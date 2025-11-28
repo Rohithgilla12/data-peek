@@ -40,6 +40,10 @@ jobs:
       - name: Build for ${{ matrix.platform }}
         run: pnpm build:${{ matrix.platform }}
 
+      - name: Build additional Linux packages
+        if: matrix.platform == 'linux'
+        run: pnpm --filter @data-peek/desktop exec electron-builder --linux deb
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

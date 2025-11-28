@@ -1,4 +1,11 @@
-import { createRouter, createRootRoute, createRoute, Outlet, Link } from '@tanstack/react-router'
+import {
+  createRouter,
+  createRootRoute,
+  createRoute,
+  createMemoryHistory,
+  Outlet,
+  Link
+} from '@tanstack/react-router'
 import { useState, useEffect, useCallback } from 'react'
 import { Moon, Sun, Monitor } from 'lucide-react'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
@@ -300,12 +307,16 @@ const settingsRoute = createRoute({
 // Create route tree
 const routeTree = rootRoute.addChildren([indexRoute, settingsRoute])
 
+// Create memory history for Electron (file:// protocol doesn't work with browser history)
+const memoryHistory = createMemoryHistory({
+  initialEntries: ['/']
+})
+
 // Create router
 export const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
-  // Use memory history for Electron (no URL bar)
-  history: undefined
+  history: memoryHistory
 })
 
 // Type declaration for router
