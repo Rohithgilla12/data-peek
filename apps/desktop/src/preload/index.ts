@@ -128,6 +128,12 @@ const api = {
     ): Promise<IpcResponse<LicenseStatus>> =>
       ipcRenderer.invoke('license:activate-offline', { key, email, type, daysValid })
   },
+  // File dialog
+  showOpenDialog: (options: {
+    properties?: Array<'openFile' | 'openDirectory' | 'multiSelections'>
+    filters?: Array<{ name: string; extensions: string[] }>
+  }): Promise<{ canceled: boolean; filePaths: string[] }> =>
+    ipcRenderer.invoke('dialog:show-open', options),
   // Saved queries management
   savedQueries: {
     list: (): Promise<IpcResponse<SavedQuery[]>> => ipcRenderer.invoke('saved-queries:list'),

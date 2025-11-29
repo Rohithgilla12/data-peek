@@ -80,6 +80,10 @@ interface DataPeekApi {
       daysValid?: number
     ) => Promise<IpcResponse<LicenseStatus>>
   }
+  showOpenDialog: (options: {
+    properties?: Array<'openFile' | 'openDirectory' | 'multiSelections'>
+    filters?: Array<{ name: string; extensions: string[] }>
+  }) => Promise<{ canceled: boolean; filePaths: string[] }>
   savedQueries: {
     list: () => Promise<IpcResponse<SavedQuery[]>>
     add: (query: SavedQuery) => Promise<IpcResponse<SavedQuery>>
