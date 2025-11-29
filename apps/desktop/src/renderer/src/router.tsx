@@ -7,7 +7,7 @@ import {
   Link
 } from '@tanstack/react-router'
 import { useState, useEffect, useCallback } from 'react'
-import { Moon, Sun, Monitor } from 'lucide-react'
+import { Moon, Sun, Monitor, Sparkles } from 'lucide-react'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import { DatabaseIcon } from '@/components/database-icons'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -19,8 +19,12 @@ import { ConnectionPicker } from '@/components/connection-picker'
 import { LicenseStatusIndicator } from '@/components/license-status-indicator'
 import { LicenseActivationModal } from '@/components/license-activation-modal'
 import { LicenseSettingsModal } from '@/components/license-settings-modal'
-import { useConnectionStore, useLicenseStore } from '@/stores'
+import { AIChatPanel, AISettingsModal } from '@/components/ai'
+import { useConnectionStore, useLicenseStore, useTabStore } from '@/stores'
+import { useAIStore } from '@/stores/ai-store'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 // Root Layout
 function RootLayout() {
@@ -36,6 +40,33 @@ function RootLayout() {
   const isSettingsModalOpen = useLicenseStore((s) => s.isSettingsModalOpen)
   const closeSettingsModal = useLicenseStore((s) => s.closeSettingsModal)
 
+  // AI states from store
+  const isAIPanelOpen = useAIStore((s) => s.isPanelOpen)
+  const toggleAIPanel = useAIStore((s) => s.togglePanel)
+  const closeAIPanel = useAIStore((s) => s.closePanel)
+  const isAISettingsOpen = useAIStore((s) => s.isSettingsOpen)
+  const openAISettings = useAIStore((s) => s.openSettings)
+  const closeAISettings = useAIStore((s) => s.closeSettings)
+  const aiConfig = useAIStore((s) => s.config)
+  const isAIConfigured = useAIStore((s) => s.isConfigured)
+  const setAIConfig = useAIStore((s) => s.setConfig)
+
+  // Get schemas for AI context
+  const schemas = useConnectionStore((s) => s.schemas)
+
+  // Tab store for opening SQL in new tab
+  const createQueryTab = useTabStore((s) => s.createQueryTab)
+  const setActiveTab = useTabStore((s) => s.setActiveTab)
+
+  // Handle opening SQL in a new tab (without execution)
+  const handleAIOpenInTab = useCallback(
+    (sql: string) => {
+      const tabId = createQueryTab(activeConnection?.id || null, sql)
+      setActiveTab(tabId)
+    },
+    [activeConnection, createQueryTab, setActiveTab]
+  )
+
   // Handle connection switching
   const handleSelectConnection = useCallback(
     (connectionId: string) => {
@@ -48,7 +79,7 @@ function RootLayout() {
     [setConnectionStatus, setActiveConnection]
   )
 
-  // Global keyboard shortcuts for connections
+  // Global keyboard shortcuts for connections and AI
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const isMeta = e.metaKey || e.ctrlKey
@@ -57,6 +88,13 @@ function RootLayout() {
       if (isMeta && e.key === 'p' && !e.shiftKey) {
         e.preventDefault()
         setIsConnectionPickerOpen(true)
+        return
+      }
+
+      // Cmd+I: Toggle AI panel
+      if (isMeta && e.key === 'i' && !e.shiftKey) {
+        e.preventDefault()
+        toggleAIPanel()
         return
       }
 
@@ -73,7 +111,7 @@ function RootLayout() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [connections, handleSelectConnection])
+  }, [connections, handleSelectConnection, toggleAIPanel])
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="data-peek-theme">
@@ -102,6 +140,28 @@ function RootLayout() {
               )}
             </div>
             <div className="titlebar-no-drag ml-auto flex items-center gap-2 px-3">
+              {/* AI Assistant Button */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn(
+                      'size-8',
+                      isAIConfigured
+                        ? 'text-blue-400 hover:text-blue-300'
+                        : 'text-muted-foreground'
+                    )}
+                    onClick={toggleAIPanel}
+                  >
+                    <Sparkles className="size-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  AI Assistant (⌘I)
+                </TooltipContent>
+              </Tooltip>
+              <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
               <LicenseStatusIndicator />
               <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
               <NavActions />
@@ -118,6 +178,34 @@ function RootLayout() {
       {/* License Modals */}
       <LicenseActivationModal open={isActivationModalOpen} onOpenChange={closeActivationModal} />
       <LicenseSettingsModal open={isSettingsModalOpen} onOpenChange={closeSettingsModal} />
+
+      {/* AI Assistant Panel */}
+      <AIChatPanel
+        isOpen={isAIPanelOpen}
+        onClose={closeAIPanel}
+        onOpenSettings={openAISettings}
+        connection={activeConnection || null}
+        schemas={schemas}
+        isConfigured={isAIConfigured}
+        onOpenInTab={handleAIOpenInTab}
+      />
+
+      {/* AI Settings Modal */}
+      <AISettingsModal
+        isOpen={isAISettingsOpen}
+        onClose={closeAISettings}
+        currentConfig={aiConfig}
+        onSave={async (config) => {
+          // Save to local store
+          setAIConfig(config)
+          // Save to main process
+          await window.api.ai.setConfig(config)
+        }}
+        onClear={async () => {
+          setAIConfig(null)
+          await window.api.ai.clearConfig()
+        }}
+      />
     </ThemeProvider>
   )
 }
@@ -322,6 +410,14 @@ function SettingsPage() {
               <div className="space-y-1">
                 <ShortcutRow keys={['⌘', 'Click']} description="Open foreign key in new tab" />
                 <ShortcutRow keys={['Click']} description="Open foreign key in side panel" />
+              </div>
+            </div>
+
+            {/* AI Assistant */}
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2">AI Assistant</h3>
+              <div className="space-y-1">
+                <ShortcutRow keys={['⌘', 'I']} description="Toggle AI assistant panel" />
               </div>
             </div>
           </div>

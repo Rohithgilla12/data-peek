@@ -14,8 +14,118 @@ import type {
   LicenseStatus,
   LicenseActivationRequest,
   LicenseType,
-  SavedQuery
+  SavedQuery,
+  SchemaInfo
 } from '@shared/index'
+
+// AI Types
+export type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama'
+
+export interface AIConfig {
+  provider: AIProvider
+  apiKey?: string
+  model: string
+  baseUrl?: string
+}
+
+export interface AIMessage {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+}
+
+// Structured AI response types (matching main process)
+export type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
+
+export interface AIQueryResponse {
+  type: 'query'
+  message: string
+  sql: string
+  explanation: string
+  warning?: string
+}
+
+export interface AIChartResponse {
+  type: 'chart'
+  message: string
+  title: string
+  description?: string
+  chartType: 'bar' | 'line' | 'pie' | 'area'
+  sql: string
+  xKey: string
+  yKeys: string[]
+}
+
+export interface AIMetricResponse {
+  type: 'metric'
+  message: string
+  label: string
+  sql: string
+  format: 'number' | 'currency' | 'percent' | 'duration'
+}
+
+export interface AISchemaResponse {
+  type: 'schema'
+  message: string
+  tables: string[]
+}
+
+export interface AIMessageResponse {
+  type: 'message'
+  message: string
+}
+
+export type AIChatResponse =
+  | AIQueryResponse
+  | AIChartResponse
+  | AIMetricResponse
+  | AISchemaResponse
+  | AIMessageResponse
+
+// Stored response data types (without message field since it's in content)
+export interface StoredQueryData {
+  type: 'query'
+  sql: string
+  explanation: string
+  warning?: string
+}
+
+export interface StoredChartData {
+  type: 'chart'
+  title: string
+  description?: string
+  chartType: 'bar' | 'line' | 'pie' | 'area'
+  sql: string
+  xKey: string
+  yKeys: string[]
+}
+
+export interface StoredMetricData {
+  type: 'metric'
+  label: string
+  sql: string
+  format: 'number' | 'currency' | 'percent' | 'duration'
+}
+
+export interface StoredSchemaData {
+  type: 'schema'
+  tables: string[]
+}
+
+export type StoredResponseData =
+  | StoredQueryData
+  | StoredChartData
+  | StoredMetricData
+  | StoredSchemaData
+  | null
+
+// Stored chat message type (for persistence)
+export interface StoredChatMessage {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  responseData?: StoredResponseData
+  createdAt: string // ISO string for storage
+}
 
 // Custom APIs for renderer
 const api = {
@@ -143,6 +253,31 @@ const api = {
       ipcRenderer.on('open-saved-queries', handler)
       return () => ipcRenderer.removeListener('open-saved-queries', handler)
     }
+  },
+  // AI Assistant
+  ai: {
+    getConfig: (): Promise<IpcResponse<AIConfig | null>> => ipcRenderer.invoke('ai:get-config'),
+    setConfig: (config: AIConfig): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('ai:set-config', config),
+    clearConfig: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('ai:clear-config'),
+    validateKey: (config: AIConfig): Promise<IpcResponse<{ valid: boolean; error?: string }>> =>
+      ipcRenderer.invoke('ai:validate-key', config),
+    chat: (
+      messages: AIMessage[],
+      schemas: SchemaInfo[],
+      dbType: string
+    ): Promise<IpcResponse<AIChatResponse>> =>
+      ipcRenderer.invoke('ai:chat', { messages, schemas, dbType }),
+    // Chat history persistence
+    getChatHistory: (connectionId: string): Promise<IpcResponse<StoredChatMessage[]>> =>
+      ipcRenderer.invoke('ai:get-chat-history', connectionId),
+    saveChatHistory: (
+      connectionId: string,
+      messages: StoredChatMessage[]
+    ): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('ai:save-chat-history', { connectionId, messages }),
+    clearChatHistory: (connectionId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('ai:clear-chat-history', connectionId)
   }
 }
 

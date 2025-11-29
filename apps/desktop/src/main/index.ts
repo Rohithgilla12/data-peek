@@ -30,7 +30,21 @@ import {
   deactivateLicense,
   activateLicenseOffline
 } from './license-service'
-import type { LicenseActivationRequest } from '@shared/index'
+import {
+  initAIStore,
+  getAIConfig,
+  setAIConfig,
+  clearAIConfig,
+  validateAPIKey,
+  generateChatResponse,
+  getChatHistory,
+  saveChatHistory,
+  clearChatHistory,
+  type AIConfig,
+  type AIMessage,
+  type StoredChatMessage
+} from './ai-service'
+import type { LicenseActivationRequest, SchemaInfo } from '@shared/index'
 
 // electron-store v11 is ESM-only, use dynamic import
 type StoreType = import('electron-store').default<{ connections: ConnectionConfig[] }>
@@ -144,6 +158,9 @@ app.whenReady().then(async () => {
 
   // Initialize license store
   await initLicenseStore()
+
+  // Initialize AI store
+  await initAIStore()
 
   // Create native application menu
   createMenu()
@@ -736,6 +753,132 @@ app.whenReady().then(async () => {
       }
       savedQueriesStore.set('savedQueries', savedQueries)
       return { success: true, data: savedQueries[index] }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // ============================================
+  // AI Handlers
+  // ============================================
+
+  // Get AI configuration
+  ipcMain.handle('ai:get-config', () => {
+    try {
+      const config = getAIConfig()
+      return { success: true, data: config }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Set AI configuration
+  ipcMain.handle('ai:set-config', (_, config: AIConfig) => {
+    try {
+      setAIConfig(config)
+      return { success: true }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Clear AI configuration
+  ipcMain.handle('ai:clear-config', () => {
+    try {
+      clearAIConfig()
+      return { success: true }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Validate API key
+  ipcMain.handle('ai:validate-key', async (_, config: AIConfig) => {
+    try {
+      const result = await validateAPIKey(config)
+      return { success: true, data: result }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Chat with AI - returns structured JSON response
+  ipcMain.handle(
+    'ai:chat',
+    async (
+      _,
+      {
+        messages,
+        schemas,
+        dbType
+      }: {
+        messages: AIMessage[]
+        schemas: SchemaInfo[]
+        dbType: string
+      }
+    ) => {
+      console.log('[main:ai:chat] Received chat request')
+      console.log('[main:ai:chat] Messages count:', messages.length)
+
+      try {
+        const config = getAIConfig()
+        if (!config) {
+          return { success: false, error: 'AI not configured. Please set up your API key.' }
+        }
+
+        const result = await generateChatResponse(config, messages, schemas, dbType)
+
+        if (result.success && result.data) {
+          return {
+            success: true,
+            data: result.data // Returns AIStructuredResponse directly
+          }
+        } else {
+          return { success: false, error: result.error }
+        }
+      } catch (error: unknown) {
+        console.error('[main:ai:chat] Error:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Get chat history for a connection
+  ipcMain.handle('ai:get-chat-history', (_, connectionId: string) => {
+    try {
+      const history = getChatHistory(connectionId)
+      return { success: true, data: history }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Save chat history for a connection
+  ipcMain.handle(
+    'ai:save-chat-history',
+    (_, { connectionId, messages }: { connectionId: string; messages: StoredChatMessage[] }) => {
+      try {
+        saveChatHistory(connectionId, messages)
+        return { success: true }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Clear chat history for a connection
+  ipcMain.handle('ai:clear-chat-history', (_, connectionId: string) => {
+    try {
+      clearChatHistory(connectionId)
+      return { success: true }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       return { success: false, error: errorMessage }

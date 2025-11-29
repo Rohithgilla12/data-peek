@@ -13,8 +13,118 @@ import type {
   LicenseStatus,
   LicenseActivationRequest,
   LicenseType,
-  SavedQuery
+  SavedQuery,
+  SchemaInfo
 } from '@shared/index'
+
+// AI Types
+type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama'
+
+interface AIConfig {
+  provider: AIProvider
+  apiKey?: string
+  model: string
+  baseUrl?: string
+}
+
+interface AIMessage {
+  role: 'user' | 'assistant' | 'system'
+  content: string
+}
+
+// Structured AI response types
+type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
+
+interface AIQueryResponse {
+  type: 'query'
+  message: string
+  sql: string
+  explanation: string
+  warning?: string
+}
+
+interface AIChartResponse {
+  type: 'chart'
+  message: string
+  title: string
+  description?: string
+  chartType: 'bar' | 'line' | 'pie' | 'area'
+  sql: string
+  xKey: string
+  yKeys: string[]
+}
+
+interface AIMetricResponse {
+  type: 'metric'
+  message: string
+  label: string
+  sql: string
+  format: 'number' | 'currency' | 'percent' | 'duration'
+}
+
+interface AISchemaResponse {
+  type: 'schema'
+  message: string
+  tables: string[]
+}
+
+interface AIMessageResponse {
+  type: 'message'
+  message: string
+}
+
+type AIChatResponse =
+  | AIQueryResponse
+  | AIChartResponse
+  | AIMetricResponse
+  | AISchemaResponse
+  | AIMessageResponse
+
+// Stored response data types (without message field since it's in content)
+interface StoredQueryData {
+  type: 'query'
+  sql: string
+  explanation: string
+  warning?: string
+}
+
+interface StoredChartData {
+  type: 'chart'
+  title: string
+  description?: string
+  chartType: 'bar' | 'line' | 'pie' | 'area'
+  sql: string
+  xKey: string
+  yKeys: string[]
+}
+
+interface StoredMetricData {
+  type: 'metric'
+  label: string
+  sql: string
+  format: 'number' | 'currency' | 'percent' | 'duration'
+}
+
+interface StoredSchemaData {
+  type: 'schema'
+  tables: string[]
+}
+
+type StoredResponseData =
+  | StoredQueryData
+  | StoredChartData
+  | StoredMetricData
+  | StoredSchemaData
+  | null
+
+// Stored chat message type (for persistence)
+interface StoredChatMessage {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  responseData?: StoredResponseData
+  createdAt: string // ISO string for storage
+}
 
 interface DataPeekApi {
   connections: {
@@ -87,6 +197,24 @@ interface DataPeekApi {
     delete: (id: string) => Promise<IpcResponse<void>>
     incrementUsage: (id: string) => Promise<IpcResponse<SavedQuery>>
     onOpenDialog: (callback: () => void) => () => void
+  }
+  ai: {
+    getConfig: () => Promise<IpcResponse<AIConfig | null>>
+    setConfig: (config: AIConfig) => Promise<IpcResponse<void>>
+    clearConfig: () => Promise<IpcResponse<void>>
+    validateKey: (config: AIConfig) => Promise<IpcResponse<{ valid: boolean; error?: string }>>
+    chat: (
+      messages: AIMessage[],
+      schemas: SchemaInfo[],
+      dbType: string
+    ) => Promise<IpcResponse<AIChatResponse>>
+    // Chat history persistence
+    getChatHistory: (connectionId: string) => Promise<IpcResponse<StoredChatMessage[]>>
+    saveChatHistory: (
+      connectionId: string,
+      messages: StoredChatMessage[]
+    ) => Promise<IpcResponse<void>>
+    clearChatHistory: (connectionId: string) => Promise<IpcResponse<void>>
   }
 }
 
