@@ -40,6 +40,11 @@ import {
   getChatHistory,
   saveChatHistory,
   clearChatHistory,
+  getChatSessions,
+  getChatSession,
+  createChatSession,
+  updateChatSession,
+  deleteChatSession,
   type AIConfig,
   type AIMessage,
   type StoredChatMessage
@@ -884,6 +889,84 @@ app.whenReady().then(async () => {
       return { success: false, error: errorMessage }
     }
   })
+
+  // Get all chat sessions for a connection
+  ipcMain.handle('ai:get-sessions', (_, connectionId: string) => {
+    try {
+      const sessions = getChatSessions(connectionId)
+      return { success: true, data: sessions }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Get a specific chat session
+  ipcMain.handle(
+    'ai:get-session',
+    (_, { connectionId, sessionId }: { connectionId: string; sessionId: string }) => {
+      try {
+        const session = getChatSession(connectionId, sessionId)
+        return { success: true, data: session }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Create a new chat session
+  ipcMain.handle(
+    'ai:create-session',
+    (_, { connectionId, title }: { connectionId: string; title?: string }) => {
+      try {
+        const session = createChatSession(connectionId, title)
+        return { success: true, data: session }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Update a chat session
+  ipcMain.handle(
+    'ai:update-session',
+    (
+      _,
+      {
+        connectionId,
+        sessionId,
+        updates
+      }: {
+        connectionId: string
+        sessionId: string
+        updates: { messages?: StoredChatMessage[]; title?: string }
+      }
+    ) => {
+      try {
+        const session = updateChatSession(connectionId, sessionId, updates)
+        return { success: true, data: session }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Delete a chat session
+  ipcMain.handle(
+    'ai:delete-session',
+    (_, { connectionId, sessionId }: { connectionId: string; sessionId: string }) => {
+      try {
+        const deleted = deleteChatSession(connectionId, sessionId)
+        return { success: true, data: deleted }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
 
   await createWindow()
 

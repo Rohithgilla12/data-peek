@@ -1,6 +1,6 @@
 # data-peek
 
-A minimal, fast, lightweight PostgreSQL client desktop application. Built for developers who want to quickly peek at their data without the bloat.
+A minimal, fast PostgreSQL client desktop application. Built for developers who want to quickly peek at their data without the bloat.
 
 ## Features
 

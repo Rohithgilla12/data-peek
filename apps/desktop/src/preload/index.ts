@@ -127,6 +127,15 @@ export interface StoredChatMessage {
   createdAt: string // ISO string for storage
 }
 
+// Chat session type - represents a single conversation thread
+export interface ChatSession {
+  id: string
+  title: string
+  messages: StoredChatMessage[]
+  createdAt: string // ISO string
+  updatedAt: string // ISO string
+}
+
 // Custom APIs for renderer
 const api = {
   // Connection management
@@ -268,7 +277,7 @@ const api = {
       dbType: string
     ): Promise<IpcResponse<AIChatResponse>> =>
       ipcRenderer.invoke('ai:chat', { messages, schemas, dbType }),
-    // Chat history persistence
+    // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string): Promise<IpcResponse<StoredChatMessage[]>> =>
       ipcRenderer.invoke('ai:get-chat-history', connectionId),
     saveChatHistory: (
@@ -277,7 +286,25 @@ const api = {
     ): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('ai:save-chat-history', { connectionId, messages }),
     clearChatHistory: (connectionId: string): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('ai:clear-chat-history', connectionId)
+      ipcRenderer.invoke('ai:clear-chat-history', connectionId),
+    // Session-based API (new)
+    getSessions: (connectionId: string): Promise<IpcResponse<ChatSession[]>> =>
+      ipcRenderer.invoke('ai:get-sessions', connectionId),
+    getSession: (
+      connectionId: string,
+      sessionId: string
+    ): Promise<IpcResponse<ChatSession | null>> =>
+      ipcRenderer.invoke('ai:get-session', { connectionId, sessionId }),
+    createSession: (connectionId: string, title?: string): Promise<IpcResponse<ChatSession>> =>
+      ipcRenderer.invoke('ai:create-session', { connectionId, title }),
+    updateSession: (
+      connectionId: string,
+      sessionId: string,
+      updates: { messages?: StoredChatMessage[]; title?: string }
+    ): Promise<IpcResponse<ChatSession | null>> =>
+      ipcRenderer.invoke('ai:update-session', { connectionId, sessionId, updates }),
+    deleteSession: (connectionId: string, sessionId: string): Promise<IpcResponse<boolean>> =>
+      ipcRenderer.invoke('ai:delete-session', { connectionId, sessionId })
   }
 }
 

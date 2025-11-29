@@ -1,7 +1,7 @@
 {
   "name": "@data-peek/desktop",
   "version": "0.1.1",
-  "description": "A minimal, fast, lightweight PostgreSQL client",
+  "description": "A minimal, fast PostgreSQL client",
   "main": "./out/main/index.js",
   "author": "Rohith Gilla",
   "homepage": "https://github.com/Rohithgilla12/data-peek",

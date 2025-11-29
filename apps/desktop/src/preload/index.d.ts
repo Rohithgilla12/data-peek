@@ -126,6 +126,15 @@ interface StoredChatMessage {
   createdAt: string // ISO string for storage
 }
 
+// Chat session type - represents a single conversation thread
+interface ChatSession {
+  id: string
+  title: string
+  messages: StoredChatMessage[]
+  createdAt: string // ISO string
+  updatedAt: string // ISO string
+}
+
 interface DataPeekApi {
   connections: {
     list: () => Promise<IpcResponse<ConnectionConfig[]>>
@@ -208,13 +217,23 @@ interface DataPeekApi {
       schemas: SchemaInfo[],
       dbType: string
     ) => Promise<IpcResponse<AIChatResponse>>
-    // Chat history persistence
+    // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string) => Promise<IpcResponse<StoredChatMessage[]>>
     saveChatHistory: (
       connectionId: string,
       messages: StoredChatMessage[]
     ) => Promise<IpcResponse<void>>
     clearChatHistory: (connectionId: string) => Promise<IpcResponse<void>>
+    // Session-based API (new)
+    getSessions: (connectionId: string) => Promise<IpcResponse<ChatSession[]>>
+    getSession: (connectionId: string, sessionId: string) => Promise<IpcResponse<ChatSession | null>>
+    createSession: (connectionId: string, title?: string) => Promise<IpcResponse<ChatSession>>
+    updateSession: (
+      connectionId: string,
+      sessionId: string,
+      updates: { messages?: StoredChatMessage[]; title?: string }
+    ) => Promise<IpcResponse<ChatSession | null>>
+    deleteSession: (connectionId: string, sessionId: string) => Promise<IpcResponse<boolean>>
   }
 }
 

@@ -161,8 +161,17 @@ export interface StoredChatMessage {
   createdAt: string // ISO string for storage
 }
 
-// Chat history store structure: map of connectionId -> messages
-type ChatHistoryStore = Record<string, StoredChatMessage[]>
+// Chat session type - represents a single conversation thread
+export interface ChatSession {
+  id: string
+  title: string
+  messages: StoredChatMessage[]
+  createdAt: string // ISO string
+  updatedAt: string // ISO string
+}
+
+// Chat history store structure: map of connectionId -> sessions
+type ChatHistoryStore = Record<string, ChatSession[]>
 
 // Store for AI config (will be initialized with electron-store)
 type AIStoreType = import('electron-store').default<{ aiConfig: AIConfig | null }>
@@ -414,28 +423,159 @@ export async function generateChatResponse(
 }
 
 /**
- * Get chat history for a connection
+ * Generate a title for a chat session based on its first message
  */
-export function getChatHistory(connectionId: string): StoredChatMessage[] {
+function generateSessionTitle(messages: StoredChatMessage[]): string {
+  const firstUserMessage = messages.find((m) => m.role === 'user')
+  if (!firstUserMessage) return 'New Chat'
+  // Truncate to first 40 characters
+  const content = firstUserMessage.content.trim()
+  return content.length > 40 ? content.substring(0, 40) + '...' : content
+}
+
+/**
+ * Check if data is in legacy format (array of messages instead of sessions)
+ */
+function isLegacyFormat(data: unknown): data is StoredChatMessage[] {
+  if (!Array.isArray(data)) return false
+  if (data.length === 0) return false
+  // Legacy format has messages with 'role' field directly
+  // New format has sessions with 'messages' array
+  const first = data[0]
+  return 'role' in first && !('messages' in first)
+}
+
+/**
+ * Migrate legacy chat history to new session-based format
+ */
+function migrateLegacyToSessions(messages: StoredChatMessage[]): ChatSession[] {
+  if (messages.length === 0) return []
+
+  const now = new Date().toISOString()
+  const session: ChatSession = {
+    id: crypto.randomUUID(),
+    title: generateSessionTitle(messages),
+    messages,
+    createdAt: messages[0]?.createdAt || now,
+    updatedAt: messages[messages.length - 1]?.createdAt || now
+  }
+  return [session]
+}
+
+/**
+ * Get all chat sessions for a connection
+ */
+export function getChatSessions(connectionId: string): ChatSession[] {
   if (!chatStore) return []
   const history = chatStore.get('chatHistory', {})
-  return history[connectionId] || []
+  const data = history[connectionId]
+
+  if (!data) return []
+
+  // Check for legacy format and migrate if needed
+  if (isLegacyFormat(data)) {
+    const sessions = migrateLegacyToSessions(data as StoredChatMessage[])
+    // Save migrated data
+    history[connectionId] = sessions
+    chatStore.set('chatHistory', history)
+    return sessions
+  }
+
+  return data as ChatSession[]
 }
 
 /**
- * Save chat history for a connection
+ * Get a specific chat session
  */
-export function saveChatHistory(connectionId: string, messages: StoredChatMessage[]): void {
-  if (!chatStore) return
+export function getChatSession(connectionId: string, sessionId: string): ChatSession | null {
+  const sessions = getChatSessions(connectionId)
+  return sessions.find((s) => s.id === sessionId) || null
+}
+
+/**
+ * Create a new chat session
+ */
+export function createChatSession(connectionId: string, title?: string): ChatSession {
+  const now = new Date().toISOString()
+  const session: ChatSession = {
+    id: crypto.randomUUID(),
+    title: title || 'New Chat',
+    messages: [],
+    createdAt: now,
+    updatedAt: now
+  }
+
+  if (!chatStore) return session
+
   const history = chatStore.get('chatHistory', {})
-  history[connectionId] = messages
+  const sessions = getChatSessions(connectionId)
+  sessions.unshift(session) // Add to beginning
+  history[connectionId] = sessions
   chatStore.set('chatHistory', history)
+
+  return session
 }
 
 /**
- * Clear chat history for a connection
+ * Update a chat session (messages and title)
  */
-export function clearChatHistory(connectionId: string): void {
+export function updateChatSession(
+  connectionId: string,
+  sessionId: string,
+  updates: { messages?: StoredChatMessage[]; title?: string }
+): ChatSession | null {
+  if (!chatStore) return null
+
+  const history = chatStore.get('chatHistory', {})
+  const sessions = getChatSessions(connectionId)
+  const index = sessions.findIndex((s) => s.id === sessionId)
+
+  if (index === -1) return null
+
+  const session = sessions[index]
+  const now = new Date().toISOString()
+
+  if (updates.messages !== undefined) {
+    session.messages = updates.messages
+    // Auto-update title if it's the default and we have messages
+    if (session.title === 'New Chat' && updates.messages.length > 0) {
+      session.title = generateSessionTitle(updates.messages)
+    }
+  }
+
+  if (updates.title !== undefined) {
+    session.title = updates.title
+  }
+
+  session.updatedAt = now
+  sessions[index] = session
+  history[connectionId] = sessions
+  chatStore.set('chatHistory', history)
+
+  return session
+}
+
+/**
+ * Delete a chat session
+ */
+export function deleteChatSession(connectionId: string, sessionId: string): boolean {
+  if (!chatStore) return false
+
+  const history = chatStore.get('chatHistory', {})
+  const sessions = getChatSessions(connectionId)
+  const filtered = sessions.filter((s) => s.id !== sessionId)
+
+  if (filtered.length === sessions.length) return false // Not found
+
+  history[connectionId] = filtered
+  chatStore.set('chatHistory', history)
+  return true
+}
+
+/**
+ * Clear all chat sessions for a connection
+ */
+export function clearChatSessions(connectionId: string): void {
   if (!chatStore) return
   const history = chatStore.get('chatHistory', {})
   delete history[connectionId]
@@ -448,4 +588,40 @@ export function clearChatHistory(connectionId: string): void {
 export function clearAllChatHistory(): void {
   if (!chatStore) return
   chatStore.set('chatHistory', {})
+}
+
+// Legacy API - kept for backward compatibility but maps to sessions
+/**
+ * @deprecated Use getChatSessions and session-based APIs instead
+ * Get chat history for a connection (returns messages from all sessions combined)
+ */
+export function getChatHistory(connectionId: string): StoredChatMessage[] {
+  const sessions = getChatSessions(connectionId)
+  if (sessions.length === 0) return []
+  // Return messages from the most recent session
+  return sessions[0]?.messages || []
+}
+
+/**
+ * @deprecated Use updateChatSession instead
+ * Save chat history for a connection (updates the most recent session)
+ */
+export function saveChatHistory(connectionId: string, messages: StoredChatMessage[]): void {
+  const sessions = getChatSessions(connectionId)
+  if (sessions.length === 0) {
+    // Create a new session
+    const session = createChatSession(connectionId)
+    updateChatSession(connectionId, session.id, { messages })
+  } else {
+    // Update the most recent session
+    updateChatSession(connectionId, sessions[0].id, { messages })
+  }
+}
+
+/**
+ * @deprecated Use clearChatSessions instead
+ * Clear chat history for a connection
+ */
+export function clearChatHistory(connectionId: string): void {
+  clearChatSessions(connectionId)
 }

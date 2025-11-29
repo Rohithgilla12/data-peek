@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-data-peek is a minimal, fast, lightweight SQL client desktop application built with Electron, React, and TypeScript. Supports PostgreSQL and MySQL databases. Core philosophy: Simple over feature-rich, keyboard-first, fast to open and query.
+data-peek is a minimal, fast SQL client desktop application built with Electron, React, and TypeScript. Supports PostgreSQL and MySQL databases. Core philosophy: Simple over feature-rich, keyboard-first, fast to open and query.
 
 ## Commands
 

@@ -12,16 +12,46 @@ import {
   Trash2,
   Lightbulb,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Plus,
+  MessageSquare,
+  ChevronLeft,
+  MoreHorizontal,
+  Pencil,
+  Check
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
 import { AIMessage } from './ai-message'
 import { AISuggestions } from './ai-suggestions'
 import type { ConnectionConfig, SchemaInfo } from '@data-peek/shared'
+
+// Chat session type (matching preload)
+interface ChatSession {
+  id: string
+  title: string
+  messages: StoredChatMessage[]
+  createdAt: string
+  updatedAt: string
+}
+
+// Stored message type (matching preload)
+interface StoredChatMessage {
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  responseData?: AIResponseData
+  createdAt: string
+}
 
 // Structured AI response types
 export type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
@@ -88,52 +118,74 @@ export function AIChatPanel({
   const [input, setInput] = React.useState('')
   const [isLoading, setIsLoading] = React.useState(false)
   const [isExpanded, setIsExpanded] = React.useState(false)
+  const [showSessionsList, setShowSessionsList] = React.useState(false)
+  const [sessions, setSessions] = React.useState<ChatSession[]>([])
+  const [currentSessionId, setCurrentSessionId] = React.useState<string | null>(null)
+  const [editingSessionId, setEditingSessionId] = React.useState<string | null>(null)
+  const [editingTitle, setEditingTitle] = React.useState('')
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const previousConnectionId = React.useRef<string | null>(null)
   const isInitialLoad = React.useRef(true)
 
-  // Load chat history when connection changes
+  // Load sessions when connection changes
   React.useEffect(() => {
     const connectionId = connection?.id || null
 
     // Skip if connection hasn't changed
     if (connectionId === previousConnectionId.current) return
     previousConnectionId.current = connectionId
+    isInitialLoad.current = true
 
-    // Clear messages when no connection
+    // Clear state when no connection
     if (!connectionId) {
       setMessages([])
+      setSessions([])
+      setCurrentSessionId(null)
       return
     }
 
-    // Load chat history for this connection
-    const loadHistory = async () => {
+    // Load sessions for this connection
+    const loadSessions = async () => {
       try {
-        const response = await window.api.ai.getChatHistory(connectionId)
+        const response = await window.api.ai.getSessions(connectionId)
         if (response.success && response.data) {
-          // Convert stored messages to AIChatMessage format
-          const loadedMessages: AIChatMessage[] = response.data.map((m) => ({
-            id: m.id,
-            role: m.role,
-            content: m.content,
-            responseData: m.responseData as AIResponseData,
-            createdAt: new Date(m.createdAt)
-          }))
-          setMessages(loadedMessages)
+          setSessions(response.data)
+          // Select the most recent session, or create a new one
+          if (response.data.length > 0) {
+            const latestSession = response.data[0]
+            setCurrentSessionId(latestSession.id)
+            // Convert stored messages to AIChatMessage format
+            const loadedMessages: AIChatMessage[] = latestSession.messages.map((m) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              responseData: m.responseData as AIResponseData,
+              createdAt: new Date(m.createdAt)
+            }))
+            setMessages(loadedMessages)
+          } else {
+            // No sessions exist, create one
+            const createResponse = await window.api.ai.createSession(connectionId)
+            if (createResponse.success && createResponse.data) {
+              setSessions([createResponse.data])
+              setCurrentSessionId(createResponse.data.id)
+              setMessages([])
+            }
+          }
         }
       } catch (err) {
-        console.error('Failed to load chat history:', err)
+        console.error('Failed to load chat sessions:', err)
       }
     }
 
-    loadHistory()
+    loadSessions()
   }, [connection?.id])
 
-  // Save chat history when messages change (debounced)
+  // Save messages when they change (debounced)
   React.useEffect(() => {
     const connectionId = connection?.id
-    if (!connectionId || messages.length === 0) return
+    if (!connectionId || !currentSessionId) return
 
     // Skip initial load to avoid overwriting
     if (isInitialLoad.current) {
@@ -141,7 +193,7 @@ export function AIChatPanel({
       return
     }
 
-    const saveHistory = async () => {
+    const saveSession = async () => {
       try {
         // Convert AIChatMessage to StoredChatMessage format
         const storedMessages = messages.map((m) => ({
@@ -151,16 +203,24 @@ export function AIChatPanel({
           responseData: m.responseData || null,
           createdAt: m.createdAt.toISOString()
         }))
-        await window.api.ai.saveChatHistory(connectionId, storedMessages)
+        const response = await window.api.ai.updateSession(connectionId, currentSessionId, {
+          messages: storedMessages
+        })
+        // Update sessions list with new title if it changed
+        if (response.success && response.data) {
+          setSessions((prev) =>
+            prev.map((s) => (s.id === currentSessionId ? response.data! : s))
+          )
+        }
       } catch (err) {
-        console.error('Failed to save chat history:', err)
+        console.error('Failed to save chat session:', err)
       }
     }
 
     // Debounce save
-    const timeoutId = setTimeout(saveHistory, 500)
+    const timeoutId = setTimeout(saveSession, 500)
     return () => clearTimeout(timeoutId)
-  }, [messages, connection?.id])
+  }, [messages, connection?.id, currentSessionId])
 
   // Auto-scroll to bottom on new messages
   React.useEffect(() => {
@@ -284,18 +344,104 @@ export function AIChatPanel({
     inputRef.current?.focus()
   }
 
+  // Create a new chat session
+  const handleNewSession = async () => {
+    if (!connection?.id) return
+    try {
+      const response = await window.api.ai.createSession(connection.id)
+      if (response.success && response.data) {
+        setSessions((prev) => [response.data!, ...prev])
+        setCurrentSessionId(response.data.id)
+        setMessages([])
+        setShowSessionsList(false)
+      }
+    } catch (err) {
+      console.error('Failed to create new session:', err)
+    }
+  }
+
+  // Switch to a different session
+  const handleSwitchSession = async (sessionId: string) => {
+    if (!connection?.id || sessionId === currentSessionId) return
+    const session = sessions.find((s) => s.id === sessionId)
+    if (session) {
+      setCurrentSessionId(sessionId)
+      // Convert stored messages to AIChatMessage format
+      const loadedMessages: AIChatMessage[] = session.messages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        responseData: m.responseData as AIResponseData,
+        createdAt: new Date(m.createdAt)
+      }))
+      setMessages(loadedMessages)
+      isInitialLoad.current = true
+      setShowSessionsList(false)
+    }
+  }
+
+  // Delete a session
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!connection?.id) return
+    try {
+      const response = await window.api.ai.deleteSession(connection.id, sessionId)
+      if (response.success) {
+        setSessions((prev) => prev.filter((s) => s.id !== sessionId))
+        // If we deleted the current session, switch to another or create new
+        if (sessionId === currentSessionId) {
+          const remainingSessions = sessions.filter((s) => s.id !== sessionId)
+          if (remainingSessions.length > 0) {
+            handleSwitchSession(remainingSessions[0].id)
+          } else {
+            handleNewSession()
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Failed to delete session:', err)
+    }
+  }
+
+  // Start editing a session title
+  const handleStartEditTitle = (session: ChatSession) => {
+    setEditingSessionId(session.id)
+    setEditingTitle(session.title)
+  }
+
+  // Save edited title
+  const handleSaveTitle = async () => {
+    if (!connection?.id || !editingSessionId) return
+    try {
+      const response = await window.api.ai.updateSession(connection.id, editingSessionId, {
+        title: editingTitle
+      })
+      if (response.success && response.data) {
+        setSessions((prev) =>
+          prev.map((s) => (s.id === editingSessionId ? response.data! : s))
+        )
+      }
+    } catch (err) {
+      console.error('Failed to update session title:', err)
+    } finally {
+      setEditingSessionId(null)
+      setEditingTitle('')
+    }
+  }
+
+  // Clear current session's chat
   const handleClearChat = async () => {
     setMessages([])
-    // Also clear persisted history
-    if (connection?.id) {
+    if (connection?.id && currentSessionId) {
       try {
-        await window.api.ai.clearChatHistory(connection.id)
+        await window.api.ai.updateSession(connection.id, currentSessionId, { messages: [] })
       } catch (err) {
-        console.error('Failed to clear chat history:', err)
+        console.error('Failed to clear session:', err)
       }
     }
   }
 
+  // Get current session
+  const currentSession = sessions.find((s) => s.id === currentSessionId)
   const panelWidth = isExpanded ? 560 : 420
   const tableCount = schemas.reduce((acc, s) => acc + s.tables.length, 0)
 
@@ -326,53 +472,101 @@ export function AIChatPanel({
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
           <div className="flex items-center gap-3">
-            <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-sm" />
-              <div className="relative flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-                <Sparkles className="size-4 text-blue-400" />
+            {showSessionsList ? (
+              // Back button when showing sessions list
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-8"
+                onClick={() => setShowSessionsList(false)}
+              >
+                <ChevronLeft className="size-4" />
+              </Button>
+            ) : (
+              <div className="relative">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-sm" />
+                <div className="relative flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+                  <Sparkles className="size-4 text-blue-400" />
+                </div>
               </div>
-            </div>
-            <div>
-              <h2 className="font-semibold text-sm">AI Assistant</h2>
-              <p className="text-[10px] text-muted-foreground">Powered by your API key</p>
+            )}
+            <div className="flex-1 min-w-0">
+              {showSessionsList ? (
+                <h2 className="font-semibold text-sm">Chat Sessions</h2>
+              ) : (
+                <>
+                  <button
+                    onClick={() => connection && setShowSessionsList(true)}
+                    className="font-semibold text-sm hover:text-blue-400 transition-colors flex items-center gap-1.5 truncate max-w-[200px]"
+                    disabled={!connection}
+                  >
+                    <MessageSquare className="size-3 shrink-0" />
+                    <span className="truncate">
+                      {currentSession?.title || 'AI Assistant'}
+                    </span>
+                  </button>
+                  <p className="text-[10px] text-muted-foreground">
+                    {sessions.length} chat{sessions.length !== 1 ? 's' : ''} • Click to switch
+                  </p>
+                </>
+              )}
             </div>
           </div>
 
           <div className="flex items-center gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                >
-                  {isExpanded ? (
-                    <Minimize2 className="size-3.5" />
-                  ) : (
-                    <Maximize2 className="size-3.5" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                {isExpanded ? 'Collapse' : 'Expand'}
-              </TooltipContent>
-            </Tooltip>
+            {!showSessionsList && (
+              <>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={handleNewSession}
+                      disabled={!connection}
+                    >
+                      <Plus className="size-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">New chat</TooltipContent>
+                </Tooltip>
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-7"
-                  onClick={handleClearChat}
-                  disabled={messages.length === 0}
-                >
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Clear chat</TooltipContent>
-            </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={() => setIsExpanded(!isExpanded)}
+                    >
+                      {isExpanded ? (
+                        <Minimize2 className="size-3.5" />
+                      ) : (
+                        <Maximize2 className="size-3.5" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">
+                    {isExpanded ? 'Collapse' : 'Expand'}
+                  </TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7"
+                      onClick={handleClearChat}
+                      disabled={messages.length === 0}
+                    >
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom">Clear chat</TooltipContent>
+                </Tooltip>
+              </>
+            )}
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -390,7 +584,7 @@ export function AIChatPanel({
         </div>
 
         {/* Connection Context Bar */}
-        {connection && (
+        {connection && !showSessionsList && (
           <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30 bg-muted/20">
             <Database className="size-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Connected to</span>
@@ -400,6 +594,130 @@ export function AIChatPanel({
             <span className="text-[10px] text-muted-foreground">
               {tableCount} table{tableCount !== 1 ? 's' : ''} available
             </span>
+          </div>
+        )}
+
+        {/* Sessions List View */}
+        {showSessionsList && isConfigured && connection && (
+          <div className="flex-1 flex flex-col">
+            {/* New Chat Button */}
+            <div className="p-4 border-b border-border/30">
+              <Button
+                onClick={handleNewSession}
+                className="w-full gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+              >
+                <Plus className="size-4" />
+                New Chat
+              </Button>
+            </div>
+
+            {/* Sessions List */}
+            <ScrollArea className="flex-1">
+              <div className="p-2 space-y-1">
+                {sessions.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+                    <MessageSquare className="size-10 text-muted-foreground/30 mb-3" />
+                    <p className="text-sm text-muted-foreground">No chat sessions yet</p>
+                    <p className="text-xs text-muted-foreground/60 mt-1">
+                      Click "New Chat" to start a conversation
+                    </p>
+                  </div>
+                ) : (
+                  sessions.map((session) => (
+                    <div
+                      key={session.id}
+                      className={cn(
+                        'group flex items-start gap-2 p-3 rounded-lg cursor-pointer transition-all',
+                        session.id === currentSessionId
+                          ? 'bg-blue-500/10 border border-blue-500/20'
+                          : 'hover:bg-muted/50'
+                      )}
+                      onClick={() => handleSwitchSession(session.id)}
+                    >
+                      <MessageSquare
+                        className={cn(
+                          'size-4 shrink-0 mt-0.5',
+                          session.id === currentSessionId
+                            ? 'text-blue-400'
+                            : 'text-muted-foreground'
+                        )}
+                      />
+                      <div className="flex-1 min-w-0">
+                        {editingSessionId === session.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="text"
+                              value={editingTitle}
+                              onChange={(e) => setEditingTitle(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveTitle()
+                                if (e.key === 'Escape') setEditingSessionId(null)
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              autoFocus
+                              className="flex-1 text-sm bg-background border border-border rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-6"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleSaveTitle()
+                              }}
+                            >
+                              <Check className="size-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <p className="text-sm font-medium truncate">{session.title}</p>
+                        )}
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {session.messages.length} message
+                          {session.messages.length !== 1 ? 's' : ''} •{' '}
+                          {new Date(session.updatedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      {editingSessionId !== session.id && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <MoreHorizontal className="size-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleStartEditTitle(session)
+                              }}
+                            >
+                              <Pencil className="size-3.5 mr-2" />
+                              Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteSession(session.id)
+                              }}
+                              className="text-red-500 focus:text-red-500"
+                            >
+                              <Trash2 className="size-3.5 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </ScrollArea>
           </div>
         )}
 
@@ -444,7 +762,7 @@ export function AIChatPanel({
         )}
 
         {/* Chat Messages */}
-        {isConfigured && connection && (
+        {isConfigured && connection && !showSessionsList && (
           <>
             <ScrollArea className="flex-1 px-4" ref={scrollRef}>
               <div className="py-4 space-y-4">
