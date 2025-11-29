@@ -208,9 +208,7 @@ export function AIChatPanel({
         })
         // Update sessions list with new title if it changed
         if (response.success && response.data) {
-          setSessions((prev) =>
-            prev.map((s) => (s.id === currentSessionId ? response.data! : s))
-          )
+          setSessions((prev) => prev.map((s) => (s.id === currentSessionId ? response.data! : s)))
         }
       } catch (err) {
         console.error('Failed to save chat session:', err)
@@ -416,9 +414,7 @@ export function AIChatPanel({
         title: editingTitle
       })
       if (response.success && response.data) {
-        setSessions((prev) =>
-          prev.map((s) => (s.id === editingSessionId ? response.data! : s))
-        )
+        setSessions((prev) => prev.map((s) => (s.id === editingSessionId ? response.data! : s)))
       }
     } catch (err) {
       console.error('Failed to update session title:', err)
@@ -501,9 +497,7 @@ export function AIChatPanel({
                     disabled={!connection}
                   >
                     <MessageSquare className="size-3 shrink-0" />
-                    <span className="truncate">
-                      {currentSession?.title || 'AI Assistant'}
-                    </span>
+                    <span className="truncate">{currentSession?.title || 'AI Assistant'}</span>
                   </button>
                   <p className="text-[10px] text-muted-foreground">
                     {sessions.length} chat{sessions.length !== 1 ? 's' : ''} • Click to switch
@@ -619,7 +613,7 @@ export function AIChatPanel({
                     <MessageSquare className="size-10 text-muted-foreground/30 mb-3" />
                     <p className="text-sm text-muted-foreground">No chat sessions yet</p>
                     <p className="text-xs text-muted-foreground/60 mt-1">
-                      Click "New Chat" to start a conversation
+                      Click &quot;New Chat&quot; to start a conversation
                     </p>
                   </div>
                 ) : (
@@ -777,10 +771,7 @@ export function AIChatPanel({
                     </p>
 
                     {/* Suggestions */}
-                    <AISuggestions
-                      schemas={schemas}
-                      onSelect={handleSuggestionClick}
-                    />
+                    <AISuggestions schemas={schemas} onSelect={handleSuggestionClick} />
                   </div>
                 ) : (
                   messages.map((message) => (

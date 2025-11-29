@@ -90,9 +90,7 @@ const responseSchema = z.discriminatedUnion('type', [
     message: z.string().describe('Brief description of the visualization'),
     title: z.string().describe('Chart title'),
     description: z.string().optional().describe('Chart description'),
-    chartType: z
-      .enum(['bar', 'line', 'pie', 'area'])
-      .describe('Chart type based on data nature'),
+    chartType: z.enum(['bar', 'line', 'pie', 'area']).describe('Chart type based on data nature'),
     sql: z.string().describe('SQL query to fetch chart data'),
     xKey: z.string().describe('Column name for X-axis'),
     yKeys: z.array(z.string()).describe('Column name(s) for Y-axis values')
