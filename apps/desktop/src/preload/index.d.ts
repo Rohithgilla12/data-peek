@@ -67,6 +67,7 @@ interface DataPeekApi {
     onExecuteQuery: (callback: () => void) => () => void
     onFormatSql: (callback: () => void) => () => void
     onClearResults: (callback: () => void) => () => void
+    onToggleSidebar: (callback: () => void) => () => void
   }
   license: {
     check: () => Promise<IpcResponse<LicenseStatus>>

@@ -12,9 +12,12 @@ import {
   Wand2,
   PanelTopClose,
   PanelTop,
+  PanelBottomClose,
+  PanelBottom,
   DatabaseZap,
   BarChart3,
-  Bookmark
+  Bookmark,
+  Maximize2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -71,8 +74,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Track if we've already attempted auto-run for this tab
   const hasAutoRun = useRef(false)
 
-  // Collapse state for query editor
+  // Collapse state for query editor and results panel
   const [isEditorCollapsed, setIsEditorCollapsed] = useState(false)
+  const [isResultsCollapsed, setIsResultsCollapsed] = useState(false)
 
   // Track client-side filters and sorting for "Apply to Query"
   const [tableFilters, setTableFilters] = useState<DataTableFilter[]>([])
@@ -87,12 +91,45 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     durationMs: number
   } | null>(null)
   const [isExplaining, setIsExplaining] = useState(false)
+  const [executionPlanWidth, setExecutionPlanWidth] = useState(() => {
+    // Load from localStorage or default to 500
+    const saved = localStorage.getItem('execution-plan-width')
+    return saved ? parseInt(saved, 10) : 500
+  })
+  const isResizing = useRef(false)
 
   // Save query dialog state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
 
   // Get the createForeignKeyTab action
   const createForeignKeyTab = useTabStore((s) => s.createForeignKeyTab)
+
+  // Handle execution plan panel resize
+  const handleExecutionPlanResize = useCallback(
+    (e: MouseEvent) => {
+      if (!isResizing.current) return
+      const newWidth = Math.max(300, Math.min(800, window.innerWidth - e.clientX))
+      setExecutionPlanWidth(newWidth)
+    },
+    []
+  )
+
+  const stopResizing = useCallback(() => {
+    isResizing.current = false
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    // Save to localStorage
+    localStorage.setItem('execution-plan-width', String(executionPlanWidth))
+  }, [executionPlanWidth])
+
+  useEffect(() => {
+    document.addEventListener('mousemove', handleExecutionPlanResize)
+    document.addEventListener('mouseup', stopResizing)
+    return () => {
+      document.removeEventListener('mousemove', handleExecutionPlanResize)
+      document.removeEventListener('mouseup', stopResizing)
+    }
+  }, [handleExecutionPlanResize, stopResizing])
 
   const handleRunQuery = useCallback(async () => {
     if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tabConnection || tab.isExecuting || !tab.query.trim()) {
@@ -527,16 +564,16 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Query Editor Section */}
-      <div className="flex flex-col border-b border-border/40 shrink-0">
+      <div className={`flex flex-col border-b border-border/40 transition-all duration-200 ${isResultsCollapsed ? 'flex-1 min-h-0' : 'shrink-0'}`}>
         {/* Monaco SQL Editor - Collapsible */}
         {!isEditorCollapsed && (
-          <div className="p-3 pb-0">
+          <div className={`p-3 pb-0 ${isResultsCollapsed ? 'flex-1 min-h-0' : ''}`}>
             <SQLEditor
               value={tab.query}
               onChange={handleQueryChange}
               onRun={handleRunQuery}
               onFormat={handleFormatQuery}
-              height={160}
+              height={isResultsCollapsed ? '100%' : 160}
               placeholder="SELECT * FROM your_table LIMIT 100;"
               schemas={schemas}
             />
@@ -623,6 +660,28 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                   <Bookmark className="size-3.5" />
                   Save
                 </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`gap-1.5 h-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
+                        onClick={() => setIsResultsCollapsed(!isResultsCollapsed)}
+                      >
+                        <Maximize2 className="size-3.5" />
+                        {isResultsCollapsed ? 'Restore' : 'Focus'}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p className="text-xs">
+                        {isResultsCollapsed
+                          ? 'Restore results panel'
+                          : 'Collapse results to focus on query writing'}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </>
             )}
           </div>
@@ -644,124 +703,171 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       </div>
 
       {/* Results Section */}
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {tab.error ? (
-          <div className="flex-1 flex items-center justify-center p-4">
-            <div className="max-w-md text-center space-y-2">
-              <AlertCircle className="size-8 text-red-400 mx-auto" />
-              <h3 className="font-medium text-red-400">Query Error</h3>
-              <p className="text-sm text-muted-foreground">{tab.error}</p>
-            </div>
-          </div>
-        ) : tab.result ? (
-          <>
-            {/* Results Table */}
-            <div className="flex-1 overflow-hidden p-3">
-              {tab.type === 'table-preview' ? (
-                <EditableDataTable
-                  tabId={tabId}
-                  columns={getColumnsForEditing()}
-                  data={paginatedRows as Record<string, unknown>[]}
-                  pageSize={tab.pageSize}
-                  canEdit={true}
-                  editContext={getEditContext()}
-                  connection={tabConnection}
-                  onFiltersChange={setTableFilters}
-                  onSortingChange={setTableSorting}
-                  onForeignKeyClick={handleFKClick}
-                  onForeignKeyOpenTab={handleFKOpenTab}
-                  onChangesCommitted={handleRunQuery}
-                />
+      <div className={`flex flex-col overflow-hidden transition-all duration-200 ${isResultsCollapsed ? 'h-10 shrink-0' : 'flex-1'}`}>
+        {/* Collapsed Results Bar */}
+        {isResultsCollapsed ? (
+          <div className="flex items-center justify-between h-10 border-t border-border/40 bg-muted/30 px-3">
+            <div className="flex items-center gap-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 w-7 p-0"
+                onClick={() => setIsResultsCollapsed(false)}
+                title="Show results panel"
+              >
+                <PanelBottom className="size-3.5" />
+              </Button>
+              {tab.error ? (
+                <span className="flex items-center gap-1.5 text-xs text-red-400">
+                  <AlertCircle className="size-3" />
+                  Query Error
+                </span>
+              ) : tab.result ? (
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <span className="size-1.5 rounded-full bg-green-500" />
+                    {tab.result.rowCount} rows
+                  </span>
+                  <span className="text-muted-foreground/60">{tab.result.durationMs}ms</span>
+                </div>
               ) : (
-                <DataTable
-                  columns={getColumnsWithFKInfo()}
-                  data={paginatedRows as Record<string, unknown>[]}
-                  pageSize={tab.pageSize}
-                  onFiltersChange={setTableFilters}
-                  onSortingChange={setTableSorting}
-                  onForeignKeyClick={handleFKClick}
-                  onForeignKeyOpenTab={handleFKOpenTab}
-                />
+                <span className="text-xs text-muted-foreground">No results</span>
               )}
             </div>
-
-            {/* Results Footer */}
-            <div className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-3 py-1.5 shrink-0">
-              <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-green-500" />
-                  {tab.result.rowCount} rows returned
-                </span>
-                <span>{tab.result.durationMs}ms</span>
-              </div>
-              <div className="flex items-center gap-2">
-                {hasActiveFiltersOrSorting && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5 h-7 text-primary border-primary/50 hover:bg-primary/10"
-                          onClick={handleApplyToQuery}
-                        >
-                          <DatabaseZap className="size-3.5" />
-                          Apply to Query
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <p className="text-xs">
-                          Convert your current filters and sorting to SQL WHERE/ORDER BY clauses and
-                          re-run the query against the database.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="gap-1.5 h-7">
-                      <Download className="size-3.5" />
-                      Export
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (!tab.result) return
-                        const filename = generateExportFilename(
-                          tab.type === 'table-preview' ? tab.tableName : undefined
-                        )
-                        downloadCSV(tab.result, filename)
-                      }}
-                    >
-                      <FileSpreadsheet className="size-4 text-muted-foreground" />
-                      Export as CSV
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => {
-                        if (!tab.result) return
-                        const filename = generateExportFilename(
-                          tab.type === 'table-preview' ? tab.tableName : undefined
-                        )
-                        downloadJSON(tab.result, filename)
-                      }}
-                    >
-                      <FileJson className="size-4 text-muted-foreground" />
-                      Export as JSON
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center space-y-2">
-              <p className="text-muted-foreground">Run a query to see results</p>
-              <p className="text-xs text-muted-foreground/70">Press ⌘+Enter to execute</p>
-            </div>
+            <span className="text-[10px] text-muted-foreground/50">Results collapsed</span>
           </div>
+        ) : (
+          <>
+            {tab.error ? (
+              <div className="flex-1 flex items-center justify-center p-4">
+                <div className="max-w-md text-center space-y-2">
+                  <AlertCircle className="size-8 text-red-400 mx-auto" />
+                  <h3 className="font-medium text-red-400">Query Error</h3>
+                  <p className="text-sm text-muted-foreground">{tab.error}</p>
+                </div>
+              </div>
+            ) : tab.result ? (
+              <>
+                {/* Results Table */}
+                <div className="flex-1 overflow-hidden p-3">
+                  {tab.type === 'table-preview' ? (
+                    <EditableDataTable
+                      tabId={tabId}
+                      columns={getColumnsForEditing()}
+                      data={paginatedRows as Record<string, unknown>[]}
+                      pageSize={tab.pageSize}
+                      canEdit={true}
+                      editContext={getEditContext()}
+                      connection={tabConnection}
+                      onFiltersChange={setTableFilters}
+                      onSortingChange={setTableSorting}
+                      onForeignKeyClick={handleFKClick}
+                      onForeignKeyOpenTab={handleFKOpenTab}
+                      onChangesCommitted={handleRunQuery}
+                    />
+                  ) : (
+                    <DataTable
+                      columns={getColumnsWithFKInfo()}
+                      data={paginatedRows as Record<string, unknown>[]}
+                      pageSize={tab.pageSize}
+                      onFiltersChange={setTableFilters}
+                      onSortingChange={setTableSorting}
+                      onForeignKeyClick={handleFKClick}
+                      onForeignKeyOpenTab={handleFKOpenTab}
+                    />
+                  )}
+                </div>
+
+                {/* Results Footer */}
+                <div className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-3 py-1.5 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0"
+                      onClick={() => setIsResultsCollapsed(true)}
+                      title="Collapse results panel"
+                    >
+                      <PanelBottomClose className="size-3.5" />
+                    </Button>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-1.5 rounded-full bg-green-500" />
+                        {tab.result.rowCount} rows returned
+                      </span>
+                      <span>{tab.result.durationMs}ms</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {hasActiveFiltersOrSorting && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5 h-7 text-primary border-primary/50 hover:bg-primary/10"
+                              onClick={handleApplyToQuery}
+                            >
+                              <DatabaseZap className="size-3.5" />
+                              Apply to Query
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-xs">
+                            <p className="text-xs">
+                              Convert your current filters and sorting to SQL WHERE/ORDER BY clauses and
+                              re-run the query against the database.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="outline" size="sm" className="gap-1.5 h-7">
+                          <Download className="size-3.5" />
+                          Export
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => {
+                            if (!tab.result) return
+                            const filename = generateExportFilename(
+                              tab.type === 'table-preview' ? tab.tableName : undefined
+                            )
+                            downloadCSV(tab.result, filename)
+                          }}
+                        >
+                          <FileSpreadsheet className="size-4 text-muted-foreground" />
+                          Export as CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            if (!tab.result) return
+                            const filename = generateExportFilename(
+                              tab.type === 'table-preview' ? tab.tableName : undefined
+                            )
+                            downloadJSON(tab.result, filename)
+                          }}
+                        >
+                          <FileJson className="size-4 text-muted-foreground" />
+                          Export as JSON
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center">
+                <div className="text-center space-y-2">
+                  <p className="text-muted-foreground">Run a query to see results</p>
+                  <p className="text-xs text-muted-foreground/70">Press ⌘+Enter to execute</p>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -777,7 +883,20 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
       {/* Execution Plan Panel */}
       {executionPlan && (
-        <div className="fixed inset-y-0 right-0 w-[500px] z-50 shadow-xl">
+        <div
+          className="fixed inset-y-0 right-0 z-50 shadow-xl"
+          style={{ width: executionPlanWidth }}
+        >
+          {/* Resize handle */}
+          <div
+            className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors z-10"
+            onMouseDown={(e) => {
+              e.preventDefault()
+              isResizing.current = true
+              document.body.style.cursor = 'ew-resize'
+              document.body.style.userSelect = 'none'
+            }}
+          />
           <ExecutionPlanViewer
             plan={executionPlan.plan as Parameters<typeof ExecutionPlanViewer>[0]['plan']}
             durationMs={executionPlan.durationMs}

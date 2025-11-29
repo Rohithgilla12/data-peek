@@ -170,35 +170,38 @@ app.whenReady().then(async () => {
     }
   })
 
-  ipcMain.handle('db:query', async (_, { config, query }: { config: ConnectionConfig; query: string }) => {
-    console.log('[main:db:query] Received query request')
-    console.log('[main:db:query] Config:', { ...config, password: '***' })
-    console.log('[main:db:query] Query:', query)
+  ipcMain.handle(
+    'db:query',
+    async (_, { config, query }: { config: ConnectionConfig; query: string }) => {
+      console.log('[main:db:query] Received query request')
+      console.log('[main:db:query] Config:', { ...config, password: '***' })
+      console.log('[main:db:query] Query:', query)
 
-    try {
-      const adapter = getAdapter(config)
-      console.log('[main:db:query] Connecting...')
-      const start = Date.now()
-      const result = await adapter.query(config, query)
-      const duration = Date.now() - start
-      console.log('[main:db:query] Query completed in', duration, 'ms')
-      console.log('[main:db:query] Rows:', result.rowCount)
+      try {
+        const adapter = getAdapter(config)
+        console.log('[main:db:query] Connecting...')
+        const start = Date.now()
+        const result = await adapter.query(config, query)
+        const duration = Date.now() - start
+        console.log('[main:db:query] Query completed in', duration, 'ms')
+        console.log('[main:db:query] Rows:', result.rowCount)
 
-      return {
-        success: true,
-        data: {
-          rows: result.rows,
-          fields: result.fields,
-          rowCount: result.rowCount,
-          durationMs: duration
+        return {
+          success: true,
+          data: {
+            rows: result.rows,
+            fields: result.fields,
+            rowCount: result.rowCount,
+            durationMs: duration
+          }
         }
+      } catch (error: unknown) {
+        console.error('[main:db:query] Error:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
       }
-    } catch (error: unknown) {
-      console.error('[main:db:query] Error:', error)
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
     }
-  })
+  )
 
   // Fetch database schemas, tables, and columns
   ipcMain.handle('db:schemas', async (_, config: ConnectionConfig) => {
@@ -288,7 +291,12 @@ app.whenReady().then(async () => {
       }
 
       // Validate operations first
-      const validOperations: Array<{ sql: string; params: unknown[]; preview: string; opId: string }> = []
+      const validOperations: Array<{
+        sql: string
+        params: unknown[]
+        preview: string
+        opId: string
+      }> = []
       for (const operation of batch.operations) {
         const validation = validateOperation(operation)
         if (!validation.valid) {
@@ -301,7 +309,12 @@ app.whenReady().then(async () => {
 
         const query = buildQuery(operation, batch.context, dbType)
         const previewSql = buildPreviewSql(operation, batch.context, dbType)
-        validOperations.push({ sql: query.sql, params: query.params, preview: previewSql, opId: operation.id })
+        validOperations.push({
+          sql: query.sql,
+          params: query.params,
+          preview: previewSql,
+          opId: operation.id
+        })
       }
 
       // If all operations have validation errors, return early
@@ -335,40 +348,49 @@ app.whenReady().then(async () => {
   )
 
   // Preview SQL for edit operations (without executing)
-  ipcMain.handle('db:preview-sql', (_, { batch, dbType }: { batch: EditBatch; dbType?: string }) => {
-    try {
-      const targetDbType = (dbType || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite'
-      const previews = batch.operations.map((op) => ({
-        operationId: op.id,
-        sql: buildPreviewSql(op, batch.context, targetDbType)
-      }))
-      return { success: true, data: previews }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
+  ipcMain.handle(
+    'db:preview-sql',
+    (_, { batch, dbType }: { batch: EditBatch; dbType?: string }) => {
+      try {
+        const targetDbType = (dbType || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite'
+        const previews = batch.operations.map((op) => ({
+          operationId: op.id,
+          sql: buildPreviewSql(op, batch.context, targetDbType)
+        }))
+        return { success: true, data: previews }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
     }
-  })
+  )
 
   // Execute EXPLAIN ANALYZE for query plan analysis
-  ipcMain.handle('db:explain', async (_, { config, query, analyze }: { config: ConnectionConfig; query: string; analyze: boolean }) => {
-    console.log('[main:db:explain] Received explain request')
-    console.log('[main:db:explain] Query:', query)
-    console.log('[main:db:explain] Analyze:', analyze)
+  ipcMain.handle(
+    'db:explain',
+    async (
+      _,
+      { config, query, analyze }: { config: ConnectionConfig; query: string; analyze: boolean }
+    ) => {
+      console.log('[main:db:explain] Received explain request')
+      console.log('[main:db:explain] Query:', query)
+      console.log('[main:db:explain] Analyze:', analyze)
 
-    try {
-      const adapter = getAdapter(config)
-      const result = await adapter.explain(config, query, analyze)
+      try {
+        const adapter = getAdapter(config)
+        const result = await adapter.explain(config, query, analyze)
 
-      return {
-        success: true,
-        data: result
+        return {
+          success: true,
+          data: result
+        }
+      } catch (error: unknown) {
+        console.error('[main:db:explain] Error:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
       }
-    } catch (error: unknown) {
-      console.error('[main:db:explain] Error:', error)
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
     }
-  })
+  )
 
   // ============================================
   // DDL Handlers - Table Designer
@@ -549,16 +571,19 @@ app.whenReady().then(async () => {
   })
 
   // Preview DDL without executing
-  ipcMain.handle('db:preview-ddl', (_, { definition, dbType }: { definition: TableDefinition; dbType?: string }) => {
-    try {
-      const targetDbType = (dbType || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite'
-      const sql = buildPreviewDDL(definition, targetDbType)
-      return { success: true, data: sql }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
+  ipcMain.handle(
+    'db:preview-ddl',
+    (_, { definition, dbType }: { definition: TableDefinition; dbType?: string }) => {
+      try {
+        const targetDbType = (dbType || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite'
+        const sql = buildPreviewDDL(definition, targetDbType)
+        return { success: true, data: sql }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
     }
-  })
+  )
 
   // ============================================
   // License Handlers

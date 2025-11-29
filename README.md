@@ -24,6 +24,22 @@ Download the latest release for your platform from [Releases](https://github.com
 - **Windows**: `.exe` installer
 - **Linux**: `.AppImage` or `.deb`
 
+### macOS: "App is damaged" Fix
+
+Since the app isn't notarized with Apple yet, macOS Gatekeeper may show a warning. To fix:
+
+**Option 1: Terminal command**
+```bash
+xattr -cr /Applications/data-peek.app
+```
+
+**Option 2: Right-click to open**
+1. Right-click (or Control+click) on data-peek.app
+2. Select "Open" from the menu
+3. Click "Open" in the dialog
+
+This only needs to be done once. Proper code signing is coming soon!
+
 ### Build from Source
 
 ```bash

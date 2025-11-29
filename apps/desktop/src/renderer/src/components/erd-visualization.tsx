@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, useState, useEffect } from 'react'
 import {
   ReactFlow,
   Background,
@@ -15,8 +15,17 @@ import {
   Handle
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Key, Columns3, GitBranch } from 'lucide-react'
+import { Key, Columns3, GitBranch, Filter, X, Check, ChevronsUpDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import type { SchemaInfo, ColumnInfo } from '@shared/index'
 
 interface TableNodeData extends Record<string, unknown> {
@@ -369,12 +378,83 @@ function layoutCluster(
 }
 
 export function ERDVisualization({ schemas }: ERDVisualizationProps) {
+  // Filter state
+  const [selectedTables, setSelectedTables] = useState<Set<string>>(new Set())
+  const [tableFilterOpen, setTableFilterOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Get all available tables for the filter
+  const allTables = useMemo(() => {
+    const tables: { key: string; schema: string; table: string }[] = []
+    schemas.forEach((schema) => {
+      schema.tables.forEach((table) => {
+        tables.push({
+          key: `${schema.name}.${table.name}`,
+          schema: schema.name,
+          table: table.name
+        })
+      })
+    })
+    return tables.sort((a, b) => a.key.localeCompare(b.key))
+  }, [schemas])
+
+  // Filter schemas based on selection
+  const filteredSchemas = useMemo(() => {
+    if (selectedTables.size === 0) {
+      return schemas // Show all if nothing selected
+    }
+
+    return schemas
+      .map((schema) => ({
+        ...schema,
+        tables: schema.tables.filter((table) => selectedTables.has(`${schema.name}.${table.name}`))
+      }))
+      .filter((schema) => schema.tables.length > 0)
+  }, [schemas, selectedTables])
+
+  // Filter tables shown in dropdown based on search
+  const filteredTableOptions = useMemo(() => {
+    if (!searchQuery) return allTables
+    const query = searchQuery.toLowerCase()
+    return allTables.filter(
+      (t) => t.table.toLowerCase().includes(query) || t.schema.toLowerCase().includes(query)
+    )
+  }, [allTables, searchQuery])
+
+  // Toggle table selection
+  const toggleTable = (tableKey: string) => {
+    setSelectedTables((prev) => {
+      const next = new Set(prev)
+      if (next.has(tableKey)) {
+        next.delete(tableKey)
+      } else {
+        next.add(tableKey)
+      }
+      return next
+    })
+  }
+
+  // Select all tables in a schema
+  const selectSchema = (schemaName: string) => {
+    const schemaTables = allTables.filter((t) => t.schema === schemaName)
+    setSelectedTables((prev) => {
+      const next = new Set(prev)
+      schemaTables.forEach((t) => next.add(t.key))
+      return next
+    })
+  }
+
+  // Clear all selections
+  const clearSelection = () => {
+    setSelectedTables(new Set())
+  }
+
   const { initialNodes, initialEdges } = useMemo(() => {
     const nodes: Node<TableNodeData | ClusterNodeData>[] = []
     const edges: Edge[] = []
 
     // Build relationship graph
-    const graph = buildRelationshipGraph(schemas)
+    const graph = buildRelationshipGraph(filteredSchemas)
 
     // Calculate table heights
     const tableHeights = new Map<string, number>()
@@ -383,7 +463,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
       { schemaName: string; columns: ColumnInfo[]; tableName: string }
     >()
 
-    schemas.forEach((schema) => {
+    filteredSchemas.forEach((schema) => {
       schema.tables.forEach((table) => {
         const key = `${schema.name}.${table.name}`
         const height = 70 + Math.min(table.columns.length, 12) * 28 // Cap visible columns
@@ -489,7 +569,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
     })
 
     // Create edges for foreign keys
-    schemas.forEach((schema) => {
+    filteredSchemas.forEach((schema) => {
       schema.tables.forEach((table) => {
         const sourceTableKey = `${schema.name}.${table.name}`
 
@@ -538,16 +618,27 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
     })
 
     return { initialNodes: nodes, initialEdges: edges }
-  }, [schemas])
+  }, [filteredSchemas])
 
-  const [nodes, , onNodesChange] = useNodesState(initialNodes)
-  const [edges, , onEdgesChange] = useEdgesState(initialEdges)
+  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
+  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+
+  // Sync React Flow state when filtered data changes
+  useEffect(() => {
+    setNodes(initialNodes)
+    setEdges(initialEdges)
+  }, [initialNodes, initialEdges, setNodes, setEdges])
 
   const onInit = useCallback(() => {
     // Could add fitView here if needed
   }, [])
 
-  if (schemas.length === 0 || initialNodes.length === 0) {
+  // Get unique schemas for grouping in filter
+  const uniqueSchemas = useMemo(() => {
+    return [...new Set(allTables.map((t) => t.schema))].sort()
+  }, [allTables])
+
+  if (schemas.length === 0) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <div className="text-center space-y-2">
@@ -565,11 +656,123 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Stats bar */}
-      <div className="flex items-center gap-6 px-4 py-2 border-b border-border/40 bg-muted/30 text-xs text-muted-foreground">
+      {/* Stats bar with filter */}
+      <div className="flex items-center gap-4 px-4 py-2 border-b border-border/40 bg-muted/30 text-xs text-muted-foreground">
+        {/* Table Filter */}
+        <Popover open={tableFilterOpen} onOpenChange={setTableFilterOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
+              <Filter className="size-3" />
+              Filter Tables
+              {selectedTables.size > 0 && (
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                  {selectedTables.size}
+                </Badge>
+              )}
+              <ChevronsUpDown className="size-3 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[300px] p-0" align="start">
+            <div className="p-2 border-b">
+              <Input
+                placeholder="Search tables..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8"
+              />
+            </div>
+            <ScrollArea className="h-[300px]">
+              <div className="p-2">
+                {filteredTableOptions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4">No tables found.</p>
+                ) : (
+                  uniqueSchemas.map((schemaName) => {
+                    const schemaTables = filteredTableOptions.filter((t) => t.schema === schemaName)
+                    if (schemaTables.length === 0) return null
+                    return (
+                      <div key={schemaName} className="mb-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase">
+                            {schemaName}
+                          </span>
+                          <button
+                            onClick={() => selectSchema(schemaName)}
+                            className="text-[10px] text-primary hover:underline"
+                          >
+                            Select all
+                          </button>
+                        </div>
+                        <div className="space-y-0.5">
+                          {schemaTables.map((table) => (
+                            <button
+                              key={table.key}
+                              onClick={() => toggleTable(table.key)}
+                              className="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent transition-colors"
+                            >
+                              <div
+                                className={cn(
+                                  'flex h-4 w-4 items-center justify-center rounded-sm border border-primary shrink-0',
+                                  selectedTables.has(table.key)
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'opacity-50'
+                                )}
+                              >
+                                {selectedTables.has(table.key) && <Check className="size-3" />}
+                              </div>
+                              <span className="truncate">{table.table}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            </ScrollArea>
+            {selectedTables.size > 0 && (
+              <div className="p-2 border-t">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full h-7 text-xs"
+                  onClick={clearSelection}
+                >
+                  <X className="size-3 mr-1" />
+                  Clear selection ({selectedTables.size})
+                </Button>
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {/* Selected tables badges */}
+        {selectedTables.size > 0 && selectedTables.size <= 3 && (
+          <div className="flex items-center gap-1">
+            {Array.from(selectedTables).slice(0, 3).map((key) => (
+              <Badge
+                key={key}
+                variant="secondary"
+                className="h-5 text-[10px] gap-1 cursor-pointer hover:bg-secondary/80"
+                onClick={() => toggleTable(key)}
+              >
+                {key.split('.')[1]}
+                <X className="size-2.5" />
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        <div className="h-4 w-px bg-border" />
+
+        {/* Stats */}
         <span className="flex items-center gap-1.5">
           <span className="size-2 rounded-full bg-primary/60" />
           {tableCount} table{tableCount !== 1 ? 's' : ''}
+          {selectedTables.size > 0 && (
+            <span className="text-muted-foreground/60">
+              (of {allTables.length})
+            </span>
+          )}
         </span>
         {clusterCount > 0 && (
           <span className="flex items-center gap-1.5">

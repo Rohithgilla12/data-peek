@@ -196,53 +196,106 @@ export function DataTable<TData extends Record<string, unknown>>({
   // Generate TanStack Table columns from column definitions
   const columns = React.useMemo<ColumnDef<TData>[]>(
     () =>
-      columnDefs.map((col) => ({
-        accessorKey: col.name,
-        header: ({ column }) => {
-          const isSorted = column.getIsSorted()
-          return (
-            <div className="flex flex-col gap-0.5">
-              <Button
-                variant="ghost"
-                className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50"
-                onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              >
-                <span>{col.name}</span>
-                {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
-                <Badge
-                  variant="outline"
-                  className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+      columnDefs.map((col) => {
+        const lowerType = col.dataType.toLowerCase()
+        const isNumeric =
+          lowerType.includes('int') ||
+          lowerType.includes('numeric') ||
+          lowerType.includes('decimal') ||
+          lowerType.includes('float') ||
+          lowerType.includes('double') ||
+          lowerType.includes('real') ||
+          lowerType.includes('money')
+
+        return {
+          accessorKey: col.name,
+          header: ({ column }) => {
+            const isSorted = column.getIsSorted()
+            return (
+              <div className="flex flex-col gap-0.5">
+                <Button
+                  variant="ghost"
+                  className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50"
+                  onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
                 >
-                  {col.dataType}
-                </Badge>
-                {isSorted === 'asc' ? (
-                  <ArrowUp className="ml-1 size-3 text-primary" />
-                ) : isSorted === 'desc' ? (
-                  <ArrowDown className="ml-1 size-3 text-primary" />
-                ) : (
-                  <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                  <span>{col.name}</span>
+                  {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
+                  <Badge
+                    variant="outline"
+                    className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                  >
+                    {col.dataType}
+                  </Badge>
+                  {isSorted === 'asc' ? (
+                    <ArrowUp className="ml-1 size-3 text-primary" />
+                  ) : isSorted === 'desc' ? (
+                    <ArrowDown className="ml-1 size-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                  )}
+                </Button>
+                {col.foreignKey && (
+                  <span className="text-[9px] text-muted-foreground px-2 -mt-0.5">
+                    → {col.foreignKey.referencedTable}
+                  </span>
                 )}
-              </Button>
-              {col.foreignKey && (
-                <span className="text-[9px] text-muted-foreground px-2 -mt-0.5">
-                  → {col.foreignKey.referencedTable}
-                </span>
-              )}
-            </div>
-          )
-        },
-        cell: ({ getValue }) => (
-          <CellValue
-            value={getValue()}
-            dataType={col.dataType}
-            columnName={col.name}
-            foreignKey={col.foreignKey}
-            onForeignKeyClick={onForeignKeyClick}
-            onForeignKeyOpenTab={onForeignKeyOpenTab}
-          />
-        ),
-        filterFn: 'includesString'
-      })),
+              </div>
+            )
+          },
+          cell: ({ getValue }) => (
+            <CellValue
+              value={getValue()}
+              dataType={col.dataType}
+              columnName={col.name}
+              foreignKey={col.foreignKey}
+              onForeignKeyClick={onForeignKeyClick}
+              onForeignKeyOpenTab={onForeignKeyOpenTab}
+            />
+          ),
+          filterFn: isNumeric
+            ? (row, columnId, filterValue) => {
+                const value = row.getValue(columnId)
+                if (value === null || value === undefined) return false
+                const numValue = Number(value)
+                const filterStr = String(filterValue).trim()
+
+                // Support range filters: "10-20", ">5", "<100", ">=50", "<=75"
+                if (filterStr.startsWith('>=')) {
+                  const threshold = parseFloat(filterStr.slice(2))
+                  return !isNaN(threshold) && numValue >= threshold
+                }
+                if (filterStr.startsWith('<=')) {
+                  const threshold = parseFloat(filterStr.slice(2))
+                  return !isNaN(threshold) && numValue <= threshold
+                }
+                if (filterStr.startsWith('>')) {
+                  const threshold = parseFloat(filterStr.slice(1))
+                  return !isNaN(threshold) && numValue > threshold
+                }
+                if (filterStr.startsWith('<')) {
+                  const threshold = parseFloat(filterStr.slice(1))
+                  return !isNaN(threshold) && numValue < threshold
+                }
+                const rangeMatch = filterStr.match(/^(-?\d+(\.\d+)?)\s*-\s*(-?\d+(\.\d+)?)$/)
+                if (rangeMatch) {
+                  const min = parseFloat(rangeMatch[1])
+                  const max = parseFloat(rangeMatch[3])
+                  if (!isNaN(min) && !isNaN(max)) {
+                    return numValue >= min && numValue <= max
+                  }
+                }
+
+                // Exact match or contains for numeric strings
+                const filterNum = parseFloat(filterStr)
+                if (!isNaN(filterNum)) {
+                  return numValue === filterNum || String(numValue).includes(filterStr)
+                }
+
+                return String(numValue).includes(filterStr)
+              }
+            : 'includesString'
+        }
+      }),
     [columnDefs, onForeignKeyClick, onForeignKeyOpenTab]
   )
 

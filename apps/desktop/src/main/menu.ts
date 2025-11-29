@@ -71,13 +71,14 @@ export function createMenu(): void {
               { type: 'separator' as const },
               {
                 label: 'Speech',
-                submenu: [
-                  { role: 'startSpeaking' as const },
-                  { role: 'stopSpeaking' as const }
-                ]
+                submenu: [{ role: 'startSpeaking' as const }, { role: 'stopSpeaking' as const }]
               }
             ]
-          : [{ role: 'delete' as const }, { type: 'separator' as const }, { role: 'selectAll' as const }])
+          : [
+              { role: 'delete' as const },
+              { type: 'separator' as const },
+              { role: 'selectAll' as const }
+            ])
       ]
     },
 
@@ -97,11 +98,21 @@ export function createMenu(): void {
         { type: 'separator' },
         {
           label: 'Saved Queries',
-          accelerator: 'CmdOrCtrl+B',
+          accelerator: 'CmdOrCtrl+Shift+S',
           click: (): void => {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
               focusedWindow.webContents.send('open-saved-queries')
+            }
+          }
+        },
+        {
+          label: 'Toggle Sidebar',
+          accelerator: 'CmdOrCtrl+B',
+          click: (): void => {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              focusedWindow.webContents.send('menu:toggle-sidebar')
             }
           }
         }

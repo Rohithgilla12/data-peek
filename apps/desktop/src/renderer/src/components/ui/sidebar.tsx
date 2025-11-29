@@ -99,6 +99,16 @@ function SidebarProvider({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [toggleSidebar])
 
+  // Listen for menu IPC event to toggle sidebar
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && window.api?.menu?.onToggleSidebar) {
+      return window.api.menu.onToggleSidebar(() => {
+        toggleSidebar()
+      })
+    }
+    return undefined
+  }, [toggleSidebar])
+
   // We add a state so that we can do data-state="expanded" or "collapsed".
   // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? 'expanded' : 'collapsed'
@@ -297,6 +307,8 @@ function SidebarInset({ className, ...props }: React.ComponentProps<'main'>) {
       className={cn(
         'bg-background relative flex w-full flex-1 flex-col',
         'md:peer-data-[variant=inset]:m-2 md:peer-data-[variant=inset]:ml-0 md:peer-data-[variant=inset]:rounded-xl md:peer-data-[variant=inset]:shadow-sm md:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2',
+        // On Mac, when sidebar is collapsed, add left padding for window controls (traffic lights)
+        'peer-data-[state=collapsed]:pl-[72px]',
         className
       )}
       {...props}

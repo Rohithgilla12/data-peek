@@ -254,7 +254,7 @@ export function AddConnectionDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-md">
+      <SheetContent className="sm:max-w-md flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Database className="size-5" />
@@ -267,7 +267,7 @@ export function AddConnectionDialog({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col gap-4 py-4 px-4">
+        <div className="flex flex-col gap-4 py-4 px-4 flex-1 overflow-y-auto">
           {/* Database Type Selector */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Database Type</label>
@@ -487,7 +487,7 @@ export function AddConnectionDialog({
           )}
         </div>
 
-        <SheetFooter className="flex-row gap-2">
+        <SheetFooter className="flex-row gap-2 shrink-0 border-t pt-4">
           <Button variant="outline" onClick={handleTestConnection} disabled={!isValid || isTesting}>
             {isTesting ? (
               <>

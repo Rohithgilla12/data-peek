@@ -107,6 +107,11 @@ const api = {
       const handler = (): void => callback()
       ipcRenderer.on('menu:clear-results', handler)
       return () => ipcRenderer.removeListener('menu:clear-results', handler)
+    },
+    onToggleSidebar: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('menu:toggle-sidebar', handler)
+      return () => ipcRenderer.removeListener('menu:toggle-sidebar', handler)
     }
   },
   // License management

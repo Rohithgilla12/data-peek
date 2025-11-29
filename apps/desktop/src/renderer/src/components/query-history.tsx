@@ -23,7 +23,7 @@ import {
   useSidebar
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useQueryStore, useConnectionStore } from '@/stores'
+import { useQueryStore, useConnectionStore, useTabStore } from '@/stores'
 import { QueryHistoryDialog } from './query-history-dialog'
 
 function formatRelativeTime(date: Date): string {
@@ -80,10 +80,13 @@ function getQueryTypeColor(type: string): string {
 export function QueryHistory() {
   const { isMobile } = useSidebar()
   const history = useQueryStore((s) => s.history)
-  const setCurrentQuery = useQueryStore((s) => s.setCurrentQuery)
   const clearHistory = useQueryStore((s) => s.clearHistory)
   const removeFromHistory = useQueryStore((s) => s.removeFromHistory)
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
+  const activeTabId = useTabStore((s) => s.activeTabId)
+  const updateTabQuery = useTabStore((s) => s.updateTabQuery)
+  const getActiveTab = useTabStore((s) => s.getActiveTab)
+  const createQueryTab = useTabStore((s) => s.createQueryTab)
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
 
   // Filter history by active connection
@@ -92,7 +95,14 @@ export function QueryHistory() {
     : history
 
   const handleQueryClick = (query: string) => {
-    setCurrentQuery(query)
+    const activeTab = getActiveTab()
+    // If there's an active query/table-preview tab, update it
+    if (activeTabId && activeTab && (activeTab.type === 'query' || activeTab.type === 'table-preview')) {
+      updateTabQuery(activeTabId, query)
+    } else if (activeConnectionId) {
+      // Otherwise create a new tab with the query
+      createQueryTab(activeConnectionId, query)
+    }
   }
 
   return (
