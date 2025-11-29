@@ -87,11 +87,7 @@ interface TabState {
     value: unknown
   ) => string
   createERDTab: (connectionId: string) => string
-  createTableDesignerTab: (
-    connectionId: string,
-    schemaName: string,
-    tableName?: string
-  ) => string
+  createTableDesignerTab: (connectionId: string, schemaName: string, tableName?: string) => string
   closeTab: (tabId: string) => void
   closeAllTabs: () => void
   closeOtherTabs: (tabId: string) => void

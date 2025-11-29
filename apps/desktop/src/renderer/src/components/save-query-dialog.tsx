@@ -6,7 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@/components/ui/dialog'
 import {
   Select,
   SelectContent,
@@ -26,12 +32,7 @@ interface SaveQueryDialogProps {
   editingQuery?: SavedQuery | null
 }
 
-export function SaveQueryDialog({
-  open,
-  onOpenChange,
-  query,
-  editingQuery
-}: SaveQueryDialogProps) {
+export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: SaveQueryDialogProps) {
   const addSavedQuery = useSavedQueryStore((s) => s.addSavedQuery)
   const updateSavedQuery = useSavedQueryStore((s) => s.updateSavedQuery)
   const getFolders = useSavedQueryStore((s) => s.getFolders)
@@ -225,7 +226,10 @@ export function SaveQueryDialog({
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Select value={folder || 'none'} onValueChange={(v) => setFolder(v === 'none' ? '' : v)}>
+                <Select
+                  value={folder || 'none'}
+                  onValueChange={(v) => setFolder(v === 'none' ? '' : v)}
+                >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="No folder" />
                   </SelectTrigger>
@@ -238,11 +242,7 @@ export function SaveQueryDialog({
                     ))}
                   </SelectContent>
                 </Select>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setIsCreatingFolder(true)}
-                >
+                <Button variant="outline" size="icon" onClick={() => setIsCreatingFolder(true)}>
                   <FolderPlus className="size-4" />
                 </Button>
               </div>

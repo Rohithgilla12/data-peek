@@ -72,11 +72,7 @@ function quoteString(value: string, dialect: DdlDialect): string {
 /**
  * Build fully qualified table reference
  */
-function buildTableRef(
-  schema: string,
-  table: string,
-  dialect: DdlDialect
-): string {
+function buildTableRef(schema: string, table: string, dialect: DdlDialect): string {
   const tableName = quoteIdentifier(table, dialect)
   if (schema && schema !== 'public' && schema !== 'main') {
     return `${quoteIdentifier(schema, dialect)}.${tableName}`
@@ -91,10 +87,7 @@ function buildDataType(column: ColumnDefinition): string {
   let dataType = column.dataType
 
   // Handle length for varchar/char
-  if (
-    (dataType === 'varchar' || dataType === 'char') &&
-    column.length !== undefined
-  ) {
+  if ((dataType === 'varchar' || dataType === 'char') && column.length !== undefined) {
     dataType = `${dataType}(${column.length})`
   }
 
@@ -170,10 +163,7 @@ function buildColumnDef(column: ColumnDefinition, dialect: DdlDialect): string {
 /**
  * Build constraint definition for CREATE TABLE
  */
-function buildConstraintDef(
-  constraint: ConstraintDefinition,
-  dialect: DdlDialect
-): string {
+function buildConstraintDef(constraint: ConstraintDefinition, dialect: DdlDialect): string {
   const parts: string[] = []
 
   // Constraint name
@@ -183,17 +173,13 @@ function buildConstraintDef(
 
   switch (constraint.type) {
     case 'primary_key': {
-      const columns = constraint.columns
-        .map((c) => quoteIdentifier(c, dialect))
-        .join(', ')
+      const columns = constraint.columns.map((c) => quoteIdentifier(c, dialect)).join(', ')
       parts.push(`PRIMARY KEY (${columns})`)
       break
     }
 
     case 'foreign_key': {
-      const columns = constraint.columns
-        .map((c) => quoteIdentifier(c, dialect))
-        .join(', ')
+      const columns = constraint.columns.map((c) => quoteIdentifier(c, dialect)).join(', ')
       const refColumns = (constraint.referencedColumns || [])
         .map((c) => quoteIdentifier(c, dialect))
         .join(', ')
@@ -216,9 +202,7 @@ function buildConstraintDef(
     }
 
     case 'unique': {
-      const columns = constraint.columns
-        .map((c) => quoteIdentifier(c, dialect))
-        .join(', ')
+      const columns = constraint.columns.map((c) => quoteIdentifier(c, dialect)).join(', ')
       parts.push(`UNIQUE (${columns})`)
       break
     }
@@ -277,9 +261,7 @@ export function buildCreateTable(
 
   const columnDefs = definition.columns.map((col) => {
     // If composite PK, don't add inline PRIMARY KEY
-    const adjustedCol = isCompositePk
-      ? { ...col, isPrimaryKey: false }
-      : col
+    const adjustedCol = isCompositePk ? { ...col, isPrimaryKey: false } : col
     return '  ' + buildColumnDef(adjustedCol, dialect)
   })
   lines.push(columnDefs.join(',\n'))
@@ -315,17 +297,13 @@ export function buildCreateTable(
 
   // Inheritance clause
   if (definition.inherits && definition.inherits.length > 0) {
-    const parents = definition.inherits
-      .map((p) => quoteIdentifier(p, dialect))
-      .join(', ')
+    const parents = definition.inherits.map((p) => quoteIdentifier(p, dialect)).join(', ')
     lines[lines.length - 1] += ` INHERITS (${parents})`
   }
 
   // Partition clause
   if (definition.partition) {
-    const partCols = definition.partition.columns
-      .map((c) => quoteIdentifier(c, dialect))
-      .join(', ')
+    const partCols = definition.partition.columns.map((c) => quoteIdentifier(c, dialect)).join(', ')
     lines[lines.length - 1] += ` PARTITION BY ${definition.partition.type} (${partCols})`
   }
 
@@ -356,12 +334,7 @@ export function buildCreateTable(
 
   // Indexes (created separately from table)
   for (const index of definition.indexes) {
-    const indexSql = buildCreateIndex(
-      definition.schema,
-      definition.name,
-      index,
-      dbType
-    )
+    const indexSql = buildCreateIndex(definition.schema, definition.name, index, dbType)
     statements.push(indexSql.sql)
   }
 
@@ -421,9 +394,7 @@ export function buildCreateIndex(
 
   // INCLUDE columns (covering index)
   if (index.include && index.include.length > 0) {
-    const includeCols = index.include
-      .map((c) => quoteIdentifier(c, dialect))
-      .join(', ')
+    const includeCols = index.include.map((c) => quoteIdentifier(c, dialect)).join(', ')
     parts.push(`INCLUDE (${includeCols})`)
   }
 
@@ -682,9 +653,10 @@ export function buildAlterPreviewDDL(
 /**
  * Validate table definition before generating DDL
  */
-export function validateTableDefinition(
-  definition: TableDefinition
-): { valid: boolean; errors: string[] } {
+export function validateTableDefinition(definition: TableDefinition): {
+  valid: boolean
+  errors: string[]
+} {
   const errors: string[] = []
 
   // Table name is required
@@ -715,10 +687,7 @@ export function validateTableDefinition(
       if (!constraint.referencedTable) {
         errors.push('Foreign key must reference a table')
       }
-      if (
-        !constraint.referencedColumns ||
-        constraint.referencedColumns.length === 0
-      ) {
+      if (!constraint.referencedColumns || constraint.referencedColumns.length === 0) {
         errors.push('Foreign key must reference columns')
       }
       if (constraint.columns.length !== constraint.referencedColumns?.length) {

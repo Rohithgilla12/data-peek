@@ -59,8 +59,7 @@ const api = {
     alterTable: (
       config: ConnectionConfig,
       batch: AlterTableBatch
-    ): Promise<IpcResponse<DDLResult>> =>
-      ipcRenderer.invoke('db:alter-table', { config, batch }),
+    ): Promise<IpcResponse<DDLResult>> => ipcRenderer.invoke('db:alter-table', { config, batch }),
     dropTable: (
       config: ConnectionConfig,
       schema: string,
@@ -135,7 +134,8 @@ const api = {
       ipcRenderer.invoke('saved-queries:add', query),
     update: (id: string, updates: Partial<SavedQuery>): Promise<IpcResponse<SavedQuery>> =>
       ipcRenderer.invoke('saved-queries:update', { id, updates }),
-    delete: (id: string): Promise<IpcResponse<void>> => ipcRenderer.invoke('saved-queries:delete', id),
+    delete: (id: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('saved-queries:delete', id),
     incrementUsage: (id: string): Promise<IpcResponse<SavedQuery>> =>
       ipcRenderer.invoke('saved-queries:increment-usage', id),
     onOpenDialog: (callback: () => void): (() => void) => {

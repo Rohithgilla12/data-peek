@@ -248,14 +248,20 @@ function PlanNodeView({
                   )}
 
                   {node['Parallel Aware'] && (
-                    <Badge variant="outline" className="text-[10px] text-blue-500 border-blue-500/30">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] text-blue-500 border-blue-500/30"
+                    >
                       <Zap className="size-2.5 mr-0.5" />
                       Parallel
                     </Badge>
                   )}
 
                   {node['Async Capable'] && (
-                    <Badge variant="outline" className="text-[10px] text-purple-500 border-purple-500/30">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] text-purple-500 border-purple-500/30"
+                    >
                       Async
                     </Badge>
                   )}
@@ -319,9 +325,10 @@ function PlanNodeView({
                     <span className="flex items-center gap-1 text-blue-500">
                       <Users className="size-3" />
                       <span className="font-mono">{node['Workers Launched']}</span>
-                      {node['Workers Planned'] && node['Workers Launched'] < node['Workers Planned'] && (
-                        <span className="text-orange-500">/{node['Workers Planned']}</span>
-                      )}
+                      {node['Workers Planned'] &&
+                        node['Workers Launched'] < node['Workers Planned'] && (
+                          <span className="text-orange-500">/{node['Workers Planned']}</span>
+                        )}
                       workers
                     </span>
                   )}
@@ -335,9 +342,7 @@ function PlanNodeView({
                       <HardDrive className="size-3" />
                       hits: <span className="font-mono">{node['Shared Hit Blocks']}</span>
                       {node['Shared Read Blocks'] ? (
-                        <span className="text-orange-500">
-                          reads: {node['Shared Read Blocks']}
-                        </span>
+                        <span className="text-orange-500">reads: {node['Shared Read Blocks']}</span>
                       ) : null}
                       {node['Shared Dirtied Blocks'] ? (
                         <span className="text-yellow-500">
@@ -348,50 +353,62 @@ function PlanNodeView({
                   )}
 
                   {/* I/O times */}
-                  {(node['I/O Read Time'] !== undefined || node['I/O Write Time'] !== undefined) && (
+                  {(node['I/O Read Time'] !== undefined ||
+                    node['I/O Write Time'] !== undefined) && (
                     <span className="flex items-center gap-1">
                       <Timer className="size-3" />
                       {node['I/O Read Time'] !== undefined && (
                         <span>
-                          read: <span className="font-mono text-orange-500">{node['I/O Read Time'].toFixed(2)}ms</span>
+                          read:{' '}
+                          <span className="font-mono text-orange-500">
+                            {node['I/O Read Time'].toFixed(2)}ms
+                          </span>
                         </span>
                       )}
                       {node['I/O Write Time'] !== undefined && (
                         <span>
-                          write: <span className="font-mono text-orange-500">{node['I/O Write Time'].toFixed(2)}ms</span>
+                          write:{' '}
+                          <span className="font-mono text-orange-500">
+                            {node['I/O Write Time'].toFixed(2)}ms
+                          </span>
                         </span>
                       )}
                     </span>
                   )}
 
                   {/* Rows removed by filter */}
-                  {node['Rows Removed by Filter'] !== undefined && node['Rows Removed by Filter'] > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Filter className="size-3" />
-                      <span
-                        className={cn(
-                          'font-mono',
-                          node['Rows Removed by Filter'] > (node['Actual Rows'] ?? 0) * 10
-                            ? 'text-orange-500'
-                            : ''
-                        )}
-                      >
-                        -{node['Rows Removed by Filter'].toLocaleString()}
+                  {node['Rows Removed by Filter'] !== undefined &&
+                    node['Rows Removed by Filter'] > 0 && (
+                      <span className="flex items-center gap-1">
+                        <Filter className="size-3" />
+                        <span
+                          className={cn(
+                            'font-mono',
+                            node['Rows Removed by Filter'] > (node['Actual Rows'] ?? 0) * 10
+                              ? 'text-orange-500'
+                              : ''
+                          )}
+                        >
+                          -{node['Rows Removed by Filter'].toLocaleString()}
+                        </span>
+                        filtered
                       </span>
-                      filtered
-                    </span>
-                  )}
+                    )}
 
                   {/* Heap fetches for index scans */}
                   {node['Heap Fetches'] !== undefined && (
                     <span className="flex items-center gap-1">
                       <Database className="size-3" />
-                      <span className="font-mono">{node['Heap Fetches'].toLocaleString()}</span> heap fetches
+                      <span className="font-mono">
+                        {node['Heap Fetches'].toLocaleString()}
+                      </span>{' '}
+                      heap fetches
                     </span>
                   )}
 
                   {/* Temp blocks (spilling to disk) */}
-                  {(node['Temp Read Blocks'] !== undefined || node['Temp Written Blocks'] !== undefined) && (
+                  {(node['Temp Read Blocks'] !== undefined ||
+                    node['Temp Written Blocks'] !== undefined) && (
                     <span className="flex items-center gap-1 text-orange-500">
                       <HardDrive className="size-3" />
                       temp:
@@ -680,7 +697,10 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
             </Badge>
           )}
           {stats.hasSeqScan && (
-            <Badge variant="outline" className="text-[10px] h-4 text-orange-500 border-orange-500/30">
+            <Badge
+              variant="outline"
+              className="text-[10px] h-4 text-orange-500 border-orange-500/30"
+            >
               Seq Scan
             </Badge>
           )}

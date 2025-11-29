@@ -46,6 +46,7 @@ export interface DataTableColumn {
   foreignKey?: ForeignKeyInfo
   isPrimaryKey?: boolean
   isNullable?: boolean
+  enumValues?: string[]
 }
 
 export interface DataTableFilter {
@@ -392,6 +393,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 isEditing={isEditing}
                 isModified={isModified}
                 isDeleted={isDeleted}
+                enumValues={col.enumValues}
+                columnName={col.name}
                 onStartEdit={() => startCellEdit(tabId, rowIndex, col.name)}
                 onSave={(newValue) =>
                   updateCellValue(tabId, rowIndex, col.name, newValue, originalRow)
@@ -628,6 +631,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                             isEditing={false}
                             isModified={false}
                             isNewRow={true}
+                            enumValues={col.enumValues}
+                            columnName={col.name}
                             onStartEdit={() => {}}
                             onSave={(value) => updateNewRowValue(tabId, newRow.id, col.name, value)}
                             onCancel={() => {}}

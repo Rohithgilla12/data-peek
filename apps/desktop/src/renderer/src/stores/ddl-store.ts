@@ -49,11 +49,7 @@ interface DDLStoreState {
   tabStates: Map<string, TabDDLState>
 
   // === Initialization ===
-  initTableDesigner: (
-    tabId: string,
-    schemaName: string,
-    tableName?: string
-  ) => void
+  initTableDesigner: (tabId: string, schemaName: string, tableName?: string) => void
   loadTableDefinition: (tabId: string, definition: TableDefinition) => void
   cleanupTab: (tabId: string) => void
 
@@ -166,7 +162,11 @@ function validateDefinition(definition: TableDefinition): ValidationError[] {
 
   // Must have at least one column
   if (definition.columns.length === 0) {
-    errors.push({ field: 'columns', message: 'Table must have at least one column', severity: 'error' })
+    errors.push({
+      field: 'columns',
+      message: 'Table must have at least one column',
+      severity: 'error'
+    })
   }
 
   // Column validation
