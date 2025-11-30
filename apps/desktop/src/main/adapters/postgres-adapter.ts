@@ -11,9 +11,15 @@ import type {
   ConstraintDefinition,
   IndexDefinition,
   SequenceInfo,
-  CustomTypeInfo
+  CustomTypeInfo,
+  StatementResult
 } from '@shared/index'
-import type { DatabaseAdapter, AdapterQueryResult, ExplainResult } from '../db-adapter'
+import type {
+  DatabaseAdapter,
+  AdapterQueryResult,
+  AdapterMultiQueryResult,
+  ExplainResult
+} from '../db-adapter'
 
 /**
  * PostgreSQL OID to Type Name Mapping
@@ -93,6 +99,172 @@ function resolvePostgresType(dataTypeID: number): string {
 }
 
 /**
+ * Split SQL into individual statements, respecting string literals and comments
+ * Handles: single quotes, double quotes, dollar-quoted strings, line comments (--)
+ * and block comments
+ */
+function splitStatements(sql: string): string[] {
+  const statements: string[] = []
+  let current = ''
+  let i = 0
+
+  while (i < sql.length) {
+    const char = sql[i]
+    const nextChar = sql[i + 1]
+
+    // Handle single-quoted strings
+    if (char === "'") {
+      current += char
+      i++
+      while (i < sql.length) {
+        if (sql[i] === "'" && sql[i + 1] === "'") {
+          // Escaped single quote
+          current += "''"
+          i += 2
+        } else if (sql[i] === "'") {
+          current += "'"
+          i++
+          break
+        } else {
+          current += sql[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Handle double-quoted identifiers
+    if (char === '"') {
+      current += char
+      i++
+      while (i < sql.length) {
+        if (sql[i] === '"' && sql[i + 1] === '"') {
+          // Escaped double quote
+          current += '""'
+          i += 2
+        } else if (sql[i] === '"') {
+          current += '"'
+          i++
+          break
+        } else {
+          current += sql[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Handle dollar-quoted strings (PostgreSQL-specific)
+    if (char === '$') {
+      // Find the tag (e.g., $tag$ or $$)
+      let tag = '$'
+      let j = i + 1
+      while (j < sql.length && (sql[j].match(/[a-zA-Z0-9_]/) || sql[j] === '$')) {
+        tag += sql[j]
+        if (sql[j] === '$') {
+          j++
+          break
+        }
+        j++
+      }
+      if (tag.endsWith('$') && tag.length >= 2) {
+        // Valid dollar quote tag
+        current += tag
+        i = j
+        // Find closing tag
+        const closeIdx = sql.indexOf(tag, i)
+        if (closeIdx !== -1) {
+          current += sql.substring(i, closeIdx + tag.length)
+          i = closeIdx + tag.length
+        } else {
+          // No closing tag, consume rest
+          current += sql.substring(i)
+          i = sql.length
+        }
+        continue
+      }
+    }
+
+    // Handle line comments (--)
+    if (char === '-' && nextChar === '-') {
+      current += '--'
+      i += 2
+      while (i < sql.length && sql[i] !== '\n') {
+        current += sql[i]
+        i++
+      }
+      continue
+    }
+
+    // Handle block comments (/* */)
+    if (char === '/' && nextChar === '*') {
+      current += '/*'
+      i += 2
+      let depth = 1
+      while (i < sql.length && depth > 0) {
+        if (sql[i] === '/' && sql[i + 1] === '*') {
+          current += '/*'
+          depth++
+          i += 2
+        } else if (sql[i] === '*' && sql[i + 1] === '/') {
+          current += '*/'
+          depth--
+          i += 2
+        } else {
+          current += sql[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Statement separator
+    if (char === ';') {
+      const stmt = current.trim()
+      if (stmt) {
+        statements.push(stmt)
+      }
+      current = ''
+      i++
+      continue
+    }
+
+    current += char
+    i++
+  }
+
+  // Don't forget the last statement (without trailing semicolon)
+  const lastStmt = current.trim()
+  if (lastStmt) {
+    statements.push(lastStmt)
+  }
+
+  return statements
+}
+
+/**
+ * Check if a SQL statement is data-returning (SELECT, RETURNING, etc.)
+ */
+function isDataReturningStatement(sql: string): boolean {
+  const normalized = sql.trim().toUpperCase()
+  // SELECT statements return data
+  if (normalized.startsWith('SELECT')) return true
+  // WITH ... SELECT (CTEs)
+  if (normalized.startsWith('WITH') && normalized.includes('SELECT')) return true
+  // TABLE statement
+  if (normalized.startsWith('TABLE')) return true
+  // VALUES statement
+  if (normalized.startsWith('VALUES')) return true
+  // RETURNING clause in INSERT/UPDATE/DELETE
+  if (normalized.includes('RETURNING')) return true
+  // SHOW commands
+  if (normalized.startsWith('SHOW')) return true
+  // EXPLAIN
+  if (normalized.startsWith('EXPLAIN')) return true
+  return false
+}
+
+/**
  * PostgreSQL database adapter
  */
 export class PostgresAdapter implements DatabaseAdapter {
@@ -121,6 +293,72 @@ export class PostgresAdapter implements DatabaseAdapter {
         rows: res.rows,
         fields,
         rowCount: res.rowCount
+      }
+    } finally {
+      await client.end()
+    }
+  }
+
+  async queryMultiple(config: ConnectionConfig, sql: string): Promise<AdapterMultiQueryResult> {
+    const client = new Client(config)
+    await client.connect()
+
+    const totalStart = Date.now()
+    const results: StatementResult[] = []
+
+    try {
+      const statements = splitStatements(sql)
+
+      for (let i = 0; i < statements.length; i++) {
+        const statement = statements[i]
+        const stmtStart = Date.now()
+
+        try {
+          const res = await client.query(statement)
+          const stmtDuration = Date.now() - stmtStart
+
+          const fields: QueryField[] = (res.fields || []).map((f) => ({
+            name: f.name,
+            dataType: resolvePostgresType(f.dataTypeID),
+            dataTypeID: f.dataTypeID
+          }))
+
+          const isDataReturning = isDataReturningStatement(statement)
+
+          results.push({
+            statement,
+            statementIndex: i,
+            rows: res.rows || [],
+            fields,
+            rowCount: res.rowCount ?? res.rows?.length ?? 0,
+            durationMs: stmtDuration,
+            isDataReturning
+          })
+        } catch (error) {
+          // If a statement fails, add an error result and stop execution
+          const stmtDuration = Date.now() - stmtStart
+          const errorMessage = error instanceof Error ? error.message : String(error)
+
+          results.push({
+            statement,
+            statementIndex: i,
+            rows: [],
+            fields: [{ name: 'error', dataType: 'text' }],
+            rowCount: 0,
+            durationMs: stmtDuration,
+            isDataReturning: false
+          })
+
+          // Re-throw to stop execution of remaining statements
+          throw new Error(
+            `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
+          )
+        }
+      }
+
+      return {
+        results,
+        totalDurationMs: Date.now() - totalStart
       }
     } finally {
       await client.end()

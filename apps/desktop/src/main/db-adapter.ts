@@ -5,7 +5,8 @@ import type {
   QueryField,
   TableDefinition,
   SequenceInfo,
-  CustomTypeInfo
+  CustomTypeInfo,
+  StatementResult
 } from '@shared/index'
 
 /**
@@ -15,6 +16,14 @@ export interface AdapterQueryResult {
   rows: Record<string, unknown>[]
   fields: QueryField[]
   rowCount: number | null
+}
+
+/**
+ * Multi-statement query result
+ */
+export interface AdapterMultiQueryResult {
+  results: StatementResult[]
+  totalDurationMs: number
 }
 
 /**
@@ -37,6 +46,9 @@ export interface DatabaseAdapter {
 
   /** Execute a query and return results */
   query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult>
+
+  /** Execute multiple SQL statements and return results for each */
+  queryMultiple(config: ConnectionConfig, sql: string): Promise<AdapterMultiQueryResult>
 
   /** Execute a statement (for INSERT/UPDATE/DELETE in transactions) */
   execute(

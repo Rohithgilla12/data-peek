@@ -1,8 +1,21 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { QueryResult } from './query-store'
+import type { StatementResult } from '@data-peek/shared'
 import { buildSelectQuery } from '@/lib/sql-helpers'
 import { useConnectionStore } from './connection-store'
+
+/**
+ * Extended QueryResult with multi-statement support
+ */
+export interface MultiQueryResult {
+  /** Array of statement results (for multiple statements) */
+  statements: StatementResult[]
+  /** Total execution time */
+  totalDurationMs: number
+  /** Number of statements */
+  statementCount: number
+}
 
 // Tab type discriminator
 export type TabType = 'query' | 'table-preview' | 'erd' | 'table-designer'
@@ -23,7 +36,9 @@ export interface QueryTab extends BaseTab {
   type: 'query'
   query: string
   savedQuery: string // Last saved/executed query for dirty detection
-  result: QueryResult | null
+  result: QueryResult | null // Legacy single result (for backward compatibility)
+  multiResult: MultiQueryResult | null // Multi-statement results
+  activeResultIndex: number // Index of currently displayed result set
   error: string | null
   isExecuting: boolean
   currentPage: number
@@ -37,7 +52,9 @@ export interface TablePreviewTab extends BaseTab {
   tableName: string
   query: string
   savedQuery: string
-  result: QueryResult | null
+  result: QueryResult | null // Legacy single result
+  multiResult: MultiQueryResult | null // Multi-statement results
+  activeResultIndex: number // Index of currently displayed result set
   error: string | null
   isExecuting: boolean
   currentPage: number
@@ -98,6 +115,12 @@ interface TabState {
   setActiveTab: (tabId: string) => void
   updateTabQuery: (tabId: string, query: string) => void
   updateTabResult: (tabId: string, result: QueryResult | null, error: string | null) => void
+  updateTabMultiResult: (
+    tabId: string,
+    multiResult: MultiQueryResult | null,
+    error: string | null
+  ) => void
+  setActiveResultIndex: (tabId: string, index: number) => void
   updateTabExecuting: (tabId: string, isExecuting: boolean) => void
   markTabSaved: (tabId: string) => void
 
@@ -123,6 +146,14 @@ interface TabState {
   isTabDirty: (tabId: string) => boolean
   getTabPaginatedRows: (tabId: string) => Record<string, unknown>[]
   getTabTotalPages: (tabId: string) => number
+  /** Get the currently active result set for a tab (multi-statement support) */
+  getActiveStatementResult: (tabId: string) => StatementResult | undefined
+  /** Get all statement results for a tab (multi-statement support) */
+  getAllStatementResults: (tabId: string) => StatementResult[]
+  /** Get paginated rows for the active result set (multi-statement support) */
+  getActiveResultPaginatedRows: (tabId: string) => Record<string, unknown>[]
+  /** Get total pages for the active result set (multi-statement support) */
+  getActiveResultTotalPages: (tabId: string) => number
   findTablePreviewTab: (
     connectionId: string,
     schemaName: string,
@@ -158,6 +189,8 @@ export const useTabStore = create<TabState>()(
           query: initialQuery,
           savedQuery: initialQuery,
           result: null,
+          multiResult: null,
+          activeResultIndex: 0,
           error: null,
           isExecuting: false,
           currentPage: 1,
@@ -202,6 +235,8 @@ export const useTabStore = create<TabState>()(
           query,
           savedQuery: query,
           result: null,
+          multiResult: null,
+          activeResultIndex: 0,
           error: null,
           isExecuting: false,
           currentPage: 1,
@@ -258,6 +293,8 @@ export const useTabStore = create<TabState>()(
           query,
           savedQuery: query,
           result: null,
+          multiResult: null,
+          activeResultIndex: 0,
           error: null,
           isExecuting: false,
           currentPage: 1,
@@ -418,6 +455,48 @@ export const useTabStore = create<TabState>()(
         }))
       },
 
+      updateTabMultiResult: (tabId, multiResult, error) => {
+        set((state) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === tabId
+              ? {
+                  ...t,
+                  multiResult,
+                  error,
+                  currentPage: 1,
+                  activeResultIndex: 0,
+                  // Also update legacy result field for backward compatibility
+                  result: multiResult?.statements?.[0]
+                    ? {
+                        columns: multiResult.statements[0].fields.map((f) => ({
+                          name: f.name,
+                          dataType: f.dataType
+                        })),
+                        rows: multiResult.statements[0].rows,
+                        rowCount: multiResult.statements[0].rowCount,
+                        durationMs: multiResult.totalDurationMs
+                      }
+                    : null
+                }
+              : t
+          )
+        }))
+      },
+
+      setActiveResultIndex: (tabId, index) => {
+        set((state) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === tabId
+              ? {
+                  ...t,
+                  activeResultIndex: index,
+                  currentPage: 1 // Reset pagination when switching result sets
+                }
+              : t
+          )
+        }))
+      },
+
       updateTabExecuting: (tabId, isExecuting) => {
         set((state) => ({
           tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, isExecuting } : t))
@@ -527,6 +606,36 @@ export const useTabStore = create<TabState>()(
         return Math.ceil(tab.result.rowCount / tab.pageSize)
       },
 
+      getActiveStatementResult: (tabId) => {
+        const tab = get().tabs.find((t) => t.id === tabId)
+        if (!tab || tab.type === 'erd' || tab.type === 'table-designer') return undefined
+        if (!tab.multiResult?.statements) return undefined
+        return tab.multiResult.statements[tab.activeResultIndex]
+      },
+
+      getAllStatementResults: (tabId) => {
+        const tab = get().tabs.find((t) => t.id === tabId)
+        if (!tab || tab.type === 'erd' || tab.type === 'table-designer') return []
+        return tab.multiResult?.statements ?? []
+      },
+
+      getActiveResultPaginatedRows: (tabId) => {
+        const tab = get().tabs.find((t) => t.id === tabId)
+        if (!tab || tab.type === 'erd' || tab.type === 'table-designer') return []
+        const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
+        if (!statement) return []
+        const start = (tab.currentPage - 1) * tab.pageSize
+        return statement.rows.slice(start, start + tab.pageSize)
+      },
+
+      getActiveResultTotalPages: (tabId) => {
+        const tab = get().tabs.find((t) => t.id === tabId)
+        if (!tab || tab.type === 'erd' || tab.type === 'table-designer') return 0
+        const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
+        if (!statement) return 0
+        return Math.ceil(statement.rowCount / tab.pageSize)
+      },
+
       findTablePreviewTab: (connectionId, schemaName, tableName) => {
         return get().tabs.find(
           (t) =>
@@ -622,6 +731,8 @@ export const useTabStore = create<TabState>()(
             const base = {
               ...t,
               result: null,
+              multiResult: null,
+              activeResultIndex: 0,
               error: null,
               isExecuting: false,
               savedQuery: (t as unknown as { query?: string }).query ?? '',

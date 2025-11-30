@@ -10,9 +10,15 @@ import type {
   ConstraintDefinition,
   IndexDefinition,
   SequenceInfo,
-  CustomTypeInfo
+  CustomTypeInfo,
+  StatementResult
 } from '@shared/index'
-import type { DatabaseAdapter, AdapterQueryResult, ExplainResult } from '../db-adapter'
+import type {
+  DatabaseAdapter,
+  AdapterQueryResult,
+  AdapterMultiQueryResult,
+  ExplainResult
+} from '../db-adapter'
 
 const MSSQL_TYPE_MAP: Record<number, string> = {
   34: 'image',
@@ -182,6 +188,143 @@ function toMSSQLConfig(config: ConnectionConfig): sql.config {
 }
 
 /**
+ * Split SQL into individual statements, respecting string literals and comments
+ */
+function splitStatements(sqlText: string): string[] {
+  const statements: string[] = []
+  let current = ''
+  let i = 0
+
+  while (i < sqlText.length) {
+    const char = sqlText[i]
+    const nextChar = sqlText[i + 1]
+
+    // Handle single-quoted strings
+    if (char === "'") {
+      current += char
+      i++
+      while (i < sqlText.length) {
+        if (sqlText[i] === "'" && sqlText[i + 1] === "'") {
+          current += "''"
+          i += 2
+        } else if (sqlText[i] === "'") {
+          current += "'"
+          i++
+          break
+        } else {
+          current += sqlText[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Handle bracket-quoted identifiers (MSSQL-specific)
+    if (char === '[') {
+      current += char
+      i++
+      while (i < sqlText.length) {
+        if (sqlText[i] === ']' && sqlText[i + 1] === ']') {
+          current += ']]'
+          i += 2
+        } else if (sqlText[i] === ']') {
+          current += ']'
+          i++
+          break
+        } else {
+          current += sqlText[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Handle double-quoted identifiers
+    if (char === '"') {
+      current += char
+      i++
+      while (i < sqlText.length) {
+        if (sqlText[i] === '"' && sqlText[i + 1] === '"') {
+          current += '""'
+          i += 2
+        } else if (sqlText[i] === '"') {
+          current += '"'
+          i++
+          break
+        } else {
+          current += sqlText[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Handle line comments (--)
+    if (char === '-' && nextChar === '-') {
+      current += '--'
+      i += 2
+      while (i < sqlText.length && sqlText[i] !== '\n') {
+        current += sqlText[i]
+        i++
+      }
+      continue
+    }
+
+    // Handle block comments (/* */)
+    if (char === '/' && nextChar === '*') {
+      current += '/*'
+      i += 2
+      while (i < sqlText.length) {
+        if (sqlText[i] === '*' && sqlText[i + 1] === '/') {
+          current += '*/'
+          i += 2
+          break
+        } else {
+          current += sqlText[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Statement separator (MSSQL uses ; or GO, but GO must be on its own line)
+    if (char === ';') {
+      const stmt = current.trim()
+      if (stmt) {
+        statements.push(stmt)
+      }
+      current = ''
+      i++
+      continue
+    }
+
+    current += char
+    i++
+  }
+
+  const lastStmt = current.trim()
+  if (lastStmt) {
+    statements.push(lastStmt)
+  }
+
+  return statements
+}
+
+/**
+ * Check if a SQL statement is data-returning (SELECT, etc.)
+ */
+function isDataReturningStatement(sqlText: string): boolean {
+  const normalized = sqlText.trim().toUpperCase()
+  if (normalized.startsWith('SELECT')) return true
+  if (normalized.startsWith('WITH') && normalized.includes('SELECT')) return true
+  if (normalized.startsWith('EXEC') && !normalized.startsWith('EXECUTE AS')) return true
+  if (normalized.startsWith('EXECUTE') && !normalized.startsWith('EXECUTE AS')) return true
+  // OUTPUT clause in INSERT/UPDATE/DELETE
+  if (normalized.includes('OUTPUT')) return true
+  return false
+}
+
+/**
  * MSSQL database adapter
  */
 export class MSSQLAdapter implements DatabaseAdapter {
@@ -237,6 +380,105 @@ export class MSSQLAdapter implements DatabaseAdapter {
       }
 
       return { rows, fields, rowCount: result.rowsAffected[0] ?? rows.length }
+    } finally {
+      await pool.close()
+    }
+  }
+
+  async queryMultiple(
+    config: ConnectionConfig,
+    sqlQuery: string
+  ): Promise<AdapterMultiQueryResult> {
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config))
+    await pool.connect()
+
+    const totalStart = Date.now()
+    const results: StatementResult[] = []
+
+    try {
+      const statements = splitStatements(sqlQuery)
+
+      for (let i = 0; i < statements.length; i++) {
+        const statement = statements[i]
+        const stmtStart = Date.now()
+
+        try {
+          const result = await pool.request().query(statement)
+          const stmtDuration = Date.now() - stmtStart
+
+          const rows = (result.recordset || []) as Record<string, unknown>[]
+          const fields: QueryField[] = []
+
+          if (result.recordset?.columns) {
+            for (const col of Object.values(result.recordset.columns)) {
+              const meta = col as { name: string; type?: { id?: number; name?: string } }
+              let dataTypeID: number | undefined
+              let dataType: string
+
+              if (meta.type?.id) {
+                dataTypeID = meta.type.id
+                dataType = resolveMSSQLType(dataTypeID)
+              } else if (meta.type?.name) {
+                dataType = meta.type.name.toLowerCase()
+                const match = Object.entries(MSSQL_TYPE_MAP).find(
+                  ([, name]) => name.toLowerCase() === dataType
+                )
+                dataTypeID = match ? Number(match[0]) : undefined
+              } else {
+                const inferred = inferTypeFromValue(rows[0]?.[meta.name])
+                dataType = inferred.dataType
+                dataTypeID = inferred.dataTypeID
+              }
+
+              fields.push({
+                name: meta.name,
+                dataType: dataType || 'nvarchar',
+                dataTypeID: dataTypeID || 231
+              })
+            }
+          } else if (rows.length > 0) {
+            for (const [name, value] of Object.entries(rows[0])) {
+              const inferred = inferTypeFromValue(value)
+              fields.push({ name, ...inferred })
+            }
+          }
+
+          const isDataReturning = isDataReturningStatement(statement)
+          const rowCount = isDataReturning ? rows.length : (result.rowsAffected[0] ?? 0)
+
+          results.push({
+            statement,
+            statementIndex: i,
+            rows,
+            fields,
+            rowCount,
+            durationMs: stmtDuration,
+            isDataReturning
+          })
+        } catch (error) {
+          const stmtDuration = Date.now() - stmtStart
+          const errorMessage = error instanceof Error ? error.message : String(error)
+
+          results.push({
+            statement,
+            statementIndex: i,
+            rows: [],
+            fields: [{ name: 'error', dataType: 'nvarchar' }],
+            rowCount: 0,
+            durationMs: stmtDuration,
+            isDataReturning: false
+          })
+
+          throw new Error(
+            `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
+          )
+        }
+      }
+
+      return {
+        results,
+        totalDurationMs: Date.now() - totalStart
+      }
     } finally {
       await pool.close()
     }

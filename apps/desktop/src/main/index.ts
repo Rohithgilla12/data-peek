@@ -202,19 +202,39 @@ app.whenReady().then(async () => {
       try {
         const adapter = getAdapter(config)
         console.log('[main:db:query] Connecting...')
-        const start = Date.now()
-        const result = await adapter.query(config, query)
-        const duration = Date.now() - start
-        console.log('[main:db:query] Query completed in', duration, 'ms')
-        console.log('[main:db:query] Rows:', result.rowCount)
+
+        // Use queryMultiple to support multiple statements
+        const multiResult = await adapter.queryMultiple(config, query)
+
+        console.log(
+          '[main:db:query] Query completed in',
+          multiResult.totalDurationMs,
+          'ms'
+        )
+        console.log('[main:db:query] Statement count:', multiResult.results.length)
 
         return {
           success: true,
           data: {
-            rows: result.rows,
-            fields: result.fields,
-            rowCount: result.rowCount,
-            durationMs: duration
+            // Return multi-statement results
+            results: multiResult.results,
+            totalDurationMs: multiResult.totalDurationMs,
+            statementCount: multiResult.results.length,
+            // Also include legacy single-result format for backward compatibility
+            // (uses first data-returning result or first result if none)
+            rows:
+              multiResult.results.find((r) => r.isDataReturning)?.rows ||
+              multiResult.results[0]?.rows ||
+              [],
+            fields:
+              multiResult.results.find((r) => r.isDataReturning)?.fields ||
+              multiResult.results[0]?.fields ||
+              [],
+            rowCount:
+              multiResult.results.find((r) => r.isDataReturning)?.rowCount ??
+              multiResult.results[0]?.rowCount ??
+              0,
+            durationMs: multiResult.totalDurationMs
           }
         }
       } catch (error: unknown) {

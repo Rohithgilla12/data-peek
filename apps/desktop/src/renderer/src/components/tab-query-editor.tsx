@@ -27,7 +27,8 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { useTabStore, useConnectionStore, useQueryStore, useSettingsStore } from '@/stores'
-import type { Tab } from '@/stores/tab-store'
+import type { Tab, MultiQueryResult } from '@/stores/tab-store'
+import type { StatementResult } from '@data-peek/shared'
 import {
   DataTable,
   type DataTableFilter,
@@ -59,9 +60,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const tab = useTabStore((s) => s.getTab(tabId)) as Tab | undefined
   const updateTabQuery = useTabStore((s) => s.updateTabQuery)
   const updateTabResult = useTabStore((s) => s.updateTabResult)
+  const updateTabMultiResult = useTabStore((s) => s.updateTabMultiResult)
+  const setActiveResultIndex = useTabStore((s) => s.setActiveResultIndex)
   const updateTabExecuting = useTabStore((s) => s.updateTabExecuting)
   const markTabSaved = useTabStore((s) => s.markTabSaved)
   const getTabPaginatedRows = useTabStore((s) => s.getTabPaginatedRows)
+  const getActiveResultPaginatedRows = useTabStore((s) => s.getActiveResultPaginatedRows)
+  const getAllStatementResults = useTabStore((s) => s.getAllStatementResults)
+  const getActiveStatementResult = useTabStore((s) => s.getActiveStatementResult)
 
   const connections = useConnectionStore((s) => s.connections)
   const schemas = useConnectionStore((s) => s.schemas)
@@ -152,32 +158,56 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       const response = await window.api.db.query(tabConnection, tab.query)
 
       if (response.success && response.data) {
-        const data = response.data as IpcQueryResult
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = response.data as any
 
-        const result = {
-          columns: data.fields.map((f) => ({
-            name: f.name,
-            dataType: f.dataType
-          })),
-          rows: data.rows,
-          rowCount: data.rowCount ?? data.rows.length,
-          durationMs: data.durationMs
+        // Check if we have multi-statement results
+        if (data.results && Array.isArray(data.results)) {
+          // Multi-statement result
+          const multiResult: MultiQueryResult = {
+            statements: data.results as StatementResult[],
+            totalDurationMs: data.totalDurationMs,
+            statementCount: data.statementCount
+          }
+
+          updateTabMultiResult(tabId, multiResult, null)
+          markTabSaved(tabId)
+
+          // Add to global history with total row count
+          const totalRows = multiResult.statements.reduce((sum, s) => sum + s.rowCount, 0)
+          addToHistory({
+            query: tab.query,
+            durationMs: multiResult.totalDurationMs,
+            rowCount: totalRows,
+            status: 'success',
+            connectionId: tabConnection.id
+          })
+        } else {
+          // Legacy single result (fallback)
+          const result = {
+            columns: data.fields.map((f: { name: string; dataType: string }) => ({
+              name: f.name,
+              dataType: f.dataType
+            })),
+            rows: data.rows,
+            rowCount: data.rowCount ?? data.rows.length,
+            durationMs: data.durationMs
+          }
+
+          updateTabResult(tabId, result, null)
+          markTabSaved(tabId)
+
+          addToHistory({
+            query: tab.query,
+            durationMs: data.durationMs,
+            rowCount: result.rowCount,
+            status: 'success',
+            connectionId: tabConnection.id
+          })
         }
-
-        updateTabResult(tabId, result, null)
-        markTabSaved(tabId)
-
-        // Add to global history
-        addToHistory({
-          query: tab.query,
-          durationMs: data.durationMs,
-          rowCount: result.rowCount,
-          status: 'success',
-          connectionId: tabConnection.id
-        })
       } else {
         const errorMessage = response.error ?? 'Query execution failed'
-        updateTabResult(tabId, null, errorMessage)
+        updateTabMultiResult(tabId, null, errorMessage)
 
         addToHistory({
           query: tab.query,
@@ -190,11 +220,20 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      updateTabResult(tabId, null, errorMessage)
+      updateTabMultiResult(tabId, null, errorMessage)
     } finally {
       updateTabExecuting(tabId, false)
     }
-  }, [tab, tabConnection, tabId, updateTabExecuting, updateTabResult, markTabSaved, addToHistory])
+  }, [
+    tab,
+    tabConnection,
+    tabId,
+    updateTabExecuting,
+    updateTabResult,
+    updateTabMultiResult,
+    markTabSaved,
+    addToHistory
+  ])
 
   const handleFormatQuery = () => {
     if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tab.query.trim()) return
@@ -533,6 +572,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     if (
       tab?.type === 'table-preview' &&
       !tab.result &&
+      !tab.multiResult &&
       !tab.error &&
       !tab.isExecuting &&
       tabConnection &&
@@ -593,7 +633,32 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     return <TableDesigner tabId={tabId} />
   }
 
-  const paginatedRows = getTabPaginatedRows(tabId)
+  // Get statement results for multi-statement queries
+  const statementResults = getAllStatementResults(tabId)
+  const activeStatementResult = getActiveStatementResult(tabId)
+  const hasMultipleResults = statementResults.length > 1
+  // At this point, tab is guaranteed to be query or table-preview (not erd or table-designer)
+  const activeResultIndex = tab.activeResultIndex ?? 0
+
+  // Use multi-result pagination when available, fallback to legacy
+  const paginatedRows = hasMultipleResults
+    ? getActiveResultPaginatedRows(tabId)
+    : getTabPaginatedRows(tabId)
+
+  // Get columns from active statement result (for multi-statement) or legacy result
+  const getActiveResultColumns = () => {
+    if (activeStatementResult) {
+      return activeStatementResult.fields.map((f) => ({
+        name: f.name,
+        dataType: f.dataType
+      }))
+    }
+    // tab is guaranteed to be query or table-preview at this point
+    if (tab.result) {
+      return tab.result.columns
+    }
+    return []
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -760,13 +825,27 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                   <AlertCircle className="size-3" />
                   Query Error
                 </span>
-              ) : tab.result ? (
+              ) : tab.result || tab.multiResult ? (
                 <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  <span className="flex items-center gap-1.5">
-                    <span className="size-1.5 rounded-full bg-green-500" />
-                    {tab.result.rowCount} rows
-                  </span>
-                  <span className="text-muted-foreground/60">{tab.result.durationMs}ms</span>
+                  {hasMultipleResults ? (
+                    <>
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-1.5 rounded-full bg-green-500" />
+                        {statementResults.length} statements
+                      </span>
+                      <span className="text-muted-foreground/60">
+                        {tab.multiResult?.totalDurationMs}ms
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex items-center gap-1.5">
+                        <span className="size-1.5 rounded-full bg-green-500" />
+                        {tab.result?.rowCount ?? 0} rows
+                      </span>
+                      <span className="text-muted-foreground/60">{tab.result?.durationMs}ms</span>
+                    </>
+                  )}
                 </div>
               ) : (
                 <span className="text-xs text-muted-foreground">No results</span>
@@ -784,8 +863,43 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                   <p className="text-sm text-muted-foreground">{tab.error}</p>
                 </div>
               </div>
-            ) : tab.result ? (
+            ) : tab.result || tab.multiResult ? (
               <>
+                {/* Result Set Tabs - shown when there are multiple statements */}
+                {hasMultipleResults && (
+                  <div className="flex items-center gap-1 border-b border-border/40 bg-muted/10 px-3 py-1.5 shrink-0 overflow-x-auto">
+                    {statementResults.map((stmt, idx) => {
+                      const isActive = idx === activeResultIndex
+                      const label = stmt.isDataReturning
+                        ? `Result ${idx + 1} (${stmt.rowCount} rows)`
+                        : `Statement ${idx + 1} (${stmt.rowCount} affected)`
+
+                      return (
+                        <button
+                          key={stmt.statementIndex}
+                          onClick={() => setActiveResultIndex(tabId, idx)}
+                          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors whitespace-nowrap ${
+                            isActive
+                              ? 'bg-primary text-primary-foreground'
+                              : 'hover:bg-muted text-muted-foreground hover:text-foreground'
+                          }`}
+                          title={stmt.statement.slice(0, 100)}
+                        >
+                          <span
+                            className={`size-1.5 rounded-full ${
+                              stmt.isDataReturning ? 'bg-green-500' : 'bg-blue-500'
+                            } ${isActive ? 'opacity-80' : ''}`}
+                          />
+                          {label}
+                          <span className={`text-[10px] ${isActive ? 'opacity-70' : 'opacity-50'}`}>
+                            {stmt.durationMs}ms
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
                 {/* Results Table */}
                 <div className="flex-1 overflow-hidden p-3">
                   {tab.type === 'table-preview' ? (
@@ -805,7 +919,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                     />
                   ) : (
                     <DataTable
-                      columns={getColumnsWithFKInfo()}
+                      columns={
+                        hasMultipleResults
+                          ? getActiveResultColumns().map((col) => ({
+                              name: col.name,
+                              dataType: col.dataType
+                            }))
+                          : getColumnsWithFKInfo()
+                      }
                       data={paginatedRows as Record<string, unknown>[]}
                       pageSize={tab.pageSize}
                       onFiltersChange={setTableFilters}
@@ -829,11 +950,27 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       <PanelBottomClose className="size-3.5" />
                     </Button>
                     <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-green-500" />
-                        {tab.result.rowCount} rows returned
-                      </span>
-                      <span>{tab.result.durationMs}ms</span>
+                      {hasMultipleResults ? (
+                        <>
+                          <span className="flex items-center gap-1.5">
+                            <span className="size-1.5 rounded-full bg-green-500" />
+                            {activeStatementResult?.rowCount ?? 0}{' '}
+                            {activeStatementResult?.isDataReturning ? 'rows' : 'affected'}
+                          </span>
+                          <span className="text-muted-foreground/60">
+                            {statementResults.length} statements
+                          </span>
+                          <span>{tab.multiResult?.totalDurationMs}ms total</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="flex items-center gap-1.5">
+                            <span className="size-1.5 rounded-full bg-green-500" />
+                            {tab.result?.rowCount ?? 0} rows returned
+                          </span>
+                          <span>{tab.result?.durationMs}ms</span>
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">

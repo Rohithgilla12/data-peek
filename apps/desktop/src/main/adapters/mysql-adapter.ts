@@ -11,9 +11,15 @@ import type {
   ConstraintDefinition,
   IndexDefinition,
   SequenceInfo,
-  CustomTypeInfo
+  CustomTypeInfo,
+  StatementResult
 } from '@shared/index'
-import type { DatabaseAdapter, AdapterQueryResult, ExplainResult } from '../db-adapter'
+import type {
+  DatabaseAdapter,
+  AdapterQueryResult,
+  AdapterMultiQueryResult,
+  ExplainResult
+} from '../db-adapter'
 
 /**
  * MySQL type codes to type name mapping
@@ -84,6 +90,153 @@ function normalizeRow<T extends Record<string, unknown>>(row: Record<string, unk
 }
 
 /**
+ * Split SQL into individual statements, respecting string literals and comments
+ */
+function splitStatements(sql: string): string[] {
+  const statements: string[] = []
+  let current = ''
+  let i = 0
+
+  while (i < sql.length) {
+    const char = sql[i]
+    const nextChar = sql[i + 1]
+
+    // Handle single-quoted strings
+    if (char === "'") {
+      current += char
+      i++
+      while (i < sql.length) {
+        if (sql[i] === "'" && sql[i + 1] === "'") {
+          current += "''"
+          i += 2
+        } else if (sql[i] === '\\' && sql[i + 1] === "'") {
+          // MySQL escape sequence
+          current += "\\'"
+          i += 2
+        } else if (sql[i] === "'") {
+          current += "'"
+          i++
+          break
+        } else {
+          current += sql[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Handle double-quoted strings (when ANSI_QUOTES mode)
+    if (char === '"') {
+      current += char
+      i++
+      while (i < sql.length) {
+        if (sql[i] === '"' && sql[i + 1] === '"') {
+          current += '""'
+          i += 2
+        } else if (sql[i] === '"') {
+          current += '"'
+          i++
+          break
+        } else {
+          current += sql[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Handle backtick-quoted identifiers (MySQL-specific)
+    if (char === '`') {
+      current += char
+      i++
+      while (i < sql.length) {
+        if (sql[i] === '`' && sql[i + 1] === '`') {
+          current += '``'
+          i += 2
+        } else if (sql[i] === '`') {
+          current += '`'
+          i++
+          break
+        } else {
+          current += sql[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Handle line comments (-- or #)
+    if ((char === '-' && nextChar === '-') || char === '#') {
+      if (char === '#') {
+        current += '#'
+        i++
+      } else {
+        current += '--'
+        i += 2
+      }
+      while (i < sql.length && sql[i] !== '\n') {
+        current += sql[i]
+        i++
+      }
+      continue
+    }
+
+    // Handle block comments (/* */)
+    if (char === '/' && nextChar === '*') {
+      current += '/*'
+      i += 2
+      while (i < sql.length) {
+        if (sql[i] === '*' && sql[i + 1] === '/') {
+          current += '*/'
+          i += 2
+          break
+        } else {
+          current += sql[i]
+          i++
+        }
+      }
+      continue
+    }
+
+    // Statement separator
+    if (char === ';') {
+      const stmt = current.trim()
+      if (stmt) {
+        statements.push(stmt)
+      }
+      current = ''
+      i++
+      continue
+    }
+
+    current += char
+    i++
+  }
+
+  const lastStmt = current.trim()
+  if (lastStmt) {
+    statements.push(lastStmt)
+  }
+
+  return statements
+}
+
+/**
+ * Check if a SQL statement is data-returning (SELECT, SHOW, etc.)
+ */
+function isDataReturningStatement(sql: string): boolean {
+  const normalized = sql.trim().toUpperCase()
+  if (normalized.startsWith('SELECT')) return true
+  if (normalized.startsWith('SHOW')) return true
+  if (normalized.startsWith('DESCRIBE')) return true
+  if (normalized.startsWith('DESC')) return true
+  if (normalized.startsWith('EXPLAIN')) return true
+  // MySQL supports RETURNING clause in recent versions
+  if (normalized.includes('RETURNING')) return true
+  return false
+}
+
+/**
  * MySQL database adapter
  */
 export class MySQLAdapter implements DatabaseAdapter {
@@ -112,6 +265,80 @@ export class MySQLAdapter implements DatabaseAdapter {
         rows: resultRows as Record<string, unknown>[],
         fields: queryFields,
         rowCount: resultRows.length
+      }
+    } finally {
+      await connection.end()
+    }
+  }
+
+  async queryMultiple(config: ConnectionConfig, sql: string): Promise<AdapterMultiQueryResult> {
+    const connection = await mysql.createConnection(toMySQLConfig(config))
+
+    const totalStart = Date.now()
+    const results: StatementResult[] = []
+
+    try {
+      const statements = splitStatements(sql)
+
+      for (let i = 0; i < statements.length; i++) {
+        const statement = statements[i]
+        const stmtStart = Date.now()
+
+        try {
+          const [rows, fields] = await connection.query(statement)
+          const stmtDuration = Date.now() - stmtStart
+
+          const queryFields: QueryField[] =
+            (fields as mysql.FieldPacket[] | undefined)?.map((f) => ({
+              name: f.name,
+              dataType: resolveMySQLType(f.type ?? 253),
+              dataTypeID: f.type ?? 253
+            })) || []
+
+          const resultRows = Array.isArray(rows) ? rows : []
+          const isDataReturning = isDataReturningStatement(statement)
+
+          // For non-SELECT statements, rowCount is the affected rows
+          let rowCount: number
+          if (isDataReturning) {
+            rowCount = resultRows.length
+          } else {
+            const header = rows as mysql.ResultSetHeader
+            rowCount = header.affectedRows ?? 0
+          }
+
+          results.push({
+            statement,
+            statementIndex: i,
+            rows: resultRows as Record<string, unknown>[],
+            fields: queryFields,
+            rowCount,
+            durationMs: stmtDuration,
+            isDataReturning
+          })
+        } catch (error) {
+          const stmtDuration = Date.now() - stmtStart
+          const errorMessage = error instanceof Error ? error.message : String(error)
+
+          results.push({
+            statement,
+            statementIndex: i,
+            rows: [],
+            fields: [{ name: 'error', dataType: 'text' }],
+            rowCount: 0,
+            durationMs: stmtDuration,
+            isDataReturning: false
+          })
+
+          throw new Error(
+            `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
+          )
+        }
+      }
+
+      return {
+        results,
+        totalDurationMs: Date.now() - totalStart
       }
     } finally {
       await connection.end()

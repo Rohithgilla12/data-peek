@@ -232,6 +232,40 @@ export interface QueryResult {
   durationMs: number;
 }
 
+/**
+ * Result from a single SQL statement within a multi-statement query
+ * Includes the statement that produced this result for reference
+ */
+export interface StatementResult {
+  /** The SQL statement that produced this result */
+  statement: string;
+  /** Index of this statement in the original query (0-based) */
+  statementIndex: number;
+  /** Row data */
+  rows: Record<string, unknown>[];
+  /** Column metadata */
+  fields: QueryField[];
+  /** Number of rows returned/affected */
+  rowCount: number;
+  /** Execution time for this statement */
+  durationMs: number;
+  /** Whether this statement returns rows (SELECT) or affects rows (INSERT/UPDATE/DELETE) */
+  isDataReturning: boolean;
+}
+
+/**
+ * Result from executing multiple SQL statements
+ * Supports queries like "SELECT * FROM users; SELECT * FROM orders;"
+ */
+export interface MultiStatementResult {
+  /** Array of results, one per statement */
+  results: StatementResult[];
+  /** Total execution time for all statements */
+  totalDurationMs: number;
+  /** Total number of statements executed */
+  statementCount: number;
+}
+
 export interface IpcResponse<T> {
   success: boolean;
   data?: T;
