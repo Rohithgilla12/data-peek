@@ -408,25 +408,50 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           }
 
           // Non-edit mode rendering (existing behavior)
+          // Double-click to enter edit mode
+          const handleDoubleClick = () => {
+            if (canEdit && editContext) {
+              enterEditMode(tabId, editContext)
+              // Start editing this cell after entering edit mode
+              setTimeout(() => startCellEdit(tabId, rowIndex, col.name), 0)
+            }
+          }
+
           if (value === null || value === undefined) {
-            return <span className="text-muted-foreground/50 italic">NULL</span>
+            return (
+              <span
+                className={cn(
+                  'text-muted-foreground/50 italic',
+                  canEdit && 'cursor-pointer'
+                )}
+                onDoubleClick={handleDoubleClick}
+              >
+                NULL
+              </span>
+            )
           }
 
           // Handle JSON/JSONB types specially
           const lowerType = col.dataType.toLowerCase()
           if (lowerType.includes('json')) {
-            return <JsonCellValue value={value} columnName={col.name} />
+            return (
+              <div onDoubleClick={handleDoubleClick} className={canEdit ? 'cursor-pointer' : ''}>
+                <JsonCellValue value={value} columnName={col.name} />
+              </div>
+            )
           }
 
           // Handle Foreign Key columns
           if (col.foreignKey) {
             return (
-              <FKCellValue
-                value={value}
-                foreignKey={col.foreignKey}
-                onForeignKeyClick={onForeignKeyClick}
-                onForeignKeyOpenTab={onForeignKeyOpenTab}
-              />
+              <div onDoubleClick={handleDoubleClick} className={canEdit ? 'cursor-pointer' : ''}>
+                <FKCellValue
+                  value={value}
+                  foreignKey={col.foreignKey}
+                  onForeignKeyClick={onForeignKeyClick}
+                  onForeignKeyOpenTab={onForeignKeyOpenTab}
+                />
+              </div>
             )
           }
 
@@ -434,7 +459,10 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           const isLong = stringValue.length > 50
 
           return (
-            <span className="truncate max-w-[300px] block">
+            <span
+              className={cn('truncate max-w-[300px] block', canEdit && 'cursor-pointer')}
+              onDoubleClick={handleDoubleClick}
+            >
               {isLong ? stringValue.substring(0, 50) + '...' : stringValue}
             </span>
           )
@@ -444,7 +472,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     })
 
     return cols
-  }, [columnDefs, isEditMode, tabId, tabEdit, onForeignKeyClick, onForeignKeyOpenTab])
+  }, [columnDefs, isEditMode, tabId, tabEdit, onForeignKeyClick, onForeignKeyOpenTab, canEdit, editContext, enterEditMode, startCellEdit])
 
   const table = useReactTable({
     data,
