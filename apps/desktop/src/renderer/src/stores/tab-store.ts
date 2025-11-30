@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { QueryResult } from './query-store'
+import { buildSelectQuery } from '@/lib/sql-helpers'
+import { useConnectionStore } from './connection-store'
 
 // Tab type discriminator
 export type TabType = 'query' | 'table-preview' | 'erd' | 'table-designer'
@@ -175,8 +177,17 @@ export const useTabStore = create<TabState>()(
         const id = crypto.randomUUID()
         const tabs = get().tabs
         const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.order)) : -1
-        const tableRef = schemaName === 'public' ? tableName : `${schemaName}.${tableName}`
-        const query = `SELECT * FROM ${tableRef} LIMIT 100;`
+
+        // Get connection to determine database type
+        const connection = useConnectionStore
+          .getState()
+          .connections.find((c) => c.id === connectionId)
+        const dbType = connection?.dbType
+
+        // Build table reference (handle MSSQL's dbo schema)
+        const defaultSchema = dbType === 'mssql' ? 'dbo' : 'public'
+        const tableRef = schemaName === defaultSchema ? tableName : `${schemaName}.${tableName}`
+        const query = buildSelectQuery(tableRef, dbType, { limit: 100 })
 
         const newTab: TablePreviewTab = {
           id,
@@ -209,7 +220,16 @@ export const useTabStore = create<TabState>()(
         const id = crypto.randomUUID()
         const tabs = get().tabs
         const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.order)) : -1
-        const tableRef = schema === 'public' ? table : `${schema}.${table}`
+
+        // Get connection to determine database type
+        const connection = useConnectionStore
+          .getState()
+          .connections.find((c) => c.id === connectionId)
+        const dbType = connection?.dbType
+
+        // Build table reference (handle MSSQL's dbo schema)
+        const defaultSchema = dbType === 'mssql' ? 'dbo' : 'public'
+        const tableRef = schema === defaultSchema ? table : `${schema}.${table}`
 
         // Format value for SQL - handle strings, numbers, nulls
         let formattedValue: string
@@ -222,7 +242,8 @@ export const useTabStore = create<TabState>()(
           formattedValue = String(value)
         }
 
-        const query = `SELECT * FROM ${tableRef} WHERE "${column}" = ${formattedValue} LIMIT 100;`
+        const whereClause = `WHERE "${column}" = ${formattedValue}`
+        const query = buildSelectQuery(tableRef, dbType, { where: whereClause, limit: 100 })
 
         const newTab: QueryTab = {
           id,

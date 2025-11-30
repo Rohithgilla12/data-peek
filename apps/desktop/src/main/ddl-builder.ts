@@ -48,6 +48,13 @@ const DIALECTS: Record<DatabaseType, DdlDialect> = {
     supportsIfNotExists: true,
     supportsIfExists: true,
     supportsConcurrent: false
+  },
+  mssql: {
+    identifierQuote: '[',
+    stringQuote: "'",
+    supportsIfNotExists: true,
+    supportsIfExists: true,
+    supportsConcurrent: false
   }
 }
 
@@ -56,6 +63,13 @@ const DIALECTS: Record<DatabaseType, DdlDialect> = {
  */
 function quoteIdentifier(name: string, dialect: DdlDialect): string {
   const q = dialect.identifierQuote
+  // MSSQL uses square brackets [ and ]
+  if (q === '[') {
+    // Escape ] by doubling it
+    const escaped = name.replace(/\]/g, ']]')
+    return `[${escaped}]`
+  }
+  // For other dialects, escape quote character by doubling it
   const escaped = name.replace(new RegExp(q, 'g'), q + q)
   return `${q}${escaped}${q}`
 }
@@ -74,7 +88,8 @@ function quoteString(value: string, dialect: DdlDialect): string {
  */
 function buildTableRef(schema: string, table: string, dialect: DdlDialect): string {
   const tableName = quoteIdentifier(table, dialect)
-  if (schema && schema !== 'public' && schema !== 'main') {
+  // MSSQL uses 'dbo' as default schema, PostgreSQL uses 'public', SQLite uses 'main'
+  if (schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo') {
     return `${quoteIdentifier(schema, dialect)}.${tableName}`
   }
   return tableName

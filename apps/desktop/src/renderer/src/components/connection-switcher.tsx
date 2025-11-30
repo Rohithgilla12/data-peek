@@ -140,7 +140,7 @@ export function ConnectionSwitcher() {
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-72 rounded-lg"
+            className="w-96 max-w-[90vw] rounded-lg"
             align="start"
             side="bottom"
             sideOffset={4}
@@ -155,7 +155,7 @@ export function ConnectionSwitcher() {
                 className="gap-2 p-2 group"
                 disabled={connection.isConnecting}
               >
-                <div className="relative flex size-6 items-center justify-center rounded-xs border">
+                <div className="relative flex size-6 shrink-0 items-center justify-center rounded-xs border">
                   {connection.isConnecting ? (
                     <Loader2 className="size-4 shrink-0 animate-spin" />
                   ) : (
@@ -165,15 +165,15 @@ export function ConnectionSwitcher() {
                     <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-green-500 ring-1 ring-background" />
                   )}
                 </div>
-                <div className="flex flex-1 flex-col">
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-medium">{connection.name}</span>
+                <div className="flex flex-1 min-w-0 flex-col gap-0.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-medium truncate">{connection.name}</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground truncate">
                     {connection.host}:{connection.port}/{connection.database}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={(e) => handleEditConnection(e, connection)}
                     className="p-1 hover:bg-muted rounded"
@@ -189,7 +189,9 @@ export function ConnectionSwitcher() {
                     <Trash2 className="size-3.5" />
                   </button>
                 </div>
-                {index < 9 && <DropdownMenuShortcut>⌘⇧{index + 1}</DropdownMenuShortcut>}
+                {index < 9 && (
+                  <DropdownMenuShortcut className="shrink-0">⌘⇧{index + 1}</DropdownMenuShortcut>
+                )}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />

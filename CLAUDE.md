@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-data-peek is a minimal, fast SQL client desktop application built with Electron, React, and TypeScript. Supports PostgreSQL and MySQL databases. Core philosophy: Simple over feature-rich, keyboard-first, fast to open and query.
+data-peek is a minimal, fast SQL client desktop application built with Electron, React, and TypeScript. Supports PostgreSQL, MySQL, and Microsoft SQL Server databases. Core philosophy: Simple over feature-rich, keyboard-first, fast to open and query.
 
 ## Commands
 
@@ -47,6 +47,7 @@ src/main/               # Electron main process (Node.js)
   adapters/             # Database-specific adapters
     postgres-adapter.ts # PostgreSQL implementation
     mysql-adapter.ts    # MySQL implementation
+    mssql-adapter.ts    # Microsoft SQL Server implementation
   license-service.ts    # License validation and management
   menu.ts               # Native menu configuration
   context-menu.ts       # Right-click context menus
@@ -82,7 +83,7 @@ All IPC types are defined in `packages/shared/src/index.ts`.
 Multi-database support via adapters in `src/main/adapters/`:
 - `DatabaseAdapter` interface defines standard operations (connect, query, execute, getSchemas, explain, getTableDDL)
 - `getAdapter(config)` returns the appropriate adapter based on `config.dbType`
-- Supported types: `'postgresql' | 'mysql' | 'sqlite'` (SQLite pending implementation)
+- Supported types: `'postgresql' | 'mysql' | 'sqlite' | 'mssql'` (SQLite pending implementation)
 
 ### State Management
 
@@ -103,7 +104,7 @@ Zustand stores in `src/renderer/src/stores/`:
 - **UI**: shadcn/ui + Tailwind CSS 4
 - **State**: Zustand
 - **Editor**: Monaco
-- **Database**: pg (PostgreSQL), mysql2 (MySQL), better-sqlite3 (local storage)
+- **Database**: pg (PostgreSQL), mysql2 (MySQL), mssql (SQL Server), better-sqlite3 (local storage)
 - **Visualization**: @xyflow/react (ERD diagrams)
 - **ORM**: Drizzle (web app)
 
@@ -116,7 +117,7 @@ Zustand stores in `src/renderer/src/stores/`:
 
 ## Key Patterns
 
-1. **IPC Communication**: All database operations go through IPC handlers in main process. Never import `pg` or `mysql2` in renderer.
+1. **IPC Communication**: All database operations go through IPC handlers in main process. Never import `pg`, `mysql2`, or `mssql` in renderer.
 
 2. **Type Safety**: Shared types in `packages/shared` ensure IPC contract consistency between main and renderer.
 

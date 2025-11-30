@@ -5,7 +5,8 @@ import {
   TableInfo,
   ColumnInfo,
   DatabaseType,
-  CustomTypeInfo
+  CustomTypeInfo,
+  MSSQLConnectionOptions
 } from '@shared/index'
 
 export interface Connection {
@@ -14,11 +15,12 @@ export interface Connection {
   host: string
   port: number
   database: string
-  user: string
+  user?: string // Optional for MSSQL with Azure AD authentication
   password?: string
   ssl?: boolean
   group?: string
   dbType: DatabaseType
+  mssqlOptions?: MSSQLConnectionOptions
 }
 
 export interface ConnectionWithStatus extends Connection {

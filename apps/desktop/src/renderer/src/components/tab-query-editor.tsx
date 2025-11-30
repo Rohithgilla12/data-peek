@@ -42,6 +42,7 @@ import type { EditContext } from '@data-peek/shared'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { downloadCSV, downloadJSON, generateExportFilename } from '@/lib/export'
+import { buildSelectQuery } from '@/lib/sql-helpers'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
@@ -338,8 +339,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     ): Promise<{ data?: Record<string, unknown>; columns?: ColumnInfo[]; error?: string }> => {
       if (!tabConnection) return { error: 'No connection' }
 
+      // Build table reference (handle MSSQL's dbo schema)
+      const defaultSchema = tabConnection.dbType === 'mssql' ? 'dbo' : 'public'
       const tableRef =
-        fk.referencedSchema === 'public'
+        fk.referencedSchema === defaultSchema
           ? fk.referencedTable
           : `${fk.referencedSchema}.${fk.referencedTable}`
 
@@ -353,7 +356,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         formattedValue = String(value)
       }
 
-      const query = `SELECT * FROM ${tableRef} WHERE "${fk.referencedColumn}" = ${formattedValue} LIMIT 1;`
+      const whereClause = `WHERE "${fk.referencedColumn}" = ${formattedValue}`
+      const query = buildSelectQuery(tableRef, tabConnection.dbType, { where: whereClause, limit: 1 })
 
       try {
         const response = await window.api.db.query(tabConnection, query)
@@ -475,11 +479,17 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
     // For table preview tabs, rebuild from scratch
     if (tab.type === 'table-preview') {
+      // Build table reference (handle MSSQL's dbo schema)
+      const defaultSchema = tabConnection?.dbType === 'mssql' ? 'dbo' : 'public'
       const tableRef =
-        tab.schemaName === 'public' ? tab.tableName : `${tab.schemaName}.${tab.tableName}`
+        tab.schemaName === defaultSchema ? tab.tableName : `${tab.schemaName}.${tab.tableName}`
       const wherePart = generateWhereClause(tableFilters)
       const orderPart = generateOrderByClause(tableSorting)
-      return `SELECT * FROM ${tableRef} ${wherePart} ${orderPart} LIMIT 100;`
+      return buildSelectQuery(tableRef, tabConnection?.dbType, {
+        where: wherePart,
+        orderBy: orderPart,
+        limit: 100
+      })
         .replace(/\s+/g, ' ')
         .trim()
     }

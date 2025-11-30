@@ -1,0 +1,774 @@
+import sql from 'mssql'
+import type {
+  ConnectionConfig,
+  SchemaInfo,
+  TableInfo,
+  QueryField,
+  ForeignKeyInfo,
+  TableDefinition,
+  ColumnDefinition,
+  ConstraintDefinition,
+  IndexDefinition,
+  SequenceInfo,
+  CustomTypeInfo
+} from '@shared/index'
+import type { DatabaseAdapter, AdapterQueryResult, ExplainResult } from '../db-adapter'
+
+const MSSQL_TYPE_MAP: Record<number, string> = {
+  34: 'image',
+  35: 'text',
+  36: 'uniqueidentifier',
+  40: 'date',
+  41: 'time',
+  42: 'datetime2',
+  43: 'datetimeoffset',
+  48: 'tinyint',
+  52: 'smallint',
+  56: 'int',
+  58: 'smalldatetime',
+  59: 'real',
+  60: 'money',
+  61: 'datetime',
+  62: 'float',
+  98: 'sql_variant',
+  99: 'ntext',
+  104: 'bit',
+  106: 'decimal',
+  108: 'numeric',
+  122: 'smallmoney',
+  127: 'bigint',
+  167: 'varchar',
+  175: 'char',
+  189: 'timestamp',
+  231: 'nvarchar',
+  239: 'nchar',
+  240: 'hierarchyid',
+  241: 'xml',
+  242: 'geometry',
+  243: 'geography'
+}
+
+/**
+ * Resolve MSSQL system type ID to human-readable type name
+ */
+const SYSTEM_SCHEMAS = [
+  'sys',
+  'INFORMATION_SCHEMA',
+  'guest',
+  'db_owner',
+  'db_accessadmin',
+  'db_securityadmin',
+  'db_ddladmin',
+  'db_backupoperator',
+  'db_datareader',
+  'db_datawriter',
+  'db_denydatareader',
+  'db_denydatawriter'
+]
+
+function resolveMSSQLType(dataTypeID: number): string {
+  return MSSQL_TYPE_MAP[dataTypeID] ?? `unknown(${dataTypeID})`
+}
+
+function inferTypeFromValue(value: unknown): { dataType: string; dataTypeID: number } {
+  if (value === null || value === undefined) return { dataType: 'nvarchar', dataTypeID: 231 }
+  if (typeof value === 'number') {
+    return Number.isInteger(value)
+      ? { dataType: 'int', dataTypeID: 56 }
+      : { dataType: 'float', dataTypeID: 62 }
+  }
+  if (typeof value === 'boolean') return { dataType: 'bit', dataTypeID: 104 }
+  if (value instanceof Date) return { dataType: 'datetime', dataTypeID: 61 }
+  return { dataType: 'nvarchar', dataTypeID: 231 }
+}
+
+function bindParameter(request: sql.Request, paramName: string, value: unknown): void {
+  if (value === null || value === undefined) {
+    request.input(paramName, sql.NVarChar, null)
+  } else if (typeof value === 'string') {
+    request.input(paramName, sql.NVarChar, value)
+  } else if (typeof value === 'number') {
+    request.input(paramName, Number.isInteger(value) ? sql.Int : sql.Float, value)
+  } else if (typeof value === 'boolean') {
+    request.input(paramName, sql.Bit, value)
+  } else if (value instanceof Date) {
+    request.input(paramName, sql.DateTime, value)
+  } else {
+    request.input(paramName, sql.NVarChar, String(value))
+  }
+}
+
+/**
+ * Create MSSQL connection config from our ConnectionConfig
+ */
+function toMSSQLConfig(config: ConnectionConfig): sql.config {
+  const mssqlOptions = config.mssqlOptions || {}
+
+  // Handle authentication methods first to determine what options are needed
+  const authentication = mssqlOptions.authentication
+  const isAzureAD = authentication === 'ActiveDirectoryIntegrated'
+
+  // Build options object - for Azure AD, keep it minimal
+  const defaultSsl = config.ssl ?? false
+  const options: sql.config['options'] = {}
+
+  // Always set encrypt if specified
+  if (mssqlOptions.encrypt !== undefined) {
+    options.encrypt = mssqlOptions.encrypt
+  } else if (defaultSsl) {
+    options.encrypt = true
+  }
+
+  // For Azure AD, don't set trustServerCertificate or enableArithAbort
+  // These can interfere with Azure AD authentication
+  if (!isAzureAD) {
+    if (mssqlOptions.trustServerCertificate !== undefined) {
+      options.trustServerCertificate = mssqlOptions.trustServerCertificate
+    } else if (!defaultSsl) {
+      options.trustServerCertificate = true
+    }
+    options.enableArithAbort = mssqlOptions.enableArithAbort ?? true
+  }
+
+  // Add connection timeout if specified
+  if (mssqlOptions.connectionTimeout !== undefined) {
+    options.connectTimeout = mssqlOptions.connectionTimeout
+  }
+
+  // Add request timeout if specified
+  if (mssqlOptions.requestTimeout !== undefined) {
+    options.requestTimeout = mssqlOptions.requestTimeout
+  }
+
+  // Build base config
+  const sqlConfig: sql.config = {
+    server: config.host,
+    database: config.database,
+    options
+  }
+
+  // Include port if provided (optional in mssql config)
+  if (config.port) {
+    sqlConfig.port = config.port
+  }
+
+  // Handle authentication methods
+  if (authentication === 'ActiveDirectoryIntegrated') {
+    // Azure AD Integrated Authentication - uses azure-active-directory-default
+    sqlConfig.authentication = {
+      type: 'azure-active-directory-default',
+      options: {}
+    }
+    // Explicitly don't set user/password for Azure AD authentication
+    // Even if they exist in config, we should not include them
+  } else if (authentication === 'ActiveDirectoryPassword') {
+    // Azure AD Password Authentication
+    // Note: This requires clientId and tenantId which aren't in our config yet
+    // For now, use SQL Server auth as fallback
+    if (config.user) sqlConfig.user = config.user
+    if (config.password) sqlConfig.password = config.password
+  } else if (authentication === 'ActiveDirectoryServicePrincipal') {
+    // Azure AD Service Principal - would need clientId and clientSecret
+    // For now, fall back to SQL Server auth
+    if (config.user) sqlConfig.user = config.user
+    if (config.password) sqlConfig.password = config.password
+  } else {
+    // Default: SQL Server Authentication
+    if (config.user) sqlConfig.user = config.user
+    if (config.password) sqlConfig.password = config.password
+  }
+
+  return sqlConfig
+}
+
+/**
+ * MSSQL database adapter
+ */
+export class MSSQLAdapter implements DatabaseAdapter {
+  readonly dbType = 'mssql' as const
+
+  async connect(config: ConnectionConfig): Promise<void> {
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config))
+    await pool.connect()
+    await pool.close()
+  }
+
+  async query(config: ConnectionConfig, sqlQuery: string): Promise<AdapterQueryResult> {
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config))
+    await pool.connect()
+
+    try {
+      const result = await pool.request().query(sqlQuery)
+      const rows = result.recordset as Record<string, unknown>[]
+      const fields: QueryField[] = []
+
+      if (result.recordset?.columns) {
+        for (const col of Object.values(result.recordset.columns)) {
+          const meta = col as { name: string; type?: { id?: number; name?: string } }
+          let dataTypeID: number | undefined
+          let dataType: string
+
+          if (meta.type?.id) {
+            dataTypeID = meta.type.id
+            dataType = resolveMSSQLType(dataTypeID)
+          } else if (meta.type?.name) {
+            dataType = meta.type.name.toLowerCase()
+            dataTypeID = Object.entries(MSSQL_TYPE_MAP).find(
+              ([, name]) => name.toLowerCase() === dataType
+            )?.[0] as number | undefined
+          } else {
+            const inferred = inferTypeFromValue(rows[0]?.[meta.name])
+            dataType = inferred.dataType
+            dataTypeID = inferred.dataTypeID
+          }
+
+          fields.push({
+            name: meta.name,
+            dataType: dataType || 'nvarchar',
+            dataTypeID: dataTypeID || 231
+          })
+        }
+      } else if (rows.length > 0) {
+        for (const [name, value] of Object.entries(rows[0])) {
+          const inferred = inferTypeFromValue(value)
+          fields.push({ name, ...inferred })
+        }
+      }
+
+      return { rows, fields, rowCount: result.rowsAffected[0] ?? rows.length }
+    } finally {
+      await pool.close()
+    }
+  }
+
+  async execute(
+    config: ConnectionConfig,
+    sqlQuery: string,
+    params: unknown[]
+  ): Promise<{ rowCount: number | null }> {
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config))
+    await pool.connect()
+
+    try {
+      const request = pool.request()
+      const hasMSSQLPlaceholders = /@p\d+/.test(sqlQuery)
+
+      if (hasMSSQLPlaceholders) {
+        for (let i = 0; i < params.length; i++) {
+          bindParameter(request, `p${i + 1}`, params[i])
+        }
+      } else {
+        let paramIndex = 1
+        sqlQuery = sqlQuery.replace(/\?/g, () => {
+          bindParameter(request, `p${paramIndex}`, params[paramIndex - 1])
+          return `@p${paramIndex++}`
+        })
+      }
+
+      const result = await request.query(sqlQuery)
+      return { rowCount: result.rowsAffected[0] ?? null }
+    } finally {
+      await pool.close()
+    }
+  }
+
+  async executeTransaction(
+    config: ConnectionConfig,
+    statements: Array<{ sql: string; params: unknown[] }>
+  ): Promise<{ rowsAffected: number; results: Array<{ rowCount: number | null }> }> {
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config))
+    await pool.connect()
+    const transaction = new sql.Transaction(pool)
+
+    try {
+      await transaction.begin()
+      const results: Array<{ rowCount: number | null }> = []
+      let rowsAffected = 0
+
+      for (const stmt of statements) {
+        const request = new sql.Request(transaction)
+        const hasMSSQLPlaceholders = /@p\d+/.test(stmt.sql)
+        let querySql = stmt.sql
+
+        if (hasMSSQLPlaceholders) {
+          for (let i = 0; i < stmt.params.length; i++) {
+            bindParameter(request, `p${i + 1}`, stmt.params[i])
+          }
+        } else {
+          let paramIndex = 1
+          querySql = stmt.sql.replace(/\?/g, () => {
+            bindParameter(request, `p${paramIndex}`, stmt.params[paramIndex - 1])
+            return `@p${paramIndex++}`
+          })
+        }
+
+        const result = await request.query(querySql)
+        const affected = result.rowsAffected[0] ?? 0
+        results.push({ rowCount: affected })
+        rowsAffected += affected
+      }
+
+      await transaction.commit()
+      return { rowsAffected, results }
+    } catch (error) {
+      await transaction.rollback().catch(() => {})
+      throw error
+    } finally {
+      await pool.close()
+    }
+  }
+
+  async getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]> {
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config))
+    await pool.connect()
+
+    try {
+      const schemaList = SYSTEM_SCHEMAS.map((s) => `'${s}'`).join(', ')
+
+      const [schemasResult, tablesResult] = await Promise.all([
+        pool
+          .request()
+          .query(
+            `SELECT schema_name FROM information_schema.schemata WHERE schema_name NOT IN (${schemaList}) ORDER BY schema_name`
+          ),
+        pool
+          .request()
+          .query(
+            `SELECT table_schema, table_name, table_type FROM information_schema.tables WHERE table_schema NOT IN (${schemaList}) ORDER BY table_schema, table_name`
+          )
+      ])
+
+      const [columnsResult, foreignKeysResult] = await Promise.all([
+        pool.request().query(`
+          SELECT c.table_schema, c.table_name, c.column_name, c.data_type, c.is_nullable,
+                 c.column_default, c.ordinal_position, c.character_maximum_length,
+                 c.numeric_precision, c.numeric_scale,
+                 CASE WHEN pk.column_name IS NOT NULL THEN 1 ELSE 0 END as is_primary_key
+          FROM information_schema.columns c
+          LEFT JOIN (
+            SELECT kcu.table_schema, kcu.table_name, kcu.column_name
+            FROM information_schema.table_constraints tc
+            JOIN information_schema.key_column_usage kcu
+              ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema
+            WHERE tc.constraint_type = 'PRIMARY KEY'
+          ) pk ON c.table_schema = pk.table_schema AND c.table_name = pk.table_name AND c.column_name = pk.column_name
+          WHERE c.table_schema NOT IN (${schemaList})
+          ORDER BY c.table_schema, c.table_name, c.ordinal_position
+        `),
+        pool.request().query(`
+          SELECT fk_schema.table_schema, fk_schema.table_name, fk_col.column_name,
+                 fk_schema.constraint_name, pk_schema.table_schema AS referenced_schema,
+                 pk_schema.table_name AS referenced_table, pk_col.column_name AS referenced_column
+          FROM information_schema.table_constraints fk_schema
+          JOIN information_schema.referential_constraints rc
+            ON fk_schema.constraint_name = rc.constraint_name AND fk_schema.table_schema = rc.constraint_schema
+          JOIN information_schema.table_constraints pk_schema
+            ON rc.unique_constraint_name = pk_schema.constraint_name AND rc.unique_constraint_schema = pk_schema.table_schema
+          JOIN information_schema.key_column_usage fk_col
+            ON fk_schema.constraint_name = fk_col.constraint_name AND fk_schema.table_schema = fk_col.table_schema
+          JOIN information_schema.key_column_usage pk_col
+            ON pk_schema.constraint_name = pk_col.constraint_name AND pk_schema.table_schema = pk_col.table_schema
+            AND fk_col.ordinal_position = pk_col.ordinal_position
+          WHERE fk_schema.constraint_type = 'FOREIGN KEY'
+            AND fk_schema.table_schema NOT IN (${schemaList})
+            AND pk_schema.table_schema NOT IN (${schemaList})
+          ORDER BY fk_schema.table_schema, fk_schema.table_name, fk_col.column_name
+        `)
+      ])
+
+      // Build schema structure
+      const schemaMap = new Map<string, SchemaInfo>()
+
+      // Initialize schemas
+      for (const row of schemasResult.recordset) {
+        schemaMap.set(row.schema_name, {
+          name: row.schema_name,
+          tables: []
+        })
+      }
+
+      // Build tables map
+      const tableMap = new Map<string, TableInfo>()
+      for (const row of tablesResult.recordset) {
+        const tableKey = `${row.table_schema}.${row.table_name}`
+        const table: TableInfo = {
+          name: row.table_name,
+          type: row.table_type === 'VIEW' ? 'view' : 'table',
+          columns: []
+        }
+        tableMap.set(tableKey, table)
+
+        const schema = schemaMap.get(row.table_schema)
+        if (schema) {
+          schema.tables.push(table)
+        }
+      }
+
+      // Build foreign key lookup map - only include FKs where both source and target tables exist
+      const fkMap = new Map<string, ForeignKeyInfo>()
+      for (const row of foreignKeysResult.recordset) {
+        const sourceTableKey = `${row.table_schema}.${row.table_name}`
+        const targetTableKey = `${row.referenced_schema}.${row.referenced_table}`
+
+        // Only include FK if both source and target tables exist in our table map
+        if (tableMap.has(sourceTableKey) && tableMap.has(targetTableKey)) {
+          const key = `${row.table_schema}.${row.table_name}.${row.column_name}`
+          fkMap.set(key, {
+            constraintName: row.constraint_name,
+            referencedSchema: row.referenced_schema,
+            referencedTable: row.referenced_table,
+            referencedColumn: row.referenced_column
+          })
+        }
+      }
+
+      for (const row of columnsResult.recordset) {
+        const table = tableMap.get(`${row.table_schema}.${row.table_name}`)
+        if (!table) continue
+
+        let dataType = row.data_type
+        if (row.character_maximum_length) {
+          dataType = `${row.data_type}(${row.character_maximum_length})`
+        } else if (row.numeric_precision && row.numeric_scale) {
+          dataType = `${row.data_type}(${row.numeric_precision},${row.numeric_scale})`
+        } else if (row.numeric_precision) {
+          dataType = `${row.data_type}(${row.numeric_precision})`
+        }
+
+        table.columns.push({
+          name: row.column_name,
+          dataType,
+          isNullable: row.is_nullable === 'YES',
+          isPrimaryKey: row.is_primary_key === 1,
+          defaultValue: row.column_default || undefined,
+          ordinalPosition: row.ordinal_position,
+          foreignKey: fkMap.get(`${row.table_schema}.${row.table_name}.${row.column_name}`)
+        })
+      }
+
+      return Array.from(schemaMap.values())
+    } finally {
+      await pool.close()
+    }
+  }
+
+  async explain(
+    config: ConnectionConfig,
+    sqlQuery: string,
+    analyze: boolean
+  ): Promise<ExplainResult> {
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config))
+    await pool.connect()
+
+    try {
+      const start = Date.now()
+
+      if (analyze) {
+        // Use SET STATISTICS XML ON for actual execution plan
+        await pool.request().query('SET STATISTICS XML ON')
+        const result = await pool.request().query(sqlQuery)
+        await pool.request().query('SET STATISTICS XML OFF')
+
+        // Extract XML plan from result
+        const plan = result.recordset.find((row: Record<string, unknown>) => {
+          const keys = Object.keys(row)
+          return keys.some(
+            (k) => k.toLowerCase().includes('executionplan') || k.toLowerCase().includes('xml')
+          )
+        })
+
+        return {
+          plan: plan || result.recordset,
+          durationMs: Date.now() - start
+        }
+      } else {
+        // Use SET SHOWPLAN_XML ON for estimated plan (doesn't execute)
+        await pool.request().query('SET SHOWPLAN_XML ON')
+        const result = await pool.request().query(sqlQuery)
+        await pool.request().query('SET SHOWPLAN_XML OFF')
+
+        // Extract XML plan from result
+        const plan = result.recordset.find((row: Record<string, unknown>) => {
+          const keys = Object.keys(row)
+          return keys.some(
+            (k) => k.toLowerCase().includes('executionplan') || k.toLowerCase().includes('xml')
+          )
+        })
+
+        return {
+          plan: plan || result.recordset,
+          durationMs: Date.now() - start
+        }
+      }
+    } finally {
+      await pool.close()
+    }
+  }
+
+  async getTableDDL(
+    config: ConnectionConfig,
+    schema: string,
+    table: string
+  ): Promise<TableDefinition> {
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config))
+    await pool.connect()
+
+    try {
+      // Query columns with full metadata
+      const columnsResult = await pool
+        .request()
+        .input('schema', sql.NVarChar, schema)
+        .input('table', sql.NVarChar, table).query(`
+        SELECT
+          c.column_name,
+          c.data_type,
+          c.is_nullable,
+          c.column_default,
+          c.ordinal_position,
+          c.character_maximum_length,
+          c.numeric_precision,
+          c.numeric_scale,
+          c.collation_name,
+          CASE WHEN pk.column_name IS NOT NULL THEN 1 ELSE 0 END as is_primary_key,
+          ep.value as column_comment
+        FROM information_schema.columns c
+        LEFT JOIN (
+          SELECT kcu.column_name
+          FROM information_schema.table_constraints tc
+          JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+          WHERE tc.constraint_type = 'PRIMARY KEY'
+            AND tc.table_schema = @schema
+            AND tc.table_name = @table
+        ) pk ON c.column_name = pk.column_name
+        LEFT JOIN sys.extended_properties ep
+          ON ep.major_id = OBJECT_ID(QUOTENAME(@schema) + '.' + QUOTENAME(@table))
+          AND ep.minor_id = c.ordinal_position
+          AND ep.name = 'MS_Description'
+        WHERE c.table_schema = @schema AND c.table_name = @table
+        ORDER BY c.ordinal_position
+      `)
+
+      // Query constraints
+      const constraintsResult = await pool
+        .request()
+        .input('schema', sql.NVarChar, schema)
+        .input('table', sql.NVarChar, table).query(`
+        SELECT
+          tc.constraint_name,
+          tc.constraint_type,
+          kcu.column_name,
+          ccu.table_schema AS ref_schema,
+          ccu.table_name AS ref_table,
+          ccu.column_name AS ref_column,
+          rc.update_rule,
+          rc.delete_rule,
+          cc.check_clause
+        FROM information_schema.table_constraints tc
+        LEFT JOIN information_schema.key_column_usage kcu
+          ON tc.constraint_name = kcu.constraint_name
+          AND tc.table_schema = kcu.table_schema
+        LEFT JOIN information_schema.constraint_column_usage ccu
+          ON tc.constraint_name = ccu.constraint_name
+          AND tc.constraint_type = 'FOREIGN KEY'
+        LEFT JOIN information_schema.referential_constraints rc
+          ON tc.constraint_name = rc.constraint_name
+        LEFT JOIN information_schema.check_constraints cc
+          ON tc.constraint_name = cc.constraint_name
+        WHERE tc.table_schema = @schema AND tc.table_name = @table
+        ORDER BY tc.constraint_name, kcu.ordinal_position
+      `)
+
+      // Query indexes
+      const indexesResult = await pool
+        .request()
+        .input('schema', sql.NVarChar, schema)
+        .input('table', sql.NVarChar, table).query(`
+        SELECT
+          i.name as index_name,
+          i.is_unique,
+          i.type_desc as index_type,
+          STRING_AGG(c.name, ', ') WITHIN GROUP (ORDER BY ic.key_ordinal) as columns
+        FROM sys.indexes i
+        JOIN sys.index_columns ic ON i.object_id = ic.object_id AND i.index_id = ic.index_id
+        JOIN sys.columns c ON ic.object_id = c.object_id AND ic.column_id = c.column_id
+        JOIN sys.tables t ON i.object_id = t.object_id
+        JOIN sys.schemas s ON t.schema_id = s.schema_id
+        WHERE s.name = @schema AND t.name = @table
+          AND i.is_primary_key = 0
+        GROUP BY i.name, i.is_unique, i.type_desc
+      `)
+
+      // Query table comment
+      const tableCommentResult = await pool
+        .request()
+        .input('schema', sql.NVarChar, schema)
+        .input('table', sql.NVarChar, table).query(`
+        SELECT ep.value as comment
+        FROM sys.extended_properties ep
+        JOIN sys.tables t ON ep.major_id = t.object_id
+        JOIN sys.schemas s ON t.schema_id = s.schema_id
+        WHERE s.name = @schema AND t.name = @table
+          AND ep.minor_id = 0
+          AND ep.name = 'MS_Description'
+      `)
+
+      // Build TableDefinition
+      const columns: ColumnDefinition[] = columnsResult.recordset.map((row, idx) => ({
+        id: `col-${idx}`,
+        name: row.column_name,
+        dataType: row.data_type,
+        length: row.character_maximum_length || undefined,
+        precision: row.numeric_precision || undefined,
+        scale: row.numeric_scale || undefined,
+        isNullable: row.is_nullable === 'YES',
+        isPrimaryKey: row.is_primary_key === 1,
+        isUnique: false, // Will be set from constraints
+        defaultValue: row.column_default || undefined,
+        comment: row.column_comment || undefined,
+        collation: row.collation_name || undefined
+      }))
+
+      // Build constraints from query results
+      const constraintMap = new Map<
+        string,
+        {
+          type: string
+          columns: string[]
+          refSchema?: string
+          refTable?: string
+          refColumns?: string[]
+          onUpdate?: string
+          onDelete?: string
+          checkExpression?: string
+        }
+      >()
+
+      for (const row of constraintsResult.recordset) {
+        const key = row.constraint_name
+        if (!constraintMap.has(key)) {
+          constraintMap.set(key, {
+            type: row.constraint_type,
+            columns: [],
+            refSchema: row.ref_schema,
+            refTable: row.ref_table,
+            refColumns: [],
+            onUpdate: row.update_rule,
+            onDelete: row.delete_rule,
+            checkExpression: row.check_clause
+          })
+        }
+        const constraint = constraintMap.get(key)!
+        if (row.column_name && !constraint.columns.includes(row.column_name)) {
+          constraint.columns.push(row.column_name)
+        }
+        if (row.ref_column && !constraint.refColumns!.includes(row.ref_column)) {
+          constraint.refColumns!.push(row.ref_column)
+        }
+      }
+
+      const constraints: ConstraintDefinition[] = []
+      let constraintIdx = 0
+      for (const [name, data] of constraintMap) {
+        // Skip primary key (handled at column level)
+        if (data.type === 'PRIMARY KEY') continue
+
+        const constraintDef: ConstraintDefinition = {
+          id: `constraint-${constraintIdx++}`,
+          name,
+          type:
+            data.type === 'FOREIGN KEY'
+              ? 'foreign_key'
+              : data.type === 'UNIQUE'
+                ? 'unique'
+                : data.type === 'CHECK'
+                  ? 'check'
+                  : 'unique',
+          columns: data.columns
+        }
+
+        if (data.type === 'FOREIGN KEY') {
+          constraintDef.referencedSchema = data.refSchema
+          constraintDef.referencedTable = data.refTable
+          constraintDef.referencedColumns = data.refColumns
+          constraintDef.onUpdate = data.onUpdate as ConstraintDefinition['onUpdate']
+          constraintDef.onDelete = data.onDelete as ConstraintDefinition['onDelete']
+        }
+
+        if (data.type === 'CHECK') {
+          constraintDef.checkExpression = data.checkExpression
+        }
+
+        // Mark columns as unique for UNIQUE constraints
+        if (data.type === 'UNIQUE' && data.columns.length === 1) {
+          const col = columns.find((c) => c.name === data.columns[0])
+          if (col) col.isUnique = true
+        }
+
+        constraints.push(constraintDef)
+      }
+
+      // Build indexes
+      const indexes: IndexDefinition[] = indexesResult.recordset.map((row, idx) => {
+        const columnsArray = row.columns ? row.columns.split(', ').filter((c: string) => c) : []
+
+        return {
+          id: `index-${idx}`,
+          name: row.index_name,
+          columns: columnsArray.map((c: string) => ({ name: c.trim() })),
+          isUnique: row.is_unique,
+          method: 'btree' // MSSQL doesn't expose index method in the same way
+        }
+      })
+
+      return {
+        schema,
+        name: table,
+        columns,
+        constraints,
+        indexes,
+        comment: tableCommentResult.recordset[0]?.comment || undefined
+      }
+    } finally {
+      await pool.close()
+    }
+  }
+
+  async getSequences(): Promise<SequenceInfo[]> {
+    // MSSQL uses IDENTITY columns instead of sequences
+    // Return empty array as sequences are a PostgreSQL concept
+    return []
+  }
+
+  async getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]> {
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config))
+    await pool.connect()
+
+    try {
+      // Get user-defined types from sys.types
+      const typesResult = await pool.request().query(`
+        SELECT
+          s.name as schema_name,
+          t.name as type_name,
+          t.is_user_defined,
+          t.is_table_type
+        FROM sys.types t
+        JOIN sys.schemas s ON t.schema_id = s.schema_id
+        WHERE t.is_user_defined = 1
+          AND s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
+        ORDER BY s.name, t.name
+      `)
+
+      // MSSQL doesn't have enum types like PostgreSQL
+      // User-defined types are typically table types or aliases
+      return typesResult.recordset.map((row) => ({
+        schema: row.schema_name,
+        name: row.type_name,
+        type: 'composite' as const // Treat as composite for now
+      }))
+    } finally {
+      await pool.close()
+    }
+  }
+}

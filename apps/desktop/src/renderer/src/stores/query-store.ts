@@ -1,5 +1,6 @@
 import type { QueryResult as IpcQueryResult } from '@data-peek/shared'
 import { create } from 'zustand'
+import { buildSelectQuery } from '@/lib/sql-helpers'
 import type { Connection, Table } from './connection-store'
 
 export interface QueryHistoryItem {
@@ -249,8 +250,10 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   setError: (error) => set({ error, result: null }),
 
   loadTableData: (schemaName, table, connection) => {
-    const tableRef = schemaName === 'public' ? table.name : `${schemaName}.${table.name}`
-    const query = `SELECT * FROM ${tableRef} LIMIT 100;`
+    // Build table reference (handle MSSQL's dbo schema)
+    const defaultSchema = connection.dbType === 'mssql' ? 'dbo' : 'public'
+    const tableRef = schemaName === defaultSchema ? table.name : `${schemaName}.${table.name}`
+    const query = buildSelectQuery(tableRef, connection.dbType, { limit: 100 })
 
     set({ currentQuery: query })
 

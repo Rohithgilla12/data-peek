@@ -13,7 +13,7 @@ import {
   SheetTitle
 } from '@/components/ui/sheet'
 import { useConnectionStore, type Connection } from '@/stores'
-import { PostgreSQLIcon, MySQLIcon } from './database-icons'
+import { PostgreSQLIcon, MySQLIcon, MSSQLIcon } from './database-icons'
 import type { DatabaseType } from '@shared/index'
 
 interface AddConnectionDialogProps {
@@ -27,13 +27,156 @@ type InputMode = 'manual' | 'connection-string'
 const DB_DEFAULTS: Record<DatabaseType, { port: string; user: string; database: string }> = {
   postgresql: { port: '5432', user: 'postgres', database: 'postgres' },
   mysql: { port: '3306', user: 'root', database: '' },
-  sqlite: { port: '', user: '', database: '' }
+  sqlite: { port: '', user: '', database: '' },
+  mssql: { port: '1433', user: 'sa', database: '' }
 }
 
 const DB_PROTOCOLS: Record<DatabaseType, string[]> = {
   postgresql: ['postgres', 'postgresql'],
   mysql: ['mysql'],
-  sqlite: []
+  sqlite: [],
+  mssql: ['mssql', 'sqlserver']
+}
+
+/**
+ * Parse MSSQL connection string with semicolon-separated parameters
+ * Format: sqlserver://host:port;database=name;authentication=...;encrypt=...;trustServerCertificate=...
+ */
+function parseMSSQLConnectionString(connectionString: string): {
+  host: string
+  port: string
+  database: string
+  user: string
+  password: string
+  ssl: boolean
+  mssqlOptions?: import('@shared/index').MSSQLConnectionOptions
+} | null {
+  try {
+    // Split protocol/authority from parameters
+    const parts = connectionString.split(';')
+    const urlPart = parts[0]
+    const paramsPart = parts.slice(1).join(';')
+
+    // Parse URL part (protocol://host:port)
+    const url = new URL(urlPart)
+    const protocol = url.protocol.replace(':', '').toLowerCase()
+
+    // Validate protocol
+    if (!protocol.startsWith('mssql') && !protocol.startsWith('sqlserver')) {
+      return null
+    }
+
+    const defaults = DB_DEFAULTS.mssql
+    const host = url.hostname || 'localhost'
+    const port = url.port || defaults.port
+
+    // Parse semicolon-separated parameters
+    const params: Record<string, string> = {}
+    const paramPairs = paramsPart.split(';').filter((p) => p.trim())
+    for (const pair of paramPairs) {
+      const [key, ...valueParts] = pair.split('=')
+      if (key && valueParts.length > 0) {
+        params[key.trim().toLowerCase()] = valueParts.join('=').trim()
+      }
+    }
+
+    // Extract values from parameters
+    const database = params.database || params['initial catalog'] || defaults.database
+
+    // Check authentication method first
+    const authentication = params.authentication?.toLowerCase()
+    const isActiveDirectoryIntegrated = authentication === 'activedirectoryintegrated'
+
+    // For ActiveDirectoryIntegrated, user/password are not needed
+    const user = isActiveDirectoryIntegrated
+      ? ''
+      : params.user || params['user id'] || params.uid || defaults.user
+    const password = isActiveDirectoryIntegrated ? '' : params.password || params.pwd || ''
+
+    // Parse encryption/SSL settings
+    const encrypt = params.encrypt?.toLowerCase()
+    let ssl = false
+    let encryptValue: boolean | undefined
+    if (encrypt === 'true' || encrypt === 'yes' || encrypt === '1') {
+      ssl = true
+      encryptValue = true
+    } else if (encrypt === 'false' || encrypt === 'no' || encrypt === '0') {
+      ssl = false
+      encryptValue = false
+    } else {
+      // Default to true for Azure SQL (encrypt is usually required)
+      ssl = host.includes('.database.windows.net')
+      encryptValue = ssl
+    }
+
+    // Parse trustServerCertificate
+    const trustServerCert = params.trustservercertificate?.toLowerCase()
+    const trustServerCertificate =
+      trustServerCert === 'true' || trustServerCert === 'yes' || trustServerCert === '1'
+        ? true
+        : trustServerCert === 'false' || trustServerCert === 'no' || trustServerCert === '0'
+          ? false
+          : undefined
+
+    // Parse authentication method (already checked above, but need the original value)
+    const authenticationParam = params.authentication
+    let authMethod:
+      | 'SQL Server Authentication'
+      | 'ActiveDirectoryIntegrated'
+      | 'ActiveDirectoryPassword'
+      | 'ActiveDirectoryServicePrincipal'
+      | 'ActiveDirectoryDeviceCodeFlow'
+      | undefined
+
+    if (authenticationParam) {
+      const authLower = authenticationParam.toLowerCase()
+      if (authLower === 'activedirectoryintegrated') {
+        authMethod = 'ActiveDirectoryIntegrated'
+      } else if (authLower === 'activedirectorypassword') {
+        authMethod = 'ActiveDirectoryPassword'
+      } else if (authLower === 'activedirectoryserviceprincipal') {
+        authMethod = 'ActiveDirectoryServicePrincipal'
+      } else if (authLower === 'activedirectorydevicecodeflow') {
+        authMethod = 'ActiveDirectoryDeviceCodeFlow'
+      } else if (authLower === 'sql server authentication' || authLower === 'sqlserver') {
+        authMethod = 'SQL Server Authentication'
+      }
+    }
+
+    // Parse connection timeout
+    const connectionTimeout = params.connectiontimeout
+      ? parseInt(params.connectiontimeout, 10)
+      : undefined
+
+    // Parse request timeout
+    const requestTimeout = params.requesttimeout ? parseInt(params.requesttimeout, 10) : undefined
+
+    // Build MSSQL options
+    const mssqlOptions: import('@shared/index').MSSQLConnectionOptions = {}
+    if (authMethod) mssqlOptions.authentication = authMethod
+    if (encryptValue !== undefined) mssqlOptions.encrypt = encryptValue
+    if (trustServerCertificate !== undefined)
+      mssqlOptions.trustServerCertificate = trustServerCertificate
+    if (connectionTimeout !== undefined && !isNaN(connectionTimeout))
+      mssqlOptions.connectionTimeout = connectionTimeout
+    if (requestTimeout !== undefined && !isNaN(requestTimeout))
+      mssqlOptions.requestTimeout = requestTimeout
+
+    // Only include mssqlOptions if it has at least one property
+    const hasOptions = Object.keys(mssqlOptions).length > 0
+
+    return {
+      host,
+      port,
+      database,
+      user,
+      password,
+      ssl,
+      ...(hasOptions && { mssqlOptions })
+    }
+  } catch {
+    return null
+  }
 }
 
 function parseConnectionString(
@@ -46,14 +189,26 @@ function parseConnectionString(
   user: string
   password: string
   ssl: boolean
+  mssqlOptions?: import('@shared/index').MSSQLConnectionOptions
 } | null {
+  // MSSQL has special connection string format with semicolons
+  if (dbType === 'mssql') {
+    // Check if it's the semicolon-separated format
+    if (connectionString.includes(';') && connectionString.match(/^(mssql|sqlserver):\/\//i)) {
+      return parseMSSQLConnectionString(connectionString)
+    }
+  }
+
   try {
     const url = new URL(connectionString)
-    const protocol = url.protocol.replace(':', '')
+    const protocol = url.protocol.replace(':', '').toLowerCase()
 
-    // Validate protocol matches db type
+    // Validate protocol matches db type (case-insensitive)
     const validProtocols = DB_PROTOCOLS[dbType]
-    if (!validProtocols.some((p) => protocol.startsWith(p))) {
+    if (
+      validProtocols.length > 0 &&
+      !validProtocols.some((p) => protocol.startsWith(p.toLowerCase()))
+    ) {
       return null
     }
 
@@ -95,6 +250,9 @@ export function AddConnectionDialog({
   const [user, setUser] = useState('postgres')
   const [password, setPassword] = useState('')
   const [ssl, setSsl] = useState(false)
+  const [mssqlOptions, setMssqlOptions] = useState<
+    import('@shared/index').MSSQLConnectionOptions | undefined
+  >(undefined)
 
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -109,9 +267,10 @@ export function AddConnectionDialog({
       setHost(editConnection.host)
       setPort(String(editConnection.port))
       setDatabase(editConnection.database)
-      setUser(editConnection.user)
+      setUser(editConnection.user || '')
       setPassword(editConnection.password || '')
       setSsl(editConnection.ssl || false)
+      setMssqlOptions(editConnection.mssqlOptions)
       setInputMode('manual')
       setConnectionString('')
       setParseError(null)
@@ -124,9 +283,18 @@ export function AddConnectionDialog({
     setDbType(newType)
     const defaults = DB_DEFAULTS[newType]
     setPort(defaults.port)
-    setUser(defaults.user)
+    // Only set default user if not MSSQL with ActiveDirectoryIntegrated
+    if (newType === 'mssql' && mssqlOptions?.authentication === 'ActiveDirectoryIntegrated') {
+      setUser('')
+    } else {
+      setUser(defaults.user)
+    }
     if (defaults.database) {
       setDatabase(defaults.database)
+    }
+    // Clear MSSQL options when switching away from MSSQL
+    if (newType !== 'mssql') {
+      setMssqlOptions(undefined)
     }
     // Clear connection string when switching types
     setConnectionString('')
@@ -151,11 +319,21 @@ export function AddConnectionDialog({
       setUser(parsed.user)
       setPassword(parsed.password)
       setSsl(parsed.ssl)
+      if (parsed.mssqlOptions) {
+        setMssqlOptions(parsed.mssqlOptions)
+      } else {
+        setMssqlOptions(undefined)
+      }
     } else {
-      const expectedFormat =
-        dbType === 'mysql'
-          ? 'mysql://user:password@host:3306/database'
-          : 'postgresql://user:password@host:5432/database'
+      let expectedFormat: string
+      if (dbType === 'mysql') {
+        expectedFormat = 'mysql://user:password@host:3306/database'
+      } else if (dbType === 'mssql') {
+        expectedFormat =
+          'sqlserver://host:1433;database=name;authentication=...;encrypt=True;trustServerCertificate=true'
+      } else {
+        expectedFormat = 'postgresql://user:password@host:5432/database'
+      }
       setParseError(`Invalid connection string format. Expected: ${expectedFormat}`)
     }
   }
@@ -172,6 +350,7 @@ export function AddConnectionDialog({
     setUser('postgres')
     setPassword('')
     setSsl(false)
+    setMssqlOptions(undefined)
     setTestResult(null)
     setTestError(null)
   }
@@ -181,17 +360,24 @@ export function AddConnectionDialog({
     onOpenChange(false)
   }
 
-  const getConnectionConfig = () => ({
-    id: editConnection?.id || crypto.randomUUID(),
-    name: name || `${host}/${database}`,
-    host,
-    port: parseInt(port, 10),
-    database,
-    user,
-    password: password || undefined,
-    ssl,
-    dbType
-  })
+  const getConnectionConfig = () => {
+    // For ActiveDirectoryIntegrated, user/password are not needed
+    const isActiveDirectoryIntegrated =
+      dbType === 'mssql' && mssqlOptions?.authentication === 'ActiveDirectoryIntegrated'
+
+    return {
+      id: editConnection?.id || crypto.randomUUID(),
+      name: name || `${host}/${database}`,
+      host,
+      port: parseInt(port, 10),
+      database,
+      user: isActiveDirectoryIntegrated ? undefined : user,
+      password: isActiveDirectoryIntegrated ? undefined : password || undefined,
+      ssl,
+      dbType,
+      ...(dbType === 'mssql' && mssqlOptions && { mssqlOptions })
+    }
+  }
 
   const handleTestConnection = async () => {
     setIsTesting(true)
@@ -247,10 +433,19 @@ export function AddConnectionDialog({
     }
   }
 
+  // Check if user is required based on database type and authentication
+  const isUserRequired =
+    dbType !== 'mssql' || mssqlOptions?.authentication !== 'ActiveDirectoryIntegrated'
+
   const isValid =
     inputMode === 'connection-string'
-      ? connectionString && !parseError && host && port && database && user
-      : host && port && database && user
+      ? connectionString &&
+        !parseError &&
+        host &&
+        port &&
+        database &&
+        (isUserRequired ? user : true)
+      : host && port && database && (isUserRequired ? user : true)
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -295,6 +490,18 @@ export function AddConnectionDialog({
               >
                 <MySQLIcon className="size-4" />
                 MySQL
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDbTypeChange('mssql')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  dbType === 'mssql'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <MSSQLIcon className="size-4" />
+                SQL Server
               </button>
             </div>
           </div>
@@ -352,7 +559,9 @@ export function AddConnectionDialog({
                 placeholder={
                   dbType === 'mysql'
                     ? 'mysql://user:password@host:3306/database'
-                    : 'postgresql://user:password@host:5432/database'
+                    : dbType === 'mssql'
+                      ? 'mssql://user:password@host:1433/database'
+                      : 'postgresql://user:password@host:5432/database'
                 }
                 value={connectionString}
                 onChange={(e) => handleConnectionStringChange(e.target.value)}
@@ -362,7 +571,9 @@ export function AddConnectionDialog({
                 Format:{' '}
                 {dbType === 'mysql'
                   ? 'mysql://user:password@host:port/database'
-                  : 'postgresql://user:password@host:port/database'}
+                  : dbType === 'mssql'
+                    ? 'sqlserver://host:port;database=name;encrypt=false;trustServerCertificate=true'
+                    : 'postgresql://user:password@host:port/database'}
               </p>
               {parseError && <p className="text-xs text-destructive">{parseError}</p>}
               {connectionString && !parseError && (
@@ -427,10 +638,23 @@ export function AddConnectionDialog({
               <div className="flex flex-col gap-2">
                 <label htmlFor="user" className="text-sm font-medium">
                   Username
+                  {dbType === 'mssql' &&
+                    mssqlOptions?.authentication === 'ActiveDirectoryIntegrated' && (
+                      <span className="text-xs text-muted-foreground font-normal ml-1">
+                        (optional for Active Directory Integrated)
+                      </span>
+                    )}
                 </label>
                 <Input
                   id="user"
-                  placeholder="postgres"
+                  placeholder={
+                    dbType === 'mssql' &&
+                    mssqlOptions?.authentication === 'ActiveDirectoryIntegrated'
+                      ? 'Not required for Active Directory Integrated'
+                      : dbType === 'mssql'
+                        ? 'sa'
+                        : 'postgres'
+                  }
                   value={user}
                   onChange={(e) => setUser(e.target.value)}
                 />

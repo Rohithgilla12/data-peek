@@ -70,12 +70,14 @@ export interface DatabaseAdapter {
 // Import adapters
 import { PostgresAdapter } from './adapters/postgres-adapter'
 import { MySQLAdapter } from './adapters/mysql-adapter'
+import { MSSQLAdapter } from './adapters/mssql-adapter'
 
 // Adapter instances (singletons)
 const adapters: Record<DatabaseType, DatabaseAdapter> = {
   postgresql: new PostgresAdapter(),
   mysql: new MySQLAdapter(),
-  sqlite: new PostgresAdapter() // Placeholder - SQLite not implemented yet
+  sqlite: new PostgresAdapter(), // Placeholder - SQLite not implemented yet
+  mssql: new MSSQLAdapter()
 }
 
 /**

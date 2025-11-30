@@ -1,6 +1,6 @@
 # data-peek
 
-A minimal, fast PostgreSQL client desktop application. Built for developers who want to quickly peek at their data without the bloat.
+A minimal, fast PostgreSQL client desktop application. Built for developers who want to quickly peek at their data without the bloat. Also supports MySQL and Microsoft SQL Server.
 
 ## Features
 
@@ -101,7 +101,7 @@ This can happen when pnpm's cache skips Electron's postinstall script that downl
 | UI | shadcn/ui + Tailwind CSS |
 | State | Zustand |
 | Query Editor | Monaco |
-| Database | pg (PostgreSQL driver) |
+| Database | pg (PostgreSQL), mysql2 (MySQL), mssql (SQL Server) |
 
 ## Project Structure
 

@@ -177,22 +177,41 @@ export interface ChatSession {
 // Connection Types
 // ============================================
 
+/**
+ * MSSQL-specific connection options
+ */
+export interface MSSQLConnectionOptions {
+  authentication?: 'SQL Server Authentication' | 'ActiveDirectoryIntegrated' | 'ActiveDirectoryPassword' | 'ActiveDirectoryServicePrincipal' | 'ActiveDirectoryDeviceCodeFlow';
+  encrypt?: boolean;
+  trustServerCertificate?: boolean;
+  enableArithAbort?: boolean;
+  connectionTimeout?: number;
+  requestTimeout?: number;
+  pool?: {
+    max?: number;
+    min?: number;
+    idleTimeoutMillis?: number;
+  };
+}
+
 export interface ConnectionConfig {
   id: string;
   name: string;
   host: string;
   port: number;
   database: string;
-  user: string;
+  user?: string; // Optional for MSSQL with Azure AD authentication
   password?: string;
   ssl?: boolean;
   dbType: DatabaseType;
+  /** MSSQL-specific connection options (only used when dbType is 'mssql') */
+  mssqlOptions?: MSSQLConnectionOptions;
 }
 
 /**
  * Supported database types
  */
-export type DatabaseType = 'postgresql' | 'mysql' | 'sqlite';
+export type DatabaseType = 'postgresql' | 'mysql' | 'sqlite' | 'mssql';
 
 /**
  * Field metadata from query results

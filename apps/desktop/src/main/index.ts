@@ -374,7 +374,7 @@ app.whenReady().then(async () => {
     'db:preview-sql',
     (_, { batch, dbType }: { batch: EditBatch; dbType?: string }) => {
       try {
-        const targetDbType = (dbType || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite'
+        const targetDbType = (dbType || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite' | 'mssql'
         const previews = batch.operations.map((op) => ({
           operationId: op.id,
           sql: buildPreviewSql(op, batch.context, targetDbType)
@@ -597,7 +597,7 @@ app.whenReady().then(async () => {
     'db:preview-ddl',
     (_, { definition, dbType }: { definition: TableDefinition; dbType?: string }) => {
       try {
-        const targetDbType = (dbType || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite'
+        const targetDbType = (dbType || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite' | 'mssql'
         const sql = buildPreviewDDL(definition, targetDbType)
         return { success: true, data: sql }
       } catch (error: unknown) {
