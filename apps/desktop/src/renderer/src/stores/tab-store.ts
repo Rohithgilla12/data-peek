@@ -87,11 +87,7 @@ interface TabState {
     value: unknown
   ) => string
   createERDTab: (connectionId: string) => string
-  createTableDesignerTab: (
-    connectionId: string,
-    schemaName: string,
-    tableName?: string
-  ) => string
+  createTableDesignerTab: (connectionId: string, schemaName: string, tableName?: string) => string
   closeTab: (tabId: string) => void
   closeAllTabs: () => void
   closeOtherTabs: (tabId: string) => void
@@ -179,7 +175,8 @@ export const useTabStore = create<TabState>()(
         const id = crypto.randomUUID()
         const tabs = get().tabs
         const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.order)) : -1
-        const tableRef = schemaName === 'public' ? tableName : `${schemaName}.${tableName}`
+        const tableRef =
+          schemaName === 'public' ? `"${tableName}"` : `"${schemaName}"."${tableName}"`
         const query = `SELECT * FROM ${tableRef} LIMIT 100;`
 
         const newTab: TablePreviewTab = {
@@ -213,7 +210,7 @@ export const useTabStore = create<TabState>()(
         const id = crypto.randomUUID()
         const tabs = get().tabs
         const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.order)) : -1
-        const tableRef = schema === 'public' ? table : `${schema}.${table}`
+        const tableRef = schema === 'public' ? `"${table}"` : `"${schema}"."${table}"`
 
         // Format value for SQL - handle strings, numbers, nulls
         let formattedValue: string
