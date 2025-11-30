@@ -1,11 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import { Check, X, RotateCcw } from 'lucide-react'
+import { Check, X, RotateCcw, Braces } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
+import { JsonCellEditor } from '@/components/json-cell-value'
 
 interface EditableCellProps {
   value: unknown
@@ -15,6 +16,8 @@ interface EditableCellProps {
   isModified: boolean
   isNewRow?: boolean
   isDeleted?: boolean
+  enumValues?: string[]
+  columnName?: string
   onStartEdit: () => void
   onSave: (value: unknown) => void
   onCancel: () => void
@@ -109,22 +112,32 @@ export function EditableCell({
   isModified,
   isNewRow = false,
   isDeleted = false,
+  enumValues,
+  columnName,
   onStartEdit,
   onSave,
   onCancel,
   onRevert
 }: EditableCellProps) {
   const [editValue, setEditValue] = React.useState('')
+  const [isJsonEditorOpen, setIsJsonEditorOpen] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
+
+  const isJson = dataType.toLowerCase().includes('json')
 
   // Initialize edit value when entering edit mode
   React.useEffect(() => {
     if (isEditing) {
+      // For JSON fields, open the JSON editor instead
+      if (isJson) {
+        setIsJsonEditorOpen(true)
+        return
+      }
       setEditValue(formatForInput(value, dataType))
       // Focus input after render
       setTimeout(() => inputRef.current?.focus(), 0)
     }
-  }, [isEditing, value, dataType])
+  }, [isEditing, value, dataType, isJson])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -148,6 +161,31 @@ export function EditableCell({
   if (isEditing) {
     const inputType = getInputType(dataType)
     const isBoolean = dataType.toLowerCase() === 'boolean' || dataType.toLowerCase() === 'bool'
+    const isEnum = enumValues && enumValues.length > 0
+
+    // JSON editing uses a sheet editor
+    if (isJson && isJsonEditorOpen) {
+      return (
+        <>
+          <div className="flex items-center gap-1.5 text-amber-500">
+            <Braces className="size-3.5" />
+            <span className="text-xs">Editing...</span>
+          </div>
+          <JsonCellEditor
+            value={value}
+            columnName={columnName}
+            onSave={(newValue) => {
+              setIsJsonEditorOpen(false)
+              onSave(newValue)
+            }}
+            onCancel={() => {
+              setIsJsonEditorOpen(false)
+              onCancel()
+            }}
+          />
+        </>
+      )
+    }
 
     return (
       <div className="flex items-center gap-1 -mx-1">
@@ -163,6 +201,22 @@ export function EditableCell({
             <option value="">NULL</option>
             <option value="true">true</option>
             <option value="false">false</option>
+          </select>
+        ) : isEnum ? (
+          <select
+            ref={inputRef as unknown as React.RefObject<HTMLSelectElement>}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onBlur={handleBlur}
+            className="h-7 text-xs px-2 bg-background border border-primary/50 rounded focus:outline-none focus:ring-1 focus:ring-primary min-w-[100px]"
+          >
+            <option value="">NULL</option>
+            {enumValues.map((enumVal) => (
+              <option key={enumVal} value={enumVal}>
+                {enumVal}
+              </option>
+            ))}
           </select>
         ) : (
           <Input
@@ -232,15 +286,15 @@ export function EditableCell({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onDoubleClick={onStartEdit}
+              onClick={onStartEdit}
               disabled={isDeleted}
               className={cn(
-                'text-left truncate max-w-[300px] px-1.5 py-0.5 rounded transition-colors cursor-default',
-                !isDeleted && 'hover:bg-accent/50 cursor-text',
+                'text-left truncate max-w-[300px] px-1.5 py-0.5 rounded transition-colors cursor-text',
+                !isDeleted && 'hover:bg-accent/50',
                 isNull && 'text-muted-foreground/50 italic',
                 isModified && !isNewRow && 'bg-amber-500/10',
                 isNewRow && 'bg-green-500/10',
-                isDeleted && 'line-through text-muted-foreground'
+                isDeleted && 'line-through text-muted-foreground cursor-not-allowed'
               )}
             >
               {displayValue}
@@ -254,9 +308,7 @@ export function EditableCell({
                   Original: {formatForInput(originalValue, dataType) || 'NULL'}
                 </p>
               )}
-              {!isDeleted && (
-                <p className="text-[10px] text-muted-foreground">Double-click to edit</p>
-              )}
+              {!isDeleted && <p className="text-[10px] text-muted-foreground">Click to edit</p>}
             </div>
           </TooltipContent>
         </Tooltip>

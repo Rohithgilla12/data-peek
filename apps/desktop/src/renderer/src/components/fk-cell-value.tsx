@@ -27,6 +27,7 @@ export function FKCellValue({
   const displayValue = isLong ? stringValue.substring(0, 30) + '...' : stringValue
 
   const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent bubbling to parent's double-click handler
     if (e.metaKey || e.ctrlKey) {
       // Cmd+Click: Open in new tab
       onForeignKeyOpenTab?.(foreignKey, value)

@@ -97,7 +97,11 @@ export function QueryHistory() {
   const handleQueryClick = (query: string) => {
     const activeTab = getActiveTab()
     // If there's an active query/table-preview tab, update it
-    if (activeTabId && activeTab && (activeTab.type === 'query' || activeTab.type === 'table-preview')) {
+    if (
+      activeTabId &&
+      activeTab &&
+      (activeTab.type === 'query' || activeTab.type === 'table-preview')
+    ) {
       updateTabQuery(activeTabId, query)
     } else if (activeConnectionId) {
       // Otherwise create a new tab with the query

@@ -46,6 +46,7 @@ export interface DataTableColumn {
   foreignKey?: ForeignKeyInfo
   isPrimaryKey?: boolean
   isNullable?: boolean
+  enumValues?: string[]
 }
 
 export interface DataTableFilter {
@@ -392,6 +393,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 isEditing={isEditing}
                 isModified={isModified}
                 isDeleted={isDeleted}
+                enumValues={col.enumValues}
+                columnName={col.name}
                 onStartEdit={() => startCellEdit(tabId, rowIndex, col.name)}
                 onSave={(newValue) =>
                   updateCellValue(tabId, rowIndex, col.name, newValue, originalRow)
@@ -404,26 +407,60 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             )
           }
 
-          // Non-edit mode rendering (existing behavior)
+          // Non-edit mode rendering
+          // Single-click to enter edit mode for simple cells
+          // Double-click for cells with special interactive elements (JSON viewer, FK navigation)
+          const handleActivate = () => {
+            if (!canEdit || !editContext) return
+            enterEditMode(tabId, editContext)
+            setTimeout(() => startCellEdit(tabId, rowIndex, col.name), 0)
+          }
+
           if (value === null || value === undefined) {
-            return <span className="text-muted-foreground/50 italic">NULL</span>
+            return (
+              <span
+                className={cn(
+                  'text-muted-foreground/50 italic px-1 py-0.5 rounded',
+                  canEdit && 'cursor-pointer hover:bg-accent/50'
+                )}
+                onClick={handleActivate}
+              >
+                NULL
+              </span>
+            )
           }
 
           // Handle JSON/JSONB types specially
+          // Single-click opens viewer, double-click on cell background enters edit mode
           const lowerType = col.dataType.toLowerCase()
           if (lowerType.includes('json')) {
-            return <JsonCellValue value={value} columnName={col.name} />
+            return (
+              <div
+                onDoubleClick={handleActivate}
+                className={cn('flex items-center', canEdit && 'cursor-pointer')}
+                title={canEdit ? 'Double-click to edit' : undefined}
+              >
+                <JsonCellValue value={value} columnName={col.name} />
+              </div>
+            )
           }
 
           // Handle Foreign Key columns
+          // Single-click navigates, double-click on cell background enters edit mode
           if (col.foreignKey) {
             return (
-              <FKCellValue
-                value={value}
-                foreignKey={col.foreignKey}
-                onForeignKeyClick={onForeignKeyClick}
-                onForeignKeyOpenTab={onForeignKeyOpenTab}
-              />
+              <div
+                onDoubleClick={handleActivate}
+                className={cn('flex items-center', canEdit && 'cursor-pointer')}
+                title={canEdit ? 'Double-click to edit' : undefined}
+              >
+                <FKCellValue
+                  value={value}
+                  foreignKey={col.foreignKey}
+                  onForeignKeyClick={onForeignKeyClick}
+                  onForeignKeyOpenTab={onForeignKeyOpenTab}
+                />
+              </div>
             )
           }
 
@@ -431,7 +468,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           const isLong = stringValue.length > 50
 
           return (
-            <span className="truncate max-w-[300px] block">
+            <span
+              className={cn(
+                'truncate max-w-[300px] block px-1 py-0.5 rounded',
+                canEdit && 'cursor-pointer hover:bg-accent/50'
+              )}
+              onClick={handleActivate}
+            >
               {isLong ? stringValue.substring(0, 50) + '...' : stringValue}
             </span>
           )
@@ -441,7 +484,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     })
 
     return cols
-  }, [columnDefs, isEditMode, tabId, tabEdit, onForeignKeyClick, onForeignKeyOpenTab])
+  }, [columnDefs, isEditMode, tabId, tabEdit, onForeignKeyClick, onForeignKeyOpenTab, canEdit, editContext, enterEditMode, startCellEdit])
 
   const table = useReactTable({
     data,
@@ -628,6 +671,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                             isEditing={false}
                             isModified={false}
                             isNewRow={true}
+                            enumValues={col.enumValues}
+                            columnName={col.name}
                             onStartEdit={() => {}}
                             onSave={(value) => updateNewRowValue(tabId, newRow.id, col.name, value)}
                             onCancel={() => {}}

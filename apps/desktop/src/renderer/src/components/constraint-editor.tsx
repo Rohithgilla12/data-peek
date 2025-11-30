@@ -21,11 +21,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -206,7 +202,9 @@ export function ConstraintEditor({
                         <label className="text-sm text-muted-foreground">Name</label>
                         <Input
                           value={constraint.name ?? ''}
-                          onChange={(e) => onUpdate(constraint.id, { name: e.target.value || undefined })}
+                          onChange={(e) =>
+                            onUpdate(constraint.id, { name: e.target.value || undefined })
+                          }
                           placeholder="Auto-generated"
                           className="h-8 font-mono text-sm"
                         />

@@ -32,8 +32,10 @@ import { LicenseStatusIndicator } from '@/components/license-status-indicator'
 import { LicenseActivationModal } from '@/components/license-activation-modal'
 import { LicenseSettingsModal } from '@/components/license-settings-modal'
 import { AIChatPanel, AISettingsModal } from '@/components/ai'
-import { useConnectionStore, useLicenseStore, useTabStore } from '@/stores'
 import { useAIStore } from '@/stores/ai-store'
+import { Switch } from '@/components/ui/switch'
+import { Label } from '@/components/ui/label'
+import { useConnectionStore, useLicenseStore, useSettingsStore, useTabStore } from '@/stores'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -497,6 +499,14 @@ function SettingsPage() {
   const openSettingsModal = useLicenseStore((s) => s.openSettingsModal)
   const openActivationModal = useLicenseStore((s) => s.openActivationModal)
 
+  // App settings
+  const {
+    hideQueryEditorByDefault,
+    expandJsonByDefault,
+    setHideQueryEditorByDefault,
+    setExpandJsonByDefault
+  } = useSettingsStore()
+
   return (
     <div className="flex flex-1 flex-col p-6 overflow-auto">
       <div className="flex items-center gap-4 mb-6">
@@ -663,10 +673,44 @@ function SettingsPage() {
 
         {/* Editor */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
-          <h2 className="text-lg font-medium mb-2">Editor</h2>
-          <p className="text-sm text-muted-foreground">
+          <h2 className="text-lg font-medium mb-2">Query Editor</h2>
+          <p className="text-sm text-muted-foreground mb-4">
             Customize the query editor appearance and behavior.
           </p>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="hide-editor">Hide query editor by default</Label>
+              <p className="text-xs text-muted-foreground">
+                Start with the query editor collapsed when opening table previews
+              </p>
+            </div>
+            <Switch
+              id="hide-editor"
+              checked={hideQueryEditorByDefault}
+              onCheckedChange={setHideQueryEditorByDefault}
+            />
+          </div>
+        </div>
+
+        {/* JSON Display */}
+        <div className="rounded-lg border border-border/50 bg-card p-4">
+          <h2 className="text-lg font-medium mb-2">JSON Display</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Configure how JSON data is displayed in results.
+          </p>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="expand-json">Expand JSON by default</Label>
+              <p className="text-xs text-muted-foreground">
+                Automatically expand all JSON objects when viewing
+              </p>
+            </div>
+            <Switch
+              id="expand-json"
+              checked={expandJsonByDefault}
+              onCheckedChange={setExpandJsonByDefault}
+            />
+          </div>
         </div>
       </div>
     </div>

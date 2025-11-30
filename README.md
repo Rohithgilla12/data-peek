@@ -40,6 +40,22 @@ xattr -cr /Applications/data-peek.app
 
 This only needs to be done once. Proper code signing is coming soon!
 
+### macOS: "App is damaged" Fix
+
+Since the app isn't notarized with Apple yet, macOS Gatekeeper may show a warning. To fix:
+
+**Option 1: Terminal command**
+```bash
+xattr -cr /Applications/data-peek.app
+```
+
+**Option 2: Right-click to open**
+1. Right-click (or Control+click) on data-peek.app
+2. Select "Open" from the menu
+3. Click "Open" in the dialog
+
+This only needs to be done once. Proper code signing is coming soon!
+
 ### Build from Source
 
 ```bash
@@ -58,6 +74,23 @@ pnpm build:mac    # macOS
 pnpm build:win    # Windows
 pnpm build:linux  # Linux
 ```
+
+### Troubleshooting: Electron not found
+
+If you get errors about Electron not being found after `pnpm install`:
+
+```bash
+# Option 1: Run the setup script
+pnpm setup:electron
+
+# Option 2: Rebuild native modules
+pnpm rebuild
+
+# Option 3: Clean install (nuclear option)
+pnpm clean:install
+```
+
+This can happen when pnpm's cache skips Electron's postinstall script that downloads platform-specific binaries.
 
 ## Tech Stack
 
@@ -98,6 +131,16 @@ pnpm lint
 # Build desktop app
 pnpm build
 ```
+
+## Star History
+
+<a href="https://www.star-history.com/#Rohithgilla12/data-peek&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Rohithgilla12/data-peek&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Rohithgilla12/data-peek&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Rohithgilla12/data-peek&type=date&legend=top-left" />
+ </picture>
+</a>
 
 ## License
 

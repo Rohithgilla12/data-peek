@@ -1,5 +1,12 @@
 import { create } from 'zustand'
-import { ConnectionConfig, SchemaInfo, TableInfo, ColumnInfo, DatabaseType } from '@shared/index'
+import {
+  ConnectionConfig,
+  SchemaInfo,
+  TableInfo,
+  ColumnInfo,
+  DatabaseType,
+  CustomTypeInfo
+} from '@shared/index'
 
 export interface Connection {
   id: string
@@ -33,6 +40,7 @@ interface ConnectionState {
 
   // Schema for active connection
   schemas: Schema[]
+  customTypes: CustomTypeInfo[]
   isLoadingSchema: boolean
   schemaError: string | null
 
@@ -55,6 +63,7 @@ interface ConnectionState {
 
   // Computed
   getActiveConnection: () => ConnectionWithStatus | null
+  getEnumValues: (dataType: string) => string[] | undefined
 }
 
 // Helper to convert ConnectionConfig to ConnectionWithStatus
@@ -72,6 +81,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   activeConnectionId: null,
   isInitialized: false,
   schemas: [],
+  customTypes: [],
   isLoadingSchema: false,
   schemaError: null,
 
@@ -148,7 +158,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     if (id) {
       get().fetchSchemas(id)
     } else {
-      set({ schemas: [], schemaError: null })
+      set({ schemas: [], customTypes: [], schemaError: null })
     }
   },
 
@@ -159,28 +169,35 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     const connection = get().connections.find((c) => c.id === id)
     if (!connection) return
 
-    set({ isLoadingSchema: true, schemas: [], schemaError: null })
+    set({ isLoadingSchema: true, schemas: [], customTypes: [], schemaError: null })
 
     try {
-      const result = await window.api.db.schemas(connection)
+      // Fetch schemas and types in parallel
+      const [schemasResult, typesResult] = await Promise.all([
+        window.api.db.schemas(connection),
+        window.api.ddl.getTypes(connection)
+      ])
 
-      if (result.success && result.data) {
+      if (schemasResult.success && schemasResult.data) {
         set({
-          schemas: result.data.schemas,
+          schemas: schemasResult.data.schemas,
+          customTypes: typesResult.success && typesResult.data ? typesResult.data : [],
           isLoadingSchema: false,
           schemaError: null
         })
       } else {
         set({
           schemas: [],
+          customTypes: [],
           isLoadingSchema: false,
-          schemaError: result.error || 'Failed to fetch schemas'
+          schemaError: schemasResult.error || 'Failed to fetch schemas'
         })
       }
     } catch (error) {
       console.error('Failed to fetch schemas:', error)
       set({
         schemas: [],
+        customTypes: [],
         isLoadingSchema: false,
         schemaError: error instanceof Error ? error.message : 'Unknown error'
       })
@@ -198,5 +215,14 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   getActiveConnection: () => {
     const state = get()
     return state.connections.find((c) => c.id === state.activeConnectionId) || null
+  },
+
+  getEnumValues: (dataType: string) => {
+    const state = get()
+    // Find enum type by name (could be schema.typename or just typename)
+    const enumType = state.customTypes.find(
+      (t) => t.type === 'enum' && (t.name === dataType || `${t.schema}.${t.name}` === dataType)
+    )
+    return enumType?.values
   }
 }))

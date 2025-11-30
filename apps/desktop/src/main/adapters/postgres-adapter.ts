@@ -428,24 +428,26 @@ export class PostgresAdapter implements DatabaseAdapter {
         [schema, table]
       )
 
-      // Query indexes
+      // Query indexes - including expression indexes
       const indexesResult = await client.query(
         `
         SELECT
           i.relname as index_name,
           ix.indisunique as is_unique,
           am.amname as index_method,
-          array_agg(a.attname ORDER BY array_position(ix.indkey, a.attnum)) as columns,
-          pg_get_expr(ix.indpred, ix.indrelid) as where_clause
+          array_agg(a.attname ORDER BY array_position(ix.indkey, a.attnum)) FILTER (WHERE a.attname IS NOT NULL) as columns,
+          pg_get_expr(ix.indpred, ix.indrelid) as where_clause,
+          pg_get_indexdef(i.oid) as index_definition,
+          ix.indexprs IS NOT NULL as is_expression_index
         FROM pg_index ix
         JOIN pg_class i ON i.oid = ix.indexrelid
         JOIN pg_class t ON t.oid = ix.indrelid
         JOIN pg_namespace n ON n.oid = t.relnamespace
         JOIN pg_am am ON am.oid = i.relam
-        LEFT JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(ix.indkey)
+        LEFT JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(ix.indkey) AND a.attnum > 0
         WHERE n.nspname = $1 AND t.relname = $2
           AND NOT ix.indisprimary  -- Exclude primary key index
-        GROUP BY i.relname, ix.indisunique, am.amname, ix.indpred, ix.indrelid
+        GROUP BY i.relname, ix.indisunique, am.amname, ix.indpred, ix.indrelid, i.oid, ix.indexprs
       `,
         [schema, table]
       )
@@ -558,9 +560,19 @@ export class PostgresAdapter implements DatabaseAdapter {
       // Build indexes
       const indexes: IndexDefinition[] = indexesResult.rows.map((row, idx) => {
         // Handle columns array - could be null, undefined, or not an array in some cases
-        const columnsArray = Array.isArray(row.columns)
+        let columnsArray = Array.isArray(row.columns)
           ? row.columns.filter((c: string | null) => c !== null)
           : []
+
+        // For expression indexes, extract the expression from the index definition
+        // Format: CREATE INDEX name ON table USING method (expression)
+        if (columnsArray.length === 0 && row.is_expression_index && row.index_definition) {
+          const match = row.index_definition.match(/USING\s+\w+\s+\((.+)\)(?:\s+WHERE|\s*$)/i)
+          if (match) {
+            // Use the expression as a single "column"
+            columnsArray = [match[1].trim()]
+          }
+        }
 
         return {
           id: `index-${idx}`,

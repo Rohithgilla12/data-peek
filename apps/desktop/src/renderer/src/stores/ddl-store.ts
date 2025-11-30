@@ -49,11 +49,7 @@ interface DDLStoreState {
   tabStates: Map<string, TabDDLState>
 
   // === Initialization ===
-  initTableDesigner: (
-    tabId: string,
-    schemaName: string,
-    tableName?: string
-  ) => void
+  initTableDesigner: (tabId: string, schemaName: string, tableName?: string) => void
   loadTableDefinition: (tabId: string, definition: TableDefinition) => void
   cleanupTab: (tabId: string) => void
 
@@ -166,7 +162,11 @@ function validateDefinition(definition: TableDefinition): ValidationError[] {
 
   // Must have at least one column
   if (definition.columns.length === 0) {
-    errors.push({ field: 'columns', message: 'Table must have at least one column', severity: 'error' })
+    errors.push({
+      field: 'columns',
+      message: 'Table must have at least one column',
+      severity: 'error'
+    })
   }
 
   // Column validation
@@ -278,10 +278,15 @@ function validateDefinition(definition: TableDefinition): ValidationError[] {
   // Index validation
   definition.indexes.forEach((index) => {
     if (!index.columns.length) {
+      // For existing indexes (those with a name from the database), treat as warning
+      // They may be expression indexes that we couldn't fully parse
+      const isExistingIndex = !!index.name
       errors.push({
         field: `index.${index.id}.columns`,
-        message: 'Index must have at least one column',
-        severity: 'error'
+        message: isExistingIndex
+          ? `Index "${index.name}" has no parseable columns (may be an expression index)`
+          : 'Index must have at least one column',
+        severity: isExistingIndex ? 'warning' : 'error'
       })
     }
   })

@@ -25,7 +25,8 @@ export default defineConfig({
       alias: {
         '@': resolve('src/renderer/src'),
         '@shared': resolve('../../packages/shared/src')
-      }
+      },
+      dedupe: ['react', 'react-dom']
     },
     plugins: [react(), tailwindcss()]
   }

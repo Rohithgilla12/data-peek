@@ -91,9 +91,7 @@ export const useSavedQueryStore = create<SavedQueryState>((set, get) => ({
       const result = await window.api.savedQueries.update(id, updates)
       if (result.success && result.data) {
         set((state) => ({
-          savedQueries: state.savedQueries.map((q) =>
-            q.id === id ? result.data! : q
-          )
+          savedQueries: state.savedQueries.map((q) => (q.id === id ? result.data! : q))
         }))
       } else {
         console.error('Failed to update saved query:', result.error)
@@ -123,9 +121,7 @@ export const useSavedQueryStore = create<SavedQueryState>((set, get) => ({
       const result = await window.api.savedQueries.incrementUsage(id)
       if (result.success && result.data) {
         set((state) => ({
-          savedQueries: state.savedQueries.map((q) =>
-            q.id === id ? result.data! : q
-          )
+          savedQueries: state.savedQueries.map((q) => (q.id === id ? result.data! : q))
         }))
       }
     } catch (error) {
@@ -152,9 +148,7 @@ export const useSavedQueryStore = create<SavedQueryState>((set, get) => ({
   },
 
   getQueriesByFolder: (folder) => {
-    return get().savedQueries.filter((q) =>
-      folder === null ? !q.folder : q.folder === folder
-    )
+    return get().savedQueries.filter((q) => (folder === null ? !q.folder : q.folder === folder))
   },
 
   getQueriesByTag: (tag) => {

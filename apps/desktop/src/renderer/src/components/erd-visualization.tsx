@@ -1,28 +1,28 @@
 'use client'
 
-import { useMemo, useCallback, useState, useEffect } from 'react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { cn } from '@/lib/utils'
+import type { ColumnInfo, SchemaInfo } from '@shared/index'
 import {
-  ReactFlow,
   Background,
   Controls,
-  MiniMap,
-  useNodesState,
-  useEdgesState,
-  type Node,
-  type Edge,
-  Position,
+  Handle,
   MarkerType,
-  Handle
+  MiniMap,
+  Position,
+  ReactFlow,
+  useEdgesState,
+  useNodesState,
+  type Edge,
+  type Node
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Key, Columns3, GitBranch, Filter, X, Check, ChevronsUpDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import type { SchemaInfo, ColumnInfo } from '@shared/index'
+import { Check, ChevronsUpDown, Columns3, Filter, GitBranch, Key, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface TableNodeData extends Record<string, unknown> {
   label: string
@@ -283,23 +283,50 @@ function layoutCluster(
   const positions = new Map<string, { x: number; y: number }>()
   const hub = findHubTable(component, graph.edgeCounts)
 
+  // Constants for layout
+  const TABLE_WIDTH = 280
+  const TABLE_MIN_HEIGHT = 200
+  const HORIZONTAL_SPACING = 350
+  const VERTICAL_SPACING = 120
+
   if (component.length === 1) {
     // Single table cluster
     positions.set(component[0], { x: 0, y: 0 })
-    const height = tableHeights.get(component[0]) || 200
+    const height = tableHeights.get(component[0]) || TABLE_MIN_HEIGHT
     return {
       tables: positions,
-      bounds: { x: 0, y: 0, width: 280, height: height + 40 },
+      bounds: { x: -20, y: -20, width: TABLE_WIDTH + 40, height: height + 60 },
       hub
     }
   }
 
-  // Radial layout with hub at center
-  const TABLE_WIDTH = 260
-  const RADIAL_SPACING = 320
-  const VERTICAL_SPACING = 80
+  // For 2 tables, place them side by side
+  if (component.length === 2) {
+    const [table1, table2] = component
+    positions.set(table1, { x: 0, y: 0 })
+    positions.set(table2, { x: HORIZONTAL_SPACING, y: 0 })
+
+    const height1 = tableHeights.get(table1) || TABLE_MIN_HEIGHT
+    const height2 = tableHeights.get(table2) || TABLE_MIN_HEIGHT
+    const maxHeight = Math.max(height1, height2)
+
+    return {
+      tables: positions,
+      bounds: {
+        x: -40,
+        y: -40,
+        width: HORIZONTAL_SPACING + TABLE_WIDTH + 80,
+        height: maxHeight + 80
+      },
+      hub
+    }
+  }
+
+  // For larger clusters, use a grid-like radial layout
+  const RADIAL_SPACING = 380
 
   // Place hub at center
+  const hubHeight = tableHeights.get(hub) || TABLE_MIN_HEIGHT
   positions.set(hub, { x: 0, y: 0 })
 
   // Get directly connected tables first
@@ -310,34 +337,38 @@ function layoutCluster(
 
   // Layout directly connected tables in a radial pattern around hub
   if (directlyConnected.length <= 4) {
-    // Cardinal positions for up to 4 tables
+    // Cardinal positions for up to 4 tables - with increased spacing
+    const hubCenterY = hubHeight / 2
     const cardinalPositions = [
-      { x: 0, y: -RADIAL_SPACING }, // Top
-      { x: RADIAL_SPACING, y: 0 }, // Right
+      { x: 0, y: -RADIAL_SPACING - hubHeight / 2 }, // Top
+      { x: RADIAL_SPACING + TABLE_WIDTH / 2, y: -hubCenterY + 50 }, // Right
       { x: 0, y: RADIAL_SPACING }, // Bottom
-      { x: -RADIAL_SPACING, y: 0 } // Left
+      { x: -RADIAL_SPACING - TABLE_WIDTH / 2, y: -hubCenterY + 50 } // Left
     ]
     directlyConnected.forEach((table, i) => {
       positions.set(table, cardinalPositions[i])
     })
   } else {
-    // Circular layout for more tables
+    // Circular layout for more tables with proper spacing
     const angleStep = (2 * Math.PI) / directlyConnected.length
     directlyConnected.forEach((table, i) => {
       const angle = i * angleStep - Math.PI / 2 // Start from top
+      const tableHeight = tableHeights.get(table) || TABLE_MIN_HEIGHT
+      // Adjust radius based on table size to prevent overlap
+      const adjustedRadius = RADIAL_SPACING + tableHeight / 4
       positions.set(table, {
-        x: Math.cos(angle) * RADIAL_SPACING,
-        y: Math.sin(angle) * RADIAL_SPACING
+        x: Math.cos(angle) * adjustedRadius,
+        y: Math.sin(angle) * adjustedRadius
       })
     })
   }
 
-  // Place remaining tables in outer ring
+  // Place remaining tables in outer ring with more spacing
   if (otherTables.length > 0) {
-    const outerRadius = RADIAL_SPACING * 1.8
+    const outerRadius = RADIAL_SPACING * 2
     const angleStep = (2 * Math.PI) / otherTables.length
     otherTables.forEach((table, i) => {
-      const angle = i * angleStep + Math.PI / otherTables.length // Offset to avoid overlap
+      const angle = i * angleStep + Math.PI / (otherTables.length * 2) // Offset to avoid overlap
       positions.set(table, {
         x: Math.cos(angle) * outerRadius,
         y: Math.sin(angle) * outerRadius
@@ -345,20 +376,20 @@ function layoutCluster(
     })
   }
 
-  // Calculate bounds
+  // Calculate bounds with proper padding
   let minX = Infinity,
     maxX = -Infinity,
     minY = Infinity,
     maxY = -Infinity
   positions.forEach((pos, table) => {
-    const height = tableHeights.get(table) || 200
+    const height = tableHeights.get(table) || TABLE_MIN_HEIGHT
     minX = Math.min(minX, pos.x)
     maxX = Math.max(maxX, pos.x + TABLE_WIDTH)
     minY = Math.min(minY, pos.y)
     maxY = Math.max(maxY, pos.y + height)
   })
 
-  const padding = 60
+  const padding = 80
   return {
     tables: positions,
     bounds: {
@@ -485,8 +516,8 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
       })
     })
 
-    // Position clusters in a grid
-    const CLUSTER_GAP = 150
+    // Position clusters in a grid with more spacing
+    const CLUSTER_GAP = 200
     let currentX = 0
     let currentY = 0
     let rowMaxHeight = 0

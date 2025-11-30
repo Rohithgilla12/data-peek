@@ -1,14 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  Plus,
-  Trash2,
-  ChevronDown,
-  ChevronRight,
-  AlertCircle,
-  Database
-} from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronRight, AlertCircle, Database } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -19,17 +12,8 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from '@/components/ui/collapsible'
-import type {
-  IndexDefinition,
-  IndexColumn,
-  IndexMethod,
-  ColumnDefinition
-} from '@data-peek/shared'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import type { IndexDefinition, IndexColumn, IndexMethod, ColumnDefinition } from '@data-peek/shared'
 import { cn } from '@/lib/utils'
 import type { ValidationError } from '@/stores/ddl-store'
 
@@ -155,7 +139,8 @@ export function IndexEditor({
                       )}
                       <Database className="size-4 text-muted-foreground" />
                       <span className="text-sm font-medium">
-                        {index.name || `Index on (${index.columns.map((c) => c.name).join(', ') || '...'})`}
+                        {index.name ||
+                          `Index on (${index.columns.map((c) => c.name).join(', ') || '...'})`}
                       </span>
                       {index.isUnique && (
                         <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
@@ -165,9 +150,7 @@ export function IndexEditor({
                       <span className="text-xs text-muted-foreground ml-auto mr-2">
                         {index.method ?? 'btree'}
                       </span>
-                      {errors.length > 0 && (
-                        <AlertCircle className="size-4 text-destructive" />
-                      )}
+                      {errors.length > 0 && <AlertCircle className="size-4 text-destructive" />}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -188,7 +171,9 @@ export function IndexEditor({
                         <label className="text-sm text-muted-foreground">Name</label>
                         <Input
                           value={index.name ?? ''}
-                          onChange={(e) => onUpdate(index.id, { name: e.target.value || undefined })}
+                          onChange={(e) =>
+                            onUpdate(index.id, { name: e.target.value || undefined })
+                          }
                           placeholder="Auto-generated"
                           className="h-8 font-mono text-sm"
                         />

@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { useTabStore, useConnectionStore, useQueryStore } from '@/stores'
+import { useTabStore, useConnectionStore, useQueryStore, useSettingsStore } from '@/stores'
 import type { Tab } from '@/stores/tab-store'
 import {
   DataTable,
@@ -64,7 +64,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   const connections = useConnectionStore((s) => s.connections)
   const schemas = useConnectionStore((s) => s.schemas)
+  const getEnumValues = useConnectionStore((s) => s.getEnumValues)
   const addToHistory = useQueryStore((s) => s.addToHistory)
+  const hideQueryEditorByDefault = useSettingsStore((s) => s.hideQueryEditorByDefault)
 
   // Get the connection for this tab
   const tabConnection = tab?.connectionId
@@ -75,7 +77,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const hasAutoRun = useRef(false)
 
   // Collapse state for query editor and results panel
-  const [isEditorCollapsed, setIsEditorCollapsed] = useState(false)
+  // For table-preview tabs, use the hideQueryEditorByDefault setting
+  const [isEditorCollapsed, setIsEditorCollapsed] = useState(
+    tab?.type === 'table-preview' ? hideQueryEditorByDefault : false
+  )
   const [isResultsCollapsed, setIsResultsCollapsed] = useState(false)
 
   // Track client-side filters and sorting for "Apply to Query"
@@ -105,14 +110,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const createForeignKeyTab = useTabStore((s) => s.createForeignKeyTab)
 
   // Handle execution plan panel resize
-  const handleExecutionPlanResize = useCallback(
-    (e: MouseEvent) => {
-      if (!isResizing.current) return
-      const newWidth = Math.max(300, Math.min(800, window.innerWidth - e.clientX))
-      setExecutionPlanWidth(newWidth)
-    },
-    []
-  )
+  const handleExecutionPlanResize = useCallback((e: MouseEvent) => {
+    if (!isResizing.current) return
+    const newWidth = Math.max(300, Math.min(800, window.innerWidth - e.clientX))
+    setExecutionPlanWidth(newWidth)
+  }, [])
 
   const stopResizing = useCallback(() => {
     isResizing.current = false
@@ -132,7 +134,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   }, [handleExecutionPlanResize, stopResizing])
 
   const handleRunQuery = useCallback(async () => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tabConnection || tab.isExecuting || !tab.query.trim()) {
+    if (
+      !tab ||
+      tab.type === 'erd' ||
+      tab.type === 'table-designer' ||
+      !tabConnection ||
+      tab.isExecuting ||
+      !tab.query.trim()
+    ) {
       return
     }
 
@@ -193,7 +202,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   }
 
   const handleExplainQuery = useCallback(async () => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tabConnection || isExplaining || !tab.query.trim()) {
+    if (
+      !tab ||
+      tab.type === 'erd' ||
+      tab.type === 'table-designer' ||
+      !tabConnection ||
+      isExplaining ||
+      !tab.query.trim()
+    ) {
       return
     }
 
@@ -226,7 +242,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Helper: Look up column info from schema (for FK details)
   const getColumnsWithFKInfo = useCallback((): DataTableColumn[] => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tab.result?.columns) return []
+    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tab.result?.columns)
+      return []
 
     // For table-preview tabs, we can directly look up the columns from schema
     if (tab.type === 'table-preview') {
@@ -267,7 +284,13 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Helper: Get columns with full info including isPrimaryKey (for editable table)
   const getColumnsForEditing = useCallback((): EditableDataTableColumn[] => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tab.result?.columns || tab.type !== 'table-preview')
+    if (
+      !tab ||
+      tab.type === 'erd' ||
+      tab.type === 'table-designer' ||
+      !tab.result?.columns ||
+      tab.type !== 'table-preview'
+    )
       return []
 
     const schema = schemas.find((s) => s.name === tab.schemaName)
@@ -282,10 +305,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         dataType: col.dataType,
         foreignKey: schemaCol?.foreignKey,
         isPrimaryKey: schemaCol?.isPrimaryKey ?? false,
-        isNullable: schemaCol?.isNullable ?? true
+        isNullable: schemaCol?.isNullable ?? true,
+        enumValues: getEnumValues(col.dataType)
       }
     })
-  }, [tab, schemas])
+  }, [tab, schemas, getEnumValues])
 
   // Helper: Build EditContext for table-preview tabs
   const getEditContext = useCallback((): EditContext | null => {
@@ -564,7 +588,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Query Editor Section */}
-      <div className={`flex flex-col border-b border-border/40 transition-all duration-200 ${isResultsCollapsed ? 'flex-1 min-h-0' : 'shrink-0'}`}>
+      <div
+        className={`flex flex-col border-b border-border/40 transition-all duration-200 ${isResultsCollapsed ? 'flex-1 min-h-0' : 'shrink-0'}`}
+      >
         {/* Monaco SQL Editor - Collapsible */}
         {!isEditorCollapsed && (
           <div className={`p-3 pb-0 ${isResultsCollapsed ? 'flex-1 min-h-0' : ''}`}>
@@ -703,7 +729,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       </div>
 
       {/* Results Section */}
-      <div className={`flex flex-col overflow-hidden transition-all duration-200 ${isResultsCollapsed ? 'h-10 shrink-0' : 'flex-1'}`}>
+      <div
+        className={`flex flex-col overflow-hidden transition-all duration-200 ${isResultsCollapsed ? 'h-10 shrink-0' : 'flex-1'}`}
+      >
         {/* Collapsed Results Bar */}
         {isResultsCollapsed ? (
           <div className="flex items-center justify-between h-10 border-t border-border/40 bg-muted/30 px-3">
@@ -815,8 +843,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                           </TooltipTrigger>
                           <TooltipContent side="top" className="max-w-xs">
                             <p className="text-xs">
-                              Convert your current filters and sorting to SQL WHERE/ORDER BY clauses and
-                              re-run the query against the database.
+                              Convert your current filters and sorting to SQL WHERE/ORDER BY clauses
+                              and re-run the query against the database.
                             </p>
                           </TooltipContent>
                         </Tooltip>
@@ -906,11 +934,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       )}
 
       {/* Save Query Dialog */}
-      <SaveQueryDialog
-        open={saveDialogOpen}
-        onOpenChange={setSaveDialogOpen}
-        query={tab.query}
-      />
+      <SaveQueryDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} query={tab.query} />
     </div>
   )
 }

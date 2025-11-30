@@ -91,11 +91,7 @@ function getQueryTypeColor(type: string): string {
 
 type SortOption = 'name' | 'created' | 'lastUsed' | 'usageCount'
 
-export function SavedQueriesDialog({
-  open,
-  onOpenChange,
-  onEditQuery
-}: SavedQueriesDialogProps) {
+export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQueriesDialogProps) {
   const savedQueries = useSavedQueryStore((s) => s.savedQueries)
   const isInitialized = useSavedQueryStore((s) => s.isInitialized)
   const initializeSavedQueries = useSavedQueryStore((s) => s.initializeSavedQueries)
@@ -342,9 +338,7 @@ export function SavedQueriesDialog({
                   <div className="space-y-2">
                     <Bookmark className="size-8 mx-auto opacity-50" />
                     <p>No saved queries yet</p>
-                    <p className="text-xs">
-                      Save a query from the editor to see it here
-                    </p>
+                    <p className="text-xs">Save a query from the editor to see it here</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -388,9 +382,7 @@ export function SavedQueriesDialog({
                           <div className="flex items-start gap-3">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                                <span className="font-medium text-sm truncate">
-                                  {query.name}
-                                </span>
+                                <span className="font-medium text-sm truncate">{query.name}</span>
                                 <Badge
                                   variant="outline"
                                   className={cn('text-[10px]', getQueryTypeColor(queryType))}
@@ -437,9 +429,7 @@ export function SavedQueriesDialog({
                                       </Badge>
                                     ))}
                                     {query.tags.length > 3 && (
-                                      <span className="text-[9px]">
-                                        +{query.tags.length - 3}
-                                      </span>
+                                      <span className="text-[9px]">+{query.tags.length - 3}</span>
                                     )}
                                   </div>
                                 )}
