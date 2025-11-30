@@ -19,11 +19,7 @@ import { Key, Columns3, GitBranch, Filter, X, Check, ChevronsUpDown } from 'luci
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import type { SchemaInfo, ColumnInfo } from '@shared/index'
@@ -91,9 +87,7 @@ function TableNode({ data }: { data: TableNodeData }) {
         }}
       >
         <div className="flex items-center gap-2">
-          {data.isHub && (
-            <GitBranch className="size-3.5" style={{ color: data.clusterColor }} />
-          )}
+          {data.isHub && <GitBranch className="size-3.5" style={{ color: data.clusterColor }} />}
           <div className="flex-1">
             <div
               className={cn('font-semibold text-sm', data.isHub && 'font-bold')}
@@ -343,7 +337,7 @@ function layoutCluster(
     const outerRadius = RADIAL_SPACING * 1.8
     const angleStep = (2 * Math.PI) / otherTables.length
     otherTables.forEach((table, i) => {
-      const angle = i * angleStep + (Math.PI / otherTables.length) // Offset to avoid overlap
+      const angle = i * angleStep + Math.PI / otherTables.length // Offset to avoid overlap
       positions.set(table, {
         x: Math.cos(angle) * outerRadius,
         y: Math.sin(angle) * outerRadius
@@ -582,7 +576,8 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
               const clusterIndex = clusterLayouts.findIndex((c) =>
                 c.component.includes(sourceTableKey)
               )
-              const edgeColor = clusterIndex >= 0 ? CLUSTER_COLORS[clusterIndex % CLUSTER_COLORS.length] : '#6366f1'
+              const edgeColor =
+                clusterIndex >= 0 ? CLUSTER_COLORS[clusterIndex % CLUSTER_COLORS.length] : '#6366f1'
 
               edges.push({
                 id: `${sourceTableKey}.${column.name}->${targetTableKey}.${column.foreignKey.referencedColumn}`,
@@ -748,17 +743,19 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
         {/* Selected tables badges */}
         {selectedTables.size > 0 && selectedTables.size <= 3 && (
           <div className="flex items-center gap-1">
-            {Array.from(selectedTables).slice(0, 3).map((key) => (
-              <Badge
-                key={key}
-                variant="secondary"
-                className="h-5 text-[10px] gap-1 cursor-pointer hover:bg-secondary/80"
-                onClick={() => toggleTable(key)}
-              >
-                {key.split('.')[1]}
-                <X className="size-2.5" />
-              </Badge>
-            ))}
+            {Array.from(selectedTables)
+              .slice(0, 3)
+              .map((key) => (
+                <Badge
+                  key={key}
+                  variant="secondary"
+                  className="h-5 text-[10px] gap-1 cursor-pointer hover:bg-secondary/80"
+                  onClick={() => toggleTable(key)}
+                >
+                  {key.split('.')[1]}
+                  <X className="size-2.5" />
+                </Badge>
+              ))}
           </div>
         )}
 
@@ -769,15 +766,17 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
           <span className="size-2 rounded-full bg-primary/60" />
           {tableCount} table{tableCount !== 1 ? 's' : ''}
           {selectedTables.size > 0 && (
-            <span className="text-muted-foreground/60">
-              (of {allTables.length})
-            </span>
+            <span className="text-muted-foreground/60">(of {allTables.length})</span>
           )}
         </span>
         {clusterCount > 0 && (
           <span className="flex items-center gap-1.5">
             <span className="size-2 rounded-full bg-indigo-500/60" />
-            {clusterCount + (tableCount - clusterCount > clusterCount ? tableCount - clusterCount - clusterCount : 0)} cluster{clusterCount !== 1 ? 's' : ''}
+            {clusterCount +
+              (tableCount - clusterCount > clusterCount
+                ? tableCount - clusterCount - clusterCount
+                : 0)}{' '}
+            cluster{clusterCount !== 1 ? 's' : ''}
           </span>
         )}
         <span className="flex items-center gap-1.5">
