@@ -59,6 +59,23 @@ pnpm build:win    # Windows
 pnpm build:linux  # Linux
 ```
 
+### Troubleshooting: Electron not found
+
+If you get errors about Electron not being found after `pnpm install`:
+
+```bash
+# Option 1: Run the setup script
+pnpm setup:electron
+
+# Option 2: Rebuild native modules
+pnpm rebuild
+
+# Option 3: Clean install (nuclear option)
+pnpm clean:install
+```
+
+This can happen when pnpm's cache skips Electron's postinstall script that downloads platform-specific binaries.
+
 ## Tech Stack
 
 | Layer | Technology |

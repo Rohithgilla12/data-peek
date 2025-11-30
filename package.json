@@ -9,7 +9,12 @@
     "dev:web": "pnpm --filter @data-peek/web dev",
     "build": "pnpm --filter @data-peek/desktop build",
     "lint": "pnpm -r lint",
-    "postinstall": "pnpm rebuild electron",
+    "postinstall": "pnpm --filter @data-peek/desktop exec electron-builder install-app-deps || true",
+    "setup": "pnpm install && pnpm setup:electron",
+    "setup:electron": "pnpm --filter @data-peek/desktop exec electron-builder install-app-deps",
+    "rebuild": "pnpm rebuild better-sqlite3 && pnpm setup:electron",
+    "clean": "rm -rf node_modules apps/*/node_modules packages/*/node_modules pnpm-lock.yaml",
+    "clean:install": "pnpm clean && pnpm install",
     "build:win": "pnpm --filter @data-peek/desktop build:win",
     "build:mac": "pnpm --filter @data-peek/desktop build:mac",
     "build:linux": "pnpm --filter @data-peek/desktop build:linux"
@@ -21,5 +26,16 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.22.0"
+  "packageManager": "pnpm@10.22.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "electron",
+      "better-sqlite3",
+      "esbuild",
+      "sharp",
+      "@clerk/shared",
+      "core-js",
+      "unrs-resolver"
+    ]
+  }
 }
