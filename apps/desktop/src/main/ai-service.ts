@@ -5,76 +5,39 @@
  * Uses AI SDK's generateObject for typed JSON output.
  */
 
+import { app, safeStorage } from 'electron'
+import { existsSync, unlinkSync } from 'fs'
+import { join } from 'path'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createGroq } from '@ai-sdk/groq'
 import { generateObject, generateText } from 'ai'
 import { z } from 'zod'
-import type { SchemaInfo } from '@shared/index'
+import type {
+  SchemaInfo,
+  AIProvider,
+  AIConfig,
+  AIMessage,
+  AIStructuredResponse,
+  StoredChatMessage,
+  ChatSession
+} from '@shared/index'
 
-// Types
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama'
+// Re-export types for main process consumers
+export type { AIProvider, AIConfig, AIMessage, AIStructuredResponse, StoredChatMessage, ChatSession }
 
-export interface AIConfig {
-  provider: AIProvider
-  apiKey?: string
-  model: string
-  baseUrl?: string
+/**
+ * Generate a machine-specific encryption key using Electron's safeStorage.
+ * Falls back to a static key if safeStorage is not available.
+ */
+function getEncryptionKey(): string {
+  const baseKey = 'data-peek-ai-v1'
+  if (safeStorage.isEncryptionAvailable()) {
+    return safeStorage.encryptString(baseKey).toString('base64')
+  }
+  return baseKey
 }
-
-export interface AIMessage {
-  role: 'user' | 'assistant' | 'system'
-  content: string
-}
-
-// Response types for structured output
-export type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
-
-export interface AIQueryResponse {
-  type: 'query'
-  message: string
-  sql: string
-  explanation: string
-  warning?: string
-}
-
-export interface AIChartResponse {
-  type: 'chart'
-  message: string
-  title: string
-  description?: string
-  chartType: 'bar' | 'line' | 'pie' | 'area'
-  sql: string
-  xKey: string
-  yKeys: string[]
-}
-
-export interface AIMetricResponse {
-  type: 'metric'
-  message: string
-  label: string
-  sql: string
-  format: 'number' | 'currency' | 'percent' | 'duration'
-}
-
-export interface AISchemaResponse {
-  type: 'schema'
-  message: string
-  tables: string[]
-}
-
-export interface AIMessageResponse {
-  type: 'message'
-  message: string
-}
-
-export type AIStructuredResponse =
-  | AIQueryResponse
-  | AIChartResponse
-  | AIMetricResponse
-  | AISchemaResponse
-  | AIMessageResponse
 
 // Zod schema for structured output
 const responseSchema = z.discriminatedUnion('type', [
@@ -113,61 +76,6 @@ const responseSchema = z.discriminatedUnion('type', [
   })
 ])
 
-// Stored response data types (without message field since it's in content)
-export interface StoredQueryData {
-  type: 'query'
-  sql: string
-  explanation: string
-  warning?: string
-}
-
-export interface StoredChartData {
-  type: 'chart'
-  title: string
-  description?: string
-  chartType: 'bar' | 'line' | 'pie' | 'area'
-  sql: string
-  xKey: string
-  yKeys: string[]
-}
-
-export interface StoredMetricData {
-  type: 'metric'
-  label: string
-  sql: string
-  format: 'number' | 'currency' | 'percent' | 'duration'
-}
-
-export interface StoredSchemaData {
-  type: 'schema'
-  tables: string[]
-}
-
-export type StoredResponseData =
-  | StoredQueryData
-  | StoredChartData
-  | StoredMetricData
-  | StoredSchemaData
-  | null
-
-// Stored chat message type (with serializable createdAt)
-export interface StoredChatMessage {
-  id: string
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  responseData?: StoredResponseData
-  createdAt: string // ISO string for storage
-}
-
-// Chat session type - represents a single conversation thread
-export interface ChatSession {
-  id: string
-  title: string
-  messages: StoredChatMessage[]
-  createdAt: string // ISO string
-  updatedAt: string // ISO string
-}
-
 // Chat history store structure: map of connectionId -> sessions
 type ChatHistoryStore = Record<string, ChatSession[]>
 
@@ -178,20 +86,58 @@ let aiStore: AIStoreType | null = null
 let chatStore: ChatStoreType | null = null
 
 /**
+ * Safely delete an old store file if it exists
+ */
+function deleteStoreFile(storeName: string): void {
+  try {
+    const userDataPath = app.getPath('userData')
+    const storePath = join(userDataPath, `${storeName}.json`)
+    if (existsSync(storePath)) {
+      unlinkSync(storePath)
+      console.log(`[ai-service] Deleted old store file: ${storePath}`)
+    }
+  } catch (error) {
+    console.error('[ai-service] Failed to delete store file:', error)
+  }
+}
+
+/**
+ * Create a store with migration support for encryption key changes
+ */
+async function createStoreWithMigration<T extends Record<string, unknown>>(
+  Store: typeof import('electron-store').default,
+  options: {
+    name: string
+    encryptionKey?: string
+    defaults: T
+  }
+): Promise<import('electron-store').default<T>> {
+  try {
+    return new Store<T>(options)
+  } catch (error) {
+    // If store creation fails (likely due to encryption key change), delete and recreate
+    console.warn(`[ai-service] Store "${options.name}" corrupted or encrypted with old key, recreating:`, error)
+    deleteStoreFile(options.name)
+    return new Store<T>(options)
+  }
+}
+
+/**
  * Initialize the AI config and chat stores
+ * Handles migration from old encryption key to new safeStorage-based key
  */
 export async function initAIStore(): Promise<void> {
   const Store = (await import('electron-store')).default
 
-  aiStore = new Store<{ aiConfig: AIConfig | null }>({
+  aiStore = await createStoreWithMigration<{ aiConfig: AIConfig | null }>(Store, {
     name: 'data-peek-ai-config',
-    encryptionKey: 'data-peek-ai-secure-key-v1',
+    encryptionKey: getEncryptionKey(),
     defaults: {
       aiConfig: null
     }
   })
 
-  chatStore = new Store<{ chatHistory: ChatHistoryStore }>({
+  chatStore = await createStoreWithMigration<{ chatHistory: ChatHistoryStore }>(Store, {
     name: 'data-peek-ai-chat-history',
     defaults: {
       chatHistory: {}

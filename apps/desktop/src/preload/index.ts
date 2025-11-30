@@ -15,125 +15,23 @@ import type {
   LicenseActivationRequest,
   LicenseType,
   SavedQuery,
-  SchemaInfo
+  SchemaInfo,
+  AIProvider,
+  AIConfig,
+  AIMessage,
+  AIChatResponse,
+  StoredChatMessage,
+  ChatSession
 } from '@shared/index'
 
-// AI Types
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama'
-
-export interface AIConfig {
-  provider: AIProvider
-  apiKey?: string
-  model: string
-  baseUrl?: string
-}
-
-export interface AIMessage {
-  role: 'user' | 'assistant' | 'system'
-  content: string
-}
-
-// Structured AI response types (matching main process)
-export type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
-
-export interface AIQueryResponse {
-  type: 'query'
-  message: string
-  sql: string
-  explanation: string
-  warning?: string
-}
-
-export interface AIChartResponse {
-  type: 'chart'
-  message: string
-  title: string
-  description?: string
-  chartType: 'bar' | 'line' | 'pie' | 'area'
-  sql: string
-  xKey: string
-  yKeys: string[]
-}
-
-export interface AIMetricResponse {
-  type: 'metric'
-  message: string
-  label: string
-  sql: string
-  format: 'number' | 'currency' | 'percent' | 'duration'
-}
-
-export interface AISchemaResponse {
-  type: 'schema'
-  message: string
-  tables: string[]
-}
-
-export interface AIMessageResponse {
-  type: 'message'
-  message: string
-}
-
-export type AIChatResponse =
-  | AIQueryResponse
-  | AIChartResponse
-  | AIMetricResponse
-  | AISchemaResponse
-  | AIMessageResponse
-
-// Stored response data types (without message field since it's in content)
-export interface StoredQueryData {
-  type: 'query'
-  sql: string
-  explanation: string
-  warning?: string
-}
-
-export interface StoredChartData {
-  type: 'chart'
-  title: string
-  description?: string
-  chartType: 'bar' | 'line' | 'pie' | 'area'
-  sql: string
-  xKey: string
-  yKeys: string[]
-}
-
-export interface StoredMetricData {
-  type: 'metric'
-  label: string
-  sql: string
-  format: 'number' | 'currency' | 'percent' | 'duration'
-}
-
-export interface StoredSchemaData {
-  type: 'schema'
-  tables: string[]
-}
-
-export type StoredResponseData =
-  | StoredQueryData
-  | StoredChartData
-  | StoredMetricData
-  | StoredSchemaData
-  | null
-
-// Stored chat message type (for persistence)
-export interface StoredChatMessage {
-  id: string
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  responseData?: StoredResponseData
-  createdAt: string // ISO string for storage
-}
-
-// Chat session type - represents a single conversation thread
-export interface ChatSession {
-  id: string
-  title: string
-  messages: StoredChatMessage[]
-  createdAt: string // ISO string
-  updatedAt: string // ISO string
+// Re-export AI types for renderer consumers
+export type {
+  AIProvider,
+  AIConfig,
+  AIMessage,
+  AIChatResponse,
+  StoredChatMessage,
+  ChatSession
 }
 
 // Custom APIs for renderer

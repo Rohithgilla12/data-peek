@@ -1,3 +1,182 @@
+// ============================================
+// AI Types - Shared across main and renderer
+// ============================================
+
+/**
+ * Supported AI providers
+ */
+export type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama';
+
+/**
+ * Configuration for AI service
+ */
+export interface AIConfig {
+  provider: AIProvider;
+  apiKey?: string;
+  model: string;
+  baseUrl?: string;
+}
+
+/**
+ * AI message for chat conversations
+ */
+export interface AIMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+}
+
+/**
+ * AI response types for structured output
+ */
+export type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema';
+
+/**
+ * AI response for SQL queries
+ */
+export interface AIQueryResponse {
+  type: 'query';
+  message: string;
+  sql: string;
+  explanation: string;
+  warning?: string;
+}
+
+/**
+ * AI response for chart visualizations
+ */
+export interface AIChartResponse {
+  type: 'chart';
+  message: string;
+  title: string;
+  description?: string;
+  chartType: 'bar' | 'line' | 'pie' | 'area';
+  sql: string;
+  xKey: string;
+  yKeys: string[];
+}
+
+/**
+ * AI response for metric cards
+ */
+export interface AIMetricResponse {
+  type: 'metric';
+  message: string;
+  label: string;
+  sql: string;
+  format: 'number' | 'currency' | 'percent' | 'duration';
+}
+
+/**
+ * AI response for schema explanations
+ */
+export interface AISchemaResponse {
+  type: 'schema';
+  message: string;
+  tables: string[];
+}
+
+/**
+ * AI response for general messages
+ */
+export interface AIMessageResponse {
+  type: 'message';
+  message: string;
+}
+
+/**
+ * Union type for all AI structured responses
+ */
+export type AIStructuredResponse =
+  | AIQueryResponse
+  | AIChartResponse
+  | AIMetricResponse
+  | AISchemaResponse
+  | AIMessageResponse;
+
+/**
+ * Alias for AIChatResponse (same as AIStructuredResponse)
+ */
+export type AIChatResponse = AIStructuredResponse;
+
+// Stored response data types (without message field since it's in content)
+
+/**
+ * Stored query data for persistence
+ */
+export interface StoredQueryData {
+  type: 'query';
+  sql: string;
+  explanation: string;
+  warning?: string;
+}
+
+/**
+ * Stored chart data for persistence
+ */
+export interface StoredChartData {
+  type: 'chart';
+  title: string;
+  description?: string;
+  chartType: 'bar' | 'line' | 'pie' | 'area';
+  sql: string;
+  xKey: string;
+  yKeys: string[];
+}
+
+/**
+ * Stored metric data for persistence
+ */
+export interface StoredMetricData {
+  type: 'metric';
+  label: string;
+  sql: string;
+  format: 'number' | 'currency' | 'percent' | 'duration';
+}
+
+/**
+ * Stored schema data for persistence
+ */
+export interface StoredSchemaData {
+  type: 'schema';
+  tables: string[];
+}
+
+/**
+ * Union type for stored response data
+ */
+export type StoredResponseData =
+  | StoredQueryData
+  | StoredChartData
+  | StoredMetricData
+  | StoredSchemaData
+  | null;
+
+/**
+ * Stored chat message type (with serializable createdAt)
+ */
+export interface StoredChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  responseData?: StoredResponseData;
+  createdAt: string; // ISO string for storage
+}
+
+/**
+ * Chat session type - represents a single conversation thread
+ */
+export interface ChatSession {
+  id: string;
+  title: string;
+  messages: StoredChatMessage[];
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+}
+
+// ============================================
+// Connection Types
+// ============================================
+
 export interface ConnectionConfig {
   id: string;
   name: string;

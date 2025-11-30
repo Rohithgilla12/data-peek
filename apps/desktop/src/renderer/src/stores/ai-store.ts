@@ -1,16 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { AIProvider, AIConfig } from '@shared/index'
 
-// Provider types
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama'
-
-// Configuration for AI service
-export interface AIConfig {
-  provider: AIProvider
-  apiKey?: string
-  model: string
-  baseUrl?: string
-}
+// Re-export types for convenience
+export type { AIProvider, AIConfig }
 
 // Message types
 export interface AIToolInvocation {
@@ -154,9 +147,10 @@ export const useAIStore = create<AIState>()(
 
       clearConversation: (connectionId) => {
         const { conversations } = get()
-        const { [connectionId]: removed, ...rest } = conversations
+        const newConversations = { ...conversations }
+        delete newConversations[connectionId]
 
-        set({ conversations: rest })
+        set({ conversations: newConversations })
       },
 
       getConversation: (connectionId) => {
