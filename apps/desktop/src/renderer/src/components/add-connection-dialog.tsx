@@ -76,25 +76,36 @@ function parseMSSQLConnectionString(connectionString: string): {
     for (const pair of paramPairs) {
       const [key, ...valueParts] = pair.split('=')
       if (key && valueParts.length > 0) {
-        params[key.trim().toLowerCase()] = valueParts.join('=').trim()
+        // Normalize key: remove spaces and convert to lowercase for consistent lookup
+        const normalizedKey = key.trim().replace(/\s+/g, '').toLowerCase()
+        params[normalizedKey] = valueParts.join('=').trim()
       }
     }
 
-    // Extract values from parameters
-    const database = params.database || params['initial catalog'] || defaults.database
+    // Helper to lookup parameter with multiple possible keys
+    const getParam = (...keys: string[]): string | undefined => {
+      for (const key of keys) {
+        const normalized = key.replace(/\s+/g, '').toLowerCase()
+        if (params[normalized]) return params[normalized]
+      }
+      return undefined
+    }
+
+    // Extract values from parameters (support both spaced and compact keys)
+    const database = getParam('database', 'initial catalog', 'initialcatalog') || defaults.database
 
     // Check authentication method first
-    const authentication = params.authentication?.toLowerCase()
+    const authentication = getParam('authentication')?.toLowerCase()
     const isActiveDirectoryIntegrated = authentication === 'activedirectoryintegrated'
 
     // For ActiveDirectoryIntegrated, user/password are not needed
     const user = isActiveDirectoryIntegrated
       ? ''
-      : params.user || params['user id'] || params.uid || defaults.user
-    const password = isActiveDirectoryIntegrated ? '' : params.password || params.pwd || ''
+      : getParam('user', 'user id', 'userid', 'uid') || defaults.user
+    const password = isActiveDirectoryIntegrated ? '' : getParam('password', 'pwd') || ''
 
     // Parse encryption/SSL settings
-    const encrypt = params.encrypt?.toLowerCase()
+    const encrypt = getParam('encrypt')?.toLowerCase()
     let ssl = false
     let encryptValue: boolean | undefined
     if (encrypt === 'true' || encrypt === 'yes' || encrypt === '1') {
@@ -109,8 +120,12 @@ function parseMSSQLConnectionString(connectionString: string): {
       encryptValue = ssl
     }
 
-    // Parse trustServerCertificate
-    const trustServerCert = params.trustservercertificate?.toLowerCase()
+    // Parse trustServerCertificate (support spaced variants)
+    const trustServerCert = getParam(
+      'trustservercertificate',
+      'trust server certificate',
+      'trustservercert'
+    )?.toLowerCase()
     const trustServerCertificate =
       trustServerCert === 'true' || trustServerCert === 'yes' || trustServerCert === '1'
         ? true
@@ -119,7 +134,7 @@ function parseMSSQLConnectionString(connectionString: string): {
           : undefined
 
     // Parse authentication method (already checked above, but need the original value)
-    const authenticationParam = params.authentication
+    const authenticationParam = getParam('authentication')
     let authMethod:
       | 'SQL Server Authentication'
       | 'ActiveDirectoryIntegrated'
@@ -143,13 +158,18 @@ function parseMSSQLConnectionString(connectionString: string): {
       }
     }
 
-    // Parse connection timeout
-    const connectionTimeout = params.connectiontimeout
-      ? parseInt(params.connectiontimeout, 10)
-      : undefined
+    // Parse connection timeout (support spaced variants)
+    const connectionTimeoutStr = getParam(
+      'connectiontimeout',
+      'connection timeout',
+      'connecttimeout',
+      'connect timeout'
+    )
+    const connectionTimeout = connectionTimeoutStr ? parseInt(connectionTimeoutStr, 10) : undefined
 
-    // Parse request timeout
-    const requestTimeout = params.requesttimeout ? parseInt(params.requesttimeout, 10) : undefined
+    // Parse request timeout (support spaced variants)
+    const requestTimeoutStr = getParam('requesttimeout', 'request timeout')
+    const requestTimeout = requestTimeoutStr ? parseInt(requestTimeoutStr, 10) : undefined
 
     // Build MSSQL options
     const mssqlOptions: import('@shared/index').MSSQLConnectionOptions = {}

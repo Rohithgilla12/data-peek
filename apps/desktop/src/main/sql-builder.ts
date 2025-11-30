@@ -12,6 +12,7 @@ import type {
   ParameterizedQuery,
   DatabaseType
 } from '@data-peek/shared'
+import { quoteIdentifier as quoteIdentifierUtil } from './sql-utils'
 
 /**
  * SQL dialect configuration
@@ -52,16 +53,7 @@ const DIALECTS: Record<DatabaseType, SqlDialect> = {
  * Quote an identifier (table name, column name) for the given dialect
  */
 function quoteIdentifier(name: string, dialect: SqlDialect): string {
-  const q = dialect.identifierQuote
-  // MSSQL uses square brackets [ and ]
-  if (q === '[') {
-    // Escape ] by doubling it
-    const escaped = name.replace(/\]/g, ']]')
-    return `[${escaped}]`
-  }
-  // For other dialects, escape quote character by doubling it
-  const escaped = name.replace(new RegExp(q, 'g'), q + q)
-  return `${q}${escaped}${q}`
+  return quoteIdentifierUtil(name, dialect.identifierQuote)
 }
 
 /**

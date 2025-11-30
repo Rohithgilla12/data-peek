@@ -242,7 +242,9 @@ export const useTabStore = create<TabState>()(
           formattedValue = String(value)
         }
 
-        const whereClause = `WHERE "${column}" = ${formattedValue}`
+        // Use bracket quoting for MSSQL, double quotes for others
+        const quotedColumn = dbType === 'mssql' ? `[${column}]` : `"${column}"`
+        const whereClause = `WHERE ${quotedColumn} = ${formattedValue}`
         const query = buildSelectQuery(tableRef, dbType, { where: whereClause, limit: 100 })
 
         const newTab: QueryTab = {

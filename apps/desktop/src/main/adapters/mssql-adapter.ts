@@ -213,9 +213,10 @@ export class MSSQLAdapter implements DatabaseAdapter {
             dataType = resolveMSSQLType(dataTypeID)
           } else if (meta.type?.name) {
             dataType = meta.type.name.toLowerCase()
-            dataTypeID = Object.entries(MSSQL_TYPE_MAP).find(
+            const match = Object.entries(MSSQL_TYPE_MAP).find(
               ([, name]) => name.toLowerCase() === dataType
-            )?.[0] as number | undefined
+            )
+            dataTypeID = match ? Number(match[0]) : undefined
           } else {
             const inferred = inferTypeFromValue(rows[0]?.[meta.name])
             dataType = inferred.dataType
