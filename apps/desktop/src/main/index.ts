@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -195,18 +195,14 @@ app.whenReady().then(async () => {
   ipcMain.handle(
     'db:query',
     async (_, { config, query }: { config: ConnectionConfig; query: string }) => {
-      console.log('[main:db:query] Received query request')
-      console.log('[main:db:query] Config:', { ...config, password: '***' })
-      console.log('[main:db:query] Query:', query)
+      console.error('[main:db:query] Received query request for', config.dbType)
 
       try {
         const adapter = getAdapter(config)
-        console.log('[main:db:query] Connecting...')
         const start = Date.now()
         const result = await adapter.query(config, query)
         const duration = Date.now() - start
-        console.log('[main:db:query] Query completed in', duration, 'ms')
-        console.log('[main:db:query] Rows:', result.rowCount)
+        console.error('[main:db:query] Completed in', duration, 'ms, rows:', result.rowCount)
 
         return {
           success: true,
@@ -299,9 +295,7 @@ app.whenReady().then(async () => {
   ipcMain.handle(
     'db:execute',
     async (_, { config, batch }: { config: ConnectionConfig; batch: EditBatch }) => {
-      console.log('[main:db:execute] Received edit batch')
-      console.log('[main:db:execute] Context:', batch.context)
-      console.log('[main:db:execute] Operations count:', batch.operations.length)
+      console.error('[main:db:execute] Received', batch.operations.length, 'operations')
 
       const adapter = getAdapter(config)
       const dbType = config.dbType || 'postgresql'
@@ -394,9 +388,7 @@ app.whenReady().then(async () => {
       _,
       { config, query, analyze }: { config: ConnectionConfig; query: string; analyze: boolean }
     ) => {
-      console.log('[main:db:explain] Received explain request')
-      console.log('[main:db:explain] Query:', query)
-      console.log('[main:db:explain] Analyze:', analyze)
+      console.error('[main:db:explain] Received explain request, analyze:', analyze)
 
       try {
         const adapter = getAdapter(config)
@@ -425,7 +417,7 @@ app.whenReady().then(async () => {
       _,
       { config, definition }: { config: ConnectionConfig; definition: TableDefinition }
     ) => {
-      console.log('[main:db:create-table] Creating table:', definition.schema, definition.name)
+      console.error('[main:db:create-table] Creating table:', definition.schema, definition.name)
 
       // Validate table definition
       const validation = validateTableDefinition(definition)
@@ -449,7 +441,7 @@ app.whenReady().then(async () => {
         const { sql } = buildCreateTable(definition, dbType)
         result.executedSql.push(sql)
 
-        console.log('[main:db:create-table] Executing:', sql)
+        console.error('[main:db:create-table] Executing DDL')
 
         // Execute each statement separately (CREATE TABLE, COMMENT, indexes)
         const statements = sql.split(/;\s*\n\n/).filter((s) => s.trim())
@@ -475,7 +467,7 @@ app.whenReady().then(async () => {
   ipcMain.handle(
     'db:alter-table',
     async (_, { config, batch }: { config: ConnectionConfig; batch: AlterTableBatch }) => {
-      console.log('[main:db:alter-table] Altering table:', batch.schema, batch.table)
+      console.error('[main:db:alter-table] Altering table:', batch.schema, batch.table)
 
       const adapter = getAdapter(config)
       const dbType = config.dbType || 'postgresql'
@@ -491,7 +483,7 @@ app.whenReady().then(async () => {
         const statements = queries.map((q) => ({ sql: q.sql, params: [] }))
         result.executedSql = queries.map((q) => q.sql)
 
-        console.log('[main:db:alter-table] Executing:', result.executedSql)
+        console.error('[main:db:alter-table] Executing', result.executedSql.length, 'statements')
 
         await adapter.executeTransaction(config, statements)
 
@@ -518,14 +510,14 @@ app.whenReady().then(async () => {
         cascade
       }: { config: ConnectionConfig; schema: string; table: string; cascade?: boolean }
     ) => {
-      console.log('[main:db:drop-table] Dropping table:', schema, table)
+      console.error('[main:db:drop-table] Dropping table:', schema, table)
 
       const adapter = getAdapter(config)
       const dbType = config.dbType || 'postgresql'
 
       try {
         const { sql } = buildDropTable(schema, table, cascade, dbType)
-        console.log('[main:db:drop-table] Executing:', sql)
+        console.error('[main:db:drop-table] Executing DROP')
 
         await adapter.executeTransaction(config, [{ sql, params: [] }])
 
@@ -548,7 +540,7 @@ app.whenReady().then(async () => {
       _,
       { config, schema, table }: { config: ConnectionConfig; schema: string; table: string }
     ) => {
-      console.log('[main:db:get-table-ddl] Getting DDL for:', schema, table)
+      console.error('[main:db:get-table-ddl] Getting DDL for:', schema, table)
 
       try {
         const adapter = getAdapter(config)
@@ -564,7 +556,7 @@ app.whenReady().then(async () => {
 
   // Get available sequences
   ipcMain.handle('db:get-sequences', async (_, config: ConnectionConfig) => {
-    console.log('[main:db:get-sequences] Fetching sequences')
+    console.error('[main:db:get-sequences] Fetching sequences')
 
     try {
       const adapter = getAdapter(config)
@@ -579,7 +571,7 @@ app.whenReady().then(async () => {
 
   // Get custom types (enums, composites, etc.)
   ipcMain.handle('db:get-types', async (_, config: ConnectionConfig) => {
-    console.log('[main:db:get-types] Fetching custom types')
+    console.error('[main:db:get-types] Fetching custom types')
 
     try {
       const adapter = getAdapter(config)
@@ -625,7 +617,7 @@ app.whenReady().then(async () => {
 
   // Activate a license
   ipcMain.handle('license:activate', async (_, request: LicenseActivationRequest) => {
-    console.log('[main:license:activate] Activating license for:', request.email)
+    console.error('[main:license:activate] Activating license')
     try {
       const result = await activateLicense(request.key, request.email)
       if (result.success) {
@@ -642,7 +634,7 @@ app.whenReady().then(async () => {
 
   // Deactivate the current license
   ipcMain.handle('license:deactivate', async () => {
-    console.log('[main:license:deactivate] Deactivating license')
+    console.error('[main:license:deactivate] Deactivating license')
     try {
       const result = await deactivateLicense()
       return { success: result.success, error: result.error }
@@ -665,7 +657,7 @@ app.whenReady().then(async () => {
         daysValid
       }: { key: string; email: string; type?: 'individual' | 'team'; daysValid?: number }
     ) => {
-      console.log('[main:license:activate-offline] Offline activation for:', email)
+      console.error('[main:license:activate-offline] Offline activation')
       try {
         activateLicenseOffline(key, email, type, daysValid)
         const status = await checkLicense()
@@ -675,6 +667,24 @@ app.whenReady().then(async () => {
         const errorMessage = error instanceof Error ? error.message : String(error)
         return { success: false, error: errorMessage }
       }
+    }
+  )
+
+  // ============================================
+  // File Dialog (for SQLite file picker)
+  // ============================================
+
+  ipcMain.handle(
+    'dialog:show-open',
+    async (
+      _,
+      options: {
+        properties?: Array<'openFile' | 'openDirectory' | 'multiSelections'>
+        filters?: Array<{ name: string; extensions: string[] }>
+      }
+    ) => {
+      const result = await dialog.showOpenDialog(options)
+      return result
     }
   )
 

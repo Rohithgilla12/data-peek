@@ -95,6 +95,7 @@ export function AddConnectionDialog({
   const [user, setUser] = useState('postgres')
   const [password, setPassword] = useState('')
   const [ssl, setSsl] = useState(false)
+  const [filePath, setFilePath] = useState('')
 
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -181,17 +182,34 @@ export function AddConnectionDialog({
     onOpenChange(false)
   }
 
-  const getConnectionConfig = () => ({
-    id: editConnection?.id || crypto.randomUUID(),
-    name: name || `${host}/${database}`,
-    host,
-    port: parseInt(port, 10),
-    database,
-    user,
-    password: password || undefined,
-    ssl,
-    dbType
-  })
+  const getConnectionConfig = () => {
+    if (dbType === 'sqlite') {
+      return {
+        id: editConnection?.id || crypto.randomUUID(),
+        name: name || filePath.split('/').pop() || 'SQLite Database',
+        host: '',
+        port: 0,
+        database: filePath,
+        user: '',
+        password: undefined,
+        ssl: false,
+        dbType,
+        filePath
+      }
+    }
+
+    return {
+      id: editConnection?.id || crypto.randomUUID(),
+      name: name || `${host}/${database}`,
+      host,
+      port: parseInt(port, 10),
+      database,
+      user,
+      password: password || undefined,
+      ssl,
+      dbType
+    }
+  }
 
   const handleTestConnection = async () => {
     setIsTesting(true)
@@ -248,9 +266,11 @@ export function AddConnectionDialog({
   }
 
   const isValid =
-    inputMode === 'connection-string'
-      ? connectionString && !parseError && host && port && database && user
-      : host && port && database && user
+    dbType === 'sqlite'
+      ? !!filePath
+      : inputMode === 'connection-string'
+        ? connectionString && !parseError && host && port && database && user
+        : host && port && database && user
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -296,11 +316,23 @@ export function AddConnectionDialog({
                 <MySQLIcon className="size-4" />
                 MySQL
               </button>
+              <button
+                type="button"
+                onClick={() => handleDbTypeChange('sqlite')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  dbType === 'sqlite'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                SQLite
+              </button>
             </div>
           </div>
 
-          {/* Input Mode Toggle */}
-          <div className="flex rounded-lg border bg-muted p-1">
+          {/* Input Mode Toggle - hide for SQLite */}
+          {dbType !== 'sqlite' && (
+            <div className="flex rounded-lg border bg-muted p-1">
             <button
               type="button"
               onClick={() => setInputMode('manual')}
@@ -326,6 +358,7 @@ export function AddConnectionDialog({
               Connection String
             </button>
           </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <label htmlFor="name" className="text-sm font-medium">
@@ -338,11 +371,47 @@ export function AddConnectionDialog({
               onChange={(e) => setName(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Optional. Defaults to host/database if empty.
+              Optional. Defaults to {dbType === 'sqlite' ? 'file name' : 'host/database'} if empty.
             </p>
           </div>
 
-          {inputMode === 'connection-string' ? (
+          {dbType === 'sqlite' ? (
+            <div className="flex flex-col gap-2">
+              <label htmlFor="file-path" className="text-sm font-medium">
+                Database File
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  id="file-path"
+                  placeholder="/path/to/database.sqlite"
+                  value={filePath}
+                  onChange={(e) => setFilePath(e.target.value)}
+                  className="flex-1 font-mono text-sm"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    const result = await window.api.showOpenDialog({
+                      properties: ['openFile'],
+                      filters: [
+                        { name: 'SQLite Database', extensions: ['sqlite', 'sqlite3', 'db', 'db3'] },
+                        { name: 'All Files', extensions: ['*'] }
+                      ]
+                    })
+                    if (result && result.filePaths && result.filePaths.length > 0) {
+                      setFilePath(result.filePaths[0])
+                    }
+                  }}
+                >
+                  Browse
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Select a SQLite database file (.sqlite, .db, .sqlite3)
+              </p>
+            </div>
+          ) : inputMode === 'connection-string' ? (
             <div className="flex flex-col gap-2">
               <label htmlFor="connection-string" className="text-sm font-medium">
                 Connection String

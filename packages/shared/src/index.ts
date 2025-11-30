@@ -187,6 +187,8 @@ export interface ConnectionConfig {
   password?: string;
   ssl?: boolean;
   dbType: DatabaseType;
+  // SQLite-specific
+  filePath?: string;
 }
 
 /**
