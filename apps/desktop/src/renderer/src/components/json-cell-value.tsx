@@ -319,7 +319,10 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
         <Tooltip>
           <TooltipTrigger asChild>
             <button
-              onClick={() => setIsOpen(true)}
+              onClick={(e) => {
+                e.stopPropagation()
+                setIsOpen(true)
+              }}
               className="flex items-center gap-1.5 text-left hover:bg-accent/50 px-1.5 py-0.5 -mx-1 rounded transition-colors group"
             >
               <Braces className="size-3.5 text-amber-500 shrink-0" />

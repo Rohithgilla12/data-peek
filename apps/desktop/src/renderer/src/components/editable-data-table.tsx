@@ -407,24 +407,23 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             )
           }
 
-          // Non-edit mode rendering (existing behavior)
-          // Double-click to enter edit mode
-          const handleDoubleClick = () => {
-            if (canEdit && editContext) {
-              enterEditMode(tabId, editContext)
-              // Start editing this cell after entering edit mode
-              setTimeout(() => startCellEdit(tabId, rowIndex, col.name), 0)
-            }
+          // Non-edit mode rendering
+          // Single-click to enter edit mode for simple cells
+          // Double-click for cells with special interactive elements (JSON viewer, FK navigation)
+          const handleActivate = () => {
+            if (!canEdit || !editContext) return
+            enterEditMode(tabId, editContext)
+            setTimeout(() => startCellEdit(tabId, rowIndex, col.name), 0)
           }
 
           if (value === null || value === undefined) {
             return (
               <span
                 className={cn(
-                  'text-muted-foreground/50 italic',
-                  canEdit && 'cursor-pointer'
+                  'text-muted-foreground/50 italic px-1 py-0.5 rounded',
+                  canEdit && 'cursor-pointer hover:bg-accent/50'
                 )}
-                onDoubleClick={handleDoubleClick}
+                onClick={handleActivate}
               >
                 NULL
               </span>
@@ -432,19 +431,29 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           }
 
           // Handle JSON/JSONB types specially
+          // Single-click opens viewer, double-click on cell background enters edit mode
           const lowerType = col.dataType.toLowerCase()
           if (lowerType.includes('json')) {
             return (
-              <div onDoubleClick={handleDoubleClick} className={canEdit ? 'cursor-pointer' : ''}>
+              <div
+                onDoubleClick={handleActivate}
+                className={cn('flex items-center', canEdit && 'cursor-pointer')}
+                title={canEdit ? 'Double-click to edit' : undefined}
+              >
                 <JsonCellValue value={value} columnName={col.name} />
               </div>
             )
           }
 
           // Handle Foreign Key columns
+          // Single-click navigates, double-click on cell background enters edit mode
           if (col.foreignKey) {
             return (
-              <div onDoubleClick={handleDoubleClick} className={canEdit ? 'cursor-pointer' : ''}>
+              <div
+                onDoubleClick={handleActivate}
+                className={cn('flex items-center', canEdit && 'cursor-pointer')}
+                title={canEdit ? 'Double-click to edit' : undefined}
+              >
                 <FKCellValue
                   value={value}
                   foreignKey={col.foreignKey}
@@ -460,8 +469,11 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
 
           return (
             <span
-              className={cn('truncate max-w-[300px] block', canEdit && 'cursor-pointer')}
-              onDoubleClick={handleDoubleClick}
+              className={cn(
+                'truncate max-w-[300px] block px-1 py-0.5 rounded',
+                canEdit && 'cursor-pointer hover:bg-accent/50'
+              )}
+              onClick={handleActivate}
             >
               {isLong ? stringValue.substring(0, 50) + '...' : stringValue}
             </span>
