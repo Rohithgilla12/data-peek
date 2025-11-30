@@ -53,7 +53,7 @@ const DIALECTS: Record<DatabaseType, DdlDialect> = {
   mssql: {
     identifierQuote: '[',
     stringQuote: "'",
-    supportsIfNotExists: true,
+    supportsIfNotExists: false,
     supportsIfExists: true,
     supportsConcurrent: false
   }
