@@ -151,7 +151,7 @@ export function SchemaExplorer() {
     }
 
     // Create a new table preview tab
-    createTablePreviewTab(connection.id, schemaName, table.name)
+    createTablePreviewTab(connection.id, schemaName, table.name, connection.dbType)
   }
 
   const handleRefresh = () => {
