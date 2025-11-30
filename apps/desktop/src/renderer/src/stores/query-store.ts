@@ -1,4 +1,5 @@
 import type { QueryResult as IpcQueryResult } from '@data-peek/shared'
+import { buildTableRef } from '@data-peek/shared'
 import { create } from 'zustand'
 import type { Connection, Table } from './connection-store'
 
@@ -249,7 +250,7 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   setError: (error) => set({ error, result: null }),
 
   loadTableData: (schemaName, table, connection) => {
-    const tableRef = schemaName === 'public' ? table.name : `${schemaName}.${table.name}`
+    const tableRef = buildTableRef(schemaName, table.name, connection.dbType)
     const query = `SELECT * FROM ${tableRef} LIMIT 100;`
 
     set({ currentQuery: query })

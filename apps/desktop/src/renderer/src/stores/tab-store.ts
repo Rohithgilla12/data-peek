@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { buildTableRef, quoteIdentifier, type DatabaseType } from '@shared/index'
 import type { QueryResult } from './query-store'
 
 // Tab type discriminator
@@ -78,13 +79,19 @@ interface TabState {
 
   // Actions
   createQueryTab: (connectionId: string | null, initialQuery?: string) => string
-  createTablePreviewTab: (connectionId: string, schemaName: string, tableName: string) => string
+  createTablePreviewTab: (
+    connectionId: string,
+    schemaName: string,
+    tableName: string,
+    dbType: DatabaseType
+  ) => string
   createForeignKeyTab: (
     connectionId: string,
     schema: string,
     table: string,
     column: string,
-    value: unknown
+    value: unknown,
+    dbType: DatabaseType
   ) => string
   createERDTab: (connectionId: string) => string
   createTableDesignerTab: (connectionId: string, schemaName: string, tableName?: string) => string
@@ -170,13 +177,12 @@ export const useTabStore = create<TabState>()(
         return id
       },
 
-      createTablePreviewTab: (connectionId, schemaName, tableName) => {
+      createTablePreviewTab: (connectionId, schemaName, tableName, dbType) => {
         // Always create a new tab (no deduplication per user preference)
         const id = crypto.randomUUID()
         const tabs = get().tabs
         const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.order)) : -1
-        const tableRef =
-          schemaName === 'public' ? `"${tableName}"` : `"${schemaName}"."${tableName}"`
+        const tableRef = buildTableRef(schemaName, tableName, dbType)
         const query = `SELECT * FROM ${tableRef} LIMIT 100;`
 
         const newTab: TablePreviewTab = {
@@ -206,11 +212,11 @@ export const useTabStore = create<TabState>()(
         return id
       },
 
-      createForeignKeyTab: (connectionId, schema, table, column, value) => {
+      createForeignKeyTab: (connectionId, schema, table, column, value, dbType) => {
         const id = crypto.randomUUID()
         const tabs = get().tabs
         const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.order)) : -1
-        const tableRef = schema === 'public' ? `"${table}"` : `"${schema}"."${table}"`
+        const tableRef = buildTableRef(schema, table, dbType)
 
         // Format value for SQL - handle strings, numbers, nulls
         let formattedValue: string
@@ -223,7 +229,7 @@ export const useTabStore = create<TabState>()(
           formattedValue = String(value)
         }
 
-        const query = `SELECT * FROM ${tableRef} WHERE "${column}" = ${formattedValue} LIMIT 100;`
+        const query = `SELECT * FROM ${tableRef} WHERE ${quoteIdentifier(column, dbType)} = ${formattedValue} LIMIT 100;`
 
         const newTab: QueryTab = {
           id,

@@ -398,7 +398,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         fk.referencedSchema,
         fk.referencedTable,
         fk.referencedColumn,
-        value
+        value,
+        tabConnection.dbType
       )
     },
     [tabConnection, createForeignKeyTab]

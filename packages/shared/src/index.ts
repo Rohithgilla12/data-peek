@@ -656,3 +656,64 @@ export interface SavedQuery {
   /** When the query was last updated (Unix timestamp) */
   updatedAt: number;
 }
+
+// ============================================
+// SQL Identifier Quoting Utilities
+// ============================================
+
+/**
+ * Get the identifier quote character for a database type
+ * PostgreSQL/SQLite use double quotes, MySQL uses backticks
+ */
+export function getIdentifierQuote(dbType: DatabaseType): string {
+  return dbType === 'mysql' ? '`' : '"';
+}
+
+/**
+ * Quote a SQL identifier (table name, column name, schema name) for the given database type.
+ * Handles escaping of embedded quote characters by doubling them.
+ *
+ * @param name - The identifier to quote
+ * @param dbType - The database type (postgresql, mysql, sqlite)
+ * @returns The properly quoted identifier
+ *
+ * @example
+ * quoteIdentifier('users', 'postgresql') // => "users"
+ * quoteIdentifier('User"Name', 'postgresql') // => "User""Name"
+ * quoteIdentifier('users', 'mysql') // => `users`
+ * quoteIdentifier('User`Name', 'mysql') // => `User``Name`
+ */
+export function quoteIdentifier(name: string, dbType: DatabaseType): string {
+  const q = getIdentifierQuote(dbType);
+  // Escape any existing quote characters by doubling them
+  const escaped = name.replace(new RegExp(q, 'g'), q + q);
+  return `${q}${escaped}${q}`;
+}
+
+/**
+ * Build a fully qualified table reference with optional schema.
+ * Omits schema prefix for default schemas (public for PostgreSQL, main for SQLite).
+ *
+ * @param schema - The schema name
+ * @param table - The table name
+ * @param dbType - The database type
+ * @returns Quoted table reference like "table" or "schema"."table"
+ *
+ * @example
+ * buildTableRef('public', 'users', 'postgresql') // => "users"
+ * buildTableRef('myschema', 'users', 'postgresql') // => "myschema"."users"
+ * buildTableRef('main', 'users', 'mysql') // => `users`
+ */
+export function buildTableRef(
+  schema: string,
+  table: string,
+  dbType: DatabaseType
+): string {
+  const quotedTable = quoteIdentifier(table, dbType);
+  // PostgreSQL uses 'public' as default, SQLite uses 'main'
+  // MySQL doesn't have schemas in the same way (uses databases)
+  if (schema === 'public' || schema === 'main') {
+    return quotedTable;
+  }
+  return `${quoteIdentifier(schema, dbType)}.${quotedTable}`;
+}
