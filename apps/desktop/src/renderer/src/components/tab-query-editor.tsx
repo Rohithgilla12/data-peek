@@ -396,7 +396,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       }
 
       const whereClause = `WHERE "${fk.referencedColumn}" = ${formattedValue}`
-      const query = buildSelectQuery(tableRef, tabConnection.dbType, { where: whereClause, limit: 1 })
+      const query = buildSelectQuery(tableRef, tabConnection.dbType, {
+        where: whereClause,
+        limit: 1
+      })
 
       try {
         const response = await window.api.db.query(tabConnection, query)

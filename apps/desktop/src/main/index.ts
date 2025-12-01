@@ -49,6 +49,7 @@ import {
   type AIMessage,
   type StoredChatMessage
 } from './ai-service'
+import { initAutoUpdater } from './updater'
 import type { LicenseActivationRequest, SchemaInfo } from '@shared/index'
 
 import { DpSecureStorage } from './storage'
@@ -983,6 +984,9 @@ app.whenReady().then(async () => {
   )
 
   await createWindow()
+
+  // Initialize auto-updater (only runs in production)
+  initAutoUpdater()
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the

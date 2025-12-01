@@ -19,4 +19,3 @@ export function quoteIdentifier(name: string, identifierQuote: string): string {
   const escaped = name.replace(new RegExp(identifierQuote, 'g'), identifierQuote + identifierQuote)
   return `${identifierQuote}${escaped}${identifierQuote}`
 }
-

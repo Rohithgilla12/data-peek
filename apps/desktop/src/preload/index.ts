@@ -25,14 +25,7 @@ import type {
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
-export type {
-  AIProvider,
-  AIConfig,
-  AIMessage,
-  AIChatResponse,
-  StoredChatMessage,
-  ChatSession
-}
+export type { AIProvider, AIConfig, AIMessage, AIChatResponse, StoredChatMessage, ChatSession }
 
 // Custom APIs for renderer
 const api = {

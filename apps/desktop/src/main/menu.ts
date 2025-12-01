@@ -1,4 +1,5 @@
 import { app, Menu, shell, BrowserWindow } from 'electron'
+import { checkForUpdates } from './updater'
 
 const isMac = process.platform === 'darwin'
 
@@ -11,6 +12,12 @@ export function createMenu(): void {
             label: app.name,
             submenu: [
               { role: 'about' as const },
+              {
+                label: 'Check for Updates...',
+                click: (): void => {
+                  checkForUpdates()
+                }
+              },
               { type: 'separator' as const },
               { role: 'services' as const },
               { type: 'separator' as const },
@@ -189,7 +196,19 @@ export function createMenu(): void {
           click: async (): Promise<void> => {
             await shell.openExternal('https://github.com/Rohithgilla12/data-peek/issues')
           }
-        }
+        },
+        // Check for Updates (Windows/Linux only - macOS has it in app menu)
+        ...(!isMac
+          ? [
+              { type: 'separator' as const },
+              {
+                label: 'Check for Updates...',
+                click: (): void => {
+                  checkForUpdates()
+                }
+              }
+            ]
+          : [])
       ]
     }
   ]

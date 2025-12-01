@@ -33,12 +33,7 @@ interface QueryResultState {
   duration: number
 }
 
-export function AIMessage({
-  message,
-  onOpenInTab,
-  connection,
-  schemas = []
-}: AIMessageProps) {
+export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AIMessageProps) {
   const [copiedContent, setCopiedContent] = React.useState(false)
   const [chartData, setChartData] = React.useState<Record<string, unknown>[] | null>(null)
   const [chartLoading, setChartLoading] = React.useState(false)

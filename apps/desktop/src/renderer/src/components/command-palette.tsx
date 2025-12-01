@@ -200,7 +200,12 @@ export function CommandPalette({ isOpen, onClose, commands }: CommandPaletteProp
                 <div key={category} className="mb-2 last:mb-0">
                   {/* Category header */}
                   <div className="flex items-center gap-2 px-2 py-1.5">
-                    <span className={cn('opacity-60', categoryConfig[category]?.color || 'text-zinc-400')}>
+                    <span
+                      className={cn(
+                        'opacity-60',
+                        categoryConfig[category]?.color || 'text-zinc-400'
+                      )}
+                    >
                       {categoryConfig[category]?.icon}
                     </span>
                     <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">

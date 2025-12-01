@@ -226,7 +226,10 @@ interface DataPeekApi {
     clearChatHistory: (connectionId: string) => Promise<IpcResponse<void>>
     // Session-based API (new)
     getSessions: (connectionId: string) => Promise<IpcResponse<ChatSession[]>>
-    getSession: (connectionId: string, sessionId: string) => Promise<IpcResponse<ChatSession | null>>
+    getSession: (
+      connectionId: string,
+      sessionId: string
+    ) => Promise<IpcResponse<ChatSession | null>>
     createSession: (connectionId: string, title?: string) => Promise<IpcResponse<ChatSession>>
     updateSession: (
       connectionId: string,

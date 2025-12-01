@@ -47,4 +47,3 @@ export function buildSelectQuery(
     return parts.join(' ') + ';'
   }
 }
-

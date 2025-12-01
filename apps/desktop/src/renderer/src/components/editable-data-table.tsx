@@ -484,7 +484,27 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     })
 
     return cols
-  }, [columnDefs, isEditMode, tabId, tabEdit, onForeignKeyClick, onForeignKeyOpenTab, canEdit, editContext, enterEditMode, startCellEdit])
+  }, [
+    isEditMode,
+    columnDefs,
+    isRowMarkedForDeletion,
+    tabId,
+    unmarkRowForDeletion,
+    markRowForDeletion,
+    isCellModified,
+    getModifiedCellValue,
+    tabEdit?.editingCell?.rowIndex,
+    tabEdit?.editingCell?.columnName,
+    canEdit,
+    startCellEdit,
+    updateCellValue,
+    cancelCellEdit,
+    revertCellChange,
+    editContext,
+    enterEditMode,
+    onForeignKeyClick,
+    onForeignKeyOpenTab
+  ])
 
   const table = useReactTable({
     data,

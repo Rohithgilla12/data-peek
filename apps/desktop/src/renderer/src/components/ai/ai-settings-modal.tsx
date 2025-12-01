@@ -56,7 +56,12 @@ const PROVIDERS = [
     keyPrefix: 'sk-ant-',
     keyUrl: 'https://console.anthropic.com/settings/keys',
     models: [
-      { id: 'claude-opus-4-5-20251124', name: 'Claude Opus 4.5', recommended: true, description: 'Best for coding' },
+      {
+        id: 'claude-opus-4-5-20251124',
+        name: 'Claude Opus 4.5',
+        recommended: true,
+        description: 'Best for coding'
+      },
       { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', description: 'Balanced' },
       { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
       { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', description: 'Faster' }
@@ -142,7 +147,10 @@ export function AISettingsModal({
   // Reset form when provider changes
   React.useEffect(() => {
     setApiKey('')
-    setModel(selectedProvider.models.find((m) => 'recommended' in m && m.recommended)?.id || selectedProvider.models[0].id)
+    setModel(
+      selectedProvider.models.find((m) => 'recommended' in m && m.recommended)?.id ||
+        selectedProvider.models[0].id
+    )
     setBaseUrl(provider === 'ollama' ? 'http://localhost:11434' : '')
     setValidationResult(null)
   }, [provider])

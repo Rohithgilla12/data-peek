@@ -104,7 +104,11 @@ function formatValue(value: unknown, type: 'number' | 'date' | 'string'): string
 }
 
 // Helper to suggest best chart type based on data
-function suggestChartType(data: Record<string, unknown>[], xKey: string, yKeys: string[]): ChartType {
+function suggestChartType(
+  data: Record<string, unknown>[],
+  xKey: string,
+  yKeys: string[]
+): ChartType {
   if (data.length === 0) return 'bar'
 
   const xValues = data.map((d) => d[xKey])
@@ -272,16 +276,16 @@ export function AIChart({ chartData, className }: AIChartProps) {
               />
               <ChartTooltip
                 content={
-                  <ChartTooltipContent
-                    labelFormatter={(label) => formatValue(label, xDataType)}
-                  />
+                  <ChartTooltipContent labelFormatter={(label) => formatValue(label, xDataType)} />
                 }
               />
               {yKeys.length > 1 && (
                 <ChartLegend
                   content={({ payload, verticalAlign }) => (
                     <ChartLegendContent
-                      payload={payload as { value?: string; dataKey?: string | number; color?: string }[]}
+                      payload={
+                        payload as { value?: string; dataKey?: string | number; color?: string }[]
+                      }
                       verticalAlign={verticalAlign}
                     />
                   )}
@@ -316,16 +320,16 @@ export function AIChart({ chartData, className }: AIChartProps) {
               />
               <ChartTooltip
                 content={
-                  <ChartTooltipContent
-                    labelFormatter={(label) => formatValue(label, xDataType)}
-                  />
+                  <ChartTooltipContent labelFormatter={(label) => formatValue(label, xDataType)} />
                 }
               />
               {yKeys.length > 1 && (
                 <ChartLegend
                   content={({ payload, verticalAlign }) => (
                     <ChartLegendContent
-                      payload={payload as { value?: string; dataKey?: string | number; color?: string }[]}
+                      payload={
+                        payload as { value?: string; dataKey?: string | number; color?: string }[]
+                      }
                       verticalAlign={verticalAlign}
                     />
                   )}
@@ -349,16 +353,8 @@ export function AIChart({ chartData, className }: AIChartProps) {
               <defs>
                 {yKeys.map((key, index) => (
                   <linearGradient key={key} id={`gradient-${key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop
-                      offset="5%"
-                      stopColor={colors[index % colors.length]}
-                      stopOpacity={0.3}
-                    />
-                    <stop
-                      offset="95%"
-                      stopColor={colors[index % colors.length]}
-                      stopOpacity={0}
-                    />
+                    <stop offset="5%" stopColor={colors[index % colors.length]} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={colors[index % colors.length]} stopOpacity={0} />
                   </linearGradient>
                 ))}
               </defs>
@@ -378,16 +374,16 @@ export function AIChart({ chartData, className }: AIChartProps) {
               />
               <ChartTooltip
                 content={
-                  <ChartTooltipContent
-                    labelFormatter={(label) => formatValue(label, xDataType)}
-                  />
+                  <ChartTooltipContent labelFormatter={(label) => formatValue(label, xDataType)} />
                 }
               />
               {yKeys.length > 1 && (
                 <ChartLegend
                   content={({ payload, verticalAlign }) => (
                     <ChartLegendContent
-                      payload={payload as { value?: string; dataKey?: string | number; color?: string }[]}
+                      payload={
+                        payload as { value?: string; dataKey?: string | number; color?: string }[]
+                      }
                       verticalAlign={verticalAlign}
                     />
                   )}
@@ -446,18 +442,30 @@ export function AIChart({ chartData, className }: AIChartProps) {
           <div className="flex items-center justify-between gap-4 text-[10px]">
             <div className="flex items-center gap-4">
               <span className="text-muted-foreground">
-                Sum: <span className="font-medium text-foreground">{formatValue(stats.sum, 'number')}</span>
+                Sum:{' '}
+                <span className="font-medium text-foreground">
+                  {formatValue(stats.sum, 'number')}
+                </span>
               </span>
               <span className="text-muted-foreground">
-                Avg: <span className="font-medium text-foreground">{formatValue(stats.avg, 'number')}</span>
+                Avg:{' '}
+                <span className="font-medium text-foreground">
+                  {formatValue(stats.avg, 'number')}
+                </span>
               </span>
             </div>
             <div className="flex items-center gap-4">
               <span className="text-muted-foreground">
-                Min: <span className="font-medium text-foreground">{formatValue(stats.min, 'number')}</span>
+                Min:{' '}
+                <span className="font-medium text-foreground">
+                  {formatValue(stats.min, 'number')}
+                </span>
               </span>
               <span className="text-muted-foreground">
-                Max: <span className="font-medium text-foreground">{formatValue(stats.max, 'number')}</span>
+                Max:{' '}
+                <span className="font-medium text-foreground">
+                  {formatValue(stats.max, 'number')}
+                </span>
               </span>
             </div>
           </div>

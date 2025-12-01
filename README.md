@@ -40,21 +40,17 @@ xattr -cr /Applications/data-peek.app
 
 This only needs to be done once. Proper code signing is coming soon!
 
-### macOS: "App is damaged" Fix
+### Linux: Auto-Updates
 
-Since the app isn't notarized with Apple yet, macOS Gatekeeper may show a warning. To fix:
+Auto-updates only work with the **AppImage** format. If you installed via `.deb` or `.tar.gz`, you'll need to manually download new releases from the [Releases page](https://github.com/Rohithgilla12/data-peek/releases).
 
-**Option 1: Terminal command**
-```bash
-xattr -cr /Applications/data-peek.app
-```
+| Format | Auto-Update |
+|--------|-------------|
+| AppImage | Yes |
+| .deb | No (manual update) |
+| .tar.gz | No (manual update) |
 
-**Option 2: Right-click to open**
-1. Right-click (or Control+click) on data-peek.app
-2. Select "Open" from the menu
-3. Click "Open" in the dialog
-
-This only needs to be done once. Proper code signing is coming soon!
+For the best experience with automatic updates, we recommend using the AppImage.
 
 ### Build from Source
 
