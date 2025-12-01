@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, safeStorage } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -54,13 +54,27 @@ import type { LicenseActivationRequest, SchemaInfo } from '@shared/index'
 
 import { DpSecureStorage } from './storage'
 
+/**
+ * Generate a machine-specific encryption key using Electron's safeStorage.
+ * Falls back to a static key if safeStorage is not available.
+ */
+function getEncryptionKey(): string {
+  const baseKey = 'data-peek-secure-storage-key'
+  if (safeStorage.isEncryptionAvailable()) {
+    return safeStorage.encryptString(baseKey).toString('base64')
+  }
+  return baseKey
+}
+
 let store: DpSecureStorage<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpSecureStorage<{ savedQueries: SavedQuery[] }>
 
 async function initStore(): Promise<void> {
+  const encryptionKey = getEncryptionKey()
+
   store = await DpSecureStorage.create<{ connections: ConnectionConfig[] }>({
     name: 'data-peek-connections',
-    encryptionKey: 'data-peek-secure-storage-key',
+    encryptionKey,
     defaults: {
       connections: []
     }
@@ -68,7 +82,7 @@ async function initStore(): Promise<void> {
 
   savedQueriesStore = await DpSecureStorage.create<{ savedQueries: SavedQuery[] }>({
     name: 'data-peek-saved-queries',
-    encryptionKey: 'data-peek-secure-storage-key',
+    encryptionKey,
     defaults: {
       savedQueries: []
     }
