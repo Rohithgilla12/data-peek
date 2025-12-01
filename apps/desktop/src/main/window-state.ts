@@ -1,7 +1,5 @@
 import { BrowserWindow, screen } from 'electron'
-
-// electron-store is ESM-only, so we use dynamic import
-type StoreType = import('electron-store').default<WindowState>
+import { DpStorage } from './storage'
 
 interface WindowState {
   x?: number
@@ -16,12 +14,11 @@ const DEFAULT_STATE: WindowState = {
   height: 900
 }
 
-let store: StoreType | null = null
+let store: DpStorage<WindowState> | null = null
 
-async function getStore(): Promise<StoreType> {
+async function getStore(): Promise<DpStorage<WindowState>> {
   if (!store) {
-    const Store = (await import('electron-store')).default
-    store = new Store<WindowState>({
+    store = await DpStorage.create<WindowState>({
       name: 'data-peek-window-state',
       defaults: DEFAULT_STATE
     })

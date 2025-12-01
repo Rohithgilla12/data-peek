@@ -2,11 +2,9 @@ import { app } from 'electron'
 import * as crypto from 'crypto'
 import * as os from 'os'
 import type { LicenseData, LicenseStatus, LicenseType } from '@shared/index'
+import { DpSecureStorage } from './storage'
 
-// electron-store v11 is ESM-only, use dynamic import
-type LicenseStore = import('electron-store').default<{ license?: LicenseData }>
-
-let store: LicenseStore | null = null
+let store: DpSecureStorage<{ license?: LicenseData }> | null = null
 
 // License server API URL (placeholder - configure for your server)
 const API_URL = process.env.LICENSE_API_URL || 'https://api.data-peek.dev'
@@ -85,8 +83,7 @@ function isVersionLessOrEqual(current: string, perpetual: string): boolean {
 export async function initLicenseStore(): Promise<void> {
   if (store) return
 
-  const Store = (await import('electron-store')).default
-  store = new Store<{ license?: LicenseData }>({
+  store = await DpSecureStorage.create<{ license?: LicenseData }>({
     name: 'data-peek-license',
     encryptionKey: getEncryptionKey(),
     defaults: {

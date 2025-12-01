@@ -5,9 +5,7 @@
  * Uses AI SDK's generateObject for typed JSON output.
  */
 
-import { app, safeStorage } from 'electron'
-import { existsSync, unlinkSync } from 'fs'
-import { join } from 'path'
+import { safeStorage } from 'electron'
 import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
@@ -25,7 +23,14 @@ import type {
 } from '@shared/index'
 
 // Re-export types for main process consumers
-export type { AIProvider, AIConfig, AIMessage, AIStructuredResponse, StoredChatMessage, ChatSession }
+export type {
+  AIProvider,
+  AIConfig,
+  AIMessage,
+  AIStructuredResponse,
+  StoredChatMessage,
+  ChatSession
+}
 
 /**
  * Generate a machine-specific encryption key using Electron's safeStorage.
@@ -76,60 +81,20 @@ const responseSchema = z.discriminatedUnion('type', [
   })
 ])
 
+import { DpSecureStorage, DpStorage } from './storage'
+
 // Chat history store structure: map of connectionId -> sessions
 type ChatHistoryStore = Record<string, ChatSession[]>
 
-// Store for AI config (will be initialized with electron-store)
-type AIStoreType = import('electron-store').default<{ aiConfig: AIConfig | null }>
-type ChatStoreType = import('electron-store').default<{ chatHistory: ChatHistoryStore }>
-let aiStore: AIStoreType | null = null
-let chatStore: ChatStoreType | null = null
-
-/**
- * Safely delete an old store file if it exists
- */
-function deleteStoreFile(storeName: string): void {
-  try {
-    const userDataPath = app.getPath('userData')
-    const storePath = join(userDataPath, `${storeName}.json`)
-    if (existsSync(storePath)) {
-      unlinkSync(storePath)
-      console.log(`[ai-service] Deleted old store file: ${storePath}`)
-    }
-  } catch (error) {
-    console.error('[ai-service] Failed to delete store file:', error)
-  }
-}
-
-/**
- * Create a store with migration support for encryption key changes
- */
-async function createStoreWithMigration<T extends Record<string, unknown>>(
-  Store: typeof import('electron-store').default,
-  options: {
-    name: string
-    encryptionKey?: string
-    defaults: T
-  }
-): Promise<import('electron-store').default<T>> {
-  try {
-    return new Store<T>(options)
-  } catch (error) {
-    // If store creation fails (likely due to encryption key change), delete and recreate
-    console.warn(`[ai-service] Store "${options.name}" corrupted or encrypted with old key, recreating:`, error)
-    deleteStoreFile(options.name)
-    return new Store<T>(options)
-  }
-}
+let aiStore: DpSecureStorage<{ aiConfig: AIConfig | null }> | null = null
+let chatStore: DpStorage<{ chatHistory: ChatHistoryStore }> | null = null
 
 /**
  * Initialize the AI config and chat stores
  * Handles migration from old encryption key to new safeStorage-based key
  */
 export async function initAIStore(): Promise<void> {
-  const Store = (await import('electron-store')).default
-
-  aiStore = await createStoreWithMigration<{ aiConfig: AIConfig | null }>(Store, {
+  aiStore = await DpSecureStorage.create<{ aiConfig: AIConfig | null }>({
     name: 'data-peek-ai-config',
     encryptionKey: getEncryptionKey(),
     defaults: {
@@ -137,7 +102,7 @@ export async function initAIStore(): Promise<void> {
     }
   })
 
-  chatStore = await createStoreWithMigration<{ chatHistory: ChatHistoryStore }>(Store, {
+  chatStore = await DpStorage.create<{ chatHistory: ChatHistoryStore }>({
     name: 'data-peek-ai-chat-history',
     defaults: {
       chatHistory: {}

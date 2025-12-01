@@ -51,23 +51,21 @@ import {
 } from './ai-service'
 import type { LicenseActivationRequest, SchemaInfo } from '@shared/index'
 
-// electron-store v11 is ESM-only, use dynamic import
-type StoreType = import('electron-store').default<{ connections: ConnectionConfig[] }>
-type SavedQueriesStoreType = import('electron-store').default<{ savedQueries: SavedQuery[] }>
-let store: StoreType
-let savedQueriesStore: SavedQueriesStoreType
+import { DpSecureStorage } from './storage'
+
+let store: DpSecureStorage<{ connections: ConnectionConfig[] }>
+let savedQueriesStore: DpSecureStorage<{ savedQueries: SavedQuery[] }>
 
 async function initStore(): Promise<void> {
-  const Store = (await import('electron-store')).default
-  store = new Store<{ connections: ConnectionConfig[] }>({
+  store = await DpSecureStorage.create<{ connections: ConnectionConfig[] }>({
     name: 'data-peek-connections',
-    encryptionKey: 'data-peek-secure-storage-key', // Encrypts sensitive data
+    encryptionKey: 'data-peek-secure-storage-key',
     defaults: {
       connections: []
     }
   })
 
-  savedQueriesStore = new Store<{ savedQueries: SavedQuery[] }>({
+  savedQueriesStore = await DpSecureStorage.create<{ savedQueries: SavedQuery[] }>({
     name: 'data-peek-saved-queries',
     encryptionKey: 'data-peek-secure-storage-key',
     defaults: {
@@ -206,11 +204,7 @@ app.whenReady().then(async () => {
         // Use queryMultiple to support multiple statements
         const multiResult = await adapter.queryMultiple(config, query)
 
-        console.log(
-          '[main:db:query] Query completed in',
-          multiResult.totalDurationMs,
-          'ms'
-        )
+        console.log('[main:db:query] Query completed in', multiResult.totalDurationMs, 'ms')
         console.log('[main:db:query] Statement count:', multiResult.results.length)
 
         return {
