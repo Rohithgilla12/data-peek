@@ -10,6 +10,8 @@
     "dev:docs": "turbo run dev --filter=docs",
     "build": "turbo run build",
     "build:desktop": "turbo run build --filter=@data-peek/desktop",
+    "build:web": "turbo run build --filter=@data-peek/web",
+    "build:docs": "turbo run build --filter=docs",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck types:check",
     "postinstall": "pnpm --filter @data-peek/desktop exec electron-builder install-app-deps || true",
