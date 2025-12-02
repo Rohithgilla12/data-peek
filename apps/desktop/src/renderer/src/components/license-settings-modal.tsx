@@ -1,6 +1,6 @@
 'use client'
 
-import { Loader2, Check, AlertCircle, ExternalLink, LogOut, Monitor } from 'lucide-react'
+import { Loader2, Check, AlertCircle, ExternalLink, LogOut, Monitor, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -18,7 +18,7 @@ interface LicenseSettingsModalProps {
 }
 
 export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModalProps) {
-  const { status, deactivateLicense, isLoading, error } = useLicenseStore()
+  const { status, deactivateLicense, openCustomerPortal, isLoading, error } = useLicenseStore()
 
   if (!status) {
     return null
@@ -151,9 +151,15 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
           <Button
             variant="outline"
             className="gap-2"
-            onClick={() => window.open('https://data-peek.dev/dashboard', '_blank')}
+            onClick={openCustomerPortal}
+            disabled={isLoading}
           >
-            Manage License
+            {isLoading ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <CreditCard className="size-4" />
+            )}
+            Manage Subscription
             <ExternalLink className="size-3" />
           </Button>
 
@@ -174,7 +180,7 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
 
             {isExpired && (
               <Button
-                onClick={() => window.open('https://data-peek.dev/pricing', '_blank')}
+                onClick={() => window.open('https://datapeek.dev/pricing', '_blank')}
                 className="gap-2"
               >
                 Renew License

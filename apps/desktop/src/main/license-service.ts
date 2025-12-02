@@ -353,3 +353,39 @@ export function activateLicenseOffline(
   saveLicense(licenseData)
   return { success: true }
 }
+
+/**
+ * Get customer portal URL for managing subscription
+ */
+export async function getCustomerPortalUrl(): Promise<{
+  success: boolean
+  url?: string
+  error?: string
+}> {
+  const stored = getStoredLicense()
+
+  if (!stored) {
+    return { success: false, error: 'No license activated' }
+  }
+
+  try {
+    const response = await fetch(`${getApiUrl()}/api/customer-portal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        license_key: stored.key
+      })
+    })
+
+    const data = await response.json()
+
+    if (!response.ok || !data.success) {
+      return { success: false, error: data.error || 'Failed to get customer portal URL' }
+    }
+
+    return { success: true, url: data.link }
+  } catch (error) {
+    console.error('[license] Customer portal error:', error)
+    return { success: false, error: 'Network error. Please check your connection.' }
+  }
+}

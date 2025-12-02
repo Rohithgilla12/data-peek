@@ -135,7 +135,9 @@ const api = {
       type?: LicenseType,
       daysValid?: number
     ): Promise<IpcResponse<LicenseStatus>> =>
-      ipcRenderer.invoke('license:activate-offline', { key, email, type, daysValid })
+      ipcRenderer.invoke('license:activate-offline', { key, email, type, daysValid }),
+    openCustomerPortal: (): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('license:customer-portal')
   },
   // Saved queries management
   savedQueries: {

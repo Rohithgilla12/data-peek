@@ -164,6 +164,9 @@ export class DpStorage<T extends StoreRecord> {
  * Uses a persistent encryption key stored securely via Electron's safeStorage.
  * The key is generated once and reused across sessions.
  *
+ * NOTE: Currently not in use due to corruption issues. Using DpStorage instead.
+ * TODO: Investigate and fix safeStorage corruption issues before re-enabling.
+ *
  * Usage:
  *   const store = await DpSecureStorage.create<{ secret: string }>({
  *     name: 'secure-store',

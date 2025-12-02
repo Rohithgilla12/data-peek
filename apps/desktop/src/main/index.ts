@@ -32,7 +32,8 @@ import {
   checkLicense,
   activateLicense,
   deactivateLicense,
-  activateLicenseOffline
+  activateLicenseOffline,
+  getCustomerPortalUrl
 } from './license-service'
 import {
   initAIStore,
@@ -56,13 +57,13 @@ import {
 import { initAutoUpdater } from './updater'
 import type { LicenseActivationRequest, SchemaInfo } from '@shared/index'
 
-import { DpSecureStorage, DpStorage } from './storage'
+import { DpStorage } from './storage'
 
-let store: DpSecureStorage<{ connections: ConnectionConfig[] }>
+let store: DpStorage<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 
 async function initStore(): Promise<void> {
-  store = await DpSecureStorage.create<{ connections: ConnectionConfig[] }>({
+  store = await DpStorage.create<{ connections: ConnectionConfig[] }>({
     name: 'data-peek-connections',
     defaults: {
       connections: []
@@ -694,6 +695,24 @@ app.whenReady().then(async () => {
       }
     }
   )
+
+  // Get customer portal URL for managing subscription
+  ipcMain.handle('license:customer-portal', async () => {
+    console.log('[main:license:customer-portal] Getting customer portal URL')
+    try {
+      const result = await getCustomerPortalUrl()
+      if (result.success && result.url) {
+        // Open the customer portal in the default browser
+        shell.openExternal(result.url)
+        return { success: true }
+      }
+      return { success: false, error: result.error }
+    } catch (error: unknown) {
+      console.error('[main:license:customer-portal] Error:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
 
   // ============================================
   // Saved Queries Handlers

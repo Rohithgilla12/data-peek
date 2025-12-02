@@ -72,19 +72,19 @@ const responseSchema = z.discriminatedUnion('type', [
   })
 ])
 
-import { DpSecureStorage, DpStorage } from './storage'
+import { DpStorage } from './storage'
 
 // Chat history store structure: map of connectionId -> sessions
 type ChatHistoryStore = Record<string, ChatSession[]>
 
-let aiStore: DpSecureStorage<{ aiConfig: AIConfig | null }> | null = null
+let aiStore: DpStorage<{ aiConfig: AIConfig | null }> | null = null
 let chatStore: DpStorage<{ chatHistory: ChatHistoryStore }> | null = null
 
 /**
  * Initialize the AI config and chat stores
  */
 export async function initAIStore(): Promise<void> {
-  aiStore = await DpSecureStorage.create<{ aiConfig: AIConfig | null }>({
+  aiStore = await DpStorage.create<{ aiConfig: AIConfig | null }>({
     name: 'data-peek-ai-config',
     defaults: {
       aiConfig: null

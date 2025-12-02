@@ -21,6 +21,7 @@ interface LicenseState {
     daysValid?: number
   ) => Promise<{ success: boolean; error?: string }>
   deactivateLicense: () => Promise<{ success: boolean; error?: string }>
+  openCustomerPortal: () => Promise<{ success: boolean; error?: string }>
 
   // Modal actions
   openActivationModal: () => void
@@ -172,6 +173,28 @@ export const useLicenseStore = create<LicenseState>((set, get) => ({
         isLoading: false,
         error: errorMsg
       })
+      return { success: false, error: errorMsg }
+    }
+  },
+
+  openCustomerPortal: async () => {
+    set({ isLoading: true, error: null })
+
+    try {
+      const result = await window.api.license.openCustomerPortal()
+
+      if (result.success) {
+        set({ isLoading: false, error: null })
+        return { success: true }
+      } else {
+        const error = result.error || 'Failed to open customer portal'
+        set({ isLoading: false, error })
+        return { success: false, error }
+      }
+    } catch (error) {
+      console.error('Failed to open customer portal:', error)
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+      set({ isLoading: false, error: errorMsg })
       return { success: false, error: errorMsg }
     }
   },

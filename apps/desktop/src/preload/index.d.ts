@@ -198,6 +198,7 @@ interface DataPeekApi {
       type?: LicenseType,
       daysValid?: number
     ) => Promise<IpcResponse<LicenseStatus>>
+    openCustomerPortal: () => Promise<IpcResponse<void>>
   }
   savedQueries: {
     list: () => Promise<IpcResponse<SavedQuery[]>>
