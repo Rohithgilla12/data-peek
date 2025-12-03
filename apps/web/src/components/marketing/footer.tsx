@@ -3,14 +3,14 @@ import { Database, Github, Twitter } from 'lucide-react'
 
 const footerLinks = {
   Product: [
-    { label: 'Features', href: '#features' },
-    { label: 'Pricing', href: '#pricing' },
+    { label: 'Features', href: '/#features' },
+    { label: 'Pricing', href: '/#pricing' },
     { label: 'Download', href: '/download' },
     { label: 'Changelog', href: '/changelog' },
   ],
   Resources: [
     { label: 'Documentation', href: '/docs' },
-    { label: 'FAQ', href: '#faq' },
+    { label: 'FAQ', href: '/#faq' },
     { label: 'Blog', href: '/blog' },
     { label: 'Support', href: '/support' },
   ],
