@@ -24,6 +24,7 @@ import { DataTable } from '@/components/data-table'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
+import { keys } from '@/lib/utils'
 
 export function QueryEditor() {
   const activeConnection = useConnectionStore((s) => s.getActiveConnection())
@@ -104,7 +105,7 @@ export function QueryEditor() {
                 <Play className="size-3.5" />
               )}
               Run
-              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">⌘↵</kbd>
+              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">{keys.mod}{keys.enter}</kbd>
             </Button>
             <Button
               variant="ghost"
@@ -115,7 +116,7 @@ export function QueryEditor() {
             >
               <Wand2 className="size-3.5" />
               Format
-              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">⌘⇧F</kbd>
+              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">{keys.mod}{keys.shift}F</kbd>
             </Button>
             <Button
               variant="ghost"

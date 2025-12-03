@@ -4,6 +4,7 @@ import * as React from 'react'
 import { ExternalLink } from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { keys } from '@/lib/utils'
 
 interface FKCellValueProps {
   value: unknown
@@ -53,7 +54,7 @@ export function FKCellValue({
           <div className="space-y-1">
             <p className="text-xs font-medium">View in {foreignKey.referencedTable}</p>
             <p className="text-[10px] text-muted-foreground">
-              Click to open panel, ⌘+Click for new tab
+              Click to open panel, {keys.mod}+Click for new tab
             </p>
             <pre className="text-xs text-muted-foreground font-mono mt-1">{stringValue}</pre>
           </div>
