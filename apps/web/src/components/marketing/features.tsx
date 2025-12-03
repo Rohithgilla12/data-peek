@@ -199,7 +199,7 @@ export function Features() {
 
         {/* Feature Screenshots */}
         <div className="mt-16 sm:mt-24 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {/* AI Assistant Screenshot */}
+          {/* AI Assistant Screenshot - Charts */}
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#a855f7]/10 border border-[#a855f7]/20 flex items-center justify-center">
@@ -209,17 +209,20 @@ export function Features() {
                 className="text-base sm:text-lg font-medium"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
-                AI Assistant
+                AI Charts & Metrics
               </h3>
             </div>
-            <div className="screenshot-placeholder min-h-[220px] sm:min-h-[300px] rounded-lg sm:rounded-xl">
-              <div className="flex flex-col items-center gap-2 z-10 text-sm">
-                <span>screenshot_ai_assistant.png</span>
-              </div>
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+              <img
+                src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/ai-assitant.png"
+                alt="AI Assistant generating charts and metrics"
+                className="w-full h-auto"
+                loading="lazy"
+              />
             </div>
           </div>
 
-          {/* Query Editor Screenshot */}
+          {/* AI Assistant Screenshot - Queries */}
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[--color-accent]/10 border border-[--color-accent]/20 flex items-center justify-center">
@@ -229,13 +232,16 @@ export function Features() {
                 className="text-base sm:text-lg font-medium"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
-                Query Editor
+                AI Query Generation
               </h3>
             </div>
-            <div className="screenshot-placeholder min-h-[220px] sm:min-h-[300px] rounded-lg sm:rounded-xl">
-              <div className="flex flex-col items-center gap-2 z-10 text-sm">
-                <span>screenshot_editor.png</span>
-              </div>
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+              <img
+                src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/ai-assitant-2.png"
+                alt="AI Assistant generating SQL queries"
+                className="w-full h-auto"
+                loading="lazy"
+              />
             </div>
           </div>
         </div>
@@ -255,10 +261,13 @@ export function Features() {
                 ER Diagrams
               </h3>
             </div>
-            <div className="screenshot-placeholder min-h-[220px] sm:min-h-[300px] rounded-lg sm:rounded-xl">
-              <div className="flex flex-col items-center gap-2 z-10 text-sm">
-                <span>screenshot_erd.png</span>
-              </div>
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+              <img
+                src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/erd.png"
+                alt="Interactive ER diagram visualization"
+                className="w-full h-auto"
+                loading="lazy"
+              />
             </div>
           </div>
 
@@ -275,10 +284,38 @@ export function Features() {
                 Command Palette
               </h3>
             </div>
-            <div className="screenshot-placeholder min-h-[220px] sm:min-h-[300px] rounded-lg sm:rounded-xl">
-              <div className="flex flex-col items-center gap-2 z-10 text-sm">
-                <span>screenshot_command_palette.png</span>
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+              <img
+                src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/command-bar.png"
+                alt="Command palette for quick actions"
+                className="w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Third row - Light Mode */}
+        <div className="mt-6 sm:mt-8">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#60a5fa]/10 border border-[#60a5fa]/20 flex items-center justify-center">
+                <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#60a5fa]" />
               </div>
+              <h3
+                className="text-base sm:text-lg font-medium"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                Light Mode
+              </h3>
+            </div>
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+              <img
+                src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/light-mode.png"
+                alt="Data Peek in light mode"
+                className="w-full h-auto"
+                loading="lazy"
+              />
             </div>
           </div>
         </div>

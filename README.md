@@ -1,15 +1,49 @@
 # data-peek
 
-A minimal, fast PostgreSQL client desktop application. Built for developers who want to quickly peek at their data without the bloat. Also supports MySQL and Microsoft SQL Server.
+A minimal, fast SQL client desktop application with AI-powered querying. Built for developers who want to quickly peek at their data without the bloat. Supports PostgreSQL, MySQL, and Microsoft SQL Server.
+
+<p align="center">
+  <img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/hero.png" alt="Data Peek - SQL Client" width="100%" />
+</p>
+
+## Screenshots
+
+<details>
+<summary>AI Assistant - Generate charts and insights</summary>
+<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/ai-assitant.png" alt="AI Assistant Charts" width="100%" />
+</details>
+
+<details>
+<summary>AI Assistant - Natural language to SQL</summary>
+<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/ai-assitant-2.png" alt="AI Assistant Queries" width="100%" />
+</details>
+
+<details>
+<summary>ER Diagrams - Visualize relationships</summary>
+<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/erd.png" alt="ER Diagrams" width="100%" />
+</details>
+
+<details>
+<summary>Command Palette - Quick actions</summary>
+<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/command-bar.png" alt="Command Palette" width="100%" />
+</details>
+
+<details>
+<summary>Light Mode</summary>
+<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/light-mode.png" alt="Light Mode" width="100%" />
+</details>
 
 ## Features
 
+- **AI Assistant** - Ask questions in plain English, get SQL queries. Generate charts and insights (BYOK)
 - **Fast** - Opens in under 2 seconds, low memory footprint
 - **Query Editor** - Monaco editor with SQL syntax highlighting and autocomplete
+- **Command Palette** - Cmd+K to access everything instantly
 - **Multi-tab Support** - Work with multiple queries simultaneously
 - **Inline Editing** - Edit table data directly with INSERT/UPDATE/DELETE
 - **ERD Visualization** - See table relationships visually
 - **Query Plans** - Analyze query performance with EXPLAIN ANALYZE viewer
+- **Saved Queries** - Bookmark your favorite queries for quick access
 - **Dark/Light Mode** - Easy on the eyes
 - **Keyboard-First** - Power users shouldn't need a mouse
 - **Secure** - Connection credentials encrypted locally, no telemetry
@@ -151,4 +185,5 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 ## Support
 
 - [GitHub Issues](https://github.com/Rohithgilla12/data-peek/issues) - Bug reports and feature requests
+- [GitHub Sponsors](https://github.com/sponsors/Rohithgilla12) - Support development
 - Twitter/X: [@gillarohith](https://x.com/gillarohith)
