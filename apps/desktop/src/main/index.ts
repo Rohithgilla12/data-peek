@@ -167,6 +167,11 @@ async function createWindow(): Promise<void> {
   }
 }
 
+// Set app name for macOS dock and Mission Control
+if (process.platform === 'darwin') {
+  app.name = 'Data Peek'
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -184,7 +189,7 @@ app.whenReady().then(async () => {
   createMenu()
 
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.datapeek')
+  electronApp.setAppUserModelId('dev.datapeek.app')
 
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.

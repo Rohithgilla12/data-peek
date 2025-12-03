@@ -1,5 +1,6 @@
-appId: com.datapeek.app
-productName: data-peek
+appId: dev.datapeek.app
+productName: Data Peek
+executableName: data-peek
 directories:
   buildResources: build
 files:
@@ -14,25 +15,30 @@ asarUnpack:
 win:
   executableName: data-peek
 nsis:
-  artifactName: ${productName}-${version}-setup.${ext}
+  artifactName: data-peek-${version}-setup.${ext}
   shortcutName: ${productName}
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   extendInfo:
-    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
-    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  identity: null
+    CFBundleDisplayName: Data Peek
   hardenedRuntime: true
-  notarize: false
+  gatekeeperAssess: false
+  notarize: true
+  category: public.app-category.developer-tools
   target:
     - target: dmg
       arch:
         - x64
         - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
 dmg:
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: data-peek-${version}-${arch}.${ext}
 linux:
   target:
     - AppImage
@@ -41,9 +47,9 @@ linux:
   maintainer: Rohith Gilla
   category: Development
 appImage:
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: data-peek-${version}-${arch}.${ext}
 deb:
-  artifactName: ${productName}-${version}-${arch}.${ext}
+  artifactName: data-peek-${version}-${arch}.${ext}
 npmRebuild: false
 publish:
   provider: github

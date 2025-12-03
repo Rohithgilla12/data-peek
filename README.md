@@ -1,5 +1,7 @@
 # data-peek
 
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Rohithgilla12/data-peek/total?style=for-the-badge)
+
 A minimal, fast PostgreSQL client desktop application. Built for developers who want to quickly peek at their data without the bloat. Also supports MySQL and Microsoft SQL Server.
 
 ## Features
