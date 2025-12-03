@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import { ClerkProvider } from '@clerk/nextjs'
 import './globals.css'
 
@@ -44,14 +45,14 @@ export default function RootLayout({
       }}
     >
       <html lang="en">
-        <head>
-          <script
-            defer
+        <body className="antialiased">
+          {children}
+          <Script
             src="https://giveme.gilla.fun/script.js"
+            strategy="afterInteractive"
             data-website-id="883e50ed-8e6e-4d4a-b77d-f320f16fe639"
           />
-        </head>
-        <body className="antialiased">{children}</body>
+        </body>
       </html>
     </ClerkProvider>
   )
