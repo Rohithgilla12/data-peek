@@ -59,6 +59,13 @@ export const Route = createRootRoute({
       { rel: 'stylesheet', href: appCss },
       { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
     ],
+    scripts: [
+      {
+        src: 'https://giveme.gilla.fun/script.js',
+        defer: true,
+        'data-website-id': '99144076-001c-49ad-82d9-a7a19fd7d700',
+      },
+    ],
   }),
   component: RootComponent,
 });

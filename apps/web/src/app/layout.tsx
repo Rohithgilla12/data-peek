@@ -44,6 +44,13 @@ export default function RootLayout({
       }}
     >
       <html lang="en">
+        <head>
+          <script
+            defer
+            src="https://giveme.gilla.fun/script.js"
+            data-website-id="883e50ed-8e6e-4d4a-b77d-f320f16fe639"
+          />
+        </head>
         <body className="antialiased">{children}</body>
       </html>
     </ClerkProvider>
