@@ -90,7 +90,7 @@ export function Hero() {
               </Link>
             </Button>
             <Button variant="secondary" size="lg" asChild>
-              <Link href="/#pricing">
+              <Link href='/#pricing'>
                 Get Pro — $29
                 <ArrowRight className="w-4 h-4" />
               </Link>
