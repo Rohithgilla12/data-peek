@@ -1,5 +1,18 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalEnv": [
+    "DATABASE_URL",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+    "CLERK_SECRET_KEY",
+    "NEXT_PUBLIC_CLERK_SIGN_IN_URL",
+    "NEXT_PUBLIC_CLERK_SIGN_UP_URL",
+    "DODO_API_KEY",
+    "DODO_WEBHOOK_SECRET",
+    "DODO_PRO_PRODUCT_ID",
+    "RESEND_API_KEY",
+    "NEXT_PUBLIC_APP_URL",
+    "NODE_ENV"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
