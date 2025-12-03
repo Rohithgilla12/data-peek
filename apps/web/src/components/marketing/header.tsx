@@ -6,9 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Database, Menu, X, Github, Star } from 'lucide-react'
 
 const navLinks = [
-  { href: '#features', label: 'Features' },
-  { href: '#pricing', label: 'Pricing' },
-  { href: '#faq', label: 'FAQ' },
+  { href: '/#features', label: 'Features' },
+  { href: '/#pricing', label: 'Pricing' },
+  { href: '/#faq', label: 'FAQ' },
 ]
 
 export function Header() {
@@ -123,7 +123,7 @@ export function Header() {
                   <Link href="/download">Download</Link>
                 </Button>
                 <Button size="sm" asChild>
-                  <Link href="#pricing">Get Pro — $29</Link>
+                  <Link href="/#pricing">Get Pro — $29</Link>
                 </Button>
               </div>
             </div>
