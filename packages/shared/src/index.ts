@@ -31,15 +31,39 @@ export interface AIMessage {
 export type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema';
 
 /**
- * AI response for SQL queries
+ * AI structured response - flat object with nullable fields.
+ * Using flat structure instead of discriminated union for AI provider compatibility.
+ * Check the 'type' field to determine which fields are populated.
  */
+export interface AIStructuredResponse {
+  type: AIResponseType;
+  message: string;
+  // Query fields (null when type is not query)
+  sql: string | null;
+  explanation: string | null;
+  warning: string | null;
+  /** If true, query should NOT be auto-executed (UPDATE/DELETE operations) */
+  requiresConfirmation: boolean | null;
+  // Chart fields (null when type is not chart)
+  title: string | null;
+  description: string | null;
+  chartType: 'bar' | 'line' | 'pie' | 'area' | null;
+  xKey: string | null;
+  yKeys: string[] | null;
+  // Metric fields (null when type is not metric)
+  label: string | null;
+  format: 'number' | 'currency' | 'percent' | 'duration' | null;
+  // Schema fields (null when type is not schema)
+  tables: string[] | null;
+}
+
+// Legacy types for backward compatibility with renderer components
 export interface AIQueryResponse {
   type: 'query';
   message: string;
   sql: string;
   explanation: string;
   warning?: string;
-  /** If true, query should NOT be auto-executed (UPDATE/DELETE operations) */
   requiresConfirmation?: boolean;
 }
 
@@ -84,16 +108,6 @@ export interface AIMessageResponse {
   type: 'message';
   message: string;
 }
-
-/**
- * Union type for all AI structured responses
- */
-export type AIStructuredResponse =
-  | AIQueryResponse
-  | AIChartResponse
-  | AIMetricResponse
-  | AISchemaResponse
-  | AIMessageResponse;
 
 /**
  * Alias for AIChatResponse (same as AIStructuredResponse)

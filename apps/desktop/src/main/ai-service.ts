@@ -32,45 +32,38 @@ export type {
 }
 
 // Zod schema for structured output
-const responseSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('query'),
-    message: z.string().describe('A brief explanation of what the query does'),
-    sql: z.string().describe('The complete, valid SQL query'),
-    explanation: z.string().describe('Detailed explanation of the query'),
-    warning: z.string().optional().describe('Warning for mutations or potential issues'),
-    requiresConfirmation: z
-      .boolean()
-      .optional()
-      .describe('Set to true for UPDATE, DELETE, DROP, TRUNCATE, or other destructive queries')
-  }),
-  z.object({
-    type: z.literal('chart'),
-    message: z.string().describe('Brief description of the visualization'),
-    title: z.string().describe('Chart title'),
-    description: z.string().optional().describe('Chart description'),
-    chartType: z.enum(['bar', 'line', 'pie', 'area']).describe('Chart type based on data nature'),
-    sql: z.string().describe('SQL query to fetch chart data'),
-    xKey: z.string().describe('Column name for X-axis'),
-    yKeys: z.array(z.string()).describe('Column name(s) for Y-axis values')
-  }),
-  z.object({
-    type: z.literal('metric'),
-    message: z.string().describe('Brief description of the metric'),
-    label: z.string().describe('Metric label'),
-    sql: z.string().describe('SQL query that returns a single value'),
-    format: z.enum(['number', 'currency', 'percent', 'duration']).describe('Value format')
-  }),
-  z.object({
-    type: z.literal('schema'),
-    message: z.string().describe('Explanation of the schema'),
-    tables: z.array(z.string()).describe('Table names to display')
-  }),
-  z.object({
-    type: z.literal('message'),
-    message: z.string().describe('The response message')
-  })
-])
+// Using flat object instead of discriminatedUnion for Anthropic/OpenAI tool compatibility
+// (discriminatedUnion produces anyOf without root type:object which providers reject)
+// Using .nullish() instead of .nullable() to accept undefined when fields are missing
+const responseSchema = z.object({
+  type: z.enum(['query', 'chart', 'metric', 'schema', 'message']).describe('Response type'),
+  message: z.string().describe('Brief explanation or response message'),
+  // Query fields (null/undefined when type is not query)
+  sql: z.string().nullish().describe('SQL query - for query/chart/metric types'),
+  explanation: z.string().nullish().describe('Detailed explanation - for query type'),
+  warning: z.string().nullish().describe('Warning for mutations - for query type'),
+  requiresConfirmation: z
+    .boolean()
+    .nullish()
+    .describe('True for destructive queries - for query type'),
+  // Chart fields (null/undefined when type is not chart)
+  title: z.string().nullish().describe('Chart title - for chart type'),
+  description: z.string().nullish().describe('Chart description - for chart type'),
+  chartType: z
+    .enum(['bar', 'line', 'pie', 'area'])
+    .nullish()
+    .describe('Chart type - for chart type'),
+  xKey: z.string().nullish().describe('X-axis column - for chart type'),
+  yKeys: z.array(z.string()).nullish().describe('Y-axis columns - for chart type'),
+  // Metric fields (null/undefined when type is not metric)
+  label: z.string().nullish().describe('Metric label - for metric type'),
+  format: z
+    .enum(['number', 'currency', 'percent', 'duration'])
+    .nullish()
+    .describe('Value format - for metric type'),
+  // Schema fields (null/undefined when type is not schema)
+  tables: z.array(z.string()).nullish().describe('Table names - for schema type')
+})
 
 import { DpStorage } from './storage'
 
@@ -206,31 +199,39 @@ function buildSystemPrompt(schemas: SchemaInfo[], dbType: string): string {
 
 ${schemaContext}
 
-## Response Guidelines
+## Response Format
 
-Based on the user's request, respond with ONE of these types:
+Set the "type" field and fill ONLY the relevant fields. **IMPORTANT: All fields must be present in the response.** Set unused fields to null (not undefined). Include every field listed below.
 
-1. **query** - When user asks for data or wants to run a query
-   - Generate valid ${dbType} SQL
-   - Include LIMIT 100 for SELECT queries unless specified
-   - **CRITICAL: For UPDATE, DELETE, DROP, TRUNCATE, or any destructive operation:**
-     - Set \`requiresConfirmation: true\`
-     - Add a clear warning explaining the impact
-     - The query will NOT be auto-executed - user must manually review and run it
-   - For INSERT queries, include a warning but requiresConfirmation is optional
+### type: "query"
+Use when user asks for data or wants to run a query.
+- Fill: message, sql, explanation
+- Optional: warning, requiresConfirmation (set true for UPDATE/DELETE/DROP/TRUNCATE)
+- Null: title, description, chartType, xKey, yKeys, label, format, tables
+- Include LIMIT 100 for SELECT queries unless specified
 
-2. **chart** - When user asks to visualize, chart, graph, or plot data
-   - Choose appropriate chartType: bar (comparisons), line (time trends), pie (proportions ≤8 items), area (cumulative)
-   - SQL must return columns matching xKey and yKeys
+### type: "chart"
+Use when user asks to visualize, chart, graph, or plot data.
+- Fill: message, sql, title, chartType, xKey, yKeys
+- Optional: description
+- Null: explanation, warning, requiresConfirmation, label, format, tables
+- chartType: bar (comparisons), line (time trends), pie (proportions ≤8 items), area (cumulative)
 
-3. **metric** - When user asks for a single KPI/number (total, count, average)
-   - SQL must return exactly one value
-   - Choose format: number, currency, percent, or duration
+### type: "metric"
+Use when user asks for a single KPI/number (total, count, average).
+- Fill: message, sql, label, format
+- Null: explanation, warning, requiresConfirmation, title, description, chartType, xKey, yKeys, tables
+- format: number, currency, percent, or duration
 
-4. **schema** - When user asks about table structure or columns
-   - List the relevant table names
+### type: "schema"
+Use when user asks about table structure or columns.
+- Fill: message, tables
+- Null: sql, explanation, warning, requiresConfirmation, title, description, chartType, xKey, yKeys, label, format
 
-5. **message** - For general questions, clarifications, or when no SQL is needed
+### type: "message"
+Use for general questions, clarifications, or when no SQL is needed.
+- Fill: message
+- Null: ALL other fields
 
 ## SQL Guidelines
 - Use proper ${dbType} syntax
@@ -252,7 +253,7 @@ export async function validateAPIKey(
     await generateText({
       model,
       prompt: 'Say "ok"',
-      maxTokens: 5
+      maxOutputTokens: 5
     })
 
     return { valid: true }
@@ -313,13 +314,31 @@ export async function generateChatResponse(
       temperature: 0.1 // Lower temperature for more consistent SQL generation
     })
 
+    // Normalize undefined to null for consistency
+    const normalizedData = {
+      ...result.object,
+      sql: result.object.sql ?? null,
+      explanation: result.object.explanation ?? null,
+      warning: result.object.warning ?? null,
+      requiresConfirmation: result.object.requiresConfirmation ?? null,
+      title: result.object.title ?? null,
+      description: result.object.description ?? null,
+      chartType: result.object.chartType ?? null,
+      xKey: result.object.xKey ?? null,
+      yKeys: result.object.yKeys ?? null,
+      label: result.object.label ?? null,
+      format: result.object.format ?? null,
+      tables: result.object.tables ?? null
+    }
+
     return {
       success: true,
-      data: result.object as AIStructuredResponse
+      data: normalizedData as AIStructuredResponse
     }
-  } catch (error) {
+  } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'
-    console.error('[ai-service] generateChatResponse error:', error)
+    console.error('[ai-service] generateChatResponse error:', JSON.stringify(error, null, 2))
+
     return { success: false, error: message }
   }
 }

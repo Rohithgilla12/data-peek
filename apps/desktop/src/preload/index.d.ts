@@ -35,50 +35,27 @@ interface AIMessage {
 // Structured AI response types
 type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
 
-interface AIQueryResponse {
-  type: 'query'
+// Flat schema with nullable fields for AI provider compatibility
+interface AIChatResponse {
+  type: AIResponseType
   message: string
-  sql: string
-  explanation: string
-  warning?: string
+  // Query fields (null when type is not query)
+  sql: string | null
+  explanation: string | null
+  warning: string | null
+  requiresConfirmation: boolean | null
+  // Chart fields (null when type is not chart)
+  title: string | null
+  description: string | null
+  chartType: 'bar' | 'line' | 'pie' | 'area' | null
+  xKey: string | null
+  yKeys: string[] | null
+  // Metric fields (null when type is not metric)
+  label: string | null
+  format: 'number' | 'currency' | 'percent' | 'duration' | null
+  // Schema fields (null when type is not schema)
+  tables: string[] | null
 }
-
-interface AIChartResponse {
-  type: 'chart'
-  message: string
-  title: string
-  description?: string
-  chartType: 'bar' | 'line' | 'pie' | 'area'
-  sql: string
-  xKey: string
-  yKeys: string[]
-}
-
-interface AIMetricResponse {
-  type: 'metric'
-  message: string
-  label: string
-  sql: string
-  format: 'number' | 'currency' | 'percent' | 'duration'
-}
-
-interface AISchemaResponse {
-  type: 'schema'
-  message: string
-  tables: string[]
-}
-
-interface AIMessageResponse {
-  type: 'message'
-  message: string
-}
-
-type AIChatResponse =
-  | AIQueryResponse
-  | AIChartResponse
-  | AIMetricResponse
-  | AISchemaResponse
-  | AIMessageResponse
 
 // Stored response data types (without message field since it's in content)
 interface StoredQueryData {

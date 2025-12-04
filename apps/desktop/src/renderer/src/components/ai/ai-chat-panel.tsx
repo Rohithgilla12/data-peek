@@ -267,32 +267,41 @@ export function AIChatPanel({
         const data = response.data
 
         // Extract response data based on type
+        // Note: Backend uses flat schema with nullable fields for AI provider compatibility
         let responseData: AIResponseData = null
-        if (data.type === 'query') {
+        if (data.type === 'query' && data.sql && data.explanation) {
           responseData = {
             type: 'query',
             sql: data.sql,
             explanation: data.explanation,
-            warning: data.warning
+            warning: data.warning ?? undefined,
+            requiresConfirmation: data.requiresConfirmation ?? undefined
           }
-        } else if (data.type === 'chart') {
+        } else if (
+          data.type === 'chart' &&
+          data.title &&
+          data.chartType &&
+          data.sql &&
+          data.xKey &&
+          data.yKeys
+        ) {
           responseData = {
             type: 'chart',
             title: data.title,
-            description: data.description,
+            description: data.description ?? undefined,
             chartType: data.chartType,
             sql: data.sql,
             xKey: data.xKey,
             yKeys: data.yKeys
           }
-        } else if (data.type === 'metric') {
+        } else if (data.type === 'metric' && data.label && data.sql && data.format) {
           responseData = {
             type: 'metric',
             label: data.label,
             sql: data.sql,
             format: data.format
           }
-        } else if (data.type === 'schema') {
+        } else if (data.type === 'schema' && data.tables) {
           responseData = {
             type: 'schema',
             tables: data.tables

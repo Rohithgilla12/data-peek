@@ -37,14 +37,19 @@ const PROVIDERS = [
   {
     id: 'openai',
     name: 'OpenAI',
-    description: 'GPT-5, GPT-5.1, GPT-4o',
+    description: 'GPT-5.1 Codex, GPT-5.1 Mini/Nano, GPT-4o',
     keyPrefix: 'sk-',
     keyUrl: 'https://platform.openai.com/api-keys',
     models: [
-      { id: 'gpt-5', name: 'GPT-5', recommended: true, description: 'Most capable' },
-      { id: 'gpt-5-mini', name: 'GPT-5 Mini', description: 'Balanced' },
+      {
+        id: 'gpt-5.1-codex',
+        name: 'GPT-5.1 Codex',
+        recommended: true,
+        description: 'Best for SQL & code'
+      },
+      { id: 'gpt-5.1', name: 'GPT-5.1', description: 'Most capable' },
+      { id: 'gpt-5.1-codex-mini', name: 'GPT-5.1 Codex Mini', description: 'Balanced' },
       { id: 'gpt-5-nano', name: 'GPT-5 Nano', description: 'Fast & efficient' },
-      { id: 'gpt-5.1', name: 'GPT-5.1', description: 'Latest update' },
       { id: 'gpt-4o', name: 'GPT-4o', description: 'Previous gen' },
       { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: 'Faster & cheaper' }
     ]
@@ -52,19 +57,18 @@ const PROVIDERS = [
   {
     id: 'anthropic',
     name: 'Anthropic',
-    description: 'Claude Opus 4.5, Claude Sonnet 4',
+    description: 'Claude Sonnet 4.5, Claude Opus 4.5',
     keyPrefix: 'sk-ant-',
     keyUrl: 'https://console.anthropic.com/settings/keys',
     models: [
       {
-        id: 'claude-opus-4-5-20251124',
-        name: 'Claude Opus 4.5',
+        id: 'claude-sonnet-4-5',
+        name: 'Claude Sonnet 4.5',
         recommended: true,
-        description: 'Best for coding'
+        description: 'Balanced'
       },
-      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', description: 'Balanced' },
-      { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },
-      { id: 'claude-3-5-haiku-20241022', name: 'Claude 3.5 Haiku', description: 'Faster' }
+      { id: 'claude-opus-4-5', name: 'Claude Opus 4.5', description: 'Best for coding' },
+      { id: 'claude-haiku-4-5', name: 'Claude 4.5 Haiku', description: 'Faster & cheaper' }
     ]
   },
   {
