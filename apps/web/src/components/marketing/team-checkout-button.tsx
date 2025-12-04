@@ -135,7 +135,7 @@ export function TeamCheckoutButton({ className }: TeamCheckoutButtonProps) {
 
           <div className="rounded-lg bg-muted p-4 text-center">
             <p className="text-sm text-muted-foreground">Total (one-time)</p>
-            <p className="text-3xl font-bold">${totalPrice}</p>
+            <p className="text-3xl font-bold text-zinc-900">${totalPrice}</p>
             <p className="text-xs text-muted-foreground mt-1">
               + 1 year of updates for your whole team
             </p>
