@@ -18,9 +18,7 @@ import type {
   AIMessage,
   AIStructuredResponse,
   StoredChatMessage,
-  ChatSession,
-  AIMultiProviderConfig,
-  AIProviderConfig
+  ChatSession
 } from '@shared/index'
 
 // Re-export types for main process consumers
@@ -30,101 +28,68 @@ export type {
   AIMessage,
   AIStructuredResponse,
   StoredChatMessage,
-  ChatSession,
-  AIMultiProviderConfig,
-  AIProviderConfig
+  ChatSession
 }
 
-const responseSchema = z.object({
-  type: z.enum(['query', 'chart', 'metric', 'schema', 'message']).describe('The type of response'),
-  message: z.string().describe('A brief explanation or response message'),
-
-  // Query-specific fields (null when not applicable)
-  sql: z
-    .string()
-    .nullable()
-    .describe('The complete, valid SQL query (null if not a query/chart/metric)'),
-  explanation: z
-    .string()
-    .nullable()
-    .describe('Detailed explanation of the query (null if not a query)'),
-  warning: z
-    .string()
-    .nullable()
-    .describe('Warning for mutations or potential issues (null if none)'),
-  requiresConfirmation: z
-    .boolean()
-    .nullable()
-    .describe(
-      'True for UPDATE, DELETE, DROP, TRUNCATE, or other destructive queries (null otherwise)'
-    ),
-
-  // Chart-specific fields (null when not applicable)
-  title: z.string().nullable().describe('Chart title (null if not a chart)'),
-  description: z.string().nullable().describe('Chart description (null if not a chart)'),
-  chartType: z
-    .enum(['bar', 'line', 'pie', 'area'])
-    .nullable()
-    .describe('Chart type based on data nature (null if not a chart)'),
-  xKey: z.string().nullable().describe('Column name for X-axis (null if not a chart)'),
-  yKeys: z
-    .array(z.string())
-    .nullable()
-    .describe('Column name(s) for Y-axis values (null if not a chart)'),
-
-  // Metric-specific fields (null when not applicable)
-  label: z.string().nullable().describe('Metric label (null if not a metric)'),
-  format: z
-    .enum(['number', 'currency', 'percent', 'duration'])
-    .nullable()
-    .describe('Value format (null if not a metric)'),
-
-  // Schema-specific fields (null when not applicable)
-  tables: z
-    .array(z.string())
-    .nullable()
-    .describe('Table names to display (null if not a schema response)')
-})
+// Zod schema for structured output
+const responseSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('query'),
+    message: z.string().describe('A brief explanation of what the query does'),
+    sql: z.string().describe('The complete, valid SQL query'),
+    explanation: z.string().describe('Detailed explanation of the query'),
+    warning: z.string().optional().describe('Warning for mutations or potential issues'),
+    requiresConfirmation: z
+      .boolean()
+      .optional()
+      .describe('Set to true for UPDATE, DELETE, DROP, TRUNCATE, or other destructive queries')
+  }),
+  z.object({
+    type: z.literal('chart'),
+    message: z.string().describe('Brief description of the visualization'),
+    title: z.string().describe('Chart title'),
+    description: z.string().optional().describe('Chart description'),
+    chartType: z.enum(['bar', 'line', 'pie', 'area']).describe('Chart type based on data nature'),
+    sql: z.string().describe('SQL query to fetch chart data'),
+    xKey: z.string().describe('Column name for X-axis'),
+    yKeys: z.array(z.string()).describe('Column name(s) for Y-axis values')
+  }),
+  z.object({
+    type: z.literal('metric'),
+    message: z.string().describe('Brief description of the metric'),
+    label: z.string().describe('Metric label'),
+    sql: z.string().describe('SQL query that returns a single value'),
+    format: z.enum(['number', 'currency', 'percent', 'duration']).describe('Value format')
+  }),
+  z.object({
+    type: z.literal('schema'),
+    message: z.string().describe('Explanation of the schema'),
+    tables: z.array(z.string()).describe('Table names to display')
+  }),
+  z.object({
+    type: z.literal('message'),
+    message: z.string().describe('The response message')
+  })
+])
 
 import { DpStorage } from './storage'
 
 // Chat history store structure: map of connectionId -> sessions
 type ChatHistoryStore = Record<string, ChatSession[]>
 
-// Default models for each provider
-const DEFAULT_MODELS: Record<AIProvider, string> = {
-  openai: 'gpt-4o',
-  anthropic: 'claude-sonnet-4-5-20250929',
-  google: 'gemini-2.5-flash',
-  groq: 'llama-3.3-70b-versatile',
-  ollama: 'llama3.2'
-}
-
-// Store types
-interface AIStoreData {
-  // Legacy single-provider config (for migration)
-  aiConfig?: AIConfig | null
-  // New multi-provider config
-  multiProviderConfig?: AIMultiProviderConfig | null
-}
-
-let aiStore: DpStorage<AIStoreData> | null = null
+let aiStore: DpStorage<{ aiConfig: AIConfig | null }> | null = null
 let chatStore: DpStorage<{ chatHistory: ChatHistoryStore }> | null = null
 
 /**
  * Initialize the AI config and chat stores
  */
 export async function initAIStore(): Promise<void> {
-  aiStore = await DpStorage.create<AIStoreData>({
+  aiStore = await DpStorage.create<{ aiConfig: AIConfig | null }>({
     name: 'data-peek-ai-config',
     defaults: {
-      aiConfig: null,
-      multiProviderConfig: null
+      aiConfig: null
     }
   })
-
-  // Migrate legacy config to multi-provider format
-  migrateLegacyConfig()
 
   chatStore = await DpStorage.create<{ chatHistory: ChatHistoryStore }>({
     name: 'data-peek-ai-chat-history',
@@ -135,169 +100,19 @@ export async function initAIStore(): Promise<void> {
 }
 
 /**
- * Migrate legacy single-provider config to multi-provider format
- */
-function migrateLegacyConfig(): void {
-  if (!aiStore) return
-
-  const legacyConfig = aiStore.get('aiConfig', null)
-  const multiConfig = aiStore.get('multiProviderConfig', null)
-
-  // If there's a legacy config but no multi-provider config, migrate it
-  if (legacyConfig && !multiConfig) {
-    const newConfig: AIMultiProviderConfig = {
-      providers: {
-        [legacyConfig.provider]: {
-          apiKey: legacyConfig.apiKey,
-          baseUrl: legacyConfig.baseUrl
-        }
-      },
-      activeProvider: legacyConfig.provider,
-      activeModels: {
-        [legacyConfig.provider]: legacyConfig.model
-      }
-    }
-    aiStore.set('multiProviderConfig', newConfig)
-    // Clear legacy config after migration
-    aiStore.set('aiConfig', null)
-    console.log('[ai-service] Migrated legacy AI config to multi-provider format')
-  }
-}
-
-/**
- * Get the multi-provider AI configuration
- */
-export function getMultiProviderConfig(): AIMultiProviderConfig | null {
-  if (!aiStore) return null
-  return aiStore.get('multiProviderConfig', null) ?? null
-}
-
-/**
- * Save multi-provider AI configuration
- */
-export function setMultiProviderConfig(config: AIMultiProviderConfig | null): void {
-  if (!aiStore) return
-  aiStore.set('multiProviderConfig', config)
-}
-
-/**
- * Get configuration for a specific provider
- */
-export function getProviderConfig(provider: AIProvider): AIProviderConfig | null {
-  const config = getMultiProviderConfig()
-  if (!config) return null
-  return config.providers[provider] || null
-}
-
-/**
- * Set configuration for a specific provider
- */
-export function setProviderConfig(provider: AIProvider, providerConfig: AIProviderConfig): void {
-  const config = getMultiProviderConfig() || {
-    providers: {},
-    activeProvider: provider,
-    activeModels: {}
-  }
-
-  config.providers[provider] = providerConfig
-
-  // If this is the first provider being configured, make it active
-  if (!config.providers[config.activeProvider]?.apiKey && provider !== 'ollama') {
-    config.activeProvider = provider
-  }
-
-  setMultiProviderConfig(config)
-}
-
-/**
- * Remove configuration for a specific provider
- */
-export function removeProviderConfig(provider: AIProvider): void {
-  const config = getMultiProviderConfig()
-  if (!config) return
-
-  delete config.providers[provider]
-  delete config.activeModels[provider]
-
-  // If we removed the active provider, switch to another configured one
-  if (config.activeProvider === provider) {
-    const configuredProviders = Object.keys(config.providers) as AIProvider[]
-    config.activeProvider = configuredProviders[0] || 'openai'
-  }
-
-  setMultiProviderConfig(config)
-}
-
-/**
- * Set the active provider
- */
-export function setActiveProvider(provider: AIProvider): void {
-  const config = getMultiProviderConfig()
-  if (!config) return
-
-  config.activeProvider = provider
-  setMultiProviderConfig(config)
-}
-
-/**
- * Set the active model for a provider
- */
-export function setActiveModel(provider: AIProvider, model: string): void {
-  const config = getMultiProviderConfig()
-  if (!config) return
-
-  config.activeModels[provider] = model
-  setMultiProviderConfig(config)
-}
-
-/**
- * Get the current AI configuration (legacy format for backward compatibility)
- * Converts multi-provider config to single AIConfig
+ * Get the current AI configuration
  */
 export function getAIConfig(): AIConfig | null {
-  const multiConfig = getMultiProviderConfig()
-  if (!multiConfig) return null
-
-  const provider = multiConfig.activeProvider
-  const providerConfig = multiConfig.providers[provider]
-
-  // For non-Ollama providers, require an API key
-  if (provider !== 'ollama' && !providerConfig?.apiKey) {
-    return null
-  }
-
-  return {
-    provider,
-    apiKey: providerConfig?.apiKey,
-    model: multiConfig.activeModels[provider] || DEFAULT_MODELS[provider],
-    baseUrl: providerConfig?.baseUrl
-  }
+  if (!aiStore) return null
+  return aiStore.get('aiConfig', null)
 }
 
 /**
- * Save AI configuration (legacy format for backward compatibility)
- * Converts single AIConfig to multi-provider format
+ * Save AI configuration
  */
 export function setAIConfig(config: AIConfig | null): void {
-  if (!config) {
-    // Don't clear everything, just deactivate
-    return
-  }
-
-  const multiConfig = getMultiProviderConfig() || {
-    providers: {},
-    activeProvider: config.provider,
-    activeModels: {}
-  }
-
-  multiConfig.providers[config.provider] = {
-    apiKey: config.apiKey,
-    baseUrl: config.baseUrl
-  }
-  multiConfig.activeProvider = config.provider
-  multiConfig.activeModels[config.provider] = config.model
-
-  setMultiProviderConfig(multiConfig)
+  if (!aiStore) return
+  aiStore.set('aiConfig', config)
 }
 
 /**
@@ -305,7 +120,7 @@ export function setAIConfig(config: AIConfig | null): void {
  */
 export function clearAIConfig(): void {
   if (!aiStore) return
-  aiStore.set('multiProviderConfig', null)
+  aiStore.set('aiConfig', null)
 }
 
 /**
@@ -490,20 +305,11 @@ export async function generateChatResponse(
       ? `Previous conversation:\n${conversationContext}\n\nUser's current request: ${lastUserMessage.content}`
       : lastUserMessage.content
 
-    // Use 'json' mode for OpenAI/Ollama to bypass strict structured outputs
-    // OpenAI's strict mode requires all fields in 'required' array which doesn't work with nullable fields
-    // 'json' mode just asks the model to output JSON and validates against schema client-side
-    const useJsonMode = config.provider === 'openai' || config.provider === 'ollama'
-
     const result = await generateObject({
       model,
       schema: responseSchema,
-      schemaName: 'DatabaseAssistantResponse',
-      schemaDescription:
-        'A structured response from the database assistant. The type field determines which other fields are relevant.',
       system: systemPrompt,
       prompt,
-      mode: useJsonMode ? 'json' : 'auto',
       temperature: 0.1 // Lower temperature for more consistent SQL generation
     })
 

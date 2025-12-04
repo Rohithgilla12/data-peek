@@ -715,10 +715,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 <Play className="size-3.5" />
               )}
               Run
-              <kbd className="ml-1.5 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                {keys.mod}
-                {keys.enter}
-              </kbd>
+              <kbd className="ml-1.5 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">{keys.mod}{keys.enter}</kbd>
             </Button>
             <TooltipProvider>
               <Tooltip>
@@ -754,10 +751,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 >
                   <Wand2 className="size-3.5" />
                   Format
-                  <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
-                    {keys.mod}
-                    {keys.shift}F
-                  </kbd>
+                  <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">{keys.mod}{keys.shift}F</kbd>
                 </Button>
                 <Button
                   variant="ghost"
@@ -1046,9 +1040,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center space-y-2">
                   <p className="text-muted-foreground">Run a query to see results</p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Press {keys.mod}+Enter to execute
-                  </p>
+                  <p className="text-xs text-muted-foreground/70">Press {keys.mod}+Enter to execute</p>
                 </div>
               </div>
             )}
