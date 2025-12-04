@@ -422,6 +422,8 @@ export class PostgresAdapter implements DatabaseAdapter {
         SELECT schema_name
         FROM information_schema.schemata
         WHERE schema_name NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND schema_name NOT LIKE 'pg_toast_temp_%'
+          AND schema_name NOT LIKE 'pg_temp_%'
         ORDER BY schema_name
       `)
 
@@ -433,6 +435,8 @@ export class PostgresAdapter implements DatabaseAdapter {
           table_type
         FROM information_schema.tables
         WHERE table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND table_schema NOT LIKE 'pg_toast_temp_%'
+          AND table_schema NOT LIKE 'pg_temp_%'
         ORDER BY table_schema, table_name
       `)
 
@@ -466,6 +470,8 @@ export class PostgresAdapter implements DatabaseAdapter {
           AND c.table_name = pk.table_name
           AND c.column_name = pk.column_name
         WHERE c.table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND c.table_schema NOT LIKE 'pg_toast_temp_%'
+          AND c.table_schema NOT LIKE 'pg_temp_%'
         ORDER BY c.table_schema, c.table_name, c.ordinal_position
       `)
 
@@ -488,6 +494,8 @@ export class PostgresAdapter implements DatabaseAdapter {
           AND ccu.table_schema = tc.constraint_schema
         WHERE tc.constraint_type = 'FOREIGN KEY'
           AND tc.table_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND tc.table_schema NOT LIKE 'pg_toast_temp_%'
+          AND tc.table_schema NOT LIKE 'pg_temp_%'
         ORDER BY tc.table_schema, tc.table_name, kcu.column_name
       `)
 
@@ -511,6 +519,8 @@ export class PostgresAdapter implements DatabaseAdapter {
         LEFT JOIN pg_catalog.pg_description d
           ON d.objoid = p.oid
         WHERE r.routine_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND r.routine_schema NOT LIKE 'pg_toast_temp_%'
+          AND r.routine_schema NOT LIKE 'pg_temp_%'
         ORDER BY r.routine_schema, r.routine_name
       `)
 
@@ -526,6 +536,8 @@ export class PostgresAdapter implements DatabaseAdapter {
           p.ordinal_position
         FROM information_schema.parameters p
         WHERE p.specific_schema NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND p.specific_schema NOT LIKE 'pg_toast_temp_%'
+          AND p.specific_schema NOT LIKE 'pg_temp_%'
           AND p.parameter_name IS NOT NULL
         ORDER BY p.specific_schema, p.specific_name, p.ordinal_position
       `)
