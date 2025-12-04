@@ -57,10 +57,15 @@ const PROVIDERS = [
     keyUrl: 'https://console.anthropic.com/settings/keys',
     models: [
       {
-        id: 'claude-opus-4-5-20251124',
+        id: 'claude-opus-4-5-20251101',
         name: 'Claude Opus 4.5',
         recommended: true,
         description: 'Best for coding'
+      },
+      {
+        id: 'claude-haiku-4-5-20251001',
+        name: 'Claude Haiku 4.5',
+        description: 'Faster'
       },
       { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', description: 'Balanced' },
       { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet' },

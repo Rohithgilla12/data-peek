@@ -31,46 +31,56 @@ export type {
   ChatSession
 }
 
-// Zod schema for structured output
-const responseSchema = z.discriminatedUnion('type', [
-  z.object({
-    type: z.literal('query'),
-    message: z.string().describe('A brief explanation of what the query does'),
-    sql: z.string().describe('The complete, valid SQL query'),
-    explanation: z.string().describe('Detailed explanation of the query'),
-    warning: z.string().optional().describe('Warning for mutations or potential issues'),
-    requiresConfirmation: z
-      .boolean()
-      .optional()
-      .describe('Set to true for UPDATE, DELETE, DROP, TRUNCATE, or other destructive queries')
-  }),
-  z.object({
-    type: z.literal('chart'),
-    message: z.string().describe('Brief description of the visualization'),
-    title: z.string().describe('Chart title'),
-    description: z.string().optional().describe('Chart description'),
-    chartType: z.enum(['bar', 'line', 'pie', 'area']).describe('Chart type based on data nature'),
-    sql: z.string().describe('SQL query to fetch chart data'),
-    xKey: z.string().describe('Column name for X-axis'),
-    yKeys: z.array(z.string()).describe('Column name(s) for Y-axis values')
-  }),
-  z.object({
-    type: z.literal('metric'),
-    message: z.string().describe('Brief description of the metric'),
-    label: z.string().describe('Metric label'),
-    sql: z.string().describe('SQL query that returns a single value'),
-    format: z.enum(['number', 'currency', 'percent', 'duration']).describe('Value format')
-  }),
-  z.object({
-    type: z.literal('schema'),
-    message: z.string().describe('Explanation of the schema'),
-    tables: z.array(z.string()).describe('Table names to display')
-  }),
-  z.object({
-    type: z.literal('message'),
-    message: z.string().describe('The response message')
-  })
-])
+const responseSchema = z.object({
+  type: z.enum(['query', 'chart', 'metric', 'schema', 'message']).describe('The type of response'),
+  message: z.string().describe('A brief explanation or response message'),
+
+  // Query-specific fields (null when not applicable)
+  sql: z
+    .string()
+    .nullable()
+    .describe('The complete, valid SQL query (null if not a query/chart/metric)'),
+  explanation: z
+    .string()
+    .nullable()
+    .describe('Detailed explanation of the query (null if not a query)'),
+  warning: z
+    .string()
+    .nullable()
+    .describe('Warning for mutations or potential issues (null if none)'),
+  requiresConfirmation: z
+    .boolean()
+    .nullable()
+    .describe(
+      'True for UPDATE, DELETE, DROP, TRUNCATE, or other destructive queries (null otherwise)'
+    ),
+
+  // Chart-specific fields (null when not applicable)
+  title: z.string().nullable().describe('Chart title (null if not a chart)'),
+  description: z.string().nullable().describe('Chart description (null if not a chart)'),
+  chartType: z
+    .enum(['bar', 'line', 'pie', 'area'])
+    .nullable()
+    .describe('Chart type based on data nature (null if not a chart)'),
+  xKey: z.string().nullable().describe('Column name for X-axis (null if not a chart)'),
+  yKeys: z
+    .array(z.string())
+    .nullable()
+    .describe('Column name(s) for Y-axis values (null if not a chart)'),
+
+  // Metric-specific fields (null when not applicable)
+  label: z.string().nullable().describe('Metric label (null if not a metric)'),
+  format: z
+    .enum(['number', 'currency', 'percent', 'duration'])
+    .nullable()
+    .describe('Value format (null if not a metric)'),
+
+  // Schema-specific fields (null when not applicable)
+  tables: z
+    .array(z.string())
+    .nullable()
+    .describe('Table names to display (null if not a schema response)')
+})
 
 import { DpStorage } from './storage'
 
@@ -305,11 +315,20 @@ export async function generateChatResponse(
       ? `Previous conversation:\n${conversationContext}\n\nUser's current request: ${lastUserMessage.content}`
       : lastUserMessage.content
 
+    // Use 'json' mode for OpenAI/Ollama to bypass strict structured outputs
+    // OpenAI's strict mode requires all fields in 'required' array which doesn't work with nullable fields
+    // 'json' mode just asks the model to output JSON and validates against schema client-side
+    const useJsonMode = config.provider === 'openai' || config.provider === 'ollama'
+
     const result = await generateObject({
       model,
       schema: responseSchema,
+      schemaName: 'DatabaseAssistantResponse',
+      schemaDescription:
+        'A structured response from the database assistant. The type field determines which other fields are relevant.',
       system: systemPrompt,
       prompt,
+      mode: useJsonMode ? 'json' : 'auto',
       temperature: 0.1 // Lower temperature for more consistent SQL generation
     })
 
