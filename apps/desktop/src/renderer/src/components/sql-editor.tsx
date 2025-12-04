@@ -7,7 +7,7 @@ import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 import { formatSQL } from '@/lib/sql-formatter'
 import { cn } from '@/lib/utils'
 import { useTheme } from '@/components/theme-provider'
-import type { SchemaInfo } from '@data-peek/shared'
+import type { SchemaInfo, TableInfo } from '@data-peek/shared'
 
 // Configure Monaco workers for Vite + Electron (avoids CSP issues)
 self.MonacoEnvironment = {
@@ -226,6 +226,94 @@ const updateCompletionSchemas = (schemas: SchemaInfo[]) => {
   currentSchemas = schemas
 }
 
+// SQL reserved keywords that should not be treated as table aliases
+const SQL_RESERVED_KEYWORDS = new Set([
+  'on',
+  'where',
+  'and',
+  'or',
+  'not',
+  'in',
+  'is',
+  'null',
+  'like',
+  'between',
+  'exists',
+  'case',
+  'when',
+  'then',
+  'else',
+  'end',
+  'left',
+  'right',
+  'inner',
+  'outer',
+  'full',
+  'cross',
+  'join',
+  'natural',
+  'using',
+  'order',
+  'group',
+  'by',
+  'having',
+  'limit',
+  'offset',
+  'union',
+  'intersect',
+  'except',
+  'all',
+  'distinct',
+  'as',
+  'set',
+  'values',
+  'into',
+  'returning',
+  'with',
+  'recursive'
+])
+
+/**
+ * Extract table aliases from SQL query text
+ * Parses FROM and JOIN clauses to build a map of alias -> table name
+ * Note: Does not support quoted identifiers (e.g., "schema"."table")
+ * @param queryText - The full SQL query text
+ * @returns Map of alias (lowercase) to table name (with schema if present)
+ */
+const extractTableAliases = (queryText: string): Map<string, string> => {
+  const aliases = new Map<string, string>()
+
+  // Normalize whitespace for matching
+  const normalized = queryText.replace(/\s+/g, ' ').trim()
+
+  // Pattern to match: FROM/JOIN [schema.]table [AS] alias
+  // Handles:
+  // - FROM table_name alias
+  // - FROM table_name AS alias
+  // - FROM schema.table_name alias
+  // - FROM schema.table_name AS alias
+  // - JOIN table_name alias
+  // - JOIN table_name AS alias
+  // - JOIN schema.table_name alias
+  // - JOIN schema.table_name AS alias
+  // Also handles LEFT/RIGHT/INNER/OUTER/FULL/CROSS JOIN variants
+  const fromJoinPattern =
+    /\b(?:FROM|JOIN|LEFT\s+(?:OUTER\s+)?JOIN|RIGHT\s+(?:OUTER\s+)?JOIN|INNER\s+JOIN|FULL\s+(?:OUTER\s+)?JOIN|CROSS\s+JOIN)\s+([\w.]+)\s+(?:AS\s+)?(\w+)\b/gi
+
+  let match: string[] | null
+  while ((match = fromJoinPattern.exec(normalized)) !== null) {
+    const tableRef = match[1]
+    const alias = match[2].toLowerCase()
+
+    // Only add if alias is a valid identifier and not a SQL keyword
+    if (alias && /^[a-zA-Z_]\w*$/.test(alias) && !SQL_RESERVED_KEYWORDS.has(alias)) {
+      aliases.set(alias, tableRef)
+    }
+  }
+
+  return aliases
+}
+
 // Register SQL completion provider once globally
 const ensureCompletionProvider = (monacoInstance: Monaco): void => {
   // Only register once
@@ -296,6 +384,54 @@ const ensureCompletionProvider = (monacoInstance: Monaco): void => {
               })
             })
             return { suggestions }
+          }
+        }
+
+        // Check if it's a table alias - extract aliases from the full query
+        const fullQueryText = model.getValue()
+        const aliases = extractTableAliases(fullQueryText)
+
+        if (aliases.has(tableOrSchemaName)) {
+          const tableRef = aliases.get(tableOrSchemaName)!
+          // Extract table name (remove schema prefix if present)
+          const tableNameParts = tableRef.split('.')
+          const tableName = tableNameParts[tableNameParts.length - 1].toLowerCase()
+          const schemaName = tableNameParts.length > 1 ? tableNameParts[0].toLowerCase() : null
+
+          // Helper to build column suggestions for a matched table
+          const buildColumnSuggestions = (
+            table: TableInfo,
+            displayPath: string
+          ): monaco.languages.CompletionItem[] => {
+            return table.columns.map((column) => {
+              const pkIndicator = column.isPrimaryKey ? ' 🔑' : ''
+              return {
+                label: column.name,
+                kind: monacoInstance.languages.CompletionItemKind.Field,
+                insertText: column.name,
+                range,
+                detail: `${column.dataType}${column.isNullable ? '' : ' NOT NULL'}${pkIndicator}`,
+                documentation: `Column in ${displayPath} (via alias ${tableOrSchemaName})\nType: ${column.dataType}\nNullable: ${column.isNullable}\nPrimary Key: ${column.isPrimaryKey}`,
+                sortText: String(column.ordinalPosition).padStart(3, '0')
+              }
+            })
+          }
+
+          // Search for the table - prioritize schema-qualified match if schema was specified
+          for (const schema of currentSchemas) {
+            // If schema was specified in the alias reference, only match that schema
+            if (schemaName && schema.name.toLowerCase() !== schemaName) {
+              continue
+            }
+
+            const matchingTable = schema.tables.find((t) => t.name.toLowerCase() === tableName)
+            if (matchingTable) {
+              const displayPath = schemaName
+                ? `${schema.name}.${matchingTable.name}`
+                : matchingTable.name
+              suggestions.push(...buildColumnSuggestions(matchingTable, displayPath))
+              return { suggestions }
+            }
           }
         }
       }
