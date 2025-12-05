@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import {
   Sparkles,
@@ -40,7 +41,10 @@ import {
   X,
   AlertCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Search,
+  Check,
+  ChevronsUpDown
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ColumnInfo } from '@data-peek/shared'
@@ -142,6 +146,7 @@ function SmartField({
   const fieldType = getFieldType(column)
   const Icon = fieldTypeIcons[fieldType]
   const [fkSearchQuery, setFkSearchQuery] = React.useState('')
+  const [fkPopoverOpen, setFkPopoverOpen] = React.useState(false)
   const iconColor = fieldTypeColors[fieldType]
   const isRequired = !column.isNullable && !column.defaultValue
   const hasDefault = !!column.defaultValue
@@ -366,7 +371,7 @@ function SmartField({
           />
         )}
 
-        {/* Foreign Key Field - searchable dropdown */}
+        {/* Foreign Key Field - searchable combobox */}
         {fieldType === 'foreignKey' && (
           <div className="flex gap-2 flex-1">
             {loadingFkValues ? (
@@ -375,54 +380,131 @@ function SmartField({
                 <span className="text-xs text-muted-foreground">Loading values...</span>
               </div>
             ) : foreignKeyValues && foreignKeyValues.length > 0 ? (
-              <Select value={displayValue || ''} onValueChange={(v) => onChange(v || null)}>
-                <SelectTrigger className="h-9 flex-1 bg-muted/30 border-border/50 focus:ring-blue-500/50">
-                  <SelectValue
-                    placeholder={`Select from ${column.foreignKey?.referencedTable}...`}
-                  />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
+              <Popover open={fkPopoverOpen} onOpenChange={setFkPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={fkPopoverOpen}
+                    className="h-9 flex-1 justify-between bg-muted/30 border-border/50 hover:bg-muted/50 font-normal"
+                  >
+                    <span
+                      className={cn(
+                        'truncate font-mono text-xs',
+                        !displayValue && 'text-muted-foreground'
+                      )}
+                    >
+                      {displayValue || `Select from ${column.foreignKey?.referencedTable}...`}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="w-[var(--radix-popover-trigger-width)] p-0"
+                  align="start"
+                >
                   {/* Search input */}
-                  <div className="px-2 pb-2">
-                    <Input
+                  <div className="flex items-center border-b px-3 py-2">
+                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                    <input
                       placeholder="Search..."
                       value={fkSearchQuery}
                       onChange={(e) => setFkSearchQuery(e.target.value)}
-                      className="h-8 text-xs"
+                      className="flex h-8 w-full rounded-md bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                     />
+                    {fkSearchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 shrink-0"
+                        onClick={() => setFkSearchQuery('')}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
                   </div>
-                  {column.isNullable && (
-                    <SelectItem value="" className="text-muted-foreground">
-                      NULL
-                    </SelectItem>
-                  )}
-                  {foreignKeyValues
-                    .filter((fk) => {
+                  {/* Options list */}
+                  <div className="max-h-[200px] overflow-y-auto p-1">
+                    {column.isNullable && (
+                      <button
+                        type="button"
+                        className={cn(
+                          'relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
+                          value === null && 'bg-accent'
+                        )}
+                        onClick={() => {
+                          onChange(null)
+                          setFkPopoverOpen(false)
+                          setFkSearchQuery('')
+                        }}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            value === null ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
+                        <span className="text-muted-foreground italic">NULL</span>
+                      </button>
+                    )}
+                    {foreignKeyValues
+                      .filter((fk) => {
+                        if (!fkSearchQuery) return true
+                        const searchLower = fkSearchQuery.toLowerCase()
+                        return (
+                          String(fk.value).toLowerCase().includes(searchLower) ||
+                          (fk.label && fk.label.toLowerCase().includes(searchLower))
+                        )
+                      })
+                      .slice(0, 100)
+                      .map((fk) => {
+                        const isSelected = String(value) === String(fk.value)
+                        return (
+                          <button
+                            key={String(fk.value)}
+                            type="button"
+                            className={cn(
+                              'relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
+                              isSelected && 'bg-accent'
+                            )}
+                            onClick={() => {
+                              onChange(fk.value)
+                              setFkPopoverOpen(false)
+                              setFkSearchQuery('')
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                isSelected ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            <span className="font-mono text-xs">{fk.value}</span>
+                            {fk.label && (
+                              <span className="ml-2 text-muted-foreground text-xs">
+                                ({fk.label})
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })}
+                    {foreignKeyValues.filter((fk) => {
                       if (!fkSearchQuery) return true
                       const searchLower = fkSearchQuery.toLowerCase()
-                      return (
-                        String(fk.value).toLowerCase().includes(searchLower) ||
-                        (fk.label && fk.label.toLowerCase().includes(searchLower))
-                      )
-                    })
-                    .slice(0, 100) // Limit to first 100 matches for performance
-                    .map((fk) => (
-                      <SelectItem key={String(fk.value)} value={String(fk.value)}>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs">{fk.value}</span>
-                          {fk.label && (
-                            <span className="text-muted-foreground text-xs">({fk.label})</span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  {foreignKeyValues.length > 100 && !fkSearchQuery && (
-                    <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">
-                      Showing first 100 of {foreignKeyValues.length} values. Type to search...
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
+                      return String(fk.value).toLowerCase().includes(searchLower)
+                    }).length === 0 && (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        No results found.
+                      </div>
+                    )}
+                    {foreignKeyValues.length > 100 && !fkSearchQuery && (
+                      <div className="px-2 py-1.5 text-xs text-muted-foreground text-center border-t mt-1">
+                        Showing first 100 of {foreignKeyValues.length}. Type to search...
+                      </div>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             ) : (
               // Fallback to manual input if no FK values available
               <Input
