@@ -3,7 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import type {
   ConnectionConfig,
   IpcResponse,
-  DatabaseSchema,
+  DatabaseSchemaResponse,
   EditBatch,
   EditResult,
   TableDefinition,
@@ -58,9 +58,8 @@ const api = {
     schemas: (
       config: ConnectionConfig,
       forceRefresh?: boolean
-    ): Promise<
-      IpcResponse<DatabaseSchema & { fromCache?: boolean; stale?: boolean; refreshError?: string }>
-    > => ipcRenderer.invoke('db:schemas', { config, forceRefresh }),
+    ): Promise<IpcResponse<DatabaseSchemaResponse>> =>
+      ipcRenderer.invoke('db:schemas', { config, forceRefresh }),
     invalidateSchemaCache: (config: ConnectionConfig): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('db:invalidate-schema-cache', config),
     execute: (config: ConnectionConfig, batch: EditBatch): Promise<IpcResponse<EditResult>> =>

@@ -587,6 +587,21 @@ export interface DatabaseSchema {
   fetchedAt: number;
 }
 
+/**
+ * Extended database schema response with cache metadata
+ * Used for IPC communication between main and renderer processes
+ */
+export interface DatabaseSchemaResponse extends DatabaseSchema {
+  /** Custom database types (enums, composites, etc.) */
+  customTypes?: CustomTypeInfo[];
+  /** Whether the response was served from cache */
+  fromCache?: boolean;
+  /** Whether the cached data is stale (past TTL but still usable) */
+  stale?: boolean;
+  /** Error message if background refresh failed */
+  refreshError?: string;
+}
+
 // ============================================
 // Edit Operation Types - Database Agnostic
 // ============================================

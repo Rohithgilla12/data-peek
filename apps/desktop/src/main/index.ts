@@ -93,7 +93,7 @@ const schemaMemoryCache = new Map<string, CachedSchema>()
 
 // Generate cache key from connection config
 function getSchemaCacheKey(config: ConnectionConfig): string {
-  return `${config.dbType}:${config.host}:${config.port}:${config.database}`
+  return `${config.dbType}:${config.host}:${config.port}:${config.database}:${config.user ?? 'default'}`
 }
 
 async function initStore(): Promise<void> {
