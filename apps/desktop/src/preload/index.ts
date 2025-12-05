@@ -53,8 +53,14 @@ const api = {
   db: {
     connect: (config: ConnectionConfig): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('db:connect', config),
-    query: (config: ConnectionConfig, query: string): Promise<IpcResponse<unknown>> =>
-      ipcRenderer.invoke('db:query', { config, query }),
+    query: (
+      config: ConnectionConfig,
+      query: string,
+      executionId?: string
+    ): Promise<IpcResponse<unknown>> =>
+      ipcRenderer.invoke('db:query', { config, query, executionId }),
+    cancelQuery: (executionId: string): Promise<IpcResponse<{ cancelled: boolean }>> =>
+      ipcRenderer.invoke('db:cancel-query', executionId),
     schemas: (
       config: ConnectionConfig,
       forceRefresh?: boolean

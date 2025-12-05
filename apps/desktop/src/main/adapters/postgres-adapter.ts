@@ -20,8 +20,10 @@ import type {
   DatabaseAdapter,
   AdapterQueryResult,
   AdapterMultiQueryResult,
-  ExplainResult
+  ExplainResult,
+  QueryOptions
 } from '../db-adapter'
+import { registerQuery, unregisterQuery } from '../query-tracker'
 
 /**
  * PostgreSQL OID to Type Name Mapping
@@ -301,9 +303,18 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
   }
 
-  async queryMultiple(config: ConnectionConfig, sql: string): Promise<AdapterMultiQueryResult> {
+  async queryMultiple(
+    config: ConnectionConfig,
+    sql: string,
+    options?: QueryOptions
+  ): Promise<AdapterMultiQueryResult> {
     const client = new Client(config)
     await client.connect()
+
+    // Register for cancellation support
+    if (options?.executionId) {
+      registerQuery(options.executionId, { type: 'postgresql', client })
+    }
 
     const totalStart = Date.now()
     const results: StatementResult[] = []
@@ -363,6 +374,10 @@ export class PostgresAdapter implements DatabaseAdapter {
         totalDurationMs: Date.now() - totalStart
       }
     } finally {
+      // Unregister from tracker
+      if (options?.executionId) {
+        unregisterQuery(options.executionId)
+      }
       await client.end()
     }
   }

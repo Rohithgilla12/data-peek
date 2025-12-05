@@ -135,7 +135,12 @@ interface DataPeekApi {
   }
   db: {
     connect: (config: ConnectionConfig) => Promise<IpcResponse<void>>
-    query: (config: ConnectionConfig, query: string) => Promise<IpcResponse<unknown>>
+    query: (
+      config: ConnectionConfig,
+      query: string,
+      executionId?: string
+    ) => Promise<IpcResponse<unknown>>
+    cancelQuery: (executionId: string) => Promise<IpcResponse<{ cancelled: boolean }>>
     schemas: (
       config: ConnectionConfig,
       forceRefresh?: boolean
