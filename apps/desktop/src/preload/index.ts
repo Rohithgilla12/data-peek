@@ -258,7 +258,31 @@ const api = {
       ipcRenderer.invoke('ai:set-active-provider', provider),
     setActiveModel: (provider: AIProvider, model: string): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('ai:set-active-model', { provider, model })
+  },
+  // Auto-updater
+  updater: {
+    getState: (): Promise<UpdateState> => ipcRenderer.invoke('updater:get-state'),
+    checkForUpdates: (): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke('updater:check-for-updates'),
+    restartAndUpdate: (): Promise<{ success: boolean }> =>
+      ipcRenderer.invoke('updater:restart-and-update'),
+    onStateChanged: (callback: (state: UpdateState) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: UpdateState): void =>
+        callback(state)
+      ipcRenderer.on('updater:state-changed', handler)
+      return () => ipcRenderer.removeListener('updater:state-changed', handler)
+    }
   }
+}
+
+// Update state type (mirrored from main process)
+export type UpdateStatus = 'idle' | 'downloading' | 'ready'
+
+export interface UpdateState {
+  status: UpdateStatus
+  version: string | null
+  releaseNotes: string | null
+  downloadProgress: number
 }
 
 // Use `contextBridge` APIs to expose Electron APIs to

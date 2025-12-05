@@ -64,7 +64,7 @@ import {
   type AIMultiProviderConfig,
   type AIProviderConfig
 } from './ai-service'
-import { initAutoUpdater, stopPeriodicChecks } from './updater'
+import { initAutoUpdater, registerUpdaterIPC } from './updater'
 import type { LicenseActivationRequest, SchemaInfo } from '@shared/index'
 
 import { DpStorage } from './storage'
@@ -1233,11 +1233,15 @@ app.whenReady().then(async () => {
     }
   )
 
+  // Register updater IPC handlers before window creation
+  registerUpdaterIPC()
+
   await createWindow()
 
-  // Initialize auto-updater (only runs in production)
-  // Pass the main window so it can send notifications to renderer
-  initAutoUpdater(mainWindow!)
+  // Initialize auto-updater with main window reference (only runs in production)
+  if (mainWindow) {
+    initAutoUpdater(mainWindow)
+  }
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
