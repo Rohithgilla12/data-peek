@@ -1,10 +1,26 @@
 'use client'
 
 import * as React from 'react'
-import { Pencil, PencilOff, Plus, Save, RotateCcw, AlertTriangle, FileCode } from 'lucide-react'
+import {
+  Pencil,
+  PencilOff,
+  Plus,
+  Save,
+  RotateCcw,
+  AlertTriangle,
+  FileCode,
+  ChevronDown,
+  PanelRight
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +45,7 @@ interface EditToolbarProps {
   isCommitting?: boolean
   onToggleEditMode: () => void
   onAddRow: () => void
+  onAddRowWithSheet: () => void
   onSaveChanges: () => void
   onDiscardChanges: () => void
   onPreviewSql: () => void
@@ -42,6 +59,7 @@ export function EditToolbar({
   isCommitting = false,
   onToggleEditMode,
   onAddRow,
+  onAddRowWithSheet,
   onSaveChanges,
   onDiscardChanges,
   onPreviewSql
@@ -142,23 +160,38 @@ export function EditToolbar({
           <>
             <div className="h-4 w-px bg-border mx-1" />
 
-            {/* Add Row */}
-            <Tooltip>
-              <TooltipTrigger asChild>
+            {/* Add Row Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 gap-1.5 text-xs text-green-600 border-green-600/30 hover:bg-green-600/10"
-                  onClick={onAddRow}
+                  className="h-7 gap-1 text-xs text-green-600 border-green-600/30 hover:bg-green-600/10"
                 >
                   <Plus className="size-3" />
                   Add Row
+                  <ChevronDown className="size-3 ml-0.5" />
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">
-                <p className="text-xs">Add a new row to the table</p>
-              </TooltipContent>
-            </Tooltip>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-48">
+                <DropdownMenuItem onClick={onAddRowWithSheet} className="gap-2">
+                  <PanelRight className="size-4 text-green-500" />
+                  <div className="flex flex-col">
+                    <span>Add with Form</span>
+                    <span className="text-[10px] text-muted-foreground">
+                      Smart fields & validation
+                    </span>
+                  </div>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onAddRow} className="gap-2">
+                  <Plus className="size-4 text-muted-foreground" />
+                  <div className="flex flex-col">
+                    <span>Quick Add</span>
+                    <span className="text-[10px] text-muted-foreground">Inline row editing</span>
+                  </div>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Pending Changes Badge */}
             {hasChanges && (

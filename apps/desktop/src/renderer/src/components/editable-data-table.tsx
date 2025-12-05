@@ -24,7 +24,9 @@ import {
   X,
   Trash2,
   RotateCcw,
-  Link2
+  Link2,
+  Copy,
+  MoreHorizontal
 } from 'lucide-react'
 import type { ForeignKeyInfo, ColumnInfo, EditContext, ConnectionConfig } from '@data-peek/shared'
 import { Input } from '@/components/ui/input'
@@ -33,11 +35,19 @@ import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/compon
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { EditableCell } from '@/components/editable-cell'
 import { EditToolbar } from '@/components/edit-toolbar'
 import { SqlPreviewModal } from '@/components/sql-preview-modal'
 import { JsonCellValue } from '@/components/json-cell-value'
 import { FKCellValue } from '@/components/fk-cell-value'
+import { AddRowSheet } from '@/components/add-row-sheet'
 import { useEditStore } from '@/stores/edit-store'
 
 export interface DataTableColumn {
@@ -119,6 +129,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   >([])
   const [isCommitting, setIsCommitting] = React.useState(false)
 
+  // Add Row Sheet state
+  const [showAddRowSheet, setShowAddRowSheet] = React.useState(false)
+  const [duplicateRowValues, setDuplicateRowValues] = React.useState<Record<
+    string,
+    unknown
+  > | null>(null)
+
   // Edit store
   const {
     isInEditMode,
@@ -184,7 +201,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     }
   }
 
-  // Handle add new row
+  // Handle add new row (inline quick add)
   const handleAddRow = () => {
     // Create default values for all columns
     const defaultValues: Record<string, unknown> = {}
@@ -193,6 +210,43 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     })
     addNewRow(tabId, defaultValues)
   }
+
+  // Handle add row with sheet (form-based)
+  const handleAddRowWithSheet = () => {
+    setDuplicateRowValues(null)
+    setShowAddRowSheet(true)
+  }
+
+  // Handle duplicate row
+  const handleDuplicateRow = (rowData: Record<string, unknown>) => {
+    setDuplicateRowValues(rowData)
+    setShowAddRowSheet(true)
+  }
+
+  // Handle sheet submit
+  const handleSheetSubmit = (values: Record<string, unknown>) => {
+    addNewRow(tabId, values)
+    setShowAddRowSheet(false)
+    setDuplicateRowValues(null)
+  }
+
+  // Convert DataTableColumn to ColumnInfo for the sheet
+  const columnInfos: ColumnInfo[] = columnDefs.map((col, idx) => ({
+    name: col.name,
+    dataType: col.dataType,
+    isPrimaryKey: col.isPrimaryKey ?? false,
+    isNullable: col.isNullable ?? true,
+    ordinalPosition: idx + 1,
+    foreignKey: col.foreignKey
+  }))
+
+  // Build enum values map
+  const enumValuesMap: Record<string, string[]> = {}
+  columnDefs.forEach((col) => {
+    if (col.enumValues && col.enumValues.length > 0) {
+      enumValuesMap[col.name] = col.enumValues
+    }
+  })
 
   // Handle preview SQL
   const handlePreviewSql = async () => {
@@ -288,7 +342,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         cell: ({ row }) => {
           const rowIndex = row.index
           const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
-          const originalRow = row.original
+          const originalRow = row.original as Record<string, unknown>
 
           return (
             <div className="flex items-center gap-1">
@@ -307,21 +361,34 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   <TooltipContent>Restore row</TooltipContent>
                 </Tooltip>
               ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-6 text-muted-foreground hover:text-red-500"
-                      onClick={() =>
-                        markRowForDeletion(tabId, rowIndex, originalRow as Record<string, unknown>)
-                      }
+                      className="size-6 text-muted-foreground hover:text-foreground"
                     >
-                      <Trash2 className="size-3" />
+                      <MoreHorizontal className="size-3" />
                     </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Delete row</TooltipContent>
-                </Tooltip>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-40">
+                    <DropdownMenuItem
+                      onClick={() => handleDuplicateRow(originalRow)}
+                      className="gap-2"
+                    >
+                      <Copy className="size-4 text-amber-500" />
+                      Duplicate Row
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => markRowForDeletion(tabId, rowIndex, originalRow)}
+                      className="gap-2 text-red-500 focus:text-red-500"
+                    >
+                      <Trash2 className="size-4" />
+                      Delete Row
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           )
@@ -484,6 +551,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     })
 
     return cols
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isEditMode,
     columnDefs,
@@ -575,6 +643,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   isCommitting={isCommitting}
                   onToggleEditMode={handleToggleEditMode}
                   onAddRow={handleAddRow}
+                  onAddRowWithSheet={handleAddRowWithSheet}
                   onSaveChanges={handleSaveChanges}
                   onDiscardChanges={handleDiscardChanges}
                   onPreviewSql={handlePreviewSql}
@@ -763,6 +832,19 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           sqlStatements={sqlStatements}
           onConfirm={handleConfirmCommit}
           isLoading={isCommitting}
+        />
+
+        {/* Add Row Sheet */}
+        <AddRowSheet
+          open={showAddRowSheet}
+          onOpenChange={setShowAddRowSheet}
+          columns={columnInfos}
+          tableName={editContext?.table ?? 'table'}
+          schemaName={editContext?.schema}
+          initialValues={duplicateRowValues ?? undefined}
+          enumValuesMap={enumValuesMap}
+          onSubmit={handleSheetSubmit}
+          isDuplicate={duplicateRowValues !== null}
         />
       </div>
     </TooltipProvider>
