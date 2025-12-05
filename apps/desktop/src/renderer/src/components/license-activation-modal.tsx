@@ -129,7 +129,7 @@ export function LicenseActivationModal({ open, onOpenChange }: LicenseActivation
             <p className="text-sm text-muted-foreground">
               Don&apos;t have a license?{' '}
               <a
-                href="https://data-peek.dev/pricing"
+                href="https://www.datapeek.dev/pricing?utm_source=desktop&utm_medium=app&utm_content=activation_modal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-primary hover:underline"
@@ -141,7 +141,7 @@ export function LicenseActivationModal({ open, onOpenChange }: LicenseActivation
             <p className="mt-2 text-sm text-muted-foreground">
               Need to manage your license?{' '}
               <a
-                href="https://data-peek.dev/dashboard"
+                href="https://www.datapeek.dev/dashboard?utm_source=desktop&utm_medium=app&utm_content=activation_modal"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-primary hover:underline"

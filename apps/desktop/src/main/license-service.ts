@@ -8,7 +8,7 @@ let store: DpStorage<{ license?: LicenseData }> | null = null
 
 // License server API URL - use getter to read lazily after dotenv loads
 function getApiUrl(): string {
-  const url = process.env.LICENSE_API_URL || 'https://datapeek.dev'
+  const url = process.env.LICENSE_API_URL || 'https://www.datapeek.dev'
   return url
 }
 

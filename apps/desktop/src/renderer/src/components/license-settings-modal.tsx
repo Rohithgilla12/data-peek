@@ -188,7 +188,7 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
 
             {isExpired && (
               <Button
-                onClick={() => window.open('https://datapeek.dev/pricing', '_blank')}
+                onClick={() => window.open('https://www.datapeek.dev/pricing?utm_source=desktop&utm_medium=app&utm_content=license_settings', '_blank')}
                 className="gap-2"
               >
                 Renew License
