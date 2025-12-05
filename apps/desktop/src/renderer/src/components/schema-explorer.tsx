@@ -128,7 +128,10 @@ function VirtualizedSchemaItems({
       } else {
         const routineKey = `${schemaName}.${item.data.name}`
         const paramCount = item.data.parameters.length + (item.data.returnType ? 1 : 0)
-        return expandedRoutines.has(routineKey) ? 28 + paramCount * 24 : 28
+        // Account for "No parameters" message when there are no params and no return type
+        const hasNoParamsMessage = item.data.parameters.length === 0 && !item.data.returnType
+        const contentCount = paramCount === 0 && hasNoParamsMessage ? 1 : paramCount
+        return expandedRoutines.has(routineKey) ? 28 + contentCount * 24 : 28
       }
     },
     overscan: 5
