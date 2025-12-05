@@ -174,6 +174,32 @@ const api = {
     }
   },
   // AI Assistant
+  // Auto-updater event listeners
+  updater: {
+    onUpdateAvailable: (callback: (version: string) => void): (() => void) => {
+      const handler = (_: unknown, version: string): void => callback(version)
+      ipcRenderer.on('updater:update-available', handler)
+      return () => ipcRenderer.removeListener('updater:update-available', handler)
+    },
+    onUpdateDownloaded: (callback: (version: string) => void): (() => void) => {
+      const handler = (_: unknown, version: string): void => callback(version)
+      ipcRenderer.on('updater:update-downloaded', handler)
+      return () => ipcRenderer.removeListener('updater:update-downloaded', handler)
+    },
+    onDownloadProgress: (callback: (percent: number) => void): (() => void) => {
+      const handler = (_: unknown, percent: number): void => callback(percent)
+      ipcRenderer.on('updater:download-progress', handler)
+      return () => ipcRenderer.removeListener('updater:download-progress', handler)
+    },
+    onError: (callback: (message: string) => void): (() => void) => {
+      const handler = (_: unknown, message: string): void => callback(message)
+      ipcRenderer.on('updater:error', handler)
+      return () => ipcRenderer.removeListener('updater:error', handler)
+    },
+    quitAndInstall: (): void => {
+      ipcRenderer.send('updater:quit-and-install')
+    }
+  },
   ai: {
     getConfig: (): Promise<IpcResponse<AIConfig | null>> => ipcRenderer.invoke('ai:get-config'),
     setConfig: (config: AIConfig): Promise<IpcResponse<void>> =>

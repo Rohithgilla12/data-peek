@@ -212,6 +212,13 @@ interface DataPeekApi {
     incrementUsage: (id: string) => Promise<IpcResponse<SavedQuery>>
     onOpenDialog: (callback: () => void) => () => void
   }
+  updater: {
+    onUpdateAvailable: (callback: (version: string) => void) => () => void
+    onUpdateDownloaded: (callback: (version: string) => void) => () => void
+    onDownloadProgress: (callback: (percent: number) => void) => () => void
+    onError: (callback: (message: string) => void) => () => void
+    quitAndInstall: () => void
+  }
   ai: {
     getConfig: () => Promise<IpcResponse<AIConfig | null>>
     setConfig: (config: AIConfig) => Promise<IpcResponse<void>>

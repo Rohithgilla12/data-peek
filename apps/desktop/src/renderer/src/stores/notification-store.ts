@@ -2,6 +2,12 @@ import { create } from 'zustand'
 
 export type NotificationType = 'success' | 'error' | 'info' | 'warning'
 
+export interface NotificationAction {
+  label: string
+  onClick: () => void
+  variant?: 'default' | 'primary'
+}
+
 export interface Notification {
   id: string
   type: NotificationType
@@ -9,6 +15,7 @@ export interface Notification {
   message?: string
   duration?: number // ms, undefined = persistent until dismissed
   dismissible?: boolean
+  action?: NotificationAction
 }
 
 interface NotificationState {
@@ -59,20 +66,55 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
 // Helper functions for common notification types
 export const notify = {
-  success: (title: string, message?: string, duration?: number) =>
-    useNotificationStore.getState().addNotification({ type: 'success', title, message, duration }),
+  success: (
+    title: string,
+    message?: string,
+    options?: { duration?: number; action?: NotificationAction }
+  ) =>
+    useNotificationStore.getState().addNotification({
+      type: 'success',
+      title,
+      message,
+      duration: options?.duration,
+      action: options?.action
+    }),
 
-  error: (title: string, message?: string, duration?: number) =>
+  error: (
+    title: string,
+    message?: string,
+    options?: { duration?: number; action?: NotificationAction }
+  ) =>
     useNotificationStore.getState().addNotification({
       type: 'error',
       title,
       message,
-      duration: duration ?? 8000 // Errors stay longer
+      duration: options?.duration ?? 8000, // Errors stay longer
+      action: options?.action
     }),
 
-  info: (title: string, message?: string, duration?: number) =>
-    useNotificationStore.getState().addNotification({ type: 'info', title, message, duration }),
+  info: (
+    title: string,
+    message?: string,
+    options?: { duration?: number; action?: NotificationAction }
+  ) =>
+    useNotificationStore.getState().addNotification({
+      type: 'info',
+      title,
+      message,
+      duration: options?.duration,
+      action: options?.action
+    }),
 
-  warning: (title: string, message?: string, duration?: number) =>
-    useNotificationStore.getState().addNotification({ type: 'warning', title, message, duration })
+  warning: (
+    title: string,
+    message?: string,
+    options?: { duration?: number; action?: NotificationAction }
+  ) =>
+    useNotificationStore.getState().addNotification({
+      type: 'warning',
+      title,
+      message,
+      duration: options?.duration,
+      action: options?.action
+    })
 }

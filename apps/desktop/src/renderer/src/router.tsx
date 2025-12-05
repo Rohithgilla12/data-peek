@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-router'
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Moon, Sun, Monitor, Sparkles, Command } from 'lucide-react'
+import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import {
   CommandPalette,
@@ -449,6 +450,9 @@ function LayoutContent() {
 
 // Root Layout wrapper that provides context
 function RootLayout() {
+  // Initialize auto-updater notifications
+  useAutoUpdater()
+
   return (
     <ThemeProvider defaultTheme="dark" storageKey="data-peek-theme">
       <SidebarProvider>

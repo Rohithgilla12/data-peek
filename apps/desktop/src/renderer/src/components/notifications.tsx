@@ -52,6 +52,22 @@ export function Notifications() {
               {notification.message && (
                 <p className="text-xs text-muted-foreground mt-0.5">{notification.message}</p>
               )}
+              {notification.action && (
+                <button
+                  onClick={() => {
+                    notification.action?.onClick()
+                    removeNotification(notification.id)
+                  }}
+                  className={cn(
+                    'mt-2 text-xs font-medium px-3 py-1.5 rounded transition-colors',
+                    notification.action.variant === 'primary'
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      : 'bg-accent hover:bg-accent/80 text-foreground'
+                  )}
+                >
+                  {notification.action.label}
+                </button>
+              )}
             </div>
             {notification.dismissible && (
               <button

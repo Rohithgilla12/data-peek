@@ -64,7 +64,7 @@ import {
   type AIMultiProviderConfig,
   type AIProviderConfig
 } from './ai-service'
-import { initAutoUpdater } from './updater'
+import { initAutoUpdater, stopPeriodicChecks } from './updater'
 import type { LicenseActivationRequest, SchemaInfo } from '@shared/index'
 
 import { DpStorage } from './storage'
@@ -1236,7 +1236,8 @@ app.whenReady().then(async () => {
   await createWindow()
 
   // Initialize auto-updater (only runs in production)
-  initAutoUpdater()
+  // Pass the main window so it can send notifications to renderer
+  initAutoUpdater(mainWindow!)
 
   app.on('activate', function () {
     // On macOS it's common to re-create a window in the app when the
@@ -1253,6 +1254,8 @@ app.whenReady().then(async () => {
 // macOS: set forceQuit flag before quitting
 app.on('before-quit', () => {
   forceQuit = true
+  // Stop periodic update checks
+  stopPeriodicChecks()
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common
