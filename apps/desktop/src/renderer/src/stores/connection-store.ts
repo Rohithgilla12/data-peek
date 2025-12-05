@@ -209,7 +209,8 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       const schemasResult = await window.api.db.schemas(connection, forceRefresh)
 
       if (schemasResult.success && schemasResult.data) {
-        const { schemas, customTypes, fetchedAt, fromCache, stale, refreshError } = schemasResult.data
+        const { schemas, customTypes, fetchedAt, fromCache, stale, refreshError } =
+          schemasResult.data
 
         set({
           schemas,
@@ -280,8 +281,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         const currentSchemas = get().schemas
 
         // Check if schemas actually changed
-        const schemasChanged =
-          JSON.stringify(schemas) !== JSON.stringify(currentSchemas)
+        const schemasChanged = JSON.stringify(schemas) !== JSON.stringify(currentSchemas)
 
         if (schemasChanged) {
           set({

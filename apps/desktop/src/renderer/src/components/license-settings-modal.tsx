@@ -189,7 +189,16 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
 
             {isExpired && (
               <Button
-                onClick={() => window.open(buildTrackingUrl('/pricing', { source: 'desktop', medium: 'app', content: 'license_settings' }), '_blank')}
+                onClick={() =>
+                  window.open(
+                    buildTrackingUrl('/pricing', {
+                      source: 'desktop',
+                      medium: 'app',
+                      content: 'license_settings'
+                    }),
+                    '_blank'
+                  )
+                }
                 className="gap-2"
               >
                 Renew License
