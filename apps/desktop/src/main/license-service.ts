@@ -2,14 +2,14 @@ import { app } from 'electron'
 import * as crypto from 'crypto'
 import * as os from 'os'
 import type { LicenseData, LicenseStatus, LicenseType } from '@shared/index'
+import { DATAPEEK_BASE_URL } from '@shared/index'
 import { DpStorage } from './storage'
 
 let store: DpStorage<{ license?: LicenseData }> | null = null
 
 // License server API URL - use getter to read lazily after dotenv loads
 function getApiUrl(): string {
-  const url = process.env.LICENSE_API_URL || 'https://datapeek.dev'
-  return url
+  return process.env.LICENSE_API_URL || DATAPEEK_BASE_URL
 }
 
 // Validation intervals

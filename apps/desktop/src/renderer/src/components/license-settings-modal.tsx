@@ -19,6 +19,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { useLicenseStore } from '@/stores/license-store'
+import { buildTrackingUrl } from '@shared/index'
 
 interface LicenseSettingsModalProps {
   open: boolean
@@ -188,7 +189,7 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
 
             {isExpired && (
               <Button
-                onClick={() => window.open('https://datapeek.dev/pricing', '_blank')}
+                onClick={() => window.open(buildTrackingUrl('/pricing', { source: 'desktop', medium: 'app', content: 'license_settings' }), '_blank')}
                 className="gap-2"
               >
                 Renew License

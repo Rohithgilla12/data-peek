@@ -627,6 +627,10 @@ export function SQLEditor({
   const editorRef = React.useRef<EditorType | null>(null)
   const monacoRef = React.useRef<Monaco | null>(null)
 
+  // Use refs to always hold the latest callbacks to avoid stale closures
+  const onRunRef = React.useRef(onRun)
+  const onFormatRef = React.useRef(onFormat)
+
   // Resolve system theme
   const resolvedTheme = React.useMemo(() => {
     if (theme === 'system') {
@@ -634,6 +638,15 @@ export function SQLEditor({
     }
     return theme
   }, [theme])
+
+  // Keep refs updated when callbacks change
+  React.useEffect(() => {
+    onRunRef.current = onRun
+  }, [onRun])
+
+  React.useEffect(() => {
+    onFormatRef.current = onFormat
+  }, [onFormat])
 
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
@@ -651,13 +664,14 @@ export function SQLEditor({
     monaco.editor.setTheme(editorTheme)
 
     // Add keyboard shortcuts
+    // Use refs to avoid stale closures - callbacks may change but Monaco commands are registered once
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      onRun?.()
+      onRunRef.current?.()
     })
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
-      if (onFormat) {
-        onFormat()
+      if (onFormatRef.current) {
+        onFormatRef.current()
       } else {
         // Format in place
         const currentValue = editor.getValue()

@@ -72,6 +72,30 @@ import { DpStorage } from './storage'
 let store: DpStorage<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 
+// Schema cache types
+interface CachedSchema {
+  schemas: SchemaInfo[]
+  customTypes: { name: string; schema: string; type: string; values?: string[] }[]
+  timestamp: number
+}
+
+interface SchemaCacheStore {
+  cache: Record<string, CachedSchema>
+}
+
+let schemaCacheStore: DpStorage<SchemaCacheStore>
+
+// Schema cache TTL - 24 hours (cached schemas are refreshed in background anyway)
+const SCHEMA_CACHE_TTL = 24 * 60 * 60 * 1000
+
+// In-memory cache for faster access during session
+const schemaMemoryCache = new Map<string, CachedSchema>()
+
+// Generate cache key from connection config
+function getSchemaCacheKey(config: ConnectionConfig): string {
+  return `${config.dbType}:${config.host}:${config.port}:${config.database}:${config.user ?? 'default'}`
+}
+
 async function initStore(): Promise<void> {
   store = await DpStorage.create<{ connections: ConnectionConfig[] }>({
     name: 'data-peek-connections',
@@ -86,6 +110,20 @@ async function initStore(): Promise<void> {
       savedQueries: []
     }
   })
+
+  schemaCacheStore = await DpStorage.create<SchemaCacheStore>({
+    name: 'data-peek-schema-cache',
+    defaults: {
+      cache: {}
+    }
+  })
+
+  // Load disk cache into memory on startup
+  const diskCache = schemaCacheStore.get('cache', {})
+  for (const [key, value] of Object.entries(diskCache)) {
+    schemaMemoryCache.set(key, value)
+  }
+  console.log(`[schema-cache] Loaded ${schemaMemoryCache.size} cached schemas from disk`)
 }
 
 // Store main window reference for macOS hide-on-close behavior
@@ -261,23 +299,109 @@ app.whenReady().then(async () => {
     }
   )
 
-  // Fetch database schemas, tables, and columns
-  ipcMain.handle('db:schemas', async (_, config: ConnectionConfig) => {
-    try {
-      const adapter = getAdapter(config)
-      const schemas = await adapter.getSchemas(config)
+  // Fetch database schemas, tables, and columns (with caching)
+  ipcMain.handle(
+    'db:schemas',
+    async (_, args: ConnectionConfig | { config: ConnectionConfig; forceRefresh?: boolean }) => {
+      // Support both old (config only) and new (with forceRefresh) API
+      const config = 'config' in args ? args.config : args
+      const forceRefresh = 'forceRefresh' in args ? args.forceRefresh : false
 
-      return {
-        success: true,
-        data: {
-          schemas,
-          fetchedAt: Date.now()
+      const cacheKey = getSchemaCacheKey(config)
+
+      try {
+        // Check memory cache first (unless force refresh)
+        if (!forceRefresh) {
+          const cached = schemaMemoryCache.get(cacheKey)
+          if (cached && Date.now() - cached.timestamp < SCHEMA_CACHE_TTL) {
+            console.log(`[schema-cache] Cache hit for ${cacheKey}`)
+            return {
+              success: true,
+              data: {
+                schemas: cached.schemas,
+                customTypes: cached.customTypes,
+                fetchedAt: cached.timestamp,
+                fromCache: true
+              }
+            }
+          }
         }
+
+        // Fetch fresh data
+        if (forceRefresh) {
+          console.log(`[schema-cache] Force refresh for ${cacheKey}, fetching from database...`)
+        } else {
+          console.log(`[schema-cache] Cache miss for ${cacheKey}, fetching from database...`)
+        }
+        const adapter = getAdapter(config)
+        const schemas = await adapter.getSchemas(config)
+
+        // Also fetch custom types
+        let customTypes: CachedSchema['customTypes'] = []
+        try {
+          customTypes = await adapter.getTypes(config)
+        } catch {
+          // Types are optional, ignore errors
+        }
+
+        const timestamp = Date.now()
+
+        // Update both memory and disk cache
+        const cacheEntry: CachedSchema = { schemas, customTypes, timestamp }
+        schemaMemoryCache.set(cacheKey, cacheEntry)
+
+        // Persist to disk asynchronously
+        const allCache = schemaCacheStore.get('cache', {})
+        allCache[cacheKey] = cacheEntry
+        schemaCacheStore.set('cache', allCache)
+
+        console.log(`[schema-cache] Cached schemas for ${cacheKey}`)
+
+        return {
+          success: true,
+          data: {
+            schemas,
+            customTypes,
+            fetchedAt: timestamp,
+            fromCache: false
+          }
+        }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+
+        // On error, try to return stale cache if available
+        const staleCache = schemaMemoryCache.get(cacheKey)
+        if (staleCache) {
+          console.log(`[schema-cache] Returning stale cache for ${cacheKey} due to error`)
+          return {
+            success: true,
+            data: {
+              schemas: staleCache.schemas,
+              customTypes: staleCache.customTypes,
+              fetchedAt: staleCache.timestamp,
+              fromCache: true,
+              stale: true,
+              refreshError: errorMessage
+            }
+          }
+        }
+
+        return { success: false, error: errorMessage }
       }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
     }
+  )
+
+  // Invalidate schema cache for a connection
+  ipcMain.handle('db:invalidate-schema-cache', (_, config: ConnectionConfig) => {
+    const cacheKey = getSchemaCacheKey(config)
+    schemaMemoryCache.delete(cacheKey)
+
+    const allCache = schemaCacheStore.get('cache', {})
+    delete allCache[cacheKey]
+    schemaCacheStore.set('cache', allCache)
+
+    console.log(`[schema-cache] Invalidated cache for ${cacheKey}`)
+    return { success: true }
   })
 
   // Connection CRUD handlers
@@ -1134,6 +1258,8 @@ app.whenReady().then(async () => {
 // macOS: set forceQuit flag before quitting
 app.on('before-quit', () => {
   forceQuit = true
+  // Stop periodic update checks
+  stopPeriodicChecks()
 })
 
 // Quit when all windows are closed, except on macOS. There, it's common

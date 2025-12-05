@@ -607,8 +607,31 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
 
   if (!rootPlan) {
     return (
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        No execution plan available
+      <div className="flex flex-col h-full bg-background border-l border-border">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30 shrink-0">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="size-4 text-primary" />
+            <span className="font-medium text-sm">Query Execution Plan</span>
+          </div>
+          <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
+            <X className="size-4" />
+          </Button>
+        </div>
+        {/* Empty state */}
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center space-y-3">
+            <div className="size-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
+              <AlertTriangle className="size-6 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-sm font-medium">No execution plan available</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                The execution plan format may not be supported for this database type.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     )
   }

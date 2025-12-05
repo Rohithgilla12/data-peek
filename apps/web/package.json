@@ -1,6 +1,6 @@
 {
   "name": "@data-peek/web",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
@@ -11,7 +11,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "admin:grant-license": "tsx scripts/grant-license.ts"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.35.5",
@@ -26,9 +27,11 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "resend": "^6.5.2",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "dotenv": "^16.4.7"
   },
   "devDependencies": {
+    "tsx": "^4.19.4",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20.19.25",
     "@types/react": "^19",

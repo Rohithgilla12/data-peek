@@ -2,7 +2,7 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 import type {
   ConnectionConfig,
   IpcResponse,
-  DatabaseSchema,
+  DatabaseSchemaResponse,
   EditBatch,
   EditResult,
   TableDefinition,
@@ -146,7 +146,11 @@ interface DataPeekApi {
   db: {
     connect: (config: ConnectionConfig) => Promise<IpcResponse<void>>
     query: (config: ConnectionConfig, query: string) => Promise<IpcResponse<unknown>>
-    schemas: (config: ConnectionConfig) => Promise<IpcResponse<DatabaseSchema>>
+    schemas: (
+      config: ConnectionConfig,
+      forceRefresh?: boolean
+    ) => Promise<IpcResponse<DatabaseSchemaResponse>>
+    invalidateSchemaCache: (config: ConnectionConfig) => Promise<IpcResponse<void>>
     execute: (config: ConnectionConfig, batch: EditBatch) => Promise<IpcResponse<EditResult>>
     previewSql: (
       batch: EditBatch
@@ -208,6 +212,13 @@ interface DataPeekApi {
     delete: (id: string) => Promise<IpcResponse<void>>
     incrementUsage: (id: string) => Promise<IpcResponse<SavedQuery>>
     onOpenDialog: (callback: () => void) => () => void
+  }
+  updater: {
+    onUpdateAvailable: (callback: (version: string) => void) => () => void
+    onUpdateDownloaded: (callback: (version: string) => void) => () => void
+    onDownloadProgress: (callback: (percent: number) => void) => () => void
+    onError: (callback: (message: string) => void) => () => void
+    quitAndInstall: () => void
   }
   ai: {
     getConfig: () => Promise<IpcResponse<AIConfig | null>>
