@@ -31,6 +31,7 @@ import { ConnectionPicker } from '@/components/connection-picker'
 import { LicenseStatusIndicator } from '@/components/license-status-indicator'
 import { LicenseActivationModal } from '@/components/license-activation-modal'
 import { LicenseSettingsModal } from '@/components/license-settings-modal'
+import { UpdateBanner } from '@/components/update-banner'
 import { AIChatPanel, AISettingsModal } from '@/components/ai'
 import { useAIStore } from '@/stores/ai-store'
 import { Switch } from '@/components/ui/switch'
@@ -321,6 +322,9 @@ function LayoutContent() {
     <>
       <AppSidebar />
       <SidebarInset>
+        {/* Update banner - shows when update is available or downloading */}
+        <UpdateBanner />
+        
         <header className="titlebar-drag-region flex h-14 shrink-0 items-center gap-2 border-b border-border/40 bg-background/80 backdrop-blur-xl">
           <div className="flex flex-1 items-center gap-2 px-3">
             <SidebarTrigger className="titlebar-no-drag" />

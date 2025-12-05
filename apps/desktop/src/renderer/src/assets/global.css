@@ -314,4 +314,17 @@
     -webkit-user-drag: none;
     user-drag: none;
   }
+
+  /* Changelog styling */
+  .changelog-content { color: var(--muted-foreground); }
+  .changelog-content h2, .changelog-content h3 { color: var(--foreground); font-weight: 600; margin: 0.75rem 0 0.5rem; }
+  .changelog-content h2 { font-size: 1rem; }
+  .changelog-content h3 { font-size: 0.875rem; }
+  .changelog-content ul { list-style: disc; padding-left: 1.25rem; }
+  .changelog-content li { margin-bottom: 0.375rem; }
+  .changelog-content p { margin-bottom: 0.5rem; }
+  .changelog-content strong { color: var(--foreground); }
+  .changelog-content code { background: var(--muted); padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.75rem; }
+  .changelog-content a { color: var(--primary); }
+  .changelog-content hr { border: none; border-top: 1px solid var(--border); margin: 0.75rem 0; }
 }

@@ -126,6 +126,16 @@ interface ChatSession {
   updatedAt: string // ISO string
 }
 
+// Update state types
+type UpdateStatus = 'idle' | 'downloading' | 'ready'
+
+interface UpdateState {
+  status: UpdateStatus
+  version: string | null
+  releaseNotes: string | null
+  downloadProgress: number
+}
+
 interface DataPeekApi {
   connections: {
     list: () => Promise<IpcResponse<ConnectionConfig[]>>
@@ -240,6 +250,12 @@ interface DataPeekApi {
     removeProviderConfig: (provider: AIProvider) => Promise<IpcResponse<void>>
     setActiveProvider: (provider: AIProvider) => Promise<IpcResponse<void>>
     setActiveModel: (provider: AIProvider, model: string) => Promise<IpcResponse<void>>
+  }
+  updater: {
+    getState: () => Promise<UpdateState>
+    checkForUpdates: () => Promise<{ success: boolean }>
+    restartAndUpdate: () => Promise<{ success: boolean }>
+    onStateChanged: (callback: (state: UpdateState) => void) => () => void
   }
 }
 

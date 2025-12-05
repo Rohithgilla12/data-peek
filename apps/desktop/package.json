@@ -60,7 +60,7 @@
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "electron-store": "^11.0.2",
-    "electron-updater": "^6.3.9",
+    "electron-updater": "^6.6.2",
     "lucide-react": "^0.555.0",
     "monaco-editor": "^0.55.1",
     "mssql": "^11.0.1",
