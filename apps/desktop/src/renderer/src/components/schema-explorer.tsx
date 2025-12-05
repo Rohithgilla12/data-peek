@@ -426,6 +426,8 @@ export function SchemaExplorer() {
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
   const getActiveConnection = useConnectionStore((s) => s.getActiveConnection)
   const fetchSchemas = useConnectionStore((s) => s.fetchSchemas)
+  const schemaFromCache = useConnectionStore((s) => s.schemaFromCache)
+  const isRefreshingSchema = useConnectionStore((s) => s.isRefreshingSchema)
 
   const createTablePreviewTab = useTabStore((s) => s.createTablePreviewTab)
   const findTablePreviewTab = useTabStore((s) => s.findTablePreviewTab)
@@ -550,7 +552,7 @@ export function SchemaExplorer() {
 
   const handleRefresh = () => {
     if (!activeConnectionId) return
-    fetchSchemas()
+    fetchSchemas(undefined, true) // Force refresh
   }
 
   const handleOpenERD = () => {
@@ -746,15 +748,30 @@ export function SchemaExplorer() {
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-5 p-0 hover:bg-sidebar-accent"
-            onClick={handleRefresh}
-            title="Refresh schema"
-          >
-            <RefreshCw className="size-3.5" />
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-5 p-0 hover:bg-sidebar-accent"
+                  onClick={handleRefresh}
+                  disabled={isRefreshingSchema}
+                >
+                  <RefreshCw
+                    className={`size-3.5 ${isRefreshingSchema ? 'animate-spin' : ''}`}
+                  />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {isRefreshingSchema
+                  ? 'Refreshing schema...'
+                  : schemaFromCache
+                    ? 'Refresh schema (loaded from cache)'
+                    : 'Refresh schema'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </SidebarGroupLabel>
       <SidebarGroupContent>

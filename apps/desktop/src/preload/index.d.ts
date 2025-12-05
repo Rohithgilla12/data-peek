@@ -136,7 +136,20 @@ interface DataPeekApi {
   db: {
     connect: (config: ConnectionConfig) => Promise<IpcResponse<void>>
     query: (config: ConnectionConfig, query: string) => Promise<IpcResponse<unknown>>
-    schemas: (config: ConnectionConfig) => Promise<IpcResponse<DatabaseSchema>>
+    schemas: (
+      config: ConnectionConfig,
+      forceRefresh?: boolean
+    ) => Promise<
+      IpcResponse<
+        DatabaseSchema & {
+          customTypes?: CustomTypeInfo[]
+          fromCache?: boolean
+          stale?: boolean
+          refreshError?: string
+        }
+      >
+    >
+    invalidateSchemaCache: (config: ConnectionConfig) => Promise<IpcResponse<void>>
     execute: (config: ConnectionConfig, batch: EditBatch) => Promise<IpcResponse<EditResult>>
     previewSql: (
       batch: EditBatch

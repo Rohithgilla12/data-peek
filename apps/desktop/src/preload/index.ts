@@ -55,8 +55,14 @@ const api = {
       ipcRenderer.invoke('db:connect', config),
     query: (config: ConnectionConfig, query: string): Promise<IpcResponse<unknown>> =>
       ipcRenderer.invoke('db:query', { config, query }),
-    schemas: (config: ConnectionConfig): Promise<IpcResponse<DatabaseSchema>> =>
-      ipcRenderer.invoke('db:schemas', config),
+    schemas: (
+      config: ConnectionConfig,
+      forceRefresh?: boolean
+    ): Promise<
+      IpcResponse<DatabaseSchema & { fromCache?: boolean; stale?: boolean; refreshError?: string }>
+    > => ipcRenderer.invoke('db:schemas', { config, forceRefresh }),
+    invalidateSchemaCache: (config: ConnectionConfig): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('db:invalidate-schema-cache', config),
     execute: (config: ConnectionConfig, batch: EditBatch): Promise<IpcResponse<EditResult>> =>
       ipcRenderer.invoke('db:execute', { config, batch }),
     previewSql: (
