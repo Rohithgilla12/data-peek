@@ -8,13 +8,39 @@
 export type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama';
 
 /**
- * Configuration for AI service
+ * Configuration for AI service (legacy single-provider format)
  */
 export interface AIConfig {
   provider: AIProvider;
   apiKey?: string;
   model: string;
   baseUrl?: string;
+}
+
+/**
+ * Configuration for a single AI provider (API key and optional base URL)
+ */
+export interface AIProviderConfig {
+  apiKey?: string;
+  baseUrl?: string;
+}
+
+/**
+ * Map of provider ID to provider configuration
+ */
+export type AIProviderConfigs = Partial<Record<AIProvider, AIProviderConfig>>;
+
+/**
+ * Multi-provider AI configuration
+ * Stores API keys for all providers and tracks active provider/model
+ */
+export interface AIMultiProviderConfig {
+  /** API keys and base URLs for each provider */
+  providers: AIProviderConfigs;
+  /** Currently active provider */
+  activeProvider: AIProvider;
+  /** Currently selected model for each provider */
+  activeModels: Partial<Record<AIProvider, string>>;
 }
 
 /**

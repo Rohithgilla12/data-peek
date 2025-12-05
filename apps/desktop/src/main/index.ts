@@ -50,9 +50,19 @@ import {
   createChatSession,
   updateChatSession,
   deleteChatSession,
+  // Multi-provider config functions
+  getMultiProviderConfig,
+  setMultiProviderConfig,
+  getProviderConfig,
+  setProviderConfig,
+  removeProviderConfig,
+  setActiveProvider,
+  setActiveModel,
   type AIConfig,
   type AIMessage,
-  type StoredChatMessage
+  type StoredChatMessage,
+  type AIMultiProviderConfig,
+  type AIProviderConfig
 } from './ai-service'
 import { initAutoUpdater } from './updater'
 import type { LicenseActivationRequest, SchemaInfo } from '@shared/index'
@@ -841,6 +851,93 @@ app.whenReady().then(async () => {
       return { success: false, error: errorMessage }
     }
   })
+
+  // ============================================
+  // Multi-Provider AI Configuration
+  // ============================================
+
+  // Get multi-provider configuration
+  ipcMain.handle('ai:get-multi-provider-config', () => {
+    try {
+      const config = getMultiProviderConfig()
+      return { success: true, data: config }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Set multi-provider configuration
+  ipcMain.handle('ai:set-multi-provider-config', (_, config: AIMultiProviderConfig | null) => {
+    try {
+      setMultiProviderConfig(config)
+      return { success: true }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Get configuration for a specific provider
+  ipcMain.handle('ai:get-provider-config', (_, provider: string) => {
+    try {
+      const config = getProviderConfig(provider as AIConfig['provider'])
+      return { success: true, data: config }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Set configuration for a specific provider
+  ipcMain.handle(
+    'ai:set-provider-config',
+    (_, { provider, config }: { provider: string; config: AIProviderConfig }) => {
+      try {
+        setProviderConfig(provider as AIConfig['provider'], config)
+        return { success: true }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Remove configuration for a specific provider
+  ipcMain.handle('ai:remove-provider-config', (_, provider: string) => {
+    try {
+      removeProviderConfig(provider as AIConfig['provider'])
+      return { success: true }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Set the active provider
+  ipcMain.handle('ai:set-active-provider', (_, provider: string) => {
+    try {
+      setActiveProvider(provider as AIConfig['provider'])
+      return { success: true }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Set the active model for a provider
+  ipcMain.handle(
+    'ai:set-active-model',
+    (_, { provider, model }: { provider: string; model: string }) => {
+      try {
+        setActiveModel(provider as AIConfig['provider'], model)
+        return { success: true }
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
 
   // Validate API key
   ipcMain.handle('ai:validate-key', async (_, config: AIConfig) => {

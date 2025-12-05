@@ -27,6 +27,20 @@ interface AIConfig {
   baseUrl?: string
 }
 
+// Multi-provider config types
+interface AIProviderConfig {
+  apiKey?: string
+  baseUrl?: string
+}
+
+type AIProviderConfigs = Partial<Record<AIProvider, AIProviderConfig>>
+
+interface AIMultiProviderConfig {
+  providers: AIProviderConfigs
+  activeProvider: AIProvider
+  activeModels: Partial<Record<AIProvider, string>>
+}
+
 interface AIMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
@@ -215,6 +229,17 @@ interface DataPeekApi {
       updates: { messages?: StoredChatMessage[]; title?: string }
     ) => Promise<IpcResponse<ChatSession | null>>
     deleteSession: (connectionId: string, sessionId: string) => Promise<IpcResponse<boolean>>
+    // Multi-provider configuration
+    getMultiProviderConfig: () => Promise<IpcResponse<AIMultiProviderConfig | null>>
+    setMultiProviderConfig: (config: AIMultiProviderConfig | null) => Promise<IpcResponse<void>>
+    getProviderConfig: (provider: AIProvider) => Promise<IpcResponse<AIProviderConfig | null>>
+    setProviderConfig: (
+      provider: AIProvider,
+      config: AIProviderConfig
+    ) => Promise<IpcResponse<void>>
+    removeProviderConfig: (provider: AIProvider) => Promise<IpcResponse<void>>
+    setActiveProvider: (provider: AIProvider) => Promise<IpcResponse<void>>
+    setActiveModel: (provider: AIProvider, model: string) => Promise<IpcResponse<void>>
   }
 }
 

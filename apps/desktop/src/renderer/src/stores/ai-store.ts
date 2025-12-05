@@ -1,9 +1,9 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { AIProvider, AIConfig } from '@shared/index'
+import type { AIProvider, AIConfig, AIMultiProviderConfig, AIProviderConfig } from '@shared/index'
 
 // Re-export types for convenience
-export type { AIProvider, AIConfig }
+export type { AIProvider, AIConfig, AIMultiProviderConfig, AIProviderConfig }
 
 // Message types
 export interface AIToolInvocation {
@@ -30,9 +30,12 @@ export interface AIConversation {
 }
 
 interface AIState {
-  // Configuration
-  config: AIConfig | null
+  // Multi-provider Configuration
+  multiProviderConfig: AIMultiProviderConfig | null
   isConfigured: boolean
+
+  // Legacy config (for backward compatibility during transition)
+  config: AIConfig | null
 
   // UI State
   isPanelOpen: boolean
@@ -42,9 +45,17 @@ interface AIState {
   // Conversations (keyed by connection ID)
   conversations: Record<string, AIConversation>
 
-  // Actions
+  // Legacy Actions (kept for backward compatibility)
   setConfig: (config: AIConfig | null) => void
   clearConfig: () => void
+
+  // Multi-provider Actions
+  setMultiProviderConfig: (config: AIMultiProviderConfig | null) => void
+  setProviderConfig: (provider: AIProvider, config: AIProviderConfig) => void
+  removeProviderConfig: (provider: AIProvider) => void
+  setActiveProvider: (provider: AIProvider) => void
+  setActiveModel: (provider: AIProvider, model: string) => void
+  loadConfigFromMain: () => Promise<void>
 
   togglePanel: () => void
   openPanel: () => void
@@ -62,10 +73,48 @@ interface AIState {
   getConversation: (connectionId: string) => AIChatMessage[]
 }
 
+// Default models for each provider (must match main process)
+const DEFAULT_MODELS: Record<AIProvider, string> = {
+  openai: 'gpt-4o',
+  anthropic: 'claude-sonnet-4-5-20250929',
+  google: 'gemini-2.5-flash',
+  groq: 'llama-3.3-70b-versatile',
+  ollama: 'llama3.2'
+}
+
+// Helper to check if multi-provider config is valid
+const isMultiProviderConfigured = (config: AIMultiProviderConfig | null): boolean => {
+  if (!config?.providers || !config.activeProvider) return false
+  const activeConfig = config.providers[config.activeProvider]
+  if (!activeConfig) return false
+  if (config.activeProvider === 'ollama') {
+    // Ollama works with default localhost URL, so just check if config exists
+    return true
+  }
+  return !!activeConfig.apiKey
+}
+
+// Helper to derive legacy AIConfig from multi-provider config
+const deriveLegacyConfig = (multiConfig: AIMultiProviderConfig | null): AIConfig | null => {
+  if (!multiConfig?.providers || !multiConfig.activeProvider) return null
+  const providerConfig = multiConfig.providers[multiConfig.activeProvider]
+  if (!providerConfig) return null
+
+  return {
+    provider: multiConfig.activeProvider,
+    apiKey: providerConfig.apiKey,
+    model:
+      multiConfig.activeModels?.[multiConfig.activeProvider] ||
+      DEFAULT_MODELS[multiConfig.activeProvider],
+    baseUrl: providerConfig.baseUrl
+  }
+}
+
 export const useAIStore = create<AIState>()(
   persist(
     (set, get) => ({
       // Initial state
+      multiProviderConfig: null,
       config: null,
       isConfigured: false,
       isPanelOpen: false,
@@ -73,7 +122,7 @@ export const useAIStore = create<AIState>()(
       isLoading: false,
       conversations: {},
 
-      // Configuration actions
+      // Legacy configuration actions (for backward compatibility)
       setConfig: (config) => {
         set({
           config,
@@ -86,6 +135,109 @@ export const useAIStore = create<AIState>()(
           config: null,
           isConfigured: false
         })
+      },
+
+      // Multi-provider configuration actions
+      setMultiProviderConfig: (config) => {
+        set({
+          multiProviderConfig: config,
+          config: deriveLegacyConfig(config),
+          isConfigured: isMultiProviderConfigured(config)
+        })
+      },
+
+      setProviderConfig: (provider, providerConfig) => {
+        const { multiProviderConfig } = get()
+        const newConfig: AIMultiProviderConfig = {
+          providers: {
+            ...(multiProviderConfig?.providers || {}),
+            [provider]: providerConfig
+          },
+          activeProvider: multiProviderConfig?.activeProvider || provider,
+          activeModels: multiProviderConfig?.activeModels || {}
+        }
+        set({
+          multiProviderConfig: newConfig,
+          config: deriveLegacyConfig(newConfig),
+          isConfigured: isMultiProviderConfigured(newConfig)
+        })
+      },
+
+      removeProviderConfig: (provider) => {
+        const { multiProviderConfig } = get()
+        if (!multiProviderConfig) return
+
+        const newProviders = { ...multiProviderConfig.providers }
+        delete newProviders[provider]
+
+        // If removing active provider, switch to first available
+        let newActiveProvider = multiProviderConfig.activeProvider
+        if (provider === multiProviderConfig.activeProvider) {
+          const remainingProviders = Object.keys(newProviders) as AIProvider[]
+          newActiveProvider = remainingProviders[0] || 'openai'
+        }
+
+        const newConfig: AIMultiProviderConfig = {
+          providers: newProviders,
+          activeProvider: newActiveProvider,
+          activeModels: multiProviderConfig.activeModels
+        }
+
+        set({
+          multiProviderConfig: newConfig,
+          config: deriveLegacyConfig(newConfig),
+          isConfigured: isMultiProviderConfigured(newConfig)
+        })
+      },
+
+      setActiveProvider: (provider) => {
+        const { multiProviderConfig } = get()
+        if (!multiProviderConfig) return
+
+        const newConfig: AIMultiProviderConfig = {
+          ...multiProviderConfig,
+          activeProvider: provider
+        }
+
+        set({
+          multiProviderConfig: newConfig,
+          config: deriveLegacyConfig(newConfig),
+          isConfigured: isMultiProviderConfigured(newConfig)
+        })
+      },
+
+      setActiveModel: (provider, model) => {
+        const { multiProviderConfig } = get()
+        if (!multiProviderConfig) return
+
+        const newConfig: AIMultiProviderConfig = {
+          ...multiProviderConfig,
+          activeModels: {
+            ...(multiProviderConfig.activeModels || {}),
+            [provider]: model
+          }
+        }
+
+        set({
+          multiProviderConfig: newConfig,
+          config: deriveLegacyConfig(newConfig),
+          isConfigured: isMultiProviderConfigured(newConfig)
+        })
+      },
+
+      loadConfigFromMain: async () => {
+        try {
+          const result = await window.api.ai.getMultiProviderConfig()
+          if (result.success && result.data) {
+            set({
+              multiProviderConfig: result.data,
+              config: deriveLegacyConfig(result.data),
+              isConfigured: isMultiProviderConfigured(result.data)
+            })
+          }
+        } catch (error) {
+          console.error('Failed to load AI config from main:', error)
+        }
       },
 
       // Panel actions
@@ -161,8 +313,8 @@ export const useAIStore = create<AIState>()(
     {
       name: 'ai-store',
       partialize: (state) => ({
-        // Only persist config, not conversations or UI state
-        config: state.config,
+        // Only persist multi-provider config, not conversations or UI state
+        multiProviderConfig: state.multiProviderConfig,
         isConfigured: state.isConfigured
       })
     }
@@ -171,6 +323,7 @@ export const useAIStore = create<AIState>()(
 
 // Selector hooks for performance
 export const useAIConfig = () => useAIStore((state) => state.config)
+export const useAIMultiProviderConfig = () => useAIStore((state) => state.multiProviderConfig)
 export const useAIConfigured = () => useAIStore((state) => state.isConfigured)
 export const useAIPanelOpen = () => useAIStore((state) => state.isPanelOpen)
 export const useAISettingsOpen = () => useAIStore((state) => state.isSettingsOpen)

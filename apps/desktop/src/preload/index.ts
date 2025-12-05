@@ -21,11 +21,22 @@ import type {
   AIMessage,
   AIChatResponse,
   StoredChatMessage,
-  ChatSession
+  ChatSession,
+  AIMultiProviderConfig,
+  AIProviderConfig
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
-export type { AIProvider, AIConfig, AIMessage, AIChatResponse, StoredChatMessage, ChatSession }
+export type {
+  AIProvider,
+  AIConfig,
+  AIMessage,
+  AIChatResponse,
+  StoredChatMessage,
+  ChatSession,
+  AIMultiProviderConfig,
+  AIProviderConfig
+}
 
 // Custom APIs for renderer
 const api = {
@@ -197,7 +208,25 @@ const api = {
     ): Promise<IpcResponse<ChatSession | null>> =>
       ipcRenderer.invoke('ai:update-session', { connectionId, sessionId, updates }),
     deleteSession: (connectionId: string, sessionId: string): Promise<IpcResponse<boolean>> =>
-      ipcRenderer.invoke('ai:delete-session', { connectionId, sessionId })
+      ipcRenderer.invoke('ai:delete-session', { connectionId, sessionId }),
+    // Multi-provider configuration
+    getMultiProviderConfig: (): Promise<IpcResponse<AIMultiProviderConfig | null>> =>
+      ipcRenderer.invoke('ai:get-multi-provider-config'),
+    setMultiProviderConfig: (config: AIMultiProviderConfig | null): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('ai:set-multi-provider-config', config),
+    getProviderConfig: (provider: AIProvider): Promise<IpcResponse<AIProviderConfig | null>> =>
+      ipcRenderer.invoke('ai:get-provider-config', provider),
+    setProviderConfig: (
+      provider: AIProvider,
+      config: AIProviderConfig
+    ): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('ai:set-provider-config', { provider, config }),
+    removeProviderConfig: (provider: AIProvider): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('ai:remove-provider-config', provider),
+    setActiveProvider: (provider: AIProvider): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('ai:set-active-provider', provider),
+    setActiveModel: (provider: AIProvider, model: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('ai:set-active-model', { provider, model })
   }
 }
 

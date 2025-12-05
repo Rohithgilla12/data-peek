@@ -157,261 +157,256 @@ function VirtualizedSchemaItems({
           position: 'relative'
         }}
       >
-          {virtualItems.map((virtualRow) => {
-            const item = items[virtualRow.index]
-            if (item.type === 'table') {
-              const table = item.data
-              const tableKey = `${schemaName}.${table.name}`
-              const isExpanded = expandedTables.has(tableKey)
+        {virtualItems.map((virtualRow) => {
+          const item = items[virtualRow.index]
+          if (item.type === 'table') {
+            const table = item.data
+            const tableKey = `${schemaName}.${table.name}`
+            const isExpanded = expandedTables.has(tableKey)
 
-              return (
-                <SidebarMenuSubItem
-                  key={tableKey}
-                  data-index={virtualRow.index}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`
-                  }}
-                >
-                  <div className="flex items-center group/table">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-5 p-0 mr-1"
-                      onClick={() => onToggleTable(tableKey)}
-                    >
-                      <ChevronRight
-                        className={`size-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                      />
-                    </Button>
-                    <SidebarMenuSubButton
-                      onClick={() => onTableClick(schemaName, table)}
-                      className="flex-1"
-                    >
-                      <Table2
-                        className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : 'text-muted-foreground'}`}
-                      />
-                      <span className="flex-1 truncate">{table.name}</span>
-                      {table.type === 'view' && (
-                        <Badge
-                          variant="outline"
-                          className="text-[11px] px-1.5 py-0 text-purple-500"
-                        >
-                          view
-                        </Badge>
-                      )}
-                    </SidebarMenuSubButton>
-                    {table.type === 'table' && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-5 p-0 opacity-0 group-hover/table:opacity-100 transition-opacity"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="size-3.5" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-40">
-                          <DropdownMenuItem onClick={() => onTableClick(schemaName, table)}>
-                            <Table2 className="size-4 mr-2" />
-                            View Data
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onEditTable(schemaName, table.name)}>
-                            <Pencil className="size-4 mr-2" />
-                            Edit Table
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                  {isExpanded && (
-                    <div className="ml-6 border-l border-border/50 pl-2 py-1 space-y-0.5">
-                      {table.columns.map((column) => (
-                        <TooltipProvider key={column.name}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default">
-                                {column.isPrimaryKey ? (
-                                  <Key className="size-3 text-yellow-500" />
-                                ) : (
-                                  <Columns3 className="size-3" />
-                                )}
-                                <span
-                                  className={
-                                    column.isPrimaryKey ? 'font-medium text-foreground' : ''
-                                  }
-                                >
-                                  {column.name}
-                                </span>
-                                {!column.isNullable && !column.isPrimaryKey && (
-                                  <span className="text-red-400 text-[10px]">*</span>
-                                )}
-                                <DataTypeBadge type={column.dataType} />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="text-xs">
-                              <div className="space-y-1">
-                                <div>
-                                  <span className="text-muted-foreground">Type: </span>
-                                  {column.dataType}
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">Nullable: </span>
-                                  {column.isNullable ? 'Yes' : 'No'}
-                                </div>
-                                {column.isPrimaryKey && (
-                                  <div className="text-yellow-500">Primary Key</div>
-                                )}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ))}
-                    </div>
-                  )}
-                </SidebarMenuSubItem>
-              )
-            } else {
-              const routine = item.data
-              const routineKey = `${schemaName}.${routine.name}`
-              const isExpanded = expandedRoutines.has(routineKey)
-
-              return (
-                <SidebarMenuSubItem
-                  key={routineKey}
-                  data-index={virtualRow.index}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    transform: `translateY(${virtualRow.start}px)`
-                  }}
-                >
-                  <div className="flex items-center group/routine">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="size-5 p-0 mr-1"
-                      onClick={() => onToggleRoutine(routineKey)}
-                    >
-                      <ChevronRight
-                        className={`size-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
-                      />
-                    </Button>
-                    <SidebarMenuSubButton className="flex-1 cursor-default">
-                      {routine.type === 'function' ? (
-                        <FunctionSquare className="size-3.5 text-cyan-500" />
-                      ) : (
-                        <Workflow className="size-3.5 text-orange-500" />
-                      )}
-                      <span className="flex-1 truncate">{routine.name}</span>
-                      <Badge
-                        variant="outline"
-                        className={`text-[11px] px-1.5 py-0 ${
-                          routine.type === 'function' ? 'text-cyan-500' : 'text-orange-500'
-                        }`}
-                      >
-                        {routine.type === 'function' ? 'fn' : 'proc'}
+            return (
+              <SidebarMenuSubItem
+                key={tableKey}
+                data-index={virtualRow.index}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`
+                }}
+              >
+                <div className="flex items-center group/table">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-5 p-0 mr-1"
+                    onClick={() => onToggleTable(tableKey)}
+                  >
+                    <ChevronRight
+                      className={`size-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    />
+                  </Button>
+                  <SidebarMenuSubButton
+                    onClick={() => onTableClick(schemaName, table)}
+                    className="flex-1"
+                  >
+                    <Table2
+                      className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : 'text-muted-foreground'}`}
+                    />
+                    <span className="flex-1 truncate">{table.name}</span>
+                    {table.type === 'view' && (
+                      <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-purple-500">
+                        view
                       </Badge>
-                    </SidebarMenuSubButton>
+                    )}
+                  </SidebarMenuSubButton>
+                  {table.type === 'table' && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-5 p-0 opacity-0 group-hover/routine:opacity-100 transition-opacity"
+                          className="size-5 p-0 opacity-0 group-hover/table:opacity-100 transition-opacity"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <MoreHorizontal className="size-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem
-                          onClick={() =>
-                            onExecuteRoutine(
-                              schemaName,
-                              routine.name,
-                              routine.type,
-                              routine.parameters
-                            )
-                          }
-                        >
-                          <Play className="size-4 mr-2" />
-                          Execute
+                        <DropdownMenuItem onClick={() => onTableClick(schemaName, table)}>
+                          <Table2 className="size-4 mr-2" />
+                          View Data
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEditTable(schemaName, table.name)}>
+                          <Pencil className="size-4 mr-2" />
+                          Edit Table
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </div>
-                  {isExpanded && (
-                    <div className="ml-6 border-l border-border/50 pl-2 py-1 space-y-0.5">
-                      {routine.returnType && (
-                        <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-                          <ArrowRight className="size-3 text-cyan-500" />
-                          <span className="text-muted-foreground">returns</span>
-                          <DataTypeBadge type={routine.returnType} />
-                        </div>
-                      )}
-                      {routine.parameters.map((param) => (
-                        <TooltipProvider key={param.name}>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default">
-                                <Columns3 className="size-3" />
-                                <span>{param.name}</span>
-                                <Badge
-                                  variant="outline"
-                                  className={`text-[11px] px-1.5 py-0 ${
-                                    param.mode === 'OUT'
-                                      ? 'text-orange-400'
-                                      : param.mode === 'INOUT'
-                                        ? 'text-yellow-400'
-                                        : 'text-muted-foreground'
-                                  }`}
-                                >
-                                  {param.mode}
-                                </Badge>
-                                <DataTypeBadge type={param.dataType} />
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="text-xs">
-                              <div className="space-y-1">
-                                <div>
-                                  <span className="text-muted-foreground">Type: </span>
-                                  {param.dataType}
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">Mode: </span>
-                                  {param.mode}
-                                </div>
-                                {param.defaultValue && (
-                                  <div>
-                                    <span className="text-muted-foreground">Default: </span>
-                                    {param.defaultValue}
-                                  </div>
-                                )}
-                              </div>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      ))}
-                      {routine.parameters.length === 0 && !routine.returnType && (
-                        <div className="py-0.5 px-1 text-xs text-muted-foreground italic">
-                          No parameters
-                        </div>
-                      )}
-                    </div>
                   )}
-                </SidebarMenuSubItem>
-              )
-            }
-          })}
-        </SidebarMenuSub>
+                </div>
+                {isExpanded && (
+                  <div className="ml-6 border-l border-border/50 pl-2 py-1 space-y-0.5">
+                    {table.columns.map((column) => (
+                      <TooltipProvider key={column.name}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default">
+                              {column.isPrimaryKey ? (
+                                <Key className="size-3 text-yellow-500" />
+                              ) : (
+                                <Columns3 className="size-3" />
+                              )}
+                              <span
+                                className={column.isPrimaryKey ? 'font-medium text-foreground' : ''}
+                              >
+                                {column.name}
+                              </span>
+                              {!column.isNullable && !column.isPrimaryKey && (
+                                <span className="text-red-400 text-[10px]">*</span>
+                              )}
+                              <DataTypeBadge type={column.dataType} />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs">
+                            <div className="space-y-1">
+                              <div>
+                                <span className="text-muted-foreground">Type: </span>
+                                {column.dataType}
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Nullable: </span>
+                                {column.isNullable ? 'Yes' : 'No'}
+                              </div>
+                              {column.isPrimaryKey && (
+                                <div className="text-yellow-500">Primary Key</div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                  </div>
+                )}
+              </SidebarMenuSubItem>
+            )
+          } else {
+            const routine = item.data
+            const routineKey = `${schemaName}.${routine.name}`
+            const isExpanded = expandedRoutines.has(routineKey)
+
+            return (
+              <SidebarMenuSubItem
+                key={routineKey}
+                data-index={virtualRow.index}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`
+                }}
+              >
+                <div className="flex items-center group/routine">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-5 p-0 mr-1"
+                    onClick={() => onToggleRoutine(routineKey)}
+                  >
+                    <ChevronRight
+                      className={`size-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                    />
+                  </Button>
+                  <SidebarMenuSubButton className="flex-1 cursor-default">
+                    {routine.type === 'function' ? (
+                      <FunctionSquare className="size-3.5 text-cyan-500" />
+                    ) : (
+                      <Workflow className="size-3.5 text-orange-500" />
+                    )}
+                    <span className="flex-1 truncate">{routine.name}</span>
+                    <Badge
+                      variant="outline"
+                      className={`text-[11px] px-1.5 py-0 ${
+                        routine.type === 'function' ? 'text-cyan-500' : 'text-orange-500'
+                      }`}
+                    >
+                      {routine.type === 'function' ? 'fn' : 'proc'}
+                    </Badge>
+                  </SidebarMenuSubButton>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-5 p-0 opacity-0 group-hover/routine:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreHorizontal className="size-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem
+                        onClick={() =>
+                          onExecuteRoutine(
+                            schemaName,
+                            routine.name,
+                            routine.type,
+                            routine.parameters
+                          )
+                        }
+                      >
+                        <Play className="size-4 mr-2" />
+                        Execute
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                {isExpanded && (
+                  <div className="ml-6 border-l border-border/50 pl-2 py-1 space-y-0.5">
+                    {routine.returnType && (
+                      <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
+                        <ArrowRight className="size-3 text-cyan-500" />
+                        <span className="text-muted-foreground">returns</span>
+                        <DataTypeBadge type={routine.returnType} />
+                      </div>
+                    )}
+                    {routine.parameters.map((param) => (
+                      <TooltipProvider key={param.name}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default">
+                              <Columns3 className="size-3" />
+                              <span>{param.name}</span>
+                              <Badge
+                                variant="outline"
+                                className={`text-[11px] px-1.5 py-0 ${
+                                  param.mode === 'OUT'
+                                    ? 'text-orange-400'
+                                    : param.mode === 'INOUT'
+                                      ? 'text-yellow-400'
+                                      : 'text-muted-foreground'
+                                }`}
+                              >
+                                {param.mode}
+                              </Badge>
+                              <DataTypeBadge type={param.dataType} />
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="text-xs">
+                            <div className="space-y-1">
+                              <div>
+                                <span className="text-muted-foreground">Type: </span>
+                                {param.dataType}
+                              </div>
+                              <div>
+                                <span className="text-muted-foreground">Mode: </span>
+                                {param.mode}
+                              </div>
+                              {param.defaultValue && (
+                                <div>
+                                  <span className="text-muted-foreground">Default: </span>
+                                  {param.defaultValue}
+                                </div>
+                              )}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    ))}
+                    {routine.parameters.length === 0 && !routine.returnType && (
+                      <div className="py-0.5 px-1 text-xs text-muted-foreground italic">
+                        No parameters
+                      </div>
+                    )}
+                  </div>
+                )}
+              </SidebarMenuSubItem>
+            )
+          }
+        })}
+      </SidebarMenuSub>
     </div>
   )
 }
