@@ -47,7 +47,7 @@ import { EditToolbar } from '@/components/edit-toolbar'
 import { SqlPreviewModal } from '@/components/sql-preview-modal'
 import { JsonCellValue } from '@/components/json-cell-value'
 import { FKCellValue } from '@/components/fk-cell-value'
-import { AddRowSheet } from '@/components/add-row-sheet'
+import { AddRowSheet, type ForeignKeyValue } from '@/components/add-row-sheet'
 import { useEditStore } from '@/stores/edit-store'
 
 export interface DataTableColumn {
@@ -135,6 +135,10 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     string,
     unknown
   > | null>(null)
+  const [foreignKeyValuesMap, setForeignKeyValuesMap] = React.useState<
+    Record<string, ForeignKeyValue[]>
+  >({})
+  const [loadingFkValues, setLoadingFkValues] = React.useState(false)
 
   // Edit store
   const {
@@ -247,6 +251,49 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
       enumValuesMap[col.name] = col.enumValues
     }
   })
+
+  // Fetch FK values when sheet opens
+  React.useEffect(() => {
+    if (!showAddRowSheet || !connection) return
+
+    // Find columns with foreign keys
+    const fkColumns = columnDefs.filter((col) => col.foreignKey)
+    if (fkColumns.length === 0) return
+
+    const fetchFkValues = async () => {
+      setLoadingFkValues(true)
+      const fkValuesMap: Record<string, ForeignKeyValue[]> = {}
+
+      try {
+        // Fetch FK values for each column in parallel
+        await Promise.all(
+          fkColumns.map(async (col) => {
+            const fk = col.foreignKey!
+            // Query the referenced table - limit to 1000 rows for performance
+            const query = `SELECT DISTINCT "${fk.referencedColumn}" FROM "${fk.referencedSchema}"."${fk.referencedTable}" ORDER BY "${fk.referencedColumn}" LIMIT 1000`
+
+            try {
+              const result = await window.api.db.query(connection, query)
+              if (result.success && Array.isArray(result.data)) {
+                fkValuesMap[col.name] = (result.data as Record<string, unknown>[]).map((row) => ({
+                  value: row[fk.referencedColumn] as string | number
+                }))
+              }
+            } catch (err) {
+              console.error(`Failed to fetch FK values for ${col.name}:`, err)
+              fkValuesMap[col.name] = []
+            }
+          })
+        )
+
+        setForeignKeyValuesMap(fkValuesMap)
+      } finally {
+        setLoadingFkValues(false)
+      }
+    }
+
+    fetchFkValues()
+  }, [showAddRowSheet, connection, columnDefs])
 
   // Handle preview SQL
   const handlePreviewSql = async () => {
@@ -843,6 +890,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           schemaName={editContext?.schema}
           initialValues={duplicateRowValues ?? undefined}
           enumValuesMap={enumValuesMap}
+          foreignKeyValuesMap={foreignKeyValuesMap}
+          loadingFkValues={loadingFkValues}
           onSubmit={handleSheetSubmit}
           isDuplicate={duplicateRowValues !== null}
         />

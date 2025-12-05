@@ -61,6 +61,9 @@ type FieldType =
 function getFieldType(column: ColumnInfo): FieldType {
   const dt = column.dataType.toLowerCase()
 
+  // Check FK first - FK fields should use the FK selector, not generate random values
+  if (column.foreignKey) return 'foreignKey'
+
   if (dt.includes('uuid')) return 'uuid'
   if (dt === 'boolean' || dt === 'bool') return 'boolean'
   if (dt.includes('json')) return 'json'
@@ -79,7 +82,6 @@ function getFieldType(column: ColumnInfo): FieldType {
   ) {
     return 'number'
   }
-  if (column.foreignKey) return 'foreignKey'
 
   return 'text'
 }
@@ -112,16 +114,34 @@ const fieldTypeColors: Record<FieldType, string> = {
   foreignKey: 'text-blue-400'
 }
 
+/** FK reference value with display label */
+export interface ForeignKeyValue {
+  value: string | number
+  label?: string // Optional display column value
+}
+
 interface SmartFieldProps {
   column: ColumnInfo
   value: unknown
   onChange: (value: unknown) => void
   enumValues?: string[]
+  /** Available FK values for foreign key columns */
+  foreignKeyValues?: ForeignKeyValue[]
+  /** Whether FK values are being loaded */
+  loadingFkValues?: boolean
 }
 
-function SmartField({ column, value, onChange, enumValues }: SmartFieldProps) {
+function SmartField({
+  column,
+  value,
+  onChange,
+  enumValues,
+  foreignKeyValues,
+  loadingFkValues
+}: SmartFieldProps) {
   const fieldType = getFieldType(column)
   const Icon = fieldTypeIcons[fieldType]
+  const [fkSearchQuery, setFkSearchQuery] = React.useState('')
   const iconColor = fieldTypeColors[fieldType]
   const isRequired = !column.isNullable && !column.defaultValue
   const hasDefault = !!column.defaultValue
@@ -346,23 +366,90 @@ function SmartField({ column, value, onChange, enumValues }: SmartFieldProps) {
           />
         )}
 
-        {/* Foreign Key Field - simple input for now */}
+        {/* Foreign Key Field - searchable dropdown */}
         {fieldType === 'foreignKey' && (
           <div className="flex gap-2 flex-1">
-            <Input
-              value={displayValue}
-              onChange={(e) => onChange(e.target.value || null)}
-              placeholder={`Enter ${column.foreignKey?.referencedColumn} value...`}
-              className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-blue-500/50"
-            />
+            {loadingFkValues ? (
+              <div className="h-9 flex-1 bg-muted/30 border border-border/50 rounded-md flex items-center px-3 gap-2">
+                <div className="size-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                <span className="text-xs text-muted-foreground">Loading values...</span>
+              </div>
+            ) : foreignKeyValues && foreignKeyValues.length > 0 ? (
+              <Select value={displayValue || ''} onValueChange={(v) => onChange(v || null)}>
+                <SelectTrigger className="h-9 flex-1 bg-muted/30 border-border/50 focus:ring-blue-500/50">
+                  <SelectValue
+                    placeholder={`Select from ${column.foreignKey?.referencedTable}...`}
+                  />
+                </SelectTrigger>
+                <SelectContent className="max-h-[300px]">
+                  {/* Search input */}
+                  <div className="px-2 pb-2">
+                    <Input
+                      placeholder="Search..."
+                      value={fkSearchQuery}
+                      onChange={(e) => setFkSearchQuery(e.target.value)}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  {column.isNullable && (
+                    <SelectItem value="" className="text-muted-foreground">
+                      NULL
+                    </SelectItem>
+                  )}
+                  {foreignKeyValues
+                    .filter((fk) => {
+                      if (!fkSearchQuery) return true
+                      const searchLower = fkSearchQuery.toLowerCase()
+                      return (
+                        String(fk.value).toLowerCase().includes(searchLower) ||
+                        (fk.label && fk.label.toLowerCase().includes(searchLower))
+                      )
+                    })
+                    .slice(0, 100) // Limit to first 100 matches for performance
+                    .map((fk) => (
+                      <SelectItem key={String(fk.value)} value={String(fk.value)}>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs">{fk.value}</span>
+                          {fk.label && (
+                            <span className="text-muted-foreground text-xs">({fk.label})</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  {foreignKeyValues.length > 100 && !fkSearchQuery && (
+                    <div className="px-2 py-1.5 text-xs text-muted-foreground text-center">
+                      Showing first 100 of {foreignKeyValues.length} values. Type to search...
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+            ) : (
+              // Fallback to manual input if no FK values available
+              <Input
+                value={displayValue}
+                onChange={(e) => onChange(e.target.value || null)}
+                placeholder={`Enter ${column.foreignKey?.referencedColumn} value...`}
+                className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-blue-500/50 font-mono text-xs"
+              />
+            )}
             {column.foreignKey && (
-              <Badge
-                variant="outline"
-                className="h-9 px-2 text-[10px] text-blue-400 border-blue-500/30 flex items-center gap-1"
-              >
-                <Link2 className="size-3" />
-                {column.foreignKey.referencedTable}
-              </Badge>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Badge
+                      variant="outline"
+                      className="h-9 px-2 text-[10px] text-blue-400 border-blue-500/30 flex items-center gap-1 shrink-0"
+                    >
+                      <Link2 className="size-3" />
+                      {column.foreignKey.referencedTable}
+                    </Badge>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    References {column.foreignKey.referencedSchema}.
+                    {column.foreignKey.referencedTable}.{column.foreignKey.referencedColumn}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         )}
@@ -408,6 +495,10 @@ export interface AddRowSheetProps {
   initialValues?: Record<string, unknown>
   /** Enum values per column */
   enumValuesMap?: Record<string, string[]>
+  /** FK values per column name */
+  foreignKeyValuesMap?: Record<string, ForeignKeyValue[]>
+  /** Whether FK values are being loaded */
+  loadingFkValues?: boolean
   onSubmit: (values: Record<string, unknown>) => void
   /** Whether this is duplicating an existing row */
   isDuplicate?: boolean
@@ -421,6 +512,8 @@ export function AddRowSheet({
   schemaName,
   initialValues,
   enumValuesMap = {},
+  foreignKeyValuesMap = {},
+  loadingFkValues = false,
   onSubmit,
   isDuplicate = false
 }: AddRowSheetProps) {
@@ -522,6 +615,8 @@ export function AddRowSheet({
                     value={values[col.name]}
                     onChange={(v) => handleValueChange(col.name, v)}
                     enumValues={enumValuesMap[col.name]}
+                    foreignKeyValues={foreignKeyValuesMap[col.name]}
+                    loadingFkValues={loadingFkValues && !!col.foreignKey}
                   />
                 ))}
               </div>
@@ -557,6 +652,8 @@ export function AddRowSheet({
                         value={values[col.name]}
                         onChange={(v) => handleValueChange(col.name, v)}
                         enumValues={enumValuesMap[col.name]}
+                        foreignKeyValues={foreignKeyValuesMap[col.name]}
+                        loadingFkValues={loadingFkValues && !!col.foreignKey}
                       />
                     ))}
                   </div>
