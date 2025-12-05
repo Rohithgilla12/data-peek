@@ -106,21 +106,24 @@ async function createWindow(): Promise<void> {
     minHeight: 600,
     show: false,
     autoHideMenuBar: false, // Show menu bar for native shortcuts
-    // macOS-style window
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 16, y: 18 },
-    vibrancy: 'sidebar',
-    visualEffectState: 'active',
-    transparent: true,
-    backgroundColor: '#00000000',
-    // Windows titlebar overlay
+    // macOS-style window with vibrancy
+    ...(process.platform === 'darwin' && {
+      titleBarStyle: 'hiddenInset',
+      trafficLightPosition: { x: 16, y: 18 },
+      vibrancy: 'sidebar',
+      visualEffectState: 'active',
+      transparent: true,
+      backgroundColor: '#00000000'
+    }),
+    // Windows titlebar overlay - keep window resizable and dockable
     ...(process.platform === 'win32' && {
       titleBarStyle: 'hidden',
       titleBarOverlay: {
         color: '#1e1e1e',
         symbolColor: '#ffffff',
         height: 40
-      }
+      },
+      backgroundColor: '#1e1e1e'
     }),
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
