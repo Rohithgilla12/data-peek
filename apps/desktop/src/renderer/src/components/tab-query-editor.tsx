@@ -1060,26 +1060,33 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
       {/* Execution Plan Panel */}
       {executionPlan && (
-        <div
-          className="fixed inset-y-0 right-0 z-50 shadow-xl"
-          style={{ width: executionPlanWidth }}
-        >
-          {/* Resize handle */}
+        <>
+          {/* Backdrop overlay */}
           <div
-            className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors z-10"
-            onMouseDown={(e) => {
-              e.preventDefault()
-              isResizing.current = true
-              document.body.style.cursor = 'ew-resize'
-              document.body.style.userSelect = 'none'
-            }}
+            className="fixed inset-0 z-40 bg-black/30"
+            onClick={() => setExecutionPlan(null)}
           />
-          <ExecutionPlanViewer
-            plan={executionPlan.plan as Parameters<typeof ExecutionPlanViewer>[0]['plan']}
-            durationMs={executionPlan.durationMs}
-            onClose={() => setExecutionPlan(null)}
-          />
-        </div>
+          <div
+            className="fixed top-0 bottom-0 right-0 z-50 shadow-xl bg-background"
+            style={{ width: executionPlanWidth }}
+          >
+            {/* Resize handle */}
+            <div
+              className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors z-10"
+              onMouseDown={(e) => {
+                e.preventDefault()
+                isResizing.current = true
+                document.body.style.cursor = 'ew-resize'
+                document.body.style.userSelect = 'none'
+              }}
+            />
+            <ExecutionPlanViewer
+              plan={executionPlan.plan as Parameters<typeof ExecutionPlanViewer>[0]['plan']}
+              durationMs={executionPlan.durationMs}
+              onClose={() => setExecutionPlan(null)}
+            />
+          </div>
+        </>
       )}
 
       {/* Save Query Dialog */}
