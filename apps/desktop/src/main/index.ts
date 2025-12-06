@@ -27,6 +27,7 @@ import { createMenu } from './menu'
 import { setupContextMenu } from './context-menu'
 import { getWindowState, trackWindowState } from './window-state'
 import { getAdapter } from './db-adapter'
+import { cancelQuery } from './query-tracker'
 import {
   initLicenseStore,
   checkLicense,
@@ -93,7 +94,7 @@ const schemaMemoryCache = new Map<string, CachedSchema>()
 
 // Generate cache key from connection config
 function getSchemaCacheKey(config: ConnectionConfig): string {
-  return `${config.dbType}:${config.host}:${config.port}:${config.database}`
+  return `${config.dbType}:${config.host}:${config.port}:${config.database}:${config.user ?? 'default'}`
 }
 
 async function initStore(): Promise<void> {
@@ -252,17 +253,26 @@ app.whenReady().then(async () => {
 
   ipcMain.handle(
     'db:query',
-    async (_, { config, query }: { config: ConnectionConfig; query: string }) => {
+    async (
+      _,
+      {
+        config,
+        query,
+        executionId
+      }: { config: ConnectionConfig; query: string; executionId?: string }
+    ) => {
       console.log('[main:db:query] Received query request')
       console.log('[main:db:query] Config:', { ...config, password: '***' })
       console.log('[main:db:query] Query:', query)
+      console.log('[main:db:query] Execution ID:', executionId)
 
       try {
         const adapter = getAdapter(config)
         console.log('[main:db:query] Connecting...')
 
         // Use queryMultiple to support multiple statements
-        const multiResult = await adapter.queryMultiple(config, query)
+        // Pass executionId for cancellation support
+        const multiResult = await adapter.queryMultiple(config, query, { executionId })
 
         console.log('[main:db:query] Query completed in', multiResult.totalDurationMs, 'ms')
         console.log('[main:db:query] Statement count:', multiResult.results.length)
@@ -298,6 +308,39 @@ app.whenReady().then(async () => {
       }
     }
   )
+
+// Cancel a running query by execution ID
+  ipcMain.handle('db:cancel-query', async (_, executionId: string) => {
+    console.log('[main:db:cancel-query] Cancelling query:', executionId)
+
+    try {
+      const result = await cancelQuery(executionId)
+      if (result.cancelled) {
+        console.log('[main:db:cancel-query] Query cancelled successfully')
+        return { success: true, data: { cancelled: true } }
+      } else {
+        console.log('[main:db:cancel-query] Query not found:', result.error)
+        return { success: false, error: result.error }
+      }
+    } catch (error: unknown) {
+      console.error('[main:db:cancel-query] Error:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Invalidate schema cache for a connection
+  ipcMain.handle('db:invalidate-schema-cache', (_, config: ConnectionConfig) => {
+    const cacheKey = getSchemaCacheKey(config)
+    schemaMemoryCache.delete(cacheKey)
+
+    const allCache = schemaCacheStore.get('cache', {})
+    delete allCache[cacheKey]
+    schemaCacheStore.set('cache', allCache)
+
+    console.log(`[schema-cache] Invalidated cache for ${cacheKey}`)
+    return { success: true }
+  })
 
   // Fetch database schemas, tables, and columns (with caching)
   ipcMain.handle(

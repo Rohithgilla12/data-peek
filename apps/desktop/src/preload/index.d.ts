@@ -2,7 +2,7 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 import type {
   ConnectionConfig,
   IpcResponse,
-  DatabaseSchema,
+  DatabaseSchemaResponse,
   EditBatch,
   EditResult,
   TableDefinition,
@@ -135,20 +135,16 @@ interface DataPeekApi {
   }
   db: {
     connect: (config: ConnectionConfig) => Promise<IpcResponse<void>>
-    query: (config: ConnectionConfig, query: string) => Promise<IpcResponse<unknown>>
+    query: (
+      config: ConnectionConfig,
+      query: string,
+      executionId?: string
+    ) => Promise<IpcResponse<unknown>>
+    cancelQuery: (executionId: string) => Promise<IpcResponse<{ cancelled: boolean }>>
     schemas: (
       config: ConnectionConfig,
       forceRefresh?: boolean
-    ) => Promise<
-      IpcResponse<
-        DatabaseSchema & {
-          customTypes?: CustomTypeInfo[]
-          fromCache?: boolean
-          stale?: boolean
-          refreshError?: string
-        }
-      >
-    >
+    ) => Promise<IpcResponse<DatabaseSchemaResponse>>
     invalidateSchemaCache: (config: ConnectionConfig) => Promise<IpcResponse<void>>
     execute: (config: ConnectionConfig, batch: EditBatch) => Promise<IpcResponse<EditResult>>
     previewSql: (

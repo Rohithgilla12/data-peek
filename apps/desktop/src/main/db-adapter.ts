@@ -27,6 +27,14 @@ export interface AdapterMultiQueryResult {
 }
 
 /**
+ * Options for query execution
+ */
+export interface QueryOptions {
+  /** Unique execution ID for cancellation support */
+  executionId?: string
+}
+
+/**
  * Explain plan result
  */
 export interface ExplainResult {
@@ -48,7 +56,11 @@ export interface DatabaseAdapter {
   query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult>
 
   /** Execute multiple SQL statements and return results for each */
-  queryMultiple(config: ConnectionConfig, sql: string): Promise<AdapterMultiQueryResult>
+  queryMultiple(
+    config: ConnectionConfig,
+    sql: string,
+    options?: QueryOptions
+  ): Promise<AdapterMultiQueryResult>
 
   /** Execute a statement (for INSERT/UPDATE/DELETE in transactions) */
   execute(

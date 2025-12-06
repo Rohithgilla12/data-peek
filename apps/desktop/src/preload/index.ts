@@ -3,7 +3,7 @@ import { electronAPI } from '@electron-toolkit/preload'
 import type {
   ConnectionConfig,
   IpcResponse,
-  DatabaseSchema,
+  DatabaseSchemaResponse,
   EditBatch,
   EditResult,
   TableDefinition,
@@ -53,14 +53,19 @@ const api = {
   db: {
     connect: (config: ConnectionConfig): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('db:connect', config),
-    query: (config: ConnectionConfig, query: string): Promise<IpcResponse<unknown>> =>
-      ipcRenderer.invoke('db:query', { config, query }),
+    query: (
+      config: ConnectionConfig,
+      query: string,
+      executionId?: string
+    ): Promise<IpcResponse<unknown>> =>
+      ipcRenderer.invoke('db:query', { config, query, executionId }),
+    cancelQuery: (executionId: string): Promise<IpcResponse<{ cancelled: boolean }>> =>
+      ipcRenderer.invoke('db:cancel-query', executionId),
     schemas: (
       config: ConnectionConfig,
       forceRefresh?: boolean
-    ): Promise<
-      IpcResponse<DatabaseSchema & { fromCache?: boolean; stale?: boolean; refreshError?: string }>
-    > => ipcRenderer.invoke('db:schemas', { config, forceRefresh }),
+    ): Promise<IpcResponse<DatabaseSchemaResponse>> =>
+      ipcRenderer.invoke('db:schemas', { config, forceRefresh }),
     invalidateSchemaCache: (config: ConnectionConfig): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('db:invalidate-schema-cache', config),
     execute: (config: ConnectionConfig, batch: EditBatch): Promise<IpcResponse<EditResult>> =>

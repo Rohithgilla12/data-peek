@@ -20,8 +20,10 @@ import type {
   DatabaseAdapter,
   AdapterQueryResult,
   AdapterMultiQueryResult,
-  ExplainResult
+  ExplainResult,
+  QueryOptions
 } from '../db-adapter'
+import { registerQuery, unregisterQuery } from '../query-tracker'
 
 /**
  * MySQL type codes to type name mapping
@@ -273,8 +275,17 @@ export class MySQLAdapter implements DatabaseAdapter {
     }
   }
 
-  async queryMultiple(config: ConnectionConfig, sql: string): Promise<AdapterMultiQueryResult> {
+  async queryMultiple(
+    config: ConnectionConfig,
+    sql: string,
+    options?: QueryOptions
+  ): Promise<AdapterMultiQueryResult> {
     const connection = await mysql.createConnection(toMySQLConfig(config))
+
+    // Register for cancellation support
+    if (options?.executionId) {
+      registerQuery(options.executionId, { type: 'mysql', connection })
+    }
 
     const totalStart = Date.now()
     const results: StatementResult[] = []
@@ -343,6 +354,10 @@ export class MySQLAdapter implements DatabaseAdapter {
         totalDurationMs: Date.now() - totalStart
       }
     } finally {
+      // Unregister from tracker
+      if (options?.executionId) {
+        unregisterQuery(options.executionId)
+      }
       await connection.end()
     }
   }

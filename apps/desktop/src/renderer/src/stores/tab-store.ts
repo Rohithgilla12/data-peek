@@ -41,6 +41,7 @@ export interface QueryTab extends BaseTab {
   activeResultIndex: number // Index of currently displayed result set
   error: string | null
   isExecuting: boolean
+  executionId: string | null // ID for cancellation support
   currentPage: number
   pageSize: number
 }
@@ -57,6 +58,7 @@ export interface TablePreviewTab extends BaseTab {
   activeResultIndex: number // Index of currently displayed result set
   error: string | null
   isExecuting: boolean
+  executionId: string | null // ID for cancellation support
   currentPage: number
   pageSize: number
 }
@@ -121,7 +123,7 @@ interface TabState {
     error: string | null
   ) => void
   setActiveResultIndex: (tabId: string, index: number) => void
-  updateTabExecuting: (tabId: string, isExecuting: boolean) => void
+  updateTabExecuting: (tabId: string, isExecuting: boolean, executionId?: string | null) => void
   markTabSaved: (tabId: string) => void
 
   // Pagination per tab
@@ -193,6 +195,7 @@ export const useTabStore = create<TabState>()(
           activeResultIndex: 0,
           error: null,
           isExecuting: false,
+          executionId: null,
           currentPage: 1,
           pageSize: 100
         }
@@ -239,6 +242,7 @@ export const useTabStore = create<TabState>()(
           activeResultIndex: 0,
           error: null,
           isExecuting: false,
+          executionId: null,
           currentPage: 1,
           pageSize: 100
         }
@@ -297,6 +301,7 @@ export const useTabStore = create<TabState>()(
           activeResultIndex: 0,
           error: null,
           isExecuting: false,
+          executionId: null,
           currentPage: 1,
           pageSize: 100
         }
@@ -497,9 +502,18 @@ export const useTabStore = create<TabState>()(
         }))
       },
 
-      updateTabExecuting: (tabId, isExecuting) => {
+      updateTabExecuting: (tabId, isExecuting, executionId?: string | null) => {
         set((state) => ({
-          tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, isExecuting } : t))
+          tabs: state.tabs.map((t) => {
+            if (t.id !== tabId) return t
+            // ERD and TableDesigner tabs don't have executionId
+            if (t.type === 'erd' || t.type === 'table-designer') return t
+            // Only update executionId if provided, otherwise clear it when not executing
+            const currentExecutionId = t.executionId
+            const newExecutionId =
+              executionId !== undefined ? executionId : isExecuting ? currentExecutionId : null
+            return { ...t, isExecuting, executionId: newExecutionId }
+          })
         }))
       },
 
@@ -735,6 +749,7 @@ export const useTabStore = create<TabState>()(
               activeResultIndex: 0,
               error: null,
               isExecuting: false,
+              executionId: null,
               savedQuery: (t as unknown as { query?: string }).query ?? '',
               createdAt: Date.now(),
               currentPage: 1,

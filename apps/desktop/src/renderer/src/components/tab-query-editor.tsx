@@ -17,7 +17,8 @@ import {
   DatabaseZap,
   BarChart3,
   Bookmark,
-  Maximize2
+  Maximize2,
+  Square
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -153,10 +154,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       return
     }
 
-    updateTabExecuting(tabId, true)
+    // Generate unique execution ID for cancellation support
+    const executionId = crypto.randomUUID()
+    updateTabExecuting(tabId, true, executionId)
 
     try {
-      const response = await window.api.db.query(tabConnection, tab.query)
+      const response = await window.api.db.query(tabConnection, tab.query, executionId)
 
       if (response.success && response.data) {
         const data = response.data as
@@ -237,6 +240,21 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     markTabSaved,
     addToHistory
   ])
+
+  const handleCancelQuery = useCallback(async () => {
+    if (!tab || tab.type === 'erd' || tab.type === 'table-designer') return
+    if (!tab.isExecuting || !tab.executionId) return
+
+    try {
+      const response = await window.api.db.cancelQuery(tab.executionId)
+      if (response.success) {
+        updateTabMultiResult(tabId, null, 'Query cancelled by user')
+        updateTabExecuting(tabId, false, null)
+      }
+    } catch (error) {
+      console.error('Failed to cancel query:', error)
+    }
+  }, [tab, tabId, updateTabMultiResult, updateTabExecuting])
 
   const handleFormatQuery = () => {
     if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tab.query.trim()) return
@@ -703,23 +721,31 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 <PanelTopClose className="size-3.5" />
               )}
             </Button>
-            <Button
-              size="sm"
-              className="gap-1.5 h-7"
-              disabled={tab.isExecuting || !tab.query.trim()}
-              onClick={handleRunQuery}
-            >
-              {tab.isExecuting ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
+            {tab.isExecuting ? (
+              <Button
+                size="sm"
+                variant="destructive"
+                className="gap-1.5 h-7"
+                onClick={handleCancelQuery}
+              >
+                <Square className="size-3.5" />
+                Cancel
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="gap-1.5 h-7"
+                disabled={!tab.query.trim()}
+                onClick={handleRunQuery}
+              >
                 <Play className="size-3.5" />
-              )}
-              Run
-              <kbd className="ml-1.5 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                {keys.mod}
-                {keys.enter}
-              </kbd>
-            </Button>
+                Run
+                <kbd className="ml-1.5 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                  {keys.mod}
+                  {keys.enter}
+                </kbd>
+              </Button>
+            )}
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>

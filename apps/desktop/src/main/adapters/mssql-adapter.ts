@@ -19,8 +19,10 @@ import type {
   DatabaseAdapter,
   AdapterQueryResult,
   AdapterMultiQueryResult,
-  ExplainResult
+  ExplainResult,
+  QueryOptions
 } from '../db-adapter'
+import { registerQuery, unregisterQuery } from '../query-tracker'
 
 const MSSQL_TYPE_MAP: Record<number, string> = {
   34: 'image',
@@ -389,7 +391,8 @@ export class MSSQLAdapter implements DatabaseAdapter {
 
   async queryMultiple(
     config: ConnectionConfig,
-    sqlQuery: string
+    sqlQuery: string,
+    options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
@@ -405,7 +408,14 @@ export class MSSQLAdapter implements DatabaseAdapter {
         const stmtStart = Date.now()
 
         try {
-          const result = await pool.request().query(statement)
+          const request = pool.request()
+
+          // Register the current request for cancellation support
+          if (options?.executionId) {
+            registerQuery(options.executionId, { type: 'mssql', request })
+          }
+
+          const result = await request.query(statement)
           const stmtDuration = Date.now() - stmtStart
 
           const rows = (result.recordset || []) as Record<string, unknown>[]
@@ -457,6 +467,11 @@ export class MSSQLAdapter implements DatabaseAdapter {
             durationMs: stmtDuration,
             isDataReturning
           })
+
+          // Unregister after each statement completes successfully
+          if (options?.executionId) {
+            unregisterQuery(options.executionId)
+          }
         } catch (error) {
           const stmtDuration = Date.now() - stmtStart
           const errorMessage = error instanceof Error ? error.message : String(error)
@@ -482,6 +497,10 @@ export class MSSQLAdapter implements DatabaseAdapter {
         totalDurationMs: Date.now() - totalStart
       }
     } finally {
+      // Unregister from tracker
+      if (options?.executionId) {
+        unregisterQuery(options.executionId)
+      }
       await pool.close()
     }
   }
