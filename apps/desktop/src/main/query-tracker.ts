@@ -4,13 +4,13 @@
 
 import { Client } from 'pg'
 import type { Connection } from 'mysql2/promise'
-import type { ConnectionPool as MSSQLPool } from 'mssql'
+import type { Request as MSSQLRequest } from 'mssql'
 
 /** Supported cancellable handle types */
 export type CancellableHandle =
   | { type: 'postgresql'; client: Client }
   | { type: 'mysql'; connection: Connection }
-  | { type: 'mssql'; pool: MSSQLPool }
+  | { type: 'mssql'; request: MSSQLRequest }
 
 interface ActiveQuery {
   executionId: string
@@ -69,8 +69,8 @@ export async function cancelQuery(
         break
       }
       case 'mssql': {
-        // MSSQL: close the pool to abort all active queries
-        await query.handle.pool.close()
+        // MSSQL: cancel the specific request without closing the pool
+        query.handle.request.cancel()
         break
       }
     }
@@ -82,7 +82,7 @@ export async function cancelQuery(
     console.error(`[query-tracker] Error cancelling query ${executionId}:`, error)
     // Still remove from active queries even if cancellation had an error
     activeQueries.delete(executionId)
-    return { cancelled: true, error: errorMessage }
+    return { cancelled: false, error: errorMessage }
   }
 }
 
