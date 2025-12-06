@@ -434,19 +434,6 @@ app.whenReady().then(async () => {
     }
   )
 
-  // Invalidate schema cache for a connection
-  ipcMain.handle('db:invalidate-schema-cache', (_, config: ConnectionConfig) => {
-    const cacheKey = getSchemaCacheKey(config)
-    schemaMemoryCache.delete(cacheKey)
-
-    const allCache = schemaCacheStore.get('cache', {})
-    delete allCache[cacheKey]
-    schemaCacheStore.set('cache', allCache)
-
-    console.log(`[schema-cache] Invalidated cache for ${cacheKey}`)
-    return { success: true }
-  })
-
   // Connection CRUD handlers
   ipcMain.handle('connections:list', () => {
     try {
