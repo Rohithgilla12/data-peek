@@ -155,6 +155,29 @@ export function EditToolbar({
           </Tooltip>
         )}
 
+        {/* Add Row Button - Available in both normal and edit mode */}
+        {!isEditMode && canEdit && !noPrimaryKey && (
+          <>
+            <div className="h-4 w-px bg-border mx-1" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 gap-1.5 text-xs text-green-600 border-green-600/30 hover:bg-green-600/10"
+                  onClick={onAddRowWithSheet}
+                >
+                  <Plus className="size-3" />
+                  Add Row
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p className="text-xs">Add a new row using a form</p>
+              </TooltipContent>
+            </Tooltip>
+          </>
+        )}
+
         {/* Edit Mode Actions */}
         {isEditMode && (
           <>

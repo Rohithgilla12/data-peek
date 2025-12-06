@@ -229,6 +229,10 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
 
   // Handle sheet submit
   const handleSheetSubmit = (values: Record<string, unknown>) => {
+    // Enter edit mode if not already in edit mode
+    if (!isEditMode && editContext) {
+      enterEditMode(tabId, editContext)
+    }
     addNewRow(tabId, values)
     setShowAddRowSheet(false)
     setDuplicateRowValues(null)
