@@ -151,13 +151,13 @@ function SmartField({
   const isRequired = !column.isNullable && !column.defaultValue
   const hasDefault = !!column.defaultValue
 
-  // Generate UUID
-  const generateUUID = () => {
+  // Generate UUID - memoized to prevent recreation on every render
+  const generateUUID = React.useCallback(() => {
     onChange(crypto.randomUUID())
-  }
+  }, [onChange])
 
-  // Set current timestamp
-  const setNow = () => {
+  // Set current timestamp - memoized
+  const setNow = React.useCallback(() => {
     const now = new Date()
     if (fieldType === 'date') {
       onChange(now.toISOString().split('T')[0])
@@ -166,12 +166,26 @@ function SmartField({
     } else {
       onChange(now.toISOString())
     }
-  }
+  }, [onChange, fieldType])
 
-  // Clear value
-  const clearValue = () => {
+  // Clear value - memoized
+  const clearValue = React.useCallback(() => {
     onChange(null)
-  }
+  }, [onChange])
+
+  // Memoize filtered FK values to prevent recalculation on every render
+  const filteredFkValues = React.useMemo(() => {
+    if (!foreignKeyValues) return []
+    if (!fkSearchQuery) return foreignKeyValues.slice(0, 100)
+    const searchLower = fkSearchQuery.toLowerCase()
+    return foreignKeyValues
+      .filter(
+        (fk) =>
+          String(fk.value).toLowerCase().includes(searchLower) ||
+          (fk.label && fk.label.toLowerCase().includes(searchLower))
+      )
+      .slice(0, 100)
+  }, [foreignKeyValues, fkSearchQuery])
 
   const displayValue = value === null || value === undefined ? '' : String(value)
 
@@ -447,52 +461,33 @@ function SmartField({
                         <span className="text-muted-foreground italic">NULL</span>
                       </button>
                     )}
-                    {foreignKeyValues
-                      .filter((fk) => {
-                        if (!fkSearchQuery) return true
-                        const searchLower = fkSearchQuery.toLowerCase()
-                        return (
-                          String(fk.value).toLowerCase().includes(searchLower) ||
-                          (fk.label && fk.label.toLowerCase().includes(searchLower))
-                        )
-                      })
-                      .slice(0, 100)
-                      .map((fk) => {
-                        const isSelected = String(value) === String(fk.value)
-                        return (
-                          <button
-                            key={String(fk.value)}
-                            type="button"
-                            className={cn(
-                              'relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
-                              isSelected && 'bg-accent'
-                            )}
-                            onClick={() => {
-                              onChange(fk.value)
-                              setFkPopoverOpen(false)
-                              setFkSearchQuery('')
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                'mr-2 h-4 w-4',
-                                isSelected ? 'opacity-100' : 'opacity-0'
-                              )}
-                            />
-                            <span className="font-mono text-xs">{fk.value}</span>
-                            {fk.label && (
-                              <span className="ml-2 text-muted-foreground text-xs">
-                                ({fk.label})
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })}
-                    {foreignKeyValues.filter((fk) => {
-                      if (!fkSearchQuery) return true
-                      const searchLower = fkSearchQuery.toLowerCase()
-                      return String(fk.value).toLowerCase().includes(searchLower)
-                    }).length === 0 && (
+                    {filteredFkValues.map((fk) => {
+                      const isSelected = String(value) === String(fk.value)
+                      return (
+                        <button
+                          key={String(fk.value)}
+                          type="button"
+                          className={cn(
+                            'relative flex w-full cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent hover:text-accent-foreground',
+                            isSelected && 'bg-accent'
+                          )}
+                          onClick={() => {
+                            onChange(fk.value)
+                            setFkPopoverOpen(false)
+                            setFkSearchQuery('')
+                          }}
+                        >
+                          <Check
+                            className={cn('mr-2 h-4 w-4', isSelected ? 'opacity-100' : 'opacity-0')}
+                          />
+                          <span className="font-mono text-xs">{fk.value}</span>
+                          {fk.label && (
+                            <span className="ml-2 text-muted-foreground text-xs">({fk.label})</span>
+                          )}
+                        </button>
+                      )
+                    })}
+                    {filteredFkValues.length === 0 && fkSearchQuery && (
                       <div className="py-6 text-center text-sm text-muted-foreground">
                         No results found.
                       </div>

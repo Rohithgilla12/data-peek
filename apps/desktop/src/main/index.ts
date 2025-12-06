@@ -309,7 +309,7 @@ app.whenReady().then(async () => {
     }
   )
 
-// Cancel a running query by execution ID
+  // Cancel a running query by execution ID
   ipcMain.handle('db:cancel-query', async (_, executionId: string) => {
     console.log('[main:db:cancel-query] Cancelling query:', executionId)
 
