@@ -23,6 +23,7 @@ import type {
   QueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
+import { closeTunnel, createTunnel } from '../ssh-tunnel-service'
 
 const MSSQL_TYPE_MAP: Record<number, string> = {
   34: 'image',
@@ -335,12 +336,19 @@ export class MSSQLAdapter implements DatabaseAdapter {
   readonly dbType = 'mssql' as const
 
   async connect(config: ConnectionConfig): Promise<void> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
     await pool.close()
+    closeTunnel()
   }
 
   async query(config: ConnectionConfig, sqlQuery: string): Promise<AdapterQueryResult> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
 
@@ -386,6 +394,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
       return { rows, fields, rowCount: result.rowsAffected[0] ?? rows.length }
     } finally {
       await pool.close()
+      closeTunnel()
     }
   }
 
@@ -394,6 +403,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
     sqlQuery: string,
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
 
@@ -502,6 +514,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
         unregisterQuery(options.executionId)
       }
       await pool.close()
+      await closeTunnel()
     }
   }
 
@@ -510,6 +523,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
     sqlQuery: string,
     params: unknown[]
   ): Promise<{ rowCount: number | null }> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
 
@@ -533,6 +549,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
       return { rowCount: result.rowsAffected[0] ?? null }
     } finally {
       await pool.close()
+      closeTunnel()
     }
   }
 
@@ -575,14 +592,18 @@ export class MSSQLAdapter implements DatabaseAdapter {
       await transaction.commit()
       return { rowsAffected, results }
     } catch (error) {
-      await transaction.rollback().catch(() => {})
+      await transaction.rollback().catch(() => { })
       throw error
     } finally {
       await pool.close()
+      closeTunnel()
     }
   }
 
   async getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
 
@@ -761,6 +782,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
       return Array.from(schemaMap.values())
     } finally {
       await pool.close()
+      closeTunnel()
     }
   }
 
@@ -769,6 +791,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
     sqlQuery: string,
     analyze: boolean
   ): Promise<ExplainResult> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
 
@@ -814,6 +839,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
       }
     } finally {
       await pool.close()
+      closeTunnel()
     }
   }
 
@@ -822,6 +848,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
     schema: string,
     table: string
   ): Promise<TableDefinition> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
 
@@ -1044,6 +1073,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
       }
     } finally {
       await pool.close()
+      closeTunnel()
     }
   }
 
@@ -1054,6 +1084,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
   }
 
   async getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
 
@@ -1081,6 +1114,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
       }))
     } finally {
       await pool.close()
+      closeTunnel()
     }
   }
 }

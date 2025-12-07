@@ -5,33 +5,33 @@
 /**
  * Base URL for the data-peek website
  */
-export const DATAPEEK_BASE_URL = 'https://www.datapeek.dev'
+export const DATAPEEK_BASE_URL = "https://www.datapeek.dev";
 
 /**
  * UTM parameters for tracking
  */
 export interface UTMParams {
-  source?: string
-  medium?: string
-  campaign?: string
-  content?: string
+  source?: string;
+  medium?: string;
+  campaign?: string;
+  content?: string;
 }
 
 /**
  * Build a URL with UTM tracking parameters
  */
 export function buildTrackingUrl(path: string, utm: UTMParams = {}): string {
-  const params = new URLSearchParams()
+  const params = new URLSearchParams();
 
-  if (utm.source) params.set('utm_source', utm.source)
-  if (utm.medium) params.set('utm_medium', utm.medium)
-  if (utm.campaign) params.set('utm_campaign', utm.campaign)
-  if (utm.content) params.set('utm_content', utm.content)
+  if (utm.source) params.set("utm_source", utm.source);
+  if (utm.medium) params.set("utm_medium", utm.medium);
+  if (utm.campaign) params.set("utm_campaign", utm.campaign);
+  if (utm.content) params.set("utm_content", utm.content);
 
-  const queryString = params.toString()
-  const separator = path.includes('?') ? '&' : '?'
+  const queryString = params.toString();
+  const separator = path.includes("?") ? "&" : "?";
 
-  return `${DATAPEEK_BASE_URL}${path}${queryString ? separator + queryString : ''}`
+  return `${DATAPEEK_BASE_URL}${path}${queryString ? separator + queryString : ""}`;
 }
 
 // ============================================
@@ -41,7 +41,7 @@ export function buildTrackingUrl(path: string, utm: UTMParams = {}): string {
 /**
  * Supported AI providers
  */
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama';
+export type AIProvider = "openai" | "anthropic" | "google" | "groq" | "ollama";
 
 /**
  * Configuration for AI service
@@ -107,87 +107,123 @@ export interface ProviderInfo {
  */
 export const AI_PROVIDERS: readonly ProviderInfo[] = [
   {
-    id: 'openai',
-    name: 'OpenAI',
-    description: 'GPT-5.1 Codex, GPT-5.1 Mini/Nano, GPT-4o',
-    keyPrefix: 'sk-',
-    keyUrl: 'https://platform.openai.com/api-keys',
+    id: "openai",
+    name: "OpenAI",
+    description: "GPT-5.1 Codex, GPT-5.1 Mini/Nano, GPT-4o",
+    keyPrefix: "sk-",
+    keyUrl: "https://platform.openai.com/api-keys",
     models: [
       {
-        id: 'gpt-5.1-codex',
-        name: 'GPT-5.1 Codex',
+        id: "gpt-5.1-codex",
+        name: "GPT-5.1 Codex",
         recommended: true,
-        description: 'Best for SQL & code'
+        description: "Best for SQL & code",
       },
-      { id: 'gpt-5.1', name: 'GPT-5.1', description: 'Most capable' },
-      { id: 'gpt-5.1-codex-mini', name: 'GPT-5.1 Codex Mini', description: 'Balanced' },
-      { id: 'gpt-5-nano', name: 'GPT-5 Nano', description: 'Fast & efficient' },
-      { id: 'gpt-4o', name: 'GPT-4o', description: 'Previous gen' },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', description: 'Faster & cheaper' }
-    ]
+      { id: "gpt-5.1", name: "GPT-5.1", description: "Most capable" },
+      {
+        id: "gpt-5.1-codex-mini",
+        name: "GPT-5.1 Codex Mini",
+        description: "Balanced",
+      },
+      { id: "gpt-5-nano", name: "GPT-5 Nano", description: "Fast & efficient" },
+      { id: "gpt-4o", name: "GPT-4o", description: "Previous gen" },
+      {
+        id: "gpt-4o-mini",
+        name: "GPT-4o Mini",
+        description: "Faster & cheaper",
+      },
+    ],
   },
   {
-    id: 'anthropic',
-    name: 'Anthropic',
-    description: 'Claude Sonnet 4.5, Claude Opus 4.5',
-    keyPrefix: 'sk-ant-',
-    keyUrl: 'https://console.anthropic.com/settings/keys',
+    id: "anthropic",
+    name: "Anthropic",
+    description: "Claude Sonnet 4.5, Claude Opus 4.5",
+    keyPrefix: "sk-ant-",
+    keyUrl: "https://console.anthropic.com/settings/keys",
     models: [
       {
-        id: 'claude-sonnet-4-5',
-        name: 'Claude Sonnet 4.5',
+        id: "claude-sonnet-4-5",
+        name: "Claude Sonnet 4.5",
         recommended: true,
-        description: 'Balanced'
+        description: "Balanced",
       },
-      { id: 'claude-opus-4-5', name: 'Claude Opus 4.5', description: 'Best for coding' },
-      { id: 'claude-haiku-4-5', name: 'Claude 4.5 Haiku', description: 'Faster & cheaper' }
-    ]
+      {
+        id: "claude-opus-4-5",
+        name: "Claude Opus 4.5",
+        description: "Best for coding",
+      },
+      {
+        id: "claude-haiku-4-5",
+        name: "Claude 4.5 Haiku",
+        description: "Faster & cheaper",
+      },
+    ],
   },
   {
-    id: 'google',
-    name: 'Google',
-    description: 'Gemini 3, Gemini 2.5',
-    keyPrefix: 'AI',
-    keyUrl: 'https://aistudio.google.com/app/apikey',
+    id: "google",
+    name: "Google",
+    description: "Gemini 3, Gemini 2.5",
+    keyPrefix: "AI",
+    keyUrl: "https://aistudio.google.com/app/apikey",
     models: [
       {
-        id: 'gemini-3-pro-preview',
-        name: 'Gemini 3 Pro',
+        id: "gemini-3-pro-preview",
+        name: "Gemini 3 Pro",
         recommended: true,
-        description: 'Most capable'
+        description: "Most capable",
       },
-      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Balanced' },
-      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash', description: 'Faster' },
-      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', description: 'Previous gen' }
-    ]
+      { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", description: "Balanced" },
+      {
+        id: "gemini-2.5-flash",
+        name: "Gemini 2.5 Flash",
+        description: "Faster",
+      },
+      {
+        id: "gemini-2.0-flash",
+        name: "Gemini 2.0 Flash",
+        description: "Previous gen",
+      },
+    ],
   },
   {
-    id: 'groq',
-    name: 'Groq',
-    description: 'Llama 3.3, Mixtral (Ultra Fast)',
-    keyPrefix: 'gsk_',
-    keyUrl: 'https://console.groq.com/keys',
+    id: "groq",
+    name: "Groq",
+    description: "Llama 3.3, Mixtral (Ultra Fast)",
+    keyPrefix: "gsk_",
+    keyUrl: "https://console.groq.com/keys",
     models: [
-      { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B', recommended: true },
-      { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B', description: 'Fastest' },
-      { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B' },
-      { id: 'qwen-qwq-32b', name: 'Qwen QwQ 32B', description: 'Reasoning' }
-    ]
+      {
+        id: "llama-3.3-70b-versatile",
+        name: "Llama 3.3 70B",
+        recommended: true,
+      },
+      {
+        id: "llama-3.1-8b-instant",
+        name: "Llama 3.1 8B",
+        description: "Fastest",
+      },
+      { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B" },
+      { id: "qwen-qwq-32b", name: "Qwen QwQ 32B", description: "Reasoning" },
+    ],
   },
   {
-    id: 'ollama',
-    name: 'Ollama',
-    description: 'Local models (no API key)',
+    id: "ollama",
+    name: "Ollama",
+    description: "Local models (no API key)",
     keyPrefix: null,
-    keyUrl: 'https://ollama.ai',
+    keyUrl: "https://ollama.ai",
     models: [
-      { id: 'llama3.2', name: 'Llama 3.2', recommended: true },
-      { id: 'qwen2.5-coder:32b', name: 'Qwen 2.5 Coder 32B', description: 'Best for SQL' },
-      { id: 'codellama', name: 'Code Llama' },
-      { id: 'mistral', name: 'Mistral' },
-      { id: 'deepseek-coder-v2', name: 'DeepSeek Coder V2' }
-    ]
-  }
+      { id: "llama3.2", name: "Llama 3.2", recommended: true },
+      {
+        id: "qwen2.5-coder:32b",
+        name: "Qwen 2.5 Coder 32B",
+        description: "Best for SQL",
+      },
+      { id: "codellama", name: "Code Llama" },
+      { id: "mistral", name: "Mistral" },
+      { id: "deepseek-coder-v2", name: "DeepSeek Coder V2" },
+    ],
+  },
 ] as const;
 
 /**
@@ -195,16 +231,17 @@ export const AI_PROVIDERS: readonly ProviderInfo[] = [
  * Falls back to the first model if no recommended model is found
  */
 function getRecommendedModel(providerId: AIProvider): string {
-  const provider = AI_PROVIDERS.find((p) => p.id === providerId)
+  const provider = AI_PROVIDERS.find((p) => p.id === providerId);
   if (!provider) {
-    throw new Error(`Provider ${providerId} not found in AI_PROVIDERS`)
+    throw new Error(`Provider ${providerId} not found in AI_PROVIDERS`);
   }
   // Prefer recommended model, fall back to first model
-  const recommendedModel = provider.models.find((m) => m.recommended) || provider.models[0]
+  const recommendedModel =
+    provider.models.find((m) => m.recommended) || provider.models[0];
   if (!recommendedModel) {
-    throw new Error(`No models found for provider ${providerId}`)
+    throw new Error(`No models found for provider ${providerId}`);
   }
-  return recommendedModel.id
+  return recommendedModel.id;
 }
 
 /**
@@ -212,25 +249,30 @@ function getRecommendedModel(providerId: AIProvider): string {
  * Derived from AI_PROVIDERS - uses the recommended model for each provider
  */
 export const DEFAULT_MODELS: Record<AIProvider, string> = {
-  openai: getRecommendedModel('openai'),
-  anthropic: getRecommendedModel('anthropic'),
-  google: getRecommendedModel('google'),
-  groq: getRecommendedModel('groq'),
-  ollama: getRecommendedModel('ollama')
+  openai: getRecommendedModel("openai"),
+  anthropic: getRecommendedModel("anthropic"),
+  google: getRecommendedModel("google"),
+  groq: getRecommendedModel("groq"),
+  ollama: getRecommendedModel("ollama"),
 };
 
 /**
  * AI message for chat conversations
  */
 export interface AIMessage {
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
 }
 
 /**
  * AI response types for structured output
  */
-export type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema';
+export type AIResponseType =
+  | "message"
+  | "query"
+  | "chart"
+  | "metric"
+  | "schema";
 
 /**
  * AI structured response - flat object with nullable fields.
@@ -249,19 +291,19 @@ export interface AIStructuredResponse {
   // Chart fields (null when type is not chart)
   title: string | null;
   description: string | null;
-  chartType: 'bar' | 'line' | 'pie' | 'area' | null;
+  chartType: "bar" | "line" | "pie" | "area" | null;
   xKey: string | null;
   yKeys: string[] | null;
   // Metric fields (null when type is not metric)
   label: string | null;
-  format: 'number' | 'currency' | 'percent' | 'duration' | null;
+  format: "number" | "currency" | "percent" | "duration" | null;
   // Schema fields (null when type is not schema)
   tables: string[] | null;
 }
 
 // Legacy types for backward compatibility with renderer components
 export interface AIQueryResponse {
-  type: 'query';
+  type: "query";
   message: string;
   sql: string;
   explanation: string;
@@ -273,11 +315,11 @@ export interface AIQueryResponse {
  * AI response for chart visualizations
  */
 export interface AIChartResponse {
-  type: 'chart';
+  type: "chart";
   message: string;
   title: string;
   description?: string;
-  chartType: 'bar' | 'line' | 'pie' | 'area';
+  chartType: "bar" | "line" | "pie" | "area";
   sql: string;
   xKey: string;
   yKeys: string[];
@@ -287,18 +329,18 @@ export interface AIChartResponse {
  * AI response for metric cards
  */
 export interface AIMetricResponse {
-  type: 'metric';
+  type: "metric";
   message: string;
   label: string;
   sql: string;
-  format: 'number' | 'currency' | 'percent' | 'duration';
+  format: "number" | "currency" | "percent" | "duration";
 }
 
 /**
  * AI response for schema explanations
  */
 export interface AISchemaResponse {
-  type: 'schema';
+  type: "schema";
   message: string;
   tables: string[];
 }
@@ -307,7 +349,7 @@ export interface AISchemaResponse {
  * AI response for general messages
  */
 export interface AIMessageResponse {
-  type: 'message';
+  type: "message";
   message: string;
 }
 
@@ -322,7 +364,7 @@ export type AIChatResponse = AIStructuredResponse;
  * Stored query data for persistence
  */
 export interface StoredQueryData {
-  type: 'query';
+  type: "query";
   sql: string;
   explanation: string;
   warning?: string;
@@ -332,10 +374,10 @@ export interface StoredQueryData {
  * Stored chart data for persistence
  */
 export interface StoredChartData {
-  type: 'chart';
+  type: "chart";
   title: string;
   description?: string;
-  chartType: 'bar' | 'line' | 'pie' | 'area';
+  chartType: "bar" | "line" | "pie" | "area";
   sql: string;
   xKey: string;
   yKeys: string[];
@@ -345,17 +387,17 @@ export interface StoredChartData {
  * Stored metric data for persistence
  */
 export interface StoredMetricData {
-  type: 'metric';
+  type: "metric";
   label: string;
   sql: string;
-  format: 'number' | 'currency' | 'percent' | 'duration';
+  format: "number" | "currency" | "percent" | "duration";
 }
 
 /**
  * Stored schema data for persistence
  */
 export interface StoredSchemaData {
-  type: 'schema';
+  type: "schema";
   tables: string[];
 }
 
@@ -374,7 +416,7 @@ export type StoredResponseData =
  */
 export interface StoredChatMessage {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: "user" | "assistant" | "system";
   content: string;
   responseData?: StoredResponseData;
   createdAt: string; // ISO string for storage
@@ -399,7 +441,12 @@ export interface ChatSession {
  * MSSQL-specific connection options
  */
 export interface MSSQLConnectionOptions {
-  authentication?: 'SQL Server Authentication' | 'ActiveDirectoryIntegrated' | 'ActiveDirectoryPassword' | 'ActiveDirectoryServicePrincipal' | 'ActiveDirectoryDeviceCodeFlow';
+  authentication?:
+  | "SQL Server Authentication"
+  | "ActiveDirectoryIntegrated"
+  | "ActiveDirectoryPassword"
+  | "ActiveDirectoryServicePrincipal"
+  | "ActiveDirectoryDeviceCodeFlow";
   encrypt?: boolean;
   trustServerCertificate?: boolean;
   enableArithAbort?: boolean;
@@ -421,15 +468,29 @@ export interface ConnectionConfig {
   user?: string; // Optional for MSSQL with Azure AD authentication
   password?: string;
   ssl?: boolean;
+  ssh?: boolean;
   dbType: DatabaseType;
+  dstPort: number;
+  sshConfig?: SSHConfig;
   /** MSSQL-specific connection options (only used when dbType is 'mssql') */
   mssqlOptions?: MSSQLConnectionOptions;
+}
+
+export interface SSHConfig {
+  host: string;
+  port: number;
+  user: string;
+  password?: string;
+  passphrase?: string;
+  localport?: number;
+  authMethod: SSHAuthenticationMethod;
+  privateKeyPath: string;
 }
 
 /**
  * Supported database types
  */
-export type DatabaseType = 'postgresql' | 'mysql' | 'sqlite' | 'mssql';
+export type DatabaseType = "postgresql" | "mysql" | "sqlite" | "mssql";
 
 /**
  * Field metadata from query results
@@ -529,7 +590,7 @@ export interface ColumnInfo {
  */
 export interface TableInfo {
   name: string;
-  type: 'table' | 'view';
+  type: "table" | "view";
   columns: ColumnInfo[];
   /** Estimated row count (if available) */
   estimatedRowCount?: number;
@@ -542,7 +603,7 @@ export interface RoutineParameterInfo {
   name: string;
   dataType: string;
   /** Parameter mode: IN, OUT, INOUT */
-  mode: 'IN' | 'OUT' | 'INOUT';
+  mode: "IN" | "OUT" | "INOUT";
   /** Default value (if any) */
   defaultValue?: string;
   /** Position in parameter list (1-indexed) */
@@ -554,7 +615,7 @@ export interface RoutineParameterInfo {
  */
 export interface RoutineInfo {
   name: string;
-  type: 'function' | 'procedure';
+  type: "function" | "procedure";
   /** Return type (for functions) */
   returnType?: string;
   /** Parameters */
@@ -562,7 +623,7 @@ export interface RoutineInfo {
   /** Language the routine is written in (e.g., 'plpgsql', 'sql') */
   language?: string;
   /** Whether the function is deterministic (IMMUTABLE/STABLE/VOLATILE) */
-  volatility?: 'IMMUTABLE' | 'STABLE' | 'VOLATILE';
+  volatility?: "IMMUTABLE" | "STABLE" | "VOLATILE";
   /** Brief description/comment */
   comment?: string;
 }
@@ -630,7 +691,7 @@ export interface PrimaryKeyValue {
  * Represents a row modification (UPDATE)
  */
 export interface RowUpdate {
-  type: 'update';
+  type: "update";
   /** Unique identifier for this change (client-side) */
   id: string;
   /** Primary key(s) to identify the row */
@@ -645,7 +706,7 @@ export interface RowUpdate {
  * Represents a row insertion (INSERT)
  */
 export interface RowInsert {
-  type: 'insert';
+  type: "insert";
   /** Unique identifier for this change (client-side) */
   id: string;
   /** New row data */
@@ -658,7 +719,7 @@ export interface RowInsert {
  * Represents a row deletion (DELETE)
  */
 export interface RowDelete {
-  type: 'delete';
+  type: "delete";
   /** Unique identifier for this change (client-side) */
   id: string;
   /** Primary key(s) to identify the row */
@@ -724,46 +785,46 @@ export interface ParameterizedQuery {
  * PostgreSQL data types for the type selector dropdown
  */
 export type PostgresDataType =
-  | 'smallint'
-  | 'integer'
-  | 'bigint'
-  | 'serial'
-  | 'bigserial'
-  | 'numeric'
-  | 'real'
-  | 'double precision'
-  | 'money'
-  | 'char'
-  | 'varchar'
-  | 'text'
-  | 'bytea'
-  | 'timestamp'
-  | 'timestamptz'
-  | 'date'
-  | 'time'
-  | 'timetz'
-  | 'interval'
-  | 'boolean'
-  | 'uuid'
-  | 'json'
-  | 'jsonb'
-  | 'xml'
-  | 'point'
-  | 'line'
-  | 'lseg'
-  | 'box'
-  | 'path'
-  | 'polygon'
-  | 'circle'
-  | 'cidr'
-  | 'inet'
-  | 'macaddr'
-  | 'int4range'
-  | 'int8range'
-  | 'numrange'
-  | 'tsrange'
-  | 'tstzrange'
-  | 'daterange';
+  | "smallint"
+  | "integer"
+  | "bigint"
+  | "serial"
+  | "bigserial"
+  | "numeric"
+  | "real"
+  | "double precision"
+  | "money"
+  | "char"
+  | "varchar"
+  | "text"
+  | "bytea"
+  | "timestamp"
+  | "timestamptz"
+  | "date"
+  | "time"
+  | "timetz"
+  | "interval"
+  | "boolean"
+  | "uuid"
+  | "json"
+  | "jsonb"
+  | "xml"
+  | "point"
+  | "line"
+  | "lseg"
+  | "box"
+  | "path"
+  | "polygon"
+  | "circle"
+  | "cidr"
+  | "inet"
+  | "macaddr"
+  | "int4range"
+  | "int8range"
+  | "numrange"
+  | "tsrange"
+  | "tstzrange"
+  | "daterange";
 
 /**
  * Column definition for table designer
@@ -791,7 +852,7 @@ export interface ColumnDefinition {
   /** Default value expression */
   defaultValue?: string;
   /** Type of default value */
-  defaultType?: 'value' | 'expression' | 'sequence';
+  defaultType?: "value" | "expression" | "sequence";
   /** Sequence name for nextval('sequence') */
   sequenceName?: string;
   /** Column-level CHECK constraint expression */
@@ -808,26 +869,26 @@ export interface ColumnDefinition {
  * Constraint types supported by PostgreSQL
  */
 export type ConstraintType =
-  | 'primary_key'
-  | 'foreign_key'
-  | 'unique'
-  | 'check'
-  | 'exclude';
+  | "primary_key"
+  | "foreign_key"
+  | "unique"
+  | "check"
+  | "exclude";
 
 /**
  * Foreign key referential actions
  */
 export type ReferentialAction =
-  | 'NO ACTION'
-  | 'RESTRICT'
-  | 'CASCADE'
-  | 'SET NULL'
-  | 'SET DEFAULT';
+  | "NO ACTION"
+  | "RESTRICT"
+  | "CASCADE"
+  | "SET NULL"
+  | "SET DEFAULT";
 
 /**
  * Index access methods
  */
-export type IndexMethod = 'btree' | 'hash' | 'gist' | 'gin' | 'spgist' | 'brin';
+export type IndexMethod = "btree" | "hash" | "gist" | "gin" | "spgist" | "brin";
 
 /**
  * Constraint definition for table designer
@@ -869,9 +930,9 @@ export interface IndexColumn {
   /** Column name or expression */
   name: string;
   /** Sort order */
-  order?: 'ASC' | 'DESC';
+  order?: "ASC" | "DESC";
   /** NULLS position */
-  nullsPosition?: 'FIRST' | 'LAST';
+  nullsPosition?: "FIRST" | "LAST";
 }
 
 /**
@@ -899,7 +960,7 @@ export interface IndexDefinition {
 /**
  * Table partitioning strategy
  */
-export type PartitionType = 'RANGE' | 'LIST' | 'HASH';
+export type PartitionType = "RANGE" | "LIST" | "HASH";
 
 /**
  * Partition definition for partitioned tables
@@ -947,30 +1008,35 @@ export interface TableDefinition {
  * Column-level ALTER TABLE operations
  */
 export type AlterColumnOperation =
-  | { type: 'add'; column: ColumnDefinition }
-  | { type: 'drop'; columnName: string; cascade?: boolean }
-  | { type: 'rename'; oldName: string; newName: string }
-  | { type: 'set_type'; columnName: string; newType: string; using?: string }
-  | { type: 'set_nullable'; columnName: string; nullable: boolean }
-  | { type: 'set_default'; columnName: string; defaultValue: string | null }
-  | { type: 'set_comment'; columnName: string; comment: string | null };
+  | { type: "add"; column: ColumnDefinition }
+  | { type: "drop"; columnName: string; cascade?: boolean }
+  | { type: "rename"; oldName: string; newName: string }
+  | { type: "set_type"; columnName: string; newType: string; using?: string }
+  | { type: "set_nullable"; columnName: string; nullable: boolean }
+  | { type: "set_default"; columnName: string; defaultValue: string | null }
+  | { type: "set_comment"; columnName: string; comment: string | null };
 
 /**
  * Constraint-level ALTER TABLE operations
  */
 export type AlterConstraintOperation =
-  | { type: 'add_constraint'; constraint: ConstraintDefinition }
-  | { type: 'drop_constraint'; name: string; cascade?: boolean }
-  | { type: 'rename_constraint'; oldName: string; newName: string };
+  | { type: "add_constraint"; constraint: ConstraintDefinition }
+  | { type: "drop_constraint"; name: string; cascade?: boolean }
+  | { type: "rename_constraint"; oldName: string; newName: string };
 
 /**
  * Index ALTER operations
  */
 export type AlterIndexOperation =
-  | { type: 'create_index'; index: IndexDefinition }
-  | { type: 'drop_index'; name: string; cascade?: boolean; concurrent?: boolean }
-  | { type: 'rename_index'; oldName: string; newName: string }
-  | { type: 'reindex'; name: string; concurrent?: boolean };
+  | { type: "create_index"; index: IndexDefinition }
+  | {
+    type: "drop_index";
+    name: string;
+    cascade?: boolean;
+    concurrent?: boolean;
+  }
+  | { type: "rename_index"; oldName: string; newName: string }
+  | { type: "reindex"; name: string; concurrent?: boolean };
 
 /**
  * Batch of ALTER TABLE operations to execute
@@ -1035,7 +1101,7 @@ export interface CustomTypeInfo {
   /** Type name */
   name: string;
   /** Type category */
-  type: 'enum' | 'composite' | 'range' | 'domain';
+  type: "enum" | "composite" | "range" | "domain";
   /** Enum values (for enum types) */
   values?: string[];
 }
@@ -1047,7 +1113,7 @@ export interface CustomTypeInfo {
 /**
  * License type enumeration
  */
-export type LicenseType = 'personal' | 'individual' | 'team';
+export type LicenseType = "personal" | "individual" | "team";
 
 /**
  * Stored license data (encrypted locally)
@@ -1157,3 +1223,5 @@ export interface SavedQuery {
   /** When the query was last updated (Unix timestamp) */
   updatedAt: number;
 }
+
+export type SSHAuthenticationMethod = "Password" | "Public Key";

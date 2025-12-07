@@ -257,6 +257,9 @@ interface DataPeekApi {
     setActiveProvider: (provider: AIProvider) => Promise<IpcResponse<void>>
     setActiveModel: (provider: AIProvider, model: string) => Promise<IpcResponse<void>>
   }
+  files: {
+    openFilePicker: () => Promise<string | null>
+  }
 }
 
 declare global {

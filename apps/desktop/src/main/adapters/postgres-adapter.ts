@@ -24,6 +24,7 @@ import type {
   QueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
+import { closeTunnel, createTunnel } from '../ssh-tunnel-service'
 
 /**
  * PostgreSQL OID to Type Name Mapping
@@ -275,12 +276,19 @@ export class PostgresAdapter implements DatabaseAdapter {
   readonly dbType = 'postgresql' as const
 
   async connect(config: ConnectionConfig): Promise<void> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const client = new Client(config)
     await client.connect()
     await client.end()
+    closeTunnel()
   }
 
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const client = new Client(config)
     await client.connect()
 
@@ -300,6 +308,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
     } finally {
       await client.end()
+      closeTunnel()
     }
   }
 
@@ -308,6 +317,9 @@ export class PostgresAdapter implements DatabaseAdapter {
     sql: string,
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const client = new Client(config)
     await client.connect()
 
@@ -379,6 +391,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         unregisterQuery(options.executionId)
       }
       await client.end()
+      closeTunnel()
     }
   }
 
@@ -387,6 +400,9 @@ export class PostgresAdapter implements DatabaseAdapter {
     sql: string,
     params: unknown[]
   ): Promise<{ rowCount: number | null }> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const client = new Client(config)
     await client.connect()
 
@@ -395,6 +411,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       return { rowCount: res.rowCount }
     } finally {
       await client.end()
+      closeTunnel()
     }
   }
 
@@ -402,6 +419,9 @@ export class PostgresAdapter implements DatabaseAdapter {
     config: ConnectionConfig,
     statements: Array<{ sql: string; params: unknown[] }>
   ): Promise<{ rowsAffected: number; results: Array<{ rowCount: number | null }> }> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const client = new Client(config)
     await client.connect()
 
@@ -424,13 +444,16 @@ export class PostgresAdapter implements DatabaseAdapter {
       throw error
     } finally {
       await client.end()
+      closeTunnel()
     }
   }
 
   async getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const client = new Client(config)
     await client.connect()
-
     try {
       // Query 1: Get all schemas (excluding system schemas)
       const schemasResult = await client.query(`
@@ -674,10 +697,14 @@ export class PostgresAdapter implements DatabaseAdapter {
       return Array.from(schemaMap.values())
     } finally {
       await client.end()
+      closeTunnel()
     }
   }
 
   async explain(config: ConnectionConfig, sql: string, analyze: boolean): Promise<ExplainResult> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const client = new Client(config)
     await client.connect()
 
@@ -699,6 +726,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
     } finally {
       await client.end()
+      closeTunnel()
     }
   }
 
@@ -707,6 +735,9 @@ export class PostgresAdapter implements DatabaseAdapter {
     schema: string,
     table: string
   ): Promise<TableDefinition> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const client = new Client(config)
     await client.connect()
 
@@ -943,10 +974,14 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
     } finally {
       await client.end()
+      closeTunnel()
     }
   }
 
   async getSequences(config: ConnectionConfig): Promise<SequenceInfo[]> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const client = new Client(config)
     await client.connect()
 
@@ -972,6 +1007,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       }))
     } finally {
       await client.end()
+      closeTunnel()
     }
   }
 
@@ -1023,6 +1059,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       ]
     } finally {
       await client.end()
+      closeTunnel()
     }
   }
 }

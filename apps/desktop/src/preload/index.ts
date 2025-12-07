@@ -264,6 +264,9 @@ const api = {
       ipcRenderer.invoke('ai:set-active-provider', provider),
     setActiveModel: (provider: AIProvider, model: string): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('ai:set-active-model', { provider, model })
+  },
+  files: {
+    openFilePicker: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('open-file-dialog')
   }
 }
 

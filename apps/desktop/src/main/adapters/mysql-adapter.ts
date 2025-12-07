@@ -24,6 +24,7 @@ import type {
   QueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
+import { closeTunnel, createTunnel } from '../ssh-tunnel-service'
 
 /**
  * MySQL type codes to type name mapping
@@ -247,11 +248,18 @@ export class MySQLAdapter implements DatabaseAdapter {
   readonly dbType = 'mysql' as const
 
   async connect(config: ConnectionConfig): Promise<void> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const connection = await mysql.createConnection(toMySQLConfig(config))
     await connection.end()
+    closeTunnel()
   }
 
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const connection = await mysql.createConnection(toMySQLConfig(config))
 
     try {
@@ -272,6 +280,7 @@ export class MySQLAdapter implements DatabaseAdapter {
       }
     } finally {
       await connection.end()
+      closeTunnel()
     }
   }
 
@@ -280,6 +289,9 @@ export class MySQLAdapter implements DatabaseAdapter {
     sql: string,
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const connection = await mysql.createConnection(toMySQLConfig(config))
 
     // Register for cancellation support
@@ -359,6 +371,7 @@ export class MySQLAdapter implements DatabaseAdapter {
         unregisterQuery(options.executionId)
       }
       await connection.end()
+      closeTunnel()
     }
   }
 
@@ -367,6 +380,9 @@ export class MySQLAdapter implements DatabaseAdapter {
     sql: string,
     params: unknown[]
   ): Promise<{ rowCount: number | null }> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const connection = await mysql.createConnection(toMySQLConfig(config))
 
     try {
@@ -375,6 +391,7 @@ export class MySQLAdapter implements DatabaseAdapter {
       return { rowCount: affectedRows }
     } finally {
       await connection.end()
+      closeTunnel()
     }
   }
 
@@ -382,6 +399,9 @@ export class MySQLAdapter implements DatabaseAdapter {
     config: ConnectionConfig,
     statements: Array<{ sql: string; params: unknown[] }>
   ): Promise<{ rowsAffected: number; results: Array<{ rowCount: number | null }> }> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const connection = await mysql.createConnection(toMySQLConfig(config))
 
     try {
@@ -400,14 +420,18 @@ export class MySQLAdapter implements DatabaseAdapter {
       await connection.commit()
       return { rowsAffected, results }
     } catch (error) {
-      await connection.rollback().catch(() => {})
+      await connection.rollback().catch(() => { })
       throw error
     } finally {
       await connection.end()
+      closeTunnel()
     }
   }
 
   async getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const connection = await mysql.createConnection(toMySQLConfig(config))
 
     try {
@@ -677,10 +701,14 @@ export class MySQLAdapter implements DatabaseAdapter {
       return Array.from(schemaMap.values())
     } finally {
       await connection.end()
+      closeTunnel()
     }
   }
 
   async explain(config: ConnectionConfig, sql: string, analyze: boolean): Promise<ExplainResult> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const connection = await mysql.createConnection(toMySQLConfig(config))
 
     try {
@@ -712,6 +740,7 @@ export class MySQLAdapter implements DatabaseAdapter {
       }
     } finally {
       await connection.end()
+      closeTunnel()
     }
   }
 
@@ -720,6 +749,9 @@ export class MySQLAdapter implements DatabaseAdapter {
     schema: string,
     table: string
   ): Promise<TableDefinition> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     const connection = await mysql.createConnection(toMySQLConfig(config))
 
     try {
@@ -964,6 +996,7 @@ export class MySQLAdapter implements DatabaseAdapter {
       }
     } finally {
       await connection.end()
+      closeTunnel()
     }
   }
 
@@ -975,6 +1008,9 @@ export class MySQLAdapter implements DatabaseAdapter {
   }
 
   async getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]> {
+    if (config.ssh) {
+      await createTunnel(config)
+    }
     // Get MySQL ENUM types from columns
     const connection = await mysql.createConnection(toMySQLConfig(config))
 
@@ -1015,6 +1051,7 @@ export class MySQLAdapter implements DatabaseAdapter {
       return types
     } finally {
       await connection.end()
+      closeTunnel()
     }
   }
 }

@@ -1,5 +1,5 @@
 import { config } from 'dotenv'
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join, resolve } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
@@ -1262,6 +1262,13 @@ app.whenReady().then(async () => {
       }
     }
   )
+
+  ipcMain.handle('open-file-dialog', async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ['openFile']
+    })
+    return result.canceled ? null : result.filePaths[0]
+  })
 
   await createWindow()
 

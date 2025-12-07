@@ -6,7 +6,8 @@ import {
   ColumnInfo,
   DatabaseType,
   CustomTypeInfo,
-  MSSQLConnectionOptions
+  MSSQLConnectionOptions,
+  SSHConfig
 } from '@shared/index'
 import { notify } from './notification-store'
 
@@ -29,6 +30,9 @@ export interface Connection {
   user?: string // Optional for MSSQL with Azure AD authentication
   password?: string
   ssl?: boolean
+  ssh?: boolean
+  dstPort: number
+  sshConfig?: SSHConfig
   group?: string
   dbType: DatabaseType
   mssqlOptions?: MSSQLConnectionOptions
@@ -88,6 +92,8 @@ const toConnectionWithStatus = (config: ConnectionConfig): ConnectionWithStatus 
   ...config,
   // Default to postgresql for backward compatibility with existing connections
   dbType: config.dbType || 'postgresql',
+  // Ensure dstPort is set (defaults to port if not specified)
+  dstPort: config.dstPort || config.port,
   isConnected: false,
   isConnecting: false
 })
@@ -132,7 +138,12 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     set((state) => ({
       connections: [
         ...state.connections,
-        { ...connection, isConnected: false, isConnecting: false }
+        {
+          ...connection,
+          dstPort: connection.dstPort || connection.port,
+          isConnected: false,
+          isConnecting: false
+        }
       ]
     })),
 
