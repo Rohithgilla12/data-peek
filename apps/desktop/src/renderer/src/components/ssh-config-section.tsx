@@ -1,6 +1,5 @@
 'use client'
 
-import { useRef } from 'react'
 import { FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,8 +18,6 @@ interface SSHConfigSectionProps {
 }
 
 export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
   const updateConfig = (updates: Partial<SSHConfig>) => {
     onConfigChange({ ...config, ...updates })
   }
@@ -100,7 +97,7 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
             id="sshPassword"
             type="password"
             placeholder="••••••••"
-            value={config.password}
+            value={config.password || ''}
             onChange={(e) => updateConfig({ password: e.target.value })}
           />
         </div>
@@ -128,12 +125,6 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
               >
                 <FolderOpen className="size-4" />
               </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={(e) => updateConfig({ privateKeyPath: e.target.value })}
-                className="hidden"
-              />
             </div>
           </div>
 
@@ -145,7 +136,7 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
               id="sshPassphrase"
               type="password"
               placeholder="••••••••"
-              value={config.passphrase}
+              value={config.passphrase || ''}
               onChange={(e) => updateConfig({ passphrase: e.target.value })}
             />
           </div>

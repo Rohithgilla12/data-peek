@@ -1,7 +1,7 @@
 // ============================================
 // Type Mappings
 // ============================================
-export { PG_TYPE_MAP, resolvePostgresType } from './type-maps'
+export { PG_TYPE_MAP, resolvePostgresType } from "./type-maps";
 
 // ============================================
 // App Constants
