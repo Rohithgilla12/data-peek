@@ -11,6 +11,7 @@ export async function createTunnel(config: ConnectionConfig) {
     ssh = new SSHClient()
     const sshConfig = config.sshConfig
     if (!sshConfig) {
+      reject(new Error('SSH config is missing for SSH-enabled connection'))
       return
     }
     ssh.on('ready', () => {
