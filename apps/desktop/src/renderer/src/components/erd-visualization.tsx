@@ -21,6 +21,7 @@ import {
   type Node
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { resolveCollisions } from '@/lib/resolve-collisions'
 import { Check, ChevronsUpDown, Columns3, Filter, GitBranch, Key, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
@@ -659,6 +660,17 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
     // Could add fitView here if needed
   }, [])
 
+  // Resolve node collisions after dragging
+  const onNodeDragStop = useCallback(() => {
+    setNodes((nds) =>
+      resolveCollisions(nds, {
+        maxIterations: Infinity,
+        overlapThreshold: 0.5,
+        margin: 15
+      })
+    )
+  }, [setNodes])
+
   // Get unique schemas for grouping in filter
   const uniqueSchemas = useMemo(() => {
     return [...new Set(allTables.map((t) => t.schema))].sort()
@@ -825,6 +837,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onNodeDragStop={onNodeDragStop}
           onInit={onInit}
           nodeTypes={nodeTypes}
           fitView
