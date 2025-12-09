@@ -379,7 +379,7 @@ Use when user asks for data or wants to run a query.
 - Fill: message, sql, explanation
 - Optional: warning, requiresConfirmation (set true for UPDATE/DELETE/DROP/TRUNCATE)
 - Null: title, description, chartType, xKey, yKeys, label, format, tables
-- Include LIMIT 100 for SELECT queries unless specified
+- Limit results: ${dbType === 'mssql' ? 'Use SELECT TOP 100 for MSSQL' : 'Include LIMIT 100 at the end'} unless user specifies otherwise
 
 ### type: "chart"
 Use when user asks to visualize, chart, graph, or plot data.

@@ -49,6 +49,7 @@ import { JsonCellValue } from '@/components/json-cell-value'
 import { FKCellValue } from '@/components/fk-cell-value'
 import { AddRowSheet, type ForeignKeyValue } from '@/components/add-row-sheet'
 import { useEditStore } from '@/stores/edit-store'
+import { generateLimitClause } from '@/lib/sql-helpers'
 
 export interface DataTableColumn {
   name: string
@@ -274,7 +275,12 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           fkColumns.map(async (col) => {
             const fk = col.foreignKey!
             // Query the referenced table - limit to 1000 rows for performance
-            const query = `SELECT DISTINCT "${fk.referencedColumn}" FROM "${fk.referencedSchema}"."${fk.referencedTable}" ORDER BY "${fk.referencedColumn}" LIMIT 1000`
+            // Use TOP for MSSQL, LIMIT for other databases
+            const limitClause = generateLimitClause(connection?.dbType, 1000)
+            const query =
+              connection?.dbType === 'mssql'
+                ? `SELECT ${limitClause} DISTINCT "${fk.referencedColumn}" FROM "${fk.referencedSchema}"."${fk.referencedTable}" ORDER BY "${fk.referencedColumn}"`
+                : `SELECT DISTINCT "${fk.referencedColumn}" FROM "${fk.referencedSchema}"."${fk.referencedTable}" ORDER BY "${fk.referencedColumn}" ${limitClause}`
 
             try {
               const result = await window.api.db.query(connection, query)
@@ -449,8 +455,15 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     }
 
     // Data columns
-    columnDefs.forEach((col) => {
+    columnDefs.forEach((col, index) => {
+      // Generate a stable id for columns - MSSQL can return empty names for aggregates like COUNT(*)
+      // TanStack Table requires explicit id when header is a function and accessorKey might be empty
+      const columnId = col.name || `_col_${index}`
+      const displayName = col.name || `(column ${index + 1})`
+
       cols.push({
+        id: columnId,
+        // Keep accessorKey as col.name since that's how row data is keyed (even if empty)
         accessorKey: col.name,
         header: ({ column }) => {
           const isSorted = column.getIsSorted()
@@ -461,7 +474,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50"
                 onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
               >
-                <span>{col.name}</span>
+                <span>{displayName}</span>
                 {col.isPrimaryKey && (
                   <span className="ml-1 text-amber-500" title="Primary Key">
                     🔑

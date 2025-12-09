@@ -566,19 +566,33 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       baseQuery = baseQuery.slice(0, -1)
     }
 
-    // Remove existing LIMIT for re-adding at the end
+    // Remove existing LIMIT (PostgreSQL/MySQL) or TOP (MSSQL) for re-adding
+    // LIMIT is at the end: SELECT * FROM table LIMIT 100
+    // TOP is after SELECT: SELECT TOP 100 * FROM table
     const limitMatch = baseQuery.match(/\s+LIMIT\s+\d+\s*$/i)
+    const topMatch = baseQuery.match(/^(SELECT)\s+(TOP\s+\d+)\s+/i)
     let limitClause = ''
+    let topClause = ''
+
     if (limitMatch) {
       limitClause = limitMatch[0]
       baseQuery = baseQuery.slice(0, -limitMatch[0].length)
+    }
+    if (topMatch) {
+      topClause = topMatch[2] + ' '
+      baseQuery = baseQuery.replace(/^SELECT\s+TOP\s+\d+\s+/i, 'SELECT ')
     }
 
     const wherePart = generateWhereClause(tableFilters)
     const orderPart = generateOrderByClause(tableSorting)
 
-    // Append clauses (simplified - assumes no existing WHERE/ORDER BY)
-    return `${baseQuery} ${wherePart} ${orderPart}${limitClause};`.replace(/\s+/g, ' ').trim()
+    // Re-add TOP after SELECT for MSSQL, or LIMIT at the end for others
+    let result = baseQuery
+    if (topClause) {
+      result = result.replace(/^SELECT\s+/i, `SELECT ${topClause}`)
+    }
+    result = `${result} ${wherePart} ${orderPart}${limitClause};`.replace(/\s+/g, ' ').trim()
+    return result
   }
 
   const handleApplyToQuery = () => {

@@ -241,10 +241,26 @@ export class MSSQLAdapter implements DatabaseAdapter {
       const fields: QueryField[] = []
 
       if (result.recordset?.columns) {
+        let colIndex = 0
         for (const col of Object.values(result.recordset.columns)) {
           const meta = col as { name: string; type?: { id?: number; name?: string } }
           let dataTypeID: number | undefined
           let dataType: string
+
+          // MSSQL returns empty string for unnamed columns (e.g., COUNT(*), SUM(), etc.)
+          // Generate a fallback name and remap the row data
+          const originalName = meta.name
+          const columnName = originalName || `column_${colIndex + 1}`
+
+          // If column name was empty, remap the row data to use the generated name
+          if (!originalName && rows.length > 0) {
+            for (const row of rows) {
+              if (originalName in row) {
+                row[columnName] = row[originalName]
+                delete row[originalName]
+              }
+            }
+          }
 
           if (meta.type?.id) {
             dataTypeID = meta.type.id
@@ -256,16 +272,17 @@ export class MSSQLAdapter implements DatabaseAdapter {
             )
             dataTypeID = match ? Number(match[0]) : undefined
           } else {
-            const inferred = inferTypeFromValue(rows[0]?.[meta.name])
+            const inferred = inferTypeFromValue(rows[0]?.[columnName])
             dataType = inferred.dataType
             dataTypeID = inferred.dataTypeID
           }
 
           fields.push({
-            name: meta.name,
+            name: columnName,
             dataType: dataType || 'nvarchar',
             dataTypeID: dataTypeID || 231
           })
+          colIndex++
         }
       } else if (rows.length > 0) {
         for (const [name, value] of Object.entries(rows[0])) {
@@ -318,10 +335,26 @@ export class MSSQLAdapter implements DatabaseAdapter {
           const fields: QueryField[] = []
 
           if (result.recordset?.columns) {
+            let colIndex = 0
             for (const col of Object.values(result.recordset.columns)) {
               const meta = col as { name: string; type?: { id?: number; name?: string } }
               let dataTypeID: number | undefined
               let dataType: string
+
+              // MSSQL returns empty string for unnamed columns (e.g., COUNT(*), SUM(), etc.)
+              // Generate a fallback name and remap the row data
+              const originalName = meta.name
+              const columnName = originalName || `column_${colIndex + 1}`
+
+              // If column name was empty, remap the row data to use the generated name
+              if (!originalName && rows.length > 0) {
+                for (const row of rows) {
+                  if (originalName in row) {
+                    row[columnName] = row[originalName]
+                    delete row[originalName]
+                  }
+                }
+              }
 
               if (meta.type?.id) {
                 dataTypeID = meta.type.id
@@ -333,16 +366,17 @@ export class MSSQLAdapter implements DatabaseAdapter {
                 )
                 dataTypeID = match ? Number(match[0]) : undefined
               } else {
-                const inferred = inferTypeFromValue(rows[0]?.[meta.name])
+                const inferred = inferTypeFromValue(rows[0]?.[columnName])
                 dataType = inferred.dataType
                 dataTypeID = inferred.dataTypeID
               }
 
               fields.push({
-                name: meta.name,
+                name: columnName,
                 dataType: dataType || 'nvarchar',
                 dataTypeID: dataTypeID || 231
               })
+              colIndex++
             }
           } else if (rows.length > 0) {
             for (const [name, value] of Object.entries(rows[0])) {

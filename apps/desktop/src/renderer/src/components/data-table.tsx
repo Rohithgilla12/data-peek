@@ -196,7 +196,11 @@ export function DataTable<TData extends Record<string, unknown>>({
   // Generate TanStack Table columns from column definitions
   const columns = React.useMemo<ColumnDef<TData>[]>(
     () =>
-      columnDefs.map((col) => {
+      columnDefs.map((col, index) => {
+        // Generate a stable id for columns - MSSQL can return empty names for aggregates like COUNT(*)
+        const columnId = col.name || `_col_${index}`
+        const displayName = col.name || `(column ${index + 1})`
+
         const lowerType = col.dataType.toLowerCase()
         const isNumeric =
           lowerType.includes('int') ||
@@ -208,6 +212,7 @@ export function DataTable<TData extends Record<string, unknown>>({
           lowerType.includes('money')
 
         return {
+          id: columnId,
           accessorKey: col.name,
           header: ({ column }) => {
             const isSorted = column.getIsSorted()
@@ -218,7 +223,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                   className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50"
                   onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
                 >
-                  <span>{col.name}</span>
+                  <span>{displayName}</span>
                   {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
                   <Badge
                     variant="outline"
