@@ -14,6 +14,7 @@ export type CancellableHandle =
   | { type: 'postgresql'; client: Client }
   | { type: 'mysql'; connection: Connection }
   | { type: 'mssql'; request: MSSQLRequest }
+  | { type: 'sqlite' } // SQLite is synchronous and cannot be cancelled mid-query
 
 interface ActiveQuery {
   executionId: string
@@ -74,6 +75,12 @@ export async function cancelQuery(
       case 'mssql': {
         // MSSQL: cancel the specific request without closing the pool
         query.handle.request.cancel()
+        break
+      }
+      case 'sqlite': {
+        // SQLite with better-sqlite3 is synchronous - cannot cancel mid-query
+        // Just remove from tracking, the query will complete
+        log.debug(`SQLite query ${executionId} cannot be cancelled (synchronous API)`)
         break
       }
     }

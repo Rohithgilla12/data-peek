@@ -408,7 +408,12 @@ Use for general questions, clarifications, or when no SQL is needed.
 - Use proper ${dbType} syntax
 - Use table aliases for readability
 - Quote identifiers if they contain special characters
-- Be precise with JOINs based on foreign key relationships`
+- Be precise with JOINs based on foreign key relationships${
+    dbType === 'sqlite'
+      ? `
+- SQLite specifics: Use double-quotes for identifiers, booleans are 0/1 integers, no RIGHT JOIN (reverse tables with LEFT JOIN), use COALESCE instead of IFNULL for portability`
+      : ''
+  }`
 }
 
 /**
