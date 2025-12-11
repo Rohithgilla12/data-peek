@@ -443,6 +443,23 @@ export interface ChatSession {
 // ============================================
 
 /**
+ * SQLite connection mode
+ */
+export type SQLiteMode = "local" | "libsql";
+
+/**
+ * SQLite/libSQL-specific connection options
+ */
+export interface SQLiteConnectionOptions {
+  /** Connection mode: local file or remote libSQL/Turso */
+  mode: SQLiteMode;
+  /** Auth token for libSQL/Turso connections */
+  authToken?: string;
+  /** Sync URL for embedded replicas (optional) */
+  syncUrl?: string;
+}
+
+/**
  * MSSQL-specific connection options
  */
 export interface MSSQLConnectionOptions {
@@ -479,6 +496,8 @@ export interface ConnectionConfig {
   sshConfig?: SSHConfig;
   /** MSSQL-specific connection options (only used when dbType is 'mssql') */
   mssqlOptions?: MSSQLConnectionOptions;
+  /** SQLite-specific connection options (only used when dbType is 'sqlite') */
+  sqliteOptions?: SQLiteConnectionOptions;
 }
 
 export interface SSHConfig {

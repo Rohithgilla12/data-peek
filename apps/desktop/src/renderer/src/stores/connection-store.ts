@@ -7,7 +7,8 @@ import {
   DatabaseType,
   CustomTypeInfo,
   MSSQLConnectionOptions,
-  SSHConfig
+  SSHConfig,
+  SQLiteConnectionOptions
 } from '@shared/index'
 import { notify } from './notification-store'
 
@@ -36,6 +37,7 @@ export interface Connection {
   group?: string
   dbType: DatabaseType
   mssqlOptions?: MSSQLConnectionOptions
+  sqliteOptions?: SQLiteConnectionOptions
 }
 
 export interface ConnectionWithStatus extends Connection {
