@@ -41,9 +41,6 @@ importers:
       '@ai-sdk/react':
         specifier: ^2.0.12
         version: 2.0.104(react@19.2.0)(zod@3.25.76)
-      '@data-peek/shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
       '@dnd-kit/core':
         specifier: ^6.3.1
         version: 6.3.1(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
@@ -192,6 +189,9 @@ importers:
         specifier: ^5.0.8
         version: 5.0.9(@types/react@19.2.7)(immer@11.0.1)(react@19.2.0)(use-sync-external-store@1.6.0(react@19.2.0))
     devDependencies:
+      '@data-peek/shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
       '@electron-toolkit/eslint-config-prettier':
         specifier: ^3.0.0
         version: 3.0.0(eslint@9.39.1(jiti@2.6.1))(prettier@3.7.3)

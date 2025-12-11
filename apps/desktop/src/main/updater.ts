@@ -1,6 +1,7 @@
 import { autoUpdater } from 'electron-updater'
 import { app, dialog, BrowserWindow, ipcMain } from 'electron'
 import { createLogger } from './lib/logger'
+import { setForceQuit } from './app-state'
 
 const log = createLogger('updater')
 
@@ -116,7 +117,14 @@ export function initAutoUpdater(window?: BrowserWindow): void {
   // Handle quit-and-install request from renderer
   ipcMain.on('updater:quit-and-install', () => {
     log.info('Quit and install requested')
-    autoUpdater.quitAndInstall()
+
+    // On macOS, we need to force the app to actually quit (not hide)
+    // The main window has a 'close' handler that hides instead of closes unless forceQuit is true
+    setForceQuit(true)
+
+    // isSilent: true = no installation UI (cleaner UX)
+    // isForceRunAfter: true = ensure app restarts after install (critical for macOS)
+    autoUpdater.quitAndInstall(true, true)
   })
 
   isUpdaterInitialized = true

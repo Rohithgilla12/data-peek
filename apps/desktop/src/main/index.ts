@@ -16,6 +16,7 @@ import { initAutoUpdater, stopPeriodicChecks } from './updater'
 import { DpStorage } from './storage'
 import { initSchemaCache } from './schema-cache'
 import { registerAllHandlers } from './ipc'
+import { setForceQuit, shouldForceQuit } from './app-state'
 
 // Store instances
 let store: DpStorage<{ connections: ConnectionConfig[] }>
@@ -23,7 +24,6 @@ let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 
 // Store main window reference for macOS hide-on-close behavior
 let mainWindow: BrowserWindow | null = null
-let forceQuit = false
 
 /**
  * Initialize all persistent stores
@@ -107,7 +107,7 @@ async function createWindow(): Promise<void> {
 
   // macOS: hide instead of close (like native apps)
   mainWindow.on('close', (e) => {
-    if (process.platform === 'darwin' && !forceQuit) {
+    if (process.platform === 'darwin' && !shouldForceQuit()) {
       e.preventDefault()
       mainWindow?.hide()
     }
@@ -176,7 +176,7 @@ app.whenReady().then(async () => {
 
 // macOS: set forceQuit flag before quitting
 app.on('before-quit', () => {
-  forceQuit = true
+  setForceQuit(true)
   stopPeriodicChecks()
 })
 
