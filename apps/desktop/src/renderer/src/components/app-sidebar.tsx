@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { MessageCircleQuestion, Settings2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
@@ -20,12 +21,15 @@ import {
   SidebarRail,
   SidebarSeparator
 } from '@/components/ui/sidebar'
+import { cn } from '@/lib/utils'
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [plataform] = useState(() => window.electron.process.platform)
+
   return (
     <Sidebar className="border-r-0 bg-sidebar/80 backdrop-blur-xl" {...props}>
       {/* Header - Connection Switcher */}
-      <SidebarHeader className="pt-10">
+      <SidebarHeader className={cn(plataform === 'darwin' && 'pt-10')}>
         <ConnectionSwitcher />
       </SidebarHeader>
 

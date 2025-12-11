@@ -54,14 +54,18 @@ async function createWindow(): Promise<void> {
   // Get saved window state
   const windowState = await getWindowState()
 
-  // Create the browser window
-  mainWindow = new BrowserWindow({
-    x: windowState.x,
-    y: windowState.y,
+  const windowSize = {
     width: windowState.width,
     height: windowState.height,
     minWidth: 900,
-    minHeight: 600,
+    minHeight: 600
+  }
+
+  // Create the browser window
+  mainWindow = new BrowserWindow({
+    ...windowSize,
+    x: windowState.x,
+    y: windowState.y,
     show: false,
     autoHideMenuBar: false,
     // macOS-style window with vibrancy
@@ -76,12 +80,9 @@ async function createWindow(): Promise<void> {
     // Windows titlebar overlay
     ...(process.platform === 'win32' && {
       titleBarStyle: 'hidden',
-      titleBarOverlay: {
-        color: '#1e1e1e',
-        symbolColor: '#ffffff',
-        height: 40
-      },
-      backgroundColor: '#1e1e1e'
+
+      // Bigger minimum width due to the Windows title bar
+      minWidth: windowSize.minWidth + 120
     }),
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {

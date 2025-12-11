@@ -283,6 +283,11 @@ const api = {
   },
   files: {
     openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog')
+  },
+  window: {
+    minimize: (): Promise<void> => ipcRenderer.invoke('minimize-window'),
+    maximize: (): Promise<void> => ipcRenderer.invoke('maximize-window'),
+    close: (): Promise<void> => ipcRenderer.invoke('close-window')
   }
 }
 

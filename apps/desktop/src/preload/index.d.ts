@@ -272,6 +272,11 @@ interface DataPeekApi {
   files: {
     openFilePicker: () => Promise<string | null>
   }
+  window: {
+    minimize: () => Promise<void>
+    maximize: () => Promise<void>
+    close: () => Promise<void>
+  }
 }
 
 declare global {

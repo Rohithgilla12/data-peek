@@ -8,7 +8,7 @@ import {
   useNavigate
 } from '@tanstack/react-router'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Moon, Sun, Monitor, Sparkles, Command } from 'lucide-react'
+import { Moon, Sun, Monitor, Sparkles, Command, X as Minimize } from 'lucide-react'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import {
@@ -41,6 +41,7 @@ import { useConnectionStore, useLicenseStore, useSettingsStore, useTabStore } fr
 import { cn, keys } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { TitlebarActions } from './components/titlebar-actions'
 
 // Inner layout component that has access to sidebar context
 function LayoutContent() {
@@ -89,6 +90,8 @@ function LayoutContent() {
   // Tab store for opening SQL in new tab
   const createQueryTab = useTabStore((s) => s.createQueryTab)
   const setActiveTab = useTabStore((s) => s.setActiveTab)
+
+  const [plataform] = useState(window.electron.process.platform)
 
   // Handle opening SQL in a new tab (without execution)
   const handleAIOpenInTab = useCallback(
@@ -381,6 +384,12 @@ function LayoutContent() {
             <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
             <NavActions />
           </div>
+          {plataform === 'win32' && (
+            <>
+              <Separator orientation="vertical" className="data-[orientation=vertical]:h-4 -ml-3" />
+              <TitlebarActions />
+            </>
+          )}
         </header>
 
         <Outlet />

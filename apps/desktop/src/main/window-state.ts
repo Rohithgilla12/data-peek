@@ -80,7 +80,17 @@ export function trackWindowState(window: BrowserWindow): void {
     saveWindowState(window)
   }
 
-  window.on('resize', saveState)
-  window.on('move', saveState)
-  window.on('close', saveState)
+  let debounceTimer: NodeJS.Timeout
+  const debouncedSaveState = () => {
+    clearTimeout(debounceTimer)
+
+    debounceTimer = setTimeout(() => {
+      saveState()
+      console.log('saved state')
+    }, 200)
+  }
+
+  window.on('resize', debouncedSaveState)
+  window.on('move', debouncedSaveState)
+  window.on('close', debouncedSaveState)
 }
