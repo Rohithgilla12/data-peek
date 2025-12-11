@@ -1,5 +1,11 @@
 import { ipcMain } from 'electron'
-import type { ConnectionConfig, EditBatch, EditResult } from '@shared/index'
+import type {
+  ConnectionConfig,
+  EditBatch,
+  EditResult,
+  QueryTelemetry,
+  BenchmarkResult
+} from '@shared/index'
 import { getAdapter } from '../db-adapter'
 import { cancelQuery } from '../query-tracker'
 import { buildQuery, validateOperation, buildPreviewSql } from '../sql-builder'
@@ -11,6 +17,7 @@ import {
   type CachedSchema
 } from '../schema-cache'
 import { createLogger } from '../lib/logger'
+import { telemetryCollector } from '../telemetry-collector'
 
 const log = createLogger('query-handlers')
 
@@ -308,6 +315,133 @@ export function registerQueryHandlers(): void {
         }
       } catch (error: unknown) {
         log.error('Explain error:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Execute a query with telemetry collection
+  ipcMain.handle(
+    'db:query-with-telemetry',
+    async (
+      _,
+      {
+        config,
+        query,
+        executionId
+      }: { config: ConnectionConfig; query: string; executionId?: string }
+    ) => {
+      log.debug('Received query with telemetry request', { ...config, password: '***' })
+      log.debug('Query:', query)
+      log.debug('Execution ID:', executionId)
+
+      try {
+        const adapter = getAdapter(config)
+        log.debug('Connecting with telemetry...')
+
+        // Use queryMultiple with telemetry enabled
+        const multiResult = await adapter.queryMultiple(config, query, {
+          executionId,
+          collectTelemetry: true
+        })
+
+        log.debug('Query completed in', multiResult.totalDurationMs, 'ms')
+        log.debug('Statement count:', multiResult.results.length)
+        log.debug('Telemetry collected:', !!multiResult.telemetry)
+
+        return {
+          success: true,
+          data: {
+            results: multiResult.results,
+            totalDurationMs: multiResult.totalDurationMs,
+            statementCount: multiResult.results.length,
+            telemetry: multiResult.telemetry,
+            // Legacy format for backward compatibility
+            rows:
+              multiResult.results.find((r) => r.isDataReturning)?.rows ||
+              multiResult.results[0]?.rows ||
+              [],
+            fields:
+              multiResult.results.find((r) => r.isDataReturning)?.fields ||
+              multiResult.results[0]?.fields ||
+              [],
+            rowCount:
+              multiResult.results.find((r) => r.isDataReturning)?.rowCount ??
+              multiResult.results[0]?.rowCount ??
+              0,
+            durationMs: multiResult.totalDurationMs
+          }
+        }
+      } catch (error: unknown) {
+        log.error('Query with telemetry error:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Run a query multiple times and collect benchmark statistics
+  ipcMain.handle(
+    'db:benchmark',
+    async (
+      _,
+      { config, query, runCount }: { config: ConnectionConfig; query: string; runCount: number }
+    ) => {
+      log.debug('Received benchmark request', { ...config, password: '***' })
+      log.debug('Query:', query)
+      log.debug('Run count:', runCount)
+
+      // Validate run count
+      if (runCount < 1 || runCount > 1000) {
+        return { success: false, error: 'Run count must be between 1 and 1000' }
+      }
+
+      try {
+        const adapter = getAdapter(config)
+        const telemetryRuns: QueryTelemetry[] = []
+
+        log.debug('Starting benchmark runs...')
+
+        for (let i = 0; i < runCount; i++) {
+          const executionId = `benchmark-${Date.now()}-${i}`
+
+          try {
+            const result = await adapter.queryMultiple(config, query, {
+              executionId,
+              collectTelemetry: true
+            })
+
+            if (result.telemetry) {
+              telemetryRuns.push(result.telemetry)
+            }
+
+            // Small delay between runs to avoid overwhelming the database
+            if (i < runCount - 1) {
+              await new Promise((resolve) => setTimeout(resolve, 10))
+            }
+          } catch (runError) {
+            // If a run fails, log it but continue
+            log.warn(`Benchmark run ${i + 1} failed:`, runError)
+          }
+        }
+
+        log.debug('Benchmark completed, successful runs:', telemetryRuns.length)
+
+        if (telemetryRuns.length === 0) {
+          return { success: false, error: 'All benchmark runs failed' }
+        }
+
+        // Aggregate the results
+        const benchmarkResult: BenchmarkResult =
+          telemetryCollector.aggregateBenchmark(telemetryRuns)
+
+        return {
+          success: true,
+          data: benchmarkResult
+        }
+      } catch (error: unknown) {
+        log.error('Benchmark error:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
         return { success: false, error: errorMessage }
       }

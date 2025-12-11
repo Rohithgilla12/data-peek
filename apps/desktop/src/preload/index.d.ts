@@ -14,7 +14,9 @@ import type {
   LicenseActivationRequest,
   LicenseType,
   SavedQuery,
-  SchemaInfo
+  SchemaInfo,
+  BenchmarkResult,
+  MultiStatementResultWithTelemetry
 } from '@shared/index'
 
 // AI Types
@@ -155,6 +157,16 @@ interface DataPeekApi {
       query: string,
       analyze: boolean
     ) => Promise<IpcResponse<{ plan: unknown; durationMs: number }>>
+    queryWithTelemetry: (
+      config: ConnectionConfig,
+      query: string,
+      executionId?: string
+    ) => Promise<IpcResponse<MultiStatementResultWithTelemetry & { results: unknown[] }>>
+    benchmark: (
+      config: ConnectionConfig,
+      query: string,
+      runCount: number
+    ) => Promise<IpcResponse<BenchmarkResult>>
   }
   ddl: {
     createTable: (

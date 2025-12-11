@@ -1249,3 +1249,116 @@ export interface SavedQuery {
 }
 
 export type SSHAuthenticationMethod = "Password" | "Public Key";
+
+// ============================================
+// Query Telemetry Types
+// ============================================
+
+/**
+ * Individual timing phase within query execution
+ */
+export interface TimingPhase {
+  /** Phase name (e.g., 'tcp_handshake', 'execution') */
+  name: string;
+  /** Duration in milliseconds */
+  durationMs: number;
+  /** Offset from query start in milliseconds */
+  startOffset: number;
+}
+
+/**
+ * Comprehensive telemetry data for a single query execution
+ */
+export interface QueryTelemetry {
+  /** Unique identifier for this execution */
+  executionId: string;
+  /** Total execution time in milliseconds */
+  totalDurationMs: number;
+  /** All timing phases */
+  phases: TimingPhase[];
+
+  // Individual phase durations (convenience accessors)
+  /** TCP connection establishment time */
+  tcpHandshakeMs?: number;
+  /** Database authentication/protocol handshake time */
+  dbHandshakeMs?: number;
+  /** Network round-trip latency */
+  networkLatencyMs?: number;
+  /** Query plan generation time (from EXPLAIN) */
+  planningMs?: number;
+  /** Server-side query execution time */
+  executionMs?: number;
+  /** Data transfer time from server */
+  downloadMs?: number;
+  /** Client-side result parsing time */
+  parseMs?: number;
+
+  // Metadata
+  /** Whether an existing connection was reused */
+  connectionReused: boolean;
+  /** Number of rows returned */
+  rowCount: number;
+  /** Bytes received from server */
+  bytesReceived?: number;
+  /** Unix timestamp when telemetry was recorded */
+  timestamp: number;
+}
+
+/**
+ * Statistical aggregations for benchmark runs
+ */
+export interface TelemetryStats {
+  avg: number;
+  min: number;
+  max: number;
+  p90: number;
+  p95: number;
+  p99: number;
+  stdDev: number;
+}
+
+/**
+ * Per-phase statistics for benchmark analysis
+ */
+export interface PhaseStats {
+  avg: number;
+  p90: number;
+  p95: number;
+  p99: number;
+}
+
+/**
+ * Results from running a query multiple times (benchmark mode)
+ */
+export interface BenchmarkResult {
+  /** Number of iterations completed */
+  runCount: number;
+  /** Individual telemetry data for each run */
+  telemetryRuns: QueryTelemetry[];
+  /** Aggregated statistics across all runs */
+  stats: TelemetryStats;
+  /** Per-phase statistics (keyed by phase name) */
+  phaseStats: Record<string, PhaseStats>;
+}
+
+/**
+ * Extended query options with telemetry support
+ */
+export interface TelemetryQueryOptions {
+  /** Unique execution ID for cancellation support */
+  executionId?: string;
+  /** Whether to collect detailed telemetry */
+  collectTelemetry?: boolean;
+  /** Number of times to run query for benchmarking */
+  benchmarkRuns?: number;
+}
+
+/**
+ * Multi-statement result extended with telemetry data
+ */
+export interface MultiStatementResultWithTelemetry extends MultiStatementResult {
+  /** Telemetry data for this execution */
+  telemetry?: QueryTelemetry;
+  /** Benchmark results (when benchmarkRuns > 1) */
+  benchmark?: BenchmarkResult;
+}

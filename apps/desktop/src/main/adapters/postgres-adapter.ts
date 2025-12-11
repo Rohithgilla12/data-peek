@@ -27,6 +27,7 @@ import type {
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { closeTunnel, createTunnel, TunnelSession } from '../ssh-tunnel-service'
 import { splitStatements } from '../lib/sql-parser'
+import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 
 /** Split SQL into statements for PostgreSQL */
 const splitPgStatements = (sql: string) => splitStatements(sql, 'postgresql')
@@ -104,12 +105,32 @@ export class PostgresAdapter implements DatabaseAdapter {
     sql: string,
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
+    const collectTelemetry = options?.collectTelemetry ?? false
+    const executionId = options?.executionId ?? crypto.randomUUID()
+
+    // Start telemetry collection if requested
+    if (collectTelemetry) {
+      telemetryCollector.startQuery(executionId, false)
+      telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+    }
+
     let tunnelSession: TunnelSession | null = null
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
+
     const client = new Client(config)
+
+    if (collectTelemetry) {
+      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+      telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+    }
+
     await client.connect()
+
+    if (collectTelemetry) {
+      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+    }
 
     // Register for cancellation support
     if (options?.executionId) {
@@ -118,6 +139,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
     const totalStart = Date.now()
     const results: StatementResult[] = []
+    let totalRowCount = 0
 
     try {
       const statements = splitPgStatements(sql)
@@ -127,7 +149,18 @@ export class PostgresAdapter implements DatabaseAdapter {
         const stmtStart = Date.now()
 
         try {
+          // Start execution phase timing
+          if (collectTelemetry) {
+            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+          }
+
           const res = await client.query(statement)
+
+          if (collectTelemetry) {
+            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.PARSE)
+          }
+
           const stmtDuration = Date.now() - stmtStart
 
           const fields: QueryField[] = (res.fields || []).map((f) => ({
@@ -137,16 +170,22 @@ export class PostgresAdapter implements DatabaseAdapter {
           }))
 
           const isDataReturning = isDataReturningStatement(statement)
+          const rowCount = res.rowCount ?? res.rows?.length ?? 0
+          totalRowCount += rowCount
 
           results.push({
             statement,
             statementIndex: i,
             rows: res.rows || [],
             fields,
-            rowCount: res.rowCount ?? res.rows?.length ?? 0,
+            rowCount,
             durationMs: stmtDuration,
             isDataReturning
           })
+
+          if (collectTelemetry) {
+            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.PARSE)
+          }
         } catch (error) {
           // If a statement fails, add an error result and stop execution
           const stmtDuration = Date.now() - stmtStart
@@ -162,6 +201,11 @@ export class PostgresAdapter implements DatabaseAdapter {
             isDataReturning: false
           })
 
+          // Cancel telemetry on error
+          if (collectTelemetry) {
+            telemetryCollector.cancel(executionId)
+          }
+
           // Re-throw to stop execution of remaining statements
           throw new Error(
             `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
@@ -169,10 +213,17 @@ export class PostgresAdapter implements DatabaseAdapter {
         }
       }
 
-      return {
+      const result: AdapterMultiQueryResult = {
         results,
         totalDurationMs: Date.now() - totalStart
       }
+
+      // Finalize telemetry
+      if (collectTelemetry) {
+        result.telemetry = telemetryCollector.finalize(executionId, totalRowCount)
+      }
+
+      return result
     } finally {
       // Unregister from tracker
       if (options?.executionId) {

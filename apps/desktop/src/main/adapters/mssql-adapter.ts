@@ -25,6 +25,7 @@ import type {
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { closeTunnel, createTunnel, TunnelSession } from '../ssh-tunnel-service'
 import { splitStatements } from '../lib/sql-parser'
+import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 
 /** Split SQL into statements for MSSQL */
 const splitMssqlStatements = (sqlText: string) => splitStatements(sqlText, 'mssql')
@@ -303,15 +304,35 @@ export class MSSQLAdapter implements DatabaseAdapter {
     sqlQuery: string,
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
+    const collectTelemetry = options?.collectTelemetry ?? false
+    const executionId = options?.executionId ?? crypto.randomUUID()
+
+    // Start telemetry collection if requested
+    if (collectTelemetry) {
+      telemetryCollector.startQuery(executionId, false)
+      telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+    }
+
     let tunnelSession: TunnelSession | null = null
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
+
+    if (collectTelemetry) {
+      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+      telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+    }
+
     const pool = new sql.ConnectionPool(toMSSQLConfig(config))
     await pool.connect()
 
+    if (collectTelemetry) {
+      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+    }
+
     const totalStart = Date.now()
     const results: StatementResult[] = []
+    let totalRowCount = 0
 
     try {
       const statements = splitMssqlStatements(sqlQuery)
@@ -328,7 +349,18 @@ export class MSSQLAdapter implements DatabaseAdapter {
             registerQuery(options.executionId, { type: 'mssql', request })
           }
 
+          // Start execution phase timing
+          if (collectTelemetry) {
+            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+          }
+
           const result = await request.query(statement)
+
+          if (collectTelemetry) {
+            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.PARSE)
+          }
+
           const stmtDuration = Date.now() - stmtStart
 
           const rows = (result.recordset || []) as Record<string, unknown>[]
@@ -387,6 +419,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
 
           const isDataReturning = isDataReturningStatement(statement)
           const rowCount = isDataReturning ? rows.length : (result.rowsAffected[0] ?? 0)
+          totalRowCount += rowCount
 
           results.push({
             statement,
@@ -397,6 +430,10 @@ export class MSSQLAdapter implements DatabaseAdapter {
             durationMs: stmtDuration,
             isDataReturning
           })
+
+          if (collectTelemetry) {
+            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.PARSE)
+          }
 
           // Unregister after each statement completes successfully
           if (options?.executionId) {
@@ -416,16 +453,28 @@ export class MSSQLAdapter implements DatabaseAdapter {
             isDataReturning: false
           })
 
+          // Cancel telemetry on error
+          if (collectTelemetry) {
+            telemetryCollector.cancel(executionId)
+          }
+
           throw new Error(
             `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
           )
         }
       }
 
-      return {
+      const result: AdapterMultiQueryResult = {
         results,
         totalDurationMs: Date.now() - totalStart
       }
+
+      // Finalize telemetry
+      if (collectTelemetry) {
+        result.telemetry = telemetryCollector.finalize(executionId, totalRowCount)
+      }
+
+      return result
     } finally {
       // Unregister from tracker
       if (options?.executionId) {

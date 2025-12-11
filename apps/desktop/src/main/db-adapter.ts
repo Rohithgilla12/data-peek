@@ -6,7 +6,8 @@ import type {
   TableDefinition,
   SequenceInfo,
   CustomTypeInfo,
-  StatementResult
+  StatementResult,
+  QueryTelemetry
 } from '@shared/index'
 
 /**
@@ -24,6 +25,8 @@ export interface AdapterQueryResult {
 export interface AdapterMultiQueryResult {
   results: StatementResult[]
   totalDurationMs: number
+  /** Telemetry data when collectTelemetry is true */
+  telemetry?: QueryTelemetry
 }
 
 /**
@@ -32,6 +35,8 @@ export interface AdapterMultiQueryResult {
 export interface QueryOptions {
   /** Unique execution ID for cancellation support */
   executionId?: string
+  /** Whether to collect detailed telemetry data */
+  collectTelemetry?: boolean
 }
 
 /**

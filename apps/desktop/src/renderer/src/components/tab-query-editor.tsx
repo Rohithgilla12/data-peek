@@ -18,7 +18,8 @@ import {
   BarChart3,
   Bookmark,
   Maximize2,
-  Square
+  Square,
+  Timer
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -27,7 +28,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { useTabStore, useConnectionStore, useQueryStore, useSettingsStore } from '@/stores'
+import {
+  useTabStore,
+  useConnectionStore,
+  useQueryStore,
+  useSettingsStore,
+  useTabTelemetry,
+  notify
+} from '@/stores'
 import type { Tab, MultiQueryResult } from '@/stores/tab-store'
 import type { StatementResult } from '@data-peek/shared'
 import {
@@ -53,6 +61,8 @@ import { ERDVisualization } from '@/components/erd-visualization'
 import { ExecutionPlanViewer } from '@/components/execution-plan-viewer'
 import { TableDesigner } from '@/components/table-designer'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
+import { TelemetryPanel } from '@/components/telemetry-panel'
+import { BenchmarkButton } from '@/components/benchmark-button'
 
 interface TabQueryEditorProps {
   tabId: string
@@ -76,6 +86,24 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const getEnumValues = useConnectionStore((s) => s.getEnumValues)
   const addToHistory = useQueryStore((s) => s.addToHistory)
   const hideQueryEditorByDefault = useSettingsStore((s) => s.hideQueryEditorByDefault)
+
+  // Telemetry state
+  const {
+    telemetry,
+    benchmark,
+    isRunningBenchmark,
+    showTelemetryPanel,
+    showConnectionOverhead,
+    selectedPercentile,
+    viewMode,
+    setTelemetry,
+    setBenchmark,
+    setShowTelemetryPanel,
+    setShowConnectionOverhead,
+    setSelectedPercentile,
+    setViewMode,
+    setRunningBenchmark
+  } = useTabTelemetry(tabId)
 
   // Get the connection for this tab
   const tabConnection = tab?.connectionId
@@ -158,13 +186,27 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     const executionId = crypto.randomUUID()
     updateTabExecuting(tabId, true, executionId)
 
+    // Clear previous benchmark when running a new query
+    setBenchmark(null)
+
     try {
-      const response = await window.api.db.query(tabConnection, tab.query, executionId)
+      // Use telemetry-enabled query API
+      const response = await window.api.db.queryWithTelemetry(tabConnection, tab.query, executionId)
 
       if (response.success && response.data) {
-        const data = response.data as
-          | { results: StatementResult[]; totalDurationMs: number; statementCount: number }
-          | IpcQueryResult
+        const data = response.data as {
+          results: StatementResult[]
+          totalDurationMs: number
+          statementCount: number
+          telemetry?: import('@data-peek/shared').QueryTelemetry
+        } & IpcQueryResult
+
+        // Store telemetry data if available
+        if (data.telemetry) {
+          setTelemetry(data.telemetry)
+        } else {
+          setTelemetry(null)
+        }
 
         // Check if we have multi-statement results
         if ('results' in data && Array.isArray(data.results)) {
@@ -214,6 +256,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       } else {
         const errorMessage = response.error ?? 'Query execution failed'
         updateTabMultiResult(tabId, null, errorMessage)
+        setTelemetry(null)
 
         addToHistory({
           query: tab.query,
@@ -227,6 +270,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       updateTabMultiResult(tabId, null, errorMessage)
+      setTelemetry(null)
     } finally {
       updateTabExecuting(tabId, false)
     }
@@ -238,7 +282,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     updateTabResult,
     updateTabMultiResult,
     markTabSaved,
-    addToHistory
+    addToHistory,
+    setTelemetry,
+    setBenchmark
   ])
 
   const handleCancelQuery = useCallback(async () => {
@@ -261,6 +307,57 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     const formatted = formatSQL(tab.query)
     updateTabQuery(tabId, formatted)
   }
+
+  // Handle benchmark execution
+  const handleBenchmark = useCallback(
+    async (runCount: number) => {
+      if (
+        !tab ||
+        tab.type === 'erd' ||
+        tab.type === 'table-designer' ||
+        !tabConnection ||
+        tab.isExecuting ||
+        isRunningBenchmark ||
+        !tab.query.trim()
+      ) {
+        return
+      }
+
+      setRunningBenchmark(true)
+      // Clear previous telemetry and show panel
+      setTelemetry(null)
+      setBenchmark(null)
+      setShowTelemetryPanel(true)
+
+      try {
+        const response = await window.api.db.benchmark(tabConnection, tab.query, runCount)
+
+        if (response.success && response.data) {
+          setBenchmark(response.data)
+          // Also set the first run's telemetry for display
+          if (response.data.telemetryRuns.length > 0) {
+            setTelemetry(response.data.telemetryRuns[0])
+          }
+        } else {
+          // Show error notification to user
+          notify.error('Benchmark failed', response.error || 'An unexpected error occurred')
+        }
+      } catch (error) {
+        notify.error('Benchmark failed', error instanceof Error ? error.message : 'An unexpected error occurred')
+      } finally {
+        setRunningBenchmark(false)
+      }
+    },
+    [
+      tab,
+      tabConnection,
+      isRunningBenchmark,
+      setRunningBenchmark,
+      setTelemetry,
+      setBenchmark,
+      setShowTelemetryPanel
+    ]
+  )
 
   const handleExplainQuery = useCallback(async () => {
     if (
@@ -783,6 +880,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
+            <BenchmarkButton
+              onBenchmark={handleBenchmark}
+              isRunning={isRunningBenchmark}
+              disabled={tab.isExecuting || !tab.query.trim()}
+            />
             {!isEditorCollapsed && (
               <>
                 <Button
@@ -1022,6 +1124,29 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    {/* Telemetry toggle button */}
+                    {(telemetry || benchmark) && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={showTelemetryPanel ? 'secondary' : 'ghost'}
+                              size="sm"
+                              className="gap-1.5 h-7"
+                              onClick={() => setShowTelemetryPanel(!showTelemetryPanel)}
+                            >
+                              <Timer className="size-3.5" />
+                              Telemetry
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">
+                            <p className="text-xs">
+                              {showTelemetryPanel ? 'Hide' : 'Show'} query performance breakdown
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                     {hasActiveFiltersOrSorting && (
                       <TooltipProvider>
                         <Tooltip>
@@ -1081,6 +1206,21 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                     </DropdownMenu>
                   </div>
                 </div>
+
+                {/* Telemetry Panel */}
+                {showTelemetryPanel && (telemetry || benchmark) && (
+                  <TelemetryPanel
+                    telemetry={telemetry}
+                    benchmark={benchmark}
+                    showConnectionOverhead={showConnectionOverhead}
+                    onToggleConnectionOverhead={setShowConnectionOverhead}
+                    selectedPercentile={selectedPercentile}
+                    onSelectPercentile={setSelectedPercentile}
+                    viewMode={viewMode}
+                    onViewModeChange={setViewMode}
+                    onClose={() => setShowTelemetryPanel(false)}
+                  />
+                )}
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">

@@ -26,6 +26,7 @@ import type {
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { closeTunnel, createTunnel, TunnelSession } from '../ssh-tunnel-service'
 import { splitStatements } from '../lib/sql-parser'
+import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 
 /** Split SQL into statements for MySQL */
 const splitMySqlStatements = (sql: string) => splitStatements(sql, 'mysql')
@@ -163,11 +164,30 @@ export class MySQLAdapter implements DatabaseAdapter {
     sql: string,
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
+    const collectTelemetry = options?.collectTelemetry ?? false
+    const executionId = options?.executionId ?? crypto.randomUUID()
+
+    // Start telemetry collection if requested
+    if (collectTelemetry) {
+      telemetryCollector.startQuery(executionId, false)
+      telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+    }
+
     let tunnelSession: TunnelSession | null = null
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
+
+    if (collectTelemetry) {
+      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+      telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+    }
+
     const connection = await mysql.createConnection(toMySQLConfig(config))
+
+    if (collectTelemetry) {
+      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+    }
 
     // Register for cancellation support
     if (options?.executionId) {
@@ -176,6 +196,7 @@ export class MySQLAdapter implements DatabaseAdapter {
 
     const totalStart = Date.now()
     const results: StatementResult[] = []
+    let totalRowCount = 0
 
     try {
       const statements = splitMySqlStatements(sql)
@@ -185,7 +206,18 @@ export class MySQLAdapter implements DatabaseAdapter {
         const stmtStart = Date.now()
 
         try {
+          // Start execution phase timing
+          if (collectTelemetry) {
+            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+          }
+
           const [rows, fields] = await connection.query(statement)
+
+          if (collectTelemetry) {
+            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.PARSE)
+          }
+
           const stmtDuration = Date.now() - stmtStart
 
           const queryFields: QueryField[] =
@@ -206,6 +238,7 @@ export class MySQLAdapter implements DatabaseAdapter {
             const header = rows as mysql.ResultSetHeader
             rowCount = header.affectedRows ?? 0
           }
+          totalRowCount += rowCount
 
           results.push({
             statement,
@@ -216,6 +249,10 @@ export class MySQLAdapter implements DatabaseAdapter {
             durationMs: stmtDuration,
             isDataReturning
           })
+
+          if (collectTelemetry) {
+            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.PARSE)
+          }
         } catch (error) {
           const stmtDuration = Date.now() - stmtStart
           const errorMessage = error instanceof Error ? error.message : String(error)
@@ -230,16 +267,28 @@ export class MySQLAdapter implements DatabaseAdapter {
             isDataReturning: false
           })
 
+          // Cancel telemetry on error
+          if (collectTelemetry) {
+            telemetryCollector.cancel(executionId)
+          }
+
           throw new Error(
             `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
           )
         }
       }
 
-      return {
+      const result: AdapterMultiQueryResult = {
         results,
         totalDurationMs: Date.now() - totalStart
       }
+
+      // Finalize telemetry
+      if (collectTelemetry) {
+        result.telemetry = telemetryCollector.finalize(executionId, totalRowCount)
+      }
+
+      return result
     } finally {
       // Unregister from tracker
       if (options?.executionId) {

@@ -23,7 +23,9 @@ import type {
   StoredChatMessage,
   ChatSession,
   AIMultiProviderConfig,
-  AIProviderConfig
+  AIProviderConfig,
+  BenchmarkResult,
+  MultiStatementResultWithTelemetry
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -79,7 +81,21 @@ const api = {
       query: string,
       analyze: boolean
     ): Promise<IpcResponse<{ plan: unknown; durationMs: number }>> =>
-      ipcRenderer.invoke('db:explain', { config, query, analyze })
+      ipcRenderer.invoke('db:explain', { config, query, analyze }),
+    // Query with telemetry collection
+    queryWithTelemetry: (
+      config: ConnectionConfig,
+      query: string,
+      executionId?: string
+    ): Promise<IpcResponse<MultiStatementResultWithTelemetry & { results: unknown[] }>> =>
+      ipcRenderer.invoke('db:query-with-telemetry', { config, query, executionId }),
+    // Benchmark query with multiple runs
+    benchmark: (
+      config: ConnectionConfig,
+      query: string,
+      runCount: number
+    ): Promise<IpcResponse<BenchmarkResult>> =>
+      ipcRenderer.invoke('db:benchmark', { config, query, runCount })
   },
   // DDL operations (Table Designer)
   ddl: {
