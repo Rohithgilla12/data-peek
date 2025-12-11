@@ -15,7 +15,7 @@ import {
 import { useConnectionStore, type Connection } from '@/stores'
 import { PostgreSQLIcon, MySQLIcon, MSSQLIcon, SQLiteIcon } from './database-icons'
 import { SSHConfigSection } from './ssh-config-section'
-import type { SSHConfig, SQLiteMode } from '@shared/index'
+import type { SSHConfig } from '@shared/index'
 import type { DatabaseType } from '@shared/index'
 
 interface AddConnectionDialogProps {
@@ -288,10 +288,6 @@ export function AddConnectionDialog({
     import('@shared/index').MSSQLConnectionOptions | undefined
   >(undefined)
 
-  // SQLite-specific state
-  const [sqliteMode, setSqliteMode] = useState<SQLiteMode>('local')
-  const [sqliteAuthToken, setSqliteAuthToken] = useState('')
-
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
@@ -311,15 +307,6 @@ export function AddConnectionDialog({
       setSsl(editConnection.ssl || false)
       setSsh(editConnection.ssh || false)
       setMssqlOptions(editConnection.mssqlOptions)
-
-      // Restore SQLite options
-      if (editConnection.sqliteOptions) {
-        setSqliteMode(editConnection.sqliteOptions.mode || 'local')
-        setSqliteAuthToken(editConnection.sqliteOptions.authToken || '')
-      } else {
-        setSqliteMode('local')
-        setSqliteAuthToken('')
-      }
 
       if (editConnection.ssh && editConnection.sshConfig) {
         setSshConfig({
@@ -376,13 +363,6 @@ export function AddConnectionDialog({
       setSsl(false)
       setInputMode('manual')
       setHost('')
-      // Reset SQLite options to local mode
-      setSqliteMode('local')
-      setSqliteAuthToken('')
-    } else {
-      // Clear SQLite options when switching away from SQLite
-      setSqliteMode('local')
-      setSqliteAuthToken('')
     }
     // Clear connection string when switching types
     setConnectionString('')
@@ -449,8 +429,6 @@ export function AddConnectionDialog({
       passphrase: ''
     })
     setMssqlOptions(undefined)
-    setSqliteMode('local')
-    setSqliteAuthToken('')
     setTestResult(null)
     setTestError(null)
   }
@@ -477,18 +455,9 @@ export function AddConnectionDialog({
         }
       : undefined
 
-    // Build SQLite options if applicable
-    const sqliteOptions =
-      dbType === 'sqlite'
-        ? {
-            mode: sqliteMode,
-            ...(sqliteMode === 'libsql' && sqliteAuthToken && { authToken: sqliteAuthToken })
-          }
-        : undefined
-
     return {
       id: editConnection?.id || crypto.randomUUID(),
-      name: name || (dbType === 'sqlite' && sqliteMode === 'libsql' ? database : `${host}/${database}`),
+      name: name || (dbType === 'sqlite' ? database : `${host}/${database}`),
       host,
       port: parseInt(port, 10) || 0,
       database,
@@ -499,8 +468,7 @@ export function AddConnectionDialog({
       ssh,
       dstPort: parseInt(port, 10) || 0,
       sshConfig: sshConfigForConnection,
-      ...(dbType === 'mssql' && mssqlOptions && { mssqlOptions }),
-      ...(dbType === 'sqlite' && sqliteOptions && { sqliteOptions })
+      ...(dbType === 'mssql' && mssqlOptions && { mssqlOptions })
     }
   }
 
@@ -587,14 +555,8 @@ export function AddConnectionDialog({
   }
 
   const isSqliteValid = () => {
-    if (sqliteMode === 'local') {
-      // Local SQLite only needs the database path
-      return !!database
-    } else {
-      // LibSQL/Turso needs a URL (in database field)
-      // Auth token is optional (for public databases or local libsql)
-      return !!database && (database.startsWith('libsql://') || database.startsWith('http://') || database.startsWith('https://') || database.startsWith('ws://') || database.startsWith('wss://'))
-    }
+    // Local SQLite only needs the database path
+    return !!database
   }
 
   const isValid =
@@ -729,117 +691,46 @@ export function AddConnectionDialog({
           {/* SQLite-specific form */}
           {dbType === 'sqlite' ? (
             <div className="flex flex-col gap-4">
-              {/* SQLite Mode Toggle */}
               <div className="flex flex-col gap-2">
-                <label className="text-sm font-medium">Connection Type</label>
-                <div className="flex rounded-lg border bg-muted p-1">
-                  <button
+                <label htmlFor="database" className="text-sm font-medium">
+                  Database File Path
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    id="database"
+                    placeholder="/path/to/database.db or :memory:"
+                    value={database}
+                    onChange={(e) => setDatabase(e.target.value)}
+                    className="font-mono text-sm flex-1"
+                  />
+                  <Button
                     type="button"
-                    onClick={() => {
-                      setSqliteMode('local')
-                      setDatabase('')
-                      setSqliteAuthToken('')
+                    variant="outline"
+                    size="icon"
+                    onClick={async () => {
+                      const filePath = await window.api.files.openFilePicker()
+                      if (filePath) {
+                        setDatabase(filePath)
+                      }
                     }}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                      sqliteMode === 'local'
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    title="Browse for SQLite database file"
                   >
                     <FolderOpen className="size-4" />
-                    Local File
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSqliteMode('libsql')
-                      setDatabase('')
-                      setSqliteAuthToken('')
-                    }}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                      sqliteMode === 'libsql'
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    <Link className="size-4" />
-                    Turso / libSQL
-                  </button>
+                  </Button>
                 </div>
+                <p className="text-xs text-muted-foreground">
+                  Enter the path to your SQLite database file, or use :memory: for an in-memory
+                  database.
+                </p>
               </div>
-
-              {sqliteMode === 'local' ? (
-                /* Local SQLite */
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="database" className="text-sm font-medium">
-                    Database File Path
-                  </label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="database"
-                      placeholder="/path/to/database.db or :memory:"
-                      value={database}
-                      onChange={(e) => setDatabase(e.target.value)}
-                      className="font-mono text-sm flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={async () => {
-                        const filePath = await window.api.files.openFilePicker()
-                        if (filePath) {
-                          setDatabase(filePath)
-                        }
-                      }}
-                      title="Browse for SQLite database file"
-                    >
-                      <FolderOpen className="size-4" />
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Enter the path to your SQLite database file, or use :memory: for an in-memory
-                    database.
-                  </p>
-                </div>
-              ) : (
-                /* Turso / libSQL */
-                <>
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="database" className="text-sm font-medium">
-                      Database URL
-                    </label>
-                    <Input
-                      id="database"
-                      placeholder="libsql://your-database.turso.io"
-                      value={database}
-                      onChange={(e) => setDatabase(e.target.value)}
-                      className="font-mono text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Your Turso database URL (e.g., libsql://your-db-name.turso.io)
-                    </p>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="auth-token" className="text-sm font-medium">
-                      Auth Token
-                    </label>
-                    <Input
-                      id="auth-token"
-                      type="password"
-                      placeholder="eyJhbGciOiJFZDI1NTE5..."
-                      value={sqliteAuthToken}
-                      onChange={(e) => setSqliteAuthToken(e.target.value)}
-                      className="font-mono text-sm"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Your Turso database token. Get it from the Turso CLI with{' '}
-                      <code className="bg-muted px-1 py-0.5 rounded">turso db tokens create</code>
-                    </p>
-                  </div>
-                </>
-              )}
+              <div className="rounded-md bg-muted/50 border border-border/50 px-3 py-2">
+                <p className="text-xs text-muted-foreground">
+                  <span className="font-medium text-foreground">
+                    Turso / libSQL support coming soon.
+                  </span>{' '}
+                  We&apos;re working on resolving some native module issues.
+                </p>
+              </div>
             </div>
           ) : inputMode === 'connection-string' ? (
             <div className="flex flex-col gap-2">

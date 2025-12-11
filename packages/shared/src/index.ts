@@ -443,20 +443,16 @@ export interface ChatSession {
 // ============================================
 
 /**
- * SQLite connection mode
+ * SQLite connection mode (local file only)
  */
-export type SQLiteMode = "local" | "libsql";
+export type SQLiteMode = "local";
 
 /**
- * SQLite/libSQL-specific connection options
+ * SQLite-specific connection options
  */
 export interface SQLiteConnectionOptions {
-  /** Connection mode: local file or remote libSQL/Turso */
+  /** Connection mode: local file */
   mode: SQLiteMode;
-  /** Auth token for libSQL/Turso connections */
-  authToken?: string;
-  /** Sync URL for embedded replicas (optional) */
-  syncUrl?: string;
 }
 
 /**

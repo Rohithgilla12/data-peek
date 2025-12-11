@@ -101,7 +101,6 @@ import { PostgresAdapter } from './adapters/postgres-adapter'
 import { MySQLAdapter } from './adapters/mysql-adapter'
 import { MSSQLAdapter } from './adapters/mssql-adapter'
 import { SQLiteAdapter } from './adapters/sqlite-adapter'
-import { LibSQLAdapter } from './adapters/libsql-adapter'
 
 // Adapter instances (singletons)
 const adapters: Record<DatabaseType, DatabaseAdapter> = {
@@ -111,19 +110,11 @@ const adapters: Record<DatabaseType, DatabaseAdapter> = {
   mssql: new MSSQLAdapter()
 }
 
-// LibSQL adapter singleton (for Turso/hosted SQLite)
-const libsqlAdapter = new LibSQLAdapter()
-
 /**
  * Get the appropriate database adapter for a connection
  */
 export function getAdapter(config: ConnectionConfig): DatabaseAdapter {
   const dbType = config.dbType || 'postgresql' // Default to postgresql for backward compatibility
-
-  // For SQLite, check if it's a libSQL/Turso connection
-  if (dbType === 'sqlite' && config.sqliteOptions?.mode === 'libsql') {
-    return libsqlAdapter
-  }
 
   const adapter = adapters[dbType]
   if (!adapter) {
