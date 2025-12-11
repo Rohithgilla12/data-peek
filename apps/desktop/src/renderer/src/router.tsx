@@ -8,7 +8,7 @@ import {
   useNavigate
 } from '@tanstack/react-router'
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { Moon, Sun, Monitor, Sparkles, Command, X as Minimize } from 'lucide-react'
+import { Moon, Sun, Monitor, Sparkles, Command } from 'lucide-react'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import {
@@ -41,7 +41,7 @@ import { useConnectionStore, useLicenseStore, useSettingsStore, useTabStore } fr
 import { cn, keys } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { TitlebarActions } from './components/titlebar-actions'
+import { TitlebarActions } from '@/components/titlebar-actions'
 
 // Inner layout component that has access to sidebar context
 function LayoutContent() {

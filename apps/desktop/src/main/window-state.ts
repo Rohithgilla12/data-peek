@@ -86,7 +86,6 @@ export function trackWindowState(window: BrowserWindow): void {
 
     debounceTimer = setTimeout(() => {
       saveState()
-      console.log('saved state')
     }, 200)
   }
 
