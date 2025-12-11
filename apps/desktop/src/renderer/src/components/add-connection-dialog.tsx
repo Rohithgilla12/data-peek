@@ -13,7 +13,7 @@ import {
   SheetTitle
 } from '@/components/ui/sheet'
 import { useConnectionStore, type Connection } from '@/stores'
-import { PostgreSQLIcon, MySQLIcon, MSSQLIcon } from './database-icons'
+import { PostgreSQLIcon, MySQLIcon, MSSQLIcon, SQLiteIcon } from './database-icons'
 import { SSHConfigSection } from './ssh-config-section'
 import type { SSHConfig } from '@shared/index'
 import type { DatabaseType } from '@shared/index'
@@ -357,6 +357,13 @@ export function AddConnectionDialog({
     if (newType !== 'mssql') {
       setMssqlOptions(undefined)
     }
+    // SQLite doesn't support SSH/SSL, and doesn't use connection strings
+    if (newType === 'sqlite') {
+      setSsh(false)
+      setSsl(false)
+      setInputMode('manual')
+      setHost('')
+    }
     // Clear connection string when switching types
     setConnectionString('')
     setParseError(null)
@@ -547,15 +554,17 @@ export function AddConnectionDialog({
   }
 
   const isValid =
-    inputMode === 'connection-string'
-      ? connectionString &&
-        !parseError &&
-        host &&
-        port &&
-        database &&
-        (isUserRequired ? user : true) &&
-        isSSHValid()
-      : host && port && database && (isUserRequired ? user : true) && isSSHValid()
+    dbType === 'sqlite'
+      ? database // SQLite only needs the database path
+      : inputMode === 'connection-string'
+        ? connectionString &&
+          !parseError &&
+          host &&
+          port &&
+          database &&
+          (isUserRequired ? user : true) &&
+          isSSHValid()
+        : host && port && database && (isUserRequired ? user : true) && isSSHValid()
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -576,11 +585,11 @@ export function AddConnectionDialog({
           {/* Database Type Selector */}
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Database Type</label>
-            <div className="flex rounded-lg border bg-muted p-1">
+            <div className="grid grid-cols-4 rounded-lg border bg-muted p-1">
               <button
                 type="button"
                 onClick={() => handleDbTypeChange('postgresql')}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
                   dbType === 'postgresql'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -592,7 +601,7 @@ export function AddConnectionDialog({
               <button
                 type="button"
                 onClick={() => handleDbTypeChange('mysql')}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
                   dbType === 'mysql'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -603,8 +612,20 @@ export function AddConnectionDialog({
               </button>
               <button
                 type="button"
+                onClick={() => handleDbTypeChange('sqlite')}
+                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                  dbType === 'sqlite'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <SQLiteIcon className="size-4" />
+                SQLite
+              </button>
+              <button
+                type="button"
                 onClick={() => handleDbTypeChange('mssql')}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
                   dbType === 'mssql'
                     ? 'bg-background text-foreground shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
@@ -616,33 +637,35 @@ export function AddConnectionDialog({
             </div>
           </div>
 
-          {/* Input Mode Toggle */}
-          <div className="flex rounded-lg border bg-muted p-1">
-            <button
-              type="button"
-              onClick={() => setInputMode('manual')}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                inputMode === 'manual'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Settings2 className="size-4" />
-              Manual
-            </button>
-            <button
-              type="button"
-              onClick={() => setInputMode('connection-string')}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                inputMode === 'connection-string'
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <Link className="size-4" />
-              Connection String
-            </button>
-          </div>
+          {/* Input Mode Toggle - hidden for SQLite */}
+          {dbType !== 'sqlite' && (
+            <div className="flex rounded-lg border bg-muted p-1">
+              <button
+                type="button"
+                onClick={() => setInputMode('manual')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  inputMode === 'manual'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Settings2 className="size-4" />
+                Manual
+              </button>
+              <button
+                type="button"
+                onClick={() => setInputMode('connection-string')}
+                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  inputMode === 'connection-string'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <Link className="size-4" />
+                Connection String
+              </button>
+            </div>
+          )}
 
           <div className="flex flex-col gap-2">
             <label htmlFor="name" className="text-sm font-medium">
@@ -659,7 +682,25 @@ export function AddConnectionDialog({
             </p>
           </div>
 
-          {inputMode === 'connection-string' ? (
+          {/* SQLite-specific form */}
+          {dbType === 'sqlite' ? (
+            <div className="flex flex-col gap-2">
+              <label htmlFor="database" className="text-sm font-medium">
+                Database File Path
+              </label>
+              <Input
+                id="database"
+                placeholder="/path/to/database.db or :memory:"
+                value={database}
+                onChange={(e) => setDatabase(e.target.value)}
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-muted-foreground">
+                Enter the path to your SQLite database file, or use :memory: for an in-memory
+                database.
+              </p>
+            </div>
+          ) : inputMode === 'connection-string' ? (
             <div className="flex flex-col gap-2">
               <label htmlFor="connection-string" className="text-sm font-medium">
                 Connection String
@@ -812,7 +853,9 @@ export function AddConnectionDialog({
             </>
           )}
 
-          {ssh && <SSHConfigSection config={sshConfig} onConfigChange={setSshConfig} />}
+          {ssh && dbType !== 'sqlite' && (
+            <SSHConfigSection config={sshConfig} onConfigChange={setSshConfig} />
+          )}
 
           {testResult && (
             <div

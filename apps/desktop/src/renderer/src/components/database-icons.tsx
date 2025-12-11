@@ -143,6 +143,21 @@ export function MSSQLIcon({ className }: { className?: string }) {
   )
 }
 
+export function SQLiteIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 100 100"
+      className={className}
+      fill="currentColor"
+    >
+      <path d="M50.5 5C25.4 5 5 25.4 5 50.5S25.4 96 50.5 96 96 75.6 96 50.5 75.6 5 50.5 5zm0 85C29.1 90 11 71.9 11 50.5S29.1 11 50.5 11 90 29.1 90 50.5 71.9 90 50.5 90z" />
+      <path d="M66.3 28.1c-2.4-2.4-5.6-3.7-9-3.7-3.4 0-6.6 1.3-9 3.7L30.1 46.3c-.5.5-.5 1.3 0 1.8l5.4 5.4c.5.5 1.3.5 1.8 0l18.2-18.2c1.2-1.2 2.8-1.8 4.5-1.8 1.7 0 3.3.7 4.5 1.8 2.5 2.5 2.5 6.5 0 9L46.3 62.5c-.5.5-.5 1.3 0 1.8l5.4 5.4c.5.5 1.3.5 1.8 0l18.2-18.2c2.4-2.4 3.7-5.6 3.7-9s-1.3-6.6-3.7-9c-.6-.6-1.2-1.1-1.9-1.5.5-.3 1-.7 1.5-1.1 2.4-2.4 3.7-5.6 3.7-9s-1.3-6.6-3.7-9c-5-5-13.1-5-18.1 0L35.1 31.1c-.5.5-.5 1.3 0 1.8l5.4 5.4c.5.5 1.3.5 1.8 0L60.5 20c1.2-1.2 2.8-1.8 4.5-1.8s3.3.7 4.5 1.8c2.5 2.5 2.5 6.5 0 9l-2.7 2.7c-.2-.1-.4-.1-.5-.6z" />
+      <circle cx="50" cy="50" r="8" />
+    </svg>
+  )
+}
+
 export function DatabaseIcon({
   dbType,
   className
@@ -155,6 +170,8 @@ export function DatabaseIcon({
       return <MySQLIcon className={className} />
     case 'mssql':
       return <MSSQLIcon className={className} />
+    case 'sqlite':
+      return <SQLiteIcon className={className} />
     case 'postgresql':
     default:
       return <PostgreSQLIcon className={className} />
