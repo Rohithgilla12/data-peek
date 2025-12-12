@@ -1,31 +1,24 @@
 import { autoUpdater } from 'electron-updater'
-import { app, dialog, BrowserWindow, ipcMain } from 'electron'
+import { app, dialog, ipcMain } from 'electron'
 import { createLogger } from './lib/logger'
 import { setForceQuit } from './app-state'
+import { windowManager } from './window-manager'
 
 const log = createLogger('updater')
 
 let isUpdaterInitialized = false
 let isManualCheck = false
-let mainWindow: BrowserWindow | null = null
 let periodicCheckInterval: ReturnType<typeof setInterval> | null = null
 
 // Check interval: 4 hours in milliseconds
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000
 
-// Send event to renderer process
-function sendToRenderer(channel: string, ...args: unknown[]): void {
-  if (mainWindow && !mainWindow.isDestroyed()) {
-    mainWindow.webContents.send(channel, ...args)
-  }
+// Send event to all renderer processes
+function sendToAllRenderers(channel: string, ...args: unknown[]): void {
+  windowManager.broadcastToAll(channel, ...args)
 }
 
-export function initAutoUpdater(window?: BrowserWindow): void {
-  // Store window reference
-  if (window) {
-    mainWindow = window
-  }
-
+export function initAutoUpdater(): void {
   // Only check for updates in production
   if (process.env.NODE_ENV === 'development' || !app.isPackaged) {
     log.debug('Skipping auto-update check in development mode')
@@ -52,8 +45,8 @@ export function initAutoUpdater(window?: BrowserWindow): void {
   autoUpdater.on('update-available', (info) => {
     log.info('Update available:', info.version)
 
-    // Notify renderer about available update
-    sendToRenderer('updater:update-available', info.version)
+    // Notify all renderers about available update
+    sendToAllRenderers('updater:update-available', info.version)
 
     if (isManualCheck) {
       // Manual check: ask user if they want to download
@@ -91,18 +84,18 @@ export function initAutoUpdater(window?: BrowserWindow): void {
 
   autoUpdater.on('download-progress', (progress) => {
     log.debug(`Download progress: ${progress.percent.toFixed(1)}%`)
-    sendToRenderer('updater:download-progress', progress.percent)
+    sendToAllRenderers('updater:download-progress', progress.percent)
   })
 
   autoUpdater.on('update-downloaded', (info) => {
     log.info('Update downloaded:', info.version)
-    // Notify renderer that update is ready to install
-    sendToRenderer('updater:update-downloaded', info.version)
+    // Notify all renderers that update is ready to install
+    sendToAllRenderers('updater:update-downloaded', info.version)
   })
 
   autoUpdater.on('error', (err) => {
     log.error('Update error:', err.message)
-    sendToRenderer('updater:error', err.message)
+    sendToAllRenderers('updater:error', err.message)
     if (isManualCheck) {
       dialog.showMessageBox({
         type: 'error',

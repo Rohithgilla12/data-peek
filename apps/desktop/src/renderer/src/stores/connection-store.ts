@@ -84,6 +84,10 @@ interface ConnectionState {
   fetchSchemas: (connectionId?: string, forceRefresh?: boolean) => Promise<void>
   refreshSchemasInBackground: (connectionId?: string) => Promise<void>
 
+  // Multi-window sync
+  refreshConnections: () => Promise<void>
+  setupConnectionSync: () => () => void
+
   // Computed
   getActiveConnection: () => ConnectionWithStatus | null
   getEnumValues: (dataType: string) => string[] | undefined
@@ -342,5 +346,36 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       (t) => t.type === 'enum' && (t.name === dataType || `${t.schema}.${t.name}` === dataType)
     )
     return enumType?.values
+  },
+
+  // Multi-window sync: refresh connections from main process
+  refreshConnections: async () => {
+    try {
+      const result = await window.api.connections.list()
+      if (result.success && result.data) {
+        const currentConnections = get().connections
+        const newConnections = result.data.map((config) => {
+          // Preserve connection status from existing connections
+          const existing = currentConnections.find((c) => c.id === config.id)
+          return {
+            ...toConnectionWithStatus(config),
+            isConnected: existing?.isConnected ?? false,
+            isConnecting: existing?.isConnecting ?? false,
+            error: existing?.error
+          }
+        })
+        set({ connections: newConnections })
+      }
+    } catch (error) {
+      console.error('Failed to refresh connections:', error)
+    }
+  },
+
+  // Set up listener for connection updates from other windows
+  setupConnectionSync: () => {
+    const cleanup = window.api.connections.onConnectionsUpdated(() => {
+      get().refreshConnections()
+    })
+    return cleanup
   }
 }))

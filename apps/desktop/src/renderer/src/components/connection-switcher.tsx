@@ -37,6 +37,7 @@ export function ConnectionSwitcher() {
   const initializeConnections = useConnectionStore((s) => s.initializeConnections)
   const removeConnection = useConnectionStore((s) => s.removeConnection)
   const isInitialized = useConnectionStore((s) => s.isInitialized)
+  const setupConnectionSync = useConnectionStore((s) => s.setupConnectionSync)
 
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingConnection, setEditingConnection] = useState<Connection | null>(null)
@@ -46,6 +47,12 @@ export function ConnectionSwitcher() {
   useEffect(() => {
     initializeConnections()
   }, [initializeConnections])
+
+  // Set up listener for connection updates from other windows
+  useEffect(() => {
+    const cleanup = setupConnectionSync()
+    return cleanup
+  }, [setupConnectionSync])
 
   const activeConnection = connections.find((c) => c.id === activeConnectionId)
 
