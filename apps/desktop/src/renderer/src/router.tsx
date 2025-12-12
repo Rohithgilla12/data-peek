@@ -24,6 +24,7 @@ import { LicenseStatusIndicator } from '@/components/license-status-indicator'
 import { LicenseActivationModal } from '@/components/license-activation-modal'
 import { LicenseSettingsModal } from '@/components/license-settings-modal'
 import { AIChatPanel, AISettingsModal } from '@/components/ai'
+import { SettingsModal } from '@/components/settings-modal'
 import { Notifications } from '@/components/notifications'
 import { useAIStore } from '@/stores/ai-store'
 import { Switch } from '@/components/ui/switch'
@@ -57,6 +58,9 @@ function LayoutContent() {
   // Add connection dialog state (for command palette integration)
   const [isAddConnectionOpen, setIsAddConnectionOpen] = useState(false)
   const [editConnectionId, setEditConnectionId] = useState<string | null>(null)
+
+  // Settings modal state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   // License modal states from store
   const isActivationModalOpen = useLicenseStore((s) => s.isActivationModalOpen)
@@ -101,6 +105,14 @@ function LayoutContent() {
   useEffect(() => {
     loadConfigFromMain()
   }, [loadConfigFromMain])
+
+  // Listen for settings menu event
+  useEffect(() => {
+    const cleanup = window.api.menu.onOpenSettings(() => {
+      setIsSettingsOpen(true)
+    })
+    return cleanup
+  }, [])
 
   // Handle connection switching (used by keyboard shortcuts)
   const handleSelectConnection = useCallback(
@@ -260,6 +272,9 @@ function LayoutContent() {
         }}
         connection={editConnectionId ? connections.find((c) => c.id === editConnectionId) : null}
       />
+
+      {/* Settings Modal */}
+      <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
 
       {/* License Modals */}
       <LicenseActivationModal open={isActivationModalOpen} onOpenChange={closeActivationModal} />

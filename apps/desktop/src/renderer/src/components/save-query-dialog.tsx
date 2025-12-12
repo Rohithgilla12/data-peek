@@ -1,18 +1,17 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import { Bookmark, X, Plus, FolderPlus, Link2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogHeader,
-  DialogTitle,
-  DialogFooter
+  DialogTitle
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -20,10 +19,11 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
-import { useSavedQueryStore, useConnectionStore } from '@/stores'
+import { Textarea } from '@/components/ui/textarea'
+import { useConnectionStore, useSavedQueryStore } from '@/stores'
 import type { SavedQuery } from '@shared/index'
+import { Bookmark, FolderPlus, Link2, Plus, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 interface SaveQueryDialogProps {
   open: boolean
@@ -37,7 +37,6 @@ export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: Sav
   const updateSavedQuery = useSavedQueryStore((s) => s.updateSavedQuery)
   const getFolders = useSavedQueryStore((s) => s.getFolders)
   const getTags = useSavedQueryStore((s) => s.getTags)
-  const savedQueries = useSavedQueryStore((s) => s.savedQueries)
 
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
   const activeConnection = useConnectionStore((s) => s.getActiveConnection())
@@ -53,8 +52,8 @@ export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: Sav
   const [isSaving, setIsSaving] = useState(false)
 
   // Get available folders and tags
-  const existingFolders = useMemo(() => getFolders(), [getFolders, savedQueries])
-  const existingTags = useMemo(() => getTags(), [getTags, savedQueries])
+  const existingFolders = useMemo(() => getFolders(), [getFolders])
+  const existingTags = useMemo(() => getTags(), [getTags])
 
   // Reset form when dialog opens
   useEffect(() => {

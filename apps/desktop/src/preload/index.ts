@@ -49,7 +49,14 @@ const api = {
       ipcRenderer.invoke('connections:add', connection),
     update: (connection: ConnectionConfig): Promise<IpcResponse<ConnectionConfig>> =>
       ipcRenderer.invoke('connections:update', connection),
-    delete: (id: string): Promise<IpcResponse<void>> => ipcRenderer.invoke('connections:delete', id)
+    delete: (id: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('connections:delete', id),
+    // Listen for connection changes from other windows
+    onConnectionsUpdated: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('connections:updated', handler)
+      return () => ipcRenderer.removeListener('connections:updated', handler)
+    }
   },
   // Database operations
   db: {
@@ -161,6 +168,11 @@ const api = {
       const handler = (): void => callback()
       ipcRenderer.on('menu:toggle-sidebar', handler)
       return () => ipcRenderer.removeListener('menu:toggle-sidebar', handler)
+    },
+    onOpenSettings: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('menu:open-settings', handler)
+      return () => ipcRenderer.removeListener('menu:open-settings', handler)
     }
   },
   // License management

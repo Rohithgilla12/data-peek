@@ -1,29 +1,24 @@
 import { config } from 'dotenv'
-import { app, shell, BrowserWindow } from 'electron'
-import { join, resolve } from 'path'
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import { app, BrowserWindow } from 'electron'
+import { resolve } from 'path'
+import { electronApp, optimizer } from '@electron-toolkit/utils'
 
 // Load .env file - in development, it's in the desktop app directory
 config({ path: resolve(__dirname, '../../.env') })
-import icon from '../../resources/icon.png?asset'
 import type { ConnectionConfig, SavedQuery } from '@shared/index'
 import { createMenu } from './menu'
-import { setupContextMenu } from './context-menu'
-import { getWindowState, trackWindowState } from './window-state'
 import { initLicenseStore } from './license-service'
 import { initAIStore } from './ai-service'
 import { initAutoUpdater, stopPeriodicChecks } from './updater'
 import { DpStorage } from './storage'
 import { initSchemaCache } from './schema-cache'
 import { registerAllHandlers } from './ipc'
-import { setForceQuit, shouldForceQuit } from './app-state'
+import { setForceQuit } from './app-state'
+import { windowManager } from './window-manager'
 
 // Store instances
 let store: DpStorage<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
-
-// Store main window reference for macOS hide-on-close behavior
-let mainWindow: BrowserWindow | null = null
 
 /**
  * Initialize all persistent stores
@@ -45,79 +40,6 @@ async function initStores(): Promise<void> {
 
   // Initialize schema cache
   await initSchemaCache()
-}
-
-/**
- * Create the main application window
- */
-async function createWindow(): Promise<void> {
-  // Get saved window state
-  const windowState = await getWindowState()
-
-  // Create the browser window
-  mainWindow = new BrowserWindow({
-    width: windowState.width,
-    height: windowState.height,
-    minWidth: 900,
-    minHeight: 600,
-    x: windowState.x,
-    y: windowState.y,
-    show: false,
-    autoHideMenuBar: false,
-    // macOS-style window with vibrancy
-    ...(process.platform === 'darwin' && {
-      titleBarStyle: 'hiddenInset',
-      trafficLightPosition: { x: 16, y: 18 },
-      vibrancy: 'sidebar',
-      visualEffectState: 'active',
-      transparent: true,
-      backgroundColor: '#00000000'
-    }),
-    // Windows titlebar overlay
-    ...(process.platform === 'win32' && {
-      titleBarStyle: 'hidden'
-    }),
-    ...(process.platform === 'linux' ? { icon } : {}),
-    webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
-    }
-  })
-
-  // Track window state for persistence
-  trackWindowState(mainWindow)
-
-  // Restore maximized state
-  if (windowState.isMaximized) {
-    mainWindow.maximize()
-  }
-
-  // Setup context menu
-  setupContextMenu(mainWindow)
-
-  mainWindow.on('ready-to-show', () => {
-    mainWindow?.show()
-  })
-
-  // macOS: hide instead of close (like native apps)
-  mainWindow.on('close', (e) => {
-    if (process.platform === 'darwin' && !shouldForceQuit()) {
-      e.preventDefault()
-      mainWindow?.hide()
-    }
-  })
-
-  mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
-    return { action: 'deny' }
-  })
-
-  // Load the app
-  if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
-  } else {
-    mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
-  }
 }
 
 // Set app name for macOS dock and Mission Control
@@ -153,17 +75,18 @@ app.whenReady().then(async () => {
     savedQueries: savedQueriesStore
   })
 
-  await createWindow()
+  // Create initial window
+  await windowManager.createWindow()
 
   // Initialize auto-updater (only runs in production)
-  initAutoUpdater(mainWindow!)
+  initAutoUpdater()
 
   app.on('activate', function () {
     // On macOS re-create window when dock icon is clicked
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
-    } else if (mainWindow) {
-      mainWindow.show()
+      windowManager.createWindow()
+    } else {
+      windowManager.showPrimaryWindow()
     }
   })
 })

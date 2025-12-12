@@ -134,6 +134,8 @@ interface DataPeekApi {
     add: (connection: ConnectionConfig) => Promise<IpcResponse<ConnectionConfig>>
     update: (connection: ConnectionConfig) => Promise<IpcResponse<ConnectionConfig>>
     delete: (id: string) => Promise<IpcResponse<void>>
+    // Listen for connection changes from other windows
+    onConnectionsUpdated: (callback: () => void) => () => void
   }
   db: {
     connect: (config: ConnectionConfig) => Promise<IpcResponse<void>>
@@ -201,6 +203,7 @@ interface DataPeekApi {
     onFormatSql: (callback: () => void) => () => void
     onClearResults: (callback: () => void) => () => void
     onToggleSidebar: (callback: () => void) => () => void
+    onOpenSettings: (callback: () => void) => () => void
   }
   license: {
     check: () => Promise<IpcResponse<LicenseStatus>>

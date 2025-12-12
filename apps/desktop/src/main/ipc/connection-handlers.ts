@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import type { ConnectionConfig } from '@shared/index'
 import type { DpStorage } from '../storage'
+import { windowManager } from '../window-manager'
 
 /**
  * Register connection CRUD handlers
@@ -25,6 +26,8 @@ export function registerConnectionHandlers(
       const connections = store.get('connections', [])
       connections.push(connection)
       store.set('connections', connections)
+      // Broadcast to all windows that connections have changed
+      windowManager.broadcastToAll('connections:updated')
       return { success: true, data: connection }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -42,6 +45,8 @@ export function registerConnectionHandlers(
       }
       connections[index] = connection
       store.set('connections', connections)
+      // Broadcast to all windows that connections have changed
+      windowManager.broadcastToAll('connections:updated')
       return { success: true, data: connection }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -55,6 +60,8 @@ export function registerConnectionHandlers(
       const connections = store.get('connections', [])
       const filtered = connections.filter((c) => c.id !== id)
       store.set('connections', filtered)
+      // Broadcast to all windows that connections have changed
+      windowManager.broadcastToAll('connections:updated')
       return { success: true }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
