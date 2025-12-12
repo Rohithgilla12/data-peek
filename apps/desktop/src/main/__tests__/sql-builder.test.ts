@@ -1,17 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import {
-  buildQuery,
-  buildBatchQueries,
-  buildPreviewSql,
-  validateOperation
-} from '../sql-builder'
-import type {
-  RowUpdate,
-  RowInsert,
-  RowDelete,
-  EditContext,
-  DatabaseType
-} from '@data-peek/shared'
+import { buildQuery, buildBatchQueries, buildPreviewSql, validateOperation } from '../sql-builder'
+import type { RowUpdate, RowInsert, RowDelete, EditContext, DatabaseType } from '@data-peek/shared'
 
 // Test fixtures
 const createContext = (overrides: Partial<EditContext> = {}): EditContext => ({
@@ -20,11 +9,35 @@ const createContext = (overrides: Partial<EditContext> = {}): EditContext => ({
   primaryKeyColumns: ['id'],
   columns: [
     { name: 'id', dataType: 'integer', isNullable: false, isPrimaryKey: true, ordinalPosition: 1 },
-    { name: 'name', dataType: 'varchar', isNullable: true, isPrimaryKey: false, ordinalPosition: 2 },
-    { name: 'email', dataType: 'varchar', isNullable: false, isPrimaryKey: false, ordinalPosition: 3 },
+    {
+      name: 'name',
+      dataType: 'varchar',
+      isNullable: true,
+      isPrimaryKey: false,
+      ordinalPosition: 2
+    },
+    {
+      name: 'email',
+      dataType: 'varchar',
+      isNullable: false,
+      isPrimaryKey: false,
+      ordinalPosition: 3
+    },
     { name: 'age', dataType: 'integer', isNullable: true, isPrimaryKey: false, ordinalPosition: 4 },
-    { name: 'active', dataType: 'boolean', isNullable: false, isPrimaryKey: false, ordinalPosition: 5 },
-    { name: 'metadata', dataType: 'jsonb', isNullable: true, isPrimaryKey: false, ordinalPosition: 6 }
+    {
+      name: 'active',
+      dataType: 'boolean',
+      isNullable: false,
+      isPrimaryKey: false,
+      ordinalPosition: 5
+    },
+    {
+      name: 'metadata',
+      dataType: 'jsonb',
+      isNullable: true,
+      isPrimaryKey: false,
+      ordinalPosition: 6
+    }
   ],
   ...overrides
 })
@@ -58,9 +71,7 @@ describe('buildQuery', () => {
 
     it('should build UPDATE for SQLite with parameterized query', () => {
       const result = buildQuery(updateOp, createContext(), 'sqlite')
-      expect(result.sql).toBe(
-        'UPDATE "users" SET "name" = ?, "age" = ? WHERE "id" = ? RETURNING *'
-      )
+      expect(result.sql).toBe('UPDATE "users" SET "name" = ?, "age" = ? WHERE "id" = ? RETURNING *')
       expect(result.params).toEqual(['Jane', 31, 1])
     })
 
@@ -363,7 +374,9 @@ describe('buildPreviewSql', () => {
       type: 'update',
       id: 'op-1',
       primaryKeys: [{ column: 'id', value: 5, dataType: 'integer' }],
-      changes: [{ column: 'status', oldValue: 'active', newValue: 'inactive', dataType: 'varchar' }],
+      changes: [
+        { column: 'status', oldValue: 'active', newValue: 'inactive', dataType: 'varchar' }
+      ],
       originalRow: { id: 5, status: 'active' }
     }
     const preview = buildPreviewSql(updateOp, createContext(), 'mysql')
@@ -404,9 +417,7 @@ describe('buildPreviewSql', () => {
       type: 'update',
       id: 'op-1',
       primaryKeys: [{ column: 'id', value: 1, dataType: 'integer' }],
-      changes: [
-        { column: 'active', oldValue: false, newValue: true, dataType: 'boolean' }
-      ],
+      changes: [{ column: 'active', oldValue: false, newValue: true, dataType: 'boolean' }],
       originalRow: { id: 1, active: false }
     }
     const preview = buildPreviewSql(updateOp, createContext(), 'postgresql')
@@ -418,9 +429,7 @@ describe('buildPreviewSql', () => {
       type: 'update',
       id: 'op-1',
       primaryKeys: [{ column: 'id', value: 1, dataType: 'integer' }],
-      changes: [
-        { column: 'data', oldValue: {}, newValue: { key: 'value' }, dataType: 'jsonb' }
-      ],
+      changes: [{ column: 'data', oldValue: {}, newValue: { key: 'value' }, dataType: 'jsonb' }],
       originalRow: { id: 1, data: {} }
     }
     const preview = buildPreviewSql(updateOp, createContext(), 'postgresql')

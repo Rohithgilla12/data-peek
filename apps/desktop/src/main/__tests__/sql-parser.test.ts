@@ -152,17 +152,17 @@ describe('splitStatements', () => {
 describe('PostgreSQL-specific features', () => {
   describe('dollar-quoted strings', () => {
     it('should handle simple $$ dollar quotes', () => {
-      const sql = "SELECT $$ hello; world $$"
+      const sql = 'SELECT $$ hello; world $$'
       expect(splitStatements(sql, 'postgresql')).toEqual(['SELECT $$ hello; world $$'])
     })
 
     it('should handle tagged dollar quotes', () => {
-      const sql = "SELECT $tag$ hello; world $tag$"
+      const sql = 'SELECT $tag$ hello; world $tag$'
       expect(splitStatements(sql, 'postgresql')).toEqual(['SELECT $tag$ hello; world $tag$'])
     })
 
     it('should handle dollar quotes with numbers and underscores', () => {
-      const sql = "SELECT $my_tag_123$ content; here $my_tag_123$"
+      const sql = 'SELECT $my_tag_123$ content; here $my_tag_123$'
       expect(splitStatements(sql, 'postgresql')).toEqual([
         'SELECT $my_tag_123$ content; here $my_tag_123$'
       ])
@@ -179,7 +179,7 @@ describe('PostgreSQL-specific features', () => {
     })
 
     it('should handle nested dollar quotes with different tags', () => {
-      const sql = "SELECT $outer$ some $inner$ nested; $inner$ text; $outer$"
+      const sql = 'SELECT $outer$ some $inner$ nested; $inner$ text; $outer$'
       expect(splitStatements(sql, 'postgresql')).toEqual([
         'SELECT $outer$ some $inner$ nested; $inner$ text; $outer$'
       ])
@@ -256,9 +256,7 @@ describe('MySQL-specific features', () => {
   describe('hash line comments', () => {
     it('should handle # as line comment', () => {
       const sql = 'SELECT 1 # comment; with semicolon\nFROM t'
-      expect(splitStatements(sql, 'mysql')).toEqual([
-        'SELECT 1 # comment; with semicolon\nFROM t'
-      ])
+      expect(splitStatements(sql, 'mysql')).toEqual(['SELECT 1 # comment; with semicolon\nFROM t'])
     })
 
     it('should handle # at start of line', () => {

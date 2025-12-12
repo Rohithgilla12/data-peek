@@ -14,8 +14,20 @@ const createContext = (overrides: Partial<EditContext> = {}): EditContext => ({
   primaryKeyColumns: ['id'],
   columns: [
     { name: 'id', dataType: 'integer', isNullable: false, isPrimaryKey: true, ordinalPosition: 1 },
-    { name: 'name', dataType: 'varchar', isNullable: true, isPrimaryKey: false, ordinalPosition: 2 },
-    { name: 'email', dataType: 'varchar', isNullable: false, isPrimaryKey: false, ordinalPosition: 3 }
+    {
+      name: 'name',
+      dataType: 'varchar',
+      isNullable: true,
+      isPrimaryKey: false,
+      ordinalPosition: 2
+    },
+    {
+      name: 'email',
+      dataType: 'varchar',
+      isNullable: false,
+      isPrimaryKey: false,
+      ordinalPosition: 3
+    }
   ],
   ...overrides
 })
@@ -412,7 +424,10 @@ describe('useEditStore', () => {
       expect(batch!.operations).toHaveLength(1)
       expect(batch!.operations[0].type).toBe('update')
 
-      const updateOp = batch!.operations[0] as { type: 'update'; changes: Array<{ column: string; newValue: unknown }> }
+      const updateOp = batch!.operations[0] as {
+        type: 'update'
+        changes: Array<{ column: string; newValue: unknown }>
+      }
       expect(updateOp.changes).toHaveLength(1)
       expect(updateOp.changes[0].column).toBe('name')
       expect(updateOp.changes[0].newValue).toBe('Jane')
@@ -466,7 +481,10 @@ describe('useEditStore', () => {
       store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
 
       const batch = store.buildEditBatch(tabId, testColumns)
-      const updateOp = batch!.operations[0] as { type: 'update'; primaryKeys: Array<{ column: string; value: unknown }> }
+      const updateOp = batch!.operations[0] as {
+        type: 'update'
+        primaryKeys: Array<{ column: string; value: unknown }>
+      }
 
       expect(updateOp.primaryKeys).toHaveLength(1)
       expect(updateOp.primaryKeys[0].column).toBe('id')

@@ -343,7 +343,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           notify.error('Benchmark failed', response.error || 'An unexpected error occurred')
         }
       } catch (error) {
-        notify.error('Benchmark failed', error instanceof Error ? error.message : 'An unexpected error occurred')
+        notify.error(
+          'Benchmark failed',
+          error instanceof Error ? error.message : 'An unexpected error occurred'
+        )
       } finally {
         setRunningBenchmark(false)
       }

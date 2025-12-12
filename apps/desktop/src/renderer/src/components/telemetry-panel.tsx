@@ -254,10 +254,7 @@ export function TelemetryPanel({
 
   // Compute maxDuration from the same source as getDisplayValue to ensure
   // bar widths never exceed 100% in benchmark mode
-  const maxDuration = Math.max(
-    ...visiblePhases.map((p) => getDisplayValue(p.name)),
-    0.001
-  )
+  const maxDuration = Math.max(...visiblePhases.map((p) => getDisplayValue(p.name)), 0.001)
 
   const getTotalDuration = (): number => {
     if (benchmark) {
