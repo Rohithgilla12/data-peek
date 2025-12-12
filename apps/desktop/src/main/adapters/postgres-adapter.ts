@@ -132,6 +132,12 @@ export class PostgresAdapter implements DatabaseAdapter {
       telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
     }
 
+    // Set query timeout if specified (0 = no timeout)
+    const queryTimeoutMs = options?.queryTimeoutMs
+    if (queryTimeoutMs !== undefined && queryTimeoutMs > 0) {
+      await client.query(`SET statement_timeout = ${queryTimeoutMs}`)
+    }
+
     // Register for cancellation support
     if (options?.executionId) {
       registerQuery(options.executionId, { type: 'postgresql', client })

@@ -189,6 +189,13 @@ export class MySQLAdapter implements DatabaseAdapter {
       telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
     }
 
+    // Set query timeout if specified (0 = no timeout)
+    // Note: max_execution_time only affects SELECT statements in MySQL 5.7.8+
+    const queryTimeoutMs = options?.queryTimeoutMs
+    if (queryTimeoutMs !== undefined && queryTimeoutMs > 0) {
+      await connection.query(`SET SESSION max_execution_time = ${queryTimeoutMs}`)
+    }
+
     // Register for cancellation support
     if (options?.executionId) {
       registerQuery(options.executionId, { type: 'mysql', connection })

@@ -37,6 +37,8 @@ export interface QueryOptions {
   executionId?: string
   /** Whether to collect detailed telemetry data */
   collectTelemetry?: boolean
+  /** Query timeout in milliseconds (0 = no timeout) */
+  queryTimeoutMs?: number
 }
 
 /**

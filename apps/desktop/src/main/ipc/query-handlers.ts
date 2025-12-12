@@ -45,20 +45,25 @@ export function registerQueryHandlers(): void {
       {
         config,
         query,
-        executionId
-      }: { config: ConnectionConfig; query: string; executionId?: string }
+        executionId,
+        queryTimeoutMs
+      }: { config: ConnectionConfig; query: string; executionId?: string; queryTimeoutMs?: number }
     ) => {
       log.debug('Received query request', { ...config, password: '***' })
       log.debug('Query:', query)
       log.debug('Execution ID:', executionId)
+      log.debug('Query timeout:', queryTimeoutMs)
 
       try {
         const adapter = getAdapter(config)
         log.debug('Connecting...')
 
         // Use queryMultiple to support multiple statements
-        // Pass executionId for cancellation support
-        const multiResult = await adapter.queryMultiple(config, query, { executionId })
+        // Pass executionId for cancellation support and queryTimeoutMs for timeout
+        const multiResult = await adapter.queryMultiple(config, query, {
+          executionId,
+          queryTimeoutMs
+        })
 
         log.debug('Query completed in', multiResult.totalDurationMs, 'ms')
         log.debug('Statement count:', multiResult.results.length)
@@ -329,12 +334,14 @@ export function registerQueryHandlers(): void {
       {
         config,
         query,
-        executionId
-      }: { config: ConnectionConfig; query: string; executionId?: string }
+        executionId,
+        queryTimeoutMs
+      }: { config: ConnectionConfig; query: string; executionId?: string; queryTimeoutMs?: number }
     ) => {
       log.debug('Received query with telemetry request', { ...config, password: '***' })
       log.debug('Query:', query)
       log.debug('Execution ID:', executionId)
+      log.debug('Query timeout:', queryTimeoutMs)
 
       try {
         const adapter = getAdapter(config)
@@ -343,7 +350,8 @@ export function registerQueryHandlers(): void {
         // Use queryMultiple with telemetry enabled
         const multiResult = await adapter.queryMultiple(config, query, {
           executionId,
-          collectTelemetry: true
+          collectTelemetry: true,
+          queryTimeoutMs
         })
 
         log.debug('Query completed in', multiResult.totalDurationMs, 'ms')

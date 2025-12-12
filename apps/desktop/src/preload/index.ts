@@ -58,9 +58,10 @@ const api = {
     query: (
       config: ConnectionConfig,
       query: string,
-      executionId?: string
+      executionId?: string,
+      queryTimeoutMs?: number
     ): Promise<IpcResponse<unknown>> =>
-      ipcRenderer.invoke('db:query', { config, query, executionId }),
+      ipcRenderer.invoke('db:query', { config, query, executionId, queryTimeoutMs }),
     cancelQuery: (executionId: string): Promise<IpcResponse<{ cancelled: boolean }>> =>
       ipcRenderer.invoke('db:cancel-query', executionId),
     schemas: (
@@ -86,9 +87,10 @@ const api = {
     queryWithTelemetry: (
       config: ConnectionConfig,
       query: string,
-      executionId?: string
+      executionId?: string,
+      queryTimeoutMs?: number
     ): Promise<IpcResponse<MultiStatementResultWithTelemetry & { results: unknown[] }>> =>
-      ipcRenderer.invoke('db:query-with-telemetry', { config, query, executionId }),
+      ipcRenderer.invoke('db:query-with-telemetry', { config, query, executionId, queryTimeoutMs }),
     // Benchmark query with multiple runs
     benchmark: (
       config: ConnectionConfig,
