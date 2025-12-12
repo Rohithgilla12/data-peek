@@ -76,10 +76,6 @@ export const Route = createRootRoute({
         src: 'https://cdn.littlestats.click/embed/wq9151m57h17nmx',
         defer: true,
       },
-      {
-        src: 'https://scripts.simpleanalyticscdn.com/latest.js',
-        async: true,
-      },
     ],
   }),
   component: RootComponent,

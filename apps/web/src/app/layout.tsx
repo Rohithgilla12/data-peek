@@ -65,11 +65,6 @@ export default function RootLayout({
             src="https://cdn.littlestats.click/embed/ooehabrtts8lb37"
             strategy="afterInteractive"
           />
-          <Script
-            src="https://scripts.simpleanalyticscdn.com/latest.js"
-            strategy="afterInteractive"
-            async
-          />
         </body>
       </html>
     </ClerkProvider>
