@@ -15,6 +15,8 @@ import {
   BarChart3,
   Command,
   Bookmark,
+  Gauge,
+  Lock,
 } from 'lucide-react'
 
 const features = [
@@ -48,6 +50,18 @@ const features = [
     title: 'Monaco Editor',
     description: 'The same editor engine that powers VS Code. Syntax highlighting, autocomplete, formatting.',
     color: '#f472b6',
+  },
+  {
+    icon: Gauge,
+    title: 'Query Telemetry',
+    description: 'Detailed timing breakdown with waterfall visualization. Benchmark mode for P90/P95/P99 stats.',
+    color: '#10b981',
+  },
+  {
+    icon: Lock,
+    title: 'SSH Tunnels',
+    description: 'Connect securely through bastion hosts. Password or key-based authentication.',
+    color: '#8b5cf6',
   },
   {
     icon: Table2,
@@ -112,7 +126,7 @@ const features = [
   {
     icon: Database,
     title: 'Multi-Database',
-    description: 'PostgreSQL, MySQL, and SQL Server. One client for all your databases.',
+    description: 'PostgreSQL, MySQL, SQL Server, and SQLite. One client for all your databases.',
     color: '#fb923c',
   },
 ]

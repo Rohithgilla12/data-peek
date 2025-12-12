@@ -57,8 +57,8 @@ export function Hero() {
             style={{ fontFamily: "var(--font-body)" }}
           >
             A lightning-fast database client with AI-powered querying.
-            PostgreSQL, MySQL, and SQL Server. Open source, free for personal
-            use.
+            PostgreSQL, MySQL, SQL Server, and SQLite. Open source, free for
+            personal use.
           </p>
 
           {/* Terminal-style feature highlight */}
