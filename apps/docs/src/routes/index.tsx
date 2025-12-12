@@ -37,15 +37,17 @@ function Home() {
 
           {/* Title */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
-            <span className="text-[#fafafa]">data-peek</span>{' '}
+            <span className="text-foreground">data-peek</span>{' '}
             <span className="text-[#22d3ee]">docs</span>
           </h1>
 
           {/* Tagline */}
-          <p className="text-lg md:text-xl text-[#a1a1aa] mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
             Everything you need to know about the minimal, fast, and lightweight SQL client for{' '}
-            <span className="text-[#22d3ee]">PostgreSQL</span> and{' '}
-            <span className="text-[#22d3ee]">MySQL</span>.
+            <span className="text-[#22d3ee]">PostgreSQL</span>,{' '}
+            <span className="text-[#22d3ee]">MySQL</span>,{' '}
+            <span className="text-[#22d3ee]">SQL Server</span>, and{' '}
+            <span className="text-[#22d3ee]">SQLite</span>.
           </p>
 
           {/* CTA Buttons */}
@@ -53,7 +55,7 @@ function Home() {
             <Link
               to="/docs/$"
               params={{ _splat: '' }}
-              className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#22d3ee] text-[#0a0a0b] font-semibold text-sm transition-all hover:bg-[#fafafa] hover:shadow-lg hover:shadow-[#22d3ee]/20"
+              className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#22d3ee] text-[#0a0a0b] font-semibold text-sm transition-all hover:bg-[#67e8f9] hover:shadow-lg hover:shadow-[#22d3ee]/20"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -85,7 +87,7 @@ function Home() {
               href="https://github.com/Rohithgilla12/data-peek"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-[#27272a] text-[#fafafa] font-medium text-sm transition-all hover:border-[#22d3ee] hover:text-[#22d3ee]"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-border text-foreground font-medium text-sm transition-all hover:border-[#22d3ee] hover:text-[#22d3ee]"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -102,7 +104,7 @@ function Home() {
 
         {/* Feature highlights */}
         <div className="relative z-10 mt-20 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <div className="group p-6 rounded-xl border border-[#27272a] bg-[#111113]/50 backdrop-blur transition-all hover:border-[#22d3ee]/30 hover:bg-[#111113]">
+          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#22d3ee]/30 hover:bg-card">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#22d3ee]/10 text-[#22d3ee] mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -121,13 +123,13 @@ function Home() {
                 <path d="M12 22v-3" />
               </svg>
             </div>
-            <h3 className="text-[#fafafa] font-semibold mb-2">Lightning Fast</h3>
-            <p className="text-[#71717a] text-sm">
+            <h3 className="text-foreground font-semibold mb-2">Lightning Fast</h3>
+            <p className="text-muted-foreground text-sm">
               Optimized for speed. Opens instantly and executes queries in milliseconds.
             </p>
           </div>
 
-          <div className="group p-6 rounded-xl border border-[#27272a] bg-[#111113]/50 backdrop-blur transition-all hover:border-[#22d3ee]/30 hover:bg-[#111113]">
+          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#22d3ee]/30 hover:bg-card">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#22d3ee]/10 text-[#22d3ee] mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -143,13 +145,13 @@ function Home() {
                 <path d="m9 8 6 4-6 4Z" />
               </svg>
             </div>
-            <h3 className="text-[#fafafa] font-semibold mb-2">Keyboard First</h3>
-            <p className="text-[#71717a] text-sm">
+            <h3 className="text-foreground font-semibold mb-2">Keyboard First</h3>
+            <p className="text-muted-foreground text-sm">
               Navigate and execute everything with keyboard shortcuts for maximum productivity.
             </p>
           </div>
 
-          <div className="group p-6 rounded-xl border border-[#27272a] bg-[#111113]/50 backdrop-blur transition-all hover:border-[#22d3ee]/30 hover:bg-[#111113]">
+          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#22d3ee]/30 hover:bg-card">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#22d3ee]/10 text-[#22d3ee] mb-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -164,15 +166,15 @@ function Home() {
                 <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
               </svg>
             </div>
-            <h3 className="text-[#fafafa] font-semibold mb-2">Beautiful Dark UI</h3>
-            <p className="text-[#71717a] text-sm">
+            <h3 className="text-foreground font-semibold mb-2">Beautiful Dark UI</h3>
+            <p className="text-muted-foreground text-sm">
               Terminal-inspired design that's easy on the eyes for long coding sessions.
             </p>
           </div>
         </div>
 
         {/* Terminal decoration */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-[#71717a] text-sm font-mono opacity-50">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground text-sm font-mono opacity-50">
           <span className="text-[#22d3ee]">$</span> data-peek --help
           <span className="inline-block w-2 h-4 bg-[#22d3ee] ml-1 animate-pulse" />
         </div>
