@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface UseCopyToClipboardOptions {
   /** Duration in ms before copied state resets (default: 2000) */
@@ -20,6 +20,15 @@ export function useCopyToClipboard(
 ): UseCopyToClipboardReturn {
   const { resetDelay = 2000, onSuccess, onError } = options
   const [copied, setCopied] = useState(false)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
 
   const copy = useCallback(
     async (text: string) => {
@@ -27,7 +36,10 @@ export function useCopyToClipboard(
         await navigator.clipboard.writeText(text)
         setCopied(true)
         onSuccess?.(text)
-        setTimeout(() => setCopied(false), resetDelay)
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+        }
+        timeoutRef.current = setTimeout(() => setCopied(false), resetDelay)
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Failed to copy')
         onError?.(error)
@@ -37,6 +49,10 @@ export function useCopyToClipboard(
   )
 
   const reset = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
     setCopied(false)
   }, [])
 
