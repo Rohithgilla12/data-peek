@@ -42,7 +42,6 @@ async function initStores(): Promise<void> {
   await initSchemaCache()
 }
 
-
 // Set app name for macOS dock and Mission Control
 if (process.platform === 'darwin') {
   app.name = 'Data Peek'

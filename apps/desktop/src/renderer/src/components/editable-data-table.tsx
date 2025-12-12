@@ -1,6 +1,27 @@
 'use client'
 
-import * as React from 'react'
+import { AddRowSheet, type ForeignKeyValue } from '@/components/add-row-sheet'
+import { EditToolbar } from '@/components/edit-toolbar'
+import { EditableCell } from '@/components/editable-cell'
+import { FKCellValue } from '@/components/fk-cell-value'
+import { JsonCellValue } from '@/components/json-cell-value'
+import { SqlPreviewModal } from '@/components/sql-preview-modal'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { generateLimitClause } from '@/lib/sql-helpers'
+import { cn } from '@/lib/utils'
+import { useEditStore } from '@/stores/edit-store'
+import type { ColumnInfo, ConnectionConfig, EditContext, ForeignKeyInfo } from '@data-peek/shared'
 import {
   flexRender,
   getCoreRowModel,
@@ -13,43 +34,22 @@ import {
   type SortingState
 } from '@tanstack/react-table'
 import {
-  ArrowUpDown,
-  ArrowUp,
   ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Filter,
-  X,
-  Trash2,
-  RotateCcw,
-  Link2,
   Copy,
-  MoreHorizontal
+  Filter,
+  Link2,
+  MoreHorizontal,
+  RotateCcw,
+  Trash2,
+  X
 } from 'lucide-react'
-import type { ForeignKeyInfo, ColumnInfo, EditContext, ConnectionConfig } from '@data-peek/shared'
-import { Input } from '@/components/ui/input'
-import { Button } from '@/components/ui/button'
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { EditableCell } from '@/components/editable-cell'
-import { EditToolbar } from '@/components/edit-toolbar'
-import { SqlPreviewModal } from '@/components/sql-preview-modal'
-import { JsonCellValue } from '@/components/json-cell-value'
-import { FKCellValue } from '@/components/fk-cell-value'
-import { AddRowSheet, type ForeignKeyValue } from '@/components/add-row-sheet'
-import { useEditStore } from '@/stores/edit-store'
-import { generateLimitClause } from '@/lib/sql-helpers'
+import * as React from 'react'
 
 export interface DataTableColumn {
   name: string
@@ -615,7 +615,6 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     })
 
     return cols
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isEditMode,
     columnDefs,
