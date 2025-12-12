@@ -1,5 +1,6 @@
 import { app, Menu, shell, BrowserWindow } from 'electron'
 import { checkForUpdates } from './updater'
+import { windowManager } from './window-manager'
 
 const isMac = process.platform === 'darwin'
 
@@ -16,6 +17,17 @@ export function createMenu(): void {
                 label: 'Check for Updates...',
                 click: (): void => {
                   checkForUpdates()
+                }
+              },
+              { type: 'separator' as const },
+              {
+                label: 'Settings...',
+                accelerator: 'Cmd+,',
+                click: (): void => {
+                  const focusedWindow = BrowserWindow.getFocusedWindow()
+                  if (focusedWindow) {
+                    focusedWindow.webContents.send('menu:open-settings')
+                  }
                 }
               },
               { type: 'separator' as const },
@@ -36,6 +48,13 @@ export function createMenu(): void {
       label: 'File',
       submenu: [
         {
+          label: 'New Window',
+          accelerator: 'CmdOrCtrl+Shift+N',
+          click: (): void => {
+            windowManager.createWindow()
+          }
+        },
+        {
           label: 'New Tab',
           accelerator: 'CmdOrCtrl+T',
           click: (): void => {
@@ -45,6 +64,7 @@ export function createMenu(): void {
             }
           }
         },
+        { type: 'separator' },
         {
           label: 'Close Tab',
           accelerator: 'CmdOrCtrl+W',
@@ -56,6 +76,22 @@ export function createMenu(): void {
           }
         },
         { type: 'separator' },
+        // Settings for Windows/Linux (macOS has it in app menu)
+        ...(!isMac
+          ? [
+              {
+                label: 'Settings',
+                accelerator: 'Ctrl+,',
+                click: (): void => {
+                  const focusedWindow = BrowserWindow.getFocusedWindow()
+                  if (focusedWindow) {
+                    focusedWindow.webContents.send('menu:open-settings')
+                  }
+                }
+              },
+              { type: 'separator' as const }
+            ]
+          : []),
         isMac ? { role: 'close' } : { role: 'quit' }
       ]
     },
