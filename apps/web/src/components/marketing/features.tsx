@@ -17,6 +17,7 @@ import {
   Bookmark,
   Gauge,
   Lock,
+  AppWindow,
 } from 'lucide-react'
 
 const features = [
@@ -309,7 +310,56 @@ export function Features() {
           </div>
         </div>
 
-        {/* Third row - Light Mode */}
+        {/* Third row - Query Telemetry & Multi-Window */}
+        <div className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+          {/* Query Telemetry Screenshot */}
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#10b981]/10 border border-[#10b981]/20 flex items-center justify-center">
+                <Gauge className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#10b981]" />
+              </div>
+              <h3
+                className="text-base sm:text-lg font-medium"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                Query Telemetry
+              </h3>
+            </div>
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+              <img
+                src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/query-telemetry.png"
+                alt="Query telemetry with waterfall visualization"
+                className="w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+
+          {/* Multi-Window Screenshot */}
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 flex items-center justify-center">
+                <AppWindow className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#8b5cf6]" />
+              </div>
+              <h3
+                className="text-base sm:text-lg font-medium"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                Multi-Window
+              </h3>
+            </div>
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+              <img
+                src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/multi-window.png"
+                alt="Multiple windows side by side"
+                className="w-full h-auto"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Fourth row - Light Mode */}
         <div className="mt-6 sm:mt-8">
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
