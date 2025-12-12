@@ -125,7 +125,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   value={queryTimeoutMs === 0 ? '' : queryTimeoutMs / 1000}
                   placeholder="0"
                   onChange={(e) => {
-                    const seconds = e.target.value ? parseFloat(e.target.value) : 0
+                    const parsed = e.target.value ? parseFloat(e.target.value) : 0
+                    const seconds = isNaN(parsed) || parsed < 0 ? 0 : parsed
                     setQueryTimeoutMs(Math.round(seconds * 1000))
                   }}
                 />

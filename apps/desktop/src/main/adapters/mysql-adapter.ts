@@ -192,8 +192,13 @@ export class MySQLAdapter implements DatabaseAdapter {
     // Set query timeout if specified (0 = no timeout)
     // Note: max_execution_time only affects SELECT statements in MySQL 5.7.8+
     const queryTimeoutMs = options?.queryTimeoutMs
-    if (queryTimeoutMs !== undefined && queryTimeoutMs > 0) {
-      await connection.query(`SET SESSION max_execution_time = ${queryTimeoutMs}`)
+    if (
+      typeof queryTimeoutMs === 'number' &&
+      Number.isFinite(queryTimeoutMs) &&
+      queryTimeoutMs > 0
+    ) {
+      const safeTimeout = Math.floor(queryTimeoutMs)
+      await connection.query(`SET SESSION max_execution_time = ${safeTimeout}`)
     }
 
     // Register for cancellation support

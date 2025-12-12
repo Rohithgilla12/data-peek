@@ -134,8 +134,15 @@ export class PostgresAdapter implements DatabaseAdapter {
 
     // Set query timeout if specified (0 = no timeout)
     const queryTimeoutMs = options?.queryTimeoutMs
-    if (queryTimeoutMs !== undefined && queryTimeoutMs > 0) {
-      await client.query(`SET statement_timeout = ${queryTimeoutMs}`)
+    if (
+      typeof queryTimeoutMs === 'number' &&
+      Number.isFinite(queryTimeoutMs) &&
+      queryTimeoutMs > 0
+    ) {
+      await client.query('SELECT set_config($1, $2, false)', [
+        'statement_timeout',
+        `${Math.floor(queryTimeoutMs)}ms`
+      ])
     }
 
     // Register for cancellation support

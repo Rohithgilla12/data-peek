@@ -345,8 +345,16 @@ export class MSSQLAdapter implements DatabaseAdapter {
 
           // Set per-request timeout if specified (overrides connection-level timeout)
           const queryTimeoutMs = options?.queryTimeoutMs
-          if (queryTimeoutMs !== undefined) {
-            request.timeout = queryTimeoutMs
+          if (
+            queryTimeoutMs !== undefined &&
+            typeof queryTimeoutMs === 'number' &&
+            Number.isFinite(queryTimeoutMs)
+          ) {
+            // The mssql library supports request.timeout at runtime but types don't expose it
+            ;(request as unknown as { timeout: number }).timeout = Math.max(
+              0,
+              Math.floor(queryTimeoutMs)
+            )
           }
 
           // Register the current request for cancellation support

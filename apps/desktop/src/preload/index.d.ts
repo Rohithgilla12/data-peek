@@ -140,7 +140,8 @@ interface DataPeekApi {
     query: (
       config: ConnectionConfig,
       query: string,
-      executionId?: string
+      executionId?: string,
+      queryTimeoutMs?: number
     ) => Promise<IpcResponse<unknown>>
     cancelQuery: (executionId: string) => Promise<IpcResponse<{ cancelled: boolean }>>
     schemas: (
@@ -160,7 +161,8 @@ interface DataPeekApi {
     queryWithTelemetry: (
       config: ConnectionConfig,
       query: string,
-      executionId?: string
+      executionId?: string,
+      queryTimeoutMs?: number
     ) => Promise<IpcResponse<MultiStatementResultWithTelemetry & { results: unknown[] }>>
     benchmark: (
       config: ConnectionConfig,
