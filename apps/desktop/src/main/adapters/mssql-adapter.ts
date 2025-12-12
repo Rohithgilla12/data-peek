@@ -151,10 +151,9 @@ function toMSSQLConfig(config: ConnectionConfig): sql.config {
     options.connectTimeout = mssqlOptions.connectionTimeout
   }
 
-  // Add request timeout if specified
-  if (mssqlOptions.requestTimeout !== undefined) {
-    options.requestTimeout = mssqlOptions.requestTimeout
-  }
+  // Set request timeout (default to 0 = no timeout to allow long-running queries)
+  // The mssql library defaults to 15000ms which is too short for complex queries
+  options.requestTimeout = mssqlOptions.requestTimeout ?? 0
 
   // Build base config
   const sqlConfig: sql.config = {
@@ -343,6 +342,20 @@ export class MSSQLAdapter implements DatabaseAdapter {
 
         try {
           const request = pool.request()
+
+          // Set per-request timeout if specified (overrides connection-level timeout)
+          const queryTimeoutMs = options?.queryTimeoutMs
+          if (
+            queryTimeoutMs !== undefined &&
+            typeof queryTimeoutMs === 'number' &&
+            Number.isFinite(queryTimeoutMs)
+          ) {
+            // The mssql library supports request.timeout at runtime but types don't expose it
+            ;(request as unknown as { timeout: number }).timeout = Math.max(
+              0,
+              Math.floor(queryTimeoutMs)
+            )
+          }
 
           // Register the current request for cancellation support
           if (options?.executionId) {

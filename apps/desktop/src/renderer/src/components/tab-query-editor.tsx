@@ -86,6 +86,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const getEnumValues = useConnectionStore((s) => s.getEnumValues)
   const addToHistory = useQueryStore((s) => s.addToHistory)
   const hideQueryEditorByDefault = useSettingsStore((s) => s.hideQueryEditorByDefault)
+  const queryTimeoutMs = useSettingsStore((s) => s.queryTimeoutMs)
 
   // Telemetry state
   const {
@@ -190,8 +191,13 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     setBenchmark(null)
 
     try {
-      // Use telemetry-enabled query API
-      const response = await window.api.db.queryWithTelemetry(tabConnection, tab.query, executionId)
+      // Use telemetry-enabled query API with timeout from settings
+      const response = await window.api.db.queryWithTelemetry(
+        tabConnection,
+        tab.query,
+        executionId,
+        queryTimeoutMs
+      )
 
       if (response.success && response.data) {
         const data = response.data as {
@@ -284,7 +290,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     markTabSaved,
     addToHistory,
     setTelemetry,
-    setBenchmark
+    setBenchmark,
+    queryTimeoutMs
   ])
 
   const handleCancelQuery = useCallback(async () => {

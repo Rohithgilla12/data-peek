@@ -111,7 +111,12 @@ function calculateFuzzyScore(text: string, search: string): number {
       }
 
       // Bonus for matching at word boundaries (start of word)
-      if (textIndex === 0 || text[textIndex - 1] === ' ' || text[textIndex - 1] === '-' || text[textIndex - 1] === '_') {
+      if (
+        textIndex === 0 ||
+        text[textIndex - 1] === ' ' ||
+        text[textIndex - 1] === '-' ||
+        text[textIndex - 1] === '_'
+      ) {
         score += 0.03
       }
 
@@ -131,9 +136,8 @@ function calculateFuzzyScore(text: string, search: string): number {
   const lengthBonus = Math.max(0, 0.1 - (text.length - search.length) * 0.005)
 
   // Bonus for matches being close together
-  const spread = matchPositions.length > 1
-    ? matchPositions[matchPositions.length - 1] - matchPositions[0]
-    : 0
+  const spread =
+    matchPositions.length > 1 ? matchPositions[matchPositions.length - 1] - matchPositions[0] : 0
   const compactnessBonus = Math.max(0, 0.1 - spread * 0.01)
 
   return Math.min(0.7, baseScore + consecutiveBonus + lengthBonus + compactnessBonus + score)

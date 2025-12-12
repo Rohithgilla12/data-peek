@@ -1,7 +1,16 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Loader2, Database, CheckCircle2, XCircle, Link, Settings2, FolderOpen } from 'lucide-react'
+import {
+  Loader2,
+  Database,
+  CheckCircle2,
+  XCircle,
+  Link,
+  Settings2,
+  FolderOpen,
+  ChevronDown
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -14,6 +23,7 @@ import {
 } from '@/components/ui/sheet'
 import { useConnectionStore, type Connection } from '@/stores'
 import { PostgreSQLIcon, MySQLIcon, MSSQLIcon, SQLiteIcon } from './database-icons'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { SSHConfigSection } from './ssh-config-section'
 import type { SSHConfig } from '@shared/index'
 import type { DatabaseType } from '@shared/index'
@@ -289,6 +299,7 @@ export function AddConnectionDialog({
   const [mssqlOptions, setMssqlOptions] = useState<
     import('@shared/index').MSSQLConnectionOptions | undefined
   >(undefined)
+  const [mssqlAdvancedOpen, setMssqlAdvancedOpen] = useState(false)
 
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
@@ -893,6 +904,64 @@ export function AddConnectionDialog({
                   </label>
                 </div>
               </div>
+
+              {/* MSSQL Advanced Options */}
+              {dbType === 'mssql' && (
+                <Collapsible open={mssqlAdvancedOpen} onOpenChange={setMssqlAdvancedOpen}>
+                  <CollapsibleTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between rounded-md border bg-muted/50 px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                    >
+                      <span>Advanced Options</span>
+                      <ChevronDown
+                        className={`size-4 transition-transform ${mssqlAdvancedOpen ? 'rotate-180' : ''}`}
+                      />
+                    </button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="pt-3 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="encrypt"
+                        type="checkbox"
+                        checked={mssqlOptions?.encrypt ?? false}
+                        onChange={(e) =>
+                          setMssqlOptions((prev) => ({
+                            ...prev,
+                            encrypt: e.target.checked
+                          }))
+                        }
+                        className="size-4 rounded border-input"
+                      />
+                      <label htmlFor="encrypt" className="text-sm font-medium">
+                        Encrypt Connection
+                      </label>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="trustServerCertificate"
+                        type="checkbox"
+                        checked={mssqlOptions?.trustServerCertificate ?? true}
+                        onChange={(e) =>
+                          setMssqlOptions((prev) => ({
+                            ...prev,
+                            trustServerCertificate: e.target.checked
+                          }))
+                        }
+                        className="size-4 rounded border-input"
+                      />
+                      <label htmlFor="trustServerCertificate" className="text-sm font-medium">
+                        Trust Server Certificate
+                      </label>
+                    </div>
+
+                    <p className="text-xs text-muted-foreground">
+                      Query timeout can be configured in Settings → Database.
+                    </p>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
             </>
           )}
 
