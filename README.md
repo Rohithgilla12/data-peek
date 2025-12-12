@@ -5,7 +5,7 @@
 
 
 
-A minimal, fast SQL client desktop application with AI-powered querying. Built for developers who want to quickly peek at their data without the bloat. Supports PostgreSQL, MySQL, and Microsoft SQL Server.
+A minimal, fast SQL client desktop application with AI-powered querying. Built for developers who want to quickly peek at their data without the bloat. Supports PostgreSQL, MySQL, Microsoft SQL Server, and SQLite.
 
 
 
@@ -45,16 +45,21 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 
 - **AI Assistant** - Ask questions in plain English, get SQL queries. Generate charts and insights (BYOK)
 - **Fast** - Opens in under 2 seconds, low memory footprint
-- **Query Editor** - Monaco editor with SQL syntax highlighting and autocomplete
-- **Command Palette** - Cmd+K to access everything instantly
-- **Multi-tab Support** - Work with multiple queries simultaneously
+- **Query Editor** - Monaco editor with SQL syntax highlighting and smart autocomplete with table aliases
+- **Command Palette** - `Cmd+K` to access everything instantly
+- **Multi-tab & Multi-window** - Work with multiple queries and databases simultaneously
+- **Query Telemetry** - Detailed timing breakdown with waterfall visualization and benchmark mode
+- **SSH Tunnels** - Connect securely through bastion hosts
+- **Schema Explorer** - Browse tables, views, stored procedures, and functions
 - **Inline Editing** - Edit table data directly with INSERT/UPDATE/DELETE
 - **ERD Visualization** - See table relationships visually
 - **Query Plans** - Analyze query performance with EXPLAIN ANALYZE viewer
 - **Saved Queries** - Bookmark your favorite queries for quick access
+- **Cancel Queries** - Stop long-running queries mid-execution
+- **Auto-Updates** - Automatic updates with toast notifications
 - **Dark/Light Mode** - Easy on the eyes
 - **Keyboard-First** - Power users shouldn't need a mouse
-- **Secure** - Connection credentials encrypted locally, no telemetry
+- **Secure** - Connection credentials encrypted locally using OS keychain, no telemetry
 
 ## Installation
 
@@ -66,9 +71,11 @@ Download the latest release for your platform from [Releases](https://github.com
 - **Windows**: `.exe` installer
 - **Linux**: `.AppImage`, `.deb`, or `.tar.gz` (Arch)
 
-### macOS: "App is damaged" Fix
+### macOS: Code Signing
 
-Since the app isn't notarized with Apple yet, macOS Gatekeeper may show a warning. To fix:
+Starting from v0.4.0, data-peek is code signed and notarized for macOS. You should be able to open it directly without any warnings.
+
+If you're using an older version and see an "App is damaged" warning:
 
 **Option 1: Terminal command**
 ```bash
@@ -79,8 +86,6 @@ xattr -cr /Applications/data-peek.app
 1. Right-click (or Control+click) on data-peek.app
 2. Select "Open" from the menu
 3. Click "Open" in the dialog
-
-This only needs to be done once. Proper code signing is coming soon!
 
 ### Linux: Auto-Updates
 
@@ -139,7 +144,7 @@ This can happen when pnpm's cache skips Electron's postinstall script that downl
 | UI | shadcn/ui + Tailwind CSS |
 | State | Zustand |
 | Query Editor | Monaco |
-| Database | pg (PostgreSQL), mysql2 (MySQL), mssql (SQL Server) |
+| Database | pg (PostgreSQL), mysql2 (MySQL), mssql (SQL Server), better-sqlite3 (SQLite) |
 
 ## Project Structure
 

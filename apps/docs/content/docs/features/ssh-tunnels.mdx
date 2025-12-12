@@ -1,0 +1,120 @@
+---
+title: SSH Tunnels
+description: Connect to databases through SSH jump hosts
+---
+
+# SSH Tunnels
+
+SSH tunnels let you securely connect to databases that aren't directly accessible from your computer, such as databases behind a firewall or in a private network.
+
+## When to Use SSH Tunnels
+
+Use an SSH tunnel when:
+- Your database is in a private network (VPC, internal network)
+- You need to connect through a bastion/jump host
+- Direct database connections are blocked by firewall
+- You want an encrypted connection layer
+
+## Setting Up an SSH Tunnel
+
+### 1. Add or Edit a Connection
+
+When creating or editing a connection, enable the SSH tunnel option.
+
+### 2. Configure SSH Settings
+
+| Setting | Description |
+|---------|-------------|
+| **SSH Host** | The hostname or IP of your SSH server (bastion host) |
+| **SSH Port** | Usually `22` |
+| **SSH Username** | Your username on the SSH server |
+| **Authentication** | Password or Private Key |
+
+### 3. Authentication Methods
+
+#### Password Authentication
+
+Enter your SSH password directly. The password is encrypted and stored securely using your OS keychain.
+
+#### Public Key Authentication
+
+1. Click **Browse** to select your private key file
+2. Common locations:
+   - `~/.ssh/id_rsa`
+   - `~/.ssh/id_ed25519`
+3. If your key has a passphrase, enter it in the **Passphrase** field
+
+## How It Works
+
+```
+Your Computer  →  SSH Server (Bastion)  →  Database Server
+    :5432      →      :22              →      :5432
+```
+
+1. data-peek establishes an SSH connection to your bastion host
+2. A secure tunnel is created from your machine to the database
+3. Database traffic flows through the encrypted SSH tunnel
+4. The connection appears to come from the bastion host
+
+## Example: AWS RDS
+
+To connect to an RDS database in a private subnet:
+
+**SSH Configuration:**
+- SSH Host: `bastion.yourcompany.com`
+- SSH Port: `22`
+- SSH Username: `ec2-user`
+- Authentication: Public Key (`~/.ssh/aws-key.pem`)
+
+**Database Configuration:**
+- Host: `mydb.abc123.us-east-1.rds.amazonaws.com`
+- Port: `5432`
+- Database: `myapp`
+
+## Supported Databases
+
+SSH tunnels work with:
+- PostgreSQL
+- MySQL
+- Microsoft SQL Server
+
+SQLite doesn't need SSH tunnels since it's file-based.
+
+## Troubleshooting
+
+### Connection Refused
+
+- Verify the SSH host is reachable: `ssh user@host`
+- Check that your SSH credentials are correct
+- Ensure the SSH server allows tunneling (`AllowTcpForwarding yes` in sshd_config)
+
+### Permission Denied
+
+- Verify your username is correct
+- For key authentication, check file permissions (`chmod 600 ~/.ssh/id_rsa`)
+- Ensure your public key is in the server's `authorized_keys`
+
+### Database Connection Timeout
+
+- Verify the database host is correct (use the **internal** hostname, not public)
+- Check that the database port is accessible from the SSH server
+- Verify database credentials
+
+### Key Format Issues
+
+data-peek supports:
+- RSA keys
+- Ed25519 keys
+- ECDSA keys
+
+If you have a `.ppk` file (PuTTY format), convert it using `puttygen`:
+```bash
+puttygen key.ppk -O private-openssh -o key.pem
+```
+
+## Security Notes
+
+- SSH tunnel traffic is fully encrypted
+- Your database credentials are stored locally with OS-level encryption
+- The SSH connection uses standard OpenSSH protocols
+- Private keys never leave your machine

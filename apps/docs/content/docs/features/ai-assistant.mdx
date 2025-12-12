@@ -1,0 +1,135 @@
+---
+title: AI Assistant
+description: Natural language to SQL queries and intelligent insights
+---
+
+# AI Assistant
+
+data-peek includes a powerful AI assistant that helps you write SQL queries, generate charts, and get insights from your data.
+
+## Getting Started
+
+### Open the AI Panel
+
+- Press `Cmd+I` (macOS) or `Ctrl+I` (Windows/Linux)
+- Or click the sparkle icon in the toolbar
+- Or use the command palette (`Cmd+K`) and search for "AI"
+
+### Configure Your API Key
+
+The AI assistant uses a "Bring Your Own Key" (BYOK) model. You need to provide your own API key:
+
+1. Open AI Settings from the command palette or AI panel
+2. Select your preferred provider (OpenAI, Anthropic, or others)
+3. Enter your API key
+4. Click Save
+
+Your API key is stored securely using your operating system's keychain.
+
+## Supported Providers
+
+| Provider | Models |
+|----------|--------|
+| OpenAI | GPT-4o, GPT-4, GPT-3.5 Turbo |
+| Anthropic | Claude 3.5 Sonnet, Claude 3 Opus |
+
+## Features
+
+### Natural Language to SQL
+
+Ask questions in plain English and get SQL queries:
+
+> "Show me all users who signed up in the last 30 days"
+
+The AI generates:
+```sql
+SELECT * FROM users
+WHERE created_at >= NOW() - INTERVAL '30 days'
+ORDER BY created_at DESC;
+```
+
+### Schema-Aware Queries
+
+The AI assistant understands your database schema. It knows your:
+- Table names and structures
+- Column names and types
+- Relationships between tables
+
+This means you can ask questions naturally:
+
+> "How many orders does each customer have?"
+
+### Chart Generation
+
+Generate visualizations directly from your queries:
+
+> "Show me a bar chart of monthly revenue for 2024"
+
+The AI will:
+1. Generate the appropriate SQL query
+2. Execute it against your database
+3. Create an interactive chart
+
+Supported chart types:
+- Bar charts
+- Line charts
+- Pie charts
+- Area charts
+
+### Query Explanations
+
+Get explanations for complex queries:
+
+> "Explain what this query does"
+
+Paste any SQL and the AI will break down:
+- What each part does
+- How the joins work
+- What the result will look like
+
+### Safety Guardrails
+
+The AI assistant includes safety features:
+- **Destructive query warnings**: DELETE, DROP, TRUNCATE queries show a confirmation dialog
+- **Read-only by default**: Queries are analyzed before execution
+- **Schema access only**: The AI can see schema structure but not your actual data
+
+## Usage Tips
+
+### Be Specific
+
+More specific questions get better results:
+
+| Less specific | More specific |
+|--------------|---------------|
+| "Show me users" | "Show me the top 10 users by order count" |
+| "Get orders" | "Get orders from the last week with total > $100" |
+
+### Reference Tables by Name
+
+When your question could apply to multiple tables, be explicit:
+
+> "Show me the status distribution of the **orders** table"
+
+### Iterate on Results
+
+You can refine queries in conversation:
+
+1. "Show me all products"
+2. "Filter to only in-stock items"
+3. "Add the category name from the categories table"
+
+## Keyboard Shortcuts
+
+| Action | macOS | Windows/Linux |
+|--------|-------|---------------|
+| Open AI panel | `Cmd+I` | `Ctrl+I` |
+| Send message | `Enter` | `Enter` |
+| New line in message | `Shift+Enter` | `Shift+Enter` |
+
+## Privacy & Security
+
+- **BYOK model**: You use your own API key, so queries go directly to your chosen provider
+- **Schema context**: Only schema metadata (table/column names) is sent to the AI, not your actual data
+- **Local storage**: Conversation history is stored locally on your device
+- **No telemetry**: data-peek doesn't collect or transmit your queries or results

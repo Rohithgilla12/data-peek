@@ -6,10 +6,15 @@
     "schema-explorer",
     "results-viewer",
     "inline-editing",
+    "ai-assistant",
+    "command-palette",
+    "saved-queries",
+    "multi-window",
     "table-designer",
     "erd-diagrams",
     "query-plans",
-    "saved-queries",
+    "query-telemetry",
+    "ssh-tunnels",
     "export"
   ]
 }

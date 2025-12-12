@@ -5,7 +5,7 @@ description: Configure data-peek preferences
 
 # Settings
 
-Access settings via the gear icon in the sidebar.
+Access settings via `Cmd+,` (macOS) / `Ctrl+,` (Windows/Linux), or through the command palette (`Cmd+K`).
 
 ## Query Editor
 
@@ -15,9 +15,17 @@ When enabled, table preview tabs open with the query editor collapsed. You can s
 
 **Default:** Off
 
-### Use Case
+**Use Case:** Enable this if you primarily use data-peek for browsing data rather than writing queries.
 
-Enable this if you primarily use data-peek for browsing data rather than writing queries.
+## Quick Query Panel
+
+### Hide Quick Query Panel by Default
+
+When enabled, the quick query panel in the sidebar is hidden by default.
+
+**Default:** Off
+
+**Use Case:** Hide this if you prefer using the full query editor instead of quick queries.
 
 ## JSON Display
 
@@ -27,25 +35,39 @@ When enabled, JSON columns automatically expand in the results viewer.
 
 **Default:** Off
 
-### JSON Expansion Depth
+**Use Case:** Enable this if you frequently work with JSON data and want to see it expanded immediately.
 
-How many levels deep to expand JSON by default.
+## Database
 
-**Options:** 1, 2, 3, 4, 5
-**Default:** 2
+### Query Timeout
 
-### Use Case
+Maximum time (in seconds) to wait for a query to complete. Set to 0 for no timeout.
 
-Set higher expansion depth if you frequently work with deeply nested JSON data.
+**Default:** 0 (no timeout)
+
+**Use Case:** Set a timeout to prevent long-running queries from blocking your workflow. Useful when exploring unfamiliar databases.
+
+### Cancel Running Queries
+
+You can cancel a running query by clicking the **Cancel** button that appears during query execution. This works for PostgreSQL, MySQL, and SQL Server.
+
+## AI Settings
+
+AI settings are configured separately through the AI panel. See [AI Assistant](/docs/features/ai-assistant) for configuration details.
+
+### Configurable Options
+
+- **Provider**: OpenAI or Anthropic
+- **API Key**: Your API key (stored securely in OS keychain)
+- **Model**: Select from available models for your provider
 
 ## Resetting Settings
 
 Click **Reset to Defaults** to restore all settings to their original values.
 
-## Future Settings
+## Settings Storage
 
-More settings are planned for future releases:
-- Editor font size
-- Tab behavior
-- Export preferences
-- Keyboard shortcut customization
+Settings are stored locally on your device:
+- **macOS**: `~/Library/Application Support/data-peek/`
+- **Windows**: `%APPDATA%/data-peek/`
+- **Linux**: `~/.config/data-peek/`
