@@ -680,40 +680,38 @@ export const useTabStore = create<TabState>()(
       name: 'data-peek-tabs',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
-        // Only persist pinned tabs
-        tabs: state.tabs
-          .filter((t) => t.isPinned)
-          .map((t): PersistedTab => {
-            const base: PersistedTab = {
-              id: t.id,
-              type: t.type,
-              title: t.title,
-              isPinned: t.isPinned,
-              connectionId: t.connectionId,
-              order: t.order
-            }
+        // Persist ALL tabs (not just pinned) to prevent data loss during split operations
+        tabs: state.tabs.map((t): PersistedTab => {
+          const base: PersistedTab = {
+            id: t.id,
+            type: t.type,
+            title: t.title,
+            isPinned: t.isPinned,
+            connectionId: t.connectionId,
+            order: t.order
+          }
 
-            if (t.type === 'erd') {
-              return base
-            }
+          if (t.type === 'erd') {
+            return base
+          }
 
-            if (t.type === 'table-designer') {
-              return {
-                ...base,
-                schemaName: t.schemaName,
-                tableName: t.tableName,
-                mode: t.mode
-              }
-            }
-
-            // query or table-preview tabs
+          if (t.type === 'table-designer') {
             return {
               ...base,
-              query: t.query,
-              schemaName: t.type === 'table-preview' ? t.schemaName : undefined,
-              tableName: t.type === 'table-preview' ? t.tableName : undefined
+              schemaName: t.schemaName,
+              tableName: t.tableName,
+              mode: t.mode
             }
-          }),
+          }
+
+          // query or table-preview tabs
+          return {
+            ...base,
+            query: t.query,
+            schemaName: t.type === 'table-preview' ? t.schemaName : undefined,
+            tableName: t.type === 'table-preview' ? t.tableName : undefined
+          }
+        }),
         activeTabId: state.activeTabId
       }),
       onRehydrateStorage: () => (state) => {

@@ -50,7 +50,8 @@ import {
   SidebarMenuSubItem
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useConnectionStore, useTabStore } from '@/stores'
+import { useConnectionStore, useTabStore, useSplitStore } from '@/stores'
+import { useTabActions } from '@/hooks'
 import type { TableInfo, RoutineInfo } from '@shared/index'
 
 // Threshold for enabling virtualization
@@ -424,11 +425,11 @@ export function SchemaExplorer() {
   const schemaFromCache = useConnectionStore((s) => s.schemaFromCache)
   const isRefreshingSchema = useConnectionStore((s) => s.isRefreshingSchema)
 
-  const createTablePreviewTab = useTabStore((s) => s.createTablePreviewTab)
   const findTablePreviewTab = useTabStore((s) => s.findTablePreviewTab)
-  const setActiveTab = useTabStore((s) => s.setActiveTab)
-  const createERDTab = useTabStore((s) => s.createERDTab)
-  const createTableDesignerTab = useTabStore((s) => s.createTableDesignerTab)
+  const { createTablePreviewTab, createERDTab, createTableDesignerTab, createQueryTab } =
+    useTabActions()
+  const setActivePaneTab = useSplitStore((s) => s.setActivePaneTab)
+  const focusedPaneId = useSplitStore((s) => s.layout.focusedPaneId)
 
   const [expandedSchemas, setExpandedSchemas] = React.useState<Set<string>>(
     new Set(schemas.map((s) => s.name))
@@ -442,8 +443,6 @@ export function SchemaExplorer() {
   const [showViews, setShowViews] = React.useState(true)
   const [showFunctions, setShowFunctions] = React.useState(false)
   const [showProcedures, setShowProcedures] = React.useState(true)
-
-  const createQueryTab = useTabStore((s) => s.createQueryTab)
 
   // Filter schemas and tables/routines based on search query and filter toggles
   const filteredSchemas = React.useMemo(() => {
@@ -537,7 +536,7 @@ export function SchemaExplorer() {
     // Check if tab already exists for this table - navigate to it instead of creating new
     const existingTab = findTablePreviewTab(connection.id, schemaName, table.name)
     if (existingTab) {
-      setActiveTab(existingTab.id)
+      setActivePaneTab(focusedPaneId, existingTab.id)
       return
     }
 

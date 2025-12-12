@@ -217,7 +217,12 @@ export function JsonCellEditor({
         <div className="flex-1 min-h-0 flex flex-col gap-3">
           {/* Toolbar */}
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" className="gap-1.5 h-7" onClick={() => copy(editValue)}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 h-7"
+              onClick={() => copy(editValue)}
+            >
               {copied ? (
                 <>
                   <Check className="size-3 text-green-500" />
@@ -340,7 +345,12 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             {/* Toolbar */}
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="outline" size="sm" className="gap-1.5 h-7" onClick={() => copy(fullPreview)}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 h-7"
+                onClick={() => copy(fullPreview)}
+              >
                 {copied ? (
                   <>
                     <Check className="size-3 text-green-500" />

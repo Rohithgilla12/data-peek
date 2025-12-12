@@ -71,6 +71,7 @@
     "mssql": "^11.0.1",
     "mysql2": "^3.15.3",
     "pg": "^8.16.3",
+    "react-resizable-panels": "^3.0.6",
     "recharts": "^3.5.1",
     "sql-formatter": "^15.6.10",
     "ssh2": "^1.17.0",

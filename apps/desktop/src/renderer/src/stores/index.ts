@@ -1,6 +1,7 @@
 export * from './connection-store'
 export * from './query-store'
 export * from './tab-store'
+export * from './split-store'
 export * from './ddl-store'
 export * from './license-store'
 export * from './saved-queries-store'

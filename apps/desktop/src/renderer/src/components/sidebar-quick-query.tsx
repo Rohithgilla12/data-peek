@@ -13,7 +13,8 @@ import {
   SidebarMenuItem
 } from '@/components/ui/sidebar'
 import { SQLEditor } from '@/components/sql-editor'
-import { useQueryStore, useConnectionStore, useTabStore, useSettingsStore } from '@/stores'
+import { useQueryStore, useConnectionStore, useSettingsStore } from '@/stores'
+import { useTabActions } from '@/hooks'
 import { cn } from '@/lib/utils'
 
 export function SidebarQuickQuery() {
@@ -26,7 +27,7 @@ export function SidebarQuickQuery() {
   const schemas = useConnectionStore((s) => s.schemas)
   const { history } = useQueryStore()
 
-  const createQueryTab = useTabStore((s) => s.createQueryTab)
+  const { createQueryTab } = useTabActions()
 
   // Get recent 3 queries for quick access
   const recentQueries = React.useMemo(() => {

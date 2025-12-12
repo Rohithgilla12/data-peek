@@ -1,5 +1,61 @@
 export { PG_TYPE_MAP, resolvePostgresType } from "./type-maps";
 
+// ============================================================================
+// Split Pane Layout Types
+// ============================================================================
+
+/**
+ * Direction of a split pane
+ */
+export type SplitDirection = "horizontal" | "vertical";
+
+/**
+ * A leaf pane that displays tabs
+ */
+export interface PaneLeaf {
+  type: "leaf";
+  /** Unique identifier for this pane */
+  id: string;
+  /** Currently active tab in this pane */
+  activeTabId: string | null;
+  /** Tab IDs that belong to this pane */
+  tabIds: string[];
+}
+
+/**
+ * A split containing two child panes
+ */
+export interface PaneSplit {
+  type: "split";
+  /** Unique identifier for this split */
+  id: string;
+  /** Direction of the split */
+  direction: SplitDirection;
+  /** The two child panes (always exactly 2) */
+  children: [PaneNode, PaneNode];
+  /** Percentage sizes of each child (0-100) */
+  sizes: [number, number];
+}
+
+/**
+ * A node in the pane tree (either a leaf or a split)
+ */
+export type PaneNode = PaneLeaf | PaneSplit;
+
+/**
+ * The complete split layout state
+ */
+export interface SplitLayout {
+  /** Root node of the pane tree */
+  root: PaneNode;
+  /** ID of the currently focused pane */
+  focusedPaneId: string;
+}
+
+// ============================================================================
+// Application Types
+// ============================================================================
+
 /**
  * Base URL for the data-peek website
  */

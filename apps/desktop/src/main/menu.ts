@@ -158,6 +158,27 @@ export function createMenu(): void {
               focusedWindow.webContents.send('menu:toggle-sidebar')
             }
           }
+        },
+        { type: 'separator' },
+        {
+          label: 'Split Editor Right',
+          accelerator: 'CmdOrCtrl+\\',
+          click: (): void => {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              focusedWindow.webContents.send('menu:split-right')
+            }
+          }
+        },
+        {
+          label: 'Split Editor Down',
+          accelerator: 'CmdOrCtrl+Shift+\\',
+          click: (): void => {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              focusedWindow.webContents.send('menu:split-down')
+            }
+          }
         }
       ]
     },

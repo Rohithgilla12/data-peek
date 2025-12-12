@@ -2,7 +2,7 @@
 
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { FileCode, Table2, Pin, X, Network } from 'lucide-react'
+import { FileCode, Table2, Pin, X, Network, Columns2, Rows2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Tab as TabType } from '@/stores/tab-store'
 import {
@@ -24,6 +24,8 @@ interface TabProps {
   onCloseOthers: () => void
   onCloseToRight: () => void
   onCloseAll: () => void
+  onSplitRight?: () => void
+  onSplitDown?: () => void
 }
 
 export function Tab({
@@ -36,7 +38,9 @@ export function Tab({
   onUnpin,
   onCloseOthers,
   onCloseToRight,
-  onCloseAll
+  onCloseAll,
+  onSplitRight,
+  onSplitDown
 }: TabProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: tab.id
@@ -115,6 +119,19 @@ export function Tab({
           </ContextMenuItem>
         )}
         <ContextMenuSeparator />
+        {onSplitRight && (
+          <ContextMenuItem onClick={onSplitRight}>
+            <Columns2 className="mr-2 size-4" />
+            Split Right
+          </ContextMenuItem>
+        )}
+        {onSplitDown && (
+          <ContextMenuItem onClick={onSplitDown}>
+            <Rows2 className="mr-2 size-4" />
+            Split Down
+          </ContextMenuItem>
+        )}
+        {(onSplitRight || onSplitDown) && <ContextMenuSeparator />}
         {!tab.isPinned && (
           <ContextMenuItem onClick={onClose}>
             <X className="mr-2 size-4" />

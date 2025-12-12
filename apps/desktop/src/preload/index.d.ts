@@ -204,6 +204,8 @@ interface DataPeekApi {
     onClearResults: (callback: () => void) => () => void
     onToggleSidebar: (callback: () => void) => () => void
     onOpenSettings: (callback: () => void) => () => void
+    onSplitRight: (callback: () => void) => () => void
+    onSplitDown: (callback: () => void) => () => void
   }
   license: {
     check: () => Promise<IpcResponse<LicenseStatus>>

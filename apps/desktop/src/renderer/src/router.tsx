@@ -30,7 +30,8 @@ import { useAIStore } from '@/stores/ai-store'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { useConnectionStore, useLicenseStore, useSettingsStore, useTabStore } from '@/stores'
+import { useConnectionStore, useLicenseStore, useSettingsStore, useSplitStore } from '@/stores'
+import { useTabActions } from '@/hooks'
 import { cn, keys } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -86,9 +87,10 @@ function LayoutContent() {
   // Get schemas for AI context
   const schemas = useConnectionStore((s) => s.schemas)
 
-  // Tab store for opening SQL in new tab
-  const createQueryTab = useTabStore((s) => s.createQueryTab)
-  const setActiveTab = useTabStore((s) => s.setActiveTab)
+  // Tab actions for opening SQL in new tab
+  const { createQueryTab } = useTabActions()
+  const setActivePaneTab = useSplitStore((s) => s.setActivePaneTab)
+  const focusedPaneId = useSplitStore((s) => s.layout.focusedPaneId)
 
   const platform = window.electron.process.platform
 
@@ -96,9 +98,9 @@ function LayoutContent() {
   const handleAIOpenInTab = useCallback(
     (sql: string) => {
       const tabId = createQueryTab(activeConnection?.id || null, sql)
-      setActiveTab(tabId)
+      setActivePaneTab(focusedPaneId, tabId)
     },
-    [activeConnection, createQueryTab, setActiveTab]
+    [activeConnection, createQueryTab, setActivePaneTab, focusedPaneId]
   )
 
   // Load AI config from main process on mount

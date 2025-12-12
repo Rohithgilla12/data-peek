@@ -24,7 +24,8 @@ import {
   useSidebar
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { useQueryStore, useConnectionStore, useTabStore } from '@/stores'
+import { useQueryStore, useConnectionStore, useTabStore, useSplitStore } from '@/stores'
+import { useTabActions } from '@/hooks'
 import { QueryHistoryDialog } from './query-history-dialog'
 
 function formatRelativeTime(date: Date): string {
@@ -84,10 +85,10 @@ export function QueryHistory() {
   const clearHistory = useQueryStore((s) => s.clearHistory)
   const removeFromHistory = useQueryStore((s) => s.removeFromHistory)
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
-  const activeTabId = useTabStore((s) => s.activeTabId)
   const updateTabQuery = useTabStore((s) => s.updateTabQuery)
-  const getActiveTab = useTabStore((s) => s.getActiveTab)
-  const createQueryTab = useTabStore((s) => s.createQueryTab)
+  const tabs = useTabStore((s) => s.tabs)
+  const { createQueryTab } = useTabActions()
+  const focusedPane = useSplitStore((s) => s.getFocusedPane())
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
 
@@ -97,8 +98,8 @@ export function QueryHistory() {
     : history
 
   const handleQueryClick = (query: string) => {
-    const activeTab = getActiveTab()
-    // If there's an active query/table-preview tab, update it
+    const activeTabId = focusedPane?.activeTabId
+    const activeTab = activeTabId ? tabs.find((t) => t.id === activeTabId) : undefined
     if (
       activeTabId &&
       activeTab &&
@@ -106,7 +107,6 @@ export function QueryHistory() {
     ) {
       updateTabQuery(activeTabId, query)
     } else if (activeConnectionId) {
-      // Otherwise create a new tab with the query
       createQueryTab(activeConnectionId, query)
     }
   }

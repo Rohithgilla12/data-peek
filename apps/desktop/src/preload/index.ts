@@ -173,6 +173,16 @@ const api = {
       const handler = (): void => callback()
       ipcRenderer.on('menu:open-settings', handler)
       return () => ipcRenderer.removeListener('menu:open-settings', handler)
+    },
+    onSplitRight: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('menu:split-right', handler)
+      return () => ipcRenderer.removeListener('menu:split-right', handler)
+    },
+    onSplitDown: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('menu:split-down', handler)
+      return () => ipcRenderer.removeListener('menu:split-down', handler)
     }
   },
   // License management

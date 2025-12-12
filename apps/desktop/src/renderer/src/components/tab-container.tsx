@@ -1,25 +1,54 @@
 'use client'
 
 import { useEffect, useCallback } from 'react'
-import { FileCode, Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { TabBar } from '@/components/tab-bar'
-import { TabQueryEditor } from '@/components/tab-query-editor'
-import { useTabStore, useConnectionStore } from '@/stores'
+import { useTabStore, useConnectionStore, useSplitStore } from '@/stores'
+import { SplitPaneContainer } from '@/components/split-pane-container'
 
 export function TabContainer() {
   const tabs = useTabStore((s) => s.tabs)
-  const activeTabId = useTabStore((s) => s.activeTabId)
   const createQueryTab = useTabStore((s) => s.createQueryTab)
   const closeTab = useTabStore((s) => s.closeTab)
-  const setActiveTab = useTabStore((s) => s.setActiveTab)
-  const activeTab = useTabStore((s) => s.getActiveTab())
 
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
 
+  const focusedPane = useSplitStore((s) => s.getFocusedPane())
+  const addTabToPane = useSplitStore((s) => s.addTabToPane)
+  const removeTabFromPane = useSplitStore((s) => s.removeTabFromPane)
+  const setActivePaneTab = useSplitStore((s) => s.setActivePaneTab)
+  const getAllPaneIds = useSplitStore((s) => s.getAllPaneIds)
+  const splitPane = useSplitStore((s) => s.splitPane)
+  const focusPane = useSplitStore((s) => s.focusPane)
+
   const handleNewTab = useCallback(() => {
-    createQueryTab(activeConnectionId)
-  }, [createQueryTab, activeConnectionId])
+    const tabId = createQueryTab(activeConnectionId)
+    addTabToPane(tabId)
+  }, [createQueryTab, activeConnectionId, addTabToPane])
+
+  const handleCloseTab = useCallback(
+    (tabId: string) => {
+      removeTabFromPane(tabId)
+      closeTab(tabId)
+    },
+    [removeTabFromPane, closeTab]
+  )
+
+  // Menu event listeners
+  useEffect(() => {
+    const unsubSplitRight = window.api.menu.onSplitRight(() => {
+      if (focusedPane) {
+        splitPane(focusedPane.id, 'horizontal')
+      }
+    })
+    const unsubSplitDown = window.api.menu.onSplitDown(() => {
+      if (focusedPane) {
+        splitPane(focusedPane.id, 'vertical')
+      }
+    })
+    return () => {
+      unsubSplitRight()
+      unsubSplitDown()
+    }
+  }, [focusedPane, splitPane])
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -34,82 +63,92 @@ export function TabContainer() {
       }
 
       // Cmd+W: Close current tab
-      if (isMeta && e.key === 'w' && activeTabId) {
+      if (isMeta && e.key === 'w' && focusedPane?.activeTabId) {
         e.preventDefault()
-        closeTab(activeTabId)
+        handleCloseTab(focusedPane.activeTabId)
         return
       }
 
-      // Cmd+1-9: Switch to tab N
-      if (isMeta && e.key >= '1' && e.key <= '9') {
+      // Cmd+1-9: Switch to tab N in focused pane
+      if (isMeta && e.key >= '1' && e.key <= '9' && focusedPane) {
         e.preventDefault()
         const tabIndex = parseInt(e.key) - 1
-        if (tabs[tabIndex]) {
-          setActiveTab(tabs[tabIndex].id)
+        const paneTabs = tabs.filter((t) => focusedPane.tabIds.includes(t.id))
+        if (paneTabs[tabIndex]) {
+          setActivePaneTab(focusedPane.id, paneTabs[tabIndex].id)
         }
         return
       }
 
-      // Cmd+Option+ArrowRight: Next tab
-      // Cmd+Option+ArrowLeft: Previous tab
+      // Cmd+Option+ArrowRight: Next tab in focused pane
+      // Cmd+Option+ArrowLeft: Previous tab in focused pane
       if (
         isMeta &&
         e.altKey &&
         (e.key === 'ArrowRight' || e.key === 'ArrowLeft') &&
-        tabs.length > 1 &&
-        activeTabId
+        focusedPane &&
+        focusedPane.tabIds.length > 1 &&
+        focusedPane.activeTabId
       ) {
         e.preventDefault()
-        const currentIndex = tabs.findIndex((t) => t.id === activeTabId)
+        const paneTabs = tabs.filter((t) => focusedPane.tabIds.includes(t.id))
+        const currentIndex = paneTabs.findIndex((t) => t.id === focusedPane.activeTabId)
         let nextIndex: number
 
         if (e.key === 'ArrowLeft') {
-          // Previous tab
-          nextIndex = currentIndex <= 0 ? tabs.length - 1 : currentIndex - 1
+          nextIndex = currentIndex <= 0 ? paneTabs.length - 1 : currentIndex - 1
         } else {
-          // Next tab
-          nextIndex = currentIndex >= tabs.length - 1 ? 0 : currentIndex + 1
+          nextIndex = currentIndex >= paneTabs.length - 1 ? 0 : currentIndex + 1
         }
 
-        setActiveTab(tabs[nextIndex].id)
+        setActivePaneTab(focusedPane.id, paneTabs[nextIndex].id)
+        return
+      }
+
+      // Cmd+\: Split current pane right (horizontal)
+      if (isMeta && !e.shiftKey && e.key === '\\' && focusedPane) {
+        e.preventDefault()
+        splitPane(focusedPane.id, 'horizontal')
+        return
+      }
+
+      // Cmd+Shift+\: Split current pane down (vertical)
+      if (isMeta && e.shiftKey && e.key === '\\' && focusedPane) {
+        e.preventDefault()
+        splitPane(focusedPane.id, 'vertical')
+        return
+      }
+
+      // Cmd+Option+Shift+ArrowRight/ArrowLeft: Focus next/previous pane
+      if (isMeta && e.altKey && e.shiftKey && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+        e.preventDefault()
+        const allPaneIds = getAllPaneIds()
+        if (allPaneIds.length > 1 && focusedPane) {
+          const currentIdx = allPaneIds.indexOf(focusedPane.id)
+          let nextIdx: number
+          if (e.key === 'ArrowRight') {
+            nextIdx = currentIdx >= allPaneIds.length - 1 ? 0 : currentIdx + 1
+          } else {
+            nextIdx = currentIdx <= 0 ? allPaneIds.length - 1 : currentIdx - 1
+          }
+          focusPane(allPaneIds[nextIdx])
+        }
         return
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [tabs, activeTabId, handleNewTab, closeTab, setActiveTab])
+  }, [
+    tabs,
+    focusedPane,
+    handleNewTab,
+    handleCloseTab,
+    setActivePaneTab,
+    getAllPaneIds,
+    splitPane,
+    focusPane
+  ])
 
-  // Empty state - no tabs open
-  if (tabs.length === 0) {
-    return (
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <TabBar />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center space-y-4">
-            <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-              <FileCode className="size-8 text-muted-foreground" />
-            </div>
-            <div>
-              <h2 className="text-lg font-medium">No tabs open</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Click the + button or select a table to get started
-              </p>
-            </div>
-            <Button onClick={handleNewTab} className="gap-2">
-              <Plus className="size-4" />
-              New Query
-            </Button>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      <TabBar />
-      {activeTab && <TabQueryEditor key={activeTab.id} tabId={activeTab.id} />}
-    </div>
-  )
+  return <SplitPaneContainer />
 }
