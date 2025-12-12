@@ -91,7 +91,7 @@ function LayoutContent() {
   const createQueryTab = useTabStore((s) => s.createQueryTab)
   const setActiveTab = useTabStore((s) => s.setActiveTab)
 
-  const [plataform] = useState(window.electron.process.platform)
+  const platform = window.electron.process.platform
 
   // Handle opening SQL in a new tab (without execution)
   const handleAIOpenInTab = useCallback(
@@ -384,7 +384,7 @@ function LayoutContent() {
             <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
             <NavActions />
           </div>
-          {plataform === 'win32' && (
+          {platform === 'win32' && (
             <>
               <Separator orientation="vertical" className="data-[orientation=vertical]:h-4 -ml-3" />
               <TitlebarActions />

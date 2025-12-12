@@ -1,18 +1,21 @@
 import { ipcMain, BrowserWindow } from 'electron'
 
 export function registerWindowHandlers(): void {
-  ipcMain.handle('minimize-window', async (): Promise<void> => {
+  ipcMain.handle('minimize-window', () => {
     BrowserWindow.getFocusedWindow()?.minimize()
   })
 
-  ipcMain.handle('maximize-window', async (): Promise<void> => {
+  ipcMain.handle('maximize-window', () => {
     const focusedWindow = BrowserWindow.getFocusedWindow()
-    if (!focusedWindow) return
 
-    focusedWindow.isMaximized() ? focusedWindow.unmaximize() : focusedWindow.maximize()
+    if (focusedWindow?.isMaximized()) {
+      focusedWindow.unmaximize()
+    } else {
+      focusedWindow?.maximize()
+    }
   })
 
-  ipcMain.handle('close-window', async (): Promise<void> => {
+  ipcMain.handle('close-window', () => {
     BrowserWindow.getFocusedWindow()?.close()
   })
 }
