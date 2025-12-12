@@ -80,7 +80,7 @@ function RootComponent() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -89,7 +89,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           theme={{
             enabled: true,
             defaultTheme: 'dark',
-            forcedTheme: 'dark',
           }}
         >
           {children}
