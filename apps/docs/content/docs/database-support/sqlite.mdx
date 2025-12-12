@@ -1,0 +1,105 @@
+---
+title: SQLite
+description: Using data-peek with SQLite databases
+---
+
+# SQLite
+
+data-peek supports SQLite databases for working with local database files.
+
+## Opening a SQLite Database
+
+1. Click **Add Connection** in the sidebar
+2. Select **SQLite** as the database type
+3. Click **Browse** to select your `.db`, `.sqlite`, or `.sqlite3` file
+4. Click **Connect**
+
+## Supported Features
+
+| Feature | Support |
+|---------|:-------:|
+| Query execution | ✓ |
+| Multiple statements | ✓ |
+| Schema explorer | ✓ |
+| Table preview | ✓ |
+| Inline editing | ✓ |
+| Table designer | ✓ |
+| ER diagrams | ✓ |
+| Query plans | ✓ |
+| Views | ✓ |
+| Foreign keys | ✓ |
+| JSON support | ✓ |
+
+## File-Based Access
+
+SQLite is a serverless database that stores everything in a single file. Unlike PostgreSQL or MySQL, there's no network connection - data-peek reads and writes directly to the file on your computer.
+
+### Supported File Extensions
+
+- `.db`
+- `.sqlite`
+- `.sqlite3`
+- `.s3db`
+
+## Query Execution
+
+### Single Statement
+
+```sql
+SELECT * FROM users WHERE active = 1;
+```
+
+### Multiple Statements
+
+Execute multiple statements in sequence:
+
+```sql
+INSERT INTO users (name, email) VALUES ('John', 'john@example.com');
+SELECT * FROM users ORDER BY id DESC LIMIT 1;
+```
+
+Each statement result is displayed in a separate result tab.
+
+## Type Affinity
+
+SQLite uses dynamic typing with type affinity. data-peek displays the following types:
+
+| Affinity | Description |
+|----------|-------------|
+| INTEGER | Whole numbers |
+| REAL | Floating point numbers |
+| TEXT | Strings |
+| BLOB | Binary data |
+| NUMERIC | Numbers, dates, booleans |
+
+## Query Plans
+
+View query execution plans using SQLite's `EXPLAIN QUERY PLAN`:
+
+```sql
+EXPLAIN QUERY PLAN SELECT * FROM users WHERE email = 'test@example.com';
+```
+
+Or use the **Explain** button in the query editor.
+
+## Limitations
+
+Since SQLite is file-based:
+
+- **No SSH tunnels** - Direct file access only
+- **No stored procedures** - SQLite doesn't support stored procedures
+- **No sequences** - Use `AUTOINCREMENT` on INTEGER PRIMARY KEY instead
+- **No custom types** - Use type affinity instead
+
+## Use Cases
+
+SQLite is ideal for:
+
+- **Development databases** - Quick prototyping
+- **Application data** - Inspecting app databases (mobile apps, Electron apps)
+- **Data analysis** - Working with exported data
+- **Testing** - Lightweight test databases
+
+## Performance
+
+SQLite handles databases up to several gigabytes efficiently. For very large databases or high-concurrency needs, consider PostgreSQL or MySQL.

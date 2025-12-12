@@ -1,0 +1,92 @@
+---
+title: Microsoft SQL Server
+description: Using data-peek with Microsoft SQL Server
+---
+
+# Microsoft SQL Server
+
+data-peek provides full support for Microsoft SQL Server databases.
+
+## Connection Setup
+
+1. Click **Add Connection** in the sidebar
+2. Select **SQL Server** as the database type
+3. Enter your connection details:
+   - **Host**: Your SQL Server hostname or IP
+   - **Port**: Default is `1433`
+   - **Database**: The database name
+   - **Username**: Your SQL Server username
+   - **Password**: Your password
+
+## Authentication Methods
+
+### SQL Server Authentication
+
+Standard username/password authentication against SQL Server.
+
+### Windows Authentication
+
+Windows authentication is not currently supported. Use SQL Server authentication instead.
+
+## Supported Features
+
+| Feature | Support |
+|---------|:-------:|
+| Query execution | ✓ |
+| Multiple result sets | ✓ |
+| Schema explorer | ✓ |
+| Table preview | ✓ |
+| Inline editing | ✓ |
+| Table designer | ✓ |
+| ER diagrams | ✓ |
+| Query plans | ✓ |
+| Views | ✓ |
+| Stored procedures | ✓ |
+| Functions | ✓ |
+| Sequences | ✓ |
+| SSH tunnels | ✓ |
+
+## Multiple Result Sets
+
+SQL Server queries can return multiple result sets. data-peek displays each result set in separate tabs within the results panel.
+
+```sql
+-- Returns two result sets
+SELECT * FROM users;
+SELECT * FROM orders;
+```
+
+## Stored Procedures
+
+Browse and execute stored procedures from the schema explorer. Stored procedures appear under each schema in the sidebar.
+
+## SSH Tunnel Support
+
+Connect to SQL Server through an SSH tunnel for secure remote access. See [SSH Tunnels](/docs/features/ssh-tunnels) for configuration details.
+
+## Connection String Options
+
+data-peek uses the `mssql` Node.js driver. Advanced connection options can be configured in the connection dialog.
+
+### Encryption
+
+SSL/TLS encryption is enabled by default. For servers with self-signed certificates, you may need to configure trust settings.
+
+## Troubleshooting
+
+### Connection Timeout
+
+If connections are timing out, try:
+- Verify the server is accessible from your network
+- Check firewall rules allow connections on port 1433
+- Ensure SQL Server is configured to allow remote connections
+
+### Authentication Failures
+
+- Verify your username and password
+- Ensure the user has access to the specified database
+- Check that SQL Server authentication is enabled on the server
+
+### Certificate Errors
+
+For self-signed certificates or internal servers, you may see certificate validation errors. Contact your database administrator for the correct SSL configuration.

@@ -5,41 +5,52 @@ description: Supported databases and their features
 
 # Database Support
 
-data-peek currently supports PostgreSQL and MySQL, with SQLite coming soon.
+data-peek supports PostgreSQL, MySQL, Microsoft SQL Server, and SQLite databases.
 
 ## Supported Databases
 
 | Database | Status | Features |
 |----------|--------|----------|
 | PostgreSQL | ✓ Full Support | All features |
-| MySQL | ✓ Supported | Core features |
-| SQLite | Coming Soon | - |
+| MySQL | ✓ Full Support | All features |
+| Microsoft SQL Server | ✓ Full Support | All features |
+| SQLite | ✓ Supported | Local file databases |
 
 <Cards>
   <Card title="PostgreSQL" href="/docs/database-support/postgresql" description="Full-featured PostgreSQL support" />
   <Card title="MySQL" href="/docs/database-support/mysql" description="MySQL database support" />
+  <Card title="SQL Server" href="/docs/database-support/mssql" description="Microsoft SQL Server support" />
+  <Card title="SQLite" href="/docs/database-support/sqlite" description="Local SQLite file databases" />
 </Cards>
 
 ## Feature Comparison
 
-| Feature | PostgreSQL | MySQL |
-|---------|:----------:|:-----:|
-| Query execution | ✓ | ✓ |
-| Schema explorer | ✓ | ✓ |
-| Table preview | ✓ | ✓ |
-| Inline editing | ✓ | ✓ |
-| Table designer | ✓ | ✓ |
-| ER diagrams | ✓ | ✓ |
-| Query plans (EXPLAIN) | ✓ | ✓ |
-| EXPLAIN ANALYZE | ✓ | - |
-| Sequences | ✓ | - |
-| Custom types (enums) | ✓ | ✓ |
-| JSON support | ✓ | ✓ |
-| Array types | ✓ | - |
+| Feature | PostgreSQL | MySQL | SQL Server | SQLite |
+|---------|:----------:|:-----:|:----------:|:------:|
+| Query execution | ✓ | ✓ | ✓ | ✓ |
+| Multiple result sets | ✓ | ✓ | ✓ | ✓ |
+| Schema explorer | ✓ | ✓ | ✓ | ✓ |
+| Table preview | ✓ | ✓ | ✓ | ✓ |
+| Inline editing | ✓ | ✓ | ✓ | ✓ |
+| Table designer | ✓ | ✓ | ✓ | ✓ |
+| ER diagrams | ✓ | ✓ | ✓ | ✓ |
+| Query plans (EXPLAIN) | ✓ | ✓ | ✓ | ✓ |
+| EXPLAIN ANALYZE | ✓ | - | - | - |
+| Views browser | ✓ | ✓ | ✓ | ✓ |
+| Stored procedures | ✓ | ✓ | ✓ | - |
+| Functions | ✓ | ✓ | ✓ | - |
+| Sequences | ✓ | - | ✓ | - |
+| Custom types (enums) | ✓ | ✓ | - | - |
+| JSON support | ✓ | ✓ | ✓ | ✓ |
+| Array types | ✓ | - | - | - |
+| SSH tunnels | ✓ | ✓ | ✓ | - |
 
 ## Connection Security
 
-Both databases support:
+All remote databases support:
 - SSL/TLS connections
 - Password authentication
-- Encrypted credential storage
+- Encrypted credential storage (using OS keychain)
+- SSH tunnel connections
+
+SQLite uses local file access and doesn't require network connections.
