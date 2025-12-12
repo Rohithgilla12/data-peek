@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { generateLimitClause } from '@/lib/sql-helpers'
+import { getTypeColor } from '@/lib/type-colors'
 import { cn } from '@/lib/utils'
 import { useEditStore } from '@/stores/edit-store'
 import type { ColumnInfo, ConnectionConfig, EditContext, ForeignKeyInfo } from '@data-peek/shared'
@@ -87,24 +88,6 @@ interface EditableDataTableProps<TData> {
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   /** Called after changes are successfully committed */
   onChangesCommitted?: () => void
-}
-
-function getTypeColor(type: string): string {
-  const lower = type.toLowerCase()
-  if (lower.includes('uuid')) return 'text-purple-400'
-  if (lower.includes('varchar') || lower.includes('text') || lower.includes('char'))
-    return 'text-green-400'
-  if (
-    lower.includes('int') ||
-    lower.includes('numeric') ||
-    lower.includes('decimal') ||
-    lower.includes('bigint')
-  )
-    return 'text-blue-400'
-  if (lower.includes('timestamp') || lower.includes('date') || lower.includes('time'))
-    return 'text-orange-400'
-  if (lower.includes('bool')) return 'text-yellow-400'
-  return 'text-muted-foreground'
 }
 
 export function EditableDataTable<TData extends Record<string, unknown>>({

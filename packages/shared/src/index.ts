@@ -1,11 +1,4 @@
-// ============================================
-// Type Mappings
-// ============================================
 export { PG_TYPE_MAP, resolvePostgresType } from "./type-maps";
-
-// ============================================
-// App Constants
-// ============================================
 
 /**
  * Base URL for the data-peek website
@@ -38,10 +31,6 @@ export function buildTrackingUrl(path: string, utm: UTMParams = {}): string {
 
   return `${DATAPEEK_BASE_URL}${path}${queryString ? separator + queryString : ""}`;
 }
-
-// ============================================
-// AI Types - Shared across main and renderer
-// ============================================
 
 /**
  * Supported AI providers
@@ -306,58 +295,6 @@ export interface AIStructuredResponse {
   tables: string[] | null;
 }
 
-// Legacy types for backward compatibility with renderer components
-export interface AIQueryResponse {
-  type: "query";
-  message: string;
-  sql: string;
-  explanation: string;
-  warning?: string;
-  requiresConfirmation?: boolean;
-}
-
-/**
- * AI response for chart visualizations
- */
-export interface AIChartResponse {
-  type: "chart";
-  message: string;
-  title: string;
-  description?: string;
-  chartType: "bar" | "line" | "pie" | "area";
-  sql: string;
-  xKey: string;
-  yKeys: string[];
-}
-
-/**
- * AI response for metric cards
- */
-export interface AIMetricResponse {
-  type: "metric";
-  message: string;
-  label: string;
-  sql: string;
-  format: "number" | "currency" | "percent" | "duration";
-}
-
-/**
- * AI response for schema explanations
- */
-export interface AISchemaResponse {
-  type: "schema";
-  message: string;
-  tables: string[];
-}
-
-/**
- * AI response for general messages
- */
-export interface AIMessageResponse {
-  type: "message";
-  message: string;
-}
-
 /**
  * Alias for AIChatResponse (same as AIStructuredResponse)
  */
@@ -437,10 +374,6 @@ export interface ChatSession {
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
 }
-
-// ============================================
-// Connection Types
-// ============================================
 
 /**
  * SQLite connection mode (local file only)
@@ -571,10 +504,6 @@ export interface IpcResponse<T> {
   error?: string;
 }
 
-// ============================================
-// Schema Types - Shared across all DB adapters
-// ============================================
-
 /**
  * Foreign key relationship metadata
  */
@@ -682,10 +611,6 @@ export interface DatabaseSchemaResponse extends DatabaseSchema {
   /** Error message if background refresh failed */
   refreshError?: string;
 }
-
-// ============================================
-// Edit Operation Types - Database Agnostic
-// ============================================
 
 /**
  * Represents a single cell change
@@ -796,10 +721,6 @@ export interface ParameterizedQuery {
   sql: string;
   params: unknown[];
 }
-
-// ============================================
-// DDL Types - Table Designer
-// ============================================
 
 /**
  * PostgreSQL data types for the type selector dropdown
@@ -1020,10 +941,6 @@ export interface TableDefinition {
   unlogged?: boolean;
 }
 
-// ============================================
-// ALTER TABLE Operation Types
-// ============================================
-
 /**
  * Column-level ALTER TABLE operations
  */
@@ -1092,10 +1009,6 @@ export interface DDLResult {
   errors?: string[];
 }
 
-// ============================================
-// Database Metadata Types
-// ============================================
-
 /**
  * Sequence information for default value picker
  */
@@ -1125,10 +1038,6 @@ export interface CustomTypeInfo {
   /** Enum values (for enum types) */
   values?: string[];
 }
-
-// ============================================
-// License Types
-// ============================================
 
 /**
  * License type enumeration
@@ -1212,10 +1121,6 @@ export interface LicenseDeactivationResponse {
   error?: string;
 }
 
-// ============================================
-// Saved Queries Types
-// ============================================
-
 /**
  * A saved query/snippet that can be bookmarked and reused
  */
@@ -1247,10 +1152,6 @@ export interface SavedQuery {
 }
 
 export type SSHAuthenticationMethod = "Password" | "Public Key";
-
-// ============================================
-// Query Telemetry Types
-// ============================================
 
 /**
  * Individual timing phase within query execution

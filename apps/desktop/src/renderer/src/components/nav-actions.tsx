@@ -26,13 +26,14 @@ import {
   SidebarMenuItem
 } from '@/components/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { useQueryStore, useConnectionStore } from '@/stores'
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { formatSQL } from '@/lib/sql-formatter'
 import { keys } from '@/lib/utils'
+import { useQueryStore, useConnectionStore } from '@/stores'
 
 export function NavActions() {
   const [isOpen, setIsOpen] = React.useState(false)
-  const [copied, setCopied] = React.useState(false)
+  const { copied, copy } = useCopyToClipboard()
 
   const activeConnection = useConnectionStore((s) => s.getActiveConnection())
   const { currentQuery, isExecuting, result } = useQueryStore()
@@ -71,9 +72,7 @@ export function NavActions() {
 
   const handleCopyQuery = async () => {
     if (!currentQuery.trim()) return
-    await navigator.clipboard.writeText(currentQuery)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    await copy(currentQuery)
     setIsOpen(false)
   }
 

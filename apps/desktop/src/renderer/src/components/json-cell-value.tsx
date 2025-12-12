@@ -11,6 +11,7 @@ import {
   SheetDescription
 } from '@/components/ui/sheet'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { useSettingsStore } from '@/stores/settings-store'
 
 // Recursive JSON tree viewer component
@@ -178,13 +179,7 @@ export function JsonCellEditor({
     return JSON.stringify(value, null, 2)
   })
   const [error, setError] = React.useState<string | null>(null)
-  const [copied, setCopied] = React.useState(false)
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(editValue)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+  const { copied, copy } = useCopyToClipboard()
 
   const handleSave = () => {
     if (editValue.trim() === '') {
@@ -222,7 +217,7 @@ export function JsonCellEditor({
         <div className="flex-1 min-h-0 flex flex-col gap-3">
           {/* Toolbar */}
           <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" size="sm" className="gap-1.5 h-7" onClick={handleCopy}>
+            <Button variant="outline" size="sm" className="gap-1.5 h-7" onClick={() => copy(editValue)}>
               {copied ? (
                 <>
                   <Check className="size-3 text-green-500" />
@@ -285,15 +280,8 @@ export function JsonCellEditor({
 // JSON cell viewer with sheet popup
 export function JsonCellValue({ value, columnName }: { value: unknown; columnName?: string }) {
   const [isOpen, setIsOpen] = React.useState(false)
-  const [copied, setCopied] = React.useState(false)
+  const { copied, copy } = useCopyToClipboard()
   const expandJsonByDefault = useSettingsStore((s) => s.expandJsonByDefault)
-
-  const handleCopy = () => {
-    const jsonStr = typeof value === 'string' ? value : JSON.stringify(value, null, 2)
-    navigator.clipboard.writeText(jsonStr)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
 
   if (value === null || value === undefined) {
     return <span className="text-muted-foreground/50 italic">NULL</span>
@@ -352,7 +340,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
           <div className="flex-1 min-h-0 flex flex-col gap-3">
             {/* Toolbar */}
             <div className="flex items-center gap-2 shrink-0">
-              <Button variant="outline" size="sm" className="gap-1.5 h-7" onClick={handleCopy}>
+              <Button variant="outline" size="sm" className="gap-1.5 h-7" onClick={() => copy(fullPreview)}>
                 {copied ? (
                   <>
                     <Check className="size-3 text-green-500" />

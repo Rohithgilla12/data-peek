@@ -12,6 +12,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { cn } from '@/lib/utils'
 
 interface AISQLPreviewProps {
@@ -106,14 +107,8 @@ export function AISQLPreview({
   isExecuting = false,
   requiresConfirmation = false
 }: AISQLPreviewProps) {
-  const [copied, setCopied] = React.useState(false)
+  const { copied, copy } = useCopyToClipboard({ resetDelay: 1500 })
   const [isExpanded, setIsExpanded] = React.useState(true)
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(sql)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
 
   const lines = sql.split('\n')
 
@@ -152,7 +147,7 @@ export function AISQLPreview({
         </div>
 
         <button
-          onClick={handleCopy}
+          onClick={() => copy(sql)}
           className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
         >
           {copied ? (

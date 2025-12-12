@@ -1,6 +1,5 @@
 'use client'
 
-import * as React from 'react'
 import { Copy, Check, FileCode, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -12,6 +11,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { cn } from '@/lib/utils'
 
 interface SqlPreviewModalProps {
@@ -55,17 +55,11 @@ export function SqlPreviewModal({
   onConfirm,
   isLoading = false
 }: SqlPreviewModalProps) {
-  const [copied, setCopied] = React.useState(false)
+  const { copied, copy } = useCopyToClipboard()
 
   const handleCopyAll = () => {
     const allSql = sqlStatements.map((s) => s.sql).join(';\n\n')
-    navigator.clipboard.writeText(allSql)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleCopySingle = (sql: string) => {
-    navigator.clipboard.writeText(sql)
+    copy(allSql)
   }
 
   const insertCount = sqlStatements.filter((s) => s.type === 'insert').length
@@ -151,7 +145,7 @@ export function SqlPreviewModal({
                     variant="ghost"
                     size="icon"
                     className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleCopySingle(statement.sql)}
+                    onClick={() => copy(statement.sql)}
                   >
                     <Copy className="size-3" />
                   </Button>

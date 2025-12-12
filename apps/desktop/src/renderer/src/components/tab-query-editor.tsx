@@ -22,6 +22,8 @@ import {
   Timer
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
+import { usePanelCollapse } from '@/hooks/use-panel-collapse'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -114,12 +116,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Track if we've already attempted auto-run for this tab
   const hasAutoRun = useRef(false)
 
-  // Collapse state for query editor and results panel
-  // For table-preview tabs, use the hideQueryEditorByDefault setting
-  const [isEditorCollapsed, setIsEditorCollapsed] = useState(
-    tab?.type === 'table-preview' ? hideQueryEditorByDefault : false
-  )
-  const [isResultsCollapsed, setIsResultsCollapsed] = useState(false)
+  // Panel collapse state (extracted to hook)
+  const { isEditorCollapsed, setIsEditorCollapsed, isResultsCollapsed, setIsResultsCollapsed } =
+    usePanelCollapse({
+      initialEditorCollapsed: tab?.type === 'table-preview' ? hideQueryEditorByDefault : false
+    })
 
   // Track client-side filters and sorting for "Apply to Query"
   const [tableFilters, setTableFilters] = useState<DataTableFilter[]>([])
@@ -128,48 +129,19 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // FK Panel stack state
   const [fkPanels, setFkPanels] = useState<FKPanelItem[]>([])
 
-  // Execution plan state
+  // Execution plan state (resize logic extracted to hook)
   const [executionPlan, setExecutionPlan] = useState<{
     plan: unknown[]
     durationMs: number
   } | null>(null)
   const [isExplaining, setIsExplaining] = useState(false)
-  const [executionPlanWidth, setExecutionPlanWidth] = useState(() => {
-    // Load from localStorage or default to 500
-    const saved = localStorage.getItem('execution-plan-width')
-    return saved ? parseInt(saved, 10) : 500
-  })
-  const isResizing = useRef(false)
+  const { executionPlanWidth, startResizing } = useExecutionPlanResize()
 
   // Save query dialog state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
 
   // Get the createForeignKeyTab action
   const createForeignKeyTab = useTabStore((s) => s.createForeignKeyTab)
-
-  // Handle execution plan panel resize
-  const handleExecutionPlanResize = useCallback((e: MouseEvent) => {
-    if (!isResizing.current) return
-    const newWidth = Math.max(300, Math.min(800, window.innerWidth - e.clientX))
-    setExecutionPlanWidth(newWidth)
-  }, [])
-
-  const stopResizing = useCallback(() => {
-    isResizing.current = false
-    document.body.style.cursor = ''
-    document.body.style.userSelect = ''
-    // Save to localStorage
-    localStorage.setItem('execution-plan-width', String(executionPlanWidth))
-  }, [executionPlanWidth])
-
-  useEffect(() => {
-    document.addEventListener('mousemove', handleExecutionPlanResize)
-    document.addEventListener('mouseup', stopResizing)
-    return () => {
-      document.removeEventListener('mousemove', handleExecutionPlanResize)
-      document.removeEventListener('mouseup', stopResizing)
-    }
-  }, [handleExecutionPlanResize, stopResizing])
 
   const handleRunQuery = useCallback(async () => {
     if (
@@ -1270,9 +1242,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors z-10"
               onMouseDown={(e) => {
                 e.preventDefault()
-                isResizing.current = true
-                document.body.style.cursor = 'ew-resize'
-                document.body.style.userSelect = 'none'
+                startResizing()
               }}
             />
             <ExecutionPlanViewer

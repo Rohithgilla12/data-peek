@@ -34,6 +34,8 @@ import { FKCellValue } from '@/components/fk-cell-value'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { getTypeColor } from '@/lib/type-colors'
 
 // Export types for parent components
 export interface DataTableFilter {
@@ -64,24 +66,6 @@ interface DataTableProps<TData> {
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
 }
 
-function getTypeColor(type: string): string {
-  const lower = type.toLowerCase()
-  if (lower.includes('uuid')) return 'text-purple-400'
-  if (lower.includes('varchar') || lower.includes('text') || lower.includes('char'))
-    return 'text-green-400'
-  if (
-    lower.includes('int') ||
-    lower.includes('numeric') ||
-    lower.includes('decimal') ||
-    lower.includes('bigint')
-  )
-    return 'text-blue-400'
-  if (lower.includes('timestamp') || lower.includes('date') || lower.includes('time'))
-    return 'text-orange-400'
-  if (lower.includes('bool')) return 'text-yellow-400'
-  return 'text-muted-foreground'
-}
-
 function CellValue({
   value,
   dataType,
@@ -97,7 +81,7 @@ function CellValue({
   onForeignKeyClick?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
 }) {
-  const [copied, setCopied] = React.useState(false)
+  const { copied, copy } = useCopyToClipboard({ resetDelay: 1500 })
   const lowerType = dataType.toLowerCase()
 
   // Handle JSON/JSONB types specially
@@ -117,12 +101,6 @@ function CellValue({
     )
   }
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(String(value ?? ''))
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }
-
   if (value === null || value === undefined) {
     return <span className="text-muted-foreground/50 italic">NULL</span>
   }
@@ -136,7 +114,7 @@ function CellValue({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            onClick={handleCopy}
+            onClick={() => copy(stringValue)}
             className={`text-left truncate max-w-[300px] hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${isMono ? 'font-mono text-xs' : ''}`}
           >
             {isLong ? stringValue.substring(0, 50) + '...' : stringValue}
@@ -145,7 +123,12 @@ function CellValue({
         <TooltipContent side="bottom" className="max-w-md">
           <div className="flex items-start gap-2">
             <pre className="text-xs whitespace-pre-wrap break-all flex-1">{stringValue}</pre>
-            <Button variant="ghost" size="icon" className="size-6 shrink-0" onClick={handleCopy}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-6 shrink-0"
+              onClick={() => copy(stringValue)}
+            >
               <Copy className="size-3" />
             </Button>
           </div>
