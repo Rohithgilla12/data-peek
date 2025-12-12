@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from '@tanstack/react-router';
-import { HomeLayout } from 'fumadocs-ui/layouts/home';
-import { baseOptions } from '@/lib/layout.shared';
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { HomeLayout } from "fumadocs-ui/layouts/home";
+import { baseOptions } from "@/lib/layout.shared";
 
-export const Route = createFileRoute('/')({
+export const Route = createFileRoute("/")({
   component: Home,
 });
 
@@ -26,16 +26,16 @@ function Home() {
 
           {/* Title */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
-            <span className="text-foreground">data-peek</span>{' '}
+            <span className="text-foreground">data-peek</span>{" "}
             <span className="text-[#22d3ee]">docs</span>
           </h1>
 
           {/* Tagline */}
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-            Everything you need to know about the minimal, fast, and lightweight SQL client for{' '}
-            <span className="text-[#22d3ee]">PostgreSQL</span>,{' '}
-            <span className="text-[#22d3ee]">MySQL</span>,{' '}
-            <span className="text-[#22d3ee]">SQL Server</span>, and{' '}
+            Everything you need to know about the minimal, fast, and lightweight
+            SQL client for <span className="text-[#22d3ee]">PostgreSQL</span>,{" "}
+            <span className="text-[#22d3ee]">MySQL</span>,{" "}
+            <span className="text-[#22d3ee]">SQL Server</span>, and{" "}
             <span className="text-[#22d3ee]">SQLite</span>.
           </p>
 
@@ -43,8 +43,9 @@ function Home() {
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link
               to="/docs/$"
-              params={{ _splat: '' }}
-              className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#22d3ee] text-[#0a0a0b] font-semibold text-sm transition-all hover:bg-[#67e8f9] hover:shadow-lg hover:shadow-[#22d3ee]/20"
+              params={{ _splat: "" }}
+              className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#22d3ee] font-semibold text-sm transition-all hover:bg-[#67e8f9] hover:shadow-lg hover:shadow-[#22d3ee]/20"
+              style={{ color: "#0f172a" }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -112,9 +113,12 @@ function Home() {
                 <path d="M12 22v-3" />
               </svg>
             </div>
-            <h3 className="text-foreground font-semibold mb-2">Lightning Fast</h3>
+            <h3 className="text-foreground font-semibold mb-2">
+              Lightning Fast
+            </h3>
             <p className="text-muted-foreground text-sm">
-              Optimized for speed. Opens instantly and executes queries in milliseconds.
+              Optimized for speed. Opens instantly and executes queries in
+              milliseconds.
             </p>
           </div>
 
@@ -134,9 +138,12 @@ function Home() {
                 <path d="m9 8 6 4-6 4Z" />
               </svg>
             </div>
-            <h3 className="text-foreground font-semibold mb-2">Keyboard First</h3>
+            <h3 className="text-foreground font-semibold mb-2">
+              Keyboard First
+            </h3>
             <p className="text-muted-foreground text-sm">
-              Navigate and execute everything with keyboard shortcuts for maximum productivity.
+              Navigate and execute everything with keyboard shortcuts for
+              maximum productivity.
             </p>
           </div>
 
@@ -155,9 +162,12 @@ function Home() {
                 <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
               </svg>
             </div>
-            <h3 className="text-foreground font-semibold mb-2">Beautiful Dark UI</h3>
+            <h3 className="text-foreground font-semibold mb-2">
+              Beautiful Dark UI
+            </h3>
             <p className="text-muted-foreground text-sm">
-              Terminal-inspired design that's easy on the eyes for long coding sessions.
+              Terminal-inspired design that's easy on the eyes for long coding
+              sessions.
             </p>
           </div>
         </div>
