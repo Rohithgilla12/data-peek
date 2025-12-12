@@ -16,22 +16,11 @@ function Home() {
           <div className="mb-8 flex justify-center">
             <div className="relative">
               <div className="absolute inset-0 blur-2xl opacity-30 bg-[#22d3ee] rounded-full scale-150" />
-              <div className="relative flex h-20 w-20 items-center justify-center rounded-2xl bg-[#22d3ee] shadow-lg shadow-[#22d3ee]/20">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="h-10 w-10 text-[#0a0a0b]"
-                >
-                  <ellipse cx="12" cy="5" rx="9" ry="3" />
-                  <path d="M3 5V19A9 3 0 0 0 21 19V5" />
-                  <path d="M3 12A9 3 0 0 0 21 12" />
-                </svg>
-              </div>
+              <img
+                src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/data-peek-icon.png"
+                alt="data-peek"
+                className="relative h-20 w-20 rounded-2xl shadow-lg shadow-[#22d3ee]/20"
+              />
             </div>
           </div>
 
