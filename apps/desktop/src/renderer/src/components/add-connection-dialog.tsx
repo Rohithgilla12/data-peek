@@ -258,6 +258,8 @@ export function AddConnectionDialog({
 }: AddConnectionDialogProps) {
   const addConnection = useConnectionStore((s) => s.addConnection)
   const updateConnection = useConnectionStore((s) => s.updateConnection)
+  const setActiveConnection = useConnectionStore((s) => s.setActiveConnection)
+  const setConnectionStatus = useConnectionStore((s) => s.setConnectionStatus)
   const isEditMode = !!editConnection
 
   const [dbType, setDbType] = useState<DatabaseType>('postgresql')
@@ -519,6 +521,15 @@ export function AddConnectionDialog({
         if (result.success && result.data) {
           // Add to local store
           addConnection(result.data)
+
+          // Auto-switch to the new connection
+          const newConnectionId = result.data.id
+          setConnectionStatus(newConnectionId, { isConnecting: true, error: undefined })
+          setTimeout(() => {
+            setConnectionStatus(newConnectionId, { isConnecting: false, isConnected: true })
+            setActiveConnection(newConnectionId)
+          }, 500)
+
           handleClose()
         } else {
           setTestResult('error')

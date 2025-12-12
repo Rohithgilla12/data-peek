@@ -1,9 +1,8 @@
 'use client'
 
 import * as React from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import {
-  Command,
-  Search,
   Sparkles,
   Database,
   FileCode2,
@@ -15,296 +14,831 @@ import {
   LayoutGrid,
   ChevronRight,
   Bookmark,
-  Trash2,
   RefreshCw,
-  Terminal,
   Keyboard,
-  LogOut
+  ChevronLeft,
+  Pin,
+  PinOff,
+  Pencil
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+  CommandShortcut
+} from '@/components/ui/command'
+import { useTheme } from '@/components/theme-provider'
+import { DatabaseIcon } from '@/components/database-icons'
+import { useConnectionStore, useTabStore } from '@/stores'
+import { useSavedQueryStore } from '@/stores/saved-queries-store'
+import { useAIStore } from '@/stores/ai-store'
+import { cn, keys } from '@/lib/utils'
+import { useSidebar } from '@/components/ui/sidebar'
+import type { SavedQuery } from '@shared/index'
 
-// Command types
-export interface CommandItem {
-  id: string
-  label: string
-  description?: string
-  icon?: React.ReactNode
-  shortcut?: string[]
-  category: string
-  action: () => void
-  keywords?: string[]
-}
+// Page types for navigation
+type CommandPage =
+  | 'home'
+  | 'connections'
+  | 'connections:switch'
+  | 'connections:edit'
+  | 'saved-queries'
+  | 'appearance'
 
 interface CommandPaletteProps {
   isOpen: boolean
   onClose: () => void
-  commands: CommandItem[]
+  onOpenAddConnection?: () => void
+  onOpenEditConnection?: (id: string) => void
+  initialPage?: CommandPage
 }
 
-// Category icons and colors
-const categoryConfig: Record<string, { icon: React.ReactNode; color: string }> = {
-  AI: { icon: <Sparkles className="size-3.5" />, color: 'text-blue-400' },
-  Connections: { icon: <Database className="size-3.5" />, color: 'text-emerald-400' },
-  Queries: { icon: <FileCode2 className="size-3.5" />, color: 'text-amber-400' },
-  Navigation: { icon: <LayoutGrid className="size-3.5" />, color: 'text-purple-400' },
-  Appearance: { icon: <Moon className="size-3.5" />, color: 'text-pink-400' },
-  General: { icon: <Command className="size-3.5" />, color: 'text-zinc-400' }
+// Custom fuzzy filter for cmdk with smart scoring
+function fuzzyFilter(value: string, search: string, keywords?: string[]): number {
+  if (!search) return 1
+
+  const searchLower = search.toLowerCase()
+  const valueLower = value.toLowerCase()
+
+  // Combine value with keywords for searching
+  const keywordsLower = keywords?.map((k) => k.toLowerCase()).join(' ') || ''
+  const searchableText = `${valueLower} ${keywordsLower}`
+
+  // Exact match - highest priority
+  if (valueLower === searchLower) return 1
+
+  // Starts with - very high priority
+  if (valueLower.startsWith(searchLower)) return 0.95
+
+  // Acronym match (e.g., "nqt" matches "New Query Tab")
+  const words = value.split(/\s+/)
+  const acronym = words.map((w) => w[0]?.toLowerCase() || '').join('')
+  if (acronym.startsWith(searchLower)) return 0.9
+  if (acronym.includes(searchLower)) return 0.85
+
+  // Contains as substring - good match
+  if (valueLower.includes(searchLower)) return 0.8
+  if (keywordsLower.includes(searchLower)) return 0.75
+
+  // Smart fuzzy match with scoring based on character proximity
+  const fuzzyScore = calculateFuzzyScore(searchableText, searchLower)
+  if (fuzzyScore > 0) return fuzzyScore
+
+  return 0
 }
 
-export function CommandPalette({ isOpen, onClose, commands }: CommandPaletteProps) {
-  const [search, setSearch] = React.useState('')
-  const [selectedIndex, setSelectedIndex] = React.useState(0)
-  const inputRef = React.useRef<HTMLInputElement>(null)
-  const listRef = React.useRef<HTMLDivElement>(null)
+// Calculate fuzzy match score with bonuses for consecutive matches and word boundaries
+function calculateFuzzyScore(text: string, search: string): number {
+  let textIndex = 0
+  let searchIndex = 0
+  let score = 0
+  let consecutiveBonus = 0
+  let lastMatchIndex = -2 // Start at -2 so first match doesn't get consecutive bonus
+  const matchPositions: number[] = []
 
-  // Filter commands based on search
-  const filteredCommands = React.useMemo(() => {
-    if (!search.trim()) return commands
+  while (textIndex < text.length && searchIndex < search.length) {
+    if (text[textIndex] === search[searchIndex]) {
+      matchPositions.push(textIndex)
 
-    const searchLower = search.toLowerCase()
-    return commands.filter((cmd) => {
-      const matchLabel = cmd.label.toLowerCase().includes(searchLower)
-      const matchDescription = cmd.description?.toLowerCase().includes(searchLower)
-      const matchKeywords = cmd.keywords?.some((k) => k.toLowerCase().includes(searchLower))
-      const matchCategory = cmd.category.toLowerCase().includes(searchLower)
-      return matchLabel || matchDescription || matchKeywords || matchCategory
-    })
-  }, [commands, search])
-
-  // Group commands by category
-  const groupedCommands = React.useMemo(() => {
-    const groups: Record<string, CommandItem[]> = {}
-    filteredCommands.forEach((cmd) => {
-      if (!groups[cmd.category]) {
-        groups[cmd.category] = []
+      // Bonus for consecutive characters (e.g., "feed" in "feedback")
+      if (textIndex === lastMatchIndex + 1) {
+        consecutiveBonus += 0.05
       }
-      groups[cmd.category].push(cmd)
-    })
-    return groups
-  }, [filteredCommands])
 
-  // Flatten for keyboard navigation
-  const flatCommands = React.useMemo(() => {
-    return Object.values(groupedCommands).flat()
-  }, [groupedCommands])
+      // Bonus for matching at word boundaries (start of word)
+      if (textIndex === 0 || text[textIndex - 1] === ' ' || text[textIndex - 1] === '-' || text[textIndex - 1] === '_') {
+        score += 0.03
+      }
 
-  // Reset selection when search changes
-  React.useEffect(() => {
-    setSelectedIndex(0)
-  }, [search])
+      lastMatchIndex = textIndex
+      searchIndex++
+    }
+    textIndex++
+  }
 
-  // Focus input when opened
+  // Did we match all search characters?
+  if (searchIndex !== search.length) return 0
+
+  // Base score for matching all characters
+  const baseScore = 0.6
+
+  // Bonus for shorter text (more relevant match)
+  const lengthBonus = Math.max(0, 0.1 - (text.length - search.length) * 0.005)
+
+  // Bonus for matches being close together
+  const spread = matchPositions.length > 1
+    ? matchPositions[matchPositions.length - 1] - matchPositions[0]
+    : 0
+  const compactnessBonus = Math.max(0, 0.1 - spread * 0.01)
+
+  return Math.min(0.7, baseScore + consecutiveBonus + lengthBonus + compactnessBonus + score)
+}
+
+// Get query type from SQL
+function getQueryType(sql: string): string {
+  const trimmed = sql.trim().toUpperCase()
+  if (trimmed.startsWith('SELECT')) return 'SELECT'
+  if (trimmed.startsWith('INSERT')) return 'INSERT'
+  if (trimmed.startsWith('UPDATE')) return 'UPDATE'
+  if (trimmed.startsWith('DELETE')) return 'DELETE'
+  if (trimmed.startsWith('CREATE')) return 'CREATE'
+  if (trimmed.startsWith('ALTER')) return 'ALTER'
+  if (trimmed.startsWith('DROP')) return 'DROP'
+  if (trimmed.startsWith('EXPLAIN')) return 'EXPLAIN'
+  return 'SQL'
+}
+
+// Query type badge colors
+const queryTypeColors: Record<string, string> = {
+  SELECT: 'bg-blue-500/20 text-blue-400',
+  INSERT: 'bg-green-500/20 text-green-400',
+  UPDATE: 'bg-yellow-500/20 text-yellow-400',
+  DELETE: 'bg-red-500/20 text-red-400',
+  CREATE: 'bg-purple-500/20 text-purple-400',
+  ALTER: 'bg-purple-500/20 text-purple-400',
+  DROP: 'bg-purple-500/20 text-purple-400',
+  EXPLAIN: 'bg-orange-500/20 text-orange-400',
+  SQL: 'bg-zinc-500/20 text-zinc-400'
+}
+
+export function CommandPalette({
+  isOpen,
+  onClose,
+  onOpenAddConnection,
+  onOpenEditConnection,
+  initialPage = 'home'
+}: CommandPaletteProps) {
+  const navigate = useNavigate()
+  const { toggleSidebar } = useSidebar()
+  const { setTheme, theme } = useTheme()
+
+  // Stores
+  const activeConnection = useConnectionStore((s) => s.getActiveConnection())
+  const connections = useConnectionStore((s) => s.connections)
+  const setActiveConnection = useConnectionStore((s) => s.setActiveConnection)
+  const setConnectionStatus = useConnectionStore((s) => s.setConnectionStatus)
+  const fetchSchemas = useConnectionStore((s) => s.fetchSchemas)
+
+  const createQueryTab = useTabStore((s) => s.createQueryTab)
+  const setActiveTab = useTabStore((s) => s.setActiveTab)
+
+  const savedQueries = useSavedQueryStore((s) => s.savedQueries)
+  const incrementUsage = useSavedQueryStore((s) => s.incrementUsage)
+  const togglePin = useSavedQueryStore((s) => s.togglePin)
+  const initializeSavedQueries = useSavedQueryStore((s) => s.initializeSavedQueries)
+  const isInitialized = useSavedQueryStore((s) => s.isInitialized)
+
+  const openAIPanel = useAIStore((s) => s.openPanel)
+  const openAISettings = useAIStore((s) => s.openSettings)
+
+  // State
+  const [search, setSearch] = React.useState('')
+  const [pages, setPages] = React.useState<CommandPage[]>([initialPage])
+  const activePage = pages[pages.length - 1]
+  const inputRef = React.useRef<HTMLInputElement>(null)
+
+  // Navigation helpers
+  const pushPage = React.useCallback((page: CommandPage) => {
+    setPages((prev) => [...prev, page])
+    setSearch('')
+  }, [])
+
+  const popPage = React.useCallback(() => {
+    setPages((prev) => (prev.length > 1 ? prev.slice(0, -1) : prev))
+    setSearch('')
+  }, [])
+
+  // Reset state when dialog opens/closes
   React.useEffect(() => {
     if (isOpen) {
+      setPages([initialPage])
       setSearch('')
-      setSelectedIndex(0)
-      setTimeout(() => inputRef.current?.focus(), 50)
+      // Initialize saved queries when opening saved-queries page
+      if (initialPage === 'saved-queries' && !isInitialized) {
+        initializeSavedQueries()
+      }
     }
-  }, [isOpen])
+  }, [isOpen, initialPage, isInitialized, initializeSavedQueries])
 
-  // Scroll selected item into view
+  // Initialize saved queries when navigating to that page
   React.useEffect(() => {
-    if (listRef.current && flatCommands.length > 0) {
-      const selectedEl = listRef.current.querySelector(`[data-index="${selectedIndex}"]`)
-      selectedEl?.scrollIntoView({ block: 'nearest' })
+    if (activePage === 'saved-queries' && !isInitialized) {
+      initializeSavedQueries()
     }
-  }, [selectedIndex, flatCommands.length])
+  }, [activePage, isInitialized, initializeSavedQueries])
 
-  // Keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault()
-        setSelectedIndex((i) => Math.min(i + 1, flatCommands.length - 1))
-        break
-      case 'ArrowUp':
-        e.preventDefault()
-        setSelectedIndex((i) => Math.max(i - 1, 0))
-        break
-      case 'Enter':
-        e.preventDefault()
-        if (flatCommands[selectedIndex]) {
-          flatCommands[selectedIndex].action()
-          onClose()
-        }
-        break
-      case 'Escape':
-        e.preventDefault()
-        onClose()
-        break
+  // Handle connection switching
+  const handleSelectConnection = React.useCallback(
+    (connectionId: string) => {
+      setConnectionStatus(connectionId, { isConnecting: true, error: undefined })
+      setTimeout(() => {
+        setConnectionStatus(connectionId, { isConnecting: false, isConnected: true })
+        setActiveConnection(connectionId)
+      }, 500)
+      onClose()
+    },
+    [setConnectionStatus, setActiveConnection, onClose]
+  )
+
+  // Handle saved query selection
+  const handleSelectQuery = React.useCallback(
+    (query: SavedQuery) => {
+      const tabId = createQueryTab(query.connectionId || activeConnection?.id || null, query.query)
+      setActiveTab(tabId)
+      incrementUsage(query.id)
+      onClose()
+    },
+    [createQueryTab, activeConnection, setActiveTab, incrementUsage, onClose]
+  )
+
+  // Sort saved queries: pinned first, then by last used
+  const sortedQueries = React.useMemo(() => {
+    return [...savedQueries].sort((a, b) => {
+      // Pinned first
+      if (a.isPinned && !b.isPinned) return -1
+      if (!a.isPinned && b.isPinned) return 1
+      // Then by last used
+      return (b.lastUsedAt || 0) - (a.lastUsedAt || 0)
+    })
+  }, [savedQueries])
+
+  // Group queries by folder for display
+  const groupedQueries = React.useMemo(() => {
+    const groups: Record<string, SavedQuery[]> = {}
+    const pinnedQueries = sortedQueries.filter((q) => q.isPinned)
+    const unpinnedQueries = sortedQueries.filter((q) => !q.isPinned)
+
+    // Add pinned group if any
+    if (pinnedQueries.length > 0) {
+      groups['Pinned'] = pinnedQueries
+    }
+
+    // Group unpinned by folder
+    unpinnedQueries.forEach((q) => {
+      const folder = q.folder || 'Ungrouped'
+      if (!groups[folder]) groups[folder] = []
+      groups[folder].push(q)
+    })
+
+    return groups
+  }, [sortedQueries])
+
+  // Breadcrumb for nested pages
+  const getBreadcrumb = () => {
+    switch (activePage) {
+      case 'connections':
+        return 'Connections'
+      case 'connections:switch':
+        return 'Connections → Switch'
+      case 'connections:edit':
+        return 'Connections → Edit'
+      case 'saved-queries':
+        return 'Saved Queries'
+      case 'appearance':
+        return 'Appearance'
+      default:
+        return null
     }
   }
 
-  if (!isOpen) return null
-
-  let globalIndex = 0
+  // Placeholder text
+  const getPlaceholder = () => {
+    switch (activePage) {
+      case 'connections':
+      case 'connections:switch':
+        return 'Search connections...'
+      case 'connections:edit':
+        return 'Select connection to edit...'
+      case 'saved-queries':
+        return 'Search saved queries...'
+      case 'appearance':
+        return 'Select theme...'
+      default:
+        return 'Type a command or search...'
+    }
+  }
 
   return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm animate-in fade-in-0 duration-150"
-        onClick={onClose}
-      />
-
-      {/* Palette */}
-      <div
-        className={cn(
-          'fixed left-1/2 top-[20%] z-[101] -translate-x-1/2',
-          'w-full max-w-[560px]',
-          'animate-in fade-in-0 slide-in-from-top-4 duration-200'
-        )}
+    <CommandDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Command
+        filter={(value, search, keywords) => fuzzyFilter(value, search, keywords)}
+        onKeyDown={(e) => {
+          // Backspace on empty search goes back
+          if (e.key === 'Backspace' && !search && pages.length > 1) {
+            e.preventDefault()
+            popPage()
+          }
+          // Escape goes back or closes
+          if (e.key === 'Escape') {
+            e.preventDefault()
+            if (pages.length > 1) {
+              popPage()
+            } else {
+              onClose()
+            }
+          }
+        }}
       >
-        <div
-          className={cn(
-            'overflow-hidden rounded-2xl',
-            'bg-zinc-900/95 backdrop-blur-xl',
-            'border border-zinc-700/50',
-            'shadow-2xl shadow-black/50',
-            'ring-1 ring-white/5'
-          )}
-        >
-          {/* Search input */}
-          <div className="relative flex items-center border-b border-zinc-800/80">
-            <Search className="absolute left-4 size-4 text-zinc-500" />
-            <input
-              ref={inputRef}
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Search commands..."
-              className={cn(
-                'w-full bg-transparent py-4 pl-11 pr-4',
-                'text-sm text-zinc-100 placeholder:text-zinc-500',
-                'focus:outline-none'
-              )}
-            />
-            <div className="absolute right-4 flex items-center gap-2">
-              <kbd className="hidden sm:flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400">
-                ESC
-              </kbd>
-            </div>
+        {/* Breadcrumb header for nested pages */}
+        {activePage !== 'home' && (
+          <div className="flex items-center gap-2 px-3 py-2 border-b text-xs text-muted-foreground">
+            <button
+              onClick={popPage}
+              className="flex items-center gap-1 hover:text-foreground transition-colors"
+            >
+              <ChevronLeft className="size-3" />
+              Back
+            </button>
+            <span className="text-muted-foreground/50">|</span>
+            <span>{getBreadcrumb()}</span>
           </div>
+        )}
 
-          {/* Commands list */}
-          <div ref={listRef} className="max-h-[400px] overflow-y-auto p-2">
-            {flatCommands.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <Search className="size-8 text-zinc-600 mb-3" />
-                <p className="text-sm text-zinc-500">No commands found</p>
-                <p className="text-xs text-zinc-600 mt-1">Try a different search term</p>
-              </div>
-            ) : (
-              Object.entries(groupedCommands).map(([category, items]) => (
-                <div key={category} className="mb-2 last:mb-0">
-                  {/* Category header */}
-                  <div className="flex items-center gap-2 px-2 py-1.5">
-                    <span
-                      className={cn(
-                        'opacity-60',
-                        categoryConfig[category]?.color || 'text-zinc-400'
-                      )}
-                    >
-                      {categoryConfig[category]?.icon}
-                    </span>
-                    <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-                      {category}
+        <CommandInput
+          ref={inputRef}
+          placeholder={getPlaceholder()}
+          value={search}
+          onValueChange={setSearch}
+        />
+
+        <CommandList>
+          <CommandEmpty>No results found.</CommandEmpty>
+
+          {/* HOME PAGE */}
+          {activePage === 'home' && (
+            <>
+              {/* AI Commands */}
+              <CommandGroup heading="AI">
+                <CommandItem
+                  value="ai-open"
+                  keywords={['chat', 'assistant', 'generate', 'sql']}
+                  onSelect={() => {
+                    openAIPanel()
+                    onClose()
+                  }}
+                >
+                  <Sparkles className="text-blue-400" />
+                  <span>Open AI Assistant</span>
+                  <CommandShortcut>{keys.mod}I</CommandShortcut>
+                </CommandItem>
+                <CommandItem
+                  value="ai-settings"
+                  keywords={['api', 'key', 'provider', 'openai', 'anthropic']}
+                  onSelect={() => {
+                    openAISettings()
+                    onClose()
+                  }}
+                >
+                  <Sparkles className="text-blue-400" />
+                  <span>AI Settings</span>
+                </CommandItem>
+              </CommandGroup>
+
+              <CommandSeparator />
+
+              {/* Connections - with submenu */}
+              <CommandGroup heading="Connections">
+                <CommandItem
+                  value="connections-menu"
+                  keywords={['database', 'connect', 'switch', 'manage']}
+                  onSelect={() => pushPage('connections')}
+                >
+                  <Database className="text-emerald-400" />
+                  <span>Connections</span>
+                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                </CommandItem>
+                {/* Quick access to top 3 connections */}
+                {connections.slice(0, 3).map((conn, index) => (
+                  <CommandItem
+                    key={conn.id}
+                    value={`connection-quick-${conn.name}`}
+                    keywords={[conn.dbType, conn.host || '', conn.database]}
+                    onSelect={() => handleSelectConnection(conn.id)}
+                  >
+                    <DatabaseIcon dbType={conn.dbType} className="size-4" />
+                    <span className="truncate">{conn.name}</span>
+                    {conn.id === activeConnection?.id && (
+                      <span className="ml-2 text-[10px] text-emerald-400">Active</span>
+                    )}
+                    <CommandShortcut>
+                      {keys.mod}
+                      {keys.shift}
+                      {index + 1}
+                    </CommandShortcut>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+
+              <CommandSeparator />
+
+              {/* Queries */}
+              <CommandGroup heading="Queries">
+                <CommandItem
+                  value="query-new"
+                  keywords={['tab', 'editor', 'sql', 'create']}
+                  onSelect={() => {
+                    const tabId = createQueryTab(activeConnection?.id || null)
+                    setActiveTab(tabId)
+                    onClose()
+                  }}
+                >
+                  <Plus className="text-amber-400" />
+                  <span>New Query Tab</span>
+                  <CommandShortcut>{keys.mod}T</CommandShortcut>
+                </CommandItem>
+                <CommandItem
+                  value="saved-queries-menu"
+                  keywords={['bookmark', 'favorites', 'history', 'pinned']}
+                  onSelect={() => pushPage('saved-queries')}
+                >
+                  <Bookmark className="text-amber-400" />
+                  <span>Saved Queries</span>
+                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                </CommandItem>
+              </CommandGroup>
+
+              <CommandSeparator />
+
+              {/* Navigation */}
+              <CommandGroup heading="Navigation">
+                <CommandItem
+                  value="nav-settings"
+                  keywords={['preferences', 'config']}
+                  onSelect={() => {
+                    navigate({ to: '/settings' })
+                    onClose()
+                  }}
+                >
+                  <Settings className="text-purple-400" />
+                  <span>Settings</span>
+                </CommandItem>
+                <CommandItem
+                  value="nav-sidebar"
+                  keywords={['panel', 'hide', 'show']}
+                  onSelect={() => {
+                    toggleSidebar()
+                    onClose()
+                  }}
+                >
+                  <LayoutGrid className="text-purple-400" />
+                  <span>Toggle Sidebar</span>
+                  <CommandShortcut>{keys.mod}B</CommandShortcut>
+                </CommandItem>
+                <CommandItem
+                  value="nav-shortcuts"
+                  keywords={['hotkeys', 'keybindings']}
+                  onSelect={() => {
+                    navigate({ to: '/settings' })
+                    onClose()
+                  }}
+                >
+                  <Keyboard className="text-purple-400" />
+                  <span>Keyboard Shortcuts</span>
+                </CommandItem>
+              </CommandGroup>
+
+              <CommandSeparator />
+
+              {/* Appearance - with submenu */}
+              <CommandGroup heading="Appearance">
+                <CommandItem
+                  value="appearance-menu"
+                  keywords={['theme', 'dark', 'light', 'mode']}
+                  onSelect={() => pushPage('appearance')}
+                >
+                  <Moon className="text-pink-400" />
+                  <span>Change Theme</span>
+                  <span className="ml-auto text-xs text-muted-foreground capitalize">{theme}</span>
+                  <ChevronRight className="size-4 text-muted-foreground" />
+                </CommandItem>
+              </CommandGroup>
+            </>
+          )}
+
+          {/* CONNECTIONS PAGE */}
+          {activePage === 'connections' && (
+            <>
+              <CommandGroup heading="Quick Switch">
+                {connections.slice(0, 5).map((conn, index) => (
+                  <CommandItem
+                    key={conn.id}
+                    value={`switch-${conn.name}-${conn.id}`}
+                    keywords={[conn.dbType, conn.host || '', conn.database]}
+                    onSelect={() => handleSelectConnection(conn.id)}
+                  >
+                    <DatabaseIcon dbType={conn.dbType} className="size-4" />
+                    <span className="truncate">{conn.name}</span>
+                    {conn.id === activeConnection?.id && (
+                      <span className="ml-2 text-[10px] text-emerald-400">Active</span>
+                    )}
+                    {index < 9 && (
+                      <CommandShortcut>
+                        {keys.mod}
+                        {keys.shift}
+                        {index + 1}
+                      </CommandShortcut>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+
+              <CommandSeparator />
+
+              <CommandGroup heading="Manage">
+                <CommandItem
+                  value="connections-all"
+                  keywords={['switch', 'browse', 'list']}
+                  onSelect={() => pushPage('connections:switch')}
+                >
+                  <Database className="text-emerald-400" />
+                  <span>All Connections</span>
+                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                </CommandItem>
+                <CommandItem
+                  value="connections-edit"
+                  keywords={['modify', 'change', 'update']}
+                  onSelect={() => pushPage('connections:edit')}
+                >
+                  <Pencil className="text-emerald-400" />
+                  <span>Edit Connection</span>
+                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                </CommandItem>
+                {onOpenAddConnection && (
+                  <CommandItem
+                    value="connections-add"
+                    keywords={['new', 'create']}
+                    onSelect={() => {
+                      onOpenAddConnection()
+                      onClose()
+                    }}
+                  >
+                    <Plus className="text-emerald-400" />
+                    <span>Add New Connection</span>
+                  </CommandItem>
+                )}
+                <CommandItem
+                  value="connections-refresh"
+                  keywords={['reload', 'schema', 'tables']}
+                  onSelect={() => {
+                    if (activeConnection) {
+                      fetchSchemas(activeConnection.id)
+                    }
+                    onClose()
+                  }}
+                >
+                  <RefreshCw className="text-emerald-400" />
+                  <span>Refresh Schema</span>
+                </CommandItem>
+              </CommandGroup>
+            </>
+          )}
+
+          {/* CONNECTIONS:SWITCH PAGE - All connections */}
+          {activePage === 'connections:switch' && (
+            <>
+              {/* Quick actions at the top */}
+              <CommandGroup heading="Actions">
+                {onOpenAddConnection && (
+                  <CommandItem
+                    value="connections-add-new"
+                    keywords={['new', 'create', 'add']}
+                    onSelect={() => {
+                      onOpenAddConnection()
+                      onClose()
+                    }}
+                  >
+                    <Plus className="text-emerald-400" />
+                    <span>Add New Connection</span>
+                  </CommandItem>
+                )}
+                <CommandItem
+                  value="connections-edit-existing"
+                  keywords={['modify', 'change', 'update', 'edit']}
+                  onSelect={() => pushPage('connections:edit')}
+                >
+                  <Pencil className="text-emerald-400" />
+                  <span>Edit Connection</span>
+                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                </CommandItem>
+                <CommandItem
+                  value="connections-refresh-schema"
+                  keywords={['reload', 'schema', 'tables']}
+                  onSelect={() => {
+                    if (activeConnection) {
+                      fetchSchemas(activeConnection.id)
+                    }
+                    onClose()
+                  }}
+                >
+                  <RefreshCw className="text-emerald-400" />
+                  <span>Refresh Schema</span>
+                </CommandItem>
+              </CommandGroup>
+
+              <CommandSeparator />
+
+              <CommandGroup heading="All Connections">
+                {connections.map((conn, index) => (
+                  <CommandItem
+                    key={conn.id}
+                    value={`switch-all-${conn.name}-${conn.id}`}
+                    keywords={[conn.dbType, conn.host || '', conn.database]}
+                    onSelect={() => handleSelectConnection(conn.id)}
+                  >
+                    <DatabaseIcon dbType={conn.dbType} className="size-4" />
+                    <div className="flex flex-col min-w-0">
+                      <span className="truncate">{conn.name}</span>
+                      <span className="text-xs text-muted-foreground truncate">
+                        {conn.host}:{conn.port}/{conn.database}
+                      </span>
+                    </div>
+                    {conn.id === activeConnection?.id && (
+                      <span className="ml-auto text-[10px] text-emerald-400">Active</span>
+                    )}
+                    {index < 9 && (
+                      <CommandShortcut>
+                        {keys.mod}
+                        {keys.shift}
+                        {index + 1}
+                      </CommandShortcut>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </>
+          )}
+
+          {/* CONNECTIONS:EDIT PAGE - Select connection to edit */}
+          {activePage === 'connections:edit' && (
+            <CommandGroup heading="Select Connection to Edit">
+              {connections.map((conn) => (
+                <CommandItem
+                  key={conn.id}
+                  value={`edit-${conn.name}-${conn.id}`}
+                  keywords={[conn.dbType, conn.host || '', conn.database]}
+                  onSelect={() => {
+                    onOpenEditConnection?.(conn.id)
+                    onClose()
+                  }}
+                >
+                  <DatabaseIcon dbType={conn.dbType} className="size-4" />
+                  <div className="flex flex-col min-w-0">
+                    <span className="truncate">{conn.name}</span>
+                    <span className="text-xs text-muted-foreground truncate">
+                      {conn.host}:{conn.port}/{conn.database}
                     </span>
                   </div>
+                  {conn.id === activeConnection?.id && (
+                    <span className="ml-auto text-[10px] text-emerald-400">Active</span>
+                  )}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
 
-                  {/* Commands */}
-                  {items.map((cmd) => {
-                    const currentIndex = globalIndex++
-                    const isSelected = currentIndex === selectedIndex
-
+          {/* SAVED QUERIES PAGE */}
+          {activePage === 'saved-queries' && (
+            <>
+              {Object.entries(groupedQueries).map(([folder, queries]) => (
+                <CommandGroup key={folder} heading={folder}>
+                  {queries.map((query) => {
+                    const queryType = getQueryType(query.query)
                     return (
-                      <button
-                        key={cmd.id}
-                        data-index={currentIndex}
-                        onClick={() => {
-                          cmd.action()
-                          onClose()
-                        }}
-                        onMouseEnter={() => setSelectedIndex(currentIndex)}
-                        className={cn(
-                          'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg',
-                          'text-left transition-all duration-75',
-                          isSelected
-                            ? 'bg-zinc-800/80 ring-1 ring-zinc-700/50'
-                            : 'hover:bg-zinc-800/50'
-                        )}
+                      <CommandItem
+                        key={query.id}
+                        value={`query-${query.name}-${query.id}`}
+                        keywords={[...query.tags, query.description || '', queryType]}
+                        onSelect={() => handleSelectQuery(query)}
+                        className="group"
                       >
-                        {/* Icon */}
-                        <div
-                          className={cn(
-                            'flex items-center justify-center size-8 rounded-lg',
-                            'bg-zinc-800 border border-zinc-700/50',
-                            isSelected && 'bg-zinc-700 border-zinc-600'
-                          )}
-                        >
-                          {cmd.icon || <Command className="size-4 text-zinc-400" />}
-                        </div>
-
-                        {/* Label & description */}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm text-zinc-200 truncate">{cmd.label}</p>
-                          {cmd.description && (
-                            <p className="text-xs text-zinc-500 truncate">{cmd.description}</p>
-                          )}
-                        </div>
-
-                        {/* Shortcut */}
-                        {cmd.shortcut && (
-                          <div className="flex items-center gap-1">
-                            {cmd.shortcut.map((key, i) => (
-                              <kbd
-                                key={i}
-                                className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-[10px] text-zinc-400"
-                              >
-                                {key}
-                              </kbd>
-                            ))}
+                        <FileCode2 className="text-amber-400 shrink-0" />
+                        <div className="flex flex-col min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="truncate">{query.name}</span>
+                            <span
+                              className={cn(
+                                'px-1.5 py-0.5 rounded text-[10px] font-medium',
+                                queryTypeColors[queryType]
+                              )}
+                            >
+                              {queryType}
+                            </span>
                           </div>
-                        )}
-
-                        {/* Arrow indicator */}
-                        {isSelected && (
-                          <ChevronRight className="size-4 text-zinc-500 animate-in slide-in-from-left-1 duration-150" />
-                        )}
-                      </button>
+                          {query.description && (
+                            <span className="text-xs text-muted-foreground truncate">
+                              {query.description}
+                            </span>
+                          )}
+                        </div>
+                        {/* Pin/Unpin button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            togglePin(query.id)
+                          }}
+                          className={cn(
+                            'p-1 rounded hover:bg-accent transition-colors',
+                            query.isPinned
+                              ? 'text-amber-400'
+                              : 'text-muted-foreground opacity-0 group-hover:opacity-100'
+                          )}
+                          title={query.isPinned ? 'Unpin' : 'Pin'}
+                        >
+                          {query.isPinned ? (
+                            <PinOff className="size-3" />
+                          ) : (
+                            <Pin className="size-3" />
+                          )}
+                        </button>
+                      </CommandItem>
                     )
                   })}
+                </CommandGroup>
+              ))}
+              {savedQueries.length === 0 && (
+                <div className="py-6 text-center text-sm text-muted-foreground">
+                  No saved queries yet
                 </div>
-              ))
+              )}
+            </>
+          )}
+
+          {/* APPEARANCE PAGE */}
+          {activePage === 'appearance' && (
+            <CommandGroup heading="Theme">
+              <CommandItem
+                value="theme-light"
+                keywords={['mode', 'bright']}
+                onSelect={() => {
+                  setTheme('light')
+                  onClose()
+                }}
+              >
+                <Sun className="text-pink-400" />
+                <span>Light</span>
+                {theme === 'light' && <span className="ml-auto text-xs text-pink-400">Active</span>}
+              </CommandItem>
+              <CommandItem
+                value="theme-dark"
+                keywords={['mode', 'night']}
+                onSelect={() => {
+                  setTheme('dark')
+                  onClose()
+                }}
+              >
+                <Moon className="text-pink-400" />
+                <span>Dark</span>
+                {theme === 'dark' && <span className="ml-auto text-xs text-pink-400">Active</span>}
+              </CommandItem>
+              <CommandItem
+                value="theme-system"
+                keywords={['mode', 'auto']}
+                onSelect={() => {
+                  setTheme('system')
+                  onClose()
+                }}
+              >
+                <Monitor className="text-pink-400" />
+                <span>System</span>
+                {theme === 'system' && (
+                  <span className="ml-auto text-xs text-pink-400">Active</span>
+                )}
+              </CommandItem>
+            </CommandGroup>
+          )}
+        </CommandList>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between px-3 py-2 border-t text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1">
+              <kbd className="px-1 py-0.5 rounded bg-muted border text-[10px]">↑↓</kbd>
+              navigate
+            </span>
+            <span className="flex items-center gap-1">
+              <kbd className="px-1 py-0.5 rounded bg-muted border text-[10px]">↵</kbd>
+              select
+            </span>
+            {pages.length > 1 && (
+              <span className="flex items-center gap-1">
+                <kbd className="px-1 py-0.5 rounded bg-muted border text-[10px]">⌫</kbd>
+                back
+              </span>
             )}
           </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between px-4 py-2.5 border-t border-zinc-800/80 bg-zinc-900/50">
-            <div className="flex items-center gap-3 text-[10px] text-zinc-500">
-              <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 rounded bg-zinc-800 border border-zinc-700">↑</kbd>
-                <kbd className="px-1 py-0.5 rounded bg-zinc-800 border border-zinc-700">↓</kbd>
-                to navigate
-              </span>
-              <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700">↵</kbd>
-                to select
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Command className="size-3 text-zinc-600" />
-              <span className="text-[10px] text-zinc-600">data-peek</span>
-            </div>
-          </div>
+          <span>data-peek</span>
         </div>
-      </div>
-    </>
+      </Command>
+    </CommandDialog>
   )
 }
 
-// Export icons for use in command definitions
+// Re-export icons for backward compatibility
 export {
   Sparkles,
   Database,
@@ -316,9 +850,6 @@ export {
   Plus,
   LayoutGrid,
   Bookmark,
-  Trash2,
   RefreshCw,
-  Terminal,
-  Keyboard,
-  LogOut
+  Keyboard
 }

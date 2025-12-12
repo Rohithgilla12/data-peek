@@ -4,31 +4,22 @@ import {
   createRoute,
   createMemoryHistory,
   Outlet,
-  Link,
-  useNavigate
+  Link
 } from '@tanstack/react-router'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Moon, Sun, Monitor, Sparkles, Command } from 'lucide-react'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
-import {
-  CommandPalette,
-  type CommandItem,
-  Database,
-  Settings,
-  Plus,
-  Bookmark,
-  RefreshCw,
-  Keyboard
-} from '@/components/command-palette'
+import { CommandPalette } from '@/components/command-palette'
 import { SavedQueriesDialog } from '@/components/saved-queries-dialog'
 import { DatabaseIcon } from '@/components/database-icons'
 import { AppSidebar } from '@/components/app-sidebar'
 import { NavActions } from '@/components/nav-actions'
 import { Separator } from '@/components/ui/separator'
-import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { TabContainer } from '@/components/tab-container'
 import { ConnectionPicker } from '@/components/connection-picker'
+import { AddConnectionDialog } from '@/components/add-connection-dialog'
 import { LicenseStatusIndicator } from '@/components/license-status-indicator'
 import { LicenseActivationModal } from '@/components/license-activation-modal'
 import { LicenseSettingsModal } from '@/components/license-settings-modal'
@@ -42,24 +33,28 @@ import { cn, keys } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
+// Command palette page type for direct navigation
+type CommandPalettePage = 'home' | 'connections' | 'connections:switch' | 'saved-queries'
+
 // Inner layout component that has access to sidebar context
 function LayoutContent() {
-  const navigate = useNavigate()
-  const { toggleSidebar } = useSidebar()
-  const { setTheme } = useTheme()
-
   const activeConnection = useConnectionStore((s) => s.getActiveConnection())
   const connections = useConnectionStore((s) => s.connections)
   const setActiveConnection = useConnectionStore((s) => s.setActiveConnection)
   const setConnectionStatus = useConnectionStore((s) => s.setConnectionStatus)
-  const fetchSchemas = useConnectionStore((s) => s.fetchSchemas)
   const [isConnectionPickerOpen, setIsConnectionPickerOpen] = useState(false)
 
   // Command palette state
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false)
+  const [commandPaletteInitialPage, setCommandPaletteInitialPage] =
+    useState<CommandPalettePage>('home')
 
   // Saved queries dialog state
   const [isSavedQueriesOpen, setIsSavedQueriesOpen] = useState(false)
+
+  // Add connection dialog state (for command palette integration)
+  const [isAddConnectionOpen, setIsAddConnectionOpen] = useState(false)
+  const [editConnectionId, setEditConnectionId] = useState<string | null>(null)
 
   // License modal states from store
   const isActivationModalOpen = useLicenseStore((s) => s.isActivationModalOpen)
@@ -70,7 +65,6 @@ function LayoutContent() {
   // AI states from store
   const isAIPanelOpen = useAIStore((s) => s.isPanelOpen)
   const toggleAIPanel = useAIStore((s) => s.togglePanel)
-  const openAIPanel = useAIStore((s) => s.openPanel)
   const closeAIPanel = useAIStore((s) => s.closePanel)
   const isAISettingsOpen = useAIStore((s) => s.isSettingsOpen)
   const openAISettings = useAIStore((s) => s.openSettings)
@@ -104,7 +98,7 @@ function LayoutContent() {
     loadConfigFromMain()
   }, [loadConfigFromMain])
 
-  // Handle connection switching
+  // Handle connection switching (used by keyboard shortcuts)
   const handleSelectConnection = useCallback(
     (connectionId: string) => {
       setConnectionStatus(connectionId, { isConnecting: true, error: undefined })
@@ -116,167 +110,11 @@ function LayoutContent() {
     [setConnectionStatus, setActiveConnection]
   )
 
-  // Command palette commands
-  const commands = useMemo<CommandItem[]>(() => {
-    const cmds: CommandItem[] = [
-      // AI Commands
-      {
-        id: 'ai-open',
-        label: 'Open AI Assistant',
-        description: 'Chat with AI to generate SQL queries',
-        icon: <Sparkles className="size-4 text-blue-400" />,
-        shortcut: [keys.mod, 'I'],
-        category: 'AI',
-        action: () => openAIPanel(),
-        keywords: ['chat', 'assistant', 'generate', 'sql']
-      },
-      {
-        id: 'ai-settings',
-        label: 'AI Settings',
-        description: 'Configure AI provider and API key',
-        icon: <Sparkles className="size-4 text-blue-400" />,
-        category: 'AI',
-        action: () => openAISettings(),
-        keywords: ['api', 'key', 'provider', 'openai', 'anthropic']
-      },
-
-      // Connection Commands
-      {
-        id: 'connection-picker',
-        label: 'Switch Connection',
-        description: 'Open connection picker',
-        icon: <Database className="size-4 text-emerald-400" />,
-        shortcut: [keys.mod, 'P'],
-        category: 'Connections',
-        action: () => setIsConnectionPickerOpen(true),
-        keywords: ['database', 'connect', 'switch']
-      },
-      {
-        id: 'connection-refresh',
-        label: 'Refresh Schema',
-        description: 'Reload database schema',
-        icon: <RefreshCw className="size-4 text-emerald-400" />,
-        category: 'Connections',
-        action: () => {
-          if (activeConnection) {
-            fetchSchemas(activeConnection.id)
-          }
-        },
-        keywords: ['reload', 'schema', 'tables']
-      },
-
-      // Query Commands
-      {
-        id: 'query-new',
-        label: 'New Query Tab',
-        description: 'Create a new query tab',
-        icon: <Plus className="size-4 text-amber-400" />,
-        shortcut: [keys.mod, 'T'],
-        category: 'Queries',
-        action: () => {
-          const tabId = createQueryTab(activeConnection?.id || null)
-          setActiveTab(tabId)
-        },
-        keywords: ['tab', 'editor', 'sql']
-      },
-      {
-        id: 'query-saved',
-        label: 'Saved Queries',
-        description: 'Browse and load saved queries',
-        icon: <Bookmark className="size-4 text-amber-400" />,
-        category: 'Queries',
-        action: () => setIsSavedQueriesOpen(true),
-        keywords: ['bookmark', 'favorites', 'history']
-      },
-
-      // Navigation Commands
-      {
-        id: 'nav-settings',
-        label: 'Settings',
-        description: 'Open application settings',
-        icon: <Settings className="size-4 text-purple-400" />,
-        category: 'Navigation',
-        action: () => navigate({ to: '/settings' }),
-        keywords: ['preferences', 'config']
-      },
-      {
-        id: 'nav-sidebar',
-        label: 'Toggle Sidebar',
-        description: 'Show or hide the sidebar',
-        icon: <Command className="size-4 text-purple-400" />,
-        shortcut: [keys.mod, 'B'],
-        category: 'Navigation',
-        action: () => toggleSidebar(),
-        keywords: ['panel', 'hide', 'show']
-      },
-      {
-        id: 'nav-shortcuts',
-        label: 'Keyboard Shortcuts',
-        description: 'View all keyboard shortcuts',
-        icon: <Keyboard className="size-4 text-purple-400" />,
-        category: 'Navigation',
-        action: () => navigate({ to: '/settings' }),
-        keywords: ['hotkeys', 'keybindings']
-      },
-
-      // Appearance Commands
-      {
-        id: 'theme-light',
-        label: 'Light Theme',
-        description: 'Switch to light mode',
-        icon: <Sun className="size-4 text-pink-400" />,
-        category: 'Appearance',
-        action: () => setTheme('light'),
-        keywords: ['mode', 'bright']
-      },
-      {
-        id: 'theme-dark',
-        label: 'Dark Theme',
-        description: 'Switch to dark mode',
-        icon: <Moon className="size-4 text-pink-400" />,
-        category: 'Appearance',
-        action: () => setTheme('dark'),
-        keywords: ['mode', 'night']
-      },
-      {
-        id: 'theme-system',
-        label: 'System Theme',
-        description: 'Follow system preference',
-        icon: <Monitor className="size-4 text-pink-400" />,
-        category: 'Appearance',
-        action: () => setTheme('system'),
-        keywords: ['mode', 'auto']
-      }
-    ]
-
-    // Add connection quick-switch commands
-    connections.slice(0, 9).forEach((conn, index) => {
-      cmds.push({
-        id: `connection-${conn.id}`,
-        label: conn.name,
-        description: `Switch to ${conn.dbType} connection`,
-        icon: <Database className="size-4 text-emerald-400" />,
-        shortcut: [keys.mod, keys.shift, String(index + 1)],
-        category: 'Connections',
-        action: () => handleSelectConnection(conn.id),
-        keywords: [conn.dbType, conn.host || '']
-      })
-    })
-
-    return cmds
-  }, [
-    activeConnection,
-    connections,
-    createQueryTab,
-    fetchSchemas,
-    handleSelectConnection,
-    navigate,
-    openAIPanel,
-    openAISettings,
-    setActiveTab,
-    setTheme,
-    toggleSidebar
-  ])
+  // Open command palette with specific page
+  const openCommandPalette = useCallback((page: CommandPalettePage = 'home') => {
+    setCommandPaletteInitialPage(page)
+    setIsCommandPaletteOpen(true)
+  }, [])
 
   // Global keyboard shortcuts
   useEffect(() => {
@@ -286,14 +124,14 @@ function LayoutContent() {
       // Cmd+K: Open command palette
       if (isMeta && e.key === 'k' && !e.shiftKey) {
         e.preventDefault()
-        setIsCommandPaletteOpen(true)
+        openCommandPalette('home')
         return
       }
 
-      // Cmd+P: Open connection picker
+      // Cmd+P: Open command palette directly to connections list
       if (isMeta && e.key === 'p' && !e.shiftKey) {
         e.preventDefault()
-        setIsConnectionPickerOpen(true)
+        openCommandPalette('connections:switch')
         return
       }
 
@@ -317,7 +155,7 @@ function LayoutContent() {
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [connections, handleSelectConnection, toggleAIPanel])
+  }, [connections, handleSelectConnection, openCommandPalette, toggleAIPanel])
 
   return (
     <>
@@ -390,7 +228,9 @@ function LayoutContent() {
       <CommandPalette
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
-        commands={commands}
+        initialPage={commandPaletteInitialPage}
+        onOpenAddConnection={() => setIsAddConnectionOpen(true)}
+        onOpenEditConnection={(id) => setEditConnectionId(id)}
       />
 
       {/* Global Connection Picker */}
@@ -398,6 +238,18 @@ function LayoutContent() {
 
       {/* Saved Queries Dialog */}
       <SavedQueriesDialog open={isSavedQueriesOpen} onOpenChange={setIsSavedQueriesOpen} />
+
+      {/* Add/Edit Connection Dialog (triggered from command palette) */}
+      <AddConnectionDialog
+        open={isAddConnectionOpen || editConnectionId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setIsAddConnectionOpen(false)
+            setEditConnectionId(null)
+          }
+        }}
+        connection={editConnectionId ? connections.find((c) => c.id === editConnectionId) : null}
+      />
 
       {/* License Modals */}
       <LicenseActivationModal open={isActivationModalOpen} onOpenChange={closeActivationModal} />

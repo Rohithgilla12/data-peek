@@ -15,12 +15,14 @@ interface SavedQueryState {
   updateSavedQuery: (id: string, updates: Partial<SavedQuery>) => Promise<void>
   deleteSavedQuery: (id: string) => Promise<void>
   incrementUsage: (id: string) => Promise<void>
+  togglePin: (id: string) => Promise<void>
 
   // Derived getters
   getFolders: () => string[]
   getTags: () => string[]
   getQueriesByFolder: (folder: string | null) => SavedQuery[]
   getQueriesByTag: (tag: string) => SavedQuery[]
+  getPinnedQueries: () => SavedQuery[]
 }
 
 export const useSavedQueryStore = create<SavedQueryState>((set, get) => ({
@@ -153,5 +155,26 @@ export const useSavedQueryStore = create<SavedQueryState>((set, get) => ({
 
   getQueriesByTag: (tag) => {
     return get().savedQueries.filter((q) => q.tags.includes(tag))
+  },
+
+  togglePin: async (id) => {
+    const query = get().savedQueries.find((q) => q.id === id)
+    if (!query) return
+
+    const newPinnedState = !query.isPinned
+    try {
+      const result = await window.api.savedQueries.update(id, { isPinned: newPinnedState })
+      if (result.success && result.data) {
+        set((state) => ({
+          savedQueries: state.savedQueries.map((q) => (q.id === id ? result.data! : q))
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to toggle pin:', error)
+    }
+  },
+
+  getPinnedQueries: () => {
+    return get().savedQueries.filter((q) => q.isPinned)
   }
 }))

@@ -1234,6 +1234,8 @@ export interface SavedQuery {
   tags: string[];
   /** Folder path for grouping (e.g., "Reports/Monthly") */
   folder?: string;
+  /** Whether this query is pinned (favorites) */
+  isPinned?: boolean;
   /** Number of times this query has been used */
   usageCount: number;
   /** Last time the query was used (Unix timestamp) */
