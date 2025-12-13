@@ -458,7 +458,7 @@ export function AIChatPanel({
     <>
       {/* Backdrop with gradient */}
       <div
-        className="fixed inset-0 z-40 bg-gradient-to-r from-transparent via-black/20 to-black/40 backdrop-blur-[2px] transition-opacity duration-300"
+        className="fixed inset-0 z-40 bg-gradient-to-r from-transparent via-black/20 to-black/40 transition-opacity duration-300"
         onClick={onClose}
       />
 
