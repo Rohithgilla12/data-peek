@@ -4,6 +4,7 @@ import type { QueryResult } from './query-store'
 import type { StatementResult } from '@data-peek/shared'
 import { buildSelectQuery } from '@/lib/sql-helpers'
 import { useConnectionStore } from './connection-store'
+import { useSettingsStore } from './settings-store'
 
 /**
  * Extended QueryResult with multi-statement support
@@ -61,6 +62,9 @@ export interface TablePreviewTab extends BaseTab {
   executionId: string | null // ID for cancellation support
   currentPage: number
   pageSize: number
+  // Server-side pagination fields
+  totalRowCount: number | null // Total rows in table (for pagination)
+  tableRef: string // Table reference for building queries (e.g., "schema.table")
 }
 
 // ERD visualization tab
@@ -129,6 +133,10 @@ interface TabState {
   // Pagination per tab
   setTabPage: (tabId: string, page: number) => void
   setTabPageSize: (tabId: string, size: number) => void
+
+  // Server-side pagination for table previews
+  setTablePreviewTotalCount: (tabId: string, count: number) => void
+  updateTablePreviewPagination: (tabId: string, page: number, pageSize: number) => void
 
   // Pinning
   pinTab: (tabId: string) => void
@@ -220,10 +228,13 @@ export const useTabStore = create<TabState>()(
           .connections.find((c) => c.id === connectionId)
         const dbType = connection?.dbType
 
+        // Get default page size from settings
+        const pageSize = useSettingsStore.getState().defaultPageSize
+
         // Build table reference (handle MSSQL's dbo schema)
         const defaultSchema = dbType === 'mssql' ? 'dbo' : 'public'
         const tableRef = schemaName === defaultSchema ? tableName : `${schemaName}.${tableName}`
-        const query = buildSelectQuery(tableRef, dbType, { limit: 100 })
+        const query = buildSelectQuery(tableRef, dbType, { limit: pageSize })
 
         const newTab: TablePreviewTab = {
           id,
@@ -244,7 +255,9 @@ export const useTabStore = create<TabState>()(
           isExecuting: false,
           executionId: null,
           currentPage: 1,
-          pageSize: 100
+          pageSize,
+          totalRowCount: null,
+          tableRef
         }
 
         set((state) => ({
@@ -454,37 +467,41 @@ export const useTabStore = create<TabState>()(
 
       updateTabResult: (tabId, result, error) => {
         set((state) => ({
-          tabs: state.tabs.map((t) =>
-            t.id === tabId ? { ...t, result, error, currentPage: 1 } : t
-          )
+          tabs: state.tabs.map((t) => {
+            if (t.id !== tabId) return t
+            // For table-preview with server-side pagination, preserve currentPage
+            const preservePage = t.type === 'table-preview' && t.totalRowCount != null
+            return { ...t, result, error, currentPage: preservePage ? t.currentPage : 1 }
+          })
         }))
       },
 
       updateTabMultiResult: (tabId, multiResult, error) => {
         set((state) => ({
-          tabs: state.tabs.map((t) =>
-            t.id === tabId
-              ? {
-                  ...t,
-                  multiResult,
-                  error,
-                  currentPage: 1,
-                  activeResultIndex: 0,
-                  // Also update legacy result field for backward compatibility
-                  result: multiResult?.statements?.[0]
-                    ? {
-                        columns: multiResult.statements[0].fields.map((f) => ({
-                          name: f.name,
-                          dataType: f.dataType
-                        })),
-                        rows: multiResult.statements[0].rows,
-                        rowCount: multiResult.statements[0].rowCount,
-                        durationMs: multiResult.totalDurationMs
-                      }
-                    : null
-                }
-              : t
-          )
+          tabs: state.tabs.map((t) => {
+            if (t.id !== tabId) return t
+            // For table-preview with server-side pagination, preserve currentPage
+            const preservePage = t.type === 'table-preview' && t.totalRowCount != null
+            return {
+              ...t,
+              multiResult,
+              error,
+              currentPage: preservePage ? t.currentPage : 1,
+              activeResultIndex: preservePage ? t.activeResultIndex : 0,
+              // Also update legacy result field for backward compatibility
+              result: multiResult?.statements?.[0]
+                ? {
+                    columns: multiResult.statements[0].fields.map((f) => ({
+                      name: f.name,
+                      dataType: f.dataType
+                    })),
+                    rows: multiResult.statements[0].rows,
+                    rowCount: multiResult.statements[0].rowCount,
+                    durationMs: multiResult.totalDurationMs
+                  }
+                : null
+            }
+          })
         }))
       },
 
@@ -537,6 +554,39 @@ export const useTabStore = create<TabState>()(
         set((state) => ({
           tabs: state.tabs.map((t) =>
             t.id === tabId ? { ...t, pageSize: size, currentPage: 1 } : t
+          )
+        }))
+      },
+
+      setTablePreviewTotalCount: (tabId, count) => {
+        set((state) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === tabId && t.type === 'table-preview'
+              ? { ...t, totalRowCount: count }
+              : t
+          )
+        }))
+      },
+
+      updateTablePreviewPagination: (tabId, page, pageSize) => {
+        const tab = get().tabs.find((t) => t.id === tabId)
+        if (!tab || tab.type !== 'table-preview') return
+
+        // Get connection to determine database type
+        const connection = useConnectionStore
+          .getState()
+          .connections.find((c) => c.id === tab.connectionId)
+        const dbType = connection?.dbType
+
+        // Build new query with updated pagination
+        const offset = (page - 1) * pageSize
+        const query = buildSelectQuery(tab.tableRef, dbType, { limit: pageSize, offset })
+
+        set((state) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === tabId && t.type === 'table-preview'
+              ? { ...t, currentPage: page, pageSize, query, savedQuery: query }
+              : t
           )
         }))
       },
@@ -757,11 +807,18 @@ export const useTabStore = create<TabState>()(
             }
 
             if (t.type === 'table-preview') {
+              const schemaName = (t as unknown as TablePreviewTab).schemaName ?? ''
+              const tableName = (t as unknown as TablePreviewTab).tableName ?? ''
+              // Rebuild tableRef - we'll use schemaName.tableName format
+              // The actual default schema handling will be done when query is executed
+              const tableRef = schemaName ? `${schemaName}.${tableName}` : tableName
               return {
                 ...base,
                 type: 'table-preview' as const,
-                schemaName: (t as unknown as TablePreviewTab).schemaName ?? '',
-                tableName: (t as unknown as TablePreviewTab).tableName ?? ''
+                schemaName,
+                tableName,
+                totalRowCount: null,
+                tableRef
               }
             }
 

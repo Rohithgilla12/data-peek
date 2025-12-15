@@ -22,6 +22,8 @@ import { generateLimitClause } from '@/lib/sql-helpers'
 import { getTypeColor } from '@/lib/type-colors'
 import { cn } from '@/lib/utils'
 import { useEditStore } from '@/stores/edit-store'
+import { useSettingsStore } from '@/stores/settings-store'
+import { PaginationControls } from '@/components/pagination-controls'
 import type { ColumnInfo, ConnectionConfig, EditContext, ForeignKeyInfo } from '@data-peek/shared'
 import {
   flexRender,
@@ -38,10 +40,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   Copy,
   Filter,
   Link2,
@@ -84,26 +82,39 @@ interface EditableDataTableProps<TData> {
   connection?: ConnectionConfig | null
   onFiltersChange?: (filters: DataTableFilter[]) => void
   onSortingChange?: (sorting: DataTableSort[]) => void
+  onPageSizeChange?: (size: number) => void
   onForeignKeyClick?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   /** Called after changes are successfully committed */
   onChangesCommitted?: () => void
+  /** Server-side pagination: current page (1-indexed) */
+  serverCurrentPage?: number
+  /** Server-side pagination: total row count from database */
+  serverTotalRowCount?: number | null
+  /** Server-side pagination: called when page or pageSize changes */
+  onServerPaginationChange?: (page: number, pageSize: number) => void
 }
 
 export function EditableDataTable<TData extends Record<string, unknown>>({
   tabId,
   columns: columnDefs,
   data,
-  pageSize = 50,
+  pageSize: propPageSize,
   canEdit = false,
   editContext,
   connection,
   onFiltersChange,
   onSortingChange,
+  onPageSizeChange,
   onForeignKeyClick,
   onForeignKeyOpenTab,
-  onChangesCommitted
+  onChangesCommitted,
+  serverCurrentPage,
+  serverTotalRowCount,
+  onServerPaginationChange
 }: EditableDataTableProps<TData>) {
+  const { defaultPageSize } = useSettingsStore()
+  const pageSize = propPageSize ?? defaultPageSize
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [showFilters, setShowFilters] = React.useState(false)
@@ -822,54 +833,35 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between py-2 shrink-0">
-          <div className="text-xs text-muted-foreground">
-            {table.getFilteredRowModel().rows.length} row(s) total
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-muted-foreground">
-              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-            </div>
-            <div className="flex items-center gap-1">
-              <Button
-                variant="outline"
-                size="icon"
-                className="size-7"
-                onClick={() => table.setPageIndex(0)}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <ChevronsLeft className="size-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="size-7"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
-              >
-                <ChevronLeft className="size-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="size-7"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
-              >
-                <ChevronRight className="size-3.5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon"
-                className="size-7"
-                onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                disabled={!table.getCanNextPage()}
-              >
-                <ChevronsRight className="size-3.5" />
-              </Button>
-            </div>
-          </div>
-        </div>
+        {onServerPaginationChange && serverTotalRowCount != null ? (
+          // Server-side pagination for table preview tabs
+          <PaginationControls
+            currentPage={serverCurrentPage ?? 1}
+            totalPages={Math.ceil(serverTotalRowCount / pageSize)}
+            pageSize={pageSize}
+            totalRows={serverTotalRowCount}
+            onPageChange={(page) => onServerPaginationChange(page, pageSize)}
+            onPageSizeChange={(size) => onServerPaginationChange(1, size)}
+            canPreviousPage={(serverCurrentPage ?? 1) > 1}
+            canNextPage={(serverCurrentPage ?? 1) < Math.ceil(serverTotalRowCount / pageSize)}
+          />
+        ) : (
+          // Client-side pagination
+          <PaginationControls
+            currentPage={table.getState().pagination.pageIndex + 1}
+            totalPages={table.getPageCount()}
+            pageSize={table.getState().pagination.pageSize}
+            totalRows={data.length}
+            filteredRows={table.getFilteredRowModel().rows.length}
+            onPageChange={(page) => table.setPageIndex(page - 1)}
+            onPageSizeChange={(size) => {
+              table.setPageSize(size)
+              onPageSizeChange?.(size)
+            }}
+            canPreviousPage={table.getCanPreviousPage()}
+            canNextPage={table.getCanNextPage()}
+          />
+        )}
 
         {/* SQL Preview Modal */}
         <SqlPreviewModal

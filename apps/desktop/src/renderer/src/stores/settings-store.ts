@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 
+export type PageSizeOption = 25 | 50 | 100 | 250 | 500
+
+export const PAGE_SIZE_OPTIONS: PageSizeOption[] = [25, 50, 100, 250, 500]
+
 export interface AppSettings {
   // Query editor settings
   hideQueryEditorByDefault: boolean
@@ -11,6 +15,9 @@ export interface AppSettings {
   // Database settings
   /** Query timeout in milliseconds (0 = no timeout) */
   queryTimeoutMs: number
+  // Pagination settings
+  /** Default page size for data tables */
+  defaultPageSize: PageSizeOption
 }
 
 interface SettingsState extends AppSettings {
@@ -19,6 +26,7 @@ interface SettingsState extends AppSettings {
   setExpandJsonByDefault: (value: boolean) => void
   setJsonExpandDepth: (depth: number) => void
   setQueryTimeoutMs: (value: number) => void
+  setDefaultPageSize: (size: PageSizeOption) => void
   resetSettings: () => void
   setHideQuickQueryPanel: (value: boolean) => void
 }
@@ -28,7 +36,8 @@ const defaultSettings: AppSettings = {
   expandJsonByDefault: false,
   jsonExpandDepth: 2,
   hideQuickQueryPanel: true,
-  queryTimeoutMs: 0 // 0 = no timeout
+  queryTimeoutMs: 0, // 0 = no timeout
+  defaultPageSize: 100
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -39,6 +48,7 @@ export const useSettingsStore = create<SettingsState>()(
       setExpandJsonByDefault: (value) => set({ expandJsonByDefault: value }),
       setJsonExpandDepth: (depth) => set({ jsonExpandDepth: depth }),
       setQueryTimeoutMs: (value) => set({ queryTimeoutMs: value }),
+      setDefaultPageSize: (size) => set({ defaultPageSize: size }),
       setHideQuickQueryPanel: (value) => set({ hideQuickQueryPanel: value }),
       resetSettings: () => set(defaultSettings)
     }),

@@ -28,6 +28,7 @@ class WindowManager {
       minHeight: 600,
       x: cascadePosition.x,
       y: cascadePosition.y,
+      title: 'Data Peek',
       show: false,
       autoHideMenuBar: false,
       // macOS-style window with vibrancy
