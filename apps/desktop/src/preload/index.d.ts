@@ -16,7 +16,10 @@ import type {
   SavedQuery,
   SchemaInfo,
   BenchmarkResult,
-  MultiStatementResultWithTelemetry
+  MultiStatementResultWithTelemetry,
+  PerformanceAnalysisResult,
+  PerformanceAnalysisConfig,
+  QueryHistoryItemForAnalysis
 } from '@shared/index'
 
 // AI Types
@@ -171,6 +174,12 @@ interface DataPeekApi {
       query: string,
       runCount: number
     ) => Promise<IpcResponse<BenchmarkResult>>
+    analyzePerformance: (
+      config: ConnectionConfig,
+      query: string,
+      queryHistory: QueryHistoryItemForAnalysis[],
+      analysisConfig?: Partial<PerformanceAnalysisConfig>
+    ) => Promise<IpcResponse<PerformanceAnalysisResult>>
   }
   ddl: {
     createTable: (

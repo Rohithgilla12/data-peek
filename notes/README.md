@@ -8,6 +8,7 @@ Technical notes and implementation details that could become blog posts.
 |------|-------|------------|
 | [ai-implementation.md](./ai-implementation.md) | Building the AI SQL Assistant | Yes |
 | [ai-deep-dive.md](./ai-deep-dive.md) | Technical deep dive into components | Yes |
+| [perf-indicator-implementation.md](./perf-indicator-implementation.md) | Query Performance Analyzer with EXPLAIN | Yes |
 
 ## Future Topics
 

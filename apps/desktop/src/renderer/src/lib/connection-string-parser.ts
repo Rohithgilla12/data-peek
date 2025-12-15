@@ -28,7 +28,9 @@ export interface ParsedConnectionConfig {
  * Parse MSSQL connection string with semicolon-separated parameters
  * Format: sqlserver://host:port;database=name;authentication=...;encrypt=...;trustServerCertificate=...
  */
-export function parseMSSQLConnectionString(connectionString: string): ParsedConnectionConfig | null {
+export function parseMSSQLConnectionString(
+  connectionString: string
+): ParsedConnectionConfig | null {
   try {
     // Split protocol/authority from parameters
     const parts = connectionString.split(';')

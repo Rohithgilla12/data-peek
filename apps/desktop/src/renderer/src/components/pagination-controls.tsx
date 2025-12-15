@@ -9,11 +9,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
-import {
-  useSettingsStore,
-  PAGE_SIZE_OPTIONS,
-  type PageSizeOption
-} from '@/stores/settings-store'
+import { useSettingsStore, PAGE_SIZE_OPTIONS, type PageSizeOption } from '@/stores/settings-store'
 
 interface PaginationControlsProps {
   currentPage: number
@@ -77,10 +73,19 @@ export function PaginationControls({
             'No rows'
           ) : (
             <>
-              Rows <span className="font-medium text-foreground">{startRow}-{endRow}</span> of{' '}
-              <span className="font-medium text-foreground">{displayTotalRows.toLocaleString()}</span>
+              Rows{' '}
+              <span className="font-medium text-foreground">
+                {startRow}-{endRow}
+              </span>{' '}
+              of{' '}
+              <span className="font-medium text-foreground">
+                {displayTotalRows.toLocaleString()}
+              </span>
               {filteredRows !== undefined && filteredRows !== totalRows && (
-                <span className="text-muted-foreground/70"> (filtered from {totalRows.toLocaleString()})</span>
+                <span className="text-muted-foreground/70">
+                  {' '}
+                  (filtered from {totalRows.toLocaleString()})
+                </span>
               )}
             </>
           )}

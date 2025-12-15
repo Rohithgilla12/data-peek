@@ -19,7 +19,8 @@ import {
   Bookmark,
   Maximize2,
   Square,
-  Timer
+  Timer,
+  ActivitySquare
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
@@ -36,6 +37,7 @@ import {
   useQueryStore,
   useSettingsStore,
   useTabTelemetry,
+  useTabPerfIndicator,
   notify
 } from '@/stores'
 import type { Tab, MultiQueryResult } from '@/stores/tab-store'
@@ -65,6 +67,8 @@ import { TableDesigner } from '@/components/table-designer'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
 import { TelemetryPanel } from '@/components/telemetry-panel'
 import { BenchmarkButton } from '@/components/benchmark-button'
+import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
+import { Badge } from '@/components/ui/badge'
 
 interface TabQueryEditorProps {
   tabId: string
@@ -109,6 +113,20 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     setViewMode,
     setRunningBenchmark
   } = useTabTelemetry(tabId)
+
+  // Performance indicator state
+  const {
+    analysis: perfAnalysis,
+    isAnalyzing: isPerfAnalyzing,
+    showPerfPanel,
+    showCritical,
+    showWarning,
+    showInfo,
+    setAnalysis: setPerfAnalysis,
+    setShowPerfPanel,
+    setAnalyzing: setPerfAnalyzing,
+    toggleSeverityFilter
+  } = useTabPerfIndicator(tabId)
 
   // Get the connection for this tab
   const tabConnection = tab?.connectionId
@@ -311,7 +329,13 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     async (page: number, pageSize: number) => {
       // Read fresh state to check if we can proceed
       const currentTab = useTabStore.getState().getTab(tabId)
-      if (!currentTab || currentTab.type !== 'table-preview' || !tabConnection || currentTab.isExecuting) return
+      if (
+        !currentTab ||
+        currentTab.type !== 'table-preview' ||
+        !tabConnection ||
+        currentTab.isExecuting
+      )
+        return
 
       // Update pagination state and query in the store
       updateTablePreviewPagination(tabId, page, pageSize)
@@ -416,6 +440,71 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       setIsExplaining(false)
     }
   }, [tab, tabConnection, tabId, isExplaining, updateTabResult])
+
+  // Get query history for performance analysis
+  const queryHistory = useQueryStore((s) => s.history)
+
+  const handleAnalyzePerformance = useCallback(async () => {
+    if (
+      !tab ||
+      tab.type === 'erd' ||
+      tab.type === 'table-designer' ||
+      !tabConnection ||
+      isPerfAnalyzing ||
+      !tab.query.trim()
+    ) {
+      return
+    }
+
+    // Only support PostgreSQL for now
+    if (tabConnection.dbType && tabConnection.dbType !== 'postgresql') {
+      notify.info(
+        'Not Supported',
+        'Performance analysis is currently only available for PostgreSQL databases.'
+      )
+      return
+    }
+
+    setPerfAnalyzing(true)
+
+    try {
+      // Convert query history to the format expected by the API
+      const historyForAnalysis = queryHistory
+        .filter((h) => h.connectionId === tabConnection.id)
+        .slice(0, 50)
+        .map((h) => ({
+          query: h.query,
+          timestamp: h.timestamp instanceof Date ? h.timestamp.getTime() : h.timestamp,
+          connectionId: h.connectionId
+        }))
+
+      const response = await window.api.db.analyzePerformance(
+        tabConnection,
+        tab.query,
+        historyForAnalysis
+      )
+
+      if (response.success && response.data) {
+        setPerfAnalysis(response.data)
+        setShowPerfPanel(true)
+      } else {
+        notify.error('Analysis Failed', response.error ?? 'Failed to analyze query performance')
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      notify.error('Analysis Error', errorMessage)
+    } finally {
+      setPerfAnalyzing(false)
+    }
+  }, [
+    tab,
+    tabConnection,
+    isPerfAnalyzing,
+    queryHistory,
+    setPerfAnalyzing,
+    setPerfAnalysis,
+    setShowPerfPanel
+  ])
 
   const handleQueryChange = (value: string) => {
     updateTabQuery(tabId, value)
@@ -1081,8 +1170,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       columns={getColumnsForEditing()}
                       data={
                         tab.totalRowCount != null
-                          ? (tab.result?.rows ?? []) as Record<string, unknown>[]
-                          : paginatedRows as Record<string, unknown>[]
+                          ? ((tab.result?.rows ?? []) as Record<string, unknown>[])
+                          : (paginatedRows as Record<string, unknown>[])
                       }
                       pageSize={tab.pageSize}
                       canEdit={true}
@@ -1177,6 +1266,59 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                    {/* Performance Analysis button - PostgreSQL only */}
+                    {tab.result &&
+                      (!tabConnection?.dbType || tabConnection.dbType === 'postgresql') && (
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant={showPerfPanel ? 'secondary' : 'ghost'}
+                                size="sm"
+                                className="gap-1.5 h-7"
+                                onClick={
+                                  perfAnalysis
+                                    ? () => setShowPerfPanel(!showPerfPanel)
+                                    : handleAnalyzePerformance
+                                }
+                                disabled={isPerfAnalyzing}
+                              >
+                                {isPerfAnalyzing ? (
+                                  <Loader2 className="size-3.5 animate-spin" />
+                                ) : (
+                                  <ActivitySquare className="size-3.5" />
+                                )}
+                                {perfAnalysis &&
+                                  perfAnalysis.issueCount.critical +
+                                    perfAnalysis.issueCount.warning >
+                                    0 && (
+                                    <Badge
+                                      variant="secondary"
+                                      className={`h-4 px-1.5 text-[10px] ${
+                                        perfAnalysis.issueCount.critical > 0
+                                          ? 'bg-red-500/20 text-red-500'
+                                          : 'bg-yellow-500/20 text-yellow-500'
+                                      }`}
+                                    >
+                                      {perfAnalysis.issueCount.critical +
+                                        perfAnalysis.issueCount.warning}
+                                    </Badge>
+                                  )}
+                                Analyze
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">
+                              <p className="text-xs">
+                                {perfAnalysis
+                                  ? showPerfPanel
+                                    ? 'Hide performance analysis'
+                                    : 'Show performance analysis'
+                                  : 'Analyze query for performance issues'}
+                              </p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      )}
                     {hasActiveFiltersOrSorting && (
                       <TooltipProvider>
                         <Tooltip>
@@ -1249,6 +1391,20 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                     viewMode={viewMode}
                     onViewModeChange={setViewMode}
                     onClose={() => setShowTelemetryPanel(false)}
+                  />
+                )}
+
+                {/* Performance Indicator Panel */}
+                {showPerfPanel && perfAnalysis && (
+                  <PerfIndicatorPanel
+                    analysis={perfAnalysis}
+                    onClose={() => setShowPerfPanel(false)}
+                    onReanalyze={handleAnalyzePerformance}
+                    isAnalyzing={isPerfAnalyzing}
+                    showCritical={showCritical}
+                    showWarning={showWarning}
+                    showInfo={showInfo}
+                    onToggleSeverity={toggleSeverityFilter}
                   />
                 )}
               </>

@@ -25,7 +25,10 @@ import type {
   AIMultiProviderConfig,
   AIProviderConfig,
   BenchmarkResult,
-  MultiStatementResultWithTelemetry
+  MultiStatementResultWithTelemetry,
+  PerformanceAnalysisResult,
+  PerformanceAnalysisConfig,
+  QueryHistoryItemForAnalysis
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -104,7 +107,15 @@ const api = {
       query: string,
       runCount: number
     ): Promise<IpcResponse<BenchmarkResult>> =>
-      ipcRenderer.invoke('db:benchmark', { config, query, runCount })
+      ipcRenderer.invoke('db:benchmark', { config, query, runCount }),
+    // Analyze query performance (on-demand)
+    analyzePerformance: (
+      config: ConnectionConfig,
+      query: string,
+      queryHistory: QueryHistoryItemForAnalysis[],
+      analysisConfig?: Partial<PerformanceAnalysisConfig>
+    ): Promise<IpcResponse<PerformanceAnalysisResult>> =>
+      ipcRenderer.invoke('db:analyze-performance', { config, query, queryHistory, analysisConfig })
   },
   // DDL operations (Table Designer)
   ddl: {
