@@ -55,7 +55,7 @@ import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { keys } from '@/lib/utils'
 import { downloadCSV, downloadJSON, generateExportFilename } from '@/lib/export'
-import { buildSelectQuery } from '@/lib/sql-helpers'
+import { buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
@@ -82,6 +82,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const getActiveResultPaginatedRows = useTabStore((s) => s.getActiveResultPaginatedRows)
   const getAllStatementResults = useTabStore((s) => s.getAllStatementResults)
   const getActiveStatementResult = useTabStore((s) => s.getActiveStatementResult)
+  const setTablePreviewTotalCount = useTabStore((s) => s.setTablePreviewTotalCount)
+  const updateTablePreviewPagination = useTabStore((s) => s.updateTablePreviewPagination)
 
   const connections = useConnectionStore((s) => s.connections)
   const schemas = useConnectionStore((s) => s.schemas)
@@ -144,13 +146,17 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const createForeignKeyTab = useTabStore((s) => s.createForeignKeyTab)
 
   const handleRunQuery = useCallback(async () => {
+    // Read fresh tab state from store to avoid stale closure issues
+    // (important for server-side pagination where query is updated before this runs)
+    const currentTab = useTabStore.getState().getTab(tabId)
+
     if (
-      !tab ||
-      tab.type === 'erd' ||
-      tab.type === 'table-designer' ||
+      !currentTab ||
+      currentTab.type === 'erd' ||
+      currentTab.type === 'table-designer' ||
       !tabConnection ||
-      tab.isExecuting ||
-      !tab.query.trim()
+      currentTab.isExecuting ||
+      !currentTab.query.trim()
     ) {
       return
     }
@@ -166,7 +172,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       // Use telemetry-enabled query API with timeout from settings
       const response = await window.api.db.queryWithTelemetry(
         tabConnection,
-        tab.query,
+        currentTab.query,
         executionId,
         queryTimeoutMs
       )
@@ -198,10 +204,29 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           updateTabMultiResult(tabId, multiResult, null)
           markTabSaved(tabId)
 
+          // For table preview tabs, fetch total count for server-side pagination
+          if (currentTab.type === 'table-preview' && currentTab.tableRef) {
+            try {
+              const countQuery = buildCountQuery(currentTab.tableRef)
+              const countResponse = await window.api.db.query(tabConnection, countQuery)
+              if (countResponse.success && countResponse.data) {
+                const countData = countResponse.data as IpcQueryResult
+                if (countData.rows?.[0]) {
+                  const totalCount = Number((countData.rows[0] as Record<string, unknown>).total)
+                  if (!isNaN(totalCount)) {
+                    setTablePreviewTotalCount(tabId, totalCount)
+                  }
+                }
+              }
+            } catch {
+              // Silently fail count query - pagination will fall back to client-side
+            }
+          }
+
           // Add to global history with total row count
           const totalRows = multiResult.statements.reduce((sum, s) => sum + s.rowCount, 0)
           addToHistory({
-            query: tab.query,
+            query: currentTab.query,
             durationMs: multiResult.totalDurationMs,
             rowCount: totalRows,
             status: 'success',
@@ -224,7 +249,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           markTabSaved(tabId)
 
           addToHistory({
-            query: tab.query,
+            query: currentTab.query,
             durationMs: singleResult.durationMs,
             rowCount: result.rowCount,
             status: 'success',
@@ -237,7 +262,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         setTelemetry(null)
 
         addToHistory({
-          query: tab.query,
+          query: currentTab.query,
           durationMs: 0,
           rowCount: 0,
           status: 'error',
@@ -253,7 +278,6 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       updateTabExecuting(tabId, false)
     }
   }, [
-    tab,
     tabConnection,
     tabId,
     updateTabExecuting,
@@ -263,7 +287,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     addToHistory,
     setTelemetry,
     setBenchmark,
-    queryTimeoutMs
+    queryTimeoutMs,
+    setTablePreviewTotalCount
   ])
 
   const handleCancelQuery = useCallback(async () => {
@@ -280,6 +305,22 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       console.error('Failed to cancel query:', error)
     }
   }, [tab, tabId, updateTabMultiResult, updateTabExecuting])
+
+  // Handle server-side pagination for table preview tabs
+  const handleTablePreviewPaginationChange = useCallback(
+    async (page: number, pageSize: number) => {
+      // Read fresh state to check if we can proceed
+      const currentTab = useTabStore.getState().getTab(tabId)
+      if (!currentTab || currentTab.type !== 'table-preview' || !tabConnection || currentTab.isExecuting) return
+
+      // Update pagination state and query in the store
+      updateTablePreviewPagination(tabId, page, pageSize)
+
+      // Re-run the query - handleRunQuery reads fresh state from store
+      handleRunQuery()
+    },
+    [tabConnection, tabId, updateTablePreviewPagination, handleRunQuery]
+  )
 
   const handleFormatQuery = () => {
     if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tab.query.trim()) return
@@ -1038,7 +1079,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                     <EditableDataTable
                       tabId={tabId}
                       columns={getColumnsForEditing()}
-                      data={paginatedRows as Record<string, unknown>[]}
+                      data={
+                        tab.totalRowCount != null
+                          ? (tab.result?.rows ?? []) as Record<string, unknown>[]
+                          : paginatedRows as Record<string, unknown>[]
+                      }
                       pageSize={tab.pageSize}
                       canEdit={true}
                       editContext={getEditContext()}
@@ -1048,6 +1093,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       onForeignKeyClick={handleFKClick}
                       onForeignKeyOpenTab={handleFKOpenTab}
                       onChangesCommitted={handleRunQuery}
+                      serverCurrentPage={tab.currentPage}
+                      serverTotalRowCount={tab.totalRowCount}
+                      onServerPaginationChange={handleTablePreviewPaginationChange}
                     />
                   ) : (
                     <DataTable
