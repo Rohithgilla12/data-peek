@@ -95,7 +95,12 @@ export async function analyzeQueryPerformance(
       const adapter = getAdapter(connectionConfig)
       const explainResult = await adapter.explain(connectionConfig, query, true)
 
-      if (explainResult.plan && Array.isArray(explainResult.plan)) {
+      if (
+        explainResult.plan &&
+        Array.isArray(explainResult.plan) &&
+        explainResult.plan.length > 0 &&
+        explainResult.plan[0]?.Plan
+      ) {
         explainPlan = explainResult.plan[0] as ExplainPlan
 
         // Analyze the plan for issues

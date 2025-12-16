@@ -101,10 +101,10 @@ export function generateIndexName(tableName: string, columns: string[]): string 
   const cleanTable = tableName.replace(/[^a-z0-9_]/gi, '').toLowerCase()
   const cleanColumns = columns.map((c) => c.replace(/[^a-z0-9_]/gi, '').toLowerCase())
 
-  // Truncate if too long (PostgreSQL limit is 63 chars)
+  // Truncate if too long (PostgreSQL limit is 63 bytes)
   let name = `idx_${cleanTable}_${cleanColumns.join('_')}`
   if (name.length > 63) {
-    name = name.substring(0, 60) + '...'
+    name = name.substring(0, 63)
   }
 
   return name

@@ -105,9 +105,9 @@ export function extractWhereInfo(sql: string): {
     const whereClause = whereMatch[1]
     // Match column names before comparison operators
     // Handles: column =, column <, column >, column !=, column <>, column LIKE, column IN, column IS
-    const colMatches = whereClause.matchAll(
+    const whereColPattern =
       /(?:^|\s|and|or|\()\s*(?:(\w+)\.)?(\w+)\s*(?:=|<|>|<=|>=|<>|!=|like|ilike|in\s*\(|is\s+)/gi
-    )
+    const colMatches = whereClause.matchAll(whereColPattern)
     for (const match of colMatches) {
       const col = match[2]
       if (col && !['and', 'or', 'not', 'null', 'true', 'false'].includes(col.toLowerCase())) {
@@ -117,9 +117,9 @@ export function extractWhereInfo(sql: string): {
   }
 
   // Extract columns from JOIN conditions
-  const joinMatches = normalized.matchAll(
+  const joinPattern =
     /join\s+\w+(?:\.\w+)?\s+(?:as\s+\w+\s+)?on\s+([^,]+?)(?:\s+(?:left|right|inner|outer|join|where|order|group|limit)|$)/gi
-  )
+  const joinMatches = normalized.matchAll(joinPattern)
   for (const joinMatch of joinMatches) {
     const onClause = joinMatch[1]
     const colMatches = onClause.matchAll(/(\w+)\.(\w+)\s*=/gi)

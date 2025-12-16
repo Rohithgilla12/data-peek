@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { PerformanceAnalysisResult } from '@data-peek/shared'
+import type { PerformanceAnalysisResult } from '@shared/index'
 
 interface PerfIndicatorState {
   // Per-tab analysis results
