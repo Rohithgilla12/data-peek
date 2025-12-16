@@ -1,6 +1,6 @@
 {
   "name": "@data-peek/desktop",
-  "version": "0.8.1",
+  "version": "0.9.0",
   "description": "A minimal, fast database client",
   "main": "./out/main/index.js",
   "author": "Rohith Gilla",
