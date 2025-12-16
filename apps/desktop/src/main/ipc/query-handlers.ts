@@ -4,7 +4,9 @@ import type {
   EditBatch,
   EditResult,
   QueryTelemetry,
-  BenchmarkResult
+  BenchmarkResult,
+  PerformanceAnalysisConfig,
+  QueryHistoryItemForAnalysis
 } from '@shared/index'
 import { getAdapter } from '../db-adapter'
 import { cancelQuery } from '../query-tracker'
@@ -18,6 +20,7 @@ import {
 } from '../schema-cache'
 import { createLogger } from '../lib/logger'
 import { telemetryCollector } from '../telemetry-collector'
+import { analyzeQueryPerformance } from '../performance-analyzer'
 
 const log = createLogger('query-handlers')
 
@@ -450,6 +453,51 @@ export function registerQueryHandlers(): void {
         }
       } catch (error: unknown) {
         log.error('Benchmark error:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Analyze query performance (on-demand)
+  ipcMain.handle(
+    'db:analyze-performance',
+    async (
+      _,
+      {
+        config,
+        query,
+        queryHistory,
+        analysisConfig
+      }: {
+        config: ConnectionConfig
+        query: string
+        queryHistory: QueryHistoryItemForAnalysis[]
+        analysisConfig?: Partial<PerformanceAnalysisConfig>
+      }
+    ) => {
+      log.debug('Received performance analysis request')
+      log.debug('Query:', query)
+      log.debug('History items:', queryHistory.length)
+
+      // Only support PostgreSQL for now
+      if (config.dbType && config.dbType !== 'postgresql') {
+        return {
+          success: false,
+          error: 'Performance analysis is currently only supported for PostgreSQL'
+        }
+      }
+
+      try {
+        const result = await analyzeQueryPerformance(config, query, queryHistory, analysisConfig)
+
+        log.debug('Analysis completed in', result.durationMs.toFixed(2), 'ms')
+        log.debug('Issues found:', result.issues.length)
+        log.debug('N+1 patterns:', result.nplusOnePatterns.length)
+
+        return { success: true, data: result }
+      } catch (error: unknown) {
+        log.error('Performance analysis error:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
         return { success: false, error: errorMessage }
       }

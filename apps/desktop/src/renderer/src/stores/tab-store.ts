@@ -561,9 +561,7 @@ export const useTabStore = create<TabState>()(
       setTablePreviewTotalCount: (tabId, count) => {
         set((state) => ({
           tabs: state.tabs.map((t) =>
-            t.id === tabId && t.type === 'table-preview'
-              ? { ...t, totalRowCount: count }
-              : t
+            t.id === tabId && t.type === 'table-preview' ? { ...t, totalRowCount: count } : t
           )
         }))
       },
