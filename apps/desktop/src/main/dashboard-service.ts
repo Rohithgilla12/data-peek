@@ -146,6 +146,14 @@ export function deleteDashboard(id: string): boolean {
     return false
   }
 
+  // Stop any active refresh job before removing the dashboard
+  const job = activeRefreshJobs.get(id)
+  if (job) {
+    job.stop()
+    activeRefreshJobs.delete(id)
+    log.debug('Stopped refresh schedule for deleted dashboard:', id)
+  }
+
   dashboardsStore.set('dashboards', filtered)
   log.debug('Deleted dashboard:', id)
   return true

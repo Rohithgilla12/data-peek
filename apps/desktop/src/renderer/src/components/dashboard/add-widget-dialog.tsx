@@ -12,7 +12,9 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
-  Search
+  Search,
+  Play,
+  Loader2
 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -47,6 +49,7 @@ import type {
   TableWidgetConfig
 } from '@shared/index'
 import { cn } from '@/lib/utils'
+import { AIWidgetSuggestion, type WidgetSuggestion } from './ai-widget-suggestion'
 
 interface AddWidgetDialogProps {
   open: boolean
@@ -145,6 +148,10 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
   // Layout config
   const [widgetWidth, setWidgetWidth] = useState<'auto' | 'half' | 'full'>('auto')
 
+  // Preview and AI suggestions
+  const [previewData, setPreviewData] = useState<Record<string, unknown>[] | null>(null)
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+
   useEffect(() => {
     if (open) {
       initializeSavedQueries()
@@ -168,6 +175,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
       setMaxRows(10)
       setWidgetWidth('auto')
       setError(null)
+      setPreviewData(null)
     }
   }, [open, connections, initializeSavedQueries])
 
@@ -221,6 +229,49 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
   const handleBack = () => {
     if (step === 'source') setStep('type')
     else if (step === 'config') setStep('source')
+  }
+
+  const handlePreviewQuery = async () => {
+    const sql =
+      sourceType === 'saved-query'
+        ? savedQueries.find((q) => q.id === selectedQueryId)?.query
+        : inlineSql
+
+    const connection = connections.find((c) => c.id === connectionId)
+    if (!sql || !connection) return
+
+    setIsLoadingPreview(true)
+    try {
+      const result = await window.api.db.query(connection, `${sql} LIMIT 100`)
+      if (result.success && result.data) {
+        const data = result.data as { rows?: Record<string, unknown>[] }
+        setPreviewData(data.rows || null)
+      } else {
+        setPreviewData(null)
+      }
+    } catch (err) {
+      console.error('Preview query failed:', err)
+      setPreviewData(null)
+    } finally {
+      setIsLoadingPreview(false)
+    }
+  }
+
+  const handleSuggestionSelect = (suggestion: WidgetSuggestion) => {
+    setWidgetType(suggestion.type)
+    if (!widgetName) {
+      setWidgetName(suggestion.name)
+    }
+
+    if (suggestion.type === 'chart' && suggestion.chartType) {
+      setChartType(suggestion.chartType)
+      if (suggestion.xKey) setXKey(suggestion.xKey)
+      if (suggestion.yKeys) setYKeys(suggestion.yKeys.join(', '))
+    } else if (suggestion.type === 'kpi') {
+      if (suggestion.kpiFormat) setKpiFormat(suggestion.kpiFormat)
+      if (suggestion.valueKey) setValueKey(suggestion.valueKey)
+      if (suggestion.label) setKpiLabel(suggestion.label)
+    }
   }
 
   const handleSubmit = async () => {
@@ -451,6 +502,37 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
 
           {step === 'config' && (
             <div className="space-y-4">
+              {!previewData && (
+                <div className="flex items-center justify-between p-3 rounded-lg border border-dashed">
+                  <span className="text-sm text-muted-foreground">
+                    Preview data to get AI widget suggestions
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviewQuery}
+                    disabled={isLoadingPreview}
+                  >
+                    {isLoadingPreview ? (
+                      <>
+                        <Loader2 className="size-3 mr-2 animate-spin" />
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        <Play className="size-3 mr-2" />
+                        Preview Data
+                      </>
+                    )}
+                  </Button>
+                </div>
+              )}
+
+              <AIWidgetSuggestion
+                queryResult={previewData}
+                onSuggestionSelect={handleSuggestionSelect}
+              />
+
               <div className="grid gap-2">
                 <Label htmlFor="widgetName">Widget Name</Label>
                 <Input
