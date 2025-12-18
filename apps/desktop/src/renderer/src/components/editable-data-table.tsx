@@ -1,5 +1,3 @@
-'use client'
-
 import { AddRowSheet, type ForeignKeyValue } from '@/components/add-row-sheet'
 import { EditToolbar } from '@/components/edit-toolbar'
 import { EditableCell } from '@/components/editable-cell'

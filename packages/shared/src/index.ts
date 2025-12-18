@@ -1387,3 +1387,339 @@ export interface QueryHistoryItemForAnalysis {
   /** Connection ID */
   connectionId: string
 }
+
+// ============================================================================
+// SCHEDULED QUERIES
+// ============================================================================
+
+/**
+ * Cron schedule expression or preset
+ */
+export type SchedulePreset =
+  | 'every_minute'
+  | 'every_5_minutes'
+  | 'every_15_minutes'
+  | 'every_30_minutes'
+  | 'every_hour'
+  | 'every_6_hours'
+  | 'every_12_hours'
+  | 'daily'
+  | 'weekly'
+  | 'monthly'
+  | 'custom'
+
+/**
+ * Maps schedule presets to human-readable labels and cron expressions
+ */
+export const SCHEDULE_PRESETS: Record<Exclude<SchedulePreset, 'custom'>, { label: string; cron: string }> = {
+  every_minute: { label: 'Every minute', cron: '* * * * *' },
+  every_5_minutes: { label: 'Every 5 minutes', cron: '*/5 * * * *' },
+  every_15_minutes: { label: 'Every 15 minutes', cron: '*/15 * * * *' },
+  every_30_minutes: { label: 'Every 30 minutes', cron: '*/30 * * * *' },
+  every_hour: { label: 'Every hour', cron: '0 * * * *' },
+  every_6_hours: { label: 'Every 6 hours', cron: '0 */6 * * *' },
+  every_12_hours: { label: 'Every 12 hours', cron: '0 */12 * * *' },
+  daily: { label: 'Daily at midnight', cron: '0 0 * * *' },
+  weekly: { label: 'Weekly on Sunday', cron: '0 0 * * 0' },
+  monthly: { label: 'Monthly on 1st', cron: '0 0 1 * *' }
+}
+
+/**
+ * Schedule configuration for a scheduled query
+ */
+export interface ScheduleConfig {
+  /** Preset schedule type */
+  preset: SchedulePreset
+  /** Custom cron expression (when preset is 'custom') */
+  cronExpression?: string
+  /** Timezone for schedule (default: local) */
+  timezone?: string
+}
+
+/**
+ * Status of a scheduled query
+ */
+export type ScheduledQueryStatus = 'active' | 'paused' | 'error'
+
+/**
+ * Result of a scheduled query execution
+ */
+export interface ScheduledQueryRun {
+  /** Unique run identifier */
+  id: string
+  /** Scheduled query ID */
+  scheduledQueryId: string
+  /** When the run started (Unix timestamp) */
+  startedAt: number
+  /** When the run completed (Unix timestamp) */
+  completedAt?: number
+  /** Duration in milliseconds */
+  durationMs?: number
+  /** Whether the run succeeded */
+  success: boolean
+  /** Error message if failed */
+  error?: string
+  /** Number of rows returned/affected */
+  rowCount?: number
+  /** Truncated preview of results (first few rows) */
+  resultPreview?: Record<string, unknown>[]
+}
+
+/**
+ * A scheduled query that runs on a cron-like schedule
+ */
+export interface ScheduledQuery {
+  /** Unique identifier */
+  id: string
+  /** Display name for the scheduled query */
+  name: string
+  /** The SQL query to execute */
+  query: string
+  /** Optional description */
+  description?: string
+  /** Connection ID to run against (required) */
+  connectionId: string
+  /** Schedule configuration */
+  schedule: ScheduleConfig
+  /** Current status */
+  status: ScheduledQueryStatus
+  /** Whether to show desktop notifications on completion */
+  notifyOnComplete: boolean
+  /** Whether to show desktop notifications on failure */
+  notifyOnError: boolean
+  /** Maximum number of runs to keep in history */
+  maxHistoryRuns: number
+  /** Last error message (if status is 'error') */
+  lastError?: string
+  /** Next scheduled run time (Unix timestamp) */
+  nextRunAt?: number
+  /** Last run time (Unix timestamp) */
+  lastRunAt?: number
+  /** When the scheduled query was created (Unix timestamp) */
+  createdAt: number
+  /** When the scheduled query was last updated (Unix timestamp) */
+  updatedAt: number
+}
+
+/**
+ * Input for creating a new scheduled query
+ */
+export type CreateScheduledQueryInput = Omit<
+  ScheduledQuery,
+  'id' | 'status' | 'lastError' | 'nextRunAt' | 'lastRunAt' | 'createdAt' | 'updatedAt'
+>
+
+/**
+ * Input for updating a scheduled query
+ */
+export type UpdateScheduledQueryInput = Partial<
+  Omit<ScheduledQuery, 'id' | 'createdAt' | 'updatedAt'>
+>
+
+export type WidgetType = 'chart' | 'kpi' | 'table'
+export type ChartWidgetType = 'bar' | 'line' | 'area' | 'pie'
+export type KPIFormat = 'number' | 'currency' | 'percent' | 'duration'
+
+/**
+ * Data source configuration for a widget
+ * Supports both saved queries and inline SQL
+ */
+export interface WidgetDataSource {
+  /** Whether to use a saved query or inline SQL */
+  type: 'saved-query' | 'inline'
+  /** Reference to saved query (when type is 'saved-query') */
+  savedQueryId?: string
+  /** Inline SQL query (when type is 'inline') */
+  sql?: string
+  /** Connection to execute against */
+  connectionId: string
+}
+
+/**
+ * Configuration for chart widgets
+ */
+export interface ChartWidgetConfig {
+  widgetType: 'chart'
+  chartType: ChartWidgetType
+  /** Column to use for X axis */
+  xKey: string
+  /** Columns to use for Y axis (supports multiple series) */
+  yKeys: string[]
+  /** Custom colors for series */
+  colors?: string[]
+  /** Whether to show legend */
+  showLegend?: boolean
+  /** Whether to show grid lines */
+  showGrid?: boolean
+  /** Chart title */
+  title?: string
+  /** Chart description */
+  description?: string
+}
+
+/**
+ * Configuration for KPI/metric widgets
+ */
+export interface KPIWidgetConfig {
+  widgetType: 'kpi'
+  /** Display format for the value */
+  format: KPIFormat
+  /** Label shown above the value */
+  label: string
+  /** Column containing the main value */
+  valueKey: string
+  /** Column for trend calculation (optional) */
+  trendKey?: string
+  /** Whether up is good or bad for trend coloring */
+  trendType?: 'up-good' | 'down-good'
+  /** Column for sparkline data (optional) */
+  sparklineKey?: string
+  /** Prefix for value display (e.g., '$') */
+  prefix?: string
+  /** Suffix for value display (e.g., '%') */
+  suffix?: string
+}
+
+/**
+ * Configuration for table preview widgets
+ */
+export interface TableWidgetConfig {
+  widgetType: 'table'
+  /** Maximum rows to display */
+  maxRows: number
+  /** Specific columns to show (all if not specified) */
+  columns?: string[]
+  /** Default sort configuration */
+  sortBy?: { column: string; direction: 'asc' | 'desc' }
+}
+
+/**
+ * Union type for all widget configurations
+ */
+export type WidgetConfig = ChartWidgetConfig | KPIWidgetConfig | TableWidgetConfig
+
+/**
+ * Widget position and size in the grid layout
+ */
+export interface WidgetLayout {
+  /** X position in grid units */
+  x: number
+  /** Y position in grid units */
+  y: number
+  /** Width in grid units */
+  w: number
+  /** Height in grid units */
+  h: number
+  /** Minimum width (optional) */
+  minW?: number
+  /** Minimum height (optional) */
+  minH?: number
+}
+
+/**
+ * A dashboard widget
+ */
+export interface Widget {
+  /** Unique identifier */
+  id: string
+  /** Display name */
+  name: string
+  /** Data source configuration */
+  dataSource: WidgetDataSource
+  /** Widget-specific configuration */
+  config: WidgetConfig
+  /** Position and size in grid */
+  layout: WidgetLayout
+  /** Auto-refresh interval in seconds (optional) */
+  refreshInterval?: number
+  /** Whether this widget was AI-generated */
+  aiGenerated?: boolean
+  /** When the widget was created (Unix timestamp) */
+  createdAt: number
+  /** When the widget was last updated (Unix timestamp) */
+  updatedAt: number
+}
+
+/**
+ * Result of executing a widget's query
+ */
+export interface WidgetRunResult {
+  /** Widget ID */
+  widgetId: string
+  /** Whether execution succeeded */
+  success: boolean
+  /** Query result data */
+  data?: Record<string, unknown>[]
+  /** Column metadata */
+  fields?: QueryField[]
+  /** Error message if failed */
+  error?: string
+  /** Execution duration in milliseconds */
+  durationMs: number
+  /** Number of rows returned */
+  rowCount: number
+  /** When the query was executed (Unix timestamp) */
+  executedAt: number
+}
+
+/**
+ * A dashboard containing widgets
+ */
+export interface Dashboard {
+  /** Unique identifier */
+  id: string
+  /** Display name */
+  name: string
+  /** Optional description */
+  description?: string
+  /** Tags for organization */
+  tags: string[]
+  /** Widgets in this dashboard */
+  widgets: Widget[]
+  /** Number of columns in the grid layout */
+  layoutCols: number
+  /** Auto-refresh schedule configuration */
+  refreshSchedule?: {
+    /** Whether auto-refresh is enabled */
+    enabled: boolean
+    /** Schedule preset */
+    preset: SchedulePreset
+    /** Custom cron expression (when preset is 'custom') */
+    cronExpression?: string
+    /** Timezone for schedule */
+    timezone?: string
+  }
+  /** When the dashboard was created (Unix timestamp) */
+  createdAt: number
+  /** When the dashboard was last updated (Unix timestamp) */
+  updatedAt: number
+  /** Version number for conflict detection (future sync) */
+  version: number
+  /** Server-assigned sync ID (for future cloud sync) */
+  syncId?: string
+}
+
+/**
+ * Input for creating a new dashboard
+ */
+export type CreateDashboardInput = Omit<
+  Dashboard,
+  'id' | 'createdAt' | 'updatedAt' | 'version'
+>
+
+/**
+ * Input for updating a dashboard
+ */
+export type UpdateDashboardInput = Partial<
+  Omit<Dashboard, 'id' | 'createdAt' | 'updatedAt'>
+>
+
+/**
+ * Input for creating a new widget
+ */
+export type CreateWidgetInput = Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>
+
+/**
+ * Input for updating a widget
+ */
+export type UpdateWidgetInput = Partial<Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>>

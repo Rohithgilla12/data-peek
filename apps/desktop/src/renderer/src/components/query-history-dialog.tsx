@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useMemo } from 'react'
 import {
   Clock,

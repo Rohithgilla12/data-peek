@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect, useCallback } from 'react'
 import { FileCode, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'

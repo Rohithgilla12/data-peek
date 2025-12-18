@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react'
 import Editor, { loader, type Monaco, type OnMount } from '@monaco-editor/react'
 import * as monaco from 'monaco-editor'

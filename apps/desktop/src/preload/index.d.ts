@@ -19,7 +19,19 @@ import type {
   MultiStatementResultWithTelemetry,
   PerformanceAnalysisResult,
   PerformanceAnalysisConfig,
-  QueryHistoryItemForAnalysis
+  QueryHistoryItemForAnalysis,
+  ScheduledQuery,
+  ScheduledQueryRun,
+  CreateScheduledQueryInput,
+  UpdateScheduledQueryInput,
+  Dashboard,
+  Widget,
+  WidgetRunResult,
+  CreateDashboardInput,
+  UpdateDashboardInput,
+  CreateWidgetInput,
+  UpdateWidgetInput,
+  WidgetLayout
 } from '@shared/index'
 
 // AI Types
@@ -233,6 +245,64 @@ interface DataPeekApi {
     delete: (id: string) => Promise<IpcResponse<void>>
     incrementUsage: (id: string) => Promise<IpcResponse<SavedQuery>>
     onOpenDialog: (callback: () => void) => () => void
+  }
+  scheduledQueries: {
+    list: () => Promise<IpcResponse<ScheduledQuery[]>>
+    get: (id: string) => Promise<IpcResponse<ScheduledQuery>>
+    create: (input: CreateScheduledQueryInput) => Promise<IpcResponse<ScheduledQuery>>
+    update: (id: string, updates: UpdateScheduledQueryInput) => Promise<IpcResponse<ScheduledQuery>>
+    delete: (id: string) => Promise<IpcResponse<void>>
+    pause: (id: string) => Promise<IpcResponse<ScheduledQuery>>
+    resume: (id: string) => Promise<IpcResponse<ScheduledQuery>>
+    runNow: (id: string) => Promise<IpcResponse<ScheduledQueryRun>>
+    getRuns: (queryId: string, limit?: number) => Promise<IpcResponse<ScheduledQueryRun[]>>
+    getAllRuns: (limit?: number) => Promise<IpcResponse<ScheduledQueryRun[]>>
+    clearRuns: (queryId: string) => Promise<IpcResponse<void>>
+    validateCron: (expression: string) => Promise<IpcResponse<{ valid: boolean; error?: string }>>
+    getNextRuns: (
+      expression: string,
+      count?: number,
+      timezone?: string
+    ) => Promise<IpcResponse<number[]>>
+  }
+  dashboards: {
+    list: () => Promise<IpcResponse<Dashboard[]>>
+    get: (id: string) => Promise<IpcResponse<Dashboard>>
+    create: (input: CreateDashboardInput) => Promise<IpcResponse<Dashboard>>
+    update: (id: string, updates: UpdateDashboardInput) => Promise<IpcResponse<Dashboard>>
+    delete: (id: string) => Promise<IpcResponse<void>>
+    duplicate: (id: string) => Promise<IpcResponse<Dashboard>>
+    addWidget: (dashboardId: string, widget: CreateWidgetInput) => Promise<IpcResponse<Widget>>
+    updateWidget: (
+      dashboardId: string,
+      widgetId: string,
+      updates: UpdateWidgetInput
+    ) => Promise<IpcResponse<Widget>>
+    deleteWidget: (dashboardId: string, widgetId: string) => Promise<IpcResponse<void>>
+    updateWidgetLayouts: (
+      dashboardId: string,
+      layouts: Record<string, WidgetLayout>
+    ) => Promise<IpcResponse<Dashboard>>
+    executeWidget: (widget: Widget) => Promise<IpcResponse<WidgetRunResult>>
+    executeAllWidgets: (dashboardId: string) => Promise<IpcResponse<WidgetRunResult[]>>
+    getByTag: (tag: string) => Promise<IpcResponse<Dashboard[]>>
+    getAllTags: () => Promise<IpcResponse<string[]>>
+    updateRefreshSchedule: (
+      dashboardId: string,
+      schedule: Dashboard['refreshSchedule']
+    ) => Promise<IpcResponse<Dashboard>>
+    getNextRefreshTime: (
+      schedule: NonNullable<Dashboard['refreshSchedule']>
+    ) => Promise<IpcResponse<number | null>>
+    validateCron: (expression: string) => Promise<IpcResponse<{ valid: boolean; error?: string }>>
+    getNextRefreshTimes: (
+      expression: string,
+      count?: number,
+      timezone?: string
+    ) => Promise<IpcResponse<number[]>>
+    onRefreshComplete: (
+      callback: (data: { dashboardId: string; results: WidgetRunResult[] }) => void
+    ) => () => void
   }
   updater: {
     onUpdateAvailable: (callback: (version: string) => void) => () => void

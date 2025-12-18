@@ -5,6 +5,8 @@ import { registerQueryHandlers } from './query-handlers'
 import { registerDDLHandlers } from './ddl-handlers'
 import { registerLicenseHandlers } from './license-handlers'
 import { registerSavedQueriesHandlers } from './saved-queries-handlers'
+import { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
+import { registerDashboardHandlers } from './dashboard-handlers'
 import { registerAIHandlers } from './ai-handlers'
 import { createLogger } from '../lib/logger'
 import { registerFileHandlers } from './file-handlers'
@@ -18,10 +20,9 @@ export interface IpcStores {
 }
 
 /**
- * Register all IPC handlers
+ * Register every IPC handler used by the application's main process.
  *
- * This function is the central point for registering all IPC handlers.
- * Each handler category is in its own file for maintainability.
+ * @param stores - Persistent stores required by handler categories; includes `connections` (connection configs) and `savedQueries` (saved query entries)
  */
 export function registerAllHandlers(stores: IpcStores): void {
   // Connection CRUD operations
@@ -38,6 +39,12 @@ export function registerAllHandlers(stores: IpcStores): void {
 
   // Saved queries management
   registerSavedQueriesHandlers(stores.savedQueries)
+
+  // Scheduled queries management
+  registerScheduledQueriesHandlers()
+
+  // Dashboard management
+  registerDashboardHandlers()
 
   // AI features
   registerAIHandlers()
@@ -57,4 +64,6 @@ export { registerQueryHandlers } from './query-handlers'
 export { registerDDLHandlers } from './ddl-handlers'
 export { registerLicenseHandlers } from './license-handlers'
 export { registerSavedQueriesHandlers } from './saved-queries-handlers'
+export { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
+export { registerDashboardHandlers } from './dashboard-handlers'
 export { registerAIHandlers } from './ai-handlers'

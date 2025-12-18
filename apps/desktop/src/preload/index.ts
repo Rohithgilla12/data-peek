@@ -28,7 +28,19 @@ import type {
   MultiStatementResultWithTelemetry,
   PerformanceAnalysisResult,
   PerformanceAnalysisConfig,
-  QueryHistoryItemForAnalysis
+  QueryHistoryItemForAnalysis,
+  ScheduledQuery,
+  ScheduledQueryRun,
+  CreateScheduledQueryInput,
+  UpdateScheduledQueryInput,
+  Dashboard,
+  Widget,
+  WidgetRunResult,
+  CreateDashboardInput,
+  UpdateDashboardInput,
+  CreateWidgetInput,
+  UpdateWidgetInput,
+  WidgetLayout
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -219,7 +231,103 @@ const api = {
       return () => ipcRenderer.removeListener('open-saved-queries', handler)
     }
   },
-  // AI Assistant
+  // Scheduled queries management
+  scheduledQueries: {
+    list: (): Promise<IpcResponse<ScheduledQuery[]>> =>
+      ipcRenderer.invoke('scheduled-queries:list'),
+    get: (id: string): Promise<IpcResponse<ScheduledQuery>> =>
+      ipcRenderer.invoke('scheduled-queries:get', id),
+    create: (input: CreateScheduledQueryInput): Promise<IpcResponse<ScheduledQuery>> =>
+      ipcRenderer.invoke('scheduled-queries:create', input),
+    update: (
+      id: string,
+      updates: UpdateScheduledQueryInput
+    ): Promise<IpcResponse<ScheduledQuery>> =>
+      ipcRenderer.invoke('scheduled-queries:update', { id, updates }),
+    delete: (id: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('scheduled-queries:delete', id),
+    pause: (id: string): Promise<IpcResponse<ScheduledQuery>> =>
+      ipcRenderer.invoke('scheduled-queries:pause', id),
+    resume: (id: string): Promise<IpcResponse<ScheduledQuery>> =>
+      ipcRenderer.invoke('scheduled-queries:resume', id),
+    runNow: (id: string): Promise<IpcResponse<ScheduledQueryRun>> =>
+      ipcRenderer.invoke('scheduled-queries:run-now', id),
+    getRuns: (queryId: string, limit?: number): Promise<IpcResponse<ScheduledQueryRun[]>> =>
+      ipcRenderer.invoke('scheduled-queries:get-runs', { queryId, limit }),
+    getAllRuns: (limit?: number): Promise<IpcResponse<ScheduledQueryRun[]>> =>
+      ipcRenderer.invoke('scheduled-queries:get-all-runs', limit),
+    clearRuns: (queryId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('scheduled-queries:clear-runs', queryId),
+    validateCron: (expression: string): Promise<IpcResponse<{ valid: boolean; error?: string }>> =>
+      ipcRenderer.invoke('scheduled-queries:validate-cron', expression),
+    getNextRuns: (
+      expression: string,
+      count?: number,
+      timezone?: string
+    ): Promise<IpcResponse<number[]>> =>
+      ipcRenderer.invoke('scheduled-queries:get-next-runs', { expression, count, timezone })
+  },
+  // Dashboard management
+  dashboards: {
+    list: (): Promise<IpcResponse<Dashboard[]>> => ipcRenderer.invoke('dashboards:list'),
+    get: (id: string): Promise<IpcResponse<Dashboard>> => ipcRenderer.invoke('dashboards:get', id),
+    create: (input: CreateDashboardInput): Promise<IpcResponse<Dashboard>> =>
+      ipcRenderer.invoke('dashboards:create', input),
+    update: (id: string, updates: UpdateDashboardInput): Promise<IpcResponse<Dashboard>> =>
+      ipcRenderer.invoke('dashboards:update', { id, updates }),
+    delete: (id: string): Promise<IpcResponse<void>> => ipcRenderer.invoke('dashboards:delete', id),
+    duplicate: (id: string): Promise<IpcResponse<Dashboard>> =>
+      ipcRenderer.invoke('dashboards:duplicate', id),
+    addWidget: (dashboardId: string, widget: CreateWidgetInput): Promise<IpcResponse<Widget>> =>
+      ipcRenderer.invoke('dashboards:add-widget', { dashboardId, widget }),
+    updateWidget: (
+      dashboardId: string,
+      widgetId: string,
+      updates: UpdateWidgetInput
+    ): Promise<IpcResponse<Widget>> =>
+      ipcRenderer.invoke('dashboards:update-widget', { dashboardId, widgetId, updates }),
+    deleteWidget: (dashboardId: string, widgetId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('dashboards:delete-widget', { dashboardId, widgetId }),
+    updateWidgetLayouts: (
+      dashboardId: string,
+      layouts: Record<string, WidgetLayout>
+    ): Promise<IpcResponse<Dashboard>> =>
+      ipcRenderer.invoke('dashboards:update-widget-layouts', { dashboardId, layouts }),
+    executeWidget: (widget: Widget): Promise<IpcResponse<WidgetRunResult>> =>
+      ipcRenderer.invoke('dashboards:execute-widget', widget),
+    executeAllWidgets: (dashboardId: string): Promise<IpcResponse<WidgetRunResult[]>> =>
+      ipcRenderer.invoke('dashboards:execute-all-widgets', dashboardId),
+    getByTag: (tag: string): Promise<IpcResponse<Dashboard[]>> =>
+      ipcRenderer.invoke('dashboards:get-by-tag', tag),
+    getAllTags: (): Promise<IpcResponse<string[]>> => ipcRenderer.invoke('dashboards:get-all-tags'),
+    updateRefreshSchedule: (
+      dashboardId: string,
+      schedule: Dashboard['refreshSchedule']
+    ): Promise<IpcResponse<Dashboard>> =>
+      ipcRenderer.invoke('dashboards:update-refresh-schedule', { dashboardId, schedule }),
+    getNextRefreshTime: (
+      schedule: NonNullable<Dashboard['refreshSchedule']>
+    ): Promise<IpcResponse<number | null>> =>
+      ipcRenderer.invoke('dashboards:get-next-refresh-time', schedule),
+    validateCron: (expression: string): Promise<IpcResponse<{ valid: boolean; error?: string }>> =>
+      ipcRenderer.invoke('dashboards:validate-cron', expression),
+    getNextRefreshTimes: (
+      expression: string,
+      count?: number,
+      timezone?: string
+    ): Promise<IpcResponse<number[]>> =>
+      ipcRenderer.invoke('dashboards:get-next-refresh-times', { expression, count, timezone }),
+    onRefreshComplete: (
+      callback: (data: { dashboardId: string; results: WidgetRunResult[] }) => void
+    ): (() => void) => {
+      const handler = (
+        _: unknown,
+        data: { dashboardId: string; results: WidgetRunResult[] }
+      ): void => callback(data)
+      ipcRenderer.on('dashboard:refresh-complete', handler)
+      return () => ipcRenderer.removeListener('dashboard:refresh-complete', handler)
+    }
+  },
   // Auto-updater event listeners
   updater: {
     onUpdateAvailable: (callback: (version: string) => void): (() => void) => {

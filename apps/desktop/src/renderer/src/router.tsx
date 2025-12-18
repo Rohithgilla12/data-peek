@@ -18,6 +18,7 @@ import { NavActions } from '@/components/nav-actions'
 import { Separator } from '@/components/ui/separator'
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { TabContainer } from '@/components/tab-container'
+import { DashboardView } from '@/components/dashboard'
 import { ConnectionPicker } from '@/components/connection-picker'
 import { AddConnectionDialog } from '@/components/add-connection-dialog'
 import { LicenseStatusIndicator } from '@/components/license-status-indicator'
@@ -684,8 +685,14 @@ const settingsRoute = createRoute({
   component: SettingsPage
 })
 
+const dashboardRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/dashboard/$dashboardId',
+  component: DashboardView
+})
+
 // Create route tree
-const routeTree = rootRoute.addChildren([indexRoute, settingsRoute])
+const routeTree = rootRoute.addChildren([indexRoute, settingsRoute, dashboardRoute])
 
 // Create memory history for Electron (file:// protocol doesn't work with browser history)
 const memoryHistory = createMemoryHistory({
