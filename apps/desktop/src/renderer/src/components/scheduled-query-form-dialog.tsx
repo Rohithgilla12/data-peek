@@ -45,6 +45,18 @@ const presetOptions: { value: SchedulePreset; label: string }[] = [
   { value: 'custom', label: 'Custom cron expression' }
 ]
 
+/**
+ * Render a modal dialog for creating or editing a scheduled query.
+ *
+ * The form supports preset and custom cron schedules (with validation and next-run preview),
+ * selects a connection, configures notifications and history limits, and creates or updates
+ * the scheduled query on submit.
+ *
+ * @param open - Whether the dialog is open
+ * @param onOpenChange - Callback invoked with the new open state to close or open the dialog
+ * @param editingQuery - When provided, populates the form to edit an existing scheduled query; when `null`, the form is initialized for creation
+ * @returns The dialog element for creating or editing a scheduled query
+ */
 export function ScheduledQueryFormDialog({
   open,
   onOpenChange,

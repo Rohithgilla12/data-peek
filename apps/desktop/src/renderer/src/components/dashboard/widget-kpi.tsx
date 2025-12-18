@@ -9,6 +9,17 @@ interface WidgetKPIProps {
   data: Record<string, unknown>[]
 }
 
+/**
+ * Format a KPI value for display according to the widget's format, with optional prefix/suffix.
+ *
+ * Converts numeric inputs (numbers or numeric strings) and returns a formatted string based on `format`.
+ *
+ * @param value - The input value to format; may be a number, numeric string, or other value. `null` and `undefined` produce `"N/A"`.
+ * @param format - The display format to apply: `"currency"`, `"percent"`, `"duration"`, or `"number"`.
+ * @param prefix - Optional string to prepend to the formatted result (not applied when `format` is `"currency"`).
+ * @param suffix - Optional string to append to the formatted result (not applied when `format` is `"percent"`).
+ * @returns The formatted display string; returns `"N/A"` for `null`/`undefined`, the original value converted to string when it cannot be parsed as a number, or a formatted numeric string otherwise.
+ */
 function formatKPIValue(
   value: unknown,
   format: KPIWidgetConfig['format'],
@@ -76,6 +87,12 @@ function formatKPIValue(
   return formatted
 }
 
+/**
+ * Renders a directional trend icon based on the provided direction.
+ *
+ * @param direction - 'up' to render an upward/trending icon, 'down' to render a downward/trending icon, or 'neutral' to render a neutral/minus icon
+ * @returns The corresponding JSX icon element for the specified trend direction
+ */
 function TrendIcon({ direction }: { direction: 'up' | 'down' | 'neutral' }) {
   switch (direction) {
     case 'up':
@@ -87,6 +104,13 @@ function TrendIcon({ direction }: { direction: 'up' | 'down' | 'neutral' }) {
   }
 }
 
+/**
+ * Chooses the CSS color class for a trend indicator based on trend direction and whether an upward trend is considered positive.
+ *
+ * @param direction - The trend direction: 'up', 'down', or 'neutral'.
+ * @param trendType - Optional qualifier indicating which direction is considered favorable: `'up-good'` (up is good) or `'down-good'` (down is good).
+ * @returns The Tailwind-like text color class to apply to the trend element (e.g., `'text-green-500'`, `'text-red-500'`, or `'text-muted-foreground'`).
+ */
 function getTrendColorClass(
   direction: 'up' | 'down' | 'neutral',
   trendType?: 'up-good' | 'down-good'
@@ -98,6 +122,19 @@ function getTrendColorClass(
   return upIsGood ? 'text-red-500' : 'text-green-500'
 }
 
+/**
+ * Render a KPI widget showing a label, a formatted primary value, and an optional trend indicator.
+ *
+ * Renders "No data available" when `data` is empty. The primary value is taken from `data[0][valueKey]`
+ * and formatted according to `config.format`, applying `config.prefix` and `config.suffix` when provided.
+ * If `config.trendKey` is present and at least two rows exist, a percent change is computed between the
+ * first and second rows; direction is "up" when the change is greater than 0.5, "down" when less than -0.5,
+ * and "neutral" otherwise. The trend label is a signed percentage with one decimal place (for example "+1.2%").
+ *
+ * @param config - Widget configuration: `format`, `label`, `valueKey`, optional `trendKey`, optional `trendType` (affects trend color), and optional `prefix`/`suffix`.
+ * @param data - Array of record objects; the first element is used as the current row and the second (if present) as the previous row for trend calculation.
+ * @returns A React element containing the KPI label, formatted value, and an optional colored trend row with icon and percentage.
+ */
 export function WidgetKPI({ config, data }: WidgetKPIProps) {
   const { format, label, valueKey, trendKey, trendType, prefix, suffix } = config
 

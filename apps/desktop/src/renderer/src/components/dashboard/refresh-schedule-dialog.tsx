@@ -46,6 +46,17 @@ const presetOptions: { value: SchedulePreset; label: string }[] = [
   { value: 'custom', label: 'Custom cron expression' }
 ]
 
+/**
+ * Render a modal dialog that configures an automatic refresh schedule for a dashboard.
+ *
+ * The dialog lets the user enable/disable auto-refresh, choose a preset frequency or enter a custom cron expression,
+ * previews upcoming run times when available, validates custom cron input, and saves changes back to the dashboard.
+ *
+ * @param props.open - Controls whether the dialog is visible
+ * @param props.onOpenChange - Callback invoked with the new open state
+ * @param props.dashboard - Dashboard data used to initialize and persist refresh settings
+ * @returns A JSX element that renders the auto-refresh schedule dialog
+ */
 export function RefreshScheduleDialog({
   open,
   onOpenChange,

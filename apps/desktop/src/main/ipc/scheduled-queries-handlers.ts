@@ -17,7 +17,12 @@ import {
 } from '../scheduler-service'
 
 /**
- * Register scheduled queries IPC handlers
+ * Register IPC handlers on `ipcMain` for scheduled-queries operations.
+ *
+ * Registers handlers for listing, retrieving, creating, updating, deleting, pausing,
+ * resuming, running now, querying run history, clearing runs, validating cron expressions,
+ * and computing next run times. Each handler returns either `{ success: true, data }`
+ * or `{ success: false, error }` and normalizes not-found conditions into a standard error message.
  */
 export function registerScheduledQueriesHandlers(): void {
   // List all scheduled queries

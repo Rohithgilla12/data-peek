@@ -31,6 +31,14 @@ interface WidgetCardProps {
   editMode: boolean
 }
 
+/**
+ * Renders a dashboard widget as a card with header actions (refresh, toggle width, configure, delete) and a content area that displays the widget's data or loading/error states.
+ *
+ * @param widget - The widget definition including its config, id, and layout.
+ * @param dashboardId - The parent dashboard's identifier used for update and delete actions.
+ * @param editMode - When true, shows edit affordances such as the drag handle and action controls.
+ * @returns The card element that hosts the widget UI and actions.
+ */
 export function WidgetCard({ widget, dashboardId, editMode }: WidgetCardProps) {
   const widgetData = useDashboardStore((s) => s.getWidgetData(widget.id))
   const isLoading = useDashboardStore((s) => s.isWidgetLoading(widget.id))
@@ -136,6 +144,18 @@ interface WidgetContentProps {
   isLoading: boolean
 }
 
+/**
+ * Selects and renders the appropriate content for a dashboard widget based on loading state and fetched data.
+ *
+ * When `isLoading` is true a centered spinner is shown. If `data` is absent a "No data" message is shown.
+ * If `data.success` is false an error message is displayed. When valid data is present the function
+ * renders the widget-specific content for `chart`, `kpi`, or `table`; unknown types render a fallback message.
+ *
+ * @param widget - The widget definition whose configuration determines which content is rendered
+ * @param data - The fetched widget data response; expected shape includes `success`, optional `error`, and `data` (records)
+ * @param isLoading - Whether the widget's data is currently loading
+ * @returns The rendered widget content element
+ */
 function WidgetContent({ widget, data, isLoading }: WidgetContentProps) {
   if (isLoading) {
     return (
@@ -173,6 +193,16 @@ function WidgetContent({ widget, data, isLoading }: WidgetContentProps) {
   }
 }
 
+/**
+ * Render the chart-specific content for a widget.
+ *
+ * Renders a full-size container with the WidgetChart when the widget's
+ * configuration indicates a chart; returns `null` otherwise.
+ *
+ * @param widget - The widget object; its `config.widgetType` must be `'chart'` for chart content to render.
+ * @param data - Array of record objects provided to the chart as input data.
+ * @returns The chart content element, or `null` if the widget is not a chart.
+ */
 function ChartWidgetContent({ widget, data }: { widget: Widget; data: Record<string, unknown>[] }) {
   if (widget.config.widgetType !== 'chart') return null
   return (
@@ -182,11 +212,25 @@ function ChartWidgetContent({ widget, data }: { widget: Widget; data: Record<str
   )
 }
 
+/**
+ * Render KPI-specific widget content when the widget is a KPI.
+ *
+ * @param widget - The widget whose config should be a KPI configuration; if its `widgetType` is not `'kpi'`, nothing is rendered.
+ * @param data - Array of data records to pass to the KPI widget.
+ * @returns The KPI widget element when `widget.config.widgetType === 'kpi'`, `null` otherwise.
+ */
 function KPIWidgetContent({ widget, data }: { widget: Widget; data: Record<string, unknown>[] }) {
   if (widget.config.widgetType !== 'kpi') return null
   return <WidgetKPI config={widget.config as KPIWidgetConfig} data={data} />
 }
 
+/**
+ * Render the table-specific content for a widget when its type is `table`.
+ *
+ * @param widget - The widget whose table configuration will be used to render content.
+ * @param data - Array of row records to be displayed in the table.
+ * @returns The rendered table component for the widget, or `null` if the widget is not a table.
+ */
 function TableWidgetContent({ widget, data }: { widget: Widget; data: Record<string, unknown>[] }) {
   if (widget.config.widgetType !== 'table') return null
   return <WidgetTable config={widget.config as TableWidgetConfig} data={data} />

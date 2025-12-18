@@ -26,6 +26,18 @@ interface DashboardFormDialogProps {
   editingDashboard: Dashboard | null
 }
 
+/**
+ * Render a modal dialog for creating or editing a dashboard.
+ *
+ * The dialog manages form state for name, description, and tags; initializes fields when
+ * editing an existing dashboard; supports adding/removing tags and Enter-to-add behavior;
+ * and provides import/export (JSON) and submit flows that call the dashboard store actions.
+ *
+ * @param open - Whether the dialog is visible
+ * @param onOpenChange - Callback invoked with the new open state to close or open the dialog
+ * @param editingDashboard - If provided, the dashboard being edited; when `null` the dialog operates in create mode
+ * @returns The dashboard form dialog React element
+ */
 export function DashboardFormDialog({
   open,
   onOpenChange,

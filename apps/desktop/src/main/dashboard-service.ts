@@ -29,7 +29,13 @@ let connectionsStore: DpStorage<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 
 /**
- * Initialize the dashboard service and storage
+ * Initialize the dashboard service and persistent dashboards storage.
+ *
+ * Sets the module-scoped connections and saved-queries stores and creates the dashboards storage
+ * container (initialized with an empty dashboards list). Logs service initialization.
+ *
+ * @param connStore - Storage handle that provides connection configurations
+ * @param queriesStore - Storage handle that provides saved queries
  */
 export async function initDashboardService(
   connStore: DpStorage<{ connections: ConnectionConfig[] }>,
@@ -47,21 +53,31 @@ export async function initDashboardService(
 }
 
 /**
- * List all dashboards
+ * Retrieve all dashboards managed by the service.
+ *
+ * @returns The array of dashboards; an empty array if none exist.
  */
 export function listDashboards(): Dashboard[] {
   return dashboardsStore.get('dashboards', [])
 }
 
 /**
- * Get a dashboard by ID
+ * Retrieve a dashboard by its id.
+ *
+ * @param id - The dashboard's id
+ * @returns The dashboard with the given id, or `undefined` if no match is found
  */
 export function getDashboard(id: string): Dashboard | undefined {
   return dashboardsStore.get('dashboards', []).find((d) => d.id === id)
 }
 
 /**
- * Create a new dashboard
+ * Create and persist a new dashboard with initialized identifiers, timestamps, defaults, and widgets.
+ *
+ * The function assigns a new UUID to the dashboard and to any widgets missing an id, sets creation and update timestamps, applies sensible defaults (e.g., `tags`, `layoutCols`, `version`), and saves the dashboard to persistent storage.
+ *
+ * @param input - Partial dashboard data provided by the caller; may include widgets, tags, layoutCols, and other dashboard fields
+ * @returns The newly created and persisted `Dashboard` object
  */
 export function createDashboard(input: CreateDashboardInput): Dashboard {
   const now = Date.now()
@@ -90,7 +106,11 @@ export function createDashboard(input: CreateDashboardInput): Dashboard {
 }
 
 /**
- * Update a dashboard
+ * Apply partial updates to a dashboard identified by its id and persist the change.
+ *
+ * @param id - The id of the dashboard to update
+ * @param updates - Fields to merge into the existing dashboard
+ * @returns The updated dashboard, or `null` if no dashboard with the given id exists
  */
 export function updateDashboard(id: string, updates: UpdateDashboardInput): Dashboard | null {
   const dashboards = dashboardsStore.get('dashboards', [])
@@ -113,7 +133,10 @@ export function updateDashboard(id: string, updates: UpdateDashboardInput): Dash
 }
 
 /**
- * Delete a dashboard
+ * Remove a dashboard identified by its id from persistent storage.
+ *
+ * @param id - The id of the dashboard to remove
+ * @returns `true` if a dashboard was removed, `false` if no matching dashboard was found
  */
 export function deleteDashboard(id: string): boolean {
   const dashboards = dashboardsStore.get('dashboards', [])
@@ -129,7 +152,14 @@ export function deleteDashboard(id: string): boolean {
 }
 
 /**
- * Duplicate a dashboard
+ * Create a duplicate of an existing dashboard.
+ *
+ * The duplicate receives a new `id`, the name appended with " (Copy)", all widgets are copied with new `id`s
+ * and their `createdAt`/`updatedAt` set to the duplication time, `createdAt`/`updatedAt` on the dashboard are set
+ * to now, `version` is reset to 1, and `syncId` is cleared.
+ *
+ * @param id - The id of the dashboard to duplicate
+ * @returns The newly created `Dashboard` copy if the source exists, `null` otherwise
  */
 export function duplicateDashboard(id: string): Dashboard | null {
   const dashboard = getDashboard(id)
@@ -163,7 +193,14 @@ export function duplicateDashboard(id: string): Dashboard | null {
 }
 
 /**
- * Add a widget to a dashboard
+ * Adds a new widget to the specified dashboard.
+ *
+ * The created widget is assigned a new `id`, `createdAt`, and `updatedAt` timestamps,
+ * the dashboard's `updatedAt` is updated and its `version` is incremented, and changes are persisted.
+ *
+ * @param dashboardId - The id of the dashboard to add the widget to
+ * @param input - Widget properties to create; `id` and timestamps will be generated
+ * @returns The created `Widget`, or `null` if no dashboard with `dashboardId` exists
  */
 export function addWidget(dashboardId: string, input: CreateWidgetInput): Widget | null {
   const dashboards = dashboardsStore.get('dashboards', [])
@@ -191,7 +228,12 @@ export function addWidget(dashboardId: string, input: CreateWidgetInput): Widget
 }
 
 /**
- * Update a widget in a dashboard
+ * Update a widget within a dashboard and persist the modification.
+ *
+ * @param dashboardId - The ID of the dashboard containing the widget
+ * @param widgetId - The ID of the widget to update
+ * @param updates - Partial widget fields to apply
+ * @returns The updated `Widget` if the dashboard and widget were found and updated, `null` otherwise
  */
 export function updateWidget(
   dashboardId: string,
@@ -226,7 +268,11 @@ export function updateWidget(
 }
 
 /**
- * Delete a widget from a dashboard
+ * Remove a widget from a specific dashboard by id.
+ *
+ * @param dashboardId - The id of the dashboard containing the widget
+ * @param widgetId - The id of the widget to remove
+ * @returns `true` if the widget was removed, `false` otherwise
  */
 export function deleteWidget(dashboardId: string, widgetId: string): boolean {
   const dashboards = dashboardsStore.get('dashboards', [])
@@ -254,7 +300,15 @@ export function deleteWidget(dashboardId: string, widgetId: string): boolean {
 }
 
 /**
- * Update widget layouts (batch update for drag-drop)
+ * Apply multiple widget layout updates to a dashboard.
+ *
+ * Updates each widget whose id appears in `layouts` with the provided layout,
+ * sets the widget `updatedAt`, updates the dashboard `updatedAt` and increments
+ * its `version`, then persists the dashboards store.
+ *
+ * @param dashboardId - The id of the dashboard to update
+ * @param layouts - A map from widget id to the new `WidgetLayout` to apply
+ * @returns The updated `Dashboard` with layouts applied, or `null` if no dashboard with the given id exists
  */
 export function updateWidgetLayouts(
   dashboardId: string,
@@ -284,7 +338,9 @@ export function updateWidgetLayouts(
 }
 
 /**
- * Get the SQL query for a widget (resolves saved query references)
+ * Resolve and return the SQL text and connection ID for a widget.
+ *
+ * @returns `{ sql: string; connectionId: string }` if the widget's data source yields SQL and a connection ID, `null` otherwise.
  */
 function getWidgetSql(widget: Widget): { sql: string; connectionId: string } | null {
   if (widget.dataSource.type === 'inline') {
@@ -319,7 +375,12 @@ function getWidgetSql(widget: Widget): { sql: string; connectionId: string } | n
 }
 
 /**
- * Execute a widget's query and return results
+ * Execute the SQL defined by a widget and produce a structured run result.
+ *
+ * Resolves the widget's SQL (inline or from a saved query), executes it against the widget's configured connection, and returns execution metadata and results.
+ *
+ * @param widget - The widget whose query will be resolved and executed
+ * @returns A `WidgetRunResult` containing execution timing, success flag, returned rows/fields/rowCount when successful, or an `error` message when execution failed or configuration is missing
  */
 export async function executeWidget(widget: Widget): Promise<WidgetRunResult> {
   const startTime = Date.now()
@@ -372,7 +433,10 @@ export async function executeWidget(widget: Widget): Promise<WidgetRunResult> {
 }
 
 /**
- * Execute all widgets in a dashboard
+ * Executes every widget in the specified dashboard.
+ *
+ * @param dashboardId - The dashboard identifier whose widgets will be executed
+ * @returns An array of `WidgetRunResult` objects corresponding to each widget's execution; returns an empty array if the dashboard is not found
  */
 export async function executeAllWidgets(dashboardId: string): Promise<WidgetRunResult[]> {
   const dashboard = getDashboard(dashboardId)
@@ -386,14 +450,19 @@ export async function executeAllWidgets(dashboardId: string): Promise<WidgetRunR
 }
 
 /**
- * Get dashboards by tag
+ * Finds dashboards that include the specified tag.
+ *
+ * @param tag - The tag to match against dashboard tags
+ * @returns An array of dashboards that include `tag`
  */
 export function getDashboardsByTag(tag: string): Dashboard[] {
   return dashboardsStore.get('dashboards', []).filter((d) => d.tags.includes(tag))
 }
 
 /**
- * Get all unique tags across dashboards
+ * Collects all unique tags used by dashboards and returns them in alphabetical order.
+ *
+ * @returns An alphabetically sorted array of unique dashboard tags
  */
 export function getAllDashboardTags(): string[] {
   const dashboards = dashboardsStore.get('dashboards', [])
@@ -409,7 +478,10 @@ export function getAllDashboardTags(): string[] {
 }
 
 /**
- * Get the cron expression for a refresh schedule
+ * Resolve the cron expression to use for a dashboard refresh schedule.
+ *
+ * @param schedule - The dashboard refresh schedule (may specify a preset or a custom cron expression)
+ * @returns The cron expression defined by the schedule or `'0 * * * *'` when the schedule has no expression or references an unknown preset
  */
 function getCronExpression(schedule: NonNullable<Dashboard['refreshSchedule']>): string {
   if (schedule.preset === 'custom') {
@@ -421,7 +493,11 @@ function getCronExpression(schedule: NonNullable<Dashboard['refreshSchedule']>):
 }
 
 /**
- * Calculate the next refresh time for a dashboard
+ * Computes the next scheduled refresh timestamp for a dashboard refresh schedule.
+ *
+ * Uses the schedule's cron expression and the schedule timezone (or the system timezone if none) to determine the next occurrence.
+ *
+ * @returns The next refresh time as a Unix millisecond timestamp, or `null` if the schedule is disabled or the cron expression cannot be parsed.
  */
 export function getNextRefreshTime(
   schedule: NonNullable<Dashboard['refreshSchedule']>
@@ -442,7 +518,14 @@ export function getNextRefreshTime(
 }
 
 /**
- * Schedule auto-refresh for a dashboard
+ * Schedule automatic widget refreshes for the specified dashboard based on its refreshSchedule.
+ *
+ * Stops any existing refresh job for the dashboard, validates the computed cron expression,
+ * and schedules a new cron job that executes all widgets at each trigger. When a refresh
+ * completes the service sends an IPC message 'dashboard:refresh-complete' to the focused
+ * BrowserWindow with the dashboardId and the execution results.
+ *
+ * @param dashboardId - The dashboard's unique identifier
  */
 export function scheduleDashboardRefresh(dashboardId: string): void {
   const existingJob = activeRefreshJobs.get(dashboardId)
@@ -503,7 +586,11 @@ export function stopDashboardRefresh(dashboardId: string): void {
 }
 
 /**
- * Update the refresh schedule for a dashboard
+ * Set a dashboard's refresh schedule and start or stop its scheduled refresh job accordingly.
+ *
+ * @param dashboardId - The id of the dashboard to update
+ * @param schedule - The new refresh schedule to assign (may be `undefined` to clear)
+ * @returns The updated dashboard, or `null` if no dashboard with the given id exists
  */
 export function updateDashboardRefreshSchedule(
   dashboardId: string,
@@ -524,7 +611,10 @@ export function updateDashboardRefreshSchedule(
 }
 
 /**
- * Start all active refresh schedules (called on app startup)
+ * Start refresh schedules for all dashboards that have an enabled refreshSchedule.
+ *
+ * Iterates stored dashboards and schedules a refresh job for each dashboard whose
+ * refreshSchedule.enabled is true.
  */
 export function startAllRefreshSchedules(): void {
   const dashboards = dashboardsStore.get('dashboards', [])
@@ -543,7 +633,9 @@ export function startAllRefreshSchedules(): void {
 }
 
 /**
- * Stop all refresh schedules (called on app shutdown)
+ * Stops and removes all active dashboard refresh cron jobs.
+ *
+ * Called on application shutdown to halt scheduled auto-refreshes and clear internal tracking.
  */
 export function stopAllRefreshSchedules(): void {
   for (const [id, job] of activeRefreshJobs) {
@@ -554,7 +646,10 @@ export function stopAllRefreshSchedules(): void {
 }
 
 /**
- * Validate a cron expression
+ * Checks whether a cron expression is syntactically valid.
+ *
+ * @param expression - The cron expression to validate
+ * @returns `{ valid: true }` if the expression parses successfully, otherwise `{ valid: false, error: string }` with the parser error message
  */
 export function validateCronExpression(expression: string): { valid: boolean; error?: string } {
   try {
@@ -569,7 +664,12 @@ export function validateCronExpression(expression: string): { valid: boolean; er
 }
 
 /**
- * Get the next N scheduled refresh times for a cron expression
+ * Compute the next scheduled run timestamps for a cron expression.
+ *
+ * @param expression - The cron expression to evaluate
+ * @param count - Number of upcoming occurrences to return (default: 5)
+ * @param timezone - Optional IANA time zone identifier to evaluate the expression in; uses the system timezone if omitted
+ * @returns An array of Unix timestamps (milliseconds) for the next `count` occurrences; returns an empty array if the expression cannot be parsed
  */
 export function getNextRefreshTimes(
   expression: string,

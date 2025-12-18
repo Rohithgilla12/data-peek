@@ -42,6 +42,14 @@ const DEFAULT_COLORS = [
   'hsl(24, 95%, 53%)'
 ]
 
+/**
+ * Detects the data type of the first non-null, non-undefined value in an array.
+ *
+ * Inspects the first present value and classifies it as a number, date, or string.
+ *
+ * @param values - Array of values to inspect
+ * @returns `'number'` if the value is a number, `'date'` if the value is a `Date` instance or a string that parses as a date and matches a `YYYY-MM` prefix, `'string'` otherwise
+ */
 function detectDataType(values: unknown[]): 'number' | 'date' | 'string' {
   const sample = values.find((v) => v !== null && v !== undefined)
   if (typeof sample === 'number') return 'number'
@@ -54,6 +62,13 @@ function detectDataType(values: unknown[]): 'number' | 'date' | 'string' {
   return 'string'
 }
 
+/**
+ * Format a value for display according to the specified output type.
+ *
+ * @param value - The value to format; may be a number, Date, date-string/number, or any other value
+ * @param type - The target format: `'number'`, `'date'`, or `'string'`
+ * @returns `'N/A'` if `value` is `null` or `undefined`; otherwise a locale-formatted number (max 2 decimals) when `type` is `'number'`, a locale date string when `type` is `'date'`, or the value converted to a string for `'string'`
+ */
 function formatValue(value: unknown, type: 'number' | 'date' | 'string'): string {
   if (value === null || value === undefined) return 'N/A'
   if (type === 'number' && typeof value === 'number') {
@@ -66,6 +81,16 @@ function formatValue(value: unknown, type: 'number' | 'date' | 'string'): string
   return String(value)
 }
 
+/**
+ * Renders a responsive chart (bar, line, area, or pie) based on the provided configuration and data.
+ *
+ * The component auto-detects the x-axis value type (number, date, or string), formats axis labels and tooltips,
+ * generates per-series labels and colors, and conditionally shows grid and legend entries.
+ *
+ * @param props.config - ChartWidgetConfig that specifies chartType, xKey, yKeys, optional colors, and display options.
+ * @param props.data - Array of data records used as the chart dataset; each record must contain the configured xKey and yKeys.
+ * @returns A JSX element containing the rendered chart configured according to `config` and populated with `data`.
+ */
 export function WidgetChart({ config, data }: WidgetChartProps) {
   const {
     chartType,

@@ -23,6 +23,12 @@ interface ScheduledQueryRunsDialogProps {
   query: ScheduledQuery | null
 }
 
+/**
+ * Format a numeric timestamp into a locale-aware date and time string.
+ *
+ * @param timestamp - Milliseconds since the Unix epoch
+ * @returns A locale-formatted date-time string with short month, numeric day, and two-digit hour, minute, and second
+ */
 function formatDateTime(timestamp: number): string {
   return new Date(timestamp).toLocaleString(undefined, {
     month: 'short',
@@ -33,6 +39,15 @@ function formatDateTime(timestamp: number): string {
   })
 }
 
+/**
+ * Formats a duration given in milliseconds into a compact, human-readable string.
+ *
+ * @param ms - Duration in milliseconds
+ * @returns A formatted duration string:
+ * - If less than 1,000 ms: "`<n>ms`"
+ * - If less than 60,000 ms: "`<s.ss>s`" (seconds with two decimals)
+ * - Otherwise: "`<m>m <s>s`" (minutes and whole seconds)
+ */
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`
   if (ms < 60000) return `${(ms / 1000).toFixed(2)}s`
@@ -41,6 +56,16 @@ function formatDuration(ms: number): string {
   return `${mins}m ${secs}s`
 }
 
+/**
+ * Render a single scheduled query run entry showing status, timing, and optional details.
+ *
+ * Renders a compact row that visually indicates success or failure, displays start and completion timestamps,
+ * an optional duration badge, optional row count (when successful), an inline error block when present,
+ * and an optional JSON result preview.
+ *
+ * @param run - The scheduled query run to display
+ * @returns A React element representing the run item
+ */
 function RunItem({ run }: { run: ScheduledQueryRun }) {
   return (
     <div
@@ -104,6 +129,16 @@ function RunItem({ run }: { run: ScheduledQueryRun }) {
   )
 }
 
+/**
+ * Render a modal dialog that displays and manages the run history for a scheduled query.
+ *
+ * Loads run history when opened for a given query and provides UI to refresh runs or clear history.
+ *
+ * @param open - Whether the dialog is visible
+ * @param onOpenChange - Callback invoked with the new open state when the dialog is closed or opened
+ * @param query - The scheduled query whose runs are shown, or `null` to show an empty state
+ * @returns The dialog element containing run statistics, a scrollable list of runs, and action controls
+ */
 export function ScheduledQueryRunsDialog({
   open,
   onOpenChange,

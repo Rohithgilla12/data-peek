@@ -18,6 +18,17 @@ interface WidgetTableProps {
   data: Record<string, unknown>[]
 }
 
+/**
+ * Format a table cell value into a human-readable string.
+ *
+ * @returns A string representation of the input:
+ * - `'—'` when `value` is `null` or `undefined`
+ * - `'Yes'` or `'No'` for boolean values
+ * - A locale-formatted number with up to 4 fractional digits for numbers
+ * - A locale date-time string for `Date` instances
+ * - `JSON.stringify(value)` for objects
+ * - The string form of other values, truncated to 50 characters with `...` if longer
+ */
 function formatCellValue(value: unknown): string {
   if (value === null || value === undefined) return '—'
   if (typeof value === 'boolean') return value ? 'Yes' : 'No'
@@ -37,6 +48,13 @@ function formatCellValue(value: unknown): string {
   return str
 }
 
+/**
+ * Render a sortable table widget that displays up to `maxRows` rows and formats cell values for presentation.
+ *
+ * @param config - Table widget configuration (controls `maxRows`, optional `columns` to use, and optional initial `sortBy`).
+ * @param data - Array of row objects to display; if `config.columns` is not provided, column names are derived from the keys of the first row.
+ * @returns A React element containing a table with clickable sortable headers, formatted cell values, and an optional footer indicating the total row count when truncated.
+ */
 export function WidgetTable({ config, data }: WidgetTableProps) {
   const { maxRows, columns: configColumns, sortBy: initialSort } = config
 

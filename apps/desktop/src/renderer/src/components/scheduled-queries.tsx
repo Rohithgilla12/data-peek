@@ -42,6 +42,12 @@ import { ScheduledQueryRunsDialog } from './scheduled-query-runs-dialog'
 import type { ScheduledQuery } from '@shared/index'
 import { SCHEDULE_PRESETS } from '@shared/index'
 
+/**
+ * Format a future timestamp into a concise, human-readable hint.
+ *
+ * @param timestamp - Future time as milliseconds since the UNIX epoch
+ * @returns `'now'` if less than 1 minute from now, `'<Xm>'` for minutes when less than 60 minutes, `'<Xh>'` for hours when less than 24 hours, otherwise a locale-formatted date string
+ */
 function formatFutureTime(timestamp: number): string {
   const now = Date.now()
   const diffMs = timestamp - now
@@ -54,6 +60,12 @@ function formatFutureTime(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString()
 }
 
+/**
+ * Produce a human-friendly label for a scheduled query schedule.
+ *
+ * @param schedule - The schedule object containing at least a `preset` and optionally `cronExpression`
+ * @returns For `preset === 'custom'`, the cron expression if present or `"Custom"`; otherwise a human-friendly label for the preset if available, or the preset key
+ */
 function getScheduleLabel(schedule: ScheduledQuery['schedule']): string {
   if (schedule.preset === 'custom') {
     return schedule.cronExpression || 'Custom'
@@ -63,6 +75,12 @@ function getScheduleLabel(schedule: ScheduledQuery['schedule']): string {
   )
 }
 
+/**
+ * Get the icon representing a scheduled query's status.
+ *
+ * @param status - The scheduled query status (e.g., "active", "paused", "error")
+ * @returns A React element for the matching status icon, or `null` if no icon is defined
+ */
 function getStatusIcon(status: ScheduledQuery['status']) {
   switch (status) {
     case 'active':
@@ -76,6 +94,16 @@ function getStatusIcon(status: ScheduledQuery['status']) {
   }
 }
 
+/**
+ * Render a collapsible sidebar section that lists and manages scheduled queries.
+ *
+ * Renders a summary badge, up to five scheduled queries with status, schedule label,
+ * next-run hint, and per-item actions (run now, pause/resume, view runs, edit, delete).
+ * Provides controls to open dialogs for viewing all schedules, creating a new schedule,
+ * editing a schedule, and viewing runs. Initializes the scheduled-query store on mount.
+ *
+ * @returns A React element containing the scheduled queries sidebar UI
+ */
 export function ScheduledQueries() {
   const { isMobile } = useSidebar()
   const scheduledQueries = useScheduledQueryStore((s) => s.scheduledQueries)

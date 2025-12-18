@@ -21,6 +21,15 @@ import { DashboardFormDialog } from './dashboard-form-dialog'
 import { DashboardGrid } from './dashboard-grid'
 import { RefreshScheduleDialog } from './refresh-schedule-dialog'
 
+/**
+ * Renders the dashboard UI for the current dashboard route, including header actions, content area, and dialogs.
+ *
+ * Renders a "Dashboard not found" fallback when the specified dashboard does not exist.
+ *
+ * The UI provides add, refresh, schedule, and edit controls; shows an auto-refresh indicator when enabled; supports keyboard shortcuts (`r`, `e`, `n`/`a`, `Escape`); and exposes dialogs for editing dashboard metadata, adding widgets, and configuring auto-refresh.
+ *
+ * @returns The rendered dashboard view element.
+ */
 export function DashboardView() {
   const { dashboardId } = useParams({ from: '/dashboard/$dashboardId' })
   const dashboards = useDashboardStore((s) => s.dashboards)
@@ -244,6 +253,14 @@ interface EmptyDashboardProps {
   onAddWidget: () => void
 }
 
+/**
+ * Renders the empty-dashboard placeholder shown when a dashboard has no widgets.
+ *
+ * Displays an icon, heading, explanatory text, and an "Add Widget" button.
+ *
+ * @param onAddWidget - Callback invoked when the user clicks the "Add Widget" button
+ * @returns The empty dashboard view element
+ */
 function EmptyDashboard({ onAddWidget }: EmptyDashboardProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-6">

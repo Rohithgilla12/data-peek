@@ -92,6 +92,20 @@ const KPI_FORMATS: { format: KPIFormat; label: string }[] = [
   { format: 'duration', label: 'Duration' }
 ]
 
+/**
+ * Render a three-step modal dialog to create and configure a dashboard widget.
+ *
+ * The dialog guides the user through choosing a widget type (chart, KPI, table), selecting a data
+ * source (saved query or inline SQL with connection), and configuring widget-specific settings
+ * (chart axes, KPI format/label, table row limit) and layout width. On submit it constructs a
+ * CreateWidgetInput and calls the dashboard store to add the widget to the provided dashboardId,
+ * then closes the dialog.
+ *
+ * @param open - Whether the dialog is visible
+ * @param onOpenChange - Callback invoked when the dialog should open or close; called with `false` after a successful add
+ * @param dashboardId - ID of the dashboard to which the new widget will be added
+ * @returns The Add Widget dialog React element
+ */
 export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDialogProps) {
   const connections = useConnectionStore((s) => s.connections)
   const savedQueries = useSavedQueryStore((s) => s.savedQueries)

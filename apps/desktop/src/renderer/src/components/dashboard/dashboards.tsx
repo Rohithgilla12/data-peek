@@ -37,6 +37,12 @@ import { useDashboardStore } from '@/stores'
 import { DashboardFormDialog } from './dashboard-form-dialog'
 import type { Dashboard } from '@shared/index'
 
+/**
+ * Format a timestamp into a human-friendly relative date string.
+ *
+ * @param timestamp - Time in milliseconds since the Unix epoch
+ * @returns `Today` if the timestamp is today, `Yesterday` if it was yesterday, `"<n> days ago"` for timestamps 2–6 days ago, or the timestamp formatted with `toLocaleDateString()` for older dates
+ */
 function formatDate(timestamp: number): string {
   const date = new Date(timestamp)
   const now = new Date()
@@ -49,6 +55,13 @@ function formatDate(timestamp: number): string {
   return date.toLocaleDateString()
 }
 
+/**
+ * Render the "Dashboards" collapsible sidebar section that lists available dashboards and exposes actions to open, edit, duplicate, or delete them, plus dialogs for creating and editing dashboards.
+ *
+ * The component initializes the dashboard store if needed, sorts dashboards by last updated time, shows a badge with the count, displays up to five recent dashboards with tooltips and action menus, and provides controls to open a full list or create a new dashboard.
+ *
+ * @returns The Dashboards sidebar React element
+ */
 export function Dashboards() {
   const { isMobile } = useSidebar()
   const navigate = useNavigate()

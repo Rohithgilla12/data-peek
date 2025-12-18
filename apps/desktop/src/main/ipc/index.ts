@@ -20,10 +20,9 @@ export interface IpcStores {
 }
 
 /**
- * Register all IPC handlers
+ * Register every IPC handler used by the application's main process.
  *
- * This function is the central point for registering all IPC handlers.
- * Each handler category is in its own file for maintainability.
+ * @param stores - Persistent stores required by handler categories; includes `connections` (connection configs) and `savedQueries` (saved query entries)
  */
 export function registerAllHandlers(stores: IpcStores): void {
   // Connection CRUD operations

@@ -41,6 +41,12 @@ interface ScheduledQueriesDialogProps {
   onOpenChange: (open: boolean) => void
 }
 
+/**
+ * Produce a human-readable representation of how long ago a timestamp occurred.
+ *
+ * @param timestamp - Time in milliseconds since the Unix epoch
+ * @returns A string like `just now`, `Nm ago`, `Nh ago`, `Nd ago`, or a locale-formatted date for times >= 7 days
+ */
 function formatRelativeTime(timestamp: number): string {
   const now = Date.now()
   const diffMs = now - timestamp
@@ -55,6 +61,12 @@ function formatRelativeTime(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString()
 }
 
+/**
+ * Formats a future timestamp into a concise human-readable relative string.
+ *
+ * @param timestamp - Future time in milliseconds since the Unix epoch
+ * @returns `now` if within one minute, `in Xm` for minutes, `in Xh` for hours, `in Xd` for days (less than 7 days), or a locale date string for later times
+ */
 function formatFutureTime(timestamp: number): string {
   const now = Date.now()
   const diffMs = timestamp - now
@@ -69,6 +81,12 @@ function formatFutureTime(timestamp: number): string {
   return new Date(timestamp).toLocaleDateString()
 }
 
+/**
+ * Map a scheduled query status to Tailwind-style CSS classes for background, text, and border styling.
+ *
+ * @param status - The scheduled query status to map (e.g., `"active"`, `"paused"`, `"error"`).
+ * @returns A string of CSS utility classes (background, text color, and border) appropriate for the provided status.
+ */
 function getStatusColor(status: ScheduledQueryStatus): string {
   switch (status) {
     case 'active':
@@ -82,6 +100,12 @@ function getStatusColor(status: ScheduledQueryStatus): string {
   }
 }
 
+/**
+ * Return an icon component corresponding to a scheduled query status.
+ *
+ * @param status - The scheduled query status to map to an icon (`'active'`, `'paused'`, `'error'`, or other)
+ * @returns A React element with the status icon, or `null` if no icon is defined for the status
+ */
 function getStatusIcon(status: ScheduledQueryStatus) {
   switch (status) {
     case 'active':
@@ -95,6 +119,12 @@ function getStatusIcon(status: ScheduledQueryStatus) {
   }
 }
 
+/**
+ * Produce a human-readable label for a scheduled query's schedule.
+ *
+ * @param schedule - The schedule object from a scheduled query; if `preset` is `"custom"`, the `cronExpression` may be used.
+ * @returns A display label for the schedule: the preset's configured label, the preset key if no label exists, or the cron expression (or "Custom") for custom schedules.
+ */
 function getScheduleLabel(schedule: ScheduledQuery['schedule']): string {
   if (schedule.preset === 'custom') {
     return schedule.cronExpression || 'Custom'
@@ -106,6 +136,15 @@ function getScheduleLabel(schedule: ScheduledQuery['schedule']): string {
 
 type FilterStatus = 'all' | ScheduledQueryStatus
 
+/**
+ * Render a modal dialog for managing scheduled queries, including search, status filtering, listing, and per-query actions (run, pause/resume, view runs, edit, delete).
+ *
+ * Renders UI for creating and editing schedules and for viewing run history; initializes schedule data when opened and wires actions to the scheduled query store.
+ *
+ * @param open - Whether the dialog is currently open
+ * @param onOpenChange - Callback invoked when the dialog open state changes
+ * @returns The Scheduled Queries dialog component tree
+ */
 export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesDialogProps) {
   const scheduledQueries = useScheduledQueryStore((s) => s.scheduledQueries)
   const isInitialized = useScheduledQueryStore((s) => s.isInitialized)

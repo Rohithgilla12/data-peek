@@ -30,7 +30,13 @@ import {
 } from '../dashboard-service'
 
 /**
- * Register dashboard IPC handlers
+ * Register IPC handlers under the "dashboards:*" namespace for dashboard and widget operations.
+ *
+ * Initializes handlers that expose create, read, update, delete, duplicate, widget management,
+ * layout updates, execution, tag queries, and refresh/cron utilities to the renderer process.
+ * Each handler returns a standardized response object of the form `{ success: boolean, data?: T, error?: string }`
+ * and converts service-layer errors or missing resources into appropriate error messages (for example,
+ * "Dashboard not found" or "Widget not found").
  */
 export function registerDashboardHandlers(): void {
   ipcMain.handle('dashboards:list', () => {

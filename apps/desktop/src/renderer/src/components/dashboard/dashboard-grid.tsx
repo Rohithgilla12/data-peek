@@ -24,6 +24,15 @@ interface DashboardGridProps {
   editMode: boolean
 }
 
+/**
+ * Render a dashboard's widget grid and synchronize layout changes with the store.
+ *
+ * Renders widgets inside a responsive grid and updates the dashboard's widget layouts when the user repositions or resizes items.
+ *
+ * @param dashboard - Dashboard object containing widgets and layout configuration used to build the grid
+ * @param editMode - When `true`, enables dragging and resizing of widgets in the grid
+ * @returns A React element that renders the dashboard grid and its WidgetCard children
+ */
 export function DashboardGrid({ dashboard, editMode }: DashboardGridProps) {
   const updateWidgetLayouts = useDashboardStore((s) => s.updateWidgetLayouts)
 

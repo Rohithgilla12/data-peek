@@ -41,6 +41,20 @@ const CHART_ICONS: Record<ChartWidgetType, typeof BarChart3> = {
   pie: PieChart
 }
 
+/**
+ * Infers up to four widget suggestions (charts, KPI, or table) from tabular query data.
+ *
+ * Analyzes column types (numeric, date, categorical) and dataset size to propose relevant
+ * visualizations and a data table preview. Possible suggestions include:
+ * - KPI for a single-row numeric value
+ * - Line/area time series when a date column and numeric columns are present
+ * - Bar (and optionally pie) charts for categorical × numeric data
+ * - A data table preview when there are multiple columns and rows
+ *
+ * @param data - Array of result rows to analyze; each row is a record of column name to value
+ * @returns An array of up to four `WidgetSuggestion` objects sorted by descending confidence.
+ * `[]` is returned when `data` is null, undefined, or empty.
+ */
 function analyzeQueryData(data: Record<string, unknown>[]): WidgetSuggestion[] {
   if (!data || data.length === 0) return []
 
@@ -155,6 +169,15 @@ function analyzeQueryData(data: Record<string, unknown>[]): WidgetSuggestion[] {
   return suggestions.sort((a, b) => b.confidence - a.confidence).slice(0, 4)
 }
 
+/**
+ * Convert a column identifier into a human-readable, title-cased label.
+ *
+ * Handles snake_case and camelCase by replacing underscores with spaces,
+ * inserting spaces before camelCase transitions, and capitalizing words.
+ *
+ * @param col - Column name or identifier (e.g., "total_sales", "orderDate")
+ * @returns A spaced, title-cased label (e.g., "Total Sales", "Order Date")
+ */
 function formatColumnName(col: string): string {
   return col
     .replace(/_/g, ' ')
@@ -162,6 +185,17 @@ function formatColumnName(col: string): string {
     .replace(/\b\w/g, (c) => c.toUpperCase())
 }
 
+/**
+ * Render AI-driven widget suggestions inferred from the provided query result and allow the user to select one.
+ *
+ * Displays a control to trigger analysis, shows a loading state while analyzing, and renders up to four suggested widgets
+ * (charts, KPI, or table) with name, confidence, and a brief reason. When a suggestion is clicked the `onSuggestionSelect`
+ * callback is invoked with the chosen suggestion.
+ *
+ * @param queryResult - The dataset (array of records) used to infer widget suggestions; if empty or null nothing is rendered.
+ * @param onSuggestionSelect - Callback invoked with the selected WidgetSuggestion when the user picks a suggestion.
+ * @returns A React element containing the suggestion UI, or `null` when `queryResult` is empty or null.
+ */
 export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidgetSuggestionProps) {
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [suggestions, setSuggestions] = useState<WidgetSuggestion[]>([])
