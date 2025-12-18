@@ -1,5 +1,3 @@
-'use client'
-
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { FileCode, Table2, Pin, X, Network } from 'lucide-react'

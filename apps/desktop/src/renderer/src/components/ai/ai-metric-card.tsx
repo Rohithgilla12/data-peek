@@ -1,5 +1,3 @@
-'use client'
-
 import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 

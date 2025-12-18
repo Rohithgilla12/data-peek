@@ -1,11 +1,11 @@
-'use client'
-
 import { MessageCircleQuestion, Settings2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 import { ConnectionSwitcher } from '@/components/connection-switcher'
+import { Dashboards } from '@/components/dashboard'
 import { QueryHistory } from '@/components/query-history'
 import { SavedQueries } from '@/components/saved-queries'
+import { ScheduledQueries } from '@/components/scheduled-queries'
 import { SchemaExplorer } from '@/components/schema-explorer'
 import { SidebarQuickQuery } from '@/components/sidebar-quick-query'
 import {
@@ -22,6 +22,14 @@ import {
 } from '@/components/ui/sidebar'
 import { cn } from '@/lib/utils'
 
+/**
+ * Render the application's multi-section sidebar with connection switching, query tools, schema access, history, saved and scheduled queries, dashboards, and secondary navigation.
+ *
+ * The component forwards all received props to the underlying Sidebar root and applies a small macOS-specific top padding to the header when running on Darwin platforms.
+ *
+ * @param props - Props forwarded to the underlying Sidebar component
+ * @returns A React element containing the assembled application sidebar
+ */
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const platform = window.electron.process.platform
 
@@ -50,6 +58,16 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         {/* Saved Queries */}
         <SavedQueries />
+
+        <SidebarSeparator className="mx-3" />
+
+        {/* Scheduled Queries */}
+        <ScheduledQueries />
+
+        <SidebarSeparator className="mx-3" />
+
+        {/* Dashboards */}
+        <Dashboards />
 
         {/* Secondary Navigation - Settings & Help */}
         <SidebarGroup className="mt-auto">

@@ -1,5 +1,3 @@
-'use client'
-
 import { useEffect } from 'react'
 import { Check, AlertCircle, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'

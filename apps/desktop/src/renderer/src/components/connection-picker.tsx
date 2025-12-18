@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { Search, Plus, Loader2, FolderOpen } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'

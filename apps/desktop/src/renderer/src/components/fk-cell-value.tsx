@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react'
 import { ExternalLink } from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'

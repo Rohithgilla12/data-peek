@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react'
 import { Braces, ChevronDown, ChevronRight as ChevronRightIcon, Copy, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'

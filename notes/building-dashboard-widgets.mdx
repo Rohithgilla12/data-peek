@@ -1,0 +1,620 @@
+---
+title: "Building a Metabase-like Dashboard System in Electron"
+description: "How we added drag-and-drop dashboards with charts, KPIs, and data tables to data-peek, complete with auto-refresh scheduling and AI-powered widget suggestions."
+date: "2025-12-18"
+author: "Rohith Gilla"
+tags:
+  ["Dashboard", "Electron", "TypeScript", "Visualization", "react-grid-layout"]
+published: true
+---
+
+SQL clients show you data. But staring at result tables gets old. We wanted **real-time dashboards**: charts that update, KPIs that track metrics, tables that refresh on schedule. Like Metabase, but built into your desktop SQL client.
+
+The result: a complete dashboard system with:
+
+- Drag-and-drop widget layout
+- Four chart types (bar, line, area, pie)
+- KPI cards with smart formatting
+- Sortable data tables
+- Cron-based auto-refresh
+- AI-powered widget suggestions
+- Full-width widgets for data-heavy displays
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      Renderer Process                            │
+│  ┌──────────────┐  ┌───────────────┐  ┌──────────────────────┐  │
+│  │  Dashboard   │  │  Dashboard    │  │  Widget Components   │  │
+│  │  View        │──│  Store        │──│  (Chart/KPI/Table)   │  │
+│  │              │  │  (Zustand)    │  │                      │  │
+│  └──────────────┘  └───────────────┘  └──────────────────────┘  │
+│         │                                        │               │
+│  ┌──────────────┐                    ┌──────────────────────┐   │
+│  │ react-grid-  │                    │  Recharts            │   │
+│  │ layout       │                    │  (Visualization)     │   │
+│  └──────────────┘                    └──────────────────────┘   │
+└────────────────────────────┬────────────────────────────────────┘
+                             │ IPC
+┌────────────────────────────┴────────────────────────────────────┐
+│                       Main Process                               │
+│  ┌──────────────┐  ┌───────────────┐  ┌──────────────────────┐  │
+│  │  Dashboard   │  │  Scheduler    │  │  Widget Execution    │  │
+│  │  Service     │──│  Service      │──│  (Query Runner)      │  │
+│  │  (CRUD)      │  │  (node-cron)  │  │                      │  │
+│  └──────────────┘  └───────────────┘  └──────────────────────┘  │
+│         │                                                        │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │              electron-store (DpStorage)                   │   │
+│  └──────────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Part 1: Data Model Design
+
+The foundation is getting the data model right. Dashboards contain widgets, widgets have data sources and configurations:
+
+```typescript
+interface Dashboard {
+  id: string;
+  name: string;
+  description?: string;
+  tags: string[];
+  widgets: Widget[];
+  layoutCols: number; // Grid columns (default: 12)
+  refreshSchedule?: {
+    enabled: boolean;
+    preset:
+      | "every_minute"
+      | "every_5_minutes"
+      | "every_15_minutes"
+      | "every_hour";
+    cronExpression?: string;
+  };
+  createdAt: number;
+  updatedAt: number;
+  version: number; // For future sync conflict resolution
+}
+
+interface Widget {
+  id: string;
+  name: string;
+  dataSource: {
+    type: "saved-query" | "inline";
+    savedQueryId?: string;
+    sql?: string;
+    connectionId: string; // Each widget can use different connections!
+  };
+  config: ChartWidgetConfig | KPIWidgetConfig | TableWidgetConfig;
+  layout: {
+    x: number;
+    y: number;
+    w: number; // 1-12 grid units
+    h: number;
+    minW?: number;
+    minH?: number;
+  };
+}
+```
+
+Key decisions:
+
+- **Widgets embedded in Dashboard** - Denormalized for simpler offline-first design
+- **Per-widget connection** - Enables cross-database dashboards
+- **Flexible data source** - Use saved queries or write inline SQL
+- **Version field** - Future-proofing for cloud sync
+
+## Part 2: The Grid System
+
+We chose `react-grid-layout` for the drag-and-drop grid. It's battle-tested (used by Grafana) and handles resize/drag elegantly.
+
+```tsx
+import GridLayout from "react-grid-layout/legacy";
+
+function DashboardGrid({ dashboard, editMode }: Props) {
+  const updateWidgetLayouts = useDashboardStore((s) => s.updateWidgetLayouts);
+
+  const layout = dashboard.widgets.map((widget) => ({
+    i: widget.id,
+    x: widget.layout.x,
+    y: widget.layout.y,
+    w: widget.layout.w,
+    h: widget.layout.h,
+    minW: widget.layout.minW || 2,
+    minH: widget.layout.minH || 2,
+    isDraggable: editMode,
+    isResizable: editMode,
+  }));
+
+  const handleLayoutChange = async (newLayout: Layout[]) => {
+    if (!editMode) return;
+
+    const layouts: Record<string, WidgetLayout> = {};
+    for (const item of newLayout) {
+      layouts[item.i] = {
+        x: item.x,
+        y: item.y,
+        w: item.w,
+        h: item.h,
+      };
+    }
+    await updateWidgetLayouts(dashboard.id, layouts);
+  };
+
+  return (
+    <GridLayout
+      className="layout"
+      layout={layout}
+      cols={dashboard.layoutCols}
+      rowHeight={80}
+      onLayoutChange={handleLayoutChange}
+      draggableHandle=".widget-drag-handle"
+      useCSSTransforms
+    >
+      {dashboard.widgets.map((widget) => (
+        <div key={widget.id}>
+          <WidgetCard
+            widget={widget}
+            dashboardId={dashboard.id}
+            editMode={editMode}
+          />
+        </div>
+      ))}
+    </GridLayout>
+  );
+}
+```
+
+A gotcha: react-grid-layout v2 changed the default export. We use the `/legacy` import for v1-compatible API.
+
+## Part 3: Widget Components
+
+Each widget type has a dedicated renderer. They share a common card wrapper:
+
+```tsx
+function WidgetCard({ widget, dashboardId, editMode }: Props) {
+  const widgetData = useDashboardStore((s) => s.getWidgetData(widget.id));
+  const isLoading = useDashboardStore((s) => s.isWidgetLoading(widget.id));
+  const refreshWidget = useDashboardStore((s) => s.refreshWidget);
+
+  return (
+    <Card className="h-full flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <div className="flex items-center gap-2">
+          {editMode && (
+            <div className="widget-drag-handle cursor-move">
+              <GripVertical className="size-4" />
+            </div>
+          )}
+          <CardTitle className="text-sm">{widget.name}</CardTitle>
+        </div>
+        <WidgetActions widget={widget} onRefresh={refreshWidget} />
+      </CardHeader>
+      <CardContent className="flex-1 min-h-0 overflow-hidden">
+        <WidgetContent
+          widget={widget}
+          data={widgetData}
+          isLoading={isLoading}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+The `min-h-0 overflow-hidden` on CardContent is critical - it constrains flex children so charts don't overflow.
+
+### Chart Widget
+
+Charts use Recharts wrapped in ResponsiveContainer:
+
+```tsx
+function WidgetChart({ config, data }: Props) {
+  const { chartType, xKey, yKeys, showLegend, showGrid } = config;
+
+  return (
+    <ChartContainer config={chartConfig} className="h-full w-full min-h-0">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart
+          data={data}
+          margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
+        >
+          {showGrid && <CartesianGrid strokeDasharray="3 3" vertical={false} />}
+          <XAxis dataKey={xKey} tickLine={false} axisLine={false} />
+          <YAxis tickLine={false} axisLine={false} />
+          <ChartTooltip content={<ChartTooltipContent />} />
+          {yKeys.map((key, i) => (
+            <Bar
+              key={key}
+              dataKey={key}
+              fill={COLORS[i % COLORS.length]}
+              radius={[2, 2, 0, 0]}
+            />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+    </ChartContainer>
+  );
+}
+```
+
+### KPI Widget
+
+KPIs format numbers based on type - currency, percentage, or plain numbers:
+
+```tsx
+function WidgetKPI({ config, data }: Props) {
+  const { format, label, valueKey, prefix, suffix } = config;
+  const value = data[0]?.[valueKey];
+
+  const formattedValue = useMemo(() => {
+    if (value === null || value === undefined) return "N/A";
+
+    const num = Number(value);
+    switch (format) {
+      case "currency":
+        return new Intl.NumberFormat("en-US", {
+          style: "currency",
+          currency: "USD",
+          maximumFractionDigits: 0,
+        }).format(num);
+      case "percent":
+        return `${num.toFixed(1)}%`;
+      default:
+        return num.toLocaleString();
+    }
+  }, [value, format]);
+
+  return (
+    <div className="flex flex-col items-center justify-center h-full">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-4xl font-bold">
+        {prefix}
+        {formattedValue}
+        {suffix}
+      </span>
+    </div>
+  );
+}
+```
+
+### Table Widget
+
+Tables support sorting and column filtering:
+
+```tsx
+function WidgetTable({ config, data }: Props) {
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  const columns = useMemo(() => {
+    if (!data.length) return [];
+    const allCols = Object.keys(data[0]);
+    return config.columns?.length ? config.columns : allCols;
+  }, [data, config.columns]);
+
+  const sortedData = useMemo(() => {
+    if (!sortColumn) return data.slice(0, config.maxRows || 10);
+    return [...data]
+      .sort((a, b) => {
+        const aVal = a[sortColumn];
+        const bVal = b[sortColumn];
+        const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+        return sortDirection === "asc" ? cmp : -cmp;
+      })
+      .slice(0, config.maxRows || 10);
+  }, [data, sortColumn, sortDirection, config.maxRows]);
+
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          {columns.map((col) => (
+            <TableHead
+              key={col}
+              className="cursor-pointer"
+              onClick={() => handleSort(col)}
+            >
+              {col}
+              {sortColumn === col && (sortDirection === "asc" ? " ↑" : " ↓")}
+            </TableHead>
+          ))}
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {sortedData.map((row, i) => (
+          <TableRow key={i}>
+            {columns.map((col) => (
+              <TableCell key={col}>{formatCell(row[col])}</TableCell>
+            ))}
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+```
+
+## Part 4: Auto-Refresh with Cron
+
+Dashboards can refresh automatically using node-cron in the main process:
+
+```typescript
+import cron, { ScheduledTask } from "node-cron";
+import { CronExpressionParser } from "cron-parser";
+
+const activeRefreshJobs = new Map<string, ScheduledTask>();
+
+function scheduleDashboardRefresh(dashboard: Dashboard) {
+  // Stop existing job if any
+  stopDashboardRefresh(dashboard.id);
+
+  if (!dashboard.refreshSchedule?.enabled) return;
+
+  const cronExpression = getCronExpression(dashboard.refreshSchedule);
+  if (!cron.validate(cronExpression)) return;
+
+  const task = cron.schedule(cronExpression, async () => {
+    const results = await executeAllWidgets(dashboard.id);
+
+    // Notify renderer process
+    BrowserWindow.getAllWindows().forEach((win) => {
+      win.webContents.send("dashboards:refresh-complete", {
+        dashboardId: dashboard.id,
+        results,
+      });
+    });
+  });
+
+  activeRefreshJobs.set(dashboard.id, task);
+}
+
+function getCronExpression(schedule: RefreshSchedule): string {
+  switch (schedule.preset) {
+    case "every_minute":
+      return "* * * * *";
+    case "every_5_minutes":
+      return "*/5 * * * *";
+    case "every_15_minutes":
+      return "*/15 * * * *";
+    case "every_hour":
+      return "0 * * * *";
+    default:
+      return schedule.cronExpression || "*/5 * * * *";
+  }
+}
+```
+
+The renderer subscribes to refresh events:
+
+```typescript
+// In dashboard-store.ts
+subscribeToAutoRefresh: () => {
+  return window.api.dashboards.onRefreshComplete(({ dashboardId, results }) => {
+    get().handleAutoRefreshResults(dashboardId, results);
+  });
+};
+```
+
+## Part 5: AI Widget Suggestions
+
+When you run a query, AI can suggest the best visualization:
+
+```typescript
+function analyzeQueryData(data: Record<string, unknown>[]): WidgetSuggestion[] {
+  const suggestions: WidgetSuggestion[] = [];
+  const columns = Object.keys(data[0]);
+
+  // Detect column types
+  const numericColumns: string[] = [];
+  const dateColumns: string[] = [];
+  const categoryColumns: string[] = [];
+
+  for (const col of columns) {
+    const sample = data[0][col];
+    if (typeof sample === "number") {
+      numericColumns.push(col);
+    } else if (typeof sample === "string" && isDateString(sample)) {
+      dateColumns.push(col);
+    } else {
+      const uniqueCount = new Set(data.map((r) => r[col])).size;
+      if (uniqueCount <= 20) categoryColumns.push(col);
+    }
+  }
+
+  // Single row with number → KPI
+  if (data.length === 1 && numericColumns.length >= 1) {
+    suggestions.push({
+      type: "kpi",
+      name: formatColumnName(numericColumns[0]),
+      valueKey: numericColumns[0],
+      confidence: 0.9,
+      reason: "Single row with numeric value - ideal for KPI display",
+    });
+  }
+
+  // Date + numbers → Line chart
+  if (dateColumns.length >= 1 && numericColumns.length >= 1) {
+    suggestions.push({
+      type: "chart",
+      chartType: "line",
+      xKey: dateColumns[0],
+      yKeys: numericColumns.slice(0, 3),
+      confidence: 0.85,
+      reason: "Time series data - line chart shows trends over time",
+    });
+  }
+
+  // Category + numbers → Bar chart
+  if (categoryColumns.length >= 1 && numericColumns.length >= 1) {
+    suggestions.push({
+      type: "chart",
+      chartType: "bar",
+      xKey: categoryColumns[0],
+      yKeys: numericColumns.slice(0, 2),
+      confidence: 0.8,
+      reason: "Categorical data - bar chart for comparison",
+    });
+  }
+
+  return suggestions.sort((a, b) => b.confidence - a.confidence);
+}
+```
+
+## Part 6: Full-Width Widgets
+
+Sometimes you need a chart to span the entire row. We added width presets:
+
+```tsx
+// In add-widget-dialog.tsx
+const [widgetWidth, setWidgetWidth] = useState<"auto" | "half" | "full">(
+  "auto"
+);
+
+const getWidgetWidth = (): number => {
+  if (widgetWidth === "full") return 12; // Full row
+  if (widgetWidth === "half") return 6; // Half row
+  return widgetType === "table" ? 6 : 4; // Auto based on type
+};
+```
+
+And a quick toggle in the widget dropdown:
+
+```tsx
+<DropdownMenuItem onClick={handleToggleFullWidth}>
+  {isFullWidth ? (
+    <>
+      <Minimize2 className="mr-2 size-4" />
+      Reset Width
+    </>
+  ) : (
+    <>
+      <Maximize2 className="mr-2 size-4" />
+      Full Width
+    </>
+  )}
+</DropdownMenuItem>
+```
+
+## Keyboard Shortcuts
+
+Power users love keyboards. We added shortcuts for common actions:
+
+```tsx
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.target instanceof HTMLInputElement) return;
+
+    if (e.key === "r" && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      handleRefresh();
+    }
+
+    if (e.key === "e" && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      setEditMode(!editMode);
+    }
+
+    if ((e.key === "n" || e.key === "a") && !e.metaKey && !e.ctrlKey) {
+      e.preventDefault();
+      setIsAddWidgetOpen(true);
+    }
+
+    if (e.key === "Escape" && editMode) {
+      e.preventDefault();
+      setEditMode(false);
+    }
+  };
+
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [editMode, handleRefresh]);
+```
+
+- `r` - Refresh all widgets
+- `e` - Toggle edit mode
+- `n` or `a` - Add new widget
+- `Escape` - Exit edit mode
+
+## Export/Import
+
+Dashboards can be exported as JSON for sharing:
+
+```typescript
+exportDashboard: (dashboardId) => {
+  const dashboard = get().dashboards.find((d) => d.id === dashboardId);
+  if (!dashboard) return null;
+
+  const exportData = {
+    version: 1,
+    exportedAt: Date.now(),
+    dashboard: {
+      ...dashboard,
+      id: undefined, // Remove runtime IDs
+      createdAt: undefined,
+      updatedAt: undefined,
+      widgets: dashboard.widgets.map((w) => ({
+        ...w,
+        id: undefined,
+      })),
+    },
+  };
+
+  return JSON.stringify(exportData, null, 2);
+};
+```
+
+And imported to create new dashboards:
+
+```typescript
+importDashboard: async (jsonData) => {
+  const parsed = JSON.parse(jsonData);
+
+  const input: CreateDashboardInput = {
+    name: `${parsed.dashboard.name} (Imported)`,
+    description: parsed.dashboard.description,
+    tags: parsed.dashboard.tags || [],
+    widgets: parsed.dashboard.widgets || [],
+    layoutCols: parsed.dashboard.layoutCols || 12,
+    refreshSchedule: parsed.dashboard.refreshSchedule,
+  };
+
+  return get().createDashboard(input);
+};
+```
+
+## Lessons Learned
+
+### 1. Flex containers need `min-h-0`
+
+Without this, flex children (like charts) can overflow. This CSS quirk cost us hours of debugging.
+
+### 2. ResponsiveContainer is non-negotiable
+
+Recharts charts without ResponsiveContainer don't adapt to their container. Always wrap them.
+
+### 3. Per-widget error states
+
+A failing widget shouldn't crash the whole dashboard. Each widget handles its own errors independently.
+
+### 4. Denormalize for offline-first
+
+Embedding widgets inside dashboards (vs. separate tables with foreign keys) makes offline sync simpler.
+
+### 5. Edit mode separation
+
+Don't let users accidentally drag widgets. A clear edit mode toggle prevents frustration.
+
+## What's Next
+
+- [ ] Widget duplication
+- [ ] Dashboard templates
+- [ ] Real-time streaming widgets
+- [ ] Threshold alerts for KPIs
+- [ ] Collaborative dashboard sharing
+- [ ] More chart types (scatter, heatmap)
+
+---
+
+_This is how we built dashboards in data-peek. The code is open source - check out `src/renderer/src/components/dashboard/` and `src/main/dashboard-service.ts`._

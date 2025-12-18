@@ -1,5 +1,3 @@
-'use client'
-
 import * as React from 'react'
 import { Table2, Clock, TrendingUp, Search, GitBranch, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'

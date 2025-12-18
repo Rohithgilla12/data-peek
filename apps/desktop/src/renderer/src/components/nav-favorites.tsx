@@ -1,5 +1,3 @@
-'use client'
-
 import { ArrowUpRight, Link, MoreHorizontal, StarOff, Trash2 } from 'lucide-react'
 
 import {

@@ -1,5 +1,3 @@
-'use client'
-
 import { useState, useEffect } from 'react'
 import { Bookmark, ChevronRight, MoreHorizontal, Play, Copy, Trash2, Pencil } from 'lucide-react'
 
