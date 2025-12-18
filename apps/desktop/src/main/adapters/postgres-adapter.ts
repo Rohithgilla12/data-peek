@@ -1,4 +1,6 @@
 import { Client } from 'pg'
+import { exec, spawn } from 'child_process'
+import { promisify } from 'util'
 import {
   resolvePostgresType,
   type ConnectionConfig,
@@ -15,7 +17,10 @@ import {
   type CustomTypeInfo,
   type StatementResult,
   type RoutineInfo,
-  type RoutineParameterInfo
+  type RoutineParameterInfo,
+  type BackupOptions,
+  type RestoreOptions,
+  type ToolAvailability
 } from '@shared/index'
 import type {
   DatabaseAdapter,
@@ -31,6 +36,7 @@ import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 
 /** Split SQL into statements for PostgreSQL */
 const splitPgStatements = (sql: string) => splitStatements(sql, 'postgresql')
+const execAsync = promisify(exec)
 
 /**
  * Check if a SQL statement is data-returning (SELECT, RETURNING, etc.)
@@ -552,6 +558,144 @@ export class PostgresAdapter implements DatabaseAdapter {
       return Array.from(schemaMap.values())
     } finally {
       await client.end()
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async checkTools(): Promise<ToolAvailability> {
+    try {
+      const { stdout } = await execAsync('pg_dump --version')
+      return { available: true, version: stdout.trim() }
+    } catch {
+      return { available: false, error: 'pg_dump not found in PATH' }
+    }
+  }
+
+  async backup(config: ConnectionConfig, options: BackupOptions): Promise<void> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+
+    try {
+      const host = config.ssh ? '127.0.0.1' : config.host
+      const port = config.port // Updated by createTunnel if SSH is used
+
+      const args = [
+        '--host',
+        host,
+        '--port',
+        String(port),
+        '--username',
+        config.user || '',
+        '--no-password'
+      ]
+
+      if (options.format === 'custom') args.push('--format=c')
+      else if (options.format === 'tar') args.push('--format=t')
+      else if (options.format === 'directory') args.push('--format=d')
+      else args.push('--format=p')
+
+      if (options.dataOnly) args.push('--data-only')
+      if (options.schemaOnly) args.push('--schema-only')
+      if (options.clean) args.push('--clean')
+      if (options.ifExists) args.push('--if-exists')
+      if (options.createDb) args.push('--create')
+      if (options.verbose) args.push('--verbose')
+      if (options.encoding) args.push('--encoding', options.encoding)
+      if (options.jobs) args.push('--jobs', String(options.jobs))
+      if (options.compression !== undefined) args.push('--compress', String(options.compression))
+
+      if (options.tables && options.tables.length > 0) {
+        options.tables.forEach((t) => args.push('--table', t))
+      }
+      if (options.schemas && options.schemas.length > 0) {
+        options.schemas.forEach((s) => args.push('--schema', s))
+      }
+
+      args.push('--file', options.outputPath)
+      args.push(config.database)
+
+      const env = { ...process.env, PGPASSWORD: config.password }
+
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn('pg_dump', args, { env })
+
+        let errorOutput = ''
+        child.stderr.on('data', (data) => {
+          errorOutput += data.toString()
+        })
+
+        child.on('close', (code) => {
+          if (code === 0) resolve()
+          else reject(new Error(`pg_dump exited with code ${code}: ${errorOutput}`))
+        })
+
+        child.on('error', (err) => {
+          reject(new Error(`Failed to start pg_dump: ${err.message}`))
+        })
+      })
+    } finally {
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async restore(config: ConnectionConfig, options: RestoreOptions): Promise<void> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+
+    try {
+      const host = config.ssh ? '127.0.0.1' : config.host
+      const port = config.port
+
+      // Check if file exists
+      // Determine tool
+      const isPlain = options.format === 'plain' || options.inputFile.endsWith('.sql')
+      const tool = isPlain ? 'psql' : 'pg_restore'
+
+      const args = [
+        '--host',
+        host,
+        '--port',
+        String(port),
+        '--username',
+        config.user || '',
+        '--no-password'
+      ]
+      const env = { ...process.env, PGPASSWORD: config.password }
+
+      if (isPlain) {
+        // psql arguments
+        args.push('--dbname', options.targetDatabase || config.database)
+        if (options.exitOnError) args.push('-v', 'ON_ERROR_STOP=1')
+        args.push('--file', options.inputFile)
+      } else {
+        // pg_restore arguments
+        if (options.clean) args.push('--clean')
+        if (options.createDb) args.push('--create')
+        if (options.ifExists) args.push('--if-exists')
+        if (options.dataOnly) args.push('--data-only')
+        if (options.schemaOnly) args.push('--schema-only')
+        if (options.jobs) args.push('--jobs', String(options.jobs))
+        if (options.verbose) args.push('--verbose')
+
+        args.push('--dbname', options.targetDatabase || config.database)
+        args.push(options.inputFile)
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn(tool, args, { env })
+        let errorOutput = ''
+        child.stderr.on('data', (data) => (errorOutput += data.toString()))
+        child.on('close', (code) => {
+          if (code === 0) resolve()
+          else reject(new Error(`${tool} exited with code ${code}: ${errorOutput}`))
+        })
+        child.on('error', (err) => reject(new Error(`Failed to start ${tool}: ${err.message}`)))
+      })
+    } finally {
       closeTunnel(tunnelSession)
     }
   }

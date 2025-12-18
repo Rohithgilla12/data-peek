@@ -7,7 +7,10 @@ import type {
   SequenceInfo,
   CustomTypeInfo,
   StatementResult,
-  QueryTelemetry
+  QueryTelemetry,
+  BackupOptions,
+  RestoreOptions,
+  ToolAvailability
 } from '@shared/index'
 
 /**
@@ -96,6 +99,15 @@ export interface DatabaseAdapter {
 
   /** Get custom types (enums, etc.) */
   getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]>
+
+  /** Check if backup/restore tools are available */
+  checkTools?(): Promise<ToolAvailability>
+
+  /** Backup database */
+  backup?(config: ConnectionConfig, options: BackupOptions): Promise<void>
+
+  /** Restore database */
+  restore?(config: ConnectionConfig, options: RestoreOptions): Promise<void>
 }
 
 // Import adapters

@@ -9,6 +9,7 @@ import { registerAIHandlers } from './ai-handlers'
 import { createLogger } from '../lib/logger'
 import { registerFileHandlers } from './file-handlers'
 import { registerWindowHandlers } from './window-handler'
+import { registerBackupHandlers } from './backup-handlers'
 
 const log = createLogger('ipc')
 
@@ -48,6 +49,9 @@ export function registerAllHandlers(stores: IpcStores): void {
   // Window controls
   registerWindowHandlers()
 
+  // Backup & Restore
+  registerBackupHandlers(stores.connections)
+
   log.debug('All handlers registered')
 }
 
@@ -58,3 +62,4 @@ export { registerDDLHandlers } from './ddl-handlers'
 export { registerLicenseHandlers } from './license-handlers'
 export { registerSavedQueriesHandlers } from './saved-queries-handlers'
 export { registerAIHandlers } from './ai-handlers'
+export { registerBackupHandlers } from './backup-handlers'

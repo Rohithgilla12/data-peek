@@ -28,7 +28,10 @@ import type {
   MultiStatementResultWithTelemetry,
   PerformanceAnalysisResult,
   PerformanceAnalysisConfig,
-  QueryHistoryItemForAnalysis
+  QueryHistoryItemForAnalysis,
+  BackupOptions,
+  RestoreOptions,
+  ToolAvailability
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -60,6 +63,15 @@ const api = {
       ipcRenderer.on('connections:updated', handler)
       return () => ipcRenderer.removeListener('connections:updated', handler)
     }
+  },
+  // Backup & Restore
+  backup: {
+    checkTools: (connectionId: string): Promise<IpcResponse<ToolAvailability>> =>
+      ipcRenderer.invoke('backup:check-tools', connectionId),
+    startBackup: (connectionId: string, options: BackupOptions): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('backup:start', { connectionId, options }),
+    startRestore: (connectionId: string, options: RestoreOptions): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('restore:start', { connectionId, options })
   },
   // Database operations
   db: {
@@ -307,7 +319,11 @@ const api = {
       ipcRenderer.invoke('ai:set-active-model', { provider, model })
   },
   files: {
-    openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog')
+    openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog'),
+    saveFilePicker: (options?: {
+      defaultPath?: string
+      filters?: Array<{ name: string; extensions: string[] }>
+    }): Promise<string | null> => ipcRenderer.invoke('save-file-dialog', options)
   },
   window: {
     minimize: (): Promise<void> => ipcRenderer.invoke('minimize-window'),

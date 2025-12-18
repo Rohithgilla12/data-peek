@@ -19,7 +19,10 @@ import type {
   MultiStatementResultWithTelemetry,
   PerformanceAnalysisResult,
   PerformanceAnalysisConfig,
-  QueryHistoryItemForAnalysis
+  QueryHistoryItemForAnalysis,
+  BackupOptions,
+  RestoreOptions,
+  ToolAvailability
 } from '@shared/index'
 
 // AI Types
@@ -139,6 +142,11 @@ interface DataPeekApi {
     delete: (id: string) => Promise<IpcResponse<void>>
     // Listen for connection changes from other windows
     onConnectionsUpdated: (callback: () => void) => () => void
+  }
+  backup: {
+    checkTools: (connectionId: string) => Promise<IpcResponse<ToolAvailability>>
+    startBackup: (connectionId: string, options: BackupOptions) => Promise<IpcResponse<void>>
+    startRestore: (connectionId: string, options: RestoreOptions) => Promise<IpcResponse<void>>
   }
   db: {
     connect: (config: ConnectionConfig) => Promise<IpcResponse<void>>
@@ -285,6 +293,10 @@ interface DataPeekApi {
   }
   files: {
     openFilePicker: () => Promise<string | null>
+    saveFilePicker: (options?: {
+      defaultPath?: string
+      filters?: Array<{ name: string; extensions: string[] }>
+    }) => Promise<string | null>
   }
   window: {
     minimize: () => Promise<void>

@@ -1,0 +1,412 @@
+import { useState, useEffect } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { Loader2, FolderOpen, AlertTriangle } from 'lucide-react'
+import { notify } from '@/stores/notification-store'
+import { type Connection } from '@/stores'
+import { type BackupOptions, type RestoreOptions, type BackupFormat } from '@shared/index'
+
+interface BackupRestoreModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  connection: Connection | null
+}
+
+export function BackupRestoreModal({ open, onOpenChange, connection }: BackupRestoreModalProps) {
+  const [activeTab, setActiveTab] = useState<'backup' | 'restore'>('backup')
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [toolCheck, setToolCheck] = useState<{ available: boolean; error?: string } | null>(null)
+
+  // Backup State
+  const [backupPath, setBackupPath] = useState('')
+  const [backupFormat, setBackupFormat] = useState<BackupFormat>('custom')
+  const [backupDataOnly, setBackupDataOnly] = useState(false)
+  const [backupSchemaOnly, setBackupSchemaOnly] = useState(false)
+  const [backupClean, setBackupClean] = useState(false)
+  const [backupVerbose, setBackupVerbose] = useState(false)
+
+  // Restore State
+  const [restorePath, setRestorePath] = useState('')
+  const [restoreFormat, setRestoreFormat] = useState<BackupFormat>('custom')
+  const [restoreDataOnly, setRestoreDataOnly] = useState(false)
+  const [restoreSchemaOnly, setRestoreSchemaOnly] = useState(false)
+  const [restoreClean, setRestoreClean] = useState(true)
+  const [restoreCreateDb, setRestoreCreateDb] = useState(false)
+  const [restoreIfExists, setRestoreIfExists] = useState(true)
+
+  useEffect(() => {
+    if (open && connection) {
+      checkTools()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, connection])
+
+  const checkTools = async () => {
+    if (!connection) return
+    try {
+      const result = await window.api.backup.checkTools(connection.id)
+      if (result.success && result.data) {
+        setToolCheck(result.data)
+      } else {
+        setToolCheck({ available: false, error: result.error || 'Unknown error' })
+      }
+    } catch (error) {
+      setToolCheck({ available: false, error: String(error) })
+    }
+  }
+
+  const handleBrowseBackupPath = async () => {
+    try {
+      const filters = [
+        { name: 'PostgreSQL Custom Dump', extensions: ['dump', 'custom'] },
+        { name: 'SQL', extensions: ['sql'] },
+        { name: 'Tar', extensions: ['tar'] },
+        { name: 'All Files', extensions: ['*'] }
+      ]
+
+      const path = await window.api.files.saveFilePicker({
+        defaultPath: `backup_${connection?.database}_${new Date().toISOString().split('T')[0]}.dump`,
+        filters
+      })
+      if (path) {
+        setBackupPath(path)
+        if (path.endsWith('.sql')) setBackupFormat('plain')
+        else if (path.endsWith('.tar')) setBackupFormat('tar')
+        else if (path.endsWith('.dump') || path.endsWith('.custom')) setBackupFormat('custom')
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const handleBrowseRestorePath = async () => {
+    try {
+      const path = await window.api.files.openFilePicker()
+      if (path) {
+        setRestorePath(path)
+        if (path.endsWith('.sql')) setRestoreFormat('plain')
+        else if (path.endsWith('.tar')) setRestoreFormat('tar')
+        else if (path.endsWith('.dump') || path.endsWith('.custom')) setRestoreFormat('custom')
+      }
+    } catch (error) {
+      console.error(error)
+    }
+  }
+
+  const handleBackup = async () => {
+    if (!connection || !backupPath) return
+
+    setIsProcessing(true)
+    try {
+      const options: BackupOptions = {
+        outputPath: backupPath,
+        format: backupFormat,
+        dataOnly: backupDataOnly,
+        schemaOnly: backupSchemaOnly,
+        clean: backupClean,
+        verbose: backupVerbose
+      }
+
+      const result = await window.api.backup.startBackup(connection.id, options)
+
+      if (result.success) {
+        notify.success(`Backup completed successfully!`)
+        onOpenChange(false)
+      } else {
+        notify.error(`Backup failed`, result.error || 'Unknown error')
+      }
+    } catch (error) {
+      notify.error(`Backup failed`, String(error))
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  const handleRestore = async () => {
+    if (!connection || !restorePath) return
+
+    if (!confirm('Are you sure you want to restore? This may overwrite existing data.')) {
+      return
+    }
+
+    setIsProcessing(true)
+    try {
+      const options: RestoreOptions = {
+        inputFile: restorePath,
+        format: restoreFormat,
+        dataOnly: restoreDataOnly,
+        schemaOnly: restoreSchemaOnly,
+        clean: restoreClean,
+        createDb: restoreCreateDb,
+        ifExists: restoreIfExists,
+        exitOnError: true,
+        verbose: true
+      }
+
+      const result = await window.api.backup.startRestore(connection.id, options)
+
+      if (result.success) {
+        notify.success(`Restore completed successfully!`)
+        onOpenChange(false)
+      } else {
+        notify.error(`Restore failed`, result.error || 'Unknown error')
+      }
+    } catch (error) {
+      notify.error(`Restore failed`, String(error))
+    } finally {
+      setIsProcessing(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle>Backup & Restore - {connection?.name}</DialogTitle>
+          <DialogDescription>Manage database backups and perform restoration.</DialogDescription>
+        </DialogHeader>
+
+        {toolCheck && !toolCheck.available && (
+          <div className="bg-destructive/10 text-destructive p-3 rounded-md flex items-center gap-2 text-sm mb-4">
+            <AlertTriangle className="size-4" />
+            <span>Required tools not found: {toolCheck.error}</span>
+          </div>
+        )}
+
+        <div className="flex gap-2 border-b mb-4">
+          <button
+            onClick={() => setActiveTab('backup')}
+            className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'backup' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+          >
+            Backup
+          </button>
+          <button
+            onClick={() => setActiveTab('restore')}
+            className={`pb-2 px-4 text-sm font-medium border-b-2 transition-colors ${activeTab === 'restore' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
+          >
+            Restore
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {activeTab === 'backup' ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Output File</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={backupPath}
+                    onChange={(e) => setBackupPath(e.target.value)}
+                    placeholder="/path/to/backup.dump"
+                  />
+                  <Button variant="outline" size="icon" onClick={handleBrowseBackupPath}>
+                    <FolderOpen className="size-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Format</Label>
+                  <Select
+                    value={backupFormat}
+                    onValueChange={(v) => setBackupFormat(v as BackupFormat)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="custom">Custom (Compressed)</SelectItem>
+                      <SelectItem value="plain">Plain SQL</SelectItem>
+                      <SelectItem value="tar">Tar</SelectItem>
+                      <SelectItem value="directory">Directory</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Options</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="backup-data"
+                      checked={backupDataOnly}
+                      onCheckedChange={(c) => setBackupDataOnly(!!c)}
+                    />
+                    <Label htmlFor="backup-data" className="cursor-pointer">
+                      Data Only
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="backup-schema"
+                      checked={backupSchemaOnly}
+                      onCheckedChange={(c) => setBackupSchemaOnly(!!c)}
+                    />
+                    <Label htmlFor="backup-schema" className="cursor-pointer">
+                      Schema Only
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="backup-clean"
+                      checked={backupClean}
+                      onCheckedChange={(c) => setBackupClean(!!c)}
+                    />
+                    <Label htmlFor="backup-clean" className="cursor-pointer">
+                      Include DROP commands
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="backup-verbose"
+                      checked={backupVerbose}
+                      onCheckedChange={(c) => setBackupVerbose(!!c)}
+                    />
+                    <Label htmlFor="backup-verbose" className="cursor-pointer">
+                      Verbose Output
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                className="w-full"
+                onClick={handleBackup}
+                disabled={isProcessing || !backupPath || (toolCheck ? !toolCheck.available : false)}
+              >
+                {isProcessing ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+                Start Backup
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Input File</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={restorePath}
+                    onChange={(e) => setRestorePath(e.target.value)}
+                    placeholder="/path/to/backup.dump"
+                  />
+                  <Button variant="outline" size="icon" onClick={handleBrowseRestorePath}>
+                    <FolderOpen className="size-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Format</Label>
+                  <Select
+                    value={restoreFormat}
+                    onValueChange={(v) => setRestoreFormat(v as BackupFormat)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="custom">Custom (Compressed)</SelectItem>
+                      <SelectItem value="plain">Plain SQL</SelectItem>
+                      <SelectItem value="tar">Tar</SelectItem>
+                      <SelectItem value="directory">Directory</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Options</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="restore-clean"
+                      checked={restoreClean}
+                      onCheckedChange={(c) => setRestoreClean(!!c)}
+                    />
+                    <Label htmlFor="restore-clean" className="cursor-pointer">
+                      Clean (Drop objects)
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="restore-exists"
+                      checked={restoreIfExists}
+                      onCheckedChange={(c) => setRestoreIfExists(!!c)}
+                    />
+                    <Label htmlFor="restore-exists" className="cursor-pointer">
+                      IF EXISTS (Safe Drop)
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="restore-create"
+                      checked={restoreCreateDb}
+                      onCheckedChange={(c) => setRestoreCreateDb(!!c)}
+                    />
+                    <Label htmlFor="restore-create" className="cursor-pointer">
+                      Create Database
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="restore-schema"
+                      checked={restoreSchemaOnly}
+                      onCheckedChange={(c) => setRestoreSchemaOnly(!!c)}
+                    />
+                    <Label htmlFor="restore-schema" className="cursor-pointer">
+                      Schema Only
+                    </Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="restore-data"
+                      checked={restoreDataOnly}
+                      onCheckedChange={(c) => setRestoreDataOnly(!!c)}
+                    />
+                    <Label htmlFor="restore-data" className="cursor-pointer">
+                      Data Only
+                    </Label>
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                variant="destructive"
+                className="w-full"
+                onClick={handleRestore}
+                disabled={
+                  isProcessing || !restorePath || (toolCheck ? !toolCheck.available : false)
+                }
+              >
+                {isProcessing ? (
+                  <Loader2 className="size-4 animate-spin mr-2" />
+                ) : (
+                  <AlertTriangle className="size-4 mr-2" />
+                )}
+                Start Restore
+              </Button>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}

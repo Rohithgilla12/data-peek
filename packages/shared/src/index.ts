@@ -393,11 +393,11 @@ export interface SQLiteConnectionOptions {
  */
 export interface MSSQLConnectionOptions {
   authentication?:
-  | "SQL Server Authentication"
-  | "ActiveDirectoryIntegrated"
-  | "ActiveDirectoryPassword"
-  | "ActiveDirectoryServicePrincipal"
-  | "ActiveDirectoryDeviceCodeFlow";
+    | "SQL Server Authentication"
+    | "ActiveDirectoryIntegrated"
+    | "ActiveDirectoryPassword"
+    | "ActiveDirectoryServicePrincipal"
+    | "ActiveDirectoryDeviceCodeFlow";
   encrypt?: boolean;
   trustServerCertificate?: boolean;
   enableArithAbort?: boolean;
@@ -967,11 +967,11 @@ export type AlterConstraintOperation =
 export type AlterIndexOperation =
   | { type: "create_index"; index: IndexDefinition }
   | {
-    type: "drop_index";
-    name: string;
-    cascade?: boolean;
-    concurrent?: boolean;
-  }
+      type: "drop_index";
+      name: string;
+      cascade?: boolean;
+      concurrent?: boolean;
+    }
   | { type: "rename_index"; oldName: string; newName: string }
   | { type: "reindex"; name: string; concurrent?: boolean };
 
@@ -1265,51 +1265,51 @@ export interface MultiStatementResultWithTelemetry extends MultiStatementResult 
 /**
  * Severity levels for performance issues
  */
-export type PerformanceIssueSeverity = 'critical' | 'warning' | 'info'
+export type PerformanceIssueSeverity = "critical" | "warning" | "info";
 
 /**
  * Categories of performance issues detected during analysis
  */
 export type PerformanceIssueType =
-  | 'missing_index'
-  | 'n_plus_one'
-  | 'slow_query'
-  | 'high_filter_ratio'
-  | 'row_estimate_off'
-  | 'disk_spill'
+  | "missing_index"
+  | "n_plus_one"
+  | "slow_query"
+  | "high_filter_ratio"
+  | "row_estimate_off"
+  | "disk_spill";
 
 /**
  * A single performance issue detected during query analysis
  */
 export interface PerformanceIssue {
   /** Unique identifier for this issue */
-  id: string
+  id: string;
   /** Type of performance issue */
-  type: PerformanceIssueType
+  type: PerformanceIssueType;
   /** Severity level */
-  severity: PerformanceIssueSeverity
+  severity: PerformanceIssueSeverity;
   /** Short title describing the issue */
-  title: string
+  title: string;
   /** Detailed description of the issue */
-  message: string
+  message: string;
   /** Actionable suggestion to fix the issue */
-  suggestion: string
+  suggestion: string;
   /** Table name if applicable */
-  tableName?: string
+  tableName?: string;
   /** Column name if applicable */
-  columnName?: string
+  columnName?: string;
   /** Suggested CREATE INDEX statement */
-  indexSuggestion?: string
+  indexSuggestion?: string;
   /** Related queries for N+1 patterns */
-  relatedQueries?: string[]
+  relatedQueries?: string[];
   /** Threshold that was exceeded (for slow queries) */
-  threshold?: number
+  threshold?: number;
   /** Actual value that exceeded the threshold */
-  actualValue?: number
+  actualValue?: number;
   /** Plan node type from EXPLAIN (e.g., 'Seq Scan') */
-  planNodeType?: string
+  planNodeType?: string;
   /** Additional details from the plan node */
-  planNodeDetails?: Record<string, unknown>
+  planNodeDetails?: Record<string, unknown>;
 }
 
 /**
@@ -1317,19 +1317,19 @@ export interface PerformanceIssue {
  */
 export interface NplusOnePattern {
   /** Normalized query fingerprint */
-  fingerprint: string
+  fingerprint: string;
   /** Query template with placeholders */
-  queryTemplate: string
+  queryTemplate: string;
   /** Number of occurrences detected */
-  occurrences: number
+  occurrences: number;
   /** Sample queries (limited to 3) */
-  querySamples: string[]
+  querySamples: string[];
   /** Table name extracted from query */
-  tableName?: string
+  tableName?: string;
   /** Column name in WHERE clause */
-  columnName?: string
+  columnName?: string;
   /** Time window in which these occurred (ms) */
-  timeWindowMs: number
+  timeWindowMs: number;
 }
 
 /**
@@ -1337,29 +1337,29 @@ export interface NplusOnePattern {
  */
 export interface PerformanceAnalysisResult {
   /** Unique identifier for this analysis */
-  queryId: string
+  queryId: string;
   /** Original query that was analyzed */
-  query: string
+  query: string;
   /** Unix timestamp when analysis was performed */
-  analyzedAt: number
+  analyzedAt: number;
   /** Time taken to perform analysis (ms) */
-  durationMs: number
+  durationMs: number;
   /** Issue counts by severity */
   issueCount: {
-    critical: number
-    warning: number
-    info: number
-  }
+    critical: number;
+    warning: number;
+    info: number;
+  };
   /** Detected performance issues */
-  issues: PerformanceIssue[]
+  issues: PerformanceIssue[];
   /** Detected N+1 patterns */
-  nplusOnePatterns: NplusOnePattern[]
+  nplusOnePatterns: NplusOnePattern[];
   /** Raw EXPLAIN plan for reference */
-  explainPlan?: unknown
+  explainPlan?: unknown;
   /** Database type */
-  dbType: 'postgresql'
+  dbType: "postgresql";
   /** Connection identifier */
-  connectionId: string
+  connectionId: string;
 }
 
 /**
@@ -1367,13 +1367,13 @@ export interface PerformanceAnalysisResult {
  */
 export interface PerformanceAnalysisConfig {
   /** Threshold for slow query warning (default: 1000ms) */
-  slowQueryThresholdMs: number
+  slowQueryThresholdMs: number;
   /** Time window for N+1 detection (default: 5000ms) */
-  nplusOneWindowMs: number
+  nplusOneWindowMs: number;
   /** Minimum occurrences to flag N+1 (default: 3) */
-  nplusOneMinOccurrences: number
+  nplusOneMinOccurrences: number;
   /** Number of recent queries to analyze for N+1 (default: 50) */
-  historyLookbackCount: number
+  historyLookbackCount: number;
 }
 
 /**
@@ -1381,9 +1381,92 @@ export interface PerformanceAnalysisConfig {
  */
 export interface QueryHistoryItemForAnalysis {
   /** The SQL query */
-  query: string
+  query: string;
   /** Unix timestamp when executed */
-  timestamp: number
+  timestamp: number;
   /** Connection ID */
-  connectionId: string
+  connectionId: string;
+}
+
+/**
+ * Supported backup formats
+ * - custom: PostgreSQL custom format (binary)
+ * - tar: Tape archive (uncompressed)
+ * - plain: Plain SQL text
+ * - directory: Directory format (PostgreSQL specific)
+ */
+export type BackupFormat = "custom" | "tar" | "plain" | "directory";
+
+/**
+ * Options for database backup
+ */
+export interface BackupOptions {
+  /** Output file path */
+  outputPath: string;
+  /** Backup format (custom, tar, plain, directory) */
+  format: BackupFormat;
+  /** Specific schemas to include (empty = all) */
+  schemas?: string[];
+  /** Specific tables to include (empty = all) */
+  tables?: string[];
+  /** Include only data, no schema */
+  dataOnly?: boolean;
+  /** Include only schema, no data */
+  schemaOnly?: boolean;
+  /** Include CREATE DATABASE statement */
+  createDb?: boolean;
+  /** Clean target database before restoring (add DROP commands) */
+  clean?: boolean;
+  /** Use IF EXISTS when dropping objects */
+  ifExists?: boolean;
+  /** Compression level for supported formats (0-9) */
+  compression?: number;
+  /** Encoding (e.g., UTF8) */
+  encoding?: string;
+  /** Number of jobs for parallel backup (if supported) */
+  jobs?: number;
+  /** Verbose output */
+  verbose?: boolean;
+}
+
+/**
+ * Options for database restore
+ */
+export interface RestoreOptions {
+  /** Input file path */
+  inputFile: string;
+  /** Backup format (custom, tar, plain, directory) - usually auto-detected but good to specify */
+  format?: BackupFormat;
+  /** Specific schemas to restore (empty = all) */
+  schemas?: string[];
+  /** Specific tables to restore (empty = all) */
+  tables?: string[];
+  /** Restore only data, no schema */
+  dataOnly?: boolean;
+  /** Restore only schema, no data */
+  schemaOnly?: boolean;
+  /** Clean target objects before restoring */
+  clean?: boolean;
+  /** Use IF EXISTS when dropping objects */
+  ifExists?: boolean;
+  /** Create database before restoring */
+  createDb?: boolean;
+  /** Stop on error */
+  exitOnError?: boolean;
+  /** Number of jobs for parallel restore */
+  jobs?: number;
+  /** Verbose output */
+  verbose?: boolean;
+  /** Target database name (if different from connection config) */
+  targetDatabase?: string;
+}
+
+/**
+ * Availability status of a CLI tool
+ */
+export interface ToolAvailability {
+  available: boolean;
+  version?: string;
+  path?: string;
+  error?: string;
 }
