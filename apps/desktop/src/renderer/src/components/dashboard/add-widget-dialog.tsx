@@ -1,21 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import {
-  BarChart3,
-  LineChart,
-  AreaChart,
-  PieChart,
-  Hash,
-  Table2,
-  Database,
-  FileText,
-  ChevronLeft,
-  ChevronRight,
-  Search,
-  Play,
-  Loader2
-} from 'lucide-react'
+import { useReducer, useEffect } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -26,30 +12,17 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { useConnectionStore, useSavedQueryStore, useDashboardStore } from '@/stores'
 import type {
-  WidgetType,
-  ChartWidgetType,
-  KPIFormat,
   CreateWidgetInput,
   WidgetDataSource,
   ChartWidgetConfig,
   KPIWidgetConfig,
   TableWidgetConfig
 } from '@shared/index'
-import { cn } from '@/lib/utils'
-import { AIWidgetSuggestion, type WidgetSuggestion } from './ai-widget-suggestion'
+import { dialogReducer, initialDialogState } from './add-widget-dialog-reducer'
+import { TypeStep, SourceStep, ConfigStep } from './add-widget-steps'
+import type { WidgetSuggestion } from './ai-widget-suggestion'
 
 interface AddWidgetDialogProps {
   open: boolean
@@ -57,136 +30,55 @@ interface AddWidgetDialogProps {
   dashboardId: string
 }
 
-type Step = 'type' | 'source' | 'config'
-
-const WIDGET_TYPES: { type: WidgetType; label: string; description: string; icon: typeof Hash }[] =
-  [
-    {
-      type: 'chart',
-      label: 'Chart',
-      description: 'Visualize trends and comparisons',
-      icon: BarChart3
-    },
-    {
-      type: 'kpi',
-      label: 'KPI Metric',
-      description: 'Display key numbers and trends',
-      icon: Hash
-    },
-    {
-      type: 'table',
-      label: 'Table',
-      description: 'Show tabular data preview',
-      icon: Table2
-    }
-  ]
-
-const CHART_TYPES: { type: ChartWidgetType; label: string; icon: typeof BarChart3 }[] = [
-  { type: 'bar', label: 'Bar Chart', icon: BarChart3 },
-  { type: 'line', label: 'Line Chart', icon: LineChart },
-  { type: 'area', label: 'Area Chart', icon: AreaChart },
-  { type: 'pie', label: 'Pie Chart', icon: PieChart }
-]
-
-const KPI_FORMATS: { format: KPIFormat; label: string }[] = [
-  { format: 'number', label: 'Number' },
-  { format: 'currency', label: 'Currency' },
-  { format: 'percent', label: 'Percentage' },
-  { format: 'duration', label: 'Duration' }
-]
-
-/**
- * Render a three-step modal dialog to create and configure a dashboard widget.
- *
- * The dialog guides the user through choosing a widget type (chart, KPI, table), selecting a data
- * source (saved query or inline SQL with connection), and configuring widget-specific settings
- * (chart axes, KPI format/label, table row limit) and layout width. On submit it constructs a
- * CreateWidgetInput and calls the dashboard store to add the widget to the provided dashboardId,
- * then closes the dialog.
- *
- * @param open - Whether the dialog is visible
- * @param onOpenChange - Callback invoked when the dialog should open or close; called with `false` after a successful add
- * @param dashboardId - ID of the dashboard to which the new widget will be added
- * @returns The Add Widget dialog React element
- */
 export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDialogProps) {
   const connections = useConnectionStore((s) => s.connections)
   const savedQueries = useSavedQueryStore((s) => s.savedQueries)
   const initializeSavedQueries = useSavedQueryStore((s) => s.initializeSavedQueries)
   const addWidget = useDashboardStore((s) => s.addWidget)
 
-  const [step, setStep] = useState<Step>('type')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [state, dispatch] = useReducer(dialogReducer, initialDialogState)
 
-  // Widget basic info
-  const [widgetName, setWidgetName] = useState('')
-  const [widgetType, setWidgetType] = useState<WidgetType>('chart')
-
-  // Data source
-  const [sourceType, setSourceType] = useState<'saved-query' | 'inline'>('saved-query')
-  const [selectedQueryId, setSelectedQueryId] = useState<string>('')
-  const [inlineSql, setInlineSql] = useState('')
-  const [connectionId, setConnectionId] = useState<string>('')
-  const [querySearch, setQuerySearch] = useState('')
-
-  // Chart config
-  const [chartType, setChartType] = useState<ChartWidgetType>('bar')
-  const [xKey, setXKey] = useState('')
-  const [yKeys, setYKeys] = useState('')
-
-  // KPI config
-  const [kpiFormat, setKpiFormat] = useState<KPIFormat>('number')
-  const [kpiLabel, setKpiLabel] = useState('')
-  const [valueKey, setValueKey] = useState('')
-  const [prefix, setPrefix] = useState('')
-  const [suffix, setSuffix] = useState('')
-
-  // Table config
-  const [maxRows, setMaxRows] = useState(10)
-
-  // Layout config
-  const [widgetWidth, setWidgetWidth] = useState<'auto' | 'half' | 'full'>('auto')
-
-  // Preview and AI suggestions
-  const [previewData, setPreviewData] = useState<Record<string, unknown>[] | null>(null)
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+  const {
+    step,
+    isSubmitting,
+    error,
+    widgetName,
+    widgetType,
+    sourceType,
+    selectedQueryId,
+    inlineSql,
+    connectionId,
+    querySearch,
+    chartType,
+    xKey,
+    yKeys,
+    kpiFormat,
+    kpiLabel,
+    valueKey,
+    prefix,
+    suffix,
+    maxRows,
+    widgetWidth,
+    previewData,
+    isLoadingPreview
+  } = state
 
   useEffect(() => {
     if (open) {
       initializeSavedQueries()
-      // Reset form
-      setStep('type')
-      setWidgetName('')
-      setWidgetType('chart')
-      setSourceType('saved-query')
-      setSelectedQueryId('')
-      setInlineSql('')
-      setConnectionId(connections.find((c) => c.isConnected)?.id || connections[0]?.id || '')
-      setQuerySearch('')
-      setChartType('bar')
-      setXKey('')
-      setYKeys('')
-      setKpiFormat('number')
-      setKpiLabel('')
-      setValueKey('')
-      setPrefix('')
-      setSuffix('')
-      setMaxRows(10)
-      setWidgetWidth('auto')
-      setError(null)
-      setPreviewData(null)
+      const defaultConnectionId =
+        connections.find((c) => c.isConnected)?.id || connections[0]?.id || ''
+      dispatch({ type: 'RESET', payload: { defaultConnectionId } })
     }
   }, [open, connections, initializeSavedQueries])
 
-  // Auto-fill widget name from saved query
   useEffect(() => {
     if (sourceType === 'saved-query' && selectedQueryId) {
       const query = savedQueries.find((q) => q.id === selectedQueryId)
       if (query && !widgetName) {
-        setWidgetName(query.name)
+        dispatch({ type: 'SET_WIDGET_NAME', payload: query.name })
         if (query.connectionId) {
-          setConnectionId(query.connectionId)
+          dispatch({ type: 'SET_CONNECTION_ID', payload: query.connectionId })
         }
       }
     }
@@ -222,13 +114,13 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
   }
 
   const handleNext = () => {
-    if (step === 'type') setStep('source')
-    else if (step === 'source') setStep('config')
+    if (step === 'type') dispatch({ type: 'SET_STEP', payload: 'source' })
+    else if (step === 'source') dispatch({ type: 'SET_STEP', payload: 'config' })
   }
 
   const handleBack = () => {
-    if (step === 'source') setStep('type')
-    else if (step === 'config') setStep('source')
+    if (step === 'source') dispatch({ type: 'SET_STEP', payload: 'type' })
+    else if (step === 'config') dispatch({ type: 'SET_STEP', payload: 'source' })
   }
 
   const handlePreviewQuery = async () => {
@@ -240,49 +132,35 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
     const connection = connections.find((c) => c.id === connectionId)
     if (!sql || !connection) return
 
-    // Remove trailing semicolons and whitespace, then add LIMIT
     sql = sql.trim().replace(/;+$/, '')
     const previewSql = `${sql} LIMIT 100`
 
-    setIsLoadingPreview(true)
+    dispatch({ type: 'SET_LOADING_PREVIEW', payload: true })
     try {
       const result = await window.api.db.query(connection, previewSql)
       if (result.success && result.data) {
         const data = result.data as { rows?: Record<string, unknown>[] }
-        setPreviewData(data.rows || null)
+        dispatch({ type: 'SET_PREVIEW_DATA', payload: data.rows || null })
       } else {
-        setPreviewData(null)
+        dispatch({ type: 'SET_PREVIEW_DATA', payload: null })
       }
     } catch (err) {
       console.error('Preview query failed:', err)
-      setPreviewData(null)
+      dispatch({ type: 'SET_PREVIEW_DATA', payload: null })
     } finally {
-      setIsLoadingPreview(false)
+      dispatch({ type: 'SET_LOADING_PREVIEW', payload: false })
     }
   }
 
   const handleSuggestionSelect = (suggestion: WidgetSuggestion) => {
-    setWidgetType(suggestion.type)
-    if (!widgetName) {
-      setWidgetName(suggestion.name)
-    }
-
-    if (suggestion.type === 'chart' && suggestion.chartType) {
-      setChartType(suggestion.chartType)
-      if (suggestion.xKey) setXKey(suggestion.xKey)
-      if (suggestion.yKeys) setYKeys(suggestion.yKeys.join(', '))
-    } else if (suggestion.type === 'kpi') {
-      if (suggestion.kpiFormat) setKpiFormat(suggestion.kpiFormat)
-      if (suggestion.valueKey) setValueKey(suggestion.valueKey)
-      if (suggestion.label) setKpiLabel(suggestion.label)
-    }
+    dispatch({ type: 'APPLY_SUGGESTION', payload: suggestion })
   }
 
   const handleSubmit = async () => {
     if (!canProceed()) return
 
-    setIsSubmitting(true)
-    setError(null)
+    dispatch({ type: 'SET_SUBMITTING', payload: true })
+    dispatch({ type: 'SET_ERROR', payload: null })
 
     try {
       const dataSource: WidgetDataSource = {
@@ -343,9 +221,9 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to add widget'
       console.error('Failed to add widget:', err)
-      setError(message)
+      dispatch({ type: 'SET_ERROR', payload: message })
     } finally {
-      setIsSubmitting(false)
+      dispatch({ type: 'SET_SUBMITTING', payload: false })
     }
   }
 
@@ -362,345 +240,31 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
         </DialogHeader>
 
         <div className="py-4">
-          {step === 'type' && (
-            <div className="grid gap-3">
-              {WIDGET_TYPES.map((wt) => (
-                <button
-                  key={wt.type}
-                  onClick={() => setWidgetType(wt.type)}
-                  className={cn(
-                    'flex items-center gap-4 p-4 rounded-lg border text-left transition-colors',
-                    widgetType === wt.type
-                      ? 'border-primary bg-primary/5'
-                      : 'border-border hover:border-primary/50'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'flex size-10 items-center justify-center rounded-lg',
-                      widgetType === wt.type ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                    )}
-                  >
-                    <wt.icon className="size-5" />
-                  </div>
-                  <div>
-                    <div className="font-medium">{wt.label}</div>
-                    <div className="text-sm text-muted-foreground">{wt.description}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+          {step === 'type' && <TypeStep widgetType={widgetType} dispatch={dispatch} />}
 
           {step === 'source' && (
-            <div className="space-y-4">
-              <div className="flex gap-2">
-                <Button
-                  variant={sourceType === 'saved-query' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSourceType('saved-query')}
-                  className="flex-1"
-                >
-                  <FileText className="size-4 mr-2" />
-                  Saved Query
-                </Button>
-                <Button
-                  variant={sourceType === 'inline' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => setSourceType('inline')}
-                  className="flex-1"
-                >
-                  <Database className="size-4 mr-2" />
-                  Write SQL
-                </Button>
-              </div>
-
-              {sourceType === 'saved-query' ? (
-                <div className="space-y-3">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search saved queries..."
-                      value={querySearch}
-                      onChange={(e) => setQuerySearch(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                  <ScrollArea className="h-[200px] border rounded-md">
-                    <div className="p-2 space-y-1">
-                      {filteredQueries.length === 0 ? (
-                        <div className="text-center py-8 text-sm text-muted-foreground">
-                          No saved queries found
-                        </div>
-                      ) : (
-                        filteredQueries.map((query) => (
-                          <button
-                            key={query.id}
-                            onClick={() => setSelectedQueryId(query.id)}
-                            className={cn(
-                              'w-full text-left p-2 rounded-md transition-colors',
-                              selectedQueryId === query.id
-                                ? 'bg-primary/10 border border-primary/30'
-                                : 'hover:bg-muted'
-                            )}
-                          >
-                            <div className="font-medium text-sm">{query.name}</div>
-                            <div className="text-xs text-muted-foreground truncate">
-                              {query.query}
-                            </div>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  </ScrollArea>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="grid gap-2">
-                    <Label>Connection</Label>
-                    <Select value={connectionId} onValueChange={setConnectionId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select connection" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {connections.map((conn) => (
-                          <SelectItem key={conn.id} value={conn.id}>
-                            {conn.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>SQL Query</Label>
-                    <Textarea
-                      placeholder="SELECT * FROM ..."
-                      value={inlineSql}
-                      onChange={(e) => setInlineSql(e.target.value)}
-                      rows={6}
-                      className="font-mono text-sm"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {sourceType === 'saved-query' && selectedQueryId && (
-                <div className="grid gap-2">
-                  <Label>Connection</Label>
-                  <Select value={connectionId} onValueChange={setConnectionId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select connection" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {connections.map((conn) => (
-                        <SelectItem key={conn.id} value={conn.id}>
-                          {conn.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
+            <SourceStep
+              sourceType={sourceType}
+              querySearch={querySearch}
+              selectedQueryId={selectedQueryId}
+              connectionId={connectionId}
+              inlineSql={inlineSql}
+              connections={connections}
+              filteredQueries={filteredQueries}
+              dispatch={dispatch}
+            />
           )}
 
           {step === 'config' && (
-            <div className="space-y-4">
-              {!previewData && (
-                <div className="flex items-center justify-between p-3 rounded-lg border border-dashed">
-                  <span className="text-sm text-muted-foreground">
-                    Preview data to get AI widget suggestions
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handlePreviewQuery}
-                    disabled={isLoadingPreview}
-                  >
-                    {isLoadingPreview ? (
-                      <>
-                        <Loader2 className="size-3 mr-2 animate-spin" />
-                        Loading...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="size-3 mr-2" />
-                        Preview Data
-                      </>
-                    )}
-                  </Button>
-                </div>
-              )}
-
-              <AIWidgetSuggestion
-                queryResult={previewData}
-                onSuggestionSelect={handleSuggestionSelect}
-              />
-
-              <div className="grid gap-2">
-                <Label htmlFor="widgetName">Widget Name</Label>
-                <Input
-                  id="widgetName"
-                  placeholder="My Widget"
-                  value={widgetName}
-                  onChange={(e) => setWidgetName(e.target.value)}
-                />
-              </div>
-
-              {widgetType === 'chart' && (
-                <>
-                  <div className="grid gap-2">
-                    <Label>Chart Type</Label>
-                    <div className="grid grid-cols-4 gap-2">
-                      {CHART_TYPES.map((ct) => (
-                        <button
-                          key={ct.type}
-                          onClick={() => setChartType(ct.type)}
-                          className={cn(
-                            'flex flex-col items-center gap-1 p-3 rounded-md border transition-colors',
-                            chartType === ct.type
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border hover:border-primary/50'
-                          )}
-                        >
-                          <ct.icon className="size-5" />
-                          <span className="text-xs">{ct.label.replace(' Chart', '')}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="xKey">X Axis Column</Label>
-                    <Input
-                      id="xKey"
-                      placeholder="e.g., date, category"
-                      value={xKey}
-                      onChange={(e) => setXKey(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="yKeys">Y Axis Columns (comma-separated)</Label>
-                    <Input
-                      id="yKeys"
-                      placeholder="e.g., sales, revenue"
-                      value={yKeys}
-                      onChange={(e) => setYKeys(e.target.value)}
-                    />
-                  </div>
-                </>
-              )}
-
-              {widgetType === 'kpi' && (
-                <>
-                  <div className="grid gap-2">
-                    <Label>Format</Label>
-                    <Select value={kpiFormat} onValueChange={(v) => setKpiFormat(v as KPIFormat)}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {KPI_FORMATS.map((f) => (
-                          <SelectItem key={f.format} value={f.format}>
-                            {f.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="kpiLabel">Label</Label>
-                    <Input
-                      id="kpiLabel"
-                      placeholder="e.g., Total Revenue"
-                      value={kpiLabel}
-                      onChange={(e) => setKpiLabel(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="valueKey">Value Column</Label>
-                    <Input
-                      id="valueKey"
-                      placeholder="e.g., total, count"
-                      value={valueKey}
-                      onChange={(e) => setValueKey(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="prefix">Prefix (optional)</Label>
-                      <Input
-                        id="prefix"
-                        placeholder="e.g., $"
-                        value={prefix}
-                        onChange={(e) => setPrefix(e.target.value)}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="suffix">Suffix (optional)</Label>
-                      <Input
-                        id="suffix"
-                        placeholder="e.g., %"
-                        value={suffix}
-                        onChange={(e) => setSuffix(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {widgetType === 'table' && (
-                <div className="grid gap-2">
-                  <Label htmlFor="maxRows">Maximum Rows</Label>
-                  <Input
-                    id="maxRows"
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={maxRows}
-                    onChange={(e) => setMaxRows(parseInt(e.target.value) || 10)}
-                  />
-                </div>
-              )}
-
-              <div className="grid gap-2">
-                <Label>Widget Width</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    onClick={() => setWidgetWidth('auto')}
-                    className={cn(
-                      'p-2 rounded-md border text-center text-sm transition-colors',
-                      widgetWidth === 'auto'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                    )}
-                  >
-                    Auto
-                  </button>
-                  <button
-                    onClick={() => setWidgetWidth('half')}
-                    className={cn(
-                      'p-2 rounded-md border text-center text-sm transition-colors',
-                      widgetWidth === 'half'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                    )}
-                  >
-                    Half Width
-                  </button>
-                  <button
-                    onClick={() => setWidgetWidth('full')}
-                    className={cn(
-                      'p-2 rounded-md border text-center text-sm transition-colors',
-                      widgetWidth === 'full'
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                    )}
-                  >
-                    Full Width
-                  </button>
-                </div>
-              </div>
-            </div>
+            <ConfigStep
+              state={state}
+              connections={connections}
+              previewData={previewData}
+              isLoadingPreview={isLoadingPreview}
+              onPreviewQuery={handlePreviewQuery}
+              onSuggestionSelect={handleSuggestionSelect}
+              dispatch={dispatch}
+            />
           )}
         </div>
 
