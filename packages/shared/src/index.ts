@@ -1483,9 +1483,90 @@ export interface ToolAvailability {
   };
 }
 
-// ============================================================================
+/**
+ * Parsed PostgreSQL version
+ */
+export interface PostgresVersion {
+  major: number;
+  minor: number;
+  patch?: number;
+  /** Full version string from server/tool */
+  full: string;
+}
+
+/**
+ * PostgreSQL tool names
+ */
+export type PostgresTool = 'pg_dump' | 'pg_restore' | 'psql';
+
+/**
+ * Information about a discovered tool
+ */
+export interface ToolVersionInfo {
+  tool: PostgresTool;
+  version: PostgresVersion | null;
+  path: string;
+  source: 'system' | 'managed';
+}
+
+/**
+ * Version mismatch details
+ */
+export interface VersionMismatch {
+  tool: PostgresTool;
+  toolMajor: number;
+  serverMajor: number;
+  recommendation: string;
+}
+
+/**
+ * Version compatibility check result
+ */
+export interface VersionCompatibility {
+  serverVersion: PostgresVersion;
+  toolVersions: {
+    pg_dump: ToolVersionInfo | null;
+    pg_restore: ToolVersionInfo | null;
+    psql: ToolVersionInfo | null;
+  };
+  isCompatible: boolean;
+  mismatchDetails?: VersionMismatch[];
+}
+
+/**
+ * Supported platforms for tool downloads
+ */
+export type ToolDownloadPlatform = 'darwin' | 'win32' | 'linux';
+
+/**
+ * Progress phases for tool download
+ */
+export type ToolDownloadPhase = 'downloading' | 'extracting' | 'verifying' | 'complete' | 'error';
+
+/**
+ * Tool download progress event
+ */
+export interface ToolDownloadProgress {
+  phase: ToolDownloadPhase;
+  progress: number;
+  bytesDownloaded?: number;
+  totalBytes?: number;
+  error?: string;
+}
+
+/**
+ * Status of managed tools installation
+ */
+export interface ManagedToolsStatus {
+  installedVersions: number[];
+  downloadInProgress: boolean;
+  currentDownload?: {
+    majorVersion: number;
+    progress: number;
+  };
+}
+
 // SCHEDULED QUERIES
-// ============================================================================
 
 /**
  * Cron schedule expression or preset

@@ -10,7 +10,9 @@ import type {
   QueryTelemetry,
   BackupOptions,
   RestoreOptions,
-  ToolAvailability
+  ToolAvailability,
+  PostgresVersion,
+  VersionCompatibility
 } from '@shared/index'
 
 /**
@@ -102,6 +104,12 @@ export interface DatabaseAdapter {
 
   /** Check if backup/restore tools are available */
   checkTools?(): Promise<ToolAvailability>
+
+  /** Get database server version (PostgreSQL-specific) */
+  getServerVersion?(config: ConnectionConfig): Promise<PostgresVersion | null>
+
+  /** Check tools with version compatibility info (PostgreSQL-specific) */
+  checkToolsWithVersion?(serverVersion?: PostgresVersion): Promise<VersionCompatibility>
 
   /** Backup database */
   backup?(config: ConnectionConfig, options: BackupOptions): Promise<void>

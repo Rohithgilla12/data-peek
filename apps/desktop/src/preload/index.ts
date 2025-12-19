@@ -27,6 +27,7 @@ import type {
   MultiStatementResultWithTelemetry,
   PerformanceAnalysisConfig,
   PerformanceAnalysisResult,
+  PostgresVersion,
   QueryHistoryItemForAnalysis,
   RestoreOptions,
   SavedQuery,
@@ -37,9 +38,11 @@ import type {
   StoredChatMessage,
   TableDefinition,
   ToolAvailability,
+  ToolDownloadProgress,
   UpdateDashboardInput,
   UpdateScheduledQueryInput,
   UpdateWidgetInput,
+  VersionCompatibility,
   Widget,
   WidgetLayout,
   WidgetRunResult
@@ -84,6 +87,29 @@ const api = {
       ipcRenderer.invoke('backup:start', { connectionId, options }),
     startRestore: (connectionId: string, options: RestoreOptions): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('restore:start', { connectionId, options })
+  },
+  // Tool version management
+  tools: {
+    getServerVersion: (connectionId: string): Promise<IpcResponse<PostgresVersion | null>> =>
+      ipcRenderer.invoke('tools:get-server-version', connectionId),
+    checkCompatibility: (connectionId: string): Promise<IpcResponse<VersionCompatibility>> =>
+      ipcRenderer.invoke('tools:check-compatibility', connectionId),
+    getManagedVersions: (): Promise<IpcResponse<number[]>> =>
+      ipcRenderer.invoke('tools:get-managed-versions'),
+    getSupportedVersions: (): Promise<IpcResponse<number[]>> =>
+      ipcRenderer.invoke('tools:get-supported-versions'),
+    downloadTools: (majorVersion: number): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('tools:download', majorVersion),
+    deleteVersion: (majorVersion: number): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('tools:delete-version', majorVersion),
+    onDownloadProgress: (
+      callback: (data: ToolDownloadProgress & { majorVersion: number }) => void
+    ): (() => void) => {
+      const handler = (_: unknown, data: ToolDownloadProgress & { majorVersion: number }): void =>
+        callback(data)
+      ipcRenderer.on('tools:download-progress', handler)
+      return () => ipcRenderer.removeListener('tools:download-progress', handler)
+    }
   },
   // Database operations
   db: {

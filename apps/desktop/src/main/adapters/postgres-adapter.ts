@@ -20,8 +20,12 @@ import {
   type RoutineParameterInfo,
   type BackupOptions,
   type RestoreOptions,
-  type ToolAvailability
+  type ToolAvailability,
+  type PostgresVersion,
+  type PostgresTool,
+  type VersionCompatibility
 } from '@shared/index'
+import { toolManager } from '../tool-manager'
 import type {
   DatabaseAdapter,
   AdapterQueryResult,
@@ -598,6 +602,70 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
   }
 
+  async getServerVersion(config: ConnectionConfig): Promise<PostgresVersion | null> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+
+    const client = new Client(config)
+    await client.connect()
+
+    try {
+      const res = await client.query('SHOW server_version')
+      const versionString = res.rows[0]?.server_version
+      if (!versionString) return null
+
+      return toolManager.parseServerVersion(versionString)
+    } finally {
+      await client.end()
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async checkToolsWithVersion(serverVersion?: PostgresVersion): Promise<VersionCompatibility> {
+    const tools: PostgresTool[] = ['pg_dump', 'pg_restore', 'psql']
+    const toolVersions: VersionCompatibility['toolVersions'] = {
+      pg_dump: null,
+      pg_restore: null,
+      psql: null
+    }
+
+    const targetMajor = serverVersion?.major ?? 16
+
+    for (const tool of tools) {
+      toolVersions[tool] = await toolManager.getBestToolPath(tool, targetMajor)
+    }
+
+    const mismatches: VersionCompatibility['mismatchDetails'] = []
+
+    if (serverVersion) {
+      for (const tool of tools) {
+        const info = toolVersions[tool]
+        if (
+          info?.version &&
+          !toolManager.isVersionCompatible(info.version.major, serverVersion.major)
+        ) {
+          mismatches.push({
+            tool,
+            toolMajor: info.version.major,
+            serverMajor: serverVersion.major,
+            recommendation: `Download PostgreSQL ${serverVersion.major} tools`
+          })
+        }
+      }
+    }
+
+    const allToolsPresent = Object.values(toolVersions).every((t) => t !== null)
+
+    return {
+      serverVersion: serverVersion ?? { major: 0, minor: 0, full: 'unknown' },
+      toolVersions,
+      isCompatible: allToolsPresent && mismatches.length === 0,
+      mismatchDetails: mismatches.length > 0 ? mismatches : undefined
+    }
+  }
+
   async backup(config: ConnectionConfig, options: BackupOptions): Promise<void> {
     let tunnelSession: TunnelSession | null = null
     if (config.ssh) {
@@ -605,8 +673,18 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
 
     try {
+      const serverVersion = await this.getServerVersion(config)
+      const targetMajor = serverVersion?.major ?? 16
+
+      const pgDumpInfo = await toolManager.getBestToolPath('pg_dump', targetMajor)
+      if (!pgDumpInfo) {
+        throw new Error(
+          'pg_dump not available. Please install PostgreSQL tools or download them from the backup dialog.'
+        )
+      }
+
       const host = config.ssh ? '127.0.0.1' : config.host
-      const port = config.port // Updated by createTunnel if SSH is used
+      const port = config.port
 
       const args = [
         '--host',
@@ -648,7 +726,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       const env = { ...process.env, PGPASSWORD: config.password }
 
       await new Promise<void>((resolve, reject) => {
-        const child = spawn('pg_dump', args, { env })
+        const child = spawn(pgDumpInfo.path, args, { env })
 
         let errorOutput = ''
         child.stderr.on('data', (data) => {
@@ -676,11 +754,21 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
 
     try {
-      const host = config.ssh ? '127.0.0.1' : config.host
-      const port = config.port
+      const serverVersion = await this.getServerVersion(config)
+      const targetMajor = serverVersion?.major ?? 16
 
       const isPlain = options.format === 'plain' || options.inputFile.endsWith('.sql')
-      const tool = isPlain ? 'psql' : 'pg_restore'
+      const toolName: PostgresTool = isPlain ? 'psql' : 'pg_restore'
+
+      const toolInfo = await toolManager.getBestToolPath(toolName, targetMajor)
+      if (!toolInfo) {
+        throw new Error(
+          `${toolName} not available. Please install PostgreSQL tools or download them from the backup dialog.`
+        )
+      }
+
+      const host = config.ssh ? '127.0.0.1' : config.host
+      const port = config.port
 
       const args = [
         '--host',
@@ -694,12 +782,10 @@ export class PostgresAdapter implements DatabaseAdapter {
       const env = { ...process.env, PGPASSWORD: config.password }
 
       if (isPlain) {
-        // psql arguments
         args.push('--dbname', options.targetDatabase || config.database)
         if (options.exitOnError) args.push('-v', 'ON_ERROR_STOP=1')
         args.push('--file', options.inputFile)
       } else {
-        // pg_restore arguments
         if (options.clean) args.push('--clean')
         if (options.createDb) args.push('--create')
         if (options.ifExists) args.push('--if-exists')
@@ -713,14 +799,14 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
 
       await new Promise<void>((resolve, reject) => {
-        const child = spawn(tool, args, { env })
+        const child = spawn(toolInfo.path, args, { env })
         let errorOutput = ''
         child.stderr.on('data', (data) => (errorOutput += data.toString()))
         child.on('close', (code) => {
           if (code === 0) resolve()
-          else reject(new Error(`${tool} exited with code ${code}: ${errorOutput}`))
+          else reject(new Error(`${toolName} exited with code ${code}: ${errorOutput}`))
         })
-        child.on('error', (err) => reject(new Error(`Failed to start ${tool}: ${err.message}`)))
+        child.on('error', (err) => reject(new Error(`Failed to start ${toolName}: ${err.message}`)))
       })
     } finally {
       closeTunnel(tunnelSession)

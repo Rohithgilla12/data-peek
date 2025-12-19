@@ -17,10 +17,16 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Loader2, FolderOpen, AlertTriangle } from 'lucide-react'
+import { Loader2, FolderOpen, AlertTriangle, Download, CheckCircle2 } from 'lucide-react'
 import { notify } from '@/stores/notification-store'
 import { type Connection } from '@/stores'
-import { type BackupOptions, type RestoreOptions, type BackupFormat } from '@shared/index'
+import {
+  type BackupOptions,
+  type RestoreOptions,
+  type BackupFormat,
+  type VersionCompatibility,
+  type ToolDownloadProgress
+} from '@shared/index'
 
 interface BackupRestoreModalProps {
   open: boolean
@@ -32,6 +38,9 @@ export function BackupRestoreModal({ open, onOpenChange, connection }: BackupRes
   const [activeTab, setActiveTab] = useState<'backup' | 'restore'>('backup')
   const [isProcessing, setIsProcessing] = useState(false)
   const [toolCheck, setToolCheck] = useState<{ available: boolean; error?: string } | null>(null)
+  const [compatibility, setCompatibility] = useState<VersionCompatibility | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadProgress, setDownloadProgress] = useState<ToolDownloadProgress | null>(null)
 
   // Backup State
   const [backupPath, setBackupPath] = useState('')
@@ -52,12 +61,57 @@ export function BackupRestoreModal({ open, onOpenChange, connection }: BackupRes
 
   useEffect(() => {
     if (open && connection) {
-      checkTools()
+      checkCompatibility()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, connection])
 
-  const checkTools = async () => {
+  useEffect(() => {
+    if (!open) return
+
+    const unsubscribe = window.api.tools.onDownloadProgress((data) => {
+      setDownloadProgress(data)
+      if (data.phase === 'complete') {
+        setIsDownloading(false)
+        notify.success('PostgreSQL tools downloaded successfully!')
+        checkCompatibility()
+      } else if (data.phase === 'error') {
+        setIsDownloading(false)
+        notify.error('Download failed', data.error || 'Unknown error')
+      }
+    })
+
+    return () => unsubscribe()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  const checkCompatibility = async () => {
+    if (!connection) return
+
+    if (connection.dbType === 'postgresql') {
+      try {
+        const result = await window.api.tools.checkCompatibility(connection.id)
+        if (result.success && result.data) {
+          setCompatibility(result.data)
+          const hasTools = Object.values(result.data.toolVersions).some((t) => t !== null)
+          setToolCheck({
+            available: hasTools && result.data.isCompatible,
+            error: result.data.isCompatible
+              ? undefined
+              : result.data.mismatchDetails?.[0]?.recommendation
+          })
+        } else {
+          await checkToolsFallback()
+        }
+      } catch {
+        await checkToolsFallback()
+      }
+    } else {
+      await checkToolsFallback()
+    }
+  }
+
+  const checkToolsFallback = async () => {
     if (!connection) return
     try {
       const result = await window.api.backup.checkTools(connection.id)
@@ -68,6 +122,24 @@ export function BackupRestoreModal({ open, onOpenChange, connection }: BackupRes
       }
     } catch (error) {
       setToolCheck({ available: false, error: String(error) })
+    }
+  }
+
+  const handleDownloadTools = async () => {
+    if (!compatibility) return
+
+    setIsDownloading(true)
+    setDownloadProgress({ phase: 'downloading', progress: 0 })
+
+    try {
+      const result = await window.api.tools.downloadTools(compatibility.serverVersion.major)
+      if (!result.success) {
+        setIsDownloading(false)
+        notify.error('Download failed', result.error || 'Unknown error')
+      }
+    } catch (error) {
+      setIsDownloading(false)
+      notify.error('Download failed', String(error))
     }
   }
 
@@ -182,7 +254,115 @@ export function BackupRestoreModal({ open, onOpenChange, connection }: BackupRes
           <DialogDescription>Manage database backups and perform restoration.</DialogDescription>
         </DialogHeader>
 
-        {toolCheck && !toolCheck.available && (
+        {compatibility && connection?.dbType === 'postgresql' && (
+          <div className="mb-4 space-y-2">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>
+                Server: PostgreSQL {compatibility.serverVersion.major}.
+                {compatibility.serverVersion.minor}
+              </span>
+              {compatibility.toolVersions.pg_dump && (
+                <>
+                  <span className="text-muted-foreground/50">|</span>
+                  <span>
+                    pg_dump: v{compatibility.toolVersions.pg_dump.version?.major}
+                    {compatibility.toolVersions.pg_dump.source === 'managed' && (
+                      <span className="text-xs ml-1 text-primary">(managed)</span>
+                    )}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {compatibility.isCompatible && compatibility.toolVersions.pg_dump && (
+              <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 p-3 rounded-md flex items-center gap-2 text-sm">
+                <CheckCircle2 className="size-4" />
+                <span>Tools are compatible with the server version</span>
+              </div>
+            )}
+
+            {!compatibility.isCompatible && compatibility.mismatchDetails && (
+              <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-md">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="size-5 text-amber-500 shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-medium text-amber-600 dark:text-amber-400">
+                      Tool Version Mismatch
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {compatibility.mismatchDetails.map((m) => (
+                        <span key={m.tool}>
+                          {m.tool} v{m.toolMajor} may not work correctly with PostgreSQL{' '}
+                          {m.serverMajor}.{' '}
+                        </span>
+                      ))}
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={handleDownloadTools}
+                      disabled={isDownloading}
+                    >
+                      {isDownloading ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin mr-2" />
+                          {downloadProgress?.phase === 'downloading' &&
+                            `Downloading... ${Math.round(downloadProgress.progress)}%`}
+                          {downloadProgress?.phase === 'extracting' && 'Extracting...'}
+                          {downloadProgress?.phase === 'verifying' && 'Verifying...'}
+                        </>
+                      ) : (
+                        <>
+                          <Download className="size-4 mr-2" />
+                          Download PostgreSQL {compatibility.serverVersion.major} Tools
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!compatibility.toolVersions.pg_dump && (
+              <div className="bg-destructive/10 border border-destructive/30 p-4 rounded-md">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="size-5 text-destructive shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-medium text-destructive">PostgreSQL Tools Not Found</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      pg_dump, pg_restore, and psql are required for backup/restore operations.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={handleDownloadTools}
+                      disabled={isDownloading}
+                    >
+                      {isDownloading ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin mr-2" />
+                          {downloadProgress?.phase === 'downloading' &&
+                            `Downloading... ${Math.round(downloadProgress.progress)}%`}
+                          {downloadProgress?.phase === 'extracting' && 'Extracting...'}
+                          {downloadProgress?.phase === 'verifying' && 'Verifying...'}
+                        </>
+                      ) : (
+                        <>
+                          <Download className="size-4 mr-2" />
+                          Download PostgreSQL {compatibility.serverVersion.major} Tools
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {toolCheck && !toolCheck.available && !compatibility && (
           <div className="bg-destructive/10 text-destructive p-3 rounded-md flex items-center gap-2 text-sm mb-4">
             <AlertTriangle className="size-4" />
             <span>Required tools not found: {toolCheck.error}</span>

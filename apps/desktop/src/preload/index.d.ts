@@ -20,6 +20,7 @@ import type {
   MultiStatementResultWithTelemetry,
   PerformanceAnalysisConfig,
   PerformanceAnalysisResult,
+  PostgresVersion,
   QueryHistoryItemForAnalysis,
   RestoreOptions,
   SavedQuery,
@@ -29,9 +30,11 @@ import type {
   SequenceInfo,
   TableDefinition,
   ToolAvailability,
+  ToolDownloadProgress,
   UpdateDashboardInput,
   UpdateScheduledQueryInput,
   UpdateWidgetInput,
+  VersionCompatibility,
   Widget,
   WidgetLayout,
   WidgetRunResult
@@ -159,6 +162,17 @@ interface DataPeekApi {
     checkTools: (connectionId: string) => Promise<IpcResponse<ToolAvailability>>
     startBackup: (connectionId: string, options: BackupOptions) => Promise<IpcResponse<void>>
     startRestore: (connectionId: string, options: RestoreOptions) => Promise<IpcResponse<void>>
+  }
+  tools: {
+    getServerVersion: (connectionId: string) => Promise<IpcResponse<PostgresVersion | null>>
+    checkCompatibility: (connectionId: string) => Promise<IpcResponse<VersionCompatibility>>
+    getManagedVersions: () => Promise<IpcResponse<number[]>>
+    getSupportedVersions: () => Promise<IpcResponse<number[]>>
+    downloadTools: (majorVersion: number) => Promise<IpcResponse<void>>
+    deleteVersion: (majorVersion: number) => Promise<IpcResponse<void>>
+    onDownloadProgress: (
+      callback: (data: ToolDownloadProgress & { majorVersion: number }) => void
+    ) => () => void
   }
   db: {
     connect: (config: ConnectionConfig) => Promise<IpcResponse<void>>
