@@ -1172,30 +1172,19 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
                 {/* Results Table */}
                 <div className="flex-1 overflow-hidden p-3">
-                  {tab.type === 'table-preview' ? (
+                  {tab.type === 'table-preview' && !hasMultipleResults ? (
                     <EditableDataTable
                       key={`result-${activeResultIndex}`}
                       tabId={tabId}
-                      columns={
-                        hasMultipleResults
-                          ? getActiveResultColumns().map((col) => ({
-                              name: col.name,
-                              dataType: col.dataType,
-                              isPrimaryKey: false,
-                              isNullable: true
-                            }))
-                          : getColumnsForEditing()
-                      }
+                      columns={getColumnsForEditing()}
                       data={
-                        hasMultipleResults
-                          ? (paginatedRows as Record<string, unknown>[])
-                          : tab.totalRowCount != null
-                            ? ((tab.result?.rows ?? []) as Record<string, unknown>[])
-                            : (paginatedRows as Record<string, unknown>[])
+                        tab.totalRowCount != null
+                          ? ((tab.result?.rows ?? []) as Record<string, unknown>[])
+                          : (paginatedRows as Record<string, unknown>[])
                       }
                       pageSize={tab.pageSize}
-                      canEdit={!hasMultipleResults}
-                      editContext={hasMultipleResults ? null : getEditContext()}
+                      canEdit={true}
+                      editContext={getEditContext()}
                       connection={tabConnection}
                       onFiltersChange={setTableFilters}
                       onSortingChange={setTableSorting}
@@ -1203,7 +1192,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       onForeignKeyOpenTab={handleFKOpenTab}
                       onChangesCommitted={handleRunQuery}
                       serverCurrentPage={tab.currentPage}
-                      serverTotalRowCount={hasMultipleResults ? null : tab.totalRowCount}
+                      serverTotalRowCount={tab.totalRowCount}
                       onServerPaginationChange={handleTablePreviewPaginationChange}
                     />
                   ) : (
