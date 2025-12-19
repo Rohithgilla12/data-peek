@@ -84,19 +84,19 @@ export const mdxComponents: MDXComponents = {
   ),
   h2: ({ children }: ComponentPropsWithoutRef<'h2'>) => (
     <h2
-      className="group text-2xl md:text-3xl font-semibold mb-4 mt-14 text-[--color-text-primary] pb-3 border-b border-[--color-border-subtle] tracking-tight"
+      className="group relative text-2xl md:text-3xl font-semibold mb-4 mt-14 text-[--color-text-primary] pb-3 border-b border-[--color-border-subtle] tracking-tight"
       style={{ fontFamily: 'var(--font-display)' }}
     >
-      <span className="text-[--color-accent] opacity-0 group-hover:opacity-100 transition-opacity mr-2">#</span>
+      <span className="absolute -left-6 text-[--color-accent] opacity-0 group-hover:opacity-100 transition-opacity">#</span>
       {children}
     </h2>
   ),
   h3: ({ children }: ComponentPropsWithoutRef<'h3'>) => (
     <h3
-      className="group text-xl md:text-2xl font-semibold mb-3 mt-10 text-[--color-text-primary] tracking-tight"
+      className="group relative text-xl md:text-2xl font-semibold mb-3 mt-10 text-[--color-text-primary] tracking-tight"
       style={{ fontFamily: 'var(--font-display)' }}
     >
-      <span className="text-[--color-accent] opacity-0 group-hover:opacity-100 transition-opacity mr-2">##</span>
+      <span className="absolute -left-7 text-[--color-accent] opacity-0 group-hover:opacity-100 transition-opacity">##</span>
       {children}
     </h3>
   ),
