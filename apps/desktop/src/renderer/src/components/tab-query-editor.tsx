@@ -885,7 +885,17 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // At this point, tab is guaranteed to be query or table-preview (not erd or table-designer)
   const activeResultIndex = tab.activeResultIndex ?? 0
 
-  // Use multi-result pagination when available, fallback to legacy
+  // For query tabs, pass all rows and let DataTable handle client-side pagination
+  // For table-preview tabs with server-side pagination, rows are already limited by SQL
+  const getAllRows = (): Record<string, unknown>[] => {
+    if (hasMultipleResults) {
+      const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
+      return (statement?.rows ?? []) as Record<string, unknown>[]
+    }
+    return (tab.result?.rows ?? []) as Record<string, unknown>[]
+  }
+
+  // Only use store pagination for table-preview with server-side pagination (for backward compat display)
   const paginatedRows = hasMultipleResults
     ? getActiveResultPaginatedRows(tabId)
     : getTabPaginatedRows(tabId)
@@ -1164,16 +1174,28 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 <div className="flex-1 overflow-hidden p-3">
                   {tab.type === 'table-preview' ? (
                     <EditableDataTable
+                      key={`result-${activeResultIndex}`}
                       tabId={tabId}
-                      columns={getColumnsForEditing()}
+                      columns={
+                        hasMultipleResults
+                          ? getActiveResultColumns().map((col) => ({
+                              name: col.name,
+                              dataType: col.dataType,
+                              isPrimaryKey: false,
+                              isNullable: true
+                            }))
+                          : getColumnsForEditing()
+                      }
                       data={
-                        tab.totalRowCount != null
-                          ? ((tab.result?.rows ?? []) as Record<string, unknown>[])
-                          : (paginatedRows as Record<string, unknown>[])
+                        hasMultipleResults
+                          ? (paginatedRows as Record<string, unknown>[])
+                          : tab.totalRowCount != null
+                            ? ((tab.result?.rows ?? []) as Record<string, unknown>[])
+                            : (paginatedRows as Record<string, unknown>[])
                       }
                       pageSize={tab.pageSize}
-                      canEdit={true}
-                      editContext={getEditContext()}
+                      canEdit={!hasMultipleResults}
+                      editContext={hasMultipleResults ? null : getEditContext()}
                       connection={tabConnection}
                       onFiltersChange={setTableFilters}
                       onSortingChange={setTableSorting}
@@ -1181,11 +1203,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       onForeignKeyOpenTab={handleFKOpenTab}
                       onChangesCommitted={handleRunQuery}
                       serverCurrentPage={tab.currentPage}
-                      serverTotalRowCount={tab.totalRowCount}
+                      serverTotalRowCount={hasMultipleResults ? null : tab.totalRowCount}
                       onServerPaginationChange={handleTablePreviewPaginationChange}
                     />
                   ) : (
                     <DataTable
+                      key={`result-${activeResultIndex}`}
                       columns={
                         hasMultipleResults
                           ? getActiveResultColumns().map((col) => ({
@@ -1194,7 +1217,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                             }))
                           : getColumnsWithFKInfo()
                       }
-                      data={paginatedRows as Record<string, unknown>[]}
+                      data={getAllRows()}
                       pageSize={tab.pageSize}
                       onFiltersChange={setTableFilters}
                       onSortingChange={setTableSorting}
