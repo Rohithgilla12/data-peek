@@ -248,9 +248,16 @@ export function BackupRestoreModal({ open, onOpenChange, connection }: BackupRes
                     <Checkbox
                       id="backup-data"
                       checked={backupDataOnly}
-                      onCheckedChange={(c) => setBackupDataOnly(!!c)}
+                      disabled={backupSchemaOnly}
+                      onCheckedChange={(c) => {
+                        setBackupDataOnly(!!c)
+                        if (c) setBackupSchemaOnly(false)
+                      }}
                     />
-                    <Label htmlFor="backup-data" className="cursor-pointer">
+                    <Label
+                      htmlFor="backup-data"
+                      className={`cursor-pointer ${backupSchemaOnly ? 'text-muted-foreground' : ''}`}
+                    >
                       Data Only
                     </Label>
                   </div>
@@ -258,9 +265,16 @@ export function BackupRestoreModal({ open, onOpenChange, connection }: BackupRes
                     <Checkbox
                       id="backup-schema"
                       checked={backupSchemaOnly}
-                      onCheckedChange={(c) => setBackupSchemaOnly(!!c)}
+                      disabled={backupDataOnly}
+                      onCheckedChange={(c) => {
+                        setBackupSchemaOnly(!!c)
+                        if (c) setBackupDataOnly(false)
+                      }}
                     />
-                    <Label htmlFor="backup-schema" className="cursor-pointer">
+                    <Label
+                      htmlFor="backup-schema"
+                      className={`cursor-pointer ${backupDataOnly ? 'text-muted-foreground' : ''}`}
+                    >
                       Schema Only
                     </Label>
                   </div>
@@ -369,9 +383,16 @@ export function BackupRestoreModal({ open, onOpenChange, connection }: BackupRes
                     <Checkbox
                       id="restore-schema"
                       checked={restoreSchemaOnly}
-                      onCheckedChange={(c) => setRestoreSchemaOnly(!!c)}
+                      disabled={restoreDataOnly}
+                      onCheckedChange={(c) => {
+                        setRestoreSchemaOnly(!!c)
+                        if (c) setRestoreDataOnly(false)
+                      }}
                     />
-                    <Label htmlFor="restore-schema" className="cursor-pointer">
+                    <Label
+                      htmlFor="restore-schema"
+                      className={`cursor-pointer ${restoreDataOnly ? 'text-muted-foreground' : ''}`}
+                    >
                       Schema Only
                     </Label>
                   </div>
@@ -379,9 +400,16 @@ export function BackupRestoreModal({ open, onOpenChange, connection }: BackupRes
                     <Checkbox
                       id="restore-data"
                       checked={restoreDataOnly}
-                      onCheckedChange={(c) => setRestoreDataOnly(!!c)}
+                      disabled={restoreSchemaOnly}
+                      onCheckedChange={(c) => {
+                        setRestoreDataOnly(!!c)
+                        if (c) setRestoreSchemaOnly(false)
+                      }}
                     />
-                    <Label htmlFor="restore-data" className="cursor-pointer">
+                    <Label
+                      htmlFor="restore-data"
+                      className={`cursor-pointer ${restoreSchemaOnly ? 'text-muted-foreground' : ''}`}
+                    >
                       Data Only
                     </Label>
                   </div>

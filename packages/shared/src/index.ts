@@ -1462,13 +1462,25 @@ export interface RestoreOptions {
 }
 
 /**
- * Availability status of a CLI tool
+ * Status of an individual CLI tool
+ */
+export interface ToolStatus {
+  available: boolean;
+  version?: string;
+  error?: string;
+}
+
+/**
+ * Availability status of backup/restore CLI tools
  */
 export interface ToolAvailability {
   available: boolean;
-  version?: string;
-  path?: string;
   error?: string;
+  tools?: {
+    pg_dump?: ToolStatus;
+    pg_restore?: ToolStatus;
+    psql?: ToolStatus;
+  };
 }
 
 // ============================================================================

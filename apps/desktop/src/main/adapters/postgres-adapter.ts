@@ -563,11 +563,38 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async checkTools(): Promise<ToolAvailability> {
-    try {
-      const { stdout } = await execAsync('pg_dump --version')
-      return { available: true, version: stdout.trim() }
-    } catch {
-      return { available: false, error: 'pg_dump not found in PATH' }
+    const checkTool = async (
+      tool: string
+    ): Promise<{ available: boolean; version?: string; error?: string }> => {
+      try {
+        const { stdout } = await execAsync(`${tool} --version`)
+        return { available: true, version: stdout.trim().split('\n')[0] }
+      } catch {
+        return { available: false, error: `${tool} not found in PATH` }
+      }
+    }
+
+    const [pgDump, pgRestore, psql] = await Promise.all([
+      checkTool('pg_dump'),
+      checkTool('pg_restore'),
+      checkTool('psql')
+    ])
+
+    const allAvailable = pgDump.available && pgRestore.available && psql.available
+    const missingTools = [
+      !pgDump.available && 'pg_dump',
+      !pgRestore.available && 'pg_restore',
+      !psql.available && 'psql'
+    ].filter(Boolean)
+
+    return {
+      available: allAvailable,
+      error: allAvailable ? undefined : `Missing tools: ${missingTools.join(', ')}`,
+      tools: {
+        pg_dump: pgDump,
+        pg_restore: pgRestore,
+        psql: psql
+      }
     }
   }
 
@@ -603,7 +630,9 @@ export class PostgresAdapter implements DatabaseAdapter {
       if (options.createDb) args.push('--create')
       if (options.verbose) args.push('--verbose')
       if (options.encoding) args.push('--encoding', options.encoding)
-      if (options.jobs) args.push('--jobs', String(options.jobs))
+      if (options.jobs && options.format === 'directory') {
+        args.push('--jobs', String(options.jobs))
+      }
       if (options.compression !== undefined) args.push('--compress', String(options.compression))
 
       if (options.tables && options.tables.length > 0) {
@@ -650,8 +679,6 @@ export class PostgresAdapter implements DatabaseAdapter {
       const host = config.ssh ? '127.0.0.1' : config.host
       const port = config.port
 
-      // Check if file exists
-      // Determine tool
       const isPlain = options.format === 'plain' || options.inputFile.endsWith('.sql')
       const tool = isPlain ? 'psql' : 'pg_restore'
 
