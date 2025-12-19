@@ -1,0 +1,219 @@
+---
+title: "The Challenge of Virtualizing HTML Tables"
+description: "How we fixed typing lag in Monaco editor caused by large result sets, and why virtualizing HTML tables is surprisingly tricky"
+date: "2025-12-19"
+author: "Rohith Gilla"
+tags: ["performance", "react", "virtualization", "tanstack"]
+---
+
+# The Challenge of Virtualizing HTML Tables
+
+## The Problem
+
+Users reported severe typing lag (5+ seconds) in the Monaco SQL editor after running queries that returned large datasets. Even with pagination limiting the display to 500 rows, the editor became nearly unusable.
+
+**GitHub Issue**: [#71 - Jank when displaying multiple records](https://github.com/Rohithgilla12/data-peek/issues/71)
+
+## Root Cause Analysis
+
+The issue wasn't the data size in memory—it was the **DOM node count**.
+
+With 500 rows × 7 columns, we had:
+
+- 3,500 table cells
+- Each cell wrapped in `TooltipProvider` → `Tooltip` → `TooltipTrigger` → `TooltipContent`
+- Each with click handlers for copy functionality
+- Foreign key cells with additional interactive components
+
+**Total: ~15,000+ React components** competing for the main thread.
+
+Monaco editor runs on the main thread. When typing, the browser must:
+
+1. Handle the keypress event
+2. Update Monaco's internal state
+3. Re-render Monaco's view
+4. Run React reconciliation for any state changes
+5. Paint the updated DOM
+
+With 15,000+ components, steps 4-5 blocked the main thread, causing the typing lag.
+
+## Solution Attempt #1: TanStack Virtual
+
+The obvious fix was virtualization—only render visible rows. TanStack Virtual (`@tanstack/react-virtual`) was already installed for the schema explorer.
+
+```tsx
+const virtualizer = useVirtualizer({
+  count: rows.length,
+  getScrollElement: () => tableContainerRef.current,
+  estimateSize: () => 37, // row height
+  overscan: 10,
+});
+
+// Only render ~30 visible rows instead of 500
+virtualizer.getVirtualItems().map((virtualRow) => {
+  const row = rows[virtualRow.index];
+  return (
+    <TableRow
+      style={{
+        position: "absolute",
+        transform: `translateY(${virtualRow.start}px)`,
+      }}
+    >
+      {row.cells.map((cell) => (
+        <TableCell>...</TableCell>
+      ))}
+    </TableRow>
+  );
+});
+```
+
+**Result**: Performance was fixed! No more typing lag.
+
+**But**: The table looked broken. All columns were compressed to the left side of the screen.
+
+## Why HTML Table Virtualization Is Hard
+
+HTML tables have a unique layout algorithm. Column widths are calculated based on **all cells in a column**, not just the header. The browser examines every row to determine optimal column widths.
+
+When you virtualize:
+
+1. Only ~30 rows exist in the DOM
+2. The browser calculates column widths from these 30 rows
+3. When you scroll, different rows appear with potentially different content widths
+4. Column widths shift unexpectedly
+
+Worse, with `position: absolute` on rows, they're **removed from the table layout flow entirely**. The table body collapses, and rows have no width reference.
+
+## Solution Attempt #2: Display Flex
+
+We tried making virtualized rows use `display: flex`:
+
+```tsx
+<TableRow className="flex">
+  {cells.map((cell) => (
+    <TableCell className="flex-1 min-w-[100px]">...</TableCell>
+  ))}
+</TableRow>
+```
+
+**Result**: Columns were now equal width, but didn't match the header. The header used natural table layout, body used flex—they couldn't align.
+
+## Solution Attempt #3: Display Table
+
+We tried making each row behave like its own table:
+
+```tsx
+<TableRow style={{ display: 'table', tableLayout: 'fixed', width: '100%' }}>
+```
+
+**Result**: Even worse. `width: 100%` referred to the parent tbody (set to `display: block`), not the actual table width. Columns were tiny.
+
+## Solution Attempt #4: CSS content-visibility
+
+Modern browsers support `content-visibility: auto` which skips rendering off-screen content while maintaining layout:
+
+```tsx
+<TableRow style={{ contentVisibility: 'auto', containIntrinsicSize: '0 37px' }}>
+```
+
+**Result**: Layout was preserved, but performance improvement was minimal. The browser still created all DOM nodes—it just skipped painting them. React reconciliation still ran for all 500 rows.
+
+## The Final Solution: Measure and Apply Header Widths
+
+The breakthrough was realizing we needed to **sync column widths from header to body** using JavaScript:
+
+```tsx
+const headerRef = useRef<HTMLTableRowElement>(null);
+const [columnWidths, setColumnWidths] = useState<number[]>([]);
+
+// Measure header column widths
+useEffect(() => {
+  const measureWidths = () => {
+    const headerCells = headerRef.current?.querySelectorAll("th");
+    if (headerCells) {
+      const widths = Array.from(headerCells).map((cell) => cell.offsetWidth);
+      setColumnWidths(widths);
+    }
+  };
+
+  measureWidths();
+
+  const resizeObserver = new ResizeObserver(measureWidths);
+  resizeObserver.observe(headerRef.current);
+
+  return () => resizeObserver.disconnect();
+}, [columns.length]);
+```
+
+Then render virtualized rows as **divs with explicit widths**:
+
+```tsx
+<TableBody>
+  <tr>
+    <td colSpan={columns.length} style={{ padding: 0 }}>
+      <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+        {virtualizer.getVirtualItems().map((virtualRow) => (
+          <div
+            className="flex items-center border-b"
+            style={{
+              position: "absolute",
+              transform: `translateY(${virtualRow.start}px)`,
+              height: virtualRow.size,
+            }}
+          >
+            {row.cells.map((cell, i) => (
+              <div
+                style={{
+                  width: columnWidths[i],
+                  flexShrink: 0,
+                }}
+              >
+                {cell.content}
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
+    </td>
+  </tr>
+</TableBody>
+```
+
+**Key insights**:
+
+1. Render all virtualized content inside a **single `<td>` that spans all columns**
+2. Use **divs, not table elements** for virtualized rows
+3. Apply **exact pixel widths** measured from the header
+4. Use `flexShrink: 0` to prevent cells from compressing
+5. ResizeObserver keeps widths in sync when table resizes
+
+## Performance Results
+
+| Metric               | Before     | After          |
+| -------------------- | ---------- | -------------- |
+| DOM nodes (500 rows) | ~15,000    | ~1,000         |
+| Typing latency       | 5+ seconds | less than 50ms |
+| Scroll performance   | Janky      | 60fps          |
+
+## Lessons Learned
+
+- HTML tables and virtualization don't mix easily. Tables need all rows in the layout flow for column width calculation.
+- Measure, don't assume. Trying to replicate table layout with CSS (flex, grid) failed because header widths are content-dependent. Measuring actual pixel widths was the only reliable solution.
+- ResizeObserver is essential. Column widths change when the window resizes, content changes, or sidebar toggles. Without ResizeObserver, widths go stale.
+- Sometimes you need to break out of the component model. Using a single `<td colSpan>` wrapper broke the semantic table structure but was necessary for virtualization to work.
+- Profile before optimizing. The real bottleneck wasn't data processing—it was DOM node count. React DevTools Profiler showed most time spent in reconciliation, not in our code.
+
+## When to Use This Pattern
+
+Consider header-width-synced virtualization when:
+
+- You have 50+ rows that cause performance issues
+- Column alignment with headers is required
+- You need horizontal scrolling support
+- Table structure must be preserved for accessibility
+
+For simpler cases, consider:
+
+- Pagination with smaller page sizes
+- CSS `content-visibility` if layout-only optimization is sufficient
+- A completely div-based grid (no tables) from the start

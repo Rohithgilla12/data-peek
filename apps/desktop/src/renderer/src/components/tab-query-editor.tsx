@@ -885,7 +885,17 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // At this point, tab is guaranteed to be query or table-preview (not erd or table-designer)
   const activeResultIndex = tab.activeResultIndex ?? 0
 
-  // Use multi-result pagination when available, fallback to legacy
+  // For query tabs, pass all rows and let DataTable handle client-side pagination
+  // For table-preview tabs with server-side pagination, rows are already limited by SQL
+  const getAllRows = (): Record<string, unknown>[] => {
+    if (hasMultipleResults) {
+      const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
+      return (statement?.rows ?? []) as Record<string, unknown>[]
+    }
+    return (tab.result?.rows ?? []) as Record<string, unknown>[]
+  }
+
+  // Only use store pagination for table-preview with server-side pagination (for backward compat display)
   const paginatedRows = hasMultipleResults
     ? getActiveResultPaginatedRows(tabId)
     : getTabPaginatedRows(tabId)
@@ -1162,8 +1172,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
                 {/* Results Table */}
                 <div className="flex-1 overflow-hidden p-3">
-                  {tab.type === 'table-preview' ? (
+                  {tab.type === 'table-preview' && !hasMultipleResults ? (
                     <EditableDataTable
+                      key={`result-${activeResultIndex}`}
                       tabId={tabId}
                       columns={getColumnsForEditing()}
                       data={
@@ -1186,6 +1197,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                     />
                   ) : (
                     <DataTable
+                      key={`result-${activeResultIndex}`}
                       columns={
                         hasMultipleResults
                           ? getActiveResultColumns().map((col) => ({
@@ -1194,7 +1206,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                             }))
                           : getColumnsWithFKInfo()
                       }
-                      data={paginatedRows as Record<string, unknown>[]}
+                      data={getAllRows()}
                       pageSize={tab.pageSize}
                       onFiltersChange={setTableFilters}
                       onSortingChange={setTableSorting}

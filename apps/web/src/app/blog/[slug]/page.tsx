@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import rehypePrettyCode from 'rehype-pretty-code'
+import remarkGfm from 'remark-gfm'
 import { Header } from '@/components/marketing/header'
 import { Footer } from '@/components/marketing/footer'
 import { getBlogPost, getAllBlogSlugs } from '@/lib/blog'
@@ -146,6 +147,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 components={mdxComponents}
                 options={{
                   mdxOptions: {
+                    remarkPlugins: [remarkGfm],
                     rehypePlugins: [
                       [
                         rehypePrettyCode,

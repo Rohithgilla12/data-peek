@@ -1,7 +1,7 @@
 ---
 title: "AI Assistant Deep Dive: Components & Patterns"
 description: "Technical deep dive into the component architecture, state management, and IPC patterns behind data-peek's AI features."
-date: "2024-12-08"
+date: "2025-12-08"
 author: "Rohith Gilla"
 tags: ["AI", "React", "Zustand", "Electron", "Architecture"]
 published: true
@@ -17,28 +17,31 @@ Electron's process isolation means we need a clear contract between renderer and
 // Exposed via preload script as window.api.ai
 interface AIApi {
   // Configuration
-  getConfig(): Promise<AIConfig | null>
-  setConfig(config: AIConfig): Promise<void>
-  clearConfig(): Promise<void>
-  validateKey(config: AIConfig): Promise<{ valid: boolean; error?: string }>
+  getConfig(): Promise<AIConfig | null>;
+  setConfig(config: AIConfig): Promise<void>;
+  clearConfig(): Promise<void>;
+  validateKey(config: AIConfig): Promise<{ valid: boolean; error?: string }>;
 
   // Chat generation
   chat(
     messages: AIMessage[],
     schemas: Schema[],
     dbType: string
-  ): Promise<IpcResponse<AIChatResponse>>
+  ): Promise<IpcResponse<AIChatResponse>>;
 
   // Session management
-  getSessions(connectionId: string): Promise<ChatSession[]>
-  getSession(connectionId: string, sessionId: string): Promise<ChatSession | null>
-  createSession(connectionId: string, title?: string): Promise<ChatSession>
+  getSessions(connectionId: string): Promise<ChatSession[]>;
+  getSession(
+    connectionId: string,
+    sessionId: string
+  ): Promise<ChatSession | null>;
+  createSession(connectionId: string, title?: string): Promise<ChatSession>;
   updateSession(
     connectionId: string,
     sessionId: string,
     updates: Partial<ChatSession>
-  ): Promise<ChatSession>
-  deleteSession(connectionId: string, sessionId: string): Promise<boolean>
+  ): Promise<ChatSession>;
+  deleteSession(connectionId: string, sessionId: string): Promise<boolean>;
 }
 ```
 
@@ -48,13 +51,13 @@ Every IPC call returns a consistent shape:
 
 ```typescript
 interface IpcResponse<T> {
-  success: boolean
-  data?: T
-  error?: string
+  success: boolean;
+  data?: T;
+  error?: string;
 }
 
 // Usage in renderer
-const response = await window.api.ai.chat(messages, schemas, dbType)
+const response = await window.api.ai.chat(messages, schemas, dbType);
 if (response.success) {
   // response.data is typed as AIChatResponse
 } else {
@@ -71,18 +74,18 @@ We use Zustand for AI state, with selective persistence:
 
 interface AIState {
   // Persisted to localStorage
-  config: AIConfig | null
+  config: AIConfig | null;
 
   // In-memory only (conversations live in electron-store)
-  conversations: Map<string, AIConversation>
-  isPanelOpen: boolean
-  isSettingsOpen: boolean
-  isLoading: boolean
+  conversations: Map<string, AIConversation>;
+  isPanelOpen: boolean;
+  isSettingsOpen: boolean;
+  isLoading: boolean;
 
   // Actions
-  setConfig: (config: AIConfig) => void
-  setConversation: (connectionId: string, conversation: AIConversation) => void
-  togglePanel: () => void
+  setConfig: (config: AIConfig) => void;
+  setConversation: (connectionId: string, conversation: AIConversation) => void;
+  togglePanel: () => void;
   // ...
 }
 
@@ -98,20 +101,20 @@ export const useAIStore = create<AIState>()(
       setConfig: (config) => set({ config }),
 
       setConversation: (connectionId, conversation) => {
-        const conversations = new Map(get().conversations)
-        conversations.set(connectionId, conversation)
-        set({ conversations })
+        const conversations = new Map(get().conversations);
+        conversations.set(connectionId, conversation);
+        set({ conversations });
       },
 
       togglePanel: () => set((s) => ({ isPanelOpen: !s.isPanelOpen })),
     }),
     {
-      name: 'data-peek-ai',
+      name: "data-peek-ai",
       // Only persist config, not conversations
       partialize: (state) => ({ config: state.config }),
     }
   )
-)
+);
 ```
 
 ### Selector Hooks for Performance
@@ -120,16 +123,16 @@ Avoid re-renders with targeted selectors:
 
 ```typescript
 // Bad: subscribes to entire store
-const { config, isLoading } = useAIStore()
+const { config, isLoading } = useAIStore();
 
 // Good: subscribes only to what you need
-const config = useAIStore((s) => s.config)
-const isLoading = useAIStore((s) => s.isLoading)
+const config = useAIStore((s) => s.config);
+const isLoading = useAIStore((s) => s.isLoading);
 
 // Better: custom hooks
-export const useAIConfig = () => useAIStore((s) => s.config)
-export const useAILoading = () => useAIStore((s) => s.isLoading)
-export const useAIPanelOpen = () => useAIStore((s) => s.isPanelOpen)
+export const useAIConfig = () => useAIStore((s) => s.config);
+export const useAILoading = () => useAIStore((s) => s.isLoading);
+export const useAIPanelOpen = () => useAIStore((s) => s.isPanelOpen);
 ```
 
 ## Component Breakdown
@@ -137,6 +140,7 @@ export const useAIPanelOpen = () => useAIStore((s) => s.isPanelOpen)
 ### AIChatPanel - The Orchestrator
 
 This 877-line component manages:
+
 - Session list sidebar
 - Message history
 - Input handling
@@ -240,29 +244,29 @@ Routes to the appropriate renderer based on response type:
 
 ```tsx
 function AIMessage({ message }) {
-  const { responseData } = message
+  const { responseData } = message;
 
   // No structured data = plain text message
   if (!responseData) {
-    return <div className="prose">{message.content}</div>
+    return <div className="prose">{message.content}</div>;
   }
 
   switch (responseData.type) {
-    case 'query':
-      return <AIQueryMessage data={responseData} />
+    case "query":
+      return <AIQueryMessage data={responseData} />;
 
-    case 'chart':
-      return <AIChartMessage data={responseData} />
+    case "chart":
+      return <AIChartMessage data={responseData} />;
 
-    case 'metric':
-      return <AIMetricMessage data={responseData} />
+    case "metric":
+      return <AIMetricMessage data={responseData} />;
 
-    case 'schema':
-      return <AISchemaMessage data={responseData} />
+    case "schema":
+      return <AISchemaMessage data={responseData} />;
 
-    case 'message':
+    case "message":
     default:
-      return <div className="prose">{message.content}</div>
+      return <div className="prose">{message.content}</div>;
   }
 }
 ```
@@ -271,18 +275,18 @@ function AIMessage({ message }) {
 
 ```tsx
 function AIQueryMessage({ data }) {
-  const [result, setResult] = useState(null)
-  const [isExecuting, setIsExecuting] = useState(false)
+  const [result, setResult] = useState(null);
+  const [isExecuting, setIsExecuting] = useState(false);
 
   async function executeInline() {
-    setIsExecuting(true)
+    setIsExecuting(true);
     try {
-      const response = await window.api.db.query(data.sql)
+      const response = await window.api.db.query(data.sql);
       if (response.success) {
-        setResult(response.data)
+        setResult(response.data);
       }
     } finally {
-      setIsExecuting(false)
+      setIsExecuting(false);
     }
   }
 
@@ -290,9 +294,9 @@ function AIQueryMessage({ data }) {
     // Add to query tab store
     useTabStore.getState().addTab({
       id: crypto.randomUUID(),
-      title: 'AI Query',
+      title: "AI Query",
       content: data.sql,
-    })
+    });
   }
 
   return (
@@ -309,7 +313,7 @@ function AIQueryMessage({ data }) {
 
       <div className="flex gap-2">
         <Button size="sm" onClick={executeInline} disabled={isExecuting}>
-          {isExecuting ? 'Executing...' : 'Execute'}
+          {isExecuting ? "Executing..." : "Execute"}
         </Button>
         <Button size="sm" variant="outline" onClick={openInEditor}>
           Open in Editor
@@ -322,7 +326,7 @@ function AIQueryMessage({ data }) {
         </div>
       )}
     </div>
-  )
+  );
 }
 ```
 
@@ -330,26 +334,26 @@ function AIQueryMessage({ data }) {
 
 ```tsx
 function AIChartMessage({ data }) {
-  const [chartData, setChartData] = useState(null)
-  const [error, setError] = useState(null)
+  const [chartData, setChartData] = useState(null);
+  const [error, setError] = useState(null);
 
   // Auto-fetch on mount
   useEffect(() => {
     window.api.db.query(data.sql).then((response) => {
       if (response.success) {
-        setChartData(response.data.rows)
+        setChartData(response.data.rows);
       } else {
-        setError(response.error)
+        setError(response.error);
       }
-    })
-  }, [data.sql])
+    });
+  }, [data.sql]);
 
   if (error) {
-    return <Alert variant="error">{error}</Alert>
+    return <Alert variant="error">{error}</Alert>;
   }
 
   if (!chartData) {
-    return <Skeleton className="h-64 w-full" />
+    return <Skeleton className="h-64 w-full" />;
   }
 
   const ChartComponent = {
@@ -357,7 +361,7 @@ function AIChartMessage({ data }) {
     line: LineChart,
     pie: PieChart,
     area: AreaChart,
-  }[data.chartType]
+  }[data.chartType];
 
   return (
     <div className="space-y-3">
@@ -370,18 +374,14 @@ function AIChartMessage({ data }) {
           <Tooltip />
           <Legend />
           {data.yKeys.map((key, i) => (
-            <Bar
-              key={key}
-              dataKey={key}
-              fill={COLORS[i % COLORS.length]}
-            />
+            <Bar key={key} dataKey={key} fill={COLORS[i % COLORS.length]} />
           ))}
         </ChartComponent>
       </ResponsiveContainer>
 
       <CollapsibleSQL sql={data.sql} />
     </div>
-  )
+  );
 }
 ```
 
@@ -392,33 +392,33 @@ function AIChartMessage({ data }) {
 ```typescript
 // src/main/ai-service.ts
 
-import { openai } from '@ai-sdk/openai'
-import { anthropic } from '@ai-sdk/anthropic'
-import { google } from '@ai-sdk/google'
-import { createOpenAI } from '@ai-sdk/openai'
+import { openai } from "@ai-sdk/openai";
+import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
+import { createOpenAI } from "@ai-sdk/openai";
 
 function getLanguageModel(config: AIConfig) {
   switch (config.provider) {
-    case 'openai':
-      return openai(config.model, { apiKey: config.apiKey })
+    case "openai":
+      return openai(config.model, { apiKey: config.apiKey });
 
-    case 'anthropic':
-      return anthropic(config.model, { apiKey: config.apiKey })
+    case "anthropic":
+      return anthropic(config.model, { apiKey: config.apiKey });
 
-    case 'google':
-      return google(config.model, { apiKey: config.apiKey })
+    case "google":
+      return google(config.model, { apiKey: config.apiKey });
 
-    case 'groq':
+    case "groq":
       return createOpenAI({
-        baseURL: 'https://api.groq.com/openai/v1',
+        baseURL: "https://api.groq.com/openai/v1",
         apiKey: config.apiKey,
-      })(config.model)
+      })(config.model);
 
-    case 'ollama':
+    case "ollama":
       return createOpenAI({
         baseURL: `${config.ollamaUrl}/v1`,
-        apiKey: 'ollama', // Placeholder, not validated
-      })(config.model)
+        apiKey: "ollama", // Placeholder, not validated
+      })(config.model);
   }
 }
 ```
@@ -432,8 +432,8 @@ async function generateChatResponse(
   dbType: string,
   config: AIConfig
 ): Promise<AIChatResponse> {
-  const model = getLanguageModel(config)
-  const systemPrompt = buildSystemPrompt(schemas, dbType)
+  const model = getLanguageModel(config);
+  const systemPrompt = buildSystemPrompt(schemas, dbType);
 
   const { object, text } = await generateObject({
     model,
@@ -444,42 +444,42 @@ async function generateChatResponse(
     })),
     system: systemPrompt,
     temperature: 0.1, // Low for consistent SQL
-  })
+  });
 
   return {
     text,
     structured: object,
-  }
+  };
 }
 ```
 
 ### Chat Persistence
 
 ```typescript
-import Store from 'electron-store'
+import Store from "electron-store";
 
 const chatStore = new Store({
-  name: 'data-peek-ai-chat-history',
-})
+  name: "data-peek-ai-chat-history",
+});
 
 function getChatSessions(connectionId: string): ChatSession[] {
-  const history = chatStore.get(`chatHistory.${connectionId}`, [])
+  const history = chatStore.get(`chatHistory.${connectionId}`, []);
 
   // Migration: old format was array of messages
-  if (history.length > 0 && 'role' in history[0]) {
+  if (history.length > 0 && "role" in history[0]) {
     // Migrate to new session format
     const migrated: ChatSession = {
       id: crypto.randomUUID(),
-      title: history[0]?.content?.slice(0, 50) || 'Chat',
+      title: history[0]?.content?.slice(0, 50) || "Chat",
       messages: history,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-    }
-    chatStore.set(`chatHistory.${connectionId}`, [migrated])
-    return [migrated]
+    };
+    chatStore.set(`chatHistory.${connectionId}`, [migrated]);
+    return [migrated];
   }
 
-  return history
+  return history;
 }
 
 function updateChatSession(
@@ -487,21 +487,21 @@ function updateChatSession(
   sessionId: string,
   updates: Partial<ChatSession>
 ): ChatSession {
-  const sessions = getChatSessions(connectionId)
-  const index = sessions.findIndex((s) => s.id === sessionId)
+  const sessions = getChatSessions(connectionId);
+  const index = sessions.findIndex((s) => s.id === sessionId);
 
-  if (index === -1) throw new Error('Session not found')
+  if (index === -1) throw new Error("Session not found");
 
   const updated = {
     ...sessions[index],
     ...updates,
     updatedAt: new Date().toISOString(),
-  }
+  };
 
-  sessions[index] = updated
-  chatStore.set(`chatHistory.${connectionId}`, sessions)
+  sessions[index] = updated;
+  chatStore.set(`chatHistory.${connectionId}`, sessions);
 
-  return updated
+  return updated;
 }
 ```
 
@@ -510,27 +510,31 @@ function updateChatSession(
 ### 1. Why Zod + generateObject instead of prompt engineering?
 
 Traditional approach:
+
 ```
 Return JSON with format: { "type": "query", "sql": "..." }
 ```
 
 Problems:
+
 - LLM might return invalid JSON
 - No type safety
 - Manual parsing and validation
 
 Our approach with Vercel AI SDK:
+
 ```typescript
 const { object } = await generateObject({
   schema: zodSchema,
   // ...
-})
+});
 // object is guaranteed to match schema
 ```
 
 ### 2. Why debounce persistence?
 
 Without debounce, every keystroke in the chat input that triggers a state change could write to disk. With 500ms debounce:
+
 - Batch rapid changes into single writes
 - Reduce disk I/O
 - Prevent UI jank from blocking operations
@@ -540,14 +544,14 @@ Without debounce, every keystroke in the chat input that triggers a state change
 ```typescript
 // Config store: encrypted
 const configStore = new Store({
-  name: 'data-peek-ai-config',
-  encryptionKey: 'your-key',
-})
+  name: "data-peek-ai-config",
+  encryptionKey: "your-key",
+});
 
 // History store: not encrypted (no sensitive data)
 const chatStore = new Store({
-  name: 'data-peek-ai-chat-history',
-})
+  name: "data-peek-ai-chat-history",
+});
 ```
 
 API keys need encryption. Chat history doesn't contain secrets and benefits from being readable for debugging.
@@ -584,23 +588,23 @@ describe('AIMessage', () => {
 
 ```typescript
 // In tests
-vi.mock('@/preload', () => ({
+vi.mock("@/preload", () => ({
   api: {
     ai: {
       chat: vi.fn().mockResolvedValue({
         success: true,
         data: {
-          text: 'Here is your query',
+          text: "Here is your query",
           structured: {
-            type: 'query',
-            sql: 'SELECT 1',
-            explanation: 'Test',
+            type: "query",
+            sql: "SELECT 1",
+            explanation: "Test",
           },
         },
       }),
     },
   },
-}))
+}));
 ```
 
 ## Performance Optimizations Applied
@@ -613,4 +617,4 @@ vi.mock('@/preload', () => ({
 
 ---
 
-*These patterns form the foundation of data-peek's AI assistant. The combination of structured outputs, clear IPC contracts, and thoughtful state management makes the feature both powerful and maintainable.*
+_These patterns form the foundation of data-peek's AI assistant. The combination of structured outputs, clear IPC contracts, and thoughtful state management makes the feature both powerful and maintainable._

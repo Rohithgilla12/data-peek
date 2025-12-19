@@ -10,6 +10,7 @@ import {
   type ColumnFiltersState,
   type SortingState
 } from '@tanstack/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Link2, Copy } from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
 import { Input } from '@/components/ui/input'
@@ -24,6 +25,9 @@ import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getTypeColor } from '@/lib/type-colors'
 import { PaginationControls } from '@/components/pagination-controls'
 import { useSettingsStore } from '@/stores/settings-store'
+
+const VIRTUALIZATION_THRESHOLD = 50
+const ROW_HEIGHT = 37
 
 // Export types for parent components
 export interface DataTableFilter {
@@ -55,7 +59,7 @@ interface DataTableProps<TData> {
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
 }
 
-function CellValue({
+const CellValue = React.memo(function CellValue({
   value,
   dataType,
   columnName,
@@ -126,7 +130,7 @@ function CellValue({
       </Tooltip>
     </TooltipProvider>
   )
-}
+})
 
 export function DataTable<TData extends Record<string, unknown>>({
   columns: columnDefs,
@@ -305,6 +309,50 @@ export function DataTable<TData extends Record<string, unknown>>({
     setColumnFilters([])
   }
 
+  const tableContainerRef = React.useRef<HTMLDivElement>(null)
+  const headerRef = React.useRef<HTMLTableRowElement>(null)
+  const [columnWidths, setColumnWidths] = React.useState<number[]>([])
+
+  const rows = table.getRowModel().rows
+  const shouldVirtualize = rows.length > VIRTUALIZATION_THRESHOLD
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 10
+  })
+
+  const columnKey = columnDefs.map((c) => c.name).join(',')
+
+  React.useEffect(() => {
+    setColumnWidths([])
+  }, [columnKey])
+
+  React.useEffect(() => {
+    if (!shouldVirtualize || !headerRef.current) return
+
+    const measureWidths = () => {
+      const headerCells = headerRef.current?.querySelectorAll('th')
+      if (headerCells) {
+        const widths = Array.from(headerCells).map((cell) => cell.offsetWidth)
+        setColumnWidths(widths)
+      }
+    }
+
+    const timeoutId = setTimeout(measureWidths, 0)
+
+    const resizeObserver = new ResizeObserver(measureWidths)
+    if (headerRef.current) {
+      resizeObserver.observe(headerRef.current)
+    }
+
+    return () => {
+      clearTimeout(timeoutId)
+      resizeObserver.disconnect()
+    }
+  }, [shouldVirtualize, columnKey])
+
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Filter Toggle Bar */}
@@ -343,12 +391,12 @@ export function DataTable<TData extends Record<string, unknown>>({
 
       {/* Table with single scroll container */}
       <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
-        <div className="absolute inset-0 overflow-auto">
+        <div ref={tableContainerRef} className="absolute inset-0 overflow-auto">
           <table className="w-full min-w-max caption-bottom text-sm">
             <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <React.Fragment key={headerGroup.id}>
-                  <TableRow className="hover:bg-transparent border-border/50">
+                  <TableRow ref={headerRef} className="hover:bg-transparent border-border/50">
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
@@ -384,19 +432,68 @@ export function DataTable<TData extends Record<string, unknown>>({
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className="hover:bg-accent/30 border-border/30 transition-colors"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+              {rows.length ? (
+                shouldVirtualize && columnWidths.length > 0 ? (
+                  <tr>
+                    <td colSpan={columns.length} style={{ padding: 0 }}>
+                      <div
+                        role="rowgroup"
+                        aria-rowcount={rows.length}
+                        style={{
+                          height: virtualizer.getTotalSize(),
+                          position: 'relative'
+                        }}
+                      >
+                        {virtualizer.getVirtualItems().map((virtualRow) => {
+                          const row = rows[virtualRow.index]
+                          return (
+                            <div
+                              key={row.id}
+                              role="row"
+                              aria-rowindex={row.index + 1}
+                              data-index={virtualRow.index}
+                              className="hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center"
+                              style={{
+                                position: 'absolute',
+                                top: 0,
+                                left: 0,
+                                height: `${virtualRow.size}px`,
+                                transform: `translateY(${virtualRow.start}px)`
+                              }}
+                            >
+                              {row.getVisibleCells().map((cell, cellIndex) => (
+                                <div
+                                  key={cell.id}
+                                  role="cell"
+                                  className="py-2 px-4 text-sm whitespace-nowrap overflow-hidden"
+                                  style={{
+                                    width: columnWidths[cellIndex] || 'auto',
+                                    flexShrink: 0
+                                  }}
+                                >
+                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </div>
+                              ))}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      className="hover:bg-accent/30 border-border/30 transition-colors"
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">

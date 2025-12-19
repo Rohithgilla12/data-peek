@@ -34,6 +34,7 @@ import {
   type ColumnFiltersState,
   type SortingState
 } from '@tanstack/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   ArrowDown,
   ArrowUp,
@@ -47,6 +48,9 @@ import {
   X
 } from 'lucide-react'
 import * as React from 'react'
+
+const VIRTUALIZATION_THRESHOLD = 50
+const ROW_HEIGHT = 37
 
 export interface DataTableColumn {
   name: string
@@ -655,6 +659,50 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     setColumnFilters([])
   }
 
+  const tableContainerRef = React.useRef<HTMLDivElement>(null)
+  const headerRef = React.useRef<HTMLTableRowElement>(null)
+  const [columnWidths, setColumnWidths] = React.useState<number[]>([])
+
+  const rows = table.getRowModel().rows
+  const shouldVirtualize = rows.length > VIRTUALIZATION_THRESHOLD
+
+  const virtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 10
+  })
+
+  const columnKey = columnDefs.map((c) => c.name).join(',')
+
+  React.useEffect(() => {
+    setColumnWidths([])
+  }, [columnKey])
+
+  React.useEffect(() => {
+    if (!shouldVirtualize || !headerRef.current) return
+
+    const measureWidths = () => {
+      const headerCells = headerRef.current?.querySelectorAll('th')
+      if (headerCells) {
+        const widths = Array.from(headerCells).map((cell) => cell.offsetWidth)
+        setColumnWidths(widths)
+      }
+    }
+
+    const timeoutId = setTimeout(measureWidths, 0)
+
+    const resizeObserver = new ResizeObserver(measureWidths)
+    if (headerRef.current) {
+      resizeObserver.observe(headerRef.current)
+    }
+
+    return () => {
+      clearTimeout(timeoutId)
+      resizeObserver.disconnect()
+    }
+  }, [shouldVirtualize, columnKey])
+
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full min-h-0">
@@ -716,12 +764,12 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
 
         {/* Table */}
         <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
-          <div className="absolute inset-0 overflow-auto">
+          <div ref={tableContainerRef} className="absolute inset-0 overflow-auto">
             <table className="w-full min-w-max caption-bottom text-sm">
               <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
                 {table.getHeaderGroups().map((headerGroup) => (
                   <React.Fragment key={headerGroup.id}>
-                    <TableRow className="hover:bg-transparent border-border/50">
+                    <TableRow ref={headerRef} className="hover:bg-transparent border-border/50">
                       {headerGroup.headers.map((header) => (
                         <TableHead
                           key={header.id}
@@ -757,28 +805,81 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 ))}
               </TableHeader>
               <TableBody>
-                {/* Existing rows */}
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => {
-                    const rowIndex = row.index
-                    const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
+                {rows.length ? (
+                  shouldVirtualize && columnWidths.length > 0 ? (
+                    <tr>
+                      <td colSpan={columns.length} style={{ padding: 0 }}>
+                        <div
+                          role="rowgroup"
+                          aria-rowcount={rows.length}
+                          style={{
+                            height: virtualizer.getTotalSize(),
+                            position: 'relative'
+                          }}
+                        >
+                          {virtualizer.getVirtualItems().map((virtualRow) => {
+                            const row = rows[virtualRow.index]
+                            const rowIndex = row.index
+                            const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
+                            return (
+                              <div
+                                key={row.id}
+                                role="row"
+                                aria-rowindex={rowIndex + 1}
+                                data-index={virtualRow.index}
+                                className={cn(
+                                  'hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center',
+                                  isDeleted && 'bg-red-500/5'
+                                )}
+                                style={{
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  height: `${virtualRow.size}px`,
+                                  transform: `translateY(${virtualRow.start}px)`
+                                }}
+                              >
+                                {row.getVisibleCells().map((cell, cellIndex) => (
+                                  <div
+                                    key={cell.id}
+                                    role="cell"
+                                    className="py-2 px-4 text-sm whitespace-nowrap overflow-hidden"
+                                    style={{
+                                      width: columnWidths[cellIndex] || 'auto',
+                                      flexShrink: 0
+                                    }}
+                                  >
+                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                  </div>
+                                ))}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    rows.map((row) => {
+                      const rowIndex = row.index
+                      const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
 
-                    return (
-                      <TableRow
-                        key={row.id}
-                        className={cn(
-                          'hover:bg-accent/30 border-border/30 transition-colors',
-                          isDeleted && 'bg-red-500/5'
-                        )}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    )
-                  })
+                      return (
+                        <TableRow
+                          key={row.id}
+                          className={cn(
+                            'hover:bg-accent/30 border-border/30 transition-colors',
+                            isDeleted && 'bg-red-500/5'
+                          )}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      )
+                    })
+                  )
                 ) : (
                   <TableRow>
                     <TableCell colSpan={columns.length} className="h-24 text-center">
@@ -787,14 +888,12 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   </TableRow>
                 )}
 
-                {/* New rows (in edit mode) */}
                 {isEditMode &&
                   newRows.map((newRow) => (
                     <TableRow
                       key={newRow.id}
                       className="hover:bg-accent/30 border-border/30 bg-green-500/5"
                     >
-                      {/* Delete button for new row */}
                       <TableCell className="py-2 text-sm whitespace-nowrap">
                         <Button
                           variant="ghost"
@@ -805,7 +904,6 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                           <X className="size-3" />
                         </Button>
                       </TableCell>
-                      {/* Data cells */}
                       {columnDefs.map((col) => (
                         <TableCell key={col.name} className="py-2 text-sm whitespace-nowrap">
                           <EditableCell
