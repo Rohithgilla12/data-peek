@@ -34,6 +34,7 @@ import {
   type ColumnFiltersState,
   type SortingState
 } from '@tanstack/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import {
   ArrowDown,
   ArrowUp,
@@ -655,6 +656,17 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     setColumnFilters([])
   }
 
+  // Virtualization
+  const tableContainerRef = React.useRef<HTMLDivElement>(null)
+  const rows = table.getRowModel().rows
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length + newRows.length, // Include new rows in count
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 37, // Approximate row height (py-2 + text-sm + border)
+    overscan: 10
+  })
+
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full min-h-0">
@@ -716,7 +728,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
 
         {/* Table */}
         <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
-          <div className="absolute inset-0 overflow-auto">
+          <div ref={tableContainerRef} className="absolute inset-0 overflow-auto">
             <table className="w-full min-w-max caption-bottom text-sm">
               <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -756,28 +768,102 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   </React.Fragment>
                 ))}
               </TableHeader>
-              <TableBody>
-                {/* Existing rows */}
-                {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => {
-                    const rowIndex = row.index
-                    const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
+              <TableBody
+                style={{
+                  height: `${rowVirtualizer.getTotalSize()}px`,
+                  position: 'relative'
+                }}
+              >
+                {rows.length || newRows.length ? (
+                  rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                    const isExistingRow = virtualRow.index < rows.length
+                    const isNewRowItem = !isExistingRow && isEditMode
 
-                    return (
-                      <TableRow
-                        key={row.id}
-                        className={cn(
-                          'hover:bg-accent/30 border-border/30 transition-colors',
-                          isDeleted && 'bg-red-500/5'
-                        )}
-                      >
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    if (isExistingRow) {
+                      // Render existing row
+                      const row = rows[virtualRow.index]
+                      const rowIndex = row.index
+                      const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
+
+                      return (
+                        <TableRow
+                          key={row.id}
+                          data-index={virtualRow.index}
+                          className={cn(
+                            'hover:bg-accent/30 border-border/30 transition-colors',
+                            isDeleted && 'bg-red-500/5'
+                          )}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: `${virtualRow.size}px`,
+                            transform: `translateY(${virtualRow.start}px)`
+                          }}
+                        >
+                          {row.getVisibleCells().map((cell) => (
+                            <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      )
+                    } else if (isNewRowItem) {
+                      // Render new row
+                      const newRowIndex = virtualRow.index - rows.length
+                      const newRow = newRows[newRowIndex]
+                      if (!newRow) return null
+
+                      return (
+                        <TableRow
+                          key={newRow.id}
+                          data-index={virtualRow.index}
+                          className="hover:bg-accent/30 border-border/30 bg-green-500/5"
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            height: `${virtualRow.size}px`,
+                            transform: `translateY(${virtualRow.start}px)`
+                          }}
+                        >
+                          {/* Delete button for new row */}
+                          <TableCell className="py-2 text-sm whitespace-nowrap">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-6 text-muted-foreground hover:text-red-500"
+                              onClick={() => removeNewRow(tabId, newRow.id)}
+                            >
+                              <X className="size-3" />
+                            </Button>
                           </TableCell>
-                        ))}
-                      </TableRow>
-                    )
+                          {/* Data cells */}
+                          {columnDefs.map((col) => (
+                            <TableCell key={col.name} className="py-2 text-sm whitespace-nowrap">
+                              <EditableCell
+                                value={newRow.values[col.name]}
+                                originalValue={null}
+                                dataType={col.dataType}
+                                isEditing={false}
+                                isModified={false}
+                                isNewRow={true}
+                                enumValues={col.enumValues}
+                                columnName={col.name}
+                                onStartEdit={() => {}}
+                                onSave={(value) =>
+                                  updateNewRowValue(tabId, newRow.id, col.name, value)
+                                }
+                                onCancel={() => {}}
+                              />
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      )
+                    }
+                    return null
                   })
                 ) : (
                   <TableRow>
@@ -786,45 +872,6 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                     </TableCell>
                   </TableRow>
                 )}
-
-                {/* New rows (in edit mode) */}
-                {isEditMode &&
-                  newRows.map((newRow) => (
-                    <TableRow
-                      key={newRow.id}
-                      className="hover:bg-accent/30 border-border/30 bg-green-500/5"
-                    >
-                      {/* Delete button for new row */}
-                      <TableCell className="py-2 text-sm whitespace-nowrap">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-6 text-muted-foreground hover:text-red-500"
-                          onClick={() => removeNewRow(tabId, newRow.id)}
-                        >
-                          <X className="size-3" />
-                        </Button>
-                      </TableCell>
-                      {/* Data cells */}
-                      {columnDefs.map((col) => (
-                        <TableCell key={col.name} className="py-2 text-sm whitespace-nowrap">
-                          <EditableCell
-                            value={newRow.values[col.name]}
-                            originalValue={null}
-                            dataType={col.dataType}
-                            isEditing={false}
-                            isModified={false}
-                            isNewRow={true}
-                            enumValues={col.enumValues}
-                            columnName={col.name}
-                            onStartEdit={() => {}}
-                            onSave={(value) => updateNewRowValue(tabId, newRow.id, col.name, value)}
-                            onCancel={() => {}}
-                          />
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
               </TableBody>
             </table>
           </div>

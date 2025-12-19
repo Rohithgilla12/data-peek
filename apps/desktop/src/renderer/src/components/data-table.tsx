@@ -10,6 +10,7 @@ import {
   type ColumnFiltersState,
   type SortingState
 } from '@tanstack/react-table'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Link2, Copy } from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
 import { Input } from '@/components/ui/input'
@@ -305,6 +306,17 @@ export function DataTable<TData extends Record<string, unknown>>({
     setColumnFilters([])
   }
 
+  // Virtualization
+  const tableContainerRef = React.useRef<HTMLDivElement>(null)
+  const rows = table.getRowModel().rows
+
+  const rowVirtualizer = useVirtualizer({
+    count: rows.length,
+    getScrollElement: () => tableContainerRef.current,
+    estimateSize: () => 37, // Approximate row height (py-2 + text-sm + border)
+    overscan: 10
+  })
+
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Filter Toggle Bar */}
@@ -343,7 +355,7 @@ export function DataTable<TData extends Record<string, unknown>>({
 
       {/* Table with single scroll container */}
       <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
-        <div className="absolute inset-0 overflow-auto">
+        <div ref={tableContainerRef} className="absolute inset-0 overflow-auto">
           <table className="w-full min-w-max caption-bottom text-sm">
             <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
               {table.getHeaderGroups().map((headerGroup) => (
@@ -383,20 +395,37 @@ export function DataTable<TData extends Record<string, unknown>>({
                 </React.Fragment>
               ))}
             </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows?.length ? (
-                table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    className="hover:bg-accent/30 border-border/30 transition-colors"
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
+            <TableBody
+              style={{
+                height: `${rowVirtualizer.getTotalSize()}px`,
+                position: 'relative'
+              }}
+            >
+              {rows.length ? (
+                rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                  const row = rows[virtualRow.index]
+                  return (
+                    <TableRow
+                      key={row.id}
+                      data-index={virtualRow.index}
+                      className="hover:bg-accent/30 border-border/30 transition-colors"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: `${virtualRow.size}px`,
+                        transform: `translateY(${virtualRow.start}px)`
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">
