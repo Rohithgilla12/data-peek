@@ -77,6 +77,8 @@ const SQL_KEYWORDS = [
   'TABLE',
   'INDEX',
   'VIEW',
+  'MATERIALIZED',
+  'REFRESH',
   'DROP',
   'ALTER',
   'ADD',
@@ -109,7 +111,9 @@ const SQL_KEYWORDS = [
   'TEMP',
   'IF',
   'REPLACE',
-  'IGNORE'
+  'IGNORE',
+  'CONCURRENTLY',
+  'DATA'
 ]
 
 // SQL Functions for autocomplete
