@@ -437,6 +437,8 @@ export function DataTable<TData extends Record<string, unknown>>({
                   <tr>
                     <td colSpan={columns.length} style={{ padding: 0 }}>
                       <div
+                        role="rowgroup"
+                        aria-rowcount={rows.length}
                         style={{
                           height: virtualizer.getTotalSize(),
                           position: 'relative'
@@ -447,6 +449,8 @@ export function DataTable<TData extends Record<string, unknown>>({
                           return (
                             <div
                               key={row.id}
+                              role="row"
+                              aria-rowindex={row.index + 1}
                               data-index={virtualRow.index}
                               className="hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center"
                               style={{
@@ -460,6 +464,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                               {row.getVisibleCells().map((cell, cellIndex) => (
                                 <div
                                   key={cell.id}
+                                  role="cell"
                                   className="py-2 px-4 text-sm whitespace-nowrap overflow-hidden"
                                   style={{
                                     width: columnWidths[cellIndex] || 'auto',
