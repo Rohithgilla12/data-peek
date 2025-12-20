@@ -6,6 +6,7 @@ import {
   Trash2,
   FileJson,
   FileSpreadsheet,
+  FileCode2,
   MoreHorizontal,
   Loader2,
   BookmarkPlus,
@@ -28,6 +29,7 @@ import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { formatSQL } from '@/lib/sql-formatter'
 import { keys } from '@/lib/utils'
 import { useQueryStore, useConnectionStore } from '@/stores'
+import { exportToSQL } from '@/lib/export'
 
 export function NavActions() {
   const [isOpen, setIsOpen] = React.useState(false)
@@ -114,6 +116,23 @@ export function NavActions() {
     const a = document.createElement('a')
     a.href = url
     a.download = `query-results-${Date.now()}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+    setIsOpen(false)
+  }
+
+  const handleExportSQL = () => {
+    if (!result) return
+    const exportData = {
+      columns: result.columns,
+      rows: result.rows
+    }
+    const sql = exportToSQL(exportData, { tableName: 'query_result' })
+    const blob = new Blob([sql], { type: 'text/sql' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `query-results-${Date.now()}.sql`
     a.click()
     URL.revokeObjectURL(url)
     setIsOpen(false)
@@ -250,6 +269,16 @@ export function NavActions() {
                       >
                         <FileJson className="size-4" />
                         <span>Export as JSON</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        onClick={handleExportSQL}
+                        disabled={!hasResults}
+                        className="gap-2.5"
+                      >
+                        <FileCode2 className="size-4" />
+                        <span>Export as SQL</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>
