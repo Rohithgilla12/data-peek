@@ -67,7 +67,7 @@ describe('Connection Duplication', () => {
           host: 'bastion.example.com',
           port: 22,
           user: 'ubuntu',
-          authMethod: 'privateKey',
+          authMethod: 'Public Key',
           privateKeyPath: '/home/user/.ssh/id_rsa'
         }
       })
@@ -83,7 +83,7 @@ describe('Connection Duplication', () => {
         mssqlOptions: {
           encrypt: true,
           trustServerCertificate: false,
-          authentication: 'default'
+          authentication: 'SQL Server Authentication'
         }
       })
       const duplicate = duplicateConnection(original)

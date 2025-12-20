@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import type { TableInfo, ColumnInfo } from '../index'
+import type { TableInfo, ColumnInfo } from '@shared/index'
 
 describe('TableInfo Type', () => {
   describe('Table Types', () => {
