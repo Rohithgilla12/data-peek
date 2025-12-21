@@ -574,7 +574,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         foreignKey: schemaCol?.foreignKey,
         isPrimaryKey: schemaCol?.isPrimaryKey ?? false,
         isNullable: schemaCol?.isNullable ?? true,
-        enumValues: getEnumValues(col.dataType)
+        enumValues: schemaCol?.enumValues ?? getEnumValues(col.dataType)
       }
     })
   }, [tab, schemas, getEnumValues])

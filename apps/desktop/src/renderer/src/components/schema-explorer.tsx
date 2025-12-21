@@ -20,7 +20,8 @@ import {
   ArrowRight,
   Eye,
   Play,
-  Filter
+  Filter,
+  Focus
 } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
@@ -33,7 +34,9 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
   DropdownMenuCheckboxItem,
-  DropdownMenuLabel
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import {
@@ -435,6 +438,9 @@ export function SchemaExplorer() {
   const [expandedRoutines, setExpandedRoutines] = React.useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = React.useState('')
 
+  // Schema focus - when set, only show this schema
+  const [focusedSchema, setFocusedSchema] = React.useState<string | null>(null)
+
   // Filter toggles
   const [showTables, setShowTables] = React.useState(true)
   const [showViews, setShowViews] = React.useState(true)
@@ -443,11 +449,16 @@ export function SchemaExplorer() {
 
   const createQueryTab = useTabStore((s) => s.createQueryTab)
 
-  // Filter schemas and tables/routines based on search query and filter toggles
+  // Filter schemas and tables/routines based on search query, filter toggles, and focused schema
   const filteredSchemas = React.useMemo(() => {
     const query = searchQuery.toLowerCase().trim()
 
     return schemas
+      .filter((schema) => {
+        // If a schema is focused, only show that schema
+        if (focusedSchema && schema.name !== focusedSchema) return false
+        return true
+      })
       .map((schema) => {
         // Filter tables based on type and search
         const filteredTables = schema.tables.filter((table) => {
@@ -476,7 +487,7 @@ export function SchemaExplorer() {
         }
       })
       .filter((schema) => schema.tables.length > 0 || (schema.routines?.length ?? 0) > 0)
-  }, [schemas, searchQuery, showTables, showViews, showFunctions, showProcedures])
+  }, [schemas, searchQuery, showTables, showViews, showFunctions, showProcedures, focusedSchema])
 
   // Auto-expand schemas when searching
   React.useEffect(() => {
@@ -490,7 +501,11 @@ export function SchemaExplorer() {
     setExpandedSchemas(new Set(schemas.map((s) => s.name)))
     setExpandedTables(new Set())
     setExpandedRoutines(new Set())
-  }, [schemas])
+    // Reset focused schema if it no longer exists
+    if (focusedSchema && !schemas.some((s) => s.name === focusedSchema)) {
+      setFocusedSchema(null)
+    }
+  }, [schemas, focusedSchema])
 
   const toggleSchema = (schemaName: string) => {
     setExpandedSchemas((prev) => {
@@ -619,6 +634,11 @@ export function SchemaExplorer() {
   // Check if any filter is active (not all enabled)
   const isFilterActive = !showTables || !showViews || !showFunctions || !showProcedures
 
+  // Clear focused schema
+  const handleClearFocus = () => {
+    setFocusedSchema(null)
+  }
+
   if (!activeConnectionId) {
     return (
       <SidebarGroup>
@@ -741,6 +761,39 @@ export function SchemaExplorer() {
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`size-5 p-0 hover:bg-sidebar-accent ${focusedSchema ? 'text-primary' : ''}`}
+                title={focusedSchema ? `Focused on: ${focusedSchema}` : 'Focus on schema'}
+              >
+                <Focus className="size-3.5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel className="text-xs">Focus on Schema</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuRadioGroup
+                value={focusedSchema ?? ''}
+                onValueChange={(v) => setFocusedSchema(v || null)}
+              >
+                <DropdownMenuRadioItem value="" className="text-xs">
+                  <span className="text-muted-foreground">All schemas</span>
+                </DropdownMenuRadioItem>
+                {schemas.map((schema) => (
+                  <DropdownMenuRadioItem key={schema.name} value={schema.name} className="text-xs">
+                    <SchemaIcon className="size-3.5 mr-2 text-muted-foreground" />
+                    {schema.name}
+                    <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0">
+                      {schema.tables.length}
+                    </Badge>
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -766,6 +819,26 @@ export function SchemaExplorer() {
         </div>
       </SidebarGroupLabel>
       <SidebarGroupContent>
+        {/* Focused Schema Indicator */}
+        {focusedSchema && (
+          <div className="px-2 pb-2">
+            <div className="flex items-center justify-between gap-2 px-2 py-1.5 bg-primary/10 rounded-md text-xs">
+              <div className="flex items-center gap-1.5 text-primary">
+                <Focus className="size-3" />
+                <span className="font-medium">{focusedSchema}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-4 p-0 hover:bg-primary/20 text-primary"
+                onClick={handleClearFocus}
+                title="Clear focus"
+              >
+                <X className="size-3" />
+              </Button>
+            </div>
+          </div>
+        )}
         {/* Search Input */}
         <div className="px-2 pb-2">
           <div className="relative">

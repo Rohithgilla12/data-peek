@@ -3,7 +3,6 @@ import { Database, FileText, Search, Play, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -12,12 +11,14 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { SQLEditor } from '@/components/sql-editor'
 import type {
   WidgetType,
   ChartWidgetType,
   KPIFormat,
   ConnectionConfig,
-  SavedQuery
+  SavedQuery,
+  SchemaInfo
 } from '@shared/index'
 import { cn } from '@/lib/utils'
 import { AIWidgetSuggestion, type WidgetSuggestion } from './ai-widget-suggestion'
@@ -74,6 +75,7 @@ interface SourceStepProps {
   inlineSql: string
   connections: ConnectionConfig[]
   filteredQueries: SavedQuery[]
+  schemas: SchemaInfo[]
   dispatch: React.Dispatch<DialogAction>
 }
 
@@ -85,6 +87,7 @@ export function SourceStep({
   inlineSql,
   connections,
   filteredQueries,
+  schemas,
   dispatch
 }: SourceStepProps) {
   return (
@@ -169,13 +172,15 @@ export function SourceStep({
           </div>
           <div className="grid gap-2">
             <Label>SQL Query</Label>
-            <Textarea
-              placeholder="SELECT * FROM ..."
-              value={inlineSql}
-              onChange={(e) => dispatch({ type: 'SET_INLINE_SQL', payload: e.target.value })}
-              rows={6}
-              className="font-mono text-sm"
-            />
+            <div className="border rounded-md overflow-hidden">
+              <SQLEditor
+                value={inlineSql}
+                onChange={(v) => dispatch({ type: 'SET_INLINE_SQL', payload: v })}
+                height={150}
+                placeholder="SELECT * FROM ..."
+                schemas={schemas}
+              />
+            </div>
           </div>
         </div>
       )}

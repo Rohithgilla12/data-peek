@@ -30,6 +30,7 @@ interface AddWidgetDialogProps {
 
 export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDialogProps) {
   const connections = useConnectionStore((s) => s.connections)
+  const schemas = useConnectionStore((s) => s.schemas)
   const savedQueries = useSavedQueryStore((s) => s.savedQueries)
   const initializeSavedQueries = useSavedQueryStore((s) => s.initializeSavedQueries)
   const addWidget = useDashboardStore((s) => s.addWidget)
@@ -249,6 +250,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
               inlineSql={inlineSql}
               connections={connections}
               filteredQueries={filteredQueries}
+              schemas={schemas}
               dispatch={dispatch}
             />
           )}

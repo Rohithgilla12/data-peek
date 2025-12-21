@@ -392,6 +392,19 @@ export class PostgresAdapter implements DatabaseAdapter {
         ORDER BY tc.table_schema, tc.table_name, kcu.column_name
       `)
 
+      // Query 4b: Get enum types with their values
+      const enumTypesResult = await client.query(`
+        SELECT
+          n.nspname as schema,
+          t.typname as name,
+          array_agg(e.enumlabel ORDER BY e.enumsortorder) as values
+        FROM pg_type t
+        JOIN pg_namespace n ON n.oid = t.typnamespace
+        JOIN pg_enum e ON e.enumtypid = t.oid
+        WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+        GROUP BY n.nspname, t.typname
+      `)
+
       // Query 5: Get all routines (functions and procedures)
       const routinesResult = await client.query(`
         SELECT
@@ -445,6 +458,14 @@ export class PostgresAdapter implements DatabaseAdapter {
           referencedTable: row.referenced_table,
           referencedColumn: row.referenced_column
         })
+      }
+
+      // Build enum lookup map: "typname" -> string[] (enum values)
+      // Also map "schema.typname" -> string[] for schema-qualified lookups
+      const enumMap = new Map<string, string[]>()
+      for (const row of enumTypesResult.rows) {
+        enumMap.set(row.name, row.values)
+        enumMap.set(`${row.schema}.${row.name}`, row.values)
       }
 
       // Build parameters lookup map: "schema.specific_name" -> RoutineParameterInfo[]
@@ -536,6 +557,10 @@ export class PostgresAdapter implements DatabaseAdapter {
           const fkKey = `${row.table_schema}.${row.table_name}.${row.column_name}`
           const foreignKey = fkMap.get(fkKey)
 
+          // Check for enum type (USER-DEFINED data_type indicates enum/composite)
+          // Look up enum values by the base udt_name
+          const enumValues = enumMap.get(row.udt_name)
+
           const column: ColumnInfo = {
             name: row.column_name,
             dataType,
@@ -543,7 +568,8 @@ export class PostgresAdapter implements DatabaseAdapter {
             isPrimaryKey: row.is_primary_key,
             defaultValue: row.column_default || undefined,
             ordinalPosition: row.ordinal_position,
-            foreignKey
+            foreignKey,
+            enumValues
           }
           table.columns.push(column)
         }
