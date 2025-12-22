@@ -133,6 +133,7 @@ export function EditWidgetDialog({
     if (!sql || !connection) return
 
     sql = sql.trim().replace(/;+$/, '')
+    sql = sql.replace(/\s+LIMIT\s+\d+\s*$/i, '')
     const previewSql = `${sql} LIMIT 10`
 
     setIsLoadingPreview(true)

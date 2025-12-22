@@ -10,7 +10,6 @@ import {
   Table2
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { ChartWidgetType, KPIFormat, WidgetType } from '@shared/index'
 
@@ -208,34 +207,27 @@ export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidget
       setSuggestions(results)
       setHasAnalyzed(true)
       setIsAnalyzing(false)
-    }, 300)
+    }, 500)
   }
 
   if (!queryResult || queryResult.length === 0) {
     return null
   }
 
+  if (!hasAnalyzed && !isAnalyzing) {
+    handleAnalyze()
+  }
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <Sparkles className="size-4 text-purple-500" />
-          AI Suggestions
-        </div>
-        {!hasAnalyzed && (
-          <Button variant="outline" size="sm" onClick={handleAnalyze} disabled={isAnalyzing}>
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="size-3 mr-2 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="size-3 mr-2" />
-                Suggest Widgets
-              </>
-            )}
-          </Button>
+      <div className="flex items-center gap-2">
+        <Sparkles className="size-4 text-purple-500" />
+        <span className="text-sm font-medium">AI Suggestions</span>
+        {isAnalyzing && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Loader2 className="size-3 animate-spin" />
+            Analyzing data...
+          </div>
         )}
       </div>
 
@@ -252,20 +244,25 @@ export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidget
             return (
               <button
                 key={index}
-                className="flex items-start gap-3 p-3 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-muted/50 transition-colors text-left"
+                className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary/60 hover:bg-accent/50 transition-all text-left group"
                 onClick={() => onSuggestionSelect(suggestion)}
               >
-                <div className="flex size-8 items-center justify-center rounded bg-primary/10 text-primary">
+                <div className="flex size-9 items-center justify-center rounded-md bg-primary/10 text-primary group-hover:bg-primary/20 transition-colors">
                   <Icon className="size-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-medium text-sm">{suggestion.name}</span>
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge
+                      variant="secondary"
+                      className="text-xs font-medium bg-primary/10 text-primary border-0"
+                    >
                       {Math.round(suggestion.confidence * 100)}% match
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{suggestion.reason}</p>
+                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                    {suggestion.reason}
+                  </p>
                 </div>
               </button>
             )
@@ -274,9 +271,11 @@ export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidget
       )}
 
       {hasAnalyzed && suggestions.length === 0 && (
-        <p className="text-sm text-muted-foreground">
-          No specific suggestions for this data. Configure manually below.
-        </p>
+        <div className="p-3 rounded-lg border border-dashed">
+          <p className="text-sm text-muted-foreground">
+            No widget suggestions available for this data. Configure manually below.
+          </p>
+        </div>
       )}
     </div>
   )
