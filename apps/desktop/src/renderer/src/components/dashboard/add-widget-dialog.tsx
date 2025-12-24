@@ -1,6 +1,17 @@
-import { useReducer, useEffect } from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import {
+  BarChart3,
+  CheckCircle2,
+  Database,
+  FileText,
+  Hash,
+  Loader2,
+  Play,
+  Search,
+  Table2
+} from 'lucide-react'
+import { useEffect, useReducer, useState } from 'react'
 
+import { SQLEditor } from '@/components/sql-editor'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -10,17 +21,34 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import { useConnectionStore, useSavedQueryStore, useDashboardStore } from '@/stores'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+import { useConnectionStore, useDashboardStore, useSavedQueryStore } from '@/stores'
 import type {
-  CreateWidgetInput,
-  WidgetDataSource,
   ChartWidgetConfig,
+  CreateWidgetInput,
+  KPIFormat,
   KPIWidgetConfig,
-  TableWidgetConfig
+  TableWidgetConfig,
+  WidgetDataSource,
+  WidgetType
 } from '@shared/index'
-import { dialogReducer, initialDialogState } from './add-widget-dialog-reducer'
-import { TypeStep, SourceStep, ConfigStep } from './add-widget-steps'
-import type { WidgetSuggestion } from './ai-widget-suggestion'
+import {
+  CHART_TYPES,
+  dialogReducer,
+  initialDialogState,
+  KPI_FORMATS
+} from './add-widget-dialog-reducer'
+import { AIWidgetSuggestion, type WidgetSuggestion } from './ai-widget-suggestion'
 
 interface AddWidgetDialogProps {
   open: boolean
@@ -28,16 +56,23 @@ interface AddWidgetDialogProps {
   dashboardId: string
 }
 
+const WIDGET_TYPE_OPTIONS: { type: WidgetType; label: string; icon: typeof BarChart3 }[] = [
+  { type: 'chart', label: 'Chart', icon: BarChart3 },
+  { type: 'kpi', label: 'KPI', icon: Hash },
+  { type: 'table', label: 'Table', icon: Table2 }
+]
+
 export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDialogProps) {
   const connections = useConnectionStore((s) => s.connections)
+  const schemas = useConnectionStore((s) => s.schemas)
   const savedQueries = useSavedQueryStore((s) => s.savedQueries)
   const initializeSavedQueries = useSavedQueryStore((s) => s.initializeSavedQueries)
   const addWidget = useDashboardStore((s) => s.addWidget)
 
   const [state, dispatch] = useReducer(dialogReducer, initialDialogState)
+  const [querySearch, setQuerySearch] = useState('')
 
   const {
-    step,
     isSubmitting,
     error,
     widgetName,
@@ -46,7 +81,6 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
     selectedQueryId,
     inlineSql,
     connectionId,
-    querySearch,
     chartType,
     xKey,
     yKeys,
@@ -67,6 +101,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
       const defaultConnectionId =
         connections.find((c) => c.isConnected)?.id || connections[0]?.id || ''
       dispatch({ type: 'RESET', payload: { defaultConnectionId } })
+      setQuerySearch('')
     }
   }, [open, connections, initializeSavedQueries])
 
@@ -88,37 +123,14 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
       q.query.toLowerCase().includes(querySearch.toLowerCase())
   )
 
-  const canProceed = (): boolean => {
-    switch (step) {
-      case 'type':
-        return true
-      case 'source':
-        if (sourceType === 'saved-query') {
-          return !!selectedQueryId && !!connectionId
-        }
-        return !!inlineSql.trim() && !!connectionId
-      case 'config':
-        if (!widgetName.trim()) return false
-        if (widgetType === 'chart') {
-          return !!xKey && !!yKeys
-        }
-        if (widgetType === 'kpi') {
-          return !!valueKey && !!kpiLabel
-        }
-        return true
-      default:
-        return false
-    }
-  }
-
-  const handleNext = () => {
-    if (step === 'type') dispatch({ type: 'SET_STEP', payload: 'source' })
-    else if (step === 'source') dispatch({ type: 'SET_STEP', payload: 'config' })
-  }
-
-  const handleBack = () => {
-    if (step === 'source') dispatch({ type: 'SET_STEP', payload: 'type' })
-    else if (step === 'config') dispatch({ type: 'SET_STEP', payload: 'source' })
+  const canSubmit = (): boolean => {
+    if (!widgetName.trim()) return false
+    if (!connectionId) return false
+    if (sourceType === 'saved-query' && !selectedQueryId) return false
+    if (sourceType === 'inline' && !inlineSql.trim()) return false
+    if (widgetType === 'chart' && (!xKey || !yKeys)) return false
+    if (widgetType === 'kpi' && (!valueKey || !kpiLabel)) return false
+    return true
   }
 
   const handlePreviewQuery = async () => {
@@ -131,6 +143,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
     if (!sql || !connection) return
 
     sql = sql.trim().replace(/;+$/, '')
+    sql = sql.replace(/\s+LIMIT\s+\d+\s*$/i, '')
     const previewSql = `${sql} LIMIT 100`
 
     dispatch({ type: 'SET_LOADING_PREVIEW', payload: true })
@@ -155,7 +168,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
   }
 
   const handleSubmit = async () => {
-    if (!canProceed()) return
+    if (!canSubmit()) return
 
     dispatch({ type: 'SET_SUBMITTING', payload: true })
     dispatch({ type: 'SET_ERROR', payload: null })
@@ -225,46 +238,424 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
     }
   }
 
+  const availableColumns = previewData && previewData.length > 0 ? Object.keys(previewData[0]) : []
+  const selectedQuery = savedQueries.find((q) => q.id === selectedQueryId)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="sm:max-w-[700px] max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Add Widget</DialogTitle>
-          <DialogDescription>
-            {step === 'type' && 'Choose what type of widget you want to add'}
-            {step === 'source' && 'Select the data source for your widget'}
-            {step === 'config' && 'Configure your widget settings'}
-          </DialogDescription>
+          <DialogDescription>Configure your dashboard widget</DialogDescription>
         </DialogHeader>
 
-        <div className="py-4">
-          {step === 'type' && <TypeStep widgetType={widgetType} dispatch={dispatch} />}
+        <ScrollArea className="flex-1 -mx-6 px-6">
+          <div className="space-y-6 pb-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Widget Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  placeholder="e.g., Monthly Revenue"
+                  value={widgetName}
+                  onChange={(e) => dispatch({ type: 'SET_WIDGET_NAME', payload: e.target.value })}
+                  className="h-9"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Widget Type
+                </Label>
+                <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
+                  {WIDGET_TYPE_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.type}
+                      onClick={() => dispatch({ type: 'SET_WIDGET_TYPE', payload: opt.type })}
+                      className={cn(
+                        'flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+                        widgetType === opt.type
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <opt.icon className="size-3.5" />
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
 
-          {step === 'source' && (
-            <SourceStep
-              sourceType={sourceType}
-              querySearch={querySearch}
-              selectedQueryId={selectedQueryId}
-              connectionId={connectionId}
-              inlineSql={inlineSql}
-              connections={connections}
-              filteredQueries={filteredQueries}
-              dispatch={dispatch}
-            />
-          )}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Data Source
+                </Label>
+                <div className="flex gap-1 p-0.5 bg-muted/50 rounded-md">
+                  <button
+                    onClick={() => dispatch({ type: 'SET_SOURCE_TYPE', payload: 'inline' })}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all',
+                      sourceType === 'inline'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <Database className="size-3" />
+                    SQL
+                  </button>
+                  <button
+                    onClick={() => dispatch({ type: 'SET_SOURCE_TYPE', payload: 'saved-query' })}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all',
+                      sourceType === 'saved-query'
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <FileText className="size-3" />
+                    Saved
+                  </button>
+                </div>
+              </div>
 
-          {step === 'config' && (
-            <ConfigStep
-              state={state}
-              connections={connections}
-              previewData={previewData}
-              isLoadingPreview={isLoadingPreview}
-              onPreviewQuery={handlePreviewQuery}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Connection</Label>
+                  <Select
+                    value={connectionId}
+                    onValueChange={(v) => dispatch({ type: 'SET_CONNECTION_ID', payload: v })}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {connections.map((conn) => (
+                        <SelectItem key={conn.id} value={conn.id} className="text-xs">
+                          {conn.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {sourceType === 'saved-query' && (
+                  <div className="col-span-2 space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground">Saved Query</Label>
+                    <Select
+                      value={selectedQueryId}
+                      onValueChange={(v) => dispatch({ type: 'SET_SELECTED_QUERY_ID', payload: v })}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue placeholder="Select a query..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div className="px-2 pb-2">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+                            <Input
+                              placeholder="Search..."
+                              value={querySearch}
+                              onChange={(e) => setQuerySearch(e.target.value)}
+                              className="h-7 pl-7 text-xs"
+                            />
+                          </div>
+                        </div>
+                        {filteredQueries.map((q) => (
+                          <SelectItem key={q.id} value={q.id} className="text-xs">
+                            {q.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              {sourceType === 'inline' && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] text-muted-foreground">SQL Query</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handlePreviewQuery}
+                      disabled={isLoadingPreview || !inlineSql.trim() || !connectionId}
+                      className="h-6 px-2 text-xs"
+                    >
+                      {isLoadingPreview ? (
+                        <Loader2 className="size-3 mr-1 animate-spin" />
+                      ) : (
+                        <Play className="size-3 mr-1" />
+                      )}
+                      Preview
+                    </Button>
+                  </div>
+                  <div className="rounded-lg border overflow-hidden bg-muted/20">
+                    <SQLEditor
+                      value={inlineSql}
+                      onChange={(v) => dispatch({ type: 'SET_INLINE_SQL', payload: v })}
+                      height={120}
+                      placeholder="SELECT * FROM your_table"
+                      schemas={schemas}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {sourceType === 'saved-query' && selectedQuery && (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] text-muted-foreground">Query Preview</Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handlePreviewQuery}
+                      disabled={isLoadingPreview || !connectionId}
+                      className="h-6 px-2 text-xs"
+                    >
+                      {isLoadingPreview ? (
+                        <Loader2 className="size-3 mr-1 animate-spin" />
+                      ) : (
+                        <Play className="size-3 mr-1" />
+                      )}
+                      Run
+                    </Button>
+                  </div>
+                  <div className="p-2 rounded-lg border bg-muted/20 font-mono text-xs text-muted-foreground max-h-20 overflow-auto">
+                    {selectedQuery.query}
+                  </div>
+                </div>
+              )}
+
+              {previewData && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
+                    <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
+                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      {previewData.length} row{previewData.length !== 1 ? 's' : ''},{' '}
+                      {availableColumns.length} column{availableColumns.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div className="rounded-lg border overflow-hidden">
+                    <div className="overflow-x-auto max-h-[150px] overflow-y-auto">
+                      <table className="w-full text-xs">
+                        <thead className="bg-muted/50 sticky top-0">
+                          <tr>
+                            {availableColumns.map((col) => (
+                              <th
+                                key={col}
+                                className="px-2 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap border-b"
+                              >
+                                {col}
+                              </th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {previewData.slice(0, 5).map((row, i) => (
+                            <tr key={i} className="border-b last:border-0 hover:bg-muted/30">
+                              {availableColumns.map((col) => (
+                                <td
+                                  key={col}
+                                  className="px-2 py-1.5 whitespace-nowrap font-mono text-[11px] max-w-[200px] truncate"
+                                  title={String(row[col] ?? '')}
+                                >
+                                  {row[col] === null ? (
+                                    <span className="text-muted-foreground/50 italic">null</span>
+                                  ) : (
+                                    String(row[col])
+                                  )}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {previewData.length > 5 && (
+                      <div className="px-2 py-1 text-[10px] text-muted-foreground bg-muted/30 border-t">
+                        Showing 5 of {previewData.length} rows
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <AIWidgetSuggestion
+              queryResult={previewData}
               onSuggestionSelect={handleSuggestionSelect}
-              dispatch={dispatch}
             />
-          )}
-        </div>
+
+            {widgetType === 'chart' && (
+              <div className="space-y-3">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Chart Configuration
+                </Label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {CHART_TYPES.map((ct) => (
+                    <button
+                      key={ct.type}
+                      onClick={() => dispatch({ type: 'SET_CHART_TYPE', payload: ct.type })}
+                      className={cn(
+                        'flex flex-col items-center gap-1 py-2 px-2 rounded-lg transition-all',
+                        chartType === ct.type
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <ct.icon className="size-4" />
+                      <span className="text-[10px] font-medium">
+                        {ct.label.replace(' Chart', '')}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground">
+                      X Axis <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      placeholder="e.g., date"
+                      value={xKey}
+                      onChange={(e) => dispatch({ type: 'SET_X_KEY', payload: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Y Axis <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      placeholder="e.g., revenue, profit"
+                      value={yKeys}
+                      onChange={(e) => dispatch({ type: 'SET_Y_KEYS', payload: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {widgetType === 'kpi' && (
+              <div className="space-y-3">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  KPI Configuration
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Label <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      placeholder="e.g., Total Revenue"
+                      value={kpiLabel}
+                      onChange={(e) => dispatch({ type: 'SET_KPI_LABEL', payload: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Value Column <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      placeholder="e.g., total"
+                      value={valueKey}
+                      onChange={(e) => dispatch({ type: 'SET_VALUE_KEY', payload: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground">Format</Label>
+                    <Select
+                      value={kpiFormat}
+                      onValueChange={(v) =>
+                        dispatch({ type: 'SET_KPI_FORMAT', payload: v as KPIFormat })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {KPI_FORMATS.map((f) => (
+                          <SelectItem key={f.format} value={f.format} className="text-xs">
+                            {f.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground">Prefix</Label>
+                    <Input
+                      placeholder="$"
+                      value={prefix}
+                      onChange={(e) => dispatch({ type: 'SET_PREFIX', payload: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] text-muted-foreground">Suffix</Label>
+                    <Input
+                      placeholder="%"
+                      value={suffix}
+                      onChange={(e) => dispatch({ type: 'SET_SUFFIX', payload: e.target.value })}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {widgetType === 'table' && (
+              <div className="space-y-3">
+                <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Table Configuration
+                </Label>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] text-muted-foreground">Max Rows</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={maxRows}
+                    onChange={(e) =>
+                      dispatch({ type: 'SET_MAX_ROWS', payload: parseInt(e.target.value) || 10 })
+                    }
+                    className="h-8 text-xs w-24"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Widget Width
+              </Label>
+              <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
+                {(['auto', 'half', 'full'] as const).map((w) => (
+                  <button
+                    key={w}
+                    onClick={() => dispatch({ type: 'SET_WIDGET_WIDTH', payload: w })}
+                    className={cn(
+                      'px-3 py-1 rounded-md text-xs font-medium transition-all',
+                      widgetWidth === w
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {w === 'auto' ? 'Auto' : w === 'half' ? 'Half' : 'Full'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </ScrollArea>
 
         {error && (
           <div className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-md px-3 py-2">
@@ -272,30 +663,13 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
           </div>
         )}
 
-        <DialogFooter className="flex justify-between">
-          <div>
-            {step !== 'type' && (
-              <Button variant="ghost" onClick={handleBack}>
-                <ChevronLeft className="size-4 mr-1" />
-                Back
-              </Button>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            {step === 'config' ? (
-              <Button onClick={handleSubmit} disabled={!canProceed() || isSubmitting}>
-                {isSubmitting ? 'Adding...' : 'Add Widget'}
-              </Button>
-            ) : (
-              <Button onClick={handleNext} disabled={!canProceed()}>
-                Next
-                <ChevronRight className="size-4 ml-1" />
-              </Button>
-            )}
-          </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={!canSubmit() || isSubmitting}>
+            {isSubmitting ? 'Adding...' : 'Add Widget'}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

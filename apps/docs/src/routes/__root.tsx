@@ -7,56 +7,22 @@ import {
 import * as React from "react";
 import appCss from "@/styles/app.css?url";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
+import { generateMetaTags, DOCS_CONFIG, getOrganizationStructuredData } from "@/lib/seo";
 
 export const Route = createRootRoute({
   head: () => ({
-    meta: [
-      {
-        charSet: "utf-8",
-      },
-      {
-        name: "viewport",
-        content: "width=device-width, initial-scale=1",
-      },
-      {
-        title: "data-peek Docs",
-      },
-      {
-        name: "description",
-        content:
-          "Documentation for data-peek - A minimal, fast, lightweight SQL client for PostgreSQL and MySQL",
-      },
-      {
-        name: "theme-color",
-        content: "#0a0a0b",
-      },
-      {
-        property: "og:title",
-        content: "data-peek Documentation",
-      },
-      {
-        property: "og:description",
-        content:
-          "A minimal, fast, lightweight SQL client for PostgreSQL and MySQL",
-      },
-      {
-        property: "og:type",
-        content: "website",
-      },
-      {
-        name: "twitter:card",
-        content: "summary_large_image",
-      },
-      {
-        name: "twitter:title",
-        content: "data-peek Documentation",
-      },
-      {
-        name: "twitter:description",
-        content:
-          "A minimal, fast, lightweight SQL client for PostgreSQL and MySQL",
-      },
-    ],
+    meta: generateMetaTags({
+      title: DOCS_CONFIG.title,
+      description: DOCS_CONFIG.description,
+      keywords: [
+        'data-peek documentation',
+        'PostgreSQL client docs',
+        'MySQL client docs',
+        'SQL client documentation',
+        'database client guide',
+        'SQL editor documentation',
+      ],
+    }),
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -93,10 +59,16 @@ function RootComponent() {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const orgStructuredData = getOrganizationStructuredData();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgStructuredData) }}
+        />
       </head>
       <body className="flex flex-col min-h-screen antialiased">
         <RootProvider

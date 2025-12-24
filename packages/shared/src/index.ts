@@ -532,6 +532,8 @@ export interface ColumnInfo {
   ordinalPosition: number;
   /** Foreign key relationship (if this column references another table) */
   foreignKey?: ForeignKeyInfo;
+  /** Enum values (if this column is an enum type) */
+  enumValues?: string[];
 }
 
 /**

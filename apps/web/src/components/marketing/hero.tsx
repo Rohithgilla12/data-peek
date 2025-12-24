@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Github, Zap, Download, Sparkles } from "lucide-react";
@@ -56,8 +57,11 @@ export function Hero() {
             className="animate-fade-in-up delay-200 text-base sm:text-lg md:text-xl text-[--color-text-secondary] max-w-2xl mb-8 sm:mb-10 leading-relaxed px-2"
             style={{ fontFamily: "var(--font-body)" }}
           >
-            A lightning-fast database client with AI-powered querying.
-            PostgreSQL, MySQL, SQL Server, and SQLite. Open source, free for
+            A lightning-fast database client with AI-powered querying.{' '}
+            <Link href="/databases/postgresql" className="text-[--color-accent] hover:underline">PostgreSQL</Link>,{' '}
+            <Link href="/databases/mysql" className="text-[--color-accent] hover:underline">MySQL</Link>,{' '}
+            <Link href="/databases/sql-server" className="text-[--color-accent] hover:underline">SQL Server</Link>, and{' '}
+            <Link href="/databases/sqlite" className="text-[--color-accent] hover:underline">SQLite</Link>. Open source, free for
             personal use.
           </p>
 
@@ -123,11 +127,14 @@ export function Hero() {
 
               {/* Hero Screenshot */}
               <div className="mt-8 sm:mt-10 rounded-xl sm:rounded-2xl rounded-t-none border border-[--color-border] border-t-0 overflow-hidden shadow-2xl shadow-black/50">
-                <img
+                <Image
                   src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/hero.png"
                   alt="Data Peek - SQL client with AI-powered querying"
+                  width={1200}
+                  height={800}
                   className="w-full h-auto"
-                  loading="eager"
+                  priority
+                  quality={90}
                 />
               </div>
 

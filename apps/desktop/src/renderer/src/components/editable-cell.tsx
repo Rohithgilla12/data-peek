@@ -1,10 +1,139 @@
 import * as React from 'react'
-import { Check, X, RotateCcw, Braces } from 'lucide-react'
+import { Check, X, RotateCcw, Braces, FileText, Copy, Expand } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription
+} from '@/components/ui/sheet'
 import { cn } from '@/lib/utils'
 import { JsonCellEditor } from '@/components/json-cell-value'
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+
+/**
+ * Check if a data type is a text type that could benefit from multiline editing
+ */
+function isTextType(dataType: string): boolean {
+  const lower = dataType.toLowerCase()
+  return (
+    lower === 'text' ||
+    lower === 'longtext' ||
+    lower === 'mediumtext' ||
+    lower.startsWith('varchar') ||
+    lower.startsWith('char') ||
+    lower.startsWith('character') ||
+    lower.includes('text')
+  )
+}
+
+/**
+ * Text cell editor for multiline text editing
+ */
+function TextCellEditor({
+  value,
+  columnName,
+  onSave,
+  onCancel
+}: {
+  value: unknown
+  columnName?: string
+  onSave: (value: unknown) => void
+  onCancel: () => void
+}) {
+  const [editValue, setEditValue] = React.useState(() =>
+    value === null || value === undefined ? '' : String(value)
+  )
+  const { copied, copy } = useCopyToClipboard()
+
+  const handleSave = () => {
+    if (editValue === '') {
+      onSave(null)
+    } else {
+      onSave(editValue)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Allow Cmd/Ctrl+Enter to save
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault()
+      handleSave()
+    }
+    // Escape to cancel
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      onCancel()
+    }
+  }
+
+  return (
+    <Sheet open={true} onOpenChange={(open) => !open && onCancel()}>
+      <SheetContent side="right" className="w-[500px] sm:max-w-[500px] flex flex-col">
+        <SheetHeader className="shrink-0">
+          <SheetTitle className="flex items-center gap-2">
+            <FileText className="size-4 text-blue-500" />
+            Edit {columnName || 'Text'}
+          </SheetTitle>
+          <SheetDescription>Edit text content in the editor below</SheetDescription>
+        </SheetHeader>
+
+        <div className="flex-1 min-h-0 flex flex-col gap-3">
+          {/* Toolbar */}
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 h-7"
+              onClick={() => copy(editValue)}
+            >
+              {copied ? (
+                <>
+                  <Check className="size-3 text-green-500" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="size-3" />
+                  Copy
+                </>
+              )}
+            </Button>
+            <div className="text-xs text-muted-foreground">{editValue.length} characters</div>
+            <div className="flex-1" />
+            <Button variant="ghost" size="sm" className="h-7" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button size="sm" className="h-7 gap-1.5" onClick={handleSave}>
+              <Check className="size-3" />
+              Save
+            </Button>
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            Press <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">⌘/Ctrl + Enter</kbd> to
+            save
+          </div>
+
+          {/* Text Editor */}
+          <div className="flex-1 min-h-0 overflow-hidden bg-muted/30 rounded-lg border border-border/50">
+            <textarea
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              className="w-full h-full min-h-[300px] bg-transparent text-sm leading-relaxed resize-none focus:outline-none p-3"
+              placeholder="Enter text here..."
+              autoFocus
+            />
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
+}
 
 interface EditableCellProps {
   value: unknown
@@ -119,9 +248,14 @@ export function EditableCell({
 }: EditableCellProps) {
   const [editValue, setEditValue] = React.useState('')
   const [isJsonEditorOpen, setIsJsonEditorOpen] = React.useState(false)
+  const [isTextEditorOpen, setIsTextEditorOpen] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
 
   const isJson = dataType.toLowerCase().includes('json')
+  const isText = isTextType(dataType)
+  const valueStr = value === null || value === undefined ? '' : String(value)
+  // Open text editor for text columns with long content or multiline content
+  const shouldUseTextEditor = isText && (valueStr.length > 100 || valueStr.includes('\n'))
 
   // Initialize edit value when entering edit mode
   React.useEffect(() => {
@@ -131,11 +265,16 @@ export function EditableCell({
         setIsJsonEditorOpen(true)
         return
       }
+      // For text fields with long content, open text editor
+      if (shouldUseTextEditor) {
+        setIsTextEditorOpen(true)
+        return
+      }
       setEditValue(formatForInput(value, dataType))
       // Focus input after render
       setTimeout(() => inputRef.current?.focus(), 0)
     }
-  }, [isEditing, value, dataType, isJson])
+  }, [isEditing, value, dataType, isJson, shouldUseTextEditor])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -178,6 +317,30 @@ export function EditableCell({
             }}
             onCancel={() => {
               setIsJsonEditorOpen(false)
+              onCancel()
+            }}
+          />
+        </>
+      )
+    }
+
+    // Text editing uses a sheet editor for long/multiline content
+    if (isTextEditorOpen) {
+      return (
+        <>
+          <div className="flex items-center gap-1.5 text-blue-500">
+            <FileText className="size-3.5" />
+            <span className="text-xs">Editing...</span>
+          </div>
+          <TextCellEditor
+            value={value}
+            columnName={columnName}
+            onSave={(newValue) => {
+              setIsTextEditorOpen(false)
+              onSave(newValue)
+            }}
+            onCancel={() => {
+              setIsTextEditorOpen(false)
               onCancel()
             }}
           />
@@ -229,6 +392,29 @@ export function EditableCell({
           />
         )}
         <div className="flex items-center gap-0.5">
+          {/* Expand button for text columns */}
+          {isText && !isEnum && !isBoolean && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-6 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setIsTextEditorOpen(true)
+                  }}
+                  onMouseDown={(e) => e.preventDefault()} // Prevent blur
+                >
+                  <Expand className="size-3" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                <p className="text-xs">Expand to multiline editor</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
           <Button
             variant="ghost"
             size="icon"
