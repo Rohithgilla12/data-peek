@@ -196,12 +196,17 @@ function VirtualizedSchemaItems({
                     className="flex-1"
                   >
                     <Table2
-                      className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : 'text-muted-foreground'}`}
+                      className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : table.type === 'materialized_view' ? 'text-teal-500' : 'text-muted-foreground'}`}
                     />
                     <span className="flex-1 truncate">{table.name}</span>
                     {table.type === 'view' && (
                       <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-purple-500">
                         view
+                      </Badge>
+                    )}
+                    {table.type === 'materialized_view' && (
+                      <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-teal-500">
+                        mview
                       </Badge>
                     )}
                   </SidebarMenuSubButton>
@@ -444,6 +449,7 @@ export function SchemaExplorer() {
   // Filter toggles
   const [showTables, setShowTables] = React.useState(true)
   const [showViews, setShowViews] = React.useState(true)
+  const [showMaterializedViews, setShowMaterializedViews] = React.useState(true)
   const [showFunctions, setShowFunctions] = React.useState(false)
   const [showProcedures, setShowProcedures] = React.useState(true)
 
@@ -465,6 +471,7 @@ export function SchemaExplorer() {
           // Type filter
           if (table.type === 'table' && !showTables) return false
           if (table.type === 'view' && !showViews) return false
+          if (table.type === 'materialized_view' && !showMaterializedViews) return false
           // Search filter
           if (query && !table.name.toLowerCase().includes(query)) return false
           return true
@@ -487,7 +494,16 @@ export function SchemaExplorer() {
         }
       })
       .filter((schema) => schema.tables.length > 0 || (schema.routines?.length ?? 0) > 0)
-  }, [schemas, searchQuery, showTables, showViews, showFunctions, showProcedures, focusedSchema])
+  }, [
+    schemas,
+    searchQuery,
+    showTables,
+    showViews,
+    showMaterializedViews,
+    showFunctions,
+    showProcedures,
+    focusedSchema
+  ])
 
   // Auto-expand schemas when searching
   React.useEffect(() => {
@@ -632,7 +648,8 @@ export function SchemaExplorer() {
   }
 
   // Check if any filter is active (not all enabled)
-  const isFilterActive = !showTables || !showViews || !showFunctions || !showProcedures
+  const isFilterActive =
+    !showTables || !showViews || !showMaterializedViews || !showFunctions || !showProcedures
 
   // Clear focused schema
   const handleClearFocus = () => {
@@ -742,6 +759,14 @@ export function SchemaExplorer() {
               >
                 <Eye className="size-3.5 mr-2 text-purple-500" />
                 Views
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={showMaterializedViews}
+                onCheckedChange={setShowMaterializedViews}
+                className="text-xs"
+              >
+                <Table2 className="size-3.5 mr-2 text-teal-500" />
+                Materialized Views
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
                 checked={showFunctions}
@@ -955,7 +980,7 @@ export function SchemaExplorer() {
                                       className="flex-1"
                                     >
                                       <Table2
-                                        className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : 'text-muted-foreground'}`}
+                                        className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : table.type === 'materialized_view' ? 'text-teal-500' : 'text-muted-foreground'}`}
                                       />
                                       <span className="flex-1">{table.name}</span>
                                       {table.type === 'view' && (
@@ -964,6 +989,14 @@ export function SchemaExplorer() {
                                           className="text-[11px] px-1.5 py-0 text-purple-500"
                                         >
                                           view
+                                        </Badge>
+                                      )}
+                                      {table.type === 'materialized_view' && (
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[11px] px-1.5 py-0 text-teal-500"
+                                        >
+                                          mview
                                         </Badge>
                                       )}
                                     </SidebarMenuSubButton>

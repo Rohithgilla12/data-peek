@@ -333,6 +333,19 @@ export class PostgresAdapter implements DatabaseAdapter {
         ORDER BY table_schema, table_name
       `)
 
+      // Query 2b: Get all materialized views (not included in information_schema.tables)
+      const matViewsResult = await client.query(`
+        SELECT
+          schemaname as table_schema,
+          matviewname as table_name,
+          'MATERIALIZED VIEW' as table_type
+        FROM pg_matviews
+        WHERE schemaname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND schemaname NOT LIKE 'pg_toast_temp_%'
+          AND schemaname NOT LIKE 'pg_temp_%'
+        ORDER BY schemaname, matviewname
+      `)
+
       // Query 3: Get all columns with primary key info
       const columnsResult = await client.query(`
         SELECT
@@ -366,6 +379,32 @@ export class PostgresAdapter implements DatabaseAdapter {
           AND c.table_schema NOT LIKE 'pg_toast_temp_%'
           AND c.table_schema NOT LIKE 'pg_temp_%'
         ORDER BY c.table_schema, c.table_name, c.ordinal_position
+      `)
+
+      // Query 3b: Get columns for materialized views (from pg_attribute)
+      const matViewColumnsResult = await client.query(`
+        SELECT
+          n.nspname as table_schema,
+          c.relname as table_name,
+          a.attname as column_name,
+          pg_catalog.format_type(a.atttypid, a.atttypmod) as data_type,
+          t.typname as udt_name,
+          NOT a.attnotnull as is_nullable,
+          pg_get_expr(d.adbin, d.adrelid) as column_default,
+          a.attnum as ordinal_position,
+          false as is_primary_key
+        FROM pg_catalog.pg_attribute a
+        JOIN pg_catalog.pg_class c ON a.attrelid = c.oid
+        JOIN pg_catalog.pg_namespace n ON c.relnamespace = n.oid
+        JOIN pg_catalog.pg_type t ON a.atttypid = t.oid
+        LEFT JOIN pg_catalog.pg_attrdef d ON (a.attrelid, a.attnum) = (d.adrelid, d.adnum)
+        WHERE c.relkind = 'm'  -- 'm' = materialized view
+          AND a.attnum > 0
+          AND NOT a.attisdropped
+          AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND n.nspname NOT LIKE 'pg_toast_temp_%'
+          AND n.nspname NOT LIKE 'pg_temp_%'
+        ORDER BY n.nspname, c.relname, a.attnum
       `)
 
       // Query 4: Get all foreign key relationships
@@ -540,6 +579,29 @@ export class PostgresAdapter implements DatabaseAdapter {
         }
       }
 
+      // Add materialized views to the tables map
+      for (const row of matViewsResult.rows) {
+        const tableKey = `${row.table_schema}.${row.table_name}`
+        const table: TableInfo = {
+          name: row.table_name,
+          type: 'materialized_view',
+          columns: []
+        }
+        tableMap.set(tableKey, table)
+
+        // Add to schema (create schema if it doesn't exist)
+        let schema = schemaMap.get(row.table_schema)
+        if (!schema) {
+          schema = {
+            name: row.table_schema,
+            tables: [],
+            routines: []
+          }
+          schemaMap.set(row.table_schema, schema)
+        }
+        schema.tables.push(table)
+      }
+
       // Assign columns to tables
       for (const row of columnsResult.rows) {
         const tableKey = `${row.table_schema}.${row.table_name}`
@@ -570,6 +632,23 @@ export class PostgresAdapter implements DatabaseAdapter {
             ordinalPosition: row.ordinal_position,
             foreignKey,
             enumValues
+          }
+          table.columns.push(column)
+        }
+      }
+
+      // Assign columns to materialized views
+      for (const row of matViewColumnsResult.rows) {
+        const tableKey = `${row.table_schema}.${row.table_name}`
+        const table = tableMap.get(tableKey)
+        if (table) {
+          const column: ColumnInfo = {
+            name: row.column_name,
+            dataType: row.data_type,
+            isNullable: row.is_nullable === true,
+            isPrimaryKey: false, // Materialized views don't have primary keys
+            defaultValue: row.column_default || undefined,
+            ordinalPosition: row.ordinal_position
           }
           table.columns.push(column)
         }

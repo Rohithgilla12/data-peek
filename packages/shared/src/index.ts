@@ -541,7 +541,7 @@ export interface ColumnInfo {
  */
 export interface TableInfo {
   name: string;
-  type: "table" | "view";
+  type: "table" | "view" | "materialized_view";
   columns: ColumnInfo[];
   /** Estimated row count (if available) */
   estimatedRowCount?: number;

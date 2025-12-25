@@ -6,6 +6,13 @@ import { getWindowState, trackWindowState } from './window-state'
 import { setupContextMenu } from './context-menu'
 import { shouldForceQuit } from './app-state'
 
+// Lazy import to avoid circular dependency (menu.ts imports windowManager)
+const scheduleMenuUpdate = (): void => {
+  setImmediate(() => {
+    import('./menu').then(({ updateMenu }) => updateMenu())
+  })
+}
+
 // Cascade offset for new windows
 const CASCADE_OFFSET = 30
 
@@ -70,6 +77,12 @@ class WindowManager {
 
     window.on('ready-to-show', () => {
       window.show()
+      scheduleMenuUpdate()
+    })
+
+    // Update menu when window gains focus (to update checkmarks)
+    window.on('focus', () => {
+      scheduleMenuUpdate()
     })
 
     // macOS: hide instead of close for last window
@@ -91,6 +104,7 @@ class WindowManager {
       if (this.windows.size === 0) {
         this.lastWindowPosition = null
       }
+      scheduleMenuUpdate()
     })
 
     window.webContents.setWindowOpenHandler((details) => {
