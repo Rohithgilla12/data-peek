@@ -170,7 +170,10 @@ export function Snippets() {
                             </div>
                           </SidebarMenuButton>
                         </TooltipTrigger>
-                        <TooltipContent side="right" className="max-w-md p-0 overflow-hidden bg-popover">
+                        <TooltipContent
+                          side="right"
+                          className="max-w-md p-0 overflow-hidden bg-popover"
+                        >
                           <div className="space-y-0">
                             <div className="px-3 py-2 border-b border-border bg-muted/50">
                               <p className="text-xs font-medium leading-relaxed text-popover-foreground">

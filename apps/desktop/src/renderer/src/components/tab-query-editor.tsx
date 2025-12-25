@@ -4,6 +4,7 @@ import {
   Download,
   FileJson,
   FileSpreadsheet,
+  FileCode2,
   Loader2,
   AlertCircle,
   Database,
@@ -55,7 +56,7 @@ import type { EditContext } from '@data-peek/shared'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { keys } from '@/lib/utils'
-import { downloadCSV, downloadJSON, generateExportFilename } from '@/lib/export'
+import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
 import { buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -1393,6 +1394,22 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                         >
                           <FileJson className="size-4 text-muted-foreground" />
                           Export as JSON
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            if (!tab.result) return
+                            const filename = generateExportFilename(
+                              tab.type === 'table-preview' ? tab.tableName : undefined
+                            )
+                            downloadSQL(tab.result, filename, {
+                              tableName:
+                                tab.type === 'table-preview' ? tab.tableName! : 'query_result',
+                              schemaName: tab.type === 'table-preview' ? tab.schemaName : undefined
+                            })
+                          }}
+                        >
+                          <FileCode2 className="size-4 text-muted-foreground" />
+                          Export as SQL
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

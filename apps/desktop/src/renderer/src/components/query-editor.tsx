@@ -4,6 +4,7 @@ import {
   Download,
   FileJson,
   FileSpreadsheet,
+  FileCode2,
   Loader2,
   AlertCircle,
   Database,
@@ -198,6 +199,10 @@ export function QueryEditor() {
                     <DropdownMenuItem>
                       <FileJson className="size-4 text-muted-foreground" />
                       Export as JSON
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <FileCode2 className="size-4 text-muted-foreground" />
+                      Export as SQL
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

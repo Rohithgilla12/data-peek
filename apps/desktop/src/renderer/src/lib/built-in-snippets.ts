@@ -28,8 +28,7 @@ export const BUILT_IN_SNIPPETS: Snippet[] = [
     id: 'builtin-select-where',
     name: 'SELECT with WHERE',
     description: 'Select with a WHERE clause',
-    template:
-      'SELECT *\nFROM ${1:table_name}\nWHERE ${2:column} = ${3:value}\nLIMIT ${4:100};',
+    template: 'SELECT *\nFROM ${1:table_name}\nWHERE ${2:column} = ${3:value}\nLIMIT ${4:100};',
     category: 'select',
     isBuiltIn: true,
     triggerPrefix: 'selw',
