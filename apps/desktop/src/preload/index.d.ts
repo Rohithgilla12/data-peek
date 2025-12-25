@@ -31,7 +31,8 @@ import type {
   UpdateDashboardInput,
   CreateWidgetInput,
   UpdateWidgetInput,
-  WidgetLayout
+  WidgetLayout,
+  Snippet
 } from '@shared/index'
 
 // AI Types
@@ -245,6 +246,12 @@ interface DataPeekApi {
     delete: (id: string) => Promise<IpcResponse<void>>
     incrementUsage: (id: string) => Promise<IpcResponse<SavedQuery>>
     onOpenDialog: (callback: () => void) => () => void
+  }
+  snippets: {
+    list: () => Promise<IpcResponse<Snippet[]>>
+    add: (snippet: Snippet) => Promise<IpcResponse<Snippet>>
+    update: (id: string, updates: Partial<Snippet>) => Promise<IpcResponse<Snippet>>
+    delete: (id: string) => Promise<IpcResponse<void>>
   }
   scheduledQueries: {
     list: () => Promise<IpcResponse<ScheduledQuery[]>>

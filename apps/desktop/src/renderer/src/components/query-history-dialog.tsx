@@ -26,62 +26,20 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useQueryStore, useConnectionStore, useTabStore } from '@/stores'
 import { cn } from '@/lib/utils'
+import {
+  filterHistory,
+  formatRelativeTime,
+  getQueryType,
+  getQueryTypeColor,
+  groupHistoryByDate,
+  type FilterStatus,
+  type FilterType
+} from '@/lib/query-history-utils'
 
 interface QueryHistoryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
-
-function formatRelativeTime(date: Date): string {
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / (1000 * 60))
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return date.toLocaleDateString()
-}
-
-function getQueryType(query: string): string {
-  const normalized = query.trim().toUpperCase()
-  if (normalized.startsWith('SELECT')) return 'SELECT'
-  if (normalized.startsWith('INSERT')) return 'INSERT'
-  if (normalized.startsWith('UPDATE')) return 'UPDATE'
-  if (normalized.startsWith('DELETE')) return 'DELETE'
-  if (normalized.startsWith('CREATE')) return 'CREATE'
-  if (normalized.startsWith('ALTER')) return 'ALTER'
-  if (normalized.startsWith('DROP')) return 'DROP'
-  if (normalized.startsWith('EXPLAIN')) return 'EXPLAIN'
-  return 'SQL'
-}
-
-function getQueryTypeColor(type: string): string {
-  switch (type) {
-    case 'SELECT':
-      return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
-    case 'INSERT':
-      return 'bg-green-500/10 text-green-500 border-green-500/20'
-    case 'UPDATE':
-      return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
-    case 'DELETE':
-      return 'bg-red-500/10 text-red-500 border-red-500/20'
-    case 'CREATE':
-    case 'ALTER':
-    case 'DROP':
-      return 'bg-purple-500/10 text-purple-500 border-purple-500/20'
-    case 'EXPLAIN':
-      return 'bg-orange-500/10 text-orange-500 border-orange-500/20'
-    default:
-      return 'bg-muted text-muted-foreground border-border'
-  }
-}
-
-type FilterStatus = 'all' | 'success' | 'error'
-type FilterType = 'all' | 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'DDL'
 
 export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogProps) {
   const history = useQueryStore((s) => s.history)
@@ -97,72 +55,20 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
   const [filterType, setFilterType] = useState<FilterType>('all')
   const [selectedConnection, setSelectedConnection] = useState<string>('all')
 
-  // Filter history
   const filteredHistory = useMemo(() => {
-    return history.filter((item) => {
-      // Search filter
-      if (searchQuery && !item.query.toLowerCase().includes(searchQuery.toLowerCase())) {
-        return false
-      }
-
-      // Status filter
-      if (filterStatus !== 'all' && item.status !== filterStatus) {
-        return false
-      }
-
-      // Type filter
-      if (filterType !== 'all') {
-        const queryType = getQueryType(item.query)
-        if (filterType === 'DDL') {
-          if (!['CREATE', 'ALTER', 'DROP'].includes(queryType)) return false
-        } else if (queryType !== filterType) {
-          return false
-        }
-      }
-
-      // Connection filter
-      if (selectedConnection !== 'all' && item.connectionId !== selectedConnection) {
-        return false
-      }
-
-      return true
+    return filterHistory(history, {
+      searchQuery,
+      filterStatus,
+      filterType,
+      connectionId: selectedConnection
     })
   }, [history, searchQuery, filterStatus, filterType, selectedConnection])
 
-  // Group by date
   const groupedHistory = useMemo(() => {
-    const groups: { label: string; items: typeof history }[] = []
-    const today = new Date()
-    const yesterday = new Date(today)
-    yesterday.setDate(yesterday.getDate() - 1)
-
-    const todayItems = filteredHistory.filter((item) => {
-      const itemDate = new Date(item.timestamp)
-      return itemDate.toDateString() === today.toDateString()
-    })
-
-    const yesterdayItems = filteredHistory.filter((item) => {
-      const itemDate = new Date(item.timestamp)
-      return itemDate.toDateString() === yesterday.toDateString()
-    })
-
-    const olderItems = filteredHistory.filter((item) => {
-      const itemDate = new Date(item.timestamp)
-      return (
-        itemDate.toDateString() !== today.toDateString() &&
-        itemDate.toDateString() !== yesterday.toDateString()
-      )
-    })
-
-    if (todayItems.length > 0) groups.push({ label: 'Today', items: todayItems })
-    if (yesterdayItems.length > 0) groups.push({ label: 'Yesterday', items: yesterdayItems })
-    if (olderItems.length > 0) groups.push({ label: 'Older', items: olderItems })
-
-    return groups
+    return groupHistoryByDate(filteredHistory)
   }, [filteredHistory])
 
   const handleRunQuery = (query: string, connectionId: string) => {
-    // Find or use active connection
     const targetConnectionId = connectionId || activeConnectionId
     if (!targetConnectionId) return
 
@@ -193,7 +99,6 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
           </DialogTitle>
         </DialogHeader>
 
-        {/* Search and Filters */}
         <div className="px-4 py-3 border-b space-y-3 shrink-0">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -281,7 +186,6 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
           </div>
         </div>
 
-        {/* History List */}
         <ScrollArea className="flex-1">
           <div className="p-4 space-y-6">
             {groupedHistory.length === 0 ? (
@@ -322,7 +226,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                                 <Badge
                                   variant="outline"
-                                  className={cn('text-[10px]', getQueryTypeColor(queryType))}
+                                  className={cn('text-[10px]', getQueryTypeColor(queryType, true))}
                                 >
                                   {queryType}
                                 </Badge>

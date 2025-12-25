@@ -1153,6 +1153,43 @@ export interface SavedQuery {
   updatedAt: number;
 }
 
+/**
+ * Category for SQL snippets
+ */
+export type SnippetCategory =
+  | "select"
+  | "insert"
+  | "update"
+  | "delete"
+  | "ddl"
+  | "aggregate"
+  | "join"
+  | "other";
+
+/**
+ * A reusable SQL snippet/template
+ */
+export interface Snippet {
+  /** Unique identifier */
+  id: string;
+  /** Display name for the snippet */
+  name: string;
+  /** Description of what the snippet does */
+  description: string;
+  /** SQL template with Monaco placeholders: ${1:table}, $2, etc. */
+  template: string;
+  /** Category for organization */
+  category: SnippetCategory;
+  /** Whether this is a built-in snippet (cannot be deleted) */
+  isBuiltIn: boolean;
+  /** Optional trigger prefix for autocomplete (e.g., "sel" for SELECT) */
+  triggerPrefix?: string;
+  /** When the snippet was created (Unix timestamp) */
+  createdAt: number;
+  /** When the snippet was last updated (Unix timestamp) */
+  updatedAt: number;
+}
+
 export type SSHAuthenticationMethod = "Password" | "Public Key";
 
 /**

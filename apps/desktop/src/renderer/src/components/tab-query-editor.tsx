@@ -36,6 +36,7 @@ import {
   useSettingsStore,
   useTabTelemetry,
   useTabPerfIndicator,
+  useSnippetStore,
   notify
 } from '@/stores'
 import type { Tab, MultiQueryResult } from '@/stores/tab-store'
@@ -93,6 +94,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const addToHistory = useQueryStore((s) => s.addToHistory)
   const hideQueryEditorByDefault = useSettingsStore((s) => s.hideQueryEditorByDefault)
   const queryTimeoutMs = useSettingsStore((s) => s.queryTimeoutMs)
+  const getAllSnippets = useSnippetStore((s) => s.getAllSnippets)
+  const initializeSnippets = useSnippetStore((s) => s.initializeSnippets)
+  const allSnippets = getAllSnippets()
+
+  // Initialize snippets on mount
+  useEffect(() => {
+    initializeSnippets()
+  }, [initializeSnippets])
 
   // Telemetry state
   const {
@@ -932,6 +941,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               height={isResultsCollapsed ? '100%' : 160}
               placeholder="SELECT * FROM your_table LIMIT 100;"
               schemas={schemas}
+              snippets={allSnippets}
             />
           </div>
         )}

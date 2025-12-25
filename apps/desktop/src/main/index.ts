@@ -5,7 +5,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 
 // Load .env file - in development, it's in the desktop app directory
 config({ path: resolve(__dirname, '../../.env') })
-import type { ConnectionConfig, SavedQuery } from '@shared/index'
+import type { ConnectionConfig, SavedQuery, Snippet } from '@shared/index'
 import { createMenu } from './menu'
 import { initLicenseStore } from './license-service'
 import { initAIStore } from './ai-service'
@@ -21,6 +21,7 @@ import { initDashboardService } from './dashboard-service'
 // Store instances
 let store: DpStorage<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
+let snippetsStore: DpStorage<{ snippets: Snippet[] }>
 
 /**
  * Initialize all persistent stores
@@ -37,6 +38,13 @@ async function initStores(): Promise<void> {
     name: 'data-peek-saved-queries',
     defaults: {
       savedQueries: []
+    }
+  })
+
+  snippetsStore = await DpStorage.create<{ snippets: Snippet[] }>({
+    name: 'data-peek-snippets',
+    defaults: {
+      snippets: []
     }
   })
 
@@ -80,7 +88,8 @@ app.whenReady().then(async () => {
   // Register all IPC handlers
   registerAllHandlers({
     connections: store,
-    savedQueries: savedQueriesStore
+    savedQueries: savedQueriesStore,
+    snippets: snippetsStore
   })
 
   // Create initial window
