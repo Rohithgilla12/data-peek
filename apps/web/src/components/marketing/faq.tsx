@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
+import { StructuredData } from '@/components/seo/structured-data'
 
 const faqs = [
   {
@@ -78,6 +79,7 @@ export function FAQ() {
 
   return (
     <section id="faq" className="relative py-20 sm:py-32 overflow-hidden">
+      <StructuredData type="faq" data={{ faq: faqs }} />
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[--color-surface]/30 to-transparent" />
 

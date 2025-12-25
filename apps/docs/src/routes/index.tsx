@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
 import { baseOptions } from "@/lib/layout.shared";
+import { generateMetaTags, DOCS_CONFIG } from "@/lib/seo";
 import {
   Book,
   ChevronRight,
@@ -12,6 +13,20 @@ import {
 
 export const Route = createFileRoute("/")({
   component: Home,
+  head: () => ({
+    meta: generateMetaTags({
+      title: DOCS_CONFIG.title,
+      description: DOCS_CONFIG.description,
+      keywords: [
+        'data-peek documentation',
+        'PostgreSQL client docs',
+        'MySQL client docs',
+        'SQL client documentation',
+        'database client guide',
+        'SQL editor documentation',
+      ],
+    }),
+  }),
 });
 
 function Icon({

@@ -1,10 +1,17 @@
+import { Metadata } from 'next'
 import { Header } from '@/components/marketing/header'
 import { Footer } from '@/components/marketing/footer'
+import { Breadcrumbs } from '@/components/seo/breadcrumbs'
+import { generateMetadata as generateSeoMetadata } from '@/lib/seo'
 
-export const metadata = {
-  title: 'Privacy Policy | data-peek',
-  description: 'Privacy policy for data-peek desktop application',
-}
+export const metadata: Metadata = generateSeoMetadata({
+  title: 'Privacy Policy',
+  description:
+    'Privacy policy for data-peek. Learn how we protect your data, handle database credentials, and respect your privacy. No telemetry, no tracking.',
+  keywords: ['privacy policy', 'data protection', 'privacy', 'data security'],
+  path: '/privacy',
+  noindex: true,
+})
 
 export default function PrivacyPage() {
   return (
@@ -13,6 +20,7 @@ export default function PrivacyPage() {
 
       <main className="pt-24 sm:pt-32 pb-16 sm:pb-20">
         <article className="max-w-3xl mx-auto px-4 sm:px-6">
+          <Breadcrumbs items={[{ label: 'Privacy Policy', href: '/privacy' }]} />
           <h1
             className="text-3xl sm:text-4xl font-semibold tracking-tight mb-4"
             style={{ fontFamily: 'var(--font-display)' }}

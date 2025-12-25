@@ -14,7 +14,7 @@ export function Pricing() {
   return (
     <section id="pricing" className="relative py-20 sm:py-32 overflow-x-hidden">
       {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[--color-surface]/50 to-transparent" />
+      <div className="absolute inset-0 bg-linear-to-b from-transparent via-[--color-surface]/50 to-transparent" />
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
         {/* Section Header */}

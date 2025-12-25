@@ -6,9 +6,12 @@ import rehypePrettyCode from 'rehype-pretty-code'
 import remarkGfm from 'remark-gfm'
 import { Header } from '@/components/marketing/header'
 import { Footer } from '@/components/marketing/footer'
+import { Breadcrumbs } from '@/components/seo/breadcrumbs'
+import { StructuredData } from '@/components/seo/structured-data'
 import { getBlogPost, getAllBlogSlugs } from '@/lib/blog'
 import { mdxComponents } from '@/components/blog/mdx-components'
 import { ReadingProgress } from '@/components/blog/reading-progress'
+import { generateMetadata as generateSeoMetadata, SITE_CONFIG } from '@/lib/seo'
 import { ArrowLeft, Calendar, Clock, User } from 'lucide-react'
 
 interface BlogPostPageProps {
@@ -30,23 +33,16 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
     }
   }
 
-  return {
-    title: `${post.title} | data-peek Blog`,
+  return generateSeoMetadata({
+    title: post.title,
     description: post.description,
-    openGraph: {
-      title: post.title,
-      description: post.description,
-      type: 'article',
-      publishedTime: post.date,
-      authors: [post.author],
-      tags: post.tags,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post.title,
-      description: post.description,
-    },
-  }
+    path: `/blog/${slug}`,
+    keywords: post.tags,
+    type: 'article',
+    publishedTime: post.date,
+    authors: [post.author],
+    tags: post.tags,
+  })
 }
 
 function formatDate(dateString: string): string {
@@ -66,12 +62,32 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     notFound()
   }
 
+  const postUrl = `${SITE_CONFIG.url}/blog/${slug}`
+
   return (
     <div className="min-h-screen">
       <ReadingProgress />
       <Header />
+      <StructuredData
+        type="article"
+        data={{
+          article: {
+            title: post.title,
+            description: post.description,
+            publishedTime: post.date,
+            author: post.author,
+            url: postUrl,
+          },
+        }}
+      />
       <main className="pt-20 md:pt-24">
         <div className="max-w-4xl mx-auto px-6 pt-8">
+          <Breadcrumbs
+            items={[
+              { label: 'Blog', href: '/blog' },
+              { label: post.title, href: `/blog/${slug}` },
+            ]}
+          />
           <Link
             href="/blog"
             className="group inline-flex items-center gap-2 text-sm text-[--color-text-muted] hover:text-[--color-accent] transition-colors"

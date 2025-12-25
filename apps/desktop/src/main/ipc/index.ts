@@ -1,10 +1,11 @@
-import type { ConnectionConfig, SavedQuery } from '@shared/index'
+import type { ConnectionConfig, SavedQuery, Snippet } from '@shared/index'
 import type { DpStorage } from '../storage'
 import { registerConnectionHandlers } from './connection-handlers'
 import { registerQueryHandlers } from './query-handlers'
 import { registerDDLHandlers } from './ddl-handlers'
 import { registerLicenseHandlers } from './license-handlers'
 import { registerSavedQueriesHandlers } from './saved-queries-handlers'
+import { registerSnippetHandlers } from './snippet-handlers'
 import { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
 import { registerDashboardHandlers } from './dashboard-handlers'
 import { registerAIHandlers } from './ai-handlers'
@@ -17,6 +18,7 @@ const log = createLogger('ipc')
 export interface IpcStores {
   connections: DpStorage<{ connections: ConnectionConfig[] }>
   savedQueries: DpStorage<{ savedQueries: SavedQuery[] }>
+  snippets: DpStorage<{ snippets: Snippet[] }>
 }
 
 /**
@@ -39,6 +41,9 @@ export function registerAllHandlers(stores: IpcStores): void {
 
   // Saved queries management
   registerSavedQueriesHandlers(stores.savedQueries)
+
+  // Snippets management
+  registerSnippetHandlers(stores.snippets)
 
   // Scheduled queries management
   registerScheduledQueriesHandlers()
@@ -64,6 +69,7 @@ export { registerQueryHandlers } from './query-handlers'
 export { registerDDLHandlers } from './ddl-handlers'
 export { registerLicenseHandlers } from './license-handlers'
 export { registerSavedQueriesHandlers } from './saved-queries-handlers'
+export { registerSnippetHandlers } from './snippet-handlers'
 export { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
 export { registerDashboardHandlers } from './dashboard-handlers'
 export { registerAIHandlers } from './ai-handlers'

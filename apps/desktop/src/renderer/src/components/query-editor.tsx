@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Play,
   Download,
@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { useQueryStore, useConnectionStore } from '@/stores'
+import { useQueryStore, useConnectionStore, useSnippetStore } from '@/stores'
 import { DataTable } from '@/components/data-table'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
@@ -31,8 +31,15 @@ export function QueryEditor() {
   const { currentQuery, isExecuting, result, error } = useQueryStore()
   const setCurrentQuery = useQueryStore((s) => s.setCurrentQuery)
   const executeQuery = useQueryStore((s) => s.executeQuery)
+  const getAllSnippets = useSnippetStore((s) => s.getAllSnippets)
+  const initializeSnippets = useSnippetStore((s) => s.initializeSnippets)
+  const allSnippets = getAllSnippets()
 
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+
+  useEffect(() => {
+    initializeSnippets()
+  }, [initializeSnippets])
 
   const handleRunQuery = () => {
     console.log('[QueryEditor] handleRunQuery called')
@@ -86,6 +93,7 @@ export function QueryEditor() {
             height={160}
             placeholder="SELECT * FROM your_table LIMIT 100;"
             schemas={schemas}
+            snippets={allSnippets}
           />
         </div>
 

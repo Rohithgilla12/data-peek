@@ -1,7 +1,8 @@
-import { useState } from 'react'
-import { ChevronRight, Clock, Copy, MoreHorizontal, Play, Trash2 } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import { ChevronRight, Clock, Copy, MoreHorizontal, Play, Trash2, Search, X } from 'lucide-react'
 
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   DropdownMenu,
@@ -24,57 +25,13 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useQueryStore, useConnectionStore, useTabStore } from '@/stores'
 import { QueryHistoryDialog } from './query-history-dialog'
-
-function formatRelativeTime(date: Date): string {
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / (1000 * 60))
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
-
-  if (diffMins < 1) return 'just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return date.toLocaleDateString()
-}
-
-function truncateQuery(query: string, maxLength: number = 40): string {
-  const normalized = query.replace(/\s+/g, ' ').trim()
-  if (normalized.length <= maxLength) return normalized
-  return normalized.substring(0, maxLength) + '...'
-}
-
-function getQueryType(query: string): string {
-  const normalized = query.trim().toUpperCase()
-  if (normalized.startsWith('SELECT')) return 'SELECT'
-  if (normalized.startsWith('INSERT')) return 'INSERT'
-  if (normalized.startsWith('UPDATE')) return 'UPDATE'
-  if (normalized.startsWith('DELETE')) return 'DELETE'
-  if (normalized.startsWith('CREATE')) return 'CREATE'
-  if (normalized.startsWith('ALTER')) return 'ALTER'
-  if (normalized.startsWith('DROP')) return 'DROP'
-  return 'SQL'
-}
-
-function getQueryTypeColor(type: string): string {
-  switch (type) {
-    case 'SELECT':
-      return 'bg-blue-500/10 text-blue-500'
-    case 'INSERT':
-      return 'bg-green-500/10 text-green-500'
-    case 'UPDATE':
-      return 'bg-yellow-500/10 text-yellow-500'
-    case 'DELETE':
-      return 'bg-red-500/10 text-red-500'
-    case 'CREATE':
-    case 'ALTER':
-    case 'DROP':
-      return 'bg-purple-500/10 text-purple-500'
-    default:
-      return 'bg-muted text-muted-foreground'
-  }
-}
+import {
+  filterHistory,
+  formatRelativeTime,
+  truncateQuery,
+  getQueryType,
+  getQueryTypeColor
+} from '@/lib/query-history-utils'
 
 export function QueryHistory() {
   const { isMobile } = useSidebar()
@@ -88,15 +45,30 @@ export function QueryHistory() {
   const createQueryTab = useTabStore((s) => s.createQueryTab)
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // Filter history by active connection
-  const filteredHistory = activeConnectionId
-    ? history.filter((h) => h.connectionId === activeConnectionId || !h.connectionId)
-    : history
+  const filteredHistory = useMemo(() => {
+    const connectionFiltered = activeConnectionId
+      ? history.filter((h) => h.connectionId === activeConnectionId || !h.connectionId)
+      : history
+
+    if (!searchQuery.trim()) {
+      return connectionFiltered
+    }
+
+    return filterHistory(connectionFiltered, {
+      searchQuery,
+      filterStatus: 'all',
+      filterType: 'all',
+      connectionId: null
+    })
+  }, [history, activeConnectionId, searchQuery])
+
+  const displayLimit = searchQuery.trim() ? 20 : 10
+  const displayedHistory = filteredHistory.slice(0, displayLimit)
 
   const handleQueryClick = (query: string) => {
     const activeTab = getActiveTab()
-    // If there's an active query/table-preview tab, update it
     if (
       activeTabId &&
       activeTab &&
@@ -104,7 +76,6 @@ export function QueryHistory() {
     ) {
       updateTabQuery(activeTabId, query)
     } else if (activeConnectionId) {
-      // Otherwise create a new tab with the query
       createQueryTab(activeConnectionId, query)
     }
   }
@@ -136,13 +107,38 @@ export function QueryHistory() {
         </SidebarGroupLabel>
         <CollapsibleContent>
           <SidebarGroupContent>
+            <div className="px-2 pb-2">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Search history..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-7 pl-7 pr-7 text-xs"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 size-4 flex items-center justify-center text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             <SidebarMenu>
-              {filteredHistory.length === 0 ? (
+              {displayedHistory.length === 0 ? (
                 <div className="px-2 py-4 text-xs text-muted-foreground text-center">
-                  {activeConnectionId ? 'No queries yet' : 'Select a connection'}
+                  {searchQuery
+                    ? 'No matching queries'
+                    : activeConnectionId
+                      ? 'No queries yet'
+                      : 'Select a connection'}
                 </div>
               ) : (
-                filteredHistory.slice(0, 10).map((item) => {
+                displayedHistory.map((item) => {
                   const queryType = getQueryType(item.query)
                   return (
                     <SidebarMenuItem key={item.id}>
@@ -225,14 +221,14 @@ export function QueryHistory() {
                   )
                 })
               )}
-              {filteredHistory.length > 10 && (
+              {filteredHistory.length > displayLimit && (
                 <SidebarMenuItem>
                   <SidebarMenuButton
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsHistoryDialogOpen(true)}
                   >
                     <MoreHorizontal />
-                    <span>View all history ({filteredHistory.length})</span>
+                    <span>View all ({filteredHistory.length})</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
