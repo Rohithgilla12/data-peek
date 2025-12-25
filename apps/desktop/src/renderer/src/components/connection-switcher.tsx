@@ -82,19 +82,23 @@ export function ConnectionSwitcher() {
 
   const handleDuplicateConnection = async (e: React.MouseEvent, connection: Connection) => {
     e.stopPropagation()
-    // Create a duplicate with a new ID and modified name
-    const duplicatedConnection = {
-      ...connection,
-      id: crypto.randomUUID(),
-      name: `${connection.name} (copy)`,
-      isConnected: false,
-      isConnecting: false
-    }
+    try {
+      const duplicatedConnection = {
+        ...connection,
+        id: crypto.randomUUID(),
+        name: `${connection.name} (copy)`,
+        isConnected: false,
+        isConnecting: false
+      }
 
-    // Save to persistent storage
-    const result = await window.api.connections.add(duplicatedConnection)
-    if (result.success && result.data) {
-      addConnection(result.data)
+      const result = await window.api.connections.add(duplicatedConnection)
+      if (result.success && result.data) {
+        addConnection(result.data)
+      } else {
+        console.error('Failed to duplicate connection:', result.error)
+      }
+    } catch (error) {
+      console.error('Error duplicating connection:', error)
     }
   }
 

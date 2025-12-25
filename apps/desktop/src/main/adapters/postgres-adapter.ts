@@ -644,8 +644,8 @@ export class PostgresAdapter implements DatabaseAdapter {
         if (table) {
           const column: ColumnInfo = {
             name: row.column_name,
-            dataType: row.udt_name || row.data_type,
-            isNullable: row.is_nullable === true || row.is_nullable === 'YES',
+            dataType: row.data_type,
+            isNullable: row.is_nullable === true,
             isPrimaryKey: false, // Materialized views don't have primary keys
             defaultValue: row.column_default || undefined,
             ordinalPosition: row.ordinal_position
