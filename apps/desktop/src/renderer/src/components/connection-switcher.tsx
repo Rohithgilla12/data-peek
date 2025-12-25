@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, Plus, Settings, Loader2, Pencil, Trash2, Archive } from 'lucide-react'
+import { ChevronDown, Plus, Settings, Loader2, Pencil, Trash2, Archive, Copy } from 'lucide-react'
 
 import {
   DropdownMenu,
@@ -35,6 +35,7 @@ export function ConnectionSwitcher() {
   const setConnectionStatus = useConnectionStore((s) => s.setConnectionStatus)
   const initializeConnections = useConnectionStore((s) => s.initializeConnections)
   const removeConnection = useConnectionStore((s) => s.removeConnection)
+  const addConnection = useConnectionStore((s) => s.addConnection)
   const isInitialized = useConnectionStore((s) => s.isInitialized)
   const setupConnectionSync = useConnectionStore((s) => s.setupConnectionSync)
 
@@ -84,6 +85,28 @@ export function ConnectionSwitcher() {
   const handleBackupConnection = (e: React.MouseEvent, connection: Connection) => {
     e.stopPropagation()
     setBackupConnection(connection)
+  }
+
+  const handleDuplicateConnection = async (e: React.MouseEvent, connection: Connection) => {
+    e.stopPropagation()
+    try {
+      const duplicatedConnection = {
+        ...connection,
+        id: crypto.randomUUID(),
+        name: `${connection.name} (copy)`,
+        isConnected: false,
+        isConnecting: false
+      }
+
+      const result = await window.api.connections.add(duplicatedConnection)
+      if (result.success && result.data) {
+        addConnection(result.data)
+      } else {
+        console.error('Failed to duplicate connection:', result.error)
+      }
+    } catch (error) {
+      console.error('Error duplicating connection:', error)
+    }
   }
 
   const confirmDelete = async () => {
@@ -192,6 +215,13 @@ export function ConnectionSwitcher() {
                     title="Backup / Restore"
                   >
                     <Archive className="size-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => handleDuplicateConnection(e, connection)}
+                    className="p-1 hover:bg-muted rounded"
+                    title="Duplicate connection"
+                  >
+                    <Copy className="size-3.5" />
                   </button>
                   <button
                     onClick={(e) => handleEditConnection(e, connection)}

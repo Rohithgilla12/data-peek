@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   GripVertical,
   MoreHorizontal,
@@ -22,6 +23,7 @@ import type { Widget, ChartWidgetConfig, KPIWidgetConfig, TableWidgetConfig } fr
 import { WidgetChart } from './widget-chart'
 import { WidgetKPI } from './widget-kpi'
 import { WidgetTable } from './widget-table'
+import { EditWidgetDialog } from './edit-widget-dialog'
 
 interface WidgetCardProps {
   widget: Widget
@@ -43,6 +45,8 @@ export function WidgetCard({ widget, dashboardId, editMode }: WidgetCardProps) {
   const refreshWidget = useDashboardStore((s) => s.refreshWidget)
   const deleteWidget = useDashboardStore((s) => s.deleteWidget)
   const updateWidget = useDashboardStore((s) => s.updateWidget)
+
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   const isFullWidth = widget.layout.w === 12
 
@@ -114,7 +118,7 @@ export function WidgetCard({ widget, dashboardId, editMode }: WidgetCardProps) {
                   </>
                 )}
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
                 <Settings className="mr-2 size-4" />
                 Configure
               </DropdownMenuItem>
@@ -130,6 +134,14 @@ export function WidgetCard({ widget, dashboardId, editMode }: WidgetCardProps) {
       <CardContent className="flex-1 pt-0 min-h-0 overflow-hidden">
         <WidgetContent widget={widget} data={widgetData} isLoading={isLoading} />
       </CardContent>
+
+      {/* Edit Widget Dialog */}
+      <EditWidgetDialog
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
+        dashboardId={dashboardId}
+        widget={widget}
+      />
     </Card>
   )
 }

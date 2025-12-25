@@ -86,7 +86,15 @@ export function DashboardView() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      const target = e.target as HTMLElement
+      const isInputFocused =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target.isContentEditable ||
+        target.closest('[role="dialog"]') !== null ||
+        target.closest('.monaco-editor') !== null
+
+      if (isInputFocused) {
         return
       }
 

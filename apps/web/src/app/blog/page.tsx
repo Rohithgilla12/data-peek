@@ -2,20 +2,25 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { Header } from '@/components/marketing/header'
 import { Footer } from '@/components/marketing/footer'
+import { Breadcrumbs } from '@/components/seo/breadcrumbs'
 import { getBlogPosts } from '@/lib/blog'
 import { ArrowRight, Calendar, Clock, Terminal, Zap } from 'lucide-react'
+import { generateMetadata as generateSeoMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: 'Blog | data-peek',
+export const metadata: Metadata = generateSeoMetadata({
+  title: 'Blog',
   description:
-    'Technical insights, tutorials, and behind-the-scenes looks at building a modern database client.',
-  openGraph: {
-    title: 'Blog | data-peek',
-    description:
-      'Technical insights, tutorials, and behind-the-scenes looks at building a modern database client.',
-    type: 'website',
-  },
-}
+    'Technical insights, tutorials, and behind-the-scenes looks at building a modern database client. Learn about SQL optimization, database internals, and developer tooling.',
+  keywords: [
+    'database blog',
+    'SQL tutorials',
+    'PostgreSQL tips',
+    'database optimization',
+    'developer tools',
+    'SQL performance',
+  ],
+  path: '/blog',
+})
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString)
@@ -35,6 +40,9 @@ export default function BlogPage() {
     <div className="min-h-screen">
       <Header />
       <main className="pt-20 md:pt-24">
+        <div className="max-w-6xl mx-auto px-6 mb-6">
+          <Breadcrumbs items={[{ label: 'Blog', href: '/blog' }]} />
+        </div>
         <section className="relative py-16 md:py-24 overflow-hidden">
           <div className="absolute inset-0 grid-pattern opacity-40" />
           <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[--color-background]" />

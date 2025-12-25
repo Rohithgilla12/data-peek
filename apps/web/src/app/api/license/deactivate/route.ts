@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from "next/server";
-import { db, activations } from "@/db";
+import { activations, db } from "@/db";
 import { eq } from "drizzle-orm";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { license_key: rawLicenseKey, instance_id, device_id } = body as {
+    const { license_key: rawLicenseKey, instance_id } = body as {
       license_key: string;
       instance_id: string;
-      device_id?: string;
     };
 
     // Normalize license key to uppercase
@@ -40,7 +39,9 @@ export async function POST(request: NextRequest) {
       .set({ isActive: false })
       .where(eq(activations.instanceId, instance_id));
 
-    console.log(`[deactivate] Deactivated ${license_key} instance ${instance_id}`);
+    console.log(
+      `[deactivate] Deactivated ${license_key} instance ${instance_id}`
+    );
 
     return NextResponse.json({
       success: true,

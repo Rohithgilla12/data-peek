@@ -21,7 +21,8 @@ export default defineConfig({
   resolve: {
     alias: {
       '@shared': resolve(__dirname, '../../packages/shared/src'),
-      '@data-peek/shared': resolve(__dirname, '../../packages/shared/src/index.ts')
+      '@data-peek/shared': resolve(__dirname, '../../packages/shared/src/index.ts'),
+      '@': resolve(__dirname, 'src/renderer/src')
     }
   }
 })

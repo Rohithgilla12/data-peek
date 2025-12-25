@@ -8,6 +8,7 @@ import { SavedQueries } from '@/components/saved-queries'
 import { ScheduledQueries } from '@/components/scheduled-queries'
 import { SchemaExplorer } from '@/components/schema-explorer'
 import { SidebarQuickQuery } from '@/components/sidebar-quick-query'
+import { Snippets } from '@/components/snippets'
 import {
   Sidebar,
   SidebarContent,
@@ -58,6 +59,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         {/* Saved Queries */}
         <SavedQueries />
+
+        <SidebarSeparator className="mx-3" />
+
+        {/* Snippets */}
+        <Snippets />
 
         <SidebarSeparator className="mx-3" />
 

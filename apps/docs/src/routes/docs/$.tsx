@@ -1,31 +1,116 @@
-import { createFileRoute, notFound } from '@tanstack/react-router';
-import { DocsLayout } from 'fumadocs-ui/layouts/docs';
-import { createServerFn } from '@tanstack/react-start';
-import { source } from '@/lib/source';
-import type * as PageTree from 'fumadocs-core/page-tree';
-import { useMemo } from 'react';
-import browserCollections from 'fumadocs-mdx:collections/browser';
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { DocsLayout } from "fumadocs-ui/layouts/docs";
+import { createServerFn } from "@tanstack/react-start";
+import { source } from "@/lib/source";
+import type * as PageTree from "fumadocs-core/page-tree";
+import { useMemo } from "react";
+import browserCollections from "fumadocs-mdx:collections/browser";
 import {
   DocsBody,
   DocsDescription,
   DocsPage,
   DocsTitle,
-} from 'fumadocs-ui/layouts/docs/page';
-import defaultMdxComponents from 'fumadocs-ui/mdx';
-import { baseOptions } from '@/lib/layout.shared';
+} from "fumadocs-ui/layouts/docs/page";
+import defaultMdxComponents from "fumadocs-ui/mdx";
+import { baseOptions } from "@/lib/layout.shared";
+import {
+  generateMetaTags,
+  DOCS_CONFIG,
+  getTechArticleStructuredData,
+  getBreadcrumbStructuredData,
+} from "@/lib/seo";
 
-export const Route = createFileRoute('/docs/$')({
+export const Route = createFileRoute("/docs/$")({
   component: Page,
   loader: async ({ params }) => {
-    const slugs = params._splat?.split('/') ?? [];
+    const slugs = params._splat?.split("/") ?? [];
     const data = await loader({ data: slugs });
     await clientLoader.preload(data.path);
     return data;
   },
+  head: ({ loaderData }) => {
+    if (!loaderData?.path) return {};
+
+    const page = source.getPage(loaderData.path.split("/").filter(Boolean));
+    if (!page) return {};
+
+    // Access frontmatter - fumadocs page structure
+    const pageData = (page as any).data || {};
+    const frontmatter = pageData.frontmatter || {
+      title: "Documentation",
+      description: DOCS_CONFIG.description,
+    };
+
+    const pagePath = `/docs/${loaderData.path}`;
+    const url = `${DOCS_CONFIG.url}${pagePath}`;
+
+    // Build breadcrumbs
+    const breadcrumbs = [
+      { name: "Home", url: DOCS_CONFIG.url },
+      { name: "Documentation", url: `${DOCS_CONFIG.url}/docs` },
+    ];
+
+    const pathParts = loaderData.path.split("/").filter(Boolean);
+    let currentPath = "";
+    pathParts.forEach((part, index) => {
+      currentPath += `/${part}`;
+      const pageAtPath = source.getPage(pathParts.slice(0, index + 1));
+      if (pageAtPath) {
+        const pageFrontmatter = (pageAtPath as any).data?.frontmatter;
+        breadcrumbs.push({
+          name: pageFrontmatter?.title || part,
+          url: `${DOCS_CONFIG.url}/docs${currentPath}`,
+        });
+      }
+    });
+
+    const title = frontmatter.title || "Documentation";
+    const description = frontmatter.description || DOCS_CONFIG.description;
+
+    const meta = generateMetaTags({
+      title,
+      description,
+      path: pagePath,
+      keywords: [
+        "data-peek",
+        "documentation",
+        "SQL client",
+        "PostgreSQL",
+        "MySQL",
+        "database",
+        ...title.toLowerCase().split(" "),
+      ],
+      type: "article",
+    });
+
+    const structuredData = [
+      getTechArticleStructuredData({
+        title,
+        description,
+        url,
+      }),
+      getBreadcrumbStructuredData(breadcrumbs),
+    ];
+
+    // Add structured data as script tags
+    const structuredDataScripts = structuredData.map((data) => ({
+      children: `(function() {
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = ${JSON.stringify(JSON.stringify(data))};
+        document.head.appendChild(script);
+      })();`,
+    }));
+
+    return {
+      meta,
+      scripts: structuredDataScripts,
+    };
+  },
 });
 
 const loader = createServerFn({
-  method: 'GET',
+  method: "GET",
 })
   .inputValidator((slugs: string[]) => slugs)
   .handler(async ({ data: slugs }) => {
@@ -61,7 +146,7 @@ function Page() {
   const Content = clientLoader.getComponent(data.path);
   const tree = useMemo(
     () => transformPageTree(data.tree as PageTree.Folder),
-    [data.tree],
+    [data.tree]
   );
 
   return (
@@ -73,7 +158,7 @@ function Page() {
 
 function transformPageTree(root: PageTree.Root): PageTree.Root {
   function mapNode<T extends PageTree.Node>(item: T): T {
-    if (typeof item.icon === 'string') {
+    if (typeof item.icon === "string") {
       item = {
         ...item,
         icon: (
@@ -86,7 +171,7 @@ function transformPageTree(root: PageTree.Root): PageTree.Root {
       };
     }
 
-    if (item.type === 'folder') {
+    if (item.type === "folder") {
       return {
         ...item,
         index: item.index ? mapNode(item.index) : undefined,

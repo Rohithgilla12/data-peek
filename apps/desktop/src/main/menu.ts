@@ -4,6 +4,36 @@ import { windowManager } from './window-manager'
 
 const isMac = process.platform === 'darwin'
 
+/**
+ * Build the Window submenu with a list of all open windows
+ */
+function buildWindowSubmenu(): Electron.MenuItemConstructorOptions[] {
+  const windows = windowManager.getAllWindows()
+  const focusedWindow = BrowserWindow.getFocusedWindow()
+
+  const windowList: Electron.MenuItemConstructorOptions[] = windows.map((win, index) => {
+    const title = win.getTitle() || `Window ${index + 1}`
+    return {
+      label: title,
+      type: 'checkbox' as const,
+      checked: focusedWindow?.id === win.id,
+      click: (): void => {
+        if (win.isMinimized()) {
+          win.restore()
+        }
+        win.focus()
+      }
+    }
+  })
+
+  return [
+    { role: 'minimize' as const },
+    { role: 'zoom' as const },
+    ...(isMac ? [{ type: 'separator' as const }, { role: 'front' as const }] : []),
+    ...(windowList.length > 0 ? [{ type: 'separator' as const }, ...windowList] : [])
+  ]
+}
+
 export function createMenu(): void {
   const template: Electron.MenuItemConstructorOptions[] = [
     // App menu (macOS only)
@@ -203,18 +233,7 @@ export function createMenu(): void {
     // Window menu
     {
       label: 'Window',
-      submenu: [
-        { role: 'minimize' },
-        { role: 'zoom' },
-        ...(isMac
-          ? [
-              { type: 'separator' as const },
-              { role: 'front' as const },
-              { type: 'separator' as const },
-              { role: 'window' as const }
-            ]
-          : [{ role: 'close' as const }])
-      ]
+      submenu: buildWindowSubmenu()
     },
 
     // Help menu
@@ -251,4 +270,11 @@ export function createMenu(): void {
 
   const menu = Menu.buildFromTemplate(template)
   Menu.setApplicationMenu(menu)
+}
+
+/**
+ * Update the menu (call when windows change)
+ */
+export function updateMenu(): void {
+  createMenu()
 }

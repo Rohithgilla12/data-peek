@@ -6,11 +6,19 @@ const footerLinks = {
     { label: "Features", href: "/#features" },
     { label: "Pricing", href: "/#pricing" },
     { label: "Download", href: "/download" },
+    { label: "Databases", href: "/databases" },
+    { label: "Compare", href: "/compare" },
     {
       label: "GitHub",
       href: "https://github.com/Rohithgilla12/data-peek",
       external: true,
     },
+  ],
+  Databases: [
+    { label: "PostgreSQL", href: "/databases/postgresql" },
+    { label: "MySQL", href: "/databases/mysql" },
+    { label: "SQL Server", href: "/databases/sql-server" },
+    { label: "SQLite", href: "/databases/sqlite" },
   ],
   Resources: [
     {
@@ -23,6 +31,8 @@ const footerLinks = {
     { label: "Support", href: "mailto:gillarohith1@gmail.com", external: true },
   ],
   Legal: [
+    { label: "Privacy Policy", href: "/privacy" },
+    { label: "Terms of Service", href: "/terms" },
     {
       label: "License (MIT)",
       href: "https://github.com/Rohithgilla12/data-peek/blob/main/LICENSE",
@@ -35,7 +45,7 @@ export function Footer() {
   return (
     <footer className="relative border-t border-[--color-border] bg-[--color-surface]/50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 gap-8 sm:gap-12">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-6 gap-8 sm:gap-12">
           {/* Brand */}
           <div className="col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-3 sm:mb-4">
@@ -92,7 +102,9 @@ export function Footer() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      {...(link.external
+                      {...(typeof link === "object" &&
+                      "external" in link &&
+                      link.external
                         ? { target: "_blank", rel: "noopener noreferrer" }
                         : {})}
                       className="text-xs sm:text-sm text-[--color-text-secondary] hover:text-[--color-text-primary] transition-colors"

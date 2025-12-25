@@ -1,8 +1,10 @@
+import { Metadata } from 'next'
 import Link from 'next/link'
 import { Header } from '@/components/marketing/header'
 import { Footer } from '@/components/marketing/footer'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Breadcrumbs } from '@/components/seo/breadcrumbs'
 import {
   Download,
   Apple,
@@ -12,6 +14,22 @@ import {
   ArrowRight,
   Cpu,
 } from 'lucide-react'
+import { generateMetadata as generateSeoMetadata } from '@/lib/seo'
+
+export const metadata: Metadata = generateSeoMetadata({
+  title: 'Download data-peek',
+  description:
+    'Download data-peek for macOS, Windows, or Linux. Free to download, no sign-up required. Start querying your databases in seconds.',
+  keywords: [
+    'download data-peek',
+    'PostgreSQL client download',
+    'database client macOS',
+    'database client Windows',
+    'database client Linux',
+    'SQL editor download',
+  ],
+  path: '/download',
+})
 
 const platforms = [
   {
@@ -96,6 +114,9 @@ export default function DownloadPage() {
       <Header />
 
       <main className="pt-24 sm:pt-32 pb-16 sm:pb-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 mb-6">
+          <Breadcrumbs items={[{ label: 'Download', href: '/download' }]} />
+        </div>
         {/* Hero Section */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 text-center mb-12 sm:mb-20">
           <Badge variant="default" size="lg" className="mb-4 sm:mb-6 text-xs sm:text-sm">

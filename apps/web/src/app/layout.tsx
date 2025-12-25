@@ -2,31 +2,33 @@ import type { Metadata } from "next";
 import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
+import {
+  generateMetadata as generateSeoMetadata,
+  SITE_CONFIG,
+} from "@/lib/seo";
+import { StructuredData } from "@/components/seo/structured-data";
 
-export const metadata: Metadata = {
-  title: "data-peek | Fast PostgreSQL Client for Developers",
-  description:
-    "A lightning-fast, beautiful PostgreSQL desktop client. Query, explore, and edit your data with a keyboard-first experience. No bloat, no subscriptions.",
+export const metadata: Metadata = generateSeoMetadata({
+  title: SITE_CONFIG.title,
+  description: SITE_CONFIG.description,
   keywords: [
     "PostgreSQL",
+    "MySQL",
+    "SQL Server",
+    "SQLite",
     "database client",
     "SQL editor",
+    "database management",
     "pgAdmin alternative",
     "DBeaver alternative",
     "TablePlus alternative",
+    "database GUI",
+    "SQL query tool",
+    "database explorer",
+    "AI SQL assistant",
+    "database visualization",
   ],
-  authors: [{ name: "data-peek" }],
-  openGraph: {
-    title: "data-peek | Peek at your data. Fast.",
-    description: "The PostgreSQL client developers actually want to use.",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "data-peek | Peek at your data. Fast.",
-    description: "The PostgreSQL client developers actually want to use.",
-  },
-};
+});
 
 export default function RootLayout({
   children,
@@ -46,6 +48,8 @@ export default function RootLayout({
     >
       <html lang="en">
         <body className="antialiased">
+          <StructuredData type="organization" />
+          <StructuredData type="software" />
           {children}
           <Script
             src="https://giveme.gilla.fun/script.js"

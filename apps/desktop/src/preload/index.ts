@@ -35,6 +35,7 @@ import type {
   ScheduledQueryRun,
   SchemaInfo,
   SequenceInfo,
+  Snippet,
   StoredChatMessage,
   TableDefinition,
   ToolAvailability,
@@ -268,6 +269,15 @@ const api = {
       ipcRenderer.on('open-saved-queries', handler)
       return () => ipcRenderer.removeListener('open-saved-queries', handler)
     }
+  },
+  // Snippets management
+  snippets: {
+    list: (): Promise<IpcResponse<Snippet[]>> => ipcRenderer.invoke('snippets:list'),
+    add: (snippet: Snippet): Promise<IpcResponse<Snippet>> =>
+      ipcRenderer.invoke('snippets:add', snippet),
+    update: (id: string, updates: Partial<Snippet>): Promise<IpcResponse<Snippet>> =>
+      ipcRenderer.invoke('snippets:update', { id, updates }),
+    delete: (id: string): Promise<IpcResponse<void>> => ipcRenderer.invoke('snippets:delete', id)
   },
   // Scheduled queries management
   scheduledQueries: {
