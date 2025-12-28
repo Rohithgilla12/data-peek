@@ -31,6 +31,10 @@ import {
 import { cn } from '@/lib/utils'
 import { AIMessage } from './ai-message'
 import { AISuggestions } from './ai-suggestions'
+import { AgentModeToggle } from './agent-mode-toggle'
+import { AgentProgressPanel } from './agent-progress-panel'
+import { AgentApprovalDialog } from './agent-approval-dialog'
+import { useAgentStore } from '@/stores/agent-store'
 import type { ConnectionConfig, SchemaInfo } from '@data-peek/shared'
 
 // Chat session type (matching preload)
@@ -127,6 +131,30 @@ export function AIChatPanel({
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const previousConnectionId = React.useRef<string | null>(null)
   const isInitialLoad = React.useRef(true)
+
+  const {
+    isAgentMode,
+    activeSession,
+    pendingApproval,
+    streamingText,
+    setAgentMode,
+    startSession,
+    approveToolCall,
+    declineToolCall,
+    subscribeToEvents,
+    clearSession
+  } = useAgentStore()
+
+  React.useEffect(() => {
+    if (!isAgentMode) return
+    const unsubscribe = subscribeToEvents()
+    return () => unsubscribe()
+  }, [isAgentMode, subscribeToEvents])
+
+  React.useEffect(() => {
+    if (!isAgentMode) return
+    clearSession()
+  }, [connection?.id, isAgentMode, clearSession])
 
   // Load sessions when connection changes
   React.useEffect(() => {
@@ -237,15 +265,32 @@ export function AIChatPanel({
   const handleSendMessage = async () => {
     if (!input.trim() || isLoading || !isConfigured || !connection) return
 
+    const prompt = input.trim()
+    setInput('')
+
+    if (isAgentMode) {
+      setIsLoading(true)
+      try {
+        const result = await startSession(connection, prompt, schemas)
+        if (!result) {
+          console.error('Failed to start agent session')
+        }
+      } catch (error) {
+        console.error('Agent session error:', error)
+      } finally {
+        setIsLoading(false)
+      }
+      return
+    }
+
     const userMessage: AIChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: input.trim(),
+      content: prompt,
       createdAt: new Date()
     }
 
     setMessages((prev) => [...prev, userMessage])
-    setInput('')
     setIsLoading(true)
 
     try {
@@ -597,6 +642,12 @@ export function AIChatPanel({
             <span className="text-[10px] text-muted-foreground">
               {tableCount} table{tableCount !== 1 ? 's' : ''} available
             </span>
+            <div className="flex-1" />
+            <AgentModeToggle
+              isAgentMode={isAgentMode}
+              onToggle={setAgentMode}
+              disabled={!isConfigured || !!activeSession}
+            />
           </div>
         )}
 
@@ -764,8 +815,13 @@ export function AIChatPanel({
           </div>
         )}
 
+        {/* Agent Progress Panel */}
+        {isConfigured && connection && !showSessionsList && isAgentMode && activeSession && (
+          <AgentProgressPanel session={activeSession} streamingText={streamingText} />
+        )}
+
         {/* Chat Messages */}
-        {isConfigured && connection && !showSessionsList && (
+        {isConfigured && connection && !showSessionsList && !isAgentMode && (
           <>
             <ScrollArea className="flex-1 px-4" ref={scrollRef}>
               <div className="py-4 space-y-4">
@@ -880,6 +936,72 @@ export function AIChatPanel({
             </div>
           </>
         )}
+
+        {/* Agent Mode Input Area */}
+        {isConfigured && connection && !showSessionsList && isAgentMode && !activeSession && (
+          <div className="p-4 border-t border-border/50 bg-gradient-to-t from-muted/20 to-transparent">
+            <div
+              className={cn(
+                'relative flex items-end gap-2 rounded-xl',
+                'bg-background/80 backdrop-blur-sm',
+                'border border-border/50',
+                'p-2 transition-all duration-200',
+                'focus-within:border-blue-500/30 focus-within:ring-2 focus-within:ring-blue-500/10'
+              )}
+            >
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Describe what you want to analyze or create..."
+                rows={1}
+                className={cn(
+                  'flex-1 resize-none bg-transparent',
+                  'text-sm placeholder:text-muted-foreground/50',
+                  'focus:outline-none',
+                  'min-h-[36px] max-h-[120px] py-2 px-2'
+                )}
+                style={{
+                  height: 'auto',
+                  overflow: 'hidden'
+                }}
+                onInput={(e) => {
+                  const target = e.target as HTMLTextAreaElement
+                  target.style.height = 'auto'
+                  target.style.height = Math.min(target.scrollHeight, 120) + 'px'
+                }}
+              />
+              <Button
+                size="icon"
+                className={cn(
+                  'size-8 rounded-lg shrink-0 transition-all duration-200',
+                  input.trim()
+                    ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20'
+                    : 'bg-muted text-muted-foreground'
+                )}
+                onClick={handleSendMessage}
+                disabled={!input.trim() || isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Send className="size-4" />
+                )}
+              </Button>
+            </div>
+            <p className="text-[10px] text-muted-foreground/50 mt-2 text-center">
+              Agent mode: AI will execute queries and create dashboards autonomously
+            </p>
+          </div>
+        )}
+
+        {/* Agent Approval Dialog */}
+        <AgentApprovalDialog
+          approval={pendingApproval}
+          onApprove={approveToolCall}
+          onDecline={declineToolCall}
+        />
       </div>
     </>
   )

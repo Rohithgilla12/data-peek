@@ -28,6 +28,8 @@
     "@ai-sdk/google": "^2.0.12",
     "@ai-sdk/groq": "^2.0.8",
     "@ai-sdk/openai": "^2.0.24",
+    "@mastra/core": "^0.10.1",
+    "@mastra/mcp": "^0.3.5",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",

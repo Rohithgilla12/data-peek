@@ -1762,3 +1762,94 @@ export type CreateWidgetInput = Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>
  * Input for updating a widget
  */
 export type UpdateWidgetInput = Partial<Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>>
+
+/**
+ * Agent tool names
+ */
+export type AgentToolName =
+  | 'execute_query'
+  | 'get_schema'
+  | 'sample_data'
+  | 'create_chart_widget'
+  | 'create_kpi_widget'
+  | 'create_table_widget'
+  | 'save_dashboard'
+
+/**
+ * Status of an agent step
+ */
+export type AgentStepStatus = 'pending' | 'running' | 'completed' | 'error' | 'requires_approval'
+
+/**
+ * A single step in the agent execution
+ */
+export interface AgentStep {
+  id: string
+  toolName: AgentToolName
+  args: Record<string, unknown>
+  status: AgentStepStatus
+  result?: unknown
+  error?: string
+  startedAt: number
+  completedAt?: number
+}
+
+/**
+ * Status of an agent session
+ */
+export type AgentSessionStatus = 'running' | 'waiting_approval' | 'completed' | 'error' | 'cancelled'
+
+/**
+ * An agent session representing a complete agent run
+ */
+export interface AgentSession {
+  id: string
+  connectionId: string
+  prompt: string
+  status: AgentSessionStatus
+  steps: AgentStep[]
+  generatedDashboardId?: string
+  finalMessage?: string
+  startedAt: number
+  completedAt?: number
+}
+
+/**
+ * Progress event emitted during agent execution
+ */
+export interface AgentProgressEvent {
+  sessionId: string
+  step: AgentStep
+  totalSteps: number
+}
+
+/**
+ * Tool call event for approval flow
+ */
+export interface AgentToolCallEvent {
+  sessionId: string
+  stepId: string
+  tool: AgentToolName
+  args: Record<string, unknown>
+  requiresApproval: boolean
+}
+
+/**
+ * Agent completion event
+ */
+export interface AgentCompleteEvent {
+  sessionId: string
+  status: AgentSessionStatus
+  finalMessage?: string
+  dashboardId?: string
+  error?: string
+}
+
+/**
+ * MCP server status
+ */
+export interface MCPServerStatus {
+  running: boolean
+  port?: number
+  connectionId?: string
+}

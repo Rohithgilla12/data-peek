@@ -41,7 +41,11 @@ import type {
   UpdateDashboardInput,
   CreateWidgetInput,
   UpdateWidgetInput,
-  WidgetLayout
+  WidgetLayout,
+  AgentSession,
+  AgentToolCallEvent,
+  AgentCompleteEvent,
+  MCPServerStatus
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -431,6 +435,95 @@ const api = {
     minimize: (): Promise<void> => ipcRenderer.invoke('minimize-window'),
     maximize: (): Promise<void> => ipcRenderer.invoke('maximize-window'),
     close: (): Promise<void> => ipcRenderer.invoke('close-window')
+  },
+  agent: {
+    start: (
+      connectionConfig: ConnectionConfig,
+      prompt: string,
+      schemas: SchemaInfo[]
+    ): Promise<IpcResponse<{ sessionId: string }>> =>
+      ipcRenderer.invoke('agent:start', { connectionConfig, prompt, schemas }),
+    approveTool: (sessionId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('agent:approve-tool', { sessionId }),
+    declineTool: (sessionId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('agent:decline-tool', { sessionId }),
+    cancel: (sessionId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('agent:cancel', { sessionId }),
+    getSession: (sessionId: string): Promise<IpcResponse<AgentSession>> =>
+      ipcRenderer.invoke('agent:get-session', { sessionId }),
+    onSessionStarted: (
+      callback: (data: { sessionId: string; prompt: string }) => void
+    ): (() => void) => {
+      const handler = (_: unknown, data: { sessionId: string; prompt: string }): void =>
+        callback(data)
+      ipcRenderer.on('agent:session-started', handler)
+      return () => ipcRenderer.removeListener('agent:session-started', handler)
+    },
+    onToolCall: (callback: (data: AgentToolCallEvent) => void): (() => void) => {
+      const handler = (_: unknown, data: AgentToolCallEvent): void => callback(data)
+      ipcRenderer.on('agent:tool-call', handler)
+      return () => ipcRenderer.removeListener('agent:tool-call', handler)
+    },
+    onToolResult: (
+      callback: (data: {
+        sessionId: string
+        stepId: string
+        tool: string
+        result: unknown
+        status: string
+      }) => void
+    ): (() => void) => {
+      const handler = (
+        _: unknown,
+        data: { sessionId: string; stepId: string; tool: string; result: unknown; status: string }
+      ): void => callback(data)
+      ipcRenderer.on('agent:tool-result', handler)
+      return () => ipcRenderer.removeListener('agent:tool-result', handler)
+    },
+    onRequiresApproval: (
+      callback: (data: {
+        sessionId: string
+        stepId: string
+        tool: string
+        sql: string
+        reason: string
+      }) => void
+    ): (() => void) => {
+      const handler = (
+        _: unknown,
+        data: { sessionId: string; stepId: string; tool: string; sql: string; reason: string }
+      ): void => callback(data)
+      ipcRenderer.on('agent:requires-approval', handler)
+      return () => ipcRenderer.removeListener('agent:requires-approval', handler)
+    },
+    onText: (callback: (data: { sessionId: string; text: string }) => void): (() => void) => {
+      const handler = (_: unknown, data: { sessionId: string; text: string }): void =>
+        callback(data)
+      ipcRenderer.on('agent:text', handler)
+      return () => ipcRenderer.removeListener('agent:text', handler)
+    },
+    onComplete: (
+      callback: (data: AgentCompleteEvent & { widgets?: CreateWidgetInput[] }) => void
+    ): (() => void) => {
+      const handler = (
+        _: unknown,
+        data: AgentCompleteEvent & { widgets?: CreateWidgetInput[] }
+      ): void => callback(data)
+      ipcRenderer.on('agent:complete', handler)
+      return () => ipcRenderer.removeListener('agent:complete', handler)
+    }
+  },
+  mcp: {
+    start: (
+      connectionConfig: ConnectionConfig,
+      schemas: SchemaInfo[],
+      port?: number
+    ): Promise<IpcResponse<{ port: number }>> =>
+      ipcRenderer.invoke('mcp:start', { connectionConfig, schemas, port }),
+    stop: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('mcp:stop'),
+    status: (): Promise<IpcResponse<MCPServerStatus>> => ipcRenderer.invoke('mcp:status'),
+    updateSchemas: (schemas: SchemaInfo[]): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('mcp:update-schemas', { schemas })
   }
 }
 

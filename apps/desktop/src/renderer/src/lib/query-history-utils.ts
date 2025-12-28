@@ -96,7 +96,9 @@ export function truncateQuery(query: string, maxLength = 40): string {
   return normalized.substring(0, maxLength) + '...'
 }
 
-export function groupHistoryByDate(history: QueryHistoryItem[]): { label: string; items: QueryHistoryItem[] }[] {
+export function groupHistoryByDate(
+  history: QueryHistoryItem[]
+): { label: string; items: QueryHistoryItem[] }[] {
   const groups: { label: string; items: QueryHistoryItem[] }[] = []
   const today = new Date()
   const yesterday = new Date(today)

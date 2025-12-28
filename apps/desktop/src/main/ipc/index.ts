@@ -9,6 +9,8 @@ import { registerSnippetHandlers } from './snippet-handlers'
 import { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
 import { registerDashboardHandlers } from './dashboard-handlers'
 import { registerAIHandlers } from './ai-handlers'
+import { registerAgentHandlers } from './agent-handlers'
+import { registerMCPHandlers } from './mcp-handlers'
 import { createLogger } from '../lib/logger'
 import { registerFileHandlers } from './file-handlers'
 import { registerWindowHandlers } from './window-handler'
@@ -54,6 +56,12 @@ export function registerAllHandlers(stores: IpcStores): void {
   // AI features
   registerAIHandlers()
 
+  // Agent features
+  registerAgentHandlers()
+
+  // MCP server
+  registerMCPHandlers()
+
   // File handler
   registerFileHandlers()
 
@@ -73,3 +81,5 @@ export { registerSnippetHandlers } from './snippet-handlers'
 export { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
 export { registerDashboardHandlers } from './dashboard-handlers'
 export { registerAIHandlers } from './ai-handlers'
+export { registerAgentHandlers } from './agent-handlers'
+export { registerMCPHandlers } from './mcp-handlers'

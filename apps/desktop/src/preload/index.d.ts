@@ -32,7 +32,11 @@ import type {
   CreateWidgetInput,
   UpdateWidgetInput,
   WidgetLayout,
-  Snippet
+  Snippet,
+  AgentSession,
+  AgentToolCallEvent,
+  AgentCompleteEvent,
+  MCPServerStatus
 } from '@shared/index'
 
 // AI Types
@@ -367,6 +371,53 @@ interface DataPeekApi {
     minimize: () => Promise<void>
     maximize: () => Promise<void>
     close: () => Promise<void>
+  }
+  agent: {
+    start: (
+      connectionConfig: ConnectionConfig,
+      prompt: string,
+      schemas: SchemaInfo[]
+    ) => Promise<IpcResponse<{ sessionId: string }>>
+    approveTool: (sessionId: string) => Promise<IpcResponse<void>>
+    declineTool: (sessionId: string) => Promise<IpcResponse<void>>
+    cancel: (sessionId: string) => Promise<IpcResponse<void>>
+    getSession: (sessionId: string) => Promise<IpcResponse<AgentSession>>
+    onSessionStarted: (
+      callback: (data: { sessionId: string; prompt: string }) => void
+    ) => () => void
+    onToolCall: (callback: (data: AgentToolCallEvent) => void) => () => void
+    onToolResult: (
+      callback: (data: {
+        sessionId: string
+        stepId: string
+        tool: string
+        result: unknown
+        status: string
+      }) => void
+    ) => () => void
+    onRequiresApproval: (
+      callback: (data: {
+        sessionId: string
+        stepId: string
+        tool: string
+        sql: string
+        reason: string
+      }) => void
+    ) => () => void
+    onText: (callback: (data: { sessionId: string; text: string }) => void) => () => void
+    onComplete: (
+      callback: (data: AgentCompleteEvent & { widgets?: CreateWidgetInput[] }) => void
+    ) => () => void
+  }
+  mcp: {
+    start: (
+      connectionConfig: ConnectionConfig,
+      schemas: SchemaInfo[],
+      port?: number
+    ) => Promise<IpcResponse<{ port: number }>>
+    stop: () => Promise<IpcResponse<void>>
+    status: () => Promise<IpcResponse<MCPServerStatus>>
+    updateSchemas: (schemas: SchemaInfo[]) => Promise<IpcResponse<void>>
   }
 }
 
