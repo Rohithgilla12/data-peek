@@ -57,6 +57,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useConnectionStore, useTabStore, notify } from '@/stores'
 import type { TableInfo, RoutineInfo, QueryResult as IpcQueryResult } from '@shared/index'
 import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
+import { buildFullyQualifiedTableRef } from '@/lib/sql-helpers'
 
 // Threshold for enabling virtualization
 const VIRTUALIZATION_THRESHOLD = 50
@@ -634,13 +635,7 @@ export function SchemaExplorer() {
 
     try {
       // Query all data from the table
-      const qualifiedName =
-        connection.dbType === 'mssql'
-          ? `[${schemaName}].[${tableName}]`
-          : connection.dbType === 'mysql'
-            ? `\`${schemaName}\`.\`${tableName}\``
-            : `"${schemaName}"."${tableName}"`
-
+      const qualifiedName = buildFullyQualifiedTableRef(schemaName, tableName, connection.dbType)
       const result = await window.api.db.query(connection, `SELECT * FROM ${qualifiedName}`)
 
       if (!result.success || !result.data) {

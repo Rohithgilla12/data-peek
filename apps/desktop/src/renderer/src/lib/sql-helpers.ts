@@ -1,5 +1,66 @@
 import type { DatabaseType } from '@shared/index'
 
+function isWrapped(value: string, start: string, end: string): boolean {
+  return value.startsWith(start) && value.endsWith(end) && value.length >= start.length + end.length
+}
+
+/**
+ * Quote an identifier (schema/table/column/etc) using database-appropriate quoting.
+ * - PostgreSQL/SQLite: "identifier"
+ * - MySQL: `identifier`
+ * - MSSQL: [identifier]
+ */
+export function quoteIdentifier(name: string, dbType: DatabaseType | undefined): string {
+  if (!name) return name
+
+  switch (dbType) {
+    case 'mysql': {
+      if (isWrapped(name, '`', '`')) return name
+      return `\`${name.replace(/`/g, '``')}\``
+    }
+
+    case 'mssql': {
+      if (isWrapped(name, '[', ']')) return name
+      return `[${name.replace(/]/g, ']]')}]`
+    }
+
+    // postgresql, sqlite (and default)
+    default: {
+      if (isWrapped(name, '"', '"')) return name
+      return `"${name.replace(/"/g, '""')}"`
+    }
+  }
+}
+
+/**
+ * Build a qualified table reference with identifier quoting, omitting the default schema
+ * (dbo for MSSQL, public for others) to preserve existing behavior.
+ */
+export function buildQualifiedTableRef(
+  schemaName: string,
+  tableName: string,
+  dbType: DatabaseType | undefined
+): string {
+  const defaultSchema = dbType === 'mssql' ? 'dbo' : 'public'
+  if (!schemaName || schemaName === defaultSchema) {
+    return quoteIdentifier(tableName, dbType)
+  }
+  return `${quoteIdentifier(schemaName, dbType)}.${quoteIdentifier(tableName, dbType)}`
+}
+
+/**
+ * Build a fully-qualified table reference with identifier quoting (always includes schema when provided).
+ * Useful for operations like export where we want to be explicit even for default schemas.
+ */
+export function buildFullyQualifiedTableRef(
+  schemaName: string,
+  tableName: string,
+  dbType: DatabaseType | undefined
+): string {
+  if (!schemaName) return quoteIdentifier(tableName, dbType)
+  return `${quoteIdentifier(schemaName, dbType)}.${quoteIdentifier(tableName, dbType)}`
+}
+
 /**
  * Generate database-appropriate LIMIT/TOP clause
  * @param dbType - Database type
