@@ -57,7 +57,7 @@ import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { keys } from '@/lib/utils'
 import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
-import { buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
+import { buildQualifiedTableRef, buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
@@ -231,9 +231,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           markTabSaved(tabId)
 
           // For table preview tabs, fetch total count for server-side pagination
-          if (currentTab.type === 'table-preview' && currentTab.tableRef) {
+          if (currentTab.type === 'table-preview') {
             try {
-              const countQuery = buildCountQuery(currentTab.tableRef)
+              const countTableRef = buildQualifiedTableRef(
+                currentTab.schemaName,
+                currentTab.tableName,
+                tabConnection.dbType
+              )
+              const countQuery = buildCountQuery(countTableRef)
               const countResponse = await window.api.db.query(tabConnection, countQuery)
               if (countResponse.success && countResponse.data) {
                 const countData = countResponse.data as IpcQueryResult
@@ -759,10 +764,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
     // For table preview tabs, rebuild from scratch
     if (tab.type === 'table-preview') {
-      // Build table reference (handle MSSQL's dbo schema)
-      const defaultSchema = tabConnection?.dbType === 'mssql' ? 'dbo' : 'public'
-      const tableRef =
-        tab.schemaName === defaultSchema ? tab.tableName : `${tab.schemaName}.${tab.tableName}`
+      const tableRef = buildQualifiedTableRef(tab.schemaName, tab.tableName, tabConnection?.dbType)
       const wherePart = generateWhereClause(tableFilters)
       const orderPart = generateOrderByClause(tableSorting)
       return buildSelectQuery(tableRef, tabConnection?.dbType, {

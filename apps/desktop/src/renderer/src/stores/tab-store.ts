@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { QueryResult } from './query-store'
 import type { StatementResult } from '@data-peek/shared'
-import { buildSelectQuery } from '@/lib/sql-helpers'
+import { buildQualifiedTableRef, buildSelectQuery, quoteIdentifier } from '@/lib/sql-helpers'
 import { useConnectionStore } from './connection-store'
 import { useSettingsStore } from './settings-store'
 
@@ -234,7 +234,8 @@ export const useTabStore = create<TabState>()(
         // Build table reference (handle MSSQL's dbo schema)
         const defaultSchema = dbType === 'mssql' ? 'dbo' : 'public'
         const tableRef = schemaName === defaultSchema ? tableName : `${schemaName}.${tableName}`
-        const query = buildSelectQuery(tableRef, dbType, { limit: pageSize })
+        const sqlTableRef = buildQualifiedTableRef(schemaName, tableName, dbType)
+        const query = buildSelectQuery(sqlTableRef, dbType, { limit: pageSize })
 
         const newTab: TablePreviewTab = {
           id,
@@ -279,9 +280,7 @@ export const useTabStore = create<TabState>()(
           .connections.find((c) => c.id === connectionId)
         const dbType = connection?.dbType
 
-        // Build table reference (handle MSSQL's dbo schema)
-        const defaultSchema = dbType === 'mssql' ? 'dbo' : 'public'
-        const tableRef = schema === defaultSchema ? table : `${schema}.${table}`
+        const sqlTableRef = buildQualifiedTableRef(schema, table, dbType)
 
         // Format value for SQL - handle strings, numbers, nulls
         let formattedValue: string
@@ -294,10 +293,9 @@ export const useTabStore = create<TabState>()(
           formattedValue = String(value)
         }
 
-        // Use bracket quoting for MSSQL, double quotes for others
-        const quotedColumn = dbType === 'mssql' ? `[${column}]` : `"${column}"`
+        const quotedColumn = quoteIdentifier(column, dbType)
         const whereClause = `WHERE ${quotedColumn} = ${formattedValue}`
-        const query = buildSelectQuery(tableRef, dbType, { where: whereClause, limit: 100 })
+        const query = buildSelectQuery(sqlTableRef, dbType, { where: whereClause, limit: 100 })
 
         const newTab: QueryTab = {
           id,
@@ -578,7 +576,8 @@ export const useTabStore = create<TabState>()(
 
         // Build new query with updated pagination
         const offset = (page - 1) * pageSize
-        const query = buildSelectQuery(tab.tableRef, dbType, { limit: pageSize, offset })
+        const sqlTableRef = buildQualifiedTableRef(tab.schemaName, tab.tableName, dbType)
+        const query = buildSelectQuery(sqlTableRef, dbType, { limit: pageSize, offset })
 
         set((state) => ({
           tabs: state.tabs.map((t) =>
