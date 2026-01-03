@@ -1,38 +1,44 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import type {
+  AlterTableBatch,
+  BackupOptions,
+  BenchmarkResult,
   ConnectionConfig,
-  IpcResponse,
+  CreateDashboardInput,
+  CreateScheduledQueryInput,
+  CreateWidgetInput,
+  CustomTypeInfo,
+  Dashboard,
   DatabaseSchemaResponse,
+  DDLResult,
   EditBatch,
   EditResult,
-  TableDefinition,
-  AlterTableBatch,
-  DDLResult,
-  SequenceInfo,
-  CustomTypeInfo,
-  LicenseStatus,
+  IpcResponse,
   LicenseActivationRequest,
+  LicenseStatus,
   LicenseType,
-  SavedQuery,
-  SchemaInfo,
-  BenchmarkResult,
   MultiStatementResultWithTelemetry,
-  PerformanceAnalysisResult,
   PerformanceAnalysisConfig,
+  PerformanceAnalysisResult,
+  PostgresVersion,
   QueryHistoryItemForAnalysis,
+  RestoreOptions,
+  SavedQuery,
   ScheduledQuery,
   ScheduledQueryRun,
-  CreateScheduledQueryInput,
-  UpdateScheduledQueryInput,
-  Dashboard,
-  Widget,
-  WidgetRunResult,
-  CreateDashboardInput,
+  SchemaInfo,
+  SequenceInfo,
+  TableDefinition,
+  ToolAvailability,
+  ToolDownloadProgress,
   UpdateDashboardInput,
-  CreateWidgetInput,
+  UpdateScheduledQueryInput,
   UpdateWidgetInput,
+  Snippet,
+  VersionCompatibility,
+  Widget,
   WidgetLayout,
-  Snippet
+  WidgetRunResult
 } from '@shared/index'
 
 // AI Types
@@ -152,6 +158,22 @@ interface DataPeekApi {
     delete: (id: string) => Promise<IpcResponse<void>>
     // Listen for connection changes from other windows
     onConnectionsUpdated: (callback: () => void) => () => void
+  }
+  backup: {
+    checkTools: (connectionId: string) => Promise<IpcResponse<ToolAvailability>>
+    startBackup: (connectionId: string, options: BackupOptions) => Promise<IpcResponse<void>>
+    startRestore: (connectionId: string, options: RestoreOptions) => Promise<IpcResponse<void>>
+  }
+  tools: {
+    getServerVersion: (connectionId: string) => Promise<IpcResponse<PostgresVersion | null>>
+    checkCompatibility: (connectionId: string) => Promise<IpcResponse<VersionCompatibility>>
+    getManagedVersions: () => Promise<IpcResponse<number[]>>
+    getSupportedVersions: () => Promise<IpcResponse<number[]>>
+    downloadTools: (majorVersion: number) => Promise<IpcResponse<void>>
+    deleteVersion: (majorVersion: number) => Promise<IpcResponse<void>>
+    onDownloadProgress: (
+      callback: (data: ToolDownloadProgress & { majorVersion: number }) => void
+    ) => () => void
   }
   db: {
     connect: (config: ConnectionConfig) => Promise<IpcResponse<void>>
@@ -365,6 +387,10 @@ interface DataPeekApi {
   }
   files: {
     openFilePicker: () => Promise<string | null>
+    saveFilePicker: (options?: {
+      defaultPath?: string
+      filters?: Array<{ name: string; extensions: string[] }>
+    }) => Promise<string | null>
   }
   window: {
     minimize: () => Promise<void>
