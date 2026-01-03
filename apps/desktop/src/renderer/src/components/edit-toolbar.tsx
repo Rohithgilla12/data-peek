@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
-import { cn } from '@/lib/utils'
+import { cn, keys } from '@/lib/utils'
 
 interface EditToolbarProps {
   isEditMode: boolean
@@ -286,7 +286,7 @@ export function EditToolbar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p className="text-xs">Discard all pending changes (⌘⇧Z)</p>
+                <p className="text-xs">Discard all pending changes ({keys.mod}+{keys.shift}+Z)</p>
               </TooltipContent>
             </Tooltip>
 
@@ -314,7 +314,7 @@ export function EditToolbar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p className="text-xs">Save all pending changes to the database (⌘S)</p>
+                <p className="text-xs">Save all pending changes to the database ({keys.mod}+S)</p>
               </TooltipContent>
             </Tooltip>
           </>

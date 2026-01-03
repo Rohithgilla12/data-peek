@@ -169,6 +169,19 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   // Check for primary key
   const hasPrimaryKey = editContext?.primaryKeyColumns && editContext.primaryKeyColumns.length > 0
 
+  // Ref to store latest handler functions (avoids stale closure in event listeners)
+  const keyboardHandlersRef = React.useRef<{
+    handleSaveChanges: () => void
+    handleDiscardChanges: () => void
+    handleToggleEditMode: () => void
+    handleAddRowWithSheet: () => void
+  }>({
+    handleSaveChanges: () => {},
+    handleDiscardChanges: () => {},
+    handleToggleEditMode: () => {},
+    handleAddRowWithSheet: () => {}
+  })
+
   // Keyboard shortcuts for edit mode
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -179,7 +192,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
       if (isMeta && e.key === 's' && !e.shiftKey) {
         if (isEditMode && pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
           e.preventDefault()
-          handleSaveChanges()
+          keyboardHandlersRef.current.handleSaveChanges()
           return
         }
       }
@@ -189,30 +202,30 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         e.preventDefault()
         if (pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
           // Has changes - let the toolbar handle the confirmation dialog
-          handleToggleEditMode()
+          keyboardHandlersRef.current.handleToggleEditMode()
         } else {
           exitEditMode(tabId)
         }
         return
       }
 
-      // Cmd+Shift+N: Add new row (when in edit mode or can edit)
-      if (isMeta && e.shiftKey && e.key === 'n') {
+      // Cmd+Shift+I: Add new row (when in edit mode or can edit)
+      if (isMeta && e.shiftKey && e.key === 'I') {
         if (canEdit && hasPrimaryKey) {
           e.preventDefault()
           if (!isEditMode && editContext) {
             enterEditMode(tabId, editContext)
           }
-          handleAddRowWithSheet()
+          keyboardHandlersRef.current.handleAddRowWithSheet()
           return
         }
       }
 
       // Cmd+Shift+Z: Discard/revert changes (when in edit mode with pending changes)
-      if (isMeta && e.key === 'z' && e.shiftKey) {
+      if (isMeta && e.shiftKey && e.key === 'Z') {
         if (isEditMode && pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
           e.preventDefault()
-          handleDiscardChanges()
+          keyboardHandlersRef.current.handleDiscardChanges()
           return
         }
       }
@@ -236,13 +249,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   React.useEffect(() => {
     const cleanupSave = window.api.menu.onSaveChanges(() => {
       if (isEditMode && pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
-        handleSaveChanges()
+        keyboardHandlersRef.current.handleSaveChanges()
       }
     })
 
     const cleanupDiscard = window.api.menu.onDiscardChanges(() => {
       if (isEditMode && pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
-        handleDiscardChanges()
+        keyboardHandlersRef.current.handleDiscardChanges()
       }
     })
 
@@ -251,7 +264,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         if (!isEditMode && editContext) {
           enterEditMode(tabId, editContext)
         }
-        handleAddRowWithSheet()
+        keyboardHandlersRef.current.handleAddRowWithSheet()
       }
     })
 
@@ -474,6 +487,14 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   // Handle discard changes
   const handleDiscardChanges = () => {
     revertAllChanges(tabId)
+  }
+
+  // Update ref with latest handlers (for keyboard shortcuts)
+  keyboardHandlersRef.current = {
+    handleSaveChanges,
+    handleDiscardChanges,
+    handleToggleEditMode,
+    handleAddRowWithSheet
   }
 
   // Build table columns

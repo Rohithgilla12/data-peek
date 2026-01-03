@@ -257,7 +257,7 @@ export function createMenu(): void {
         { type: 'separator' },
         {
           label: 'Add Row',
-          accelerator: 'CmdOrCtrl+Shift+N',
+          accelerator: 'CmdOrCtrl+Shift+I',
           click: (): void => {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
