@@ -169,6 +169,99 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   // Check for primary key
   const hasPrimaryKey = editContext?.primaryKeyColumns && editContext.primaryKeyColumns.length > 0
 
+  // Keyboard shortcuts for edit mode
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isMeta = e.metaKey || e.ctrlKey
+      const isEditing = tabEdit?.editingCell !== null
+
+      // Cmd+S: Save changes (when in edit mode with pending changes)
+      if (isMeta && e.key === 's' && !e.shiftKey) {
+        if (isEditMode && pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
+          e.preventDefault()
+          handleSaveChanges()
+          return
+        }
+      }
+
+      // Escape: Exit edit mode (when not editing a cell)
+      if (e.key === 'Escape' && isEditMode && !isEditing) {
+        e.preventDefault()
+        if (pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
+          // Has changes - let the toolbar handle the confirmation dialog
+          handleToggleEditMode()
+        } else {
+          exitEditMode(tabId)
+        }
+        return
+      }
+
+      // Cmd+Shift+N: Add new row (when in edit mode or can edit)
+      if (isMeta && e.shiftKey && e.key === 'n') {
+        if (canEdit && hasPrimaryKey) {
+          e.preventDefault()
+          if (!isEditMode && editContext) {
+            enterEditMode(tabId, editContext)
+          }
+          handleAddRowWithSheet()
+          return
+        }
+      }
+
+      // Cmd+Shift+Z: Discard/revert changes (when in edit mode with pending changes)
+      if (isMeta && e.key === 'z' && e.shiftKey) {
+        if (isEditMode && pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
+          e.preventDefault()
+          handleDiscardChanges()
+          return
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [
+    isEditMode,
+    pendingChanges,
+    tabEdit?.editingCell,
+    tabId,
+    canEdit,
+    hasPrimaryKey,
+    editContext,
+    enterEditMode,
+    exitEditMode
+  ])
+
+  // Listen for menu events (for menu bar shortcuts)
+  React.useEffect(() => {
+    const cleanupSave = window.api.menu.onSaveChanges(() => {
+      if (isEditMode && pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
+        handleSaveChanges()
+      }
+    })
+
+    const cleanupDiscard = window.api.menu.onDiscardChanges(() => {
+      if (isEditMode && pendingChanges.updates + pendingChanges.inserts + pendingChanges.deletes > 0) {
+        handleDiscardChanges()
+      }
+    })
+
+    const cleanupAddRow = window.api.menu.onAddRow(() => {
+      if (canEdit && hasPrimaryKey) {
+        if (!isEditMode && editContext) {
+          enterEditMode(tabId, editContext)
+        }
+        handleAddRowWithSheet()
+      }
+    })
+
+    return () => {
+      cleanupSave()
+      cleanupDiscard()
+      cleanupAddRow()
+    }
+  }, [isEditMode, pendingChanges, canEdit, hasPrimaryKey, editContext, tabId, enterEditMode])
+
   // Notify parent of filter changes
   React.useEffect(() => {
     if (onFiltersChange) {

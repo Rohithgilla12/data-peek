@@ -226,6 +226,9 @@ interface DataPeekApi {
     onClearResults: (callback: () => void) => () => void
     onToggleSidebar: (callback: () => void) => () => void
     onOpenSettings: (callback: () => void) => () => void
+    onSaveChanges: (callback: () => void) => () => void
+    onDiscardChanges: (callback: () => void) => () => void
+    onAddRow: (callback: () => void) => () => void
   }
   license: {
     check: () => Promise<IpcResponse<LicenseStatus>>

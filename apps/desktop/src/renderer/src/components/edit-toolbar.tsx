@@ -286,7 +286,7 @@ export function EditToolbar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p className="text-xs">Discard all pending changes</p>
+                <p className="text-xs">Discard all pending changes (⌘⇧Z)</p>
               </TooltipContent>
             </Tooltip>
 
@@ -314,7 +314,7 @@ export function EditToolbar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p className="text-xs">Save all pending changes to the database</p>
+                <p className="text-xs">Save all pending changes to the database (⌘S)</p>
               </TooltipContent>
             </Tooltip>
           </>

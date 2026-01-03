@@ -550,6 +550,17 @@ function SettingsPage() {
               </div>
             </div>
 
+            {/* Data Editing */}
+            <div>
+              <h3 className="text-sm font-semibold text-foreground mb-2">Data Editing</h3>
+              <div className="space-y-1">
+                <ShortcutRow keys={[keys.mod, 'S']} description="Save pending changes" />
+                <ShortcutRow keys={[keys.mod, keys.shift, 'Z']} description="Discard all changes" />
+                <ShortcutRow keys={[keys.mod, keys.shift, 'N']} description="Add new row" />
+                <ShortcutRow keys={['Escape']} description="Exit edit mode" />
+              </div>
+            </div>
+
             {/* Foreign Keys */}
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">Foreign Keys</h3>

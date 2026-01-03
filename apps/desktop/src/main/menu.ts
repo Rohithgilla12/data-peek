@@ -230,6 +230,44 @@ export function createMenu(): void {
       ]
     },
 
+    // Data menu (table editing operations)
+    {
+      label: 'Data',
+      submenu: [
+        {
+          label: 'Save Changes',
+          accelerator: 'CmdOrCtrl+S',
+          click: (): void => {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              focusedWindow.webContents.send('menu:save-changes')
+            }
+          }
+        },
+        {
+          label: 'Discard Changes',
+          accelerator: 'CmdOrCtrl+Shift+Z',
+          click: (): void => {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              focusedWindow.webContents.send('menu:discard-changes')
+            }
+          }
+        },
+        { type: 'separator' },
+        {
+          label: 'Add Row',
+          accelerator: 'CmdOrCtrl+Shift+N',
+          click: (): void => {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              focusedWindow.webContents.send('menu:add-row')
+            }
+          }
+        }
+      ]
+    },
+
     // Window menu
     {
       label: 'Window',

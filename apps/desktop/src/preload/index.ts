@@ -197,6 +197,21 @@ const api = {
       const handler = (): void => callback()
       ipcRenderer.on('menu:open-settings', handler)
       return () => ipcRenderer.removeListener('menu:open-settings', handler)
+    },
+    onSaveChanges: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('menu:save-changes', handler)
+      return () => ipcRenderer.removeListener('menu:save-changes', handler)
+    },
+    onDiscardChanges: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('menu:discard-changes', handler)
+      return () => ipcRenderer.removeListener('menu:discard-changes', handler)
+    },
+    onAddRow: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('menu:add-row', handler)
+      return () => ipcRenderer.removeListener('menu:add-row', handler)
     }
   },
   // License management
