@@ -19,7 +19,8 @@ import {
   Maximize2,
   Square,
   Timer,
-  ActivitySquare
+  ActivitySquare,
+  ClipboardCopy
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
@@ -28,7 +29,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu'
 import {
   useTabStore,
@@ -56,7 +58,15 @@ import type { EditContext } from '@data-peek/shared'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { keys } from '@/lib/utils'
-import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
+import {
+  downloadCSV,
+  downloadJSON,
+  downloadSQL,
+  generateExportFilename,
+  exportToCSV,
+  exportToJSON
+} from '@/lib/export'
+import { useCopyToClipboard } from '@/hooks'
 import { buildQualifiedTableRef, buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -98,6 +108,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const getAllSnippets = useSnippetStore((s) => s.getAllSnippets)
   const initializeSnippets = useSnippetStore((s) => s.initializeSnippets)
   const allSnippets = getAllSnippets()
+  const { copy: copyToClipboard } = useCopyToClipboard()
 
   // Initialize snippets on mount
   useEffect(() => {
@@ -1375,11 +1386,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() => {
-                            if (!tab.result) return
+                            const activeStatement = getActiveStatementResult(tabId)
+                            const exportData = activeStatement
+                              ? { columns: activeStatement.fields, rows: activeStatement.rows }
+                              : tab.result
+                            if (!exportData) return
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            downloadCSV(tab.result, filename)
+                            downloadCSV(exportData, filename)
                           }}
                         >
                           <FileSpreadsheet className="size-4 text-muted-foreground" />
@@ -1387,11 +1402,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            if (!tab.result) return
+                            const activeStatement = getActiveStatementResult(tabId)
+                            const exportData = activeStatement
+                              ? { columns: activeStatement.fields, rows: activeStatement.rows }
+                              : tab.result
+                            if (!exportData) return
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            downloadJSON(tab.result, filename)
+                            downloadJSON(exportData, filename)
                           }}
                         >
                           <FileJson className="size-4 text-muted-foreground" />
@@ -1399,11 +1418,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            if (!tab.result) return
+                            const activeStatement = getActiveStatementResult(tabId)
+                            const exportData = activeStatement
+                              ? { columns: activeStatement.fields, rows: activeStatement.rows }
+                              : tab.result
+                            if (!exportData) return
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            downloadSQL(tab.result, filename, {
+                            downloadSQL(exportData, filename, {
                               tableName:
                                 tab.type === 'table-preview' ? tab.tableName! : 'query_result',
                               schemaName: tab.type === 'table-preview' ? tab.schemaName : undefined
@@ -1412,6 +1435,33 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                         >
                           <FileCode2 className="size-4 text-muted-foreground" />
                           Export as SQL
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const activeStatement = getActiveStatementResult(tabId)
+                            const exportData = activeStatement
+                              ? { columns: activeStatement.fields, rows: activeStatement.rows }
+                              : tab.result
+                            if (!exportData) return
+                            copyToClipboard(exportToCSV(exportData))
+                          }}
+                        >
+                          <ClipboardCopy className="size-4 text-muted-foreground" />
+                          Copy as CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            const activeStatement = getActiveStatementResult(tabId)
+                            const exportData = activeStatement
+                              ? { columns: activeStatement.fields, rows: activeStatement.rows }
+                              : tab.result
+                            if (!exportData) return
+                            copyToClipboard(exportToJSON(exportData))
+                          }}
+                        >
+                          <ClipboardCopy className="size-4 text-muted-foreground" />
+                          Copy as JSON
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

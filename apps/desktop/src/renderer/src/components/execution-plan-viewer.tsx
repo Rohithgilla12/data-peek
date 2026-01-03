@@ -14,13 +14,16 @@ import {
   Timer,
   TrendingUp,
   Filter,
-  Database
+  Database,
+  Copy,
+  Check
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { cn } from '@/lib/utils'
+import { useCopyToClipboard } from '@/hooks'
 
 // PostgreSQL EXPLAIN JSON plan node structure
 interface PlanNode {
@@ -543,9 +546,14 @@ function PlanNodeView({
 }
 
 export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlanViewerProps) {
+  const { copied, copy } = useCopyToClipboard()
   const rootPlan = plan[0]?.Plan
   const planningTime = plan[0]?.['Planning Time']
   const executionTime = plan[0]?.['Execution Time']
+
+  const handleCopyPlan = () => {
+    copy(JSON.stringify(plan, null, 2))
+  }
 
   // Calculate totals for percentage calculations and aggregate stats
   const stats = useMemo(() => {
@@ -660,6 +668,15 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
               Total: <span className="font-mono text-foreground">{durationMs}ms</span>
             </span>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-7"
+            onClick={handleCopyPlan}
+            title="Copy plan JSON"
+          >
+            {copied ? <Check className="size-4 text-green-500" /> : <Copy className="size-4" />}
+          </Button>
           <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
             <X className="size-4" />
           </Button>
