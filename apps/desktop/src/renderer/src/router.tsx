@@ -556,7 +556,7 @@ function SettingsPage() {
               <div className="space-y-1">
                 <ShortcutRow keys={[keys.mod, 'S']} description="Save pending changes" />
                 <ShortcutRow keys={[keys.mod, keys.shift, 'Z']} description="Discard all changes" />
-                <ShortcutRow keys={[keys.mod, keys.shift, 'I']} description="Add new row" />
+                <ShortcutRow keys={[keys.mod, keys.shift, 'A']} description="Add new row" />
                 <ShortcutRow keys={['Escape']} description="Exit edit mode" />
               </div>
             </div>
