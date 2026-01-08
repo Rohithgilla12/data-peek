@@ -29,9 +29,9 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
       privateKeyPath: filePath
     })
   }
-  const [showPassphrase, setShowPassphrase] = useState(false) 
+  const [showPassphrase, setShowPassphrase] = useState(false)
   const [showSshPassword, setShowSshPassword] = useState(false)
-  
+
   const handlePassphraseToggle = () => {
     setShowPassphrase((prev) => !prev)
   }
@@ -39,7 +39,7 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
     setShowSshPassword((prev) => !prev)
   }
 
-   return (
+  return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <label htmlFor="sshHost" className="text-sm font-medium">
@@ -102,23 +102,24 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
             SSH Password
           </label>
           <div className="flex items-center gap-2">
-          <Input
-            id="sshPassword"
-            type={showSshPassword ? "text" : "password"}
-            placeholder="••••••••"
-            value={config.password || ''}
-            onChange={(e) => updateConfig({ password: e.target.value })}
+            <Input
+              id="sshPassword"
+              type={showSshPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={config.password || ''}
+              onChange={(e) => updateConfig({ password: e.target.value })}
             />
             <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleSshPasswordToggle}
-                className="px-3"
-              >
-                {showSshPassword ? <EyeOff />:<Eye />}
-              </Button>
-            </div>
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSshPasswordToggle}
+              className="px-3"
+              title={showSshPassword ? 'Hide password' : 'Show password'}
+            >
+              {showSshPassword ? <EyeOff /> : <Eye />}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -152,12 +153,12 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
               Passphrase (optional)
             </label>
             <div className="flex items-center gap-2">
-            <Input
-              id="sshPassphrase"
-                type={showPassphrase ? "text" : "password"}
-              placeholder="••••••••"
-              value={config.passphrase || ''}
-              onChange={(e) => updateConfig({ passphrase: e.target.value })}
+              <Input
+                id="sshPassphrase"
+                type={showPassphrase ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={config.passphrase || ''}
+                onChange={(e) => updateConfig({ passphrase: e.target.value })}
               />
               <Button
                 type="button"
@@ -165,12 +166,11 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
                 size="sm"
                 onClick={handlePassphraseToggle}
                 className="px-3"
+                title={showPassphrase ? 'Hide passphrase' : 'Show passphrase'}
               >
-                {showPassphrase ? <EyeOff />:<Eye />}
+                {showPassphrase ? <EyeOff /> : <Eye />}
               </Button>
-              
-              </div>
-
+            </div>
           </div>
         </>
       )}

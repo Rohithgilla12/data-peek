@@ -649,25 +649,26 @@ export function AddConnectionDialog({
               <div className="flex flex-col gap-2">
                 <label htmlFor="password" className="text-sm font-medium">
                   Password
-                    </label>
-                    <div className="flex items-center gap-2">
-                    <Input
-                      id="password"
-                      type={showDatabasePassword ? 'text' : 'password'}
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDatabasePasswordToggle}
-                        className="px-3"
-                      >
-                        {showDatabasePassword ? <EyeOff />:<Eye />}
-                      </Button>
-                      </div>
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="password"
+                    type={showDatabasePassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDatabasePasswordToggle}
+                    className="px-3"
+                    title={showDatabasePassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showDatabasePassword ? <EyeOff /> : <Eye />}
+                  </Button>
+                </div>
               </div>
 
               <div className="flex space-x-4">
