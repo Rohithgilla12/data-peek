@@ -665,7 +665,7 @@ export function AddConnectionDialog({
                         onClick={handleDatabasePasswordToggle}
                         className="px-3"
                       >
-                        {showDatabasePassword ? <Eye /> : <EyeOff />}
+                        {showDatabasePassword ? <EyeOff />:<Eye />}
                       </Button>
                       </div>
               </div>

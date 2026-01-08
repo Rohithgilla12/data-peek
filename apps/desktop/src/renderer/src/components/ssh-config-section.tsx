@@ -116,7 +116,7 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
                 onClick={handleSshPasswordToggle}
                 className="px-3"
               >
-                {showSshPassword ? <Eye /> : <EyeOff />}
+                {showSshPassword ? <EyeOff />:<Eye />}
               </Button>
             </div>
         </div>
@@ -166,7 +166,7 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
                 onClick={handlePassphraseToggle}
                 className="px-3"
               >
-                {showPassphrase ? <Eye /> : <EyeOff />}
+                {showPassphrase ? <EyeOff />:<Eye />}
               </Button>
               
               </div>
