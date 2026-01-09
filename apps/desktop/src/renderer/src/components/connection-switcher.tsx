@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, Plus, Settings, Loader2, Pencil, Trash2, Copy } from 'lucide-react'
+import { ChevronDown, Plus, Settings, Loader2, Pencil, Trash2, Archive, Copy } from 'lucide-react'
 
 import {
   DropdownMenu,
@@ -25,6 +25,7 @@ import { useConnectionStore, type Connection } from '@/stores'
 import { useNavigate } from '@tanstack/react-router'
 import { AddConnectionDialog } from './add-connection-dialog'
 import { DatabaseIcon } from './database-icons'
+import { BackupRestoreModal } from './backup-restore-modal'
 
 export function ConnectionSwitcher() {
   const navigate = useNavigate()
@@ -41,6 +42,7 @@ export function ConnectionSwitcher() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [editingConnection, setEditingConnection] = useState<Connection | null>(null)
   const [deletingConnection, setDeletingConnection] = useState<Connection | null>(null)
+  const [backupConnection, setBackupConnection] = useState<Connection | null>(null)
 
   // Initialize connections from persistent storage on mount
   useEffect(() => {
@@ -78,6 +80,11 @@ export function ConnectionSwitcher() {
   const handleDeleteConnection = (e: React.MouseEvent, connection: Connection) => {
     e.stopPropagation()
     setDeletingConnection(connection)
+  }
+
+  const handleBackupConnection = (e: React.MouseEvent, connection: Connection) => {
+    e.stopPropagation()
+    setBackupConnection(connection)
   }
 
   const handleDuplicateConnection = async (e: React.MouseEvent, connection: Connection) => {
@@ -203,6 +210,13 @@ export function ConnectionSwitcher() {
                 </div>
                 <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
+                    onClick={(e) => handleBackupConnection(e, connection)}
+                    className="p-1 hover:bg-muted rounded"
+                    title="Backup / Restore"
+                  >
+                    <Archive className="size-3.5" />
+                  </button>
+                  <button
                     onClick={(e) => handleDuplicateConnection(e, connection)}
                     className="p-1 hover:bg-muted rounded"
                     title="Duplicate connection"
@@ -279,6 +293,12 @@ export function ConnectionSwitcher() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {/* Backup/Restore Modal */}
+      <BackupRestoreModal
+        open={!!backupConnection}
+        onOpenChange={(open) => !open && setBackupConnection(null)}
+        connection={backupConnection}
+      />
     </SidebarMenu>
   )
 }

@@ -1,4 +1,6 @@
 import { Client } from 'pg'
+import { exec, spawn } from 'child_process'
+import { promisify } from 'util'
 import {
   resolvePostgresType,
   type ConnectionConfig,
@@ -15,8 +17,15 @@ import {
   type CustomTypeInfo,
   type StatementResult,
   type RoutineInfo,
-  type RoutineParameterInfo
+  type RoutineParameterInfo,
+  type BackupOptions,
+  type RestoreOptions,
+  type ToolAvailability,
+  type PostgresVersion,
+  type PostgresTool,
+  type VersionCompatibility
 } from '@shared/index'
+import { toolManager } from '../tool-manager'
 import type {
   DatabaseAdapter,
   AdapterQueryResult,
@@ -31,6 +40,7 @@ import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 
 /** Split SQL into statements for PostgreSQL */
 const splitPgStatements = (sql: string) => splitStatements(sql, 'postgresql')
+const execAsync = promisify(exec)
 
 /**
  * Check if a SQL statement is data-returning (SELECT, RETURNING, etc.)
@@ -657,6 +667,253 @@ export class PostgresAdapter implements DatabaseAdapter {
       return Array.from(schemaMap.values())
     } finally {
       await client.end()
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async checkTools(): Promise<ToolAvailability> {
+    const checkTool = async (
+      tool: string
+    ): Promise<{ available: boolean; version?: string; error?: string }> => {
+      try {
+        const { stdout } = await execAsync(`${tool} --version`)
+        return { available: true, version: stdout.trim().split('\n')[0] }
+      } catch {
+        return { available: false, error: `${tool} not found in PATH` }
+      }
+    }
+
+    const [pgDump, pgRestore, psql] = await Promise.all([
+      checkTool('pg_dump'),
+      checkTool('pg_restore'),
+      checkTool('psql')
+    ])
+
+    const allAvailable = pgDump.available && pgRestore.available && psql.available
+    const missingTools = [
+      !pgDump.available && 'pg_dump',
+      !pgRestore.available && 'pg_restore',
+      !psql.available && 'psql'
+    ].filter(Boolean)
+
+    return {
+      available: allAvailable,
+      error: allAvailable ? undefined : `Missing tools: ${missingTools.join(', ')}`,
+      tools: {
+        pg_dump: pgDump,
+        pg_restore: pgRestore,
+        psql: psql
+      }
+    }
+  }
+
+  async getServerVersion(config: ConnectionConfig): Promise<PostgresVersion | null> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+
+    const client = new Client(config)
+    await client.connect()
+
+    try {
+      const res = await client.query('SHOW server_version')
+      const versionString = res.rows[0]?.server_version
+      if (!versionString) return null
+
+      return toolManager.parseServerVersion(versionString)
+    } finally {
+      await client.end()
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async checkToolsWithVersion(serverVersion?: PostgresVersion): Promise<VersionCompatibility> {
+    const tools: PostgresTool[] = ['pg_dump', 'pg_restore', 'psql']
+    const toolVersions: VersionCompatibility['toolVersions'] = {
+      pg_dump: null,
+      pg_restore: null,
+      psql: null
+    }
+
+    const targetMajor = serverVersion?.major ?? 16
+
+    for (const tool of tools) {
+      toolVersions[tool] = await toolManager.getBestToolPath(tool, targetMajor)
+    }
+
+    const mismatches: VersionCompatibility['mismatchDetails'] = []
+
+    if (serverVersion) {
+      for (const tool of tools) {
+        const info = toolVersions[tool]
+        if (
+          info?.version &&
+          !toolManager.isVersionCompatible(info.version.major, serverVersion.major)
+        ) {
+          mismatches.push({
+            tool,
+            toolMajor: info.version.major,
+            serverMajor: serverVersion.major,
+            recommendation: `Download PostgreSQL ${serverVersion.major} tools`
+          })
+        }
+      }
+    }
+
+    const allToolsPresent = Object.values(toolVersions).every((t) => t !== null)
+
+    return {
+      serverVersion: serverVersion ?? { major: 0, minor: 0, full: 'unknown' },
+      toolVersions,
+      isCompatible: allToolsPresent && mismatches.length === 0,
+      mismatchDetails: mismatches.length > 0 ? mismatches : undefined
+    }
+  }
+
+  async backup(config: ConnectionConfig, options: BackupOptions): Promise<void> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+
+    try {
+      const serverVersion = await this.getServerVersion(config)
+      const targetMajor = serverVersion?.major ?? 16
+
+      const pgDumpInfo = await toolManager.getBestToolPath('pg_dump', targetMajor)
+      if (!pgDumpInfo) {
+        throw new Error(
+          'pg_dump not available. Please install PostgreSQL tools or download them from the backup dialog.'
+        )
+      }
+
+      const host = config.ssh ? '127.0.0.1' : config.host
+      const port = config.port
+
+      const args = [
+        '--host',
+        host,
+        '--port',
+        String(port),
+        '--username',
+        config.user || '',
+        '--no-password'
+      ]
+
+      if (options.format === 'custom') args.push('--format=c')
+      else if (options.format === 'tar') args.push('--format=t')
+      else if (options.format === 'directory') args.push('--format=d')
+      else args.push('--format=p')
+
+      if (options.dataOnly) args.push('--data-only')
+      if (options.schemaOnly) args.push('--schema-only')
+      if (options.clean) args.push('--clean')
+      if (options.ifExists) args.push('--if-exists')
+      if (options.createDb) args.push('--create')
+      if (options.verbose) args.push('--verbose')
+      if (options.encoding) args.push('--encoding', options.encoding)
+      if (options.jobs && options.format === 'directory') {
+        args.push('--jobs', String(options.jobs))
+      }
+      if (options.compression !== undefined) args.push('--compress', String(options.compression))
+
+      if (options.tables && options.tables.length > 0) {
+        options.tables.forEach((t) => args.push('--table', t))
+      }
+      if (options.schemas && options.schemas.length > 0) {
+        options.schemas.forEach((s) => args.push('--schema', s))
+      }
+
+      args.push('--file', options.outputPath)
+      args.push(config.database)
+
+      const env = { ...process.env, PGPASSWORD: config.password }
+
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn(pgDumpInfo.path, args, { env })
+
+        let errorOutput = ''
+        child.stderr.on('data', (data) => {
+          errorOutput += data.toString()
+        })
+
+        child.on('close', (code) => {
+          if (code === 0) resolve()
+          else reject(new Error(`pg_dump exited with code ${code}: ${errorOutput}`))
+        })
+
+        child.on('error', (err) => {
+          reject(new Error(`Failed to start pg_dump: ${err.message}`))
+        })
+      })
+    } finally {
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async restore(config: ConnectionConfig, options: RestoreOptions): Promise<void> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+
+    try {
+      const serverVersion = await this.getServerVersion(config)
+      const targetMajor = serverVersion?.major ?? 16
+
+      const isPlain = options.format === 'plain' || options.inputFile.endsWith('.sql')
+      const toolName: PostgresTool = isPlain ? 'psql' : 'pg_restore'
+
+      const toolInfo = await toolManager.getBestToolPath(toolName, targetMajor)
+      if (!toolInfo) {
+        throw new Error(
+          `${toolName} not available. Please install PostgreSQL tools or download them from the backup dialog.`
+        )
+      }
+
+      const host = config.ssh ? '127.0.0.1' : config.host
+      const port = config.port
+
+      const args = [
+        '--host',
+        host,
+        '--port',
+        String(port),
+        '--username',
+        config.user || '',
+        '--no-password'
+      ]
+      const env = { ...process.env, PGPASSWORD: config.password }
+
+      if (isPlain) {
+        args.push('--dbname', options.targetDatabase || config.database)
+        if (options.exitOnError) args.push('-v', 'ON_ERROR_STOP=1')
+        args.push('--file', options.inputFile)
+      } else {
+        if (options.clean) args.push('--clean')
+        if (options.createDb) args.push('--create')
+        if (options.ifExists) args.push('--if-exists')
+        if (options.dataOnly) args.push('--data-only')
+        if (options.schemaOnly) args.push('--schema-only')
+        if (options.jobs) args.push('--jobs', String(options.jobs))
+        if (options.verbose) args.push('--verbose')
+
+        args.push('--dbname', options.targetDatabase || config.database)
+        args.push(options.inputFile)
+      }
+
+      await new Promise<void>((resolve, reject) => {
+        const child = spawn(toolInfo.path, args, { env })
+        let errorOutput = ''
+        child.stderr.on('data', (data) => (errorOutput += data.toString()))
+        child.on('close', (code) => {
+          if (code === 0) resolve()
+          else reject(new Error(`${toolName} exited with code ${code}: ${errorOutput}`))
+        })
+        child.on('error', (err) => reject(new Error(`Failed to start ${toolName}: ${err.message}`)))
+      })
+    } finally {
       closeTunnel(tunnelSession)
     }
   }

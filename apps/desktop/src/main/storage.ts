@@ -118,8 +118,8 @@ export class DpStorage<T extends StoreRecord> {
     try {
       const store = new Store<T>(options)
       return new DpStorage(store, options.name)
-    } catch {
-      log.warn(`Store "${options.name}" corrupted, recreating`)
+    } catch (error) {
+      log.warn(`Store "${options.name}" corrupted, recreating. Error:`, error)
       deleteStoreFile(options.name)
       const store = new Store<T>(options)
       return new DpStorage(store, options.name)
@@ -197,8 +197,8 @@ export class DpSecureStorage<T extends StoreRecord> {
     try {
       const store = new Store<T>({ ...options, encryptionKey })
       return new DpSecureStorage(store, options.name)
-    } catch {
-      log.warn(`Secure store "${options.name}" corrupted, recreating`)
+    } catch (error) {
+      log.warn(`Secure store "${options.name}" corrupted, recreating. Error:`, error)
       deleteStoreFile(options.name)
       const store = new Store<T>({ ...options, encryptionKey })
       return new DpSecureStorage(store, options.name)
