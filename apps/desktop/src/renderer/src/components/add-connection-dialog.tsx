@@ -7,7 +7,9 @@ import {
   Link,
   Settings2,
   FolderOpen,
-  ChevronDown
+  ChevronDown,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -59,6 +61,11 @@ export function AddConnectionDialog({
   const [password, setPassword] = useState('')
   const [ssl, setSsl] = useState(false)
   const [ssh, setSsh] = useState(false)
+  const [showDatabasePassword, setShowDatabasePassword] = useState(false)
+
+  const handleDatabasePasswordToggle = () => {
+    setShowDatabasePassword(!showDatabasePassword)
+  }
 
   const [sshConfig, setSshConfig] = useState<SSHConfig>({
     host: '',
@@ -643,13 +650,25 @@ export function AddConnectionDialog({
                 <label htmlFor="password" className="text-sm font-medium">
                   Password
                 </label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="password"
+                    type={showDatabasePassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDatabasePasswordToggle}
+                    className="px-3"
+                    title={showDatabasePassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showDatabasePassword ? <EyeOff /> : <Eye />}
+                  </Button>
+                </div>
               </div>
 
               <div className="flex space-x-4">

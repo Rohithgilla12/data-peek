@@ -1,4 +1,4 @@
-import { FolderOpen } from 'lucide-react'
+import { Eye, EyeOff, FolderOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -9,6 +9,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import type { SSHAuthenticationMethod, SSHConfig } from '@shared/index'
+import { useState } from 'react'
 
 interface SSHConfigSectionProps {
   config: SSHConfig
@@ -27,6 +28,15 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
     updateConfig({
       privateKeyPath: filePath
     })
+  }
+  const [showPassphrase, setShowPassphrase] = useState(false)
+  const [showSshPassword, setShowSshPassword] = useState(false)
+
+  const handlePassphraseToggle = () => {
+    setShowPassphrase((prev) => !prev)
+  }
+  const handleSshPasswordToggle = () => {
+    setShowSshPassword((prev) => !prev)
   }
 
   return (
@@ -91,13 +101,25 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
           <label htmlFor="sshPassword" className="text-sm font-medium">
             SSH Password
           </label>
-          <Input
-            id="sshPassword"
-            type="password"
-            placeholder="••••••••"
-            value={config.password || ''}
-            onChange={(e) => updateConfig({ password: e.target.value })}
-          />
+          <div className="flex items-center gap-2">
+            <Input
+              id="sshPassword"
+              type={showSshPassword ? 'text' : 'password'}
+              placeholder="••••••••"
+              value={config.password || ''}
+              onChange={(e) => updateConfig({ password: e.target.value })}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleSshPasswordToggle}
+              className="px-3"
+              title={showSshPassword ? 'Hide password' : 'Show password'}
+            >
+              {showSshPassword ? <EyeOff /> : <Eye />}
+            </Button>
+          </div>
         </div>
       )}
 
@@ -130,13 +152,25 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
             <label htmlFor="sshPassphrase" className="text-sm font-medium">
               Passphrase (optional)
             </label>
-            <Input
-              id="sshPassphrase"
-              type="password"
-              placeholder="••••••••"
-              value={config.passphrase || ''}
-              onChange={(e) => updateConfig({ passphrase: e.target.value })}
-            />
+            <div className="flex items-center gap-2">
+              <Input
+                id="sshPassphrase"
+                type={showPassphrase ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={config.passphrase || ''}
+                onChange={(e) => updateConfig({ passphrase: e.target.value })}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handlePassphraseToggle}
+                className="px-3"
+                title={showPassphrase ? 'Hide passphrase' : 'Show passphrase'}
+              >
+                {showPassphrase ? <EyeOff /> : <Eye />}
+              </Button>
+            </div>
           </div>
         </>
       )}
