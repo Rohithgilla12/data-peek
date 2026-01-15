@@ -148,6 +148,10 @@ interface TabState {
   // Tab title
   renameTab: (tabId: string, title: string) => void
 
+  // Connection sync
+  updateTabConnectionId: (tabId: string, connectionId: string | null) => void
+  syncActiveTabWithConnection: (connectionId: string | null) => void
+
   // Computed helpers
   getTab: (tabId: string) => Tab | undefined
   getActiveTab: () => Tab | undefined
@@ -624,6 +628,26 @@ export const useTabStore = create<TabState>()(
       renameTab: (tabId, title) => {
         set((state) => ({
           tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, title } : t))
+        }))
+      },
+
+      updateTabConnectionId: (tabId, connectionId) => {
+        set((state) => ({
+          tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, connectionId } : t))
+        }))
+      },
+
+      syncActiveTabWithConnection: (connectionId) => {
+        const activeTab = get().getActiveTab()
+        if (!activeTab) return
+
+        // Only sync query tabs (not table-preview, erd, or table-designer)
+        // Table previews are tied to specific tables in specific databases
+        // ERD and table designer are also database-specific
+        if (activeTab.type !== 'query') return
+
+        set((state) => ({
+          tabs: state.tabs.map((t) => (t.id === activeTab.id ? { ...t, connectionId } : t))
         }))
       },
 

@@ -90,6 +90,10 @@ function LayoutContent() {
   // Tab store for opening SQL in new tab
   const createQueryTab = useTabStore((s) => s.createQueryTab)
   const setActiveTab = useTabStore((s) => s.setActiveTab)
+  const syncActiveTabWithConnection = useTabStore((s) => s.syncActiveTabWithConnection)
+
+  // Track active connection ID for sync effect
+  const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
 
   const platform = window.electron.process.platform
 
@@ -114,6 +118,13 @@ function LayoutContent() {
     })
     return cleanup
   }, [])
+
+  // Sync active query tab's connection when the active connection changes
+  useEffect(() => {
+    if (activeConnectionId) {
+      syncActiveTabWithConnection(activeConnectionId)
+    }
+  }, [activeConnectionId, syncActiveTabWithConnection])
 
   // Handle connection switching (used by keyboard shortcuts)
   const handleSelectConnection = useCallback(
