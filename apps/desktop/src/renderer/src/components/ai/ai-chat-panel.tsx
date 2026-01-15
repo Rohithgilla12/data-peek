@@ -57,7 +57,7 @@ export type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
 export interface AIQueryData {
   type: 'query'
   sql: string
-  explanation: string
+  explanation?: string
   warning?: string
   /** If true, query should NOT be auto-executed (UPDATE/DELETE operations) */
   requiresConfirmation?: boolean
@@ -267,11 +267,11 @@ export function AIChatPanel({
         // Extract response data based on type
         // Note: Backend uses flat schema with nullable fields for AI provider compatibility
         let responseData: AIResponseData = null
-        if (data.type === 'query' && data.sql && data.explanation) {
+        if (data.type === 'query' && data.sql) {
           responseData = {
             type: 'query',
             sql: data.sql,
-            explanation: data.explanation,
+            explanation: data.explanation ?? undefined,
             warning: data.warning ?? undefined,
             requiresConfirmation: data.requiresConfirmation ?? undefined
           }
