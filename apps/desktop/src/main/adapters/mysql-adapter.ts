@@ -100,13 +100,16 @@ function toMySQLConfig(config: ConnectionConfig): mysql.ConnectionOptions {
           rejectUnauthorized: true,
           ca: readFileSync(sslOptions.ca, 'utf-8')
         }
-      } catch {
-        mysqlConfig.ssl = {
-          rejectUnauthorized: true
-        }
+      } catch (err) {
+        console.error(`Failed to read CA certificate from ${sslOptions.ca}:`, err)
+        throw new Error(
+          `Failed to read CA certificate file: ${sslOptions.ca}. Please verify the file exists and is readable.`
+        )
       }
     } else {
-      mysqlConfig.ssl = {}
+      mysqlConfig.ssl = {
+        rejectUnauthorized: true
+      }
     }
   }
 

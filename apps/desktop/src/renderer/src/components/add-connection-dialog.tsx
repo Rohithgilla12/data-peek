@@ -707,28 +707,52 @@ export function AddConnectionDialog({
                 </div>
 
                 {ssl && dbType !== 'mssql' && (
-                  <div className="ml-6 flex flex-col gap-2 rounded-md border bg-muted/30 p-3">
-                    <div className="flex items-center gap-2">
-                      <input
-                        id="sslRejectUnauthorized"
-                        type="checkbox"
-                        checked={sslOptions.rejectUnauthorized !== false}
+                  <div className="ml-6 flex flex-col gap-3 rounded-md border bg-muted/30 p-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="sslRejectUnauthorized"
+                          type="checkbox"
+                          checked={sslOptions.rejectUnauthorized !== false}
+                          onChange={(e) =>
+                            setSslOptions((prev) => ({
+                              ...prev,
+                              rejectUnauthorized: e.target.checked
+                            }))
+                          }
+                          className="size-4 rounded border-input"
+                        />
+                        <label htmlFor="sslRejectUnauthorized" className="text-sm font-medium">
+                          Verify server certificate
+                        </label>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Disable this for AWS RDS, Azure, or other cloud databases where certificate
+                        verification fails.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="sslCaPath" className="text-sm font-medium">
+                        CA Certificate Path (optional)
+                      </label>
+                      <Input
+                        id="sslCaPath"
+                        type="text"
+                        value={sslOptions.ca || ''}
                         onChange={(e) =>
                           setSslOptions((prev) => ({
                             ...prev,
-                            rejectUnauthorized: e.target.checked
+                            ca: e.target.value || undefined
                           }))
                         }
-                        className="size-4 rounded border-input"
+                        placeholder="/path/to/ca-certificate.pem"
+                        className="mt-1"
                       />
-                      <label htmlFor="sslRejectUnauthorized" className="text-sm font-medium">
-                        Verify server certificate
-                      </label>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Path to a CA certificate file for servers with private CA certificates.
+                      </p>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Disable this for AWS RDS, Azure, or other cloud databases where certificate
-                      verification fails. Required when connecting through VPN.
-                    </p>
                   </div>
                 )}
               </div>
