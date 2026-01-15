@@ -286,7 +286,9 @@ export function EditToolbar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p className="text-xs">Discard all pending changes ({keys.mod}+{keys.shift}+Z)</p>
+                <p className="text-xs">
+                  Discard all pending changes ({keys.mod}+{keys.shift}+Z)
+                </p>
               </TooltipContent>
             </Tooltip>
 
