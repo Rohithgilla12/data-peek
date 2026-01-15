@@ -149,7 +149,6 @@ interface TabState {
   renameTab: (tabId: string, title: string) => void
 
   // Connection sync
-  updateTabConnectionId: (tabId: string, connectionId: string | null) => void
   syncActiveTabWithConnection: (connectionId: string | null) => void
 
   // Computed helpers
@@ -628,12 +627,6 @@ export const useTabStore = create<TabState>()(
       renameTab: (tabId, title) => {
         set((state) => ({
           tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, title } : t))
-        }))
-      },
-
-      updateTabConnectionId: (tabId, connectionId) => {
-        set((state) => ({
-          tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, connectionId } : t))
         }))
       },
 
