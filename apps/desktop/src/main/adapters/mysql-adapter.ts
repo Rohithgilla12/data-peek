@@ -1,4 +1,5 @@
 import mysql from 'mysql2/promise'
+import { readFileSync } from 'fs'
 import type {
   ConnectionConfig,
   SchemaInfo,
@@ -75,16 +76,41 @@ function resolveMySQLType(typeCode: number): string {
 
 /**
  * Create MySQL connection config from our ConnectionConfig
+ * Properly handles SSL options for cloud databases like AWS RDS
  */
 function toMySQLConfig(config: ConnectionConfig): mysql.ConnectionOptions {
-  return {
+  const mysqlConfig: mysql.ConnectionOptions = {
     host: config.host,
     port: config.port,
     user: config.user,
     password: config.password,
-    database: config.database,
-    ssl: config.ssl ? {} : undefined
+    database: config.database
   }
+
+  if (config.ssl) {
+    const sslOptions = config.sslOptions || {}
+
+    if (sslOptions.rejectUnauthorized === false) {
+      mysqlConfig.ssl = {
+        rejectUnauthorized: false
+      }
+    } else if (sslOptions.ca) {
+      try {
+        mysqlConfig.ssl = {
+          rejectUnauthorized: true,
+          ca: readFileSync(sslOptions.ca, 'utf-8')
+        }
+      } catch {
+        mysqlConfig.ssl = {
+          rejectUnauthorized: true
+        }
+      }
+    } else {
+      mysqlConfig.ssl = {}
+    }
+  }
+
+  return mysqlConfig
 }
 
 /**

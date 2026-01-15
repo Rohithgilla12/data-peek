@@ -1,4 +1,5 @@
-import { Client } from 'pg'
+import { Client, type ClientConfig } from 'pg'
+import { readFileSync } from 'fs'
 import {
   resolvePostgresType,
   type ConnectionConfig,
@@ -31,6 +32,45 @@ import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 
 /** Split SQL into statements for PostgreSQL */
 const splitPgStatements = (sql: string) => splitStatements(sql, 'postgresql')
+
+/**
+ * Build pg Client configuration from ConnectionConfig
+ * Properly handles SSL options for cloud databases like AWS RDS
+ */
+function buildClientConfig(config: ConnectionConfig): ClientConfig {
+  const clientConfig: ClientConfig = {
+    host: config.host,
+    port: config.port,
+    database: config.database,
+    user: config.user,
+    password: config.password
+  }
+
+  if (config.ssl) {
+    const sslOptions = config.sslOptions || {}
+
+    if (sslOptions.rejectUnauthorized === false) {
+      clientConfig.ssl = {
+        rejectUnauthorized: false
+      }
+    } else if (sslOptions.ca) {
+      try {
+        clientConfig.ssl = {
+          rejectUnauthorized: true,
+          ca: readFileSync(sslOptions.ca, 'utf-8')
+        }
+      } catch {
+        clientConfig.ssl = {
+          rejectUnauthorized: true
+        }
+      }
+    } else {
+      clientConfig.ssl = true
+    }
+  }
+
+  return clientConfig
+}
 
 /**
  * Check if a SQL statement is data-returning (SELECT, RETURNING, etc.)
@@ -66,7 +106,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       tunnelSession = await createTunnel(config)
     }
 
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
     await client.connect()
     await client.end()
     closeTunnel(tunnelSession)
@@ -77,7 +117,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
     await client.connect()
 
     try {
@@ -119,7 +159,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       tunnelSession = await createTunnel(config)
     }
 
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
 
     if (collectTelemetry) {
       telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
@@ -256,7 +296,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
     await client.connect()
 
     try {
@@ -276,7 +316,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
     await client.connect()
 
     try {
@@ -307,7 +347,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
     await client.connect()
     try {
       // Query 1: Get all schemas (excluding system schemas)
@@ -666,7 +706,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
     await client.connect()
 
     try {
@@ -700,7 +740,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
     await client.connect()
 
     try {
@@ -945,7 +985,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
     await client.connect()
 
     try {
@@ -979,7 +1019,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(config)
+    const client = new Client(buildClientConfig(config))
     await client.connect()
 
     try {
