@@ -93,7 +93,7 @@ interface AIChatResponse {
 interface StoredQueryData {
   type: 'query'
   sql: string
-  explanation: string
+  explanation?: string
   warning?: string
 }
 
