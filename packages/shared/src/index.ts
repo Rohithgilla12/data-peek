@@ -389,6 +389,25 @@ export interface SQLiteConnectionOptions {
 }
 
 /**
+ * SSL/TLS connection options for PostgreSQL and MySQL
+ * Allows configuration of certificate verification behavior
+ */
+export interface SSLConnectionOptions {
+  /**
+   * If true, the server certificate is verified against the list of supplied CAs.
+   * Set to false to allow connections to servers with self-signed certificates
+   * or when connecting through VPN to cloud databases (like AWS RDS).
+   * Default: true
+   */
+  rejectUnauthorized?: boolean;
+  /**
+   * Optional path to CA certificate file (PEM format)
+   * Use this when connecting to a server with a certificate signed by a private CA
+   */
+  ca?: string;
+}
+
+/**
  * MSSQL-specific connection options
  */
 export interface MSSQLConnectionOptions {
@@ -423,6 +442,8 @@ export interface ConnectionConfig {
   dbType: DatabaseType;
   dstPort: number;
   sshConfig?: SSHConfig;
+  /** SSL/TLS options for PostgreSQL and MySQL (only used when ssl is true) */
+  sslOptions?: SSLConnectionOptions;
   /** MSSQL-specific connection options (only used when dbType is 'mssql') */
   mssqlOptions?: MSSQLConnectionOptions;
   /** SQLite-specific connection options (only used when dbType is 'sqlite') */

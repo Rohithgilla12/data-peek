@@ -26,7 +26,7 @@ import { DB_DEFAULTS, parseConnectionString } from '@/lib/connection-string-pars
 import { PostgreSQLIcon, MySQLIcon, MSSQLIcon, SQLiteIcon } from './database-icons'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { SSHConfigSection } from './ssh-config-section'
-import type { SSHConfig } from '@shared/index'
+import type { SSHConfig, SSLConnectionOptions } from '@shared/index'
 import type { DatabaseType } from '@shared/index'
 
 interface AddConnectionDialogProps {
@@ -77,6 +77,10 @@ export function AddConnectionDialog({
     passphrase: ''
   })
 
+  const [sslOptions, setSslOptions] = useState<SSLConnectionOptions>({
+    rejectUnauthorized: true
+  })
+
   const [mssqlOptions, setMssqlOptions] = useState<
     import('@shared/index').MSSQLConnectionOptions | undefined
   >(undefined)
@@ -99,6 +103,7 @@ export function AddConnectionDialog({
       setUser(editConnection.user || '')
       setPassword(editConnection.password || '')
       setSsl(editConnection.ssl || false)
+      setSslOptions(editConnection.sslOptions || { rejectUnauthorized: true })
       setSsh(editConnection.ssh || false)
       setMssqlOptions(editConnection.mssqlOptions)
 
@@ -212,6 +217,7 @@ export function AddConnectionDialog({
     setUser('postgres')
     setPassword('')
     setSsl(false)
+    setSslOptions({ rejectUnauthorized: true })
     setSsh(false)
     setSshConfig({
       host: '',
@@ -262,6 +268,7 @@ export function AddConnectionDialog({
       ssh,
       dstPort: parseInt(port, 10) || 0,
       sshConfig: sshConfigForConnection,
+      ...(ssl && { sslOptions }),
       ...(dbType === 'mssql' && mssqlOptions && { mssqlOptions })
     }
   }
@@ -671,31 +678,83 @@ export function AddConnectionDialog({
                 </div>
               </div>
 
-              <div className="flex space-x-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    id="ssl"
-                    type="checkbox"
-                    checked={ssl}
-                    onChange={(e) => setSsl(e.target.checked)}
-                    className="size-4 rounded border-input"
-                  />
-                  <label htmlFor="ssl" className="text-sm font-medium">
-                    Use SSL
-                  </label>
+              <div className="flex flex-col gap-3">
+                <div className="flex space-x-4">
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="ssl"
+                      type="checkbox"
+                      checked={ssl}
+                      onChange={(e) => setSsl(e.target.checked)}
+                      className="size-4 rounded border-input"
+                    />
+                    <label htmlFor="ssl" className="text-sm font-medium">
+                      Use SSL
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="ssh"
+                      type="checkbox"
+                      checked={ssh}
+                      onChange={() => setSsh(!ssh)}
+                      className="size-4 rounded border-input"
+                    />
+                    <label htmlFor="ssh" className="text-sm font-medium">
+                      Use SSH
+                    </label>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <input
-                    id="ssh"
-                    type="checkbox"
-                    checked={ssh}
-                    onChange={() => setSsh(!ssh)}
-                    className="size-4 rounded border-input"
-                  />
-                  <label htmlFor="ssh" className="text-sm font-medium">
-                    Use SSH
-                  </label>
-                </div>
+
+                {ssl && dbType !== 'mssql' && (
+                  <div className="ml-6 flex flex-col gap-3 rounded-md border bg-muted/30 p-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="sslRejectUnauthorized"
+                          type="checkbox"
+                          checked={sslOptions.rejectUnauthorized !== false}
+                          onChange={(e) =>
+                            setSslOptions((prev) => ({
+                              ...prev,
+                              rejectUnauthorized: e.target.checked
+                            }))
+                          }
+                          className="size-4 rounded border-input"
+                        />
+                        <label htmlFor="sslRejectUnauthorized" className="text-sm font-medium">
+                          Verify server certificate
+                        </label>
+                      </div>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Disable this for AWS RDS, Azure, or other cloud databases where certificate
+                        verification fails.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label htmlFor="sslCaPath" className="text-sm font-medium">
+                        CA Certificate Path (optional)
+                      </label>
+                      <Input
+                        id="sslCaPath"
+                        type="text"
+                        value={sslOptions.ca || ''}
+                        onChange={(e) =>
+                          setSslOptions((prev) => ({
+                            ...prev,
+                            ca: e.target.value || undefined
+                          }))
+                        }
+                        placeholder="/path/to/ca-certificate.pem"
+                        className="mt-1"
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Path to a CA certificate file for servers with private CA certificates.
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* MSSQL Advanced Options */}
