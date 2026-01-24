@@ -193,7 +193,7 @@ function LayoutContent() {
         <header
           className={cn(
             'titlebar-drag-region flex h-14 shrink-0 items-center gap-2 border-b border-border/40 bg-background/80 backdrop-blur-xl transition-[margin] duration-200 ease-linear',
-            sidebarState === 'collapsed' && 'mx-[72px]'
+            sidebarState === 'collapsed' && 'ml-[72px]'
           )}
         >
           <div className="flex flex-1 items-center gap-2 px-3">
