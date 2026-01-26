@@ -249,6 +249,11 @@
     background: oklch(0.6 0 0 / 0.5);
   }
 
+  /* Scrollbar corner */
+  ::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
   /* Selection colors */
   ::selection {
     background: oklch(0.45 0.15 250 / 0.3);

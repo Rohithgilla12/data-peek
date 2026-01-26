@@ -16,7 +16,7 @@ import { DatabaseIcon } from '@/components/database-icons'
 import { AppSidebar } from '@/components/app-sidebar'
 import { NavActions } from '@/components/nav-actions'
 import { Separator } from '@/components/ui/separator'
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from '@/components/ui/sidebar'
 import { TabContainer } from '@/components/tab-container'
 import { DashboardView } from '@/components/dashboard'
 import { ConnectionPicker } from '@/components/connection-picker'
@@ -42,6 +42,7 @@ type CommandPalettePage = 'home' | 'connections' | 'connections:switch' | 'saved
 
 // Inner layout component that has access to sidebar context
 function LayoutContent() {
+  const { state: sidebarState } = useSidebar()
   const activeConnection = useConnectionStore((s) => s.getActiveConnection())
   const connections = useConnectionStore((s) => s.connections)
   const setActiveConnection = useConnectionStore((s) => s.setActiveConnection)
@@ -189,11 +190,16 @@ function LayoutContent() {
     <>
       <AppSidebar />
       <SidebarInset>
-        <header className="titlebar-drag-region flex h-14 shrink-0 items-center gap-2 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <header
+          className={cn(
+            'titlebar-drag-region flex h-14 shrink-0 items-center gap-2 border-b border-border/40 bg-background/80 backdrop-blur-xl transition-[margin] duration-200 ease-linear',
+            sidebarState === 'collapsed' && platform === 'darwin' && 'ml-[72px]'
+          )}
+        >
           <div className="flex flex-1 items-center gap-2 px-3">
             <SidebarTrigger className="titlebar-no-drag" />
             <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-            <span className="text-sm font-medium text-muted-foreground">data-peek</span>
+            <span className="text-sm font-medium text-muted-foreground">Data Peek</span>
             {activeConnection && (
               <>
                 <Separator
