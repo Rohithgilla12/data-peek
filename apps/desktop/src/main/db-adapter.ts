@@ -7,7 +7,12 @@ import type {
   SequenceInfo,
   CustomTypeInfo,
   StatementResult,
-  QueryTelemetry
+  QueryTelemetry,
+  BackupOptions,
+  RestoreOptions,
+  ToolAvailability,
+  PostgresVersion,
+  VersionCompatibility
 } from '@shared/index'
 
 /**
@@ -96,6 +101,21 @@ export interface DatabaseAdapter {
 
   /** Get custom types (enums, etc.) */
   getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]>
+
+  /** Check if backup/restore tools are available */
+  checkTools?(): Promise<ToolAvailability>
+
+  /** Get database server version (PostgreSQL-specific) */
+  getServerVersion?(config: ConnectionConfig): Promise<PostgresVersion | null>
+
+  /** Check tools with version compatibility info (PostgreSQL-specific) */
+  checkToolsWithVersion?(serverVersion?: PostgresVersion): Promise<VersionCompatibility>
+
+  /** Backup database */
+  backup?(config: ConnectionConfig, options: BackupOptions): Promise<void>
+
+  /** Restore database */
+  restore?(config: ConnectionConfig, options: RestoreOptions): Promise<void>
 }
 
 // Import adapters

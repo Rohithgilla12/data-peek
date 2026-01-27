@@ -1,59 +1,65 @@
-import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type {
-  ConnectionConfig,
-  IpcResponse,
-  DatabaseSchemaResponse,
-  EditBatch,
-  EditResult,
-  TableDefinition,
-  AlterTableBatch,
-  DDLResult,
-  SequenceInfo,
-  CustomTypeInfo,
-  LicenseStatus,
-  LicenseActivationRequest,
-  LicenseType,
-  SavedQuery,
-  Snippet,
-  SchemaInfo,
-  AIProvider,
+  AIChatResponse,
   AIConfig,
   AIMessage,
-  AIChatResponse,
-  StoredChatMessage,
-  ChatSession,
   AIMultiProviderConfig,
+  AIProvider,
   AIProviderConfig,
+  AlterTableBatch,
+  BackupOptions,
   BenchmarkResult,
+  ChatSession,
+  ConnectionConfig,
+  CreateDashboardInput,
+  CreateScheduledQueryInput,
+  CreateWidgetInput,
+  CustomTypeInfo,
+  Dashboard,
+  DatabaseSchemaResponse,
+  DDLResult,
+  EditBatch,
+  EditResult,
+  IpcResponse,
+  LicenseActivationRequest,
+  LicenseStatus,
+  LicenseType,
   MultiStatementResultWithTelemetry,
-  PerformanceAnalysisResult,
   PerformanceAnalysisConfig,
+  PerformanceAnalysisResult,
+  PostgresVersion,
   QueryHistoryItemForAnalysis,
+  RestoreOptions,
+  SavedQuery,
   ScheduledQuery,
   ScheduledQueryRun,
-  CreateScheduledQueryInput,
-  UpdateScheduledQueryInput,
-  Dashboard,
-  Widget,
-  WidgetRunResult,
-  CreateDashboardInput,
+  SchemaInfo,
+  SequenceInfo,
+  Snippet,
+  StoredChatMessage,
+  TableDefinition,
+  ToolAvailability,
+  ToolDownloadProgress,
   UpdateDashboardInput,
-  CreateWidgetInput,
+  UpdateScheduledQueryInput,
   UpdateWidgetInput,
-  WidgetLayout
+  VersionCompatibility,
+  Widget,
+  WidgetLayout,
+  WidgetRunResult
 } from '@shared/index'
+import { contextBridge, ipcRenderer } from 'electron'
 
 // Re-export AI types for renderer consumers
 export type {
-  AIProvider,
+  AIChatResponse,
   AIConfig,
   AIMessage,
-  AIChatResponse,
-  StoredChatMessage,
-  ChatSession,
   AIMultiProviderConfig,
-  AIProviderConfig
+  AIProvider,
+  AIProviderConfig,
+  ChatSession,
+  StoredChatMessage
 }
 
 // Custom APIs for renderer
@@ -72,6 +78,38 @@ const api = {
       const handler = (): void => callback()
       ipcRenderer.on('connections:updated', handler)
       return () => ipcRenderer.removeListener('connections:updated', handler)
+    }
+  },
+  // Backup & Restore
+  backup: {
+    checkTools: (connectionId: string): Promise<IpcResponse<ToolAvailability>> =>
+      ipcRenderer.invoke('backup:check-tools', connectionId),
+    startBackup: (connectionId: string, options: BackupOptions): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('backup:start', { connectionId, options }),
+    startRestore: (connectionId: string, options: RestoreOptions): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('restore:start', { connectionId, options })
+  },
+  // Tool version management
+  tools: {
+    getServerVersion: (connectionId: string): Promise<IpcResponse<PostgresVersion | null>> =>
+      ipcRenderer.invoke('tools:get-server-version', connectionId),
+    checkCompatibility: (connectionId: string): Promise<IpcResponse<VersionCompatibility>> =>
+      ipcRenderer.invoke('tools:check-compatibility', connectionId),
+    getManagedVersions: (): Promise<IpcResponse<number[]>> =>
+      ipcRenderer.invoke('tools:get-managed-versions'),
+    getSupportedVersions: (): Promise<IpcResponse<number[]>> =>
+      ipcRenderer.invoke('tools:get-supported-versions'),
+    downloadTools: (majorVersion: number): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('tools:download', majorVersion),
+    deleteVersion: (majorVersion: number): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('tools:delete-version', majorVersion),
+    onDownloadProgress: (
+      callback: (data: ToolDownloadProgress & { majorVersion: number }) => void
+    ): (() => void) => {
+      const handler = (_: unknown, data: ToolDownloadProgress & { majorVersion: number }): void =>
+        callback(data)
+      ipcRenderer.on('tools:download-progress', handler)
+      return () => ipcRenderer.removeListener('tools:download-progress', handler)
     }
   },
   // Database operations
@@ -440,7 +478,11 @@ const api = {
       ipcRenderer.invoke('ai:set-active-model', { provider, model })
   },
   files: {
-    openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog')
+    openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog'),
+    saveFilePicker: (options?: {
+      defaultPath?: string
+      filters?: Array<{ name: string; extensions: string[] }>
+    }): Promise<string | null> => ipcRenderer.invoke('save-file-dialog', options)
   },
   window: {
     minimize: (): Promise<void> => ipcRenderer.invoke('minimize-window'),
