@@ -1,5 +1,11 @@
 import { cn } from '@/lib/utils'
-import type { QueryTelemetry, BenchmarkResult, TimingPhase } from '@data-peek/shared'
+import {
+  calcPercentile,
+  calcStdDev,
+  type QueryTelemetry,
+  type BenchmarkResult,
+  type TimingPhase
+} from '@data-peek/shared'
 import {
   X,
   Activity,
@@ -124,25 +130,6 @@ function formatDuration(ms: number): string {
 }
 
 /**
- * Calculate percentile from a sorted array
- */
-function percentile(sorted: number[], p: number): number {
-  if (sorted.length === 0) return 0
-  if (sorted.length === 1) return sorted[0]
-  const idx = Math.ceil((p / 100) * sorted.length) - 1
-  return sorted[Math.max(0, Math.min(idx, sorted.length - 1))]
-}
-
-/**
- * Calculate standard deviation
- */
-function stdDev(values: number[], mean: number): number {
-  if (values.length === 0) return 0
-  const variance = values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / values.length
-  return Math.sqrt(variance)
-}
-
-/**
  * Calculate adjusted stats excluding connection overhead
  */
 function calculateAdjustedStats(
@@ -171,10 +158,10 @@ function calculateAdjustedStats(
     avg,
     min: adjustedDurations[0],
     max: adjustedDurations[adjustedDurations.length - 1],
-    p90: percentile(adjustedDurations, 90),
-    p95: percentile(adjustedDurations, 95),
-    p99: percentile(adjustedDurations, 99),
-    stdDev: stdDev(adjustedDurations, avg)
+    p90: calcPercentile(adjustedDurations, 90),
+    p95: calcPercentile(adjustedDurations, 95),
+    p99: calcPercentile(adjustedDurations, 99),
+    stdDev: calcStdDev(adjustedDurations, avg)
   }
 }
 
