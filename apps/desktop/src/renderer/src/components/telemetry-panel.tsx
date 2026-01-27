@@ -332,13 +332,24 @@ export function TelemetryPanel({
     return 0
   }
 
+  const getConnectionOverheadMs = (): number => {
+    if (showConnectionOverhead) return 0
+    return phases
+      .filter((p) => PHASE_CONFIG[p.name]?.isConnectionPhase)
+      .reduce((sum, p) => sum + p.durationMs, 0)
+  }
+
+  const connectionOverheadMs = getConnectionOverheadMs()
+
   const getPhaseForTimeline = (phase: TimingPhase): { start: number; duration: number } => {
+    const adjustedStart = Math.max(0, phase.startOffset - connectionOverheadMs)
+
     // For benchmark mode, we don't have per-run startOffset, so estimate based on phase order
     if (benchmark) {
       const duration = benchmark.phaseStats[phase.name]?.[selectedPercentile] ?? phase.durationMs
-      return { start: phase.startOffset, duration }
+      return { start: adjustedStart, duration }
     }
-    return { start: phase.startOffset, duration: phase.durationMs }
+    return { start: adjustedStart, duration: phase.durationMs }
   }
 
   const totalDuration = getTotalDuration()
