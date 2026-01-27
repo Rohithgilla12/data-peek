@@ -1,5 +1,11 @@
 import { cn } from '@/lib/utils'
-import type { QueryTelemetry, BenchmarkResult, TimingPhase } from '@data-peek/shared'
+import {
+  calcPercentile,
+  calcStdDev,
+  type QueryTelemetry,
+  type BenchmarkResult,
+  type TimingPhase
+} from '@data-peek/shared'
 import {
   X,
   Activity,
@@ -121,6 +127,42 @@ function formatDuration(ms: number): string {
   if (ms < 1) return `${(ms * 1000).toFixed(0)}µs`
   if (ms < 1000) return `${ms.toFixed(2)}ms`
   return `${(ms / 1000).toFixed(2)}s`
+}
+
+/**
+ * Calculate adjusted stats excluding connection overhead
+ */
+function calculateAdjustedStats(
+  benchmark: BenchmarkResult,
+  excludeConnectionOverhead: boolean
+): BenchmarkResult['stats'] {
+  if (!excludeConnectionOverhead) {
+    return benchmark.stats
+  }
+
+  const adjustedDurations = benchmark.telemetryRuns
+    .map((run) => {
+      const connectionOverhead = (run.tcpHandshakeMs ?? 0) + (run.dbHandshakeMs ?? 0)
+      return Math.max(0, run.totalDurationMs - connectionOverhead)
+    })
+    .sort((a, b) => a - b)
+
+  if (adjustedDurations.length === 0) {
+    return benchmark.stats
+  }
+
+  const sum = adjustedDurations.reduce((a, b) => a + b, 0)
+  const avg = sum / adjustedDurations.length
+
+  return {
+    avg,
+    min: adjustedDurations[0],
+    max: adjustedDurations[adjustedDurations.length - 1],
+    p90: calcPercentile(adjustedDurations, 90),
+    p95: calcPercentile(adjustedDurations, 95),
+    p99: calcPercentile(adjustedDurations, 99),
+    stdDev: calcStdDev(adjustedDurations, avg)
+  }
 }
 
 /**
@@ -256,20 +298,45 @@ export function TelemetryPanel({
   // bar widths never exceed 100% in benchmark mode
   const maxDuration = Math.max(...visiblePhases.map((p) => getDisplayValue(p.name)), 0.001)
 
-  const getTotalDuration = (): number => {
-    if (benchmark) {
-      return benchmark.stats[selectedPercentile]
-    }
-    return telemetry?.totalDurationMs ?? 0
+  const getAdjustedBenchmarkStats = () => {
+    if (!benchmark) return null
+    return calculateAdjustedStats(benchmark, !showConnectionOverhead)
   }
 
+  const adjustedStats = getAdjustedBenchmarkStats()
+
+  const getTotalDuration = (): number => {
+    if (benchmark && adjustedStats) {
+      return adjustedStats[selectedPercentile]
+    }
+    if (telemetry) {
+      if (!showConnectionOverhead) {
+        const connectionOverhead = (telemetry.tcpHandshakeMs ?? 0) + (telemetry.dbHandshakeMs ?? 0)
+        return Math.max(0, telemetry.totalDurationMs - connectionOverhead)
+      }
+      return telemetry.totalDurationMs
+    }
+    return 0
+  }
+
+  const getConnectionOverheadMs = (): number => {
+    if (showConnectionOverhead) return 0
+    return phases
+      .filter((p) => PHASE_CONFIG[p.name]?.isConnectionPhase)
+      .reduce((sum, p) => sum + p.durationMs, 0)
+  }
+
+  const connectionOverheadMs = getConnectionOverheadMs()
+
   const getPhaseForTimeline = (phase: TimingPhase): { start: number; duration: number } => {
+    const adjustedStart = Math.max(0, phase.startOffset - connectionOverheadMs)
+
     // For benchmark mode, we don't have per-run startOffset, so estimate based on phase order
     if (benchmark) {
       const duration = benchmark.phaseStats[phase.name]?.[selectedPercentile] ?? phase.durationMs
-      return { start: phase.startOffset, duration }
+      return { start: adjustedStart, duration }
     }
-    return { start: phase.startOffset, duration: phase.durationMs }
+    return { start: adjustedStart, duration: phase.durationMs }
   }
 
   const totalDuration = getTotalDuration()
@@ -645,21 +712,17 @@ export function TelemetryPanel({
       )}
 
       {/* Benchmark statistics footer */}
-      {benchmark && (
+      {benchmark && adjustedStats && (
         <div className="px-4 py-2.5 border-t border-border/40 bg-muted/20">
           <div className="flex items-center gap-2 flex-wrap">
-            <StatBadge label="Min" value={formatDuration(benchmark.stats.min)} variant="min" />
-            <StatBadge label="Max" value={formatDuration(benchmark.stats.max)} variant="max" />
-            <StatBadge label="Avg" value={formatDuration(benchmark.stats.avg)} />
-            <StatBadge label="P90" value={formatDuration(benchmark.stats.p90)} />
-            <StatBadge label="P95" value={formatDuration(benchmark.stats.p95)} />
-            <StatBadge
-              label="P99"
-              value={formatDuration(benchmark.stats.p99)}
-              variant="highlight"
-            />
+            <StatBadge label="Min" value={formatDuration(adjustedStats.min)} variant="min" />
+            <StatBadge label="Max" value={formatDuration(adjustedStats.max)} variant="max" />
+            <StatBadge label="Avg" value={formatDuration(adjustedStats.avg)} />
+            <StatBadge label="P90" value={formatDuration(adjustedStats.p90)} />
+            <StatBadge label="P95" value={formatDuration(adjustedStats.p95)} />
+            <StatBadge label="P99" value={formatDuration(adjustedStats.p99)} variant="highlight" />
             <div className="flex-1" />
-            <StatBadge label="σ" value={formatDuration(benchmark.stats.stdDev)} />
+            <StatBadge label="σ" value={formatDuration(adjustedStats.stdDev)} />
           </div>
         </div>
       )}

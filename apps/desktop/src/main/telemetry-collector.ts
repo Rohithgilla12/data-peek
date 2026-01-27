@@ -1,9 +1,11 @@
-import type {
-  QueryTelemetry,
-  TimingPhase,
-  BenchmarkResult,
-  TelemetryStats,
-  PhaseStats
+import {
+  calcPercentile,
+  calcStdDev,
+  type QueryTelemetry,
+  type TimingPhase,
+  type BenchmarkResult,
+  type TelemetryStats,
+  type PhaseStats
 } from '@shared/index'
 import { performance } from 'perf_hooks'
 
@@ -151,25 +153,6 @@ class TelemetryCollector {
   }
 
   /**
-   * Calculate percentile from a sorted array
-   */
-  private percentile(sorted: number[], p: number): number {
-    if (sorted.length === 0) return 0
-    if (sorted.length === 1) return sorted[0]
-    const idx = Math.ceil((p / 100) * sorted.length) - 1
-    return sorted[Math.max(0, Math.min(idx, sorted.length - 1))]
-  }
-
-  /**
-   * Calculate standard deviation
-   */
-  private stdDev(values: number[], mean: number): number {
-    if (values.length === 0) return 0
-    const variance = values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / values.length
-    return Math.sqrt(variance)
-  }
-
-  /**
    * Aggregate multiple telemetry runs into benchmark results
    */
   aggregateBenchmark(runs: QueryTelemetry[]): BenchmarkResult {
@@ -186,10 +169,10 @@ class TelemetryCollector {
       avg,
       min: durations[0],
       max: durations[durations.length - 1],
-      p90: this.percentile(durations, 90),
-      p95: this.percentile(durations, 95),
-      p99: this.percentile(durations, 99),
-      stdDev: this.stdDev(durations, avg)
+      p90: calcPercentile(durations, 90),
+      p95: calcPercentile(durations, 95),
+      p99: calcPercentile(durations, 99),
+      stdDev: calcStdDev(durations, avg)
     }
 
     // Calculate per-phase statistics
@@ -206,9 +189,9 @@ class TelemetryCollector {
         const phaseAvg = phaseDurations.reduce((a, b) => a + b, 0) / phaseDurations.length
         phaseStats[name] = {
           avg: phaseAvg,
-          p90: this.percentile(phaseDurations, 90),
-          p95: this.percentile(phaseDurations, 95),
-          p99: this.percentile(phaseDurations, 99)
+          p90: calcPercentile(phaseDurations, 90),
+          p95: calcPercentile(phaseDurations, 95),
+          p99: calcPercentile(phaseDurations, 99)
         }
       }
     }
