@@ -36,11 +36,16 @@ const splitPgStatements = (sql: string) => splitStatements(sql, 'postgresql')
 /**
  * Build pg Client configuration from ConnectionConfig
  * Properly handles SSL options for cloud databases like AWS RDS
+ *
+ * @param overrides - Optional host/port overrides (e.g., from SSH tunnel)
  */
-function buildClientConfig(config: ConnectionConfig): ClientConfig {
+function buildClientConfig(
+  config: ConnectionConfig,
+  overrides?: { host: string; port: number }
+): ClientConfig {
   const clientConfig: ClientConfig = {
-    host: config.host,
-    port: config.port,
+    host: overrides?.host ?? config.host,
+    port: overrides?.port ?? config.port,
     database: config.database,
     user: config.user,
     password: config.password
@@ -107,10 +112,19 @@ export class PostgresAdapter implements DatabaseAdapter {
       tunnelSession = await createTunnel(config)
     }
 
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
-    await client.end()
-    closeTunnel(tunnelSession)
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
+    try {
+      await client.connect()
+      await client.end()
+    } catch (error) {
+      await client.end().catch(() => {})
+      throw error
+    } finally {
+      closeTunnel(tunnelSession)
+    }
   }
 
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
@@ -118,7 +132,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     await client.connect()
 
     try {
@@ -136,7 +153,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         rowCount: res.rowCount
       }
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -160,7 +177,10 @@ export class PostgresAdapter implements DatabaseAdapter {
       tunnelSession = await createTunnel(config)
     }
 
-    const client = new Client(buildClientConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
 
     if (collectTelemetry) {
       telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
@@ -283,7 +303,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       if (options?.executionId) {
         unregisterQuery(options.executionId)
       }
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -297,14 +317,17 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     await client.connect()
 
     try {
       const res = await client.query(sql, params)
       return { rowCount: res.rowCount }
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -317,7 +340,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     await client.connect()
 
     try {
@@ -338,7 +364,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       await client.query('ROLLBACK').catch(() => {})
       throw error
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -348,7 +374,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     await client.connect()
     try {
       // Query 1: Get all schemas (excluding system schemas)
@@ -697,7 +726,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
       return Array.from(schemaMap.values())
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -707,7 +736,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     await client.connect()
 
     try {
@@ -727,7 +759,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         durationMs: duration
       }
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -741,7 +773,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     await client.connect()
 
     try {
@@ -976,7 +1011,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         comment: tableCommentResult.rows[0]?.comment || undefined
       }
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -986,7 +1021,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     await client.connect()
 
     try {
@@ -1010,7 +1048,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         increment: row.increment
       }))
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -1020,7 +1058,10 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     await client.connect()
 
     try {
@@ -1066,7 +1107,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         }))
       ]
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
