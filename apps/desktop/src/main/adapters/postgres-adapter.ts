@@ -36,11 +36,16 @@ const splitPgStatements = (sql: string) => splitStatements(sql, 'postgresql')
 /**
  * Build pg Client configuration from ConnectionConfig
  * Properly handles SSL options for cloud databases like AWS RDS
+ *
+ * @param overrides - Optional host/port overrides (e.g., from SSH tunnel)
  */
-function buildClientConfig(config: ConnectionConfig): ClientConfig {
+function buildClientConfig(
+  config: ConnectionConfig,
+  overrides?: { host: string; port: number }
+): ClientConfig {
   const clientConfig: ClientConfig = {
-    host: config.host,
-    port: config.port,
+    host: overrides?.host ?? config.host,
+    port: overrides?.port ?? config.port,
     database: config.database,
     user: config.user,
     password: config.password
@@ -107,10 +112,19 @@ export class PostgresAdapter implements DatabaseAdapter {
       tunnelSession = await createTunnel(config)
     }
 
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
-    await client.end()
-    closeTunnel(tunnelSession)
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
+    try {
+      await client.connect()
+      await client.end()
+    } catch (error) {
+      await client.end().catch(() => {})
+      throw error
+    } finally {
+      closeTunnel(tunnelSession)
+    }
   }
 
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
@@ -118,10 +132,13 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
 
     try {
+      await client.connect()
       const res = await client.query(sql)
 
       const fields: QueryField[] = res.fields.map((f) => ({
@@ -136,7 +153,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         rowCount: res.rowCount
       }
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -160,42 +177,45 @@ export class PostgresAdapter implements DatabaseAdapter {
       tunnelSession = await createTunnel(config)
     }
 
-    const client = new Client(buildClientConfig(config))
-
-    if (collectTelemetry) {
-      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
-      telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-    }
-
-    await client.connect()
-
-    if (collectTelemetry) {
-      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-    }
-
-    // Set query timeout if specified (0 = no timeout)
-    const queryTimeoutMs = options?.queryTimeoutMs
-    if (
-      typeof queryTimeoutMs === 'number' &&
-      Number.isFinite(queryTimeoutMs) &&
-      queryTimeoutMs > 0
-    ) {
-      await client.query('SELECT set_config($1, $2, false)', [
-        'statement_timeout',
-        `${Math.floor(queryTimeoutMs)}ms`
-      ])
-    }
-
-    // Register for cancellation support
-    if (options?.executionId) {
-      registerQuery(options.executionId, { type: 'postgresql', client })
-    }
-
-    const totalStart = Date.now()
-    const results: StatementResult[] = []
-    let totalRowCount = 0
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
 
     try {
+      if (collectTelemetry) {
+        telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+        telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+      }
+
+      await client.connect()
+
+      if (collectTelemetry) {
+        telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+      }
+
+      // Set query timeout if specified (0 = no timeout)
+      const queryTimeoutMs = options?.queryTimeoutMs
+      if (
+        typeof queryTimeoutMs === 'number' &&
+        Number.isFinite(queryTimeoutMs) &&
+        queryTimeoutMs > 0
+      ) {
+        await client.query('SELECT set_config($1, $2, false)', [
+          'statement_timeout',
+          `${Math.floor(queryTimeoutMs)}ms`
+        ])
+      }
+
+      // Register for cancellation support
+      if (options?.executionId) {
+        registerQuery(options.executionId, { type: 'postgresql', client })
+      }
+
+      const totalStart = Date.now()
+      const results: StatementResult[] = []
+      let totalRowCount = 0
+
       const statements = splitPgStatements(sql)
 
       for (let i = 0; i < statements.length; i++) {
@@ -283,7 +303,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       if (options?.executionId) {
         unregisterQuery(options.executionId)
       }
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -297,14 +317,16 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
-
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     try {
+      await client.connect()
       const res = await client.query(sql, params)
       return { rowCount: res.rowCount }
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -317,10 +339,12 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
-
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     try {
+      await client.connect()
       await client.query('BEGIN')
 
       const results: Array<{ rowCount: number | null }> = []
@@ -338,7 +362,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       await client.query('ROLLBACK').catch(() => {})
       throw error
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -348,9 +372,12 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     try {
+      await client.connect()
       // Query 1: Get all schemas (excluding system schemas)
       const schemasResult = await client.query(`
         SELECT schema_name
@@ -697,7 +724,7 @@ export class PostgresAdapter implements DatabaseAdapter {
 
       return Array.from(schemaMap.values())
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -707,10 +734,12 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
-
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     try {
+      await client.connect()
       const explainOptions = analyze
         ? 'ANALYZE, COSTS, VERBOSE, BUFFERS, FORMAT JSON'
         : 'COSTS, VERBOSE, FORMAT JSON'
@@ -727,7 +756,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         durationMs: duration
       }
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -741,10 +770,12 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
-
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     try {
+      await client.connect()
       // Query columns with full metadata
       const columnsResult = await client.query(
         `
@@ -976,7 +1007,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         comment: tableCommentResult.rows[0]?.comment || undefined
       }
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -986,10 +1017,12 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
-
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     try {
+      await client.connect()
       const result = await client.query(`
         SELECT
           schemaname as schema,
@@ -1010,7 +1043,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         increment: row.increment
       }))
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -1020,10 +1053,12 @@ export class PostgresAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const client = new Client(buildClientConfig(config))
-    await client.connect()
-
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
     try {
+      await client.connect()
       // Get enum types with their values
       const enumsResult = await client.query(`
         SELECT
@@ -1066,7 +1101,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         }))
       ]
     } finally {
-      await client.end()
+      await client.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }

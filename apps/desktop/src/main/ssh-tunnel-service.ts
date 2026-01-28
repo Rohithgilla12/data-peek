@@ -6,6 +6,10 @@ import fs from 'fs'
 export interface TunnelSession {
   ssh: SSHClient | null
   server: net.Server | null
+  /** The local proxy host to connect through (always 127.0.0.1) */
+  localHost: string
+  /** The local proxy port to connect through */
+  localPort: number
 }
 
 export async function createTunnel(config: ConnectionConfig): Promise<TunnelSession> {
@@ -63,10 +67,8 @@ export async function createTunnel(config: ConnectionConfig): Promise<TunnelSess
 
         server.listen(0, '127.0.0.1', () => {
           const proxyPort = (server!.address() as net.AddressInfo).port
-          config.host = '127.0.0.1'
-          config.port = proxyPort
           console.log(`SSH tunnel ready: localhost:${proxyPort} → ${dstHost}:${dstPort}`)
-          resolve({ ssh, server })
+          resolve({ ssh, server, localHost: '127.0.0.1', localPort: proxyPort })
         })
       })
 
@@ -97,7 +99,7 @@ export async function createTunnel(config: ConnectionConfig): Promise<TunnelSess
   })
 }
 
-export function closeTunnel(tunnelSession: TunnelSession | null) {
+export function closeTunnel(tunnelSession: Pick<TunnelSession, 'ssh' | 'server'> | null) {
   if (!tunnelSession) return
   closeServer(tunnelSession.server)
   closeSSHSession(tunnelSession.ssh)

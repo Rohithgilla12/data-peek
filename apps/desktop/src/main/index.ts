@@ -57,22 +57,37 @@ if (process.platform === 'darwin') {
   app.name = 'Data Peek'
 }
 
+// Global error handlers to prevent silent crashes
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error)
+})
+
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason)
+})
+
 // Application initialization
 app.whenReady().then(async () => {
-  // Initialize stores
-  await initStores()
+  try {
+    // Initialize stores
+    await initStores()
 
-  // Initialize license store
-  await initLicenseStore()
+    // Initialize license store
+    await initLicenseStore()
 
-  // Initialize AI store
-  await initAIStore()
+    // Initialize AI store
+    await initAIStore()
 
-  // Initialize scheduler service (needs connections store)
-  await initSchedulerService(store)
+    // Initialize scheduler service (needs connections store)
+    await initSchedulerService(store)
 
-  // Initialize dashboard service (needs connections and saved queries stores)
-  await initDashboardService(store, savedQueriesStore)
+    // Initialize dashboard service (needs connections and saved queries stores)
+    await initDashboardService(store, savedQueriesStore)
+  } catch (error) {
+    console.error('Failed to initialize services:', error)
+    // Continue to create the window so the user can see the app
+    // even if some services failed to initialize
+  }
 
   // Create native application menu
   createMenu()

@@ -78,10 +78,13 @@ function resolveMySQLType(typeCode: number): string {
  * Create MySQL connection config from our ConnectionConfig
  * Properly handles SSL options for cloud databases like AWS RDS
  */
-function toMySQLConfig(config: ConnectionConfig): mysql.ConnectionOptions {
+function toMySQLConfig(
+  config: ConnectionConfig,
+  overrides?: { host: string; port: number }
+): mysql.ConnectionOptions {
   const mysqlConfig: mysql.ConnectionOptions = {
-    host: config.host,
-    port: config.port,
+    host: overrides?.host ?? config.host,
+    port: overrides?.port ?? config.port,
     user: config.user,
     password: config.password,
     database: config.database
@@ -154,9 +157,17 @@ export class MySQLAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const connection = await mysql.createConnection(toMySQLConfig(config))
-    await connection.end()
-    closeTunnel(tunnelSession)
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+    try {
+      await connection.end()
+    } catch {
+      // ignore end errors during test connection
+    } finally {
+      closeTunnel(tunnelSession)
+    }
   }
 
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
@@ -164,9 +175,13 @@ export class MySQLAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const connection = await mysql.createConnection(toMySQLConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
 
     try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
       const [rows, fields] = await connection.query(sql)
 
       const queryFields: QueryField[] = (fields as mysql.FieldPacket[]).map((f) => ({
@@ -183,7 +198,7 @@ export class MySQLAdapter implements DatabaseAdapter {
         rowCount: resultRows.length
       }
     } finally {
-      await connection.end()
+      if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -207,39 +222,43 @@ export class MySQLAdapter implements DatabaseAdapter {
       tunnelSession = await createTunnel(config)
     }
 
-    if (collectTelemetry) {
-      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
-      telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
 
-    const connection = await mysql.createConnection(toMySQLConfig(config))
-
-    if (collectTelemetry) {
-      telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-    }
-
-    // Set query timeout if specified (0 = no timeout)
-    // Note: max_execution_time only affects SELECT statements in MySQL 5.7.8+
-    const queryTimeoutMs = options?.queryTimeoutMs
-    if (
-      typeof queryTimeoutMs === 'number' &&
-      Number.isFinite(queryTimeoutMs) &&
-      queryTimeoutMs > 0
-    ) {
-      const safeTimeout = Math.floor(queryTimeoutMs)
-      await connection.query(`SET SESSION max_execution_time = ${safeTimeout}`)
-    }
-
-    // Register for cancellation support
-    if (options?.executionId) {
-      registerQuery(options.executionId, { type: 'mysql', connection })
-    }
-
+    let connection: mysql.Connection | null = null
     const totalStart = Date.now()
     const results: StatementResult[] = []
     let totalRowCount = 0
 
     try {
+      if (collectTelemetry) {
+        telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+        telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+      }
+
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      if (collectTelemetry) {
+        telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+      }
+
+      // Set query timeout if specified (0 = no timeout)
+      // Note: max_execution_time only affects SELECT statements in MySQL 5.7.8+
+      const queryTimeoutMs = options?.queryTimeoutMs
+      if (
+        typeof queryTimeoutMs === 'number' &&
+        Number.isFinite(queryTimeoutMs) &&
+        queryTimeoutMs > 0
+      ) {
+        const safeTimeout = Math.floor(queryTimeoutMs)
+        await connection.query(`SET SESSION max_execution_time = ${safeTimeout}`)
+      }
+
+      // Register for cancellation support
+      if (options?.executionId) {
+        registerQuery(options.executionId, { type: 'mysql', connection })
+      }
       const statements = splitMySqlStatements(sql)
 
       for (let i = 0; i < statements.length; i++) {
@@ -335,7 +354,7 @@ export class MySQLAdapter implements DatabaseAdapter {
       if (options?.executionId) {
         unregisterQuery(options.executionId)
       }
-      await connection.end()
+      if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -349,14 +368,18 @@ export class MySQLAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const connection = await mysql.createConnection(toMySQLConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
 
     try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
       const [result] = await connection.execute(sql, params)
       const affectedRows = (result as mysql.ResultSetHeader).affectedRows ?? null
       return { rowCount: affectedRows }
     } finally {
-      await connection.end()
+      if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -369,9 +392,13 @@ export class MySQLAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const connection = await mysql.createConnection(toMySQLConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
 
     try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
       await connection.beginTransaction()
 
       const results: Array<{ rowCount: number | null }> = []
@@ -387,10 +414,10 @@ export class MySQLAdapter implements DatabaseAdapter {
       await connection.commit()
       return { rowsAffected, results }
     } catch (error) {
-      await connection.rollback().catch(() => {})
+      if (connection) await connection.rollback().catch(() => {})
       throw error
     } finally {
-      await connection.end()
+      if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -400,9 +427,13 @@ export class MySQLAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const connection = await mysql.createConnection(toMySQLConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
 
     try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
       // In MySQL, "schema" = "database"
       // We'll show all databases as schemas, excluding system databases
       const [schemasRows] = await connection.query(`
@@ -668,7 +699,7 @@ export class MySQLAdapter implements DatabaseAdapter {
 
       return Array.from(schemaMap.values())
     } finally {
-      await connection.end()
+      if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -678,9 +709,13 @@ export class MySQLAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const connection = await mysql.createConnection(toMySQLConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
 
     try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
       // MySQL uses EXPLAIN ANALYZE (8.0.18+) or just EXPLAIN
       const explainQuery = analyze ? `EXPLAIN ANALYZE ${sql}` : `EXPLAIN FORMAT=JSON ${sql}`
 
@@ -708,7 +743,7 @@ export class MySQLAdapter implements DatabaseAdapter {
         durationMs: duration
       }
     } finally {
-      await connection.end()
+      if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -722,9 +757,13 @@ export class MySQLAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    const connection = await mysql.createConnection(toMySQLConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
 
     try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
       // Get columns with full metadata
       const [columnsRows] = await connection.query(
         `
@@ -965,7 +1004,7 @@ export class MySQLAdapter implements DatabaseAdapter {
         comment: tableCommentResult[0]?.table_comment || undefined
       }
     } finally {
-      await connection.end()
+      if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
@@ -982,10 +1021,14 @@ export class MySQLAdapter implements DatabaseAdapter {
     if (config.ssh) {
       tunnelSession = await createTunnel(config)
     }
-    // Get MySQL ENUM types from columns
-    const connection = await mysql.createConnection(toMySQLConfig(config))
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
 
     try {
+      // Get MySQL ENUM types from columns
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
       // MySQL doesn't have standalone enum types, they're defined per column
       // We'll extract unique enum definitions from columns
       const [enumRows] = await connection.query(`
@@ -1021,7 +1064,7 @@ export class MySQLAdapter implements DatabaseAdapter {
 
       return types
     } finally {
-      await connection.end()
+      if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
   }
