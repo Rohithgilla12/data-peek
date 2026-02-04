@@ -249,7 +249,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
     const tunnelOverrides = tunnelSession
       ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
       : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+try {
+  await pool.connect()
 
     try {
       await pool.connect()
