@@ -224,3 +224,9 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 - [GitHub Issues](https://github.com/Rohithgilla12/data-peek/issues) - Bug reports and feature requests
 - [GitHub Sponsors](https://github.com/sponsors/Rohithgilla12) - Support development
 - Twitter/X: [@gillarohith](https://x.com/gillarohith)
+
+<br />
+<br />
+<a href="https://vercel.com/oss">
+  <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
+</a>
