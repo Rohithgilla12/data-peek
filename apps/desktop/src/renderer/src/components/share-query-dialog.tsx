@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import html2canvas from 'html2canvas'
+import { toBlob } from 'html-to-image'
 import {
   Dialog,
   DialogContent,
@@ -22,35 +22,102 @@ import { Copy, Download, Check, Loader2 } from 'lucide-react'
 import { DatabaseIcon } from '@/components/database-icons'
 import type { DatabaseType } from '@shared/index'
 import { cn } from '@/lib/utils'
+import { SQL_KEYWORDS as SQL_KEYWORDS_ARRAY } from '@/constants/sql-keywords'
 
-// SQL syntax highlighting tokens
-const SQL_KEYWORDS = new Set([
-  'SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'NOT', 'IN', 'IS', 'NULL', 'LIKE', 'BETWEEN',
-  'EXISTS', 'CASE', 'WHEN', 'THEN', 'ELSE', 'END', 'LEFT', 'RIGHT', 'INNER', 'OUTER',
-  'FULL', 'CROSS', 'JOIN', 'NATURAL', 'USING', 'ON', 'ORDER', 'GROUP', 'BY', 'HAVING',
-  'LIMIT', 'OFFSET', 'UNION', 'INTERSECT', 'EXCEPT', 'ALL', 'DISTINCT', 'AS', 'SET',
-  'VALUES', 'INTO', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'ALTER', 'DROP', 'TABLE',
-  'INDEX', 'VIEW', 'DATABASE', 'SCHEMA', 'CONSTRAINT', 'PRIMARY', 'FOREIGN', 'KEY',
-  'REFERENCES', 'CASCADE', 'RESTRICT', 'DEFAULT', 'UNIQUE', 'CHECK', 'WITH', 'RECURSIVE',
-  'RETURNING', 'TRUNCATE', 'GRANT', 'REVOKE', 'BEGIN', 'COMMIT', 'ROLLBACK', 'TRANSACTION',
-  'ASC', 'DESC', 'NULLS', 'FIRST', 'LAST', 'TRUE', 'FALSE', 'OVER', 'PARTITION', 'ROWS',
-  'RANGE', 'UNBOUNDED', 'PRECEDING', 'FOLLOWING', 'CURRENT', 'ROW', 'FETCH', 'NEXT', 'ONLY',
-  'TOP', 'HAVING', 'LATERAL', 'CROSS', 'APPLY', 'OUTER'
-])
+// Additional keywords not in the shared list (window functions, MSSQL, etc.)
+const EXTRA_KEYWORDS = [
+  'OVER',
+  'PARTITION',
+  'ROWS',
+  'RANGE',
+  'UNBOUNDED',
+  'PRECEDING',
+  'FOLLOWING',
+  'CURRENT',
+  'ROW',
+  'FETCH',
+  'NEXT',
+  'ONLY',
+  'TOP',
+  'LATERAL',
+  'APPLY'
+]
+
+const SQL_KEYWORDS = new Set([...SQL_KEYWORDS_ARRAY, ...EXTRA_KEYWORDS])
 
 const SQL_FUNCTIONS = new Set([
-  'COUNT', 'SUM', 'AVG', 'MIN', 'MAX', 'COALESCE', 'NULLIF', 'CAST', 'CONVERT',
-  'SUBSTRING', 'UPPER', 'LOWER', 'TRIM', 'LTRIM', 'RTRIM', 'LENGTH', 'REPLACE',
-  'CONCAT', 'NOW', 'DATE', 'TIME', 'DATETIME', 'TIMESTAMP', 'EXTRACT', 'DATEPART',
-  'DATEDIFF', 'DATEADD', 'ABS', 'ROUND', 'CEIL', 'CEILING', 'FLOOR', 'RANDOM',
-  'ROW_NUMBER', 'RANK', 'DENSE_RANK', 'NTILE', 'LAG', 'LEAD', 'FIRST_VALUE',
-  'LAST_VALUE', 'NTH_VALUE', 'ARRAY_AGG', 'STRING_AGG', 'JSON_AGG', 'JSON_BUILD_OBJECT',
-  'JSON_EXTRACT', 'JSON_ARRAY', 'JSON_OBJECT', 'STRFTIME', 'PRINTF', 'INSTR', 'TYPEOF',
-  'IIF', 'ISNULL', 'IFNULL', 'GROUP_CONCAT', 'LISTAGG'
+  'COUNT',
+  'SUM',
+  'AVG',
+  'MIN',
+  'MAX',
+  'COALESCE',
+  'NULLIF',
+  'CAST',
+  'CONVERT',
+  'SUBSTRING',
+  'UPPER',
+  'LOWER',
+  'TRIM',
+  'LTRIM',
+  'RTRIM',
+  'LENGTH',
+  'REPLACE',
+  'CONCAT',
+  'NOW',
+  'DATE',
+  'TIME',
+  'DATETIME',
+  'TIMESTAMP',
+  'EXTRACT',
+  'DATEPART',
+  'DATEDIFF',
+  'DATEADD',
+  'ABS',
+  'ROUND',
+  'CEIL',
+  'CEILING',
+  'FLOOR',
+  'RANDOM',
+  'ROW_NUMBER',
+  'RANK',
+  'DENSE_RANK',
+  'NTILE',
+  'LAG',
+  'LEAD',
+  'FIRST_VALUE',
+  'LAST_VALUE',
+  'NTH_VALUE',
+  'ARRAY_AGG',
+  'STRING_AGG',
+  'JSON_AGG',
+  'JSON_BUILD_OBJECT',
+  'JSON_EXTRACT',
+  'JSON_ARRAY',
+  'JSON_OBJECT',
+  'STRFTIME',
+  'PRINTF',
+  'INSTR',
+  'TYPEOF',
+  'IIF',
+  'ISNULL',
+  'IFNULL',
+  'GROUP_CONCAT',
+  'LISTAGG'
 ])
 
+type TokenType =
+  | 'keyword'
+  | 'function'
+  | 'string'
+  | 'number'
+  | 'comment'
+  | 'operator'
+  | 'identifier'
+  | 'whitespace'
+
 interface Token {
-  type: 'keyword' | 'function' | 'string' | 'number' | 'comment' | 'operator' | 'identifier' | 'whitespace'
+  type: TokenType
   value: string
 }
 
@@ -177,27 +244,41 @@ function tokenizeSQL(sql: string): Token[] {
 
 function HighlightedSQL({ sql, theme }: { sql: string; theme: 'dark' | 'light' }) {
   const tokens = tokenizeSQL(sql)
-  
+
   const getColor = (type: Token['type']) => {
     if (theme === 'dark') {
       switch (type) {
-        case 'keyword': return '#60a5fa' // blue-400
-        case 'function': return '#f472b6' // pink-400
-        case 'string': return '#4ade80' // green-400
-        case 'number': return '#fb923c' // orange-400
-        case 'comment': return '#6b7280' // gray-500
-        case 'operator': return '#c084fc' // purple-400
-        default: return '#e5e7eb' // gray-200
+        case 'keyword':
+          return '#60a5fa' // blue-400
+        case 'function':
+          return '#f472b6' // pink-400
+        case 'string':
+          return '#4ade80' // green-400
+        case 'number':
+          return '#fb923c' // orange-400
+        case 'comment':
+          return '#6b7280' // gray-500
+        case 'operator':
+          return '#c084fc' // purple-400
+        default:
+          return '#e5e7eb' // gray-200
       }
     } else {
       switch (type) {
-        case 'keyword': return '#2563eb' // blue-600
-        case 'function': return '#db2777' // pink-600
-        case 'string': return '#16a34a' // green-600
-        case 'number': return '#ea580c' // orange-600
-        case 'comment': return '#9ca3af' // gray-400
-        case 'operator': return '#9333ea' // purple-600
-        default: return '#1f2937' // gray-800
+        case 'keyword':
+          return '#2563eb' // blue-600
+        case 'function':
+          return '#db2777' // pink-600
+        case 'string':
+          return '#16a34a' // green-600
+        case 'number':
+          return '#ea580c' // orange-600
+        case 'comment':
+          return '#9ca3af' // gray-400
+        case 'operator':
+          return '#9333ea' // purple-600
+        default:
+          return '#1f2937' // gray-800
       }
     }
   }
@@ -220,7 +301,12 @@ function HighlightedSQL({ sql, theme }: { sql: string; theme: 'dark' | 'light' }
   )
 }
 
-type BackgroundStyle = 'gradient-blue' | 'gradient-purple' | 'gradient-green' | 'solid-dark' | 'solid-light'
+type BackgroundStyle =
+  | 'gradient-blue'
+  | 'gradient-purple'
+  | 'gradient-green'
+  | 'solid-dark'
+  | 'solid-light'
 
 interface ShareQueryDialogProps {
   open: boolean
@@ -240,7 +326,7 @@ export function ShareQueryDialog({
   const renderRef = useRef<HTMLDivElement>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
-  
+
   // Customization options
   const [showBadge, setShowBadge] = useState(true)
   const [showBranding, setShowBranding] = useState(true)
@@ -278,17 +364,23 @@ export function ShareQueryDialog({
 
   const getPaddingClass = (p: typeof padding) => {
     switch (p) {
-      case 'compact': return 'p-4'
-      case 'normal': return 'p-6'
-      case 'spacious': return 'p-10'
+      case 'compact':
+        return 'p-4'
+      case 'normal':
+        return 'p-6'
+      case 'spacious':
+        return 'p-10'
     }
   }
 
   const getCodePaddingClass = (p: typeof padding) => {
     switch (p) {
-      case 'compact': return 'p-4'
-      case 'normal': return 'p-6'
-      case 'spacious': return 'p-8'
+      case 'compact':
+        return 'p-4'
+      case 'normal':
+        return 'p-6'
+      case 'spacious':
+        return 'p-8'
     }
   }
 
@@ -299,19 +391,12 @@ export function ShareQueryDialog({
 
     try {
       setIsGenerating(true)
-      
-      const canvas = await html2canvas(renderRef.current, {
-        backgroundColor: null,
-        scale: 2, // Higher quality
-        logging: false,
-        useCORS: true
+
+      const blob = await toBlob(renderRef.current, {
+        pixelRatio: 2 // Higher quality
       })
 
-      return new Promise((resolve) => {
-        canvas.toBlob((blob) => {
-          resolve(blob)
-        }, 'image/png')
-      })
+      return blob
     } catch (error) {
       console.error('Failed to generate image:', error)
       return null
@@ -319,23 +404,6 @@ export function ShareQueryDialog({
       setIsGenerating(false)
     }
   }, [])
-
-  const handleCopyToClipboard = useCallback(async () => {
-    const blob = await generateImage()
-    if (!blob) return
-
-    try {
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ])
-      setIsCopied(true)
-      setTimeout(() => setIsCopied(false), 2000)
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error)
-      // Fallback: download instead
-      handleDownload()
-    }
-  }, [generateImage])
 
   const handleDownload = useCallback(async () => {
     const blob = await generateImage()
@@ -350,6 +418,21 @@ export function ShareQueryDialog({
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   }, [generateImage])
+
+  const handleCopyToClipboard = useCallback(async () => {
+    const blob = await generateImage()
+    if (!blob) return
+
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      setIsCopied(true)
+      setTimeout(() => setIsCopied(false), 2000)
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error)
+      // Fallback: download instead
+      await handleDownload()
+    }
+  }, [generateImage, handleDownload])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -390,10 +473,10 @@ export function ShareQueryDialog({
                 </div>
               )}
 
-              {/* Code block */}
+              {/* Code block - removed backdrop-blur-sm for image export compatibility */}
               <div
                 className={cn(
-                  'rounded-lg backdrop-blur-sm overflow-auto',
+                  'rounded-lg',
                   getCodeBackgroundClass(backgroundStyle),
                   getCodePaddingClass(padding)
                 )}
@@ -405,10 +488,12 @@ export function ShareQueryDialog({
 
               {/* Branding */}
               {showBranding && (
-                <div className={cn(
-                  'mt-4 flex items-center justify-end gap-2 text-xs',
-                  theme === 'light' ? 'text-zinc-500' : 'text-white/60'
-                )}>
+                <div
+                  className={cn(
+                    'mt-4 flex items-center justify-end gap-2 text-xs',
+                    theme === 'light' ? 'text-zinc-500' : 'text-white/60'
+                  )}
+                >
                   <span>Made with</span>
                   <span className="font-semibold">data-peek</span>
                 </div>
@@ -421,7 +506,10 @@ export function ShareQueryDialog({
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label>Background</Label>
-                <Select value={backgroundStyle} onValueChange={(v) => setBackgroundStyle(v as BackgroundStyle)}>
+                <Select
+                  value={backgroundStyle}
+                  onValueChange={(v) => setBackgroundStyle(v as BackgroundStyle)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -437,7 +525,10 @@ export function ShareQueryDialog({
 
               <div className="space-y-2">
                 <Label>Padding</Label>
-                <Select value={padding} onValueChange={(v) => setPadding(v as typeof padding)}>
+                <Select
+                  value={padding}
+                  onValueChange={(v) => setPadding(v as typeof padding)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -453,11 +544,7 @@ export function ShareQueryDialog({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <Label htmlFor="show-badge">Show Database Badge</Label>
-                <Switch
-                  id="show-badge"
-                  checked={showBadge}
-                  onCheckedChange={setShowBadge}
-                />
+                <Switch id="show-badge" checked={showBadge} onCheckedChange={setShowBadge} />
               </div>
 
               <div className="flex items-center justify-between">
@@ -486,11 +573,7 @@ export function ShareQueryDialog({
               )}
               Save as PNG
             </Button>
-            <Button
-              onClick={handleCopyToClipboard}
-              disabled={isGenerating}
-              className="gap-2"
-            >
+            <Button onClick={handleCopyToClipboard} disabled={isGenerating} className="gap-2">
               {isGenerating ? (
                 <Loader2 className="size-4 animate-spin" />
               ) : isCopied ? (
