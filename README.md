@@ -209,6 +209,19 @@ pnpm build
  </picture>
 </a>
 
+## Sponsors
+
+<p align="center">
+  <a href="https://www.tembo.io/?utm_source=github&utm_medium=readme&utm_campaign=data_peek_sponsorship#gh-light-mode-only" target="_blank">
+    <img src="assets/tembo-dark.svg#gh-light-mode-only" alt="Tembo - Goodbye Database Sprawl" width="400"/>
+  </a>
+  <a href="https://www.tembo.io/?utm_source=github&utm_medium=readme&utm_campaign=data_peek_sponsorship#gh-dark-mode-only" target="_blank">
+    <img src="assets/tembo-light.svg#gh-dark-mode-only" alt="Tembo - Goodbye Database Sprawl" width="400"/>
+  </a>
+  <br/>
+  <strong><a href="https://www.tembo.io/?utm_source=github&utm_medium=readme&utm_campaign=data_peek_sponsorship" target="_blank">Tembo — Goodbye Database Sprawl</a></strong>
+</p>
+
 ## License
 
 MIT License - see [LICENSE](LICENSE) for details.
