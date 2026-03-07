@@ -90,7 +90,7 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 ### macOS: Homebrew
 
 ```bash
-brew tap Rohithgilla12/data-peek
+brew tap Rohithgilla12/tap
 brew install --cask data-peek
 ```
 
