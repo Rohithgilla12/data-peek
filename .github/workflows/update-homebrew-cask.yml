@@ -1,0 +1,112 @@
+name: Update Homebrew Cask
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update-cask:
+    runs-on: ubuntu-latest
+    if: "!github.event.release.prerelease"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Get release version
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Download macOS DMGs and compute SHA256
+        id: sha
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          echo "Downloading arm64 DMG..."
+          gh release download "$GITHUB_REF_NAME" \
+            --pattern "data-peek-${VERSION}-arm64.dmg" \
+            --dir /tmp/release
+
+          echo "Downloading x64 DMG..."
+          gh release download "$GITHUB_REF_NAME" \
+            --pattern "data-peek-${VERSION}-x64.dmg" \
+            --dir /tmp/release
+
+          ARM64_SHA=$(sha256sum "/tmp/release/data-peek-${VERSION}-arm64.dmg" | cut -d' ' -f1)
+          X64_SHA=$(sha256sum "/tmp/release/data-peek-${VERSION}-x64.dmg" | cut -d' ' -f1)
+
+          echo "arm64_sha=${ARM64_SHA}" >> "$GITHUB_OUTPUT"
+          echo "x64_sha=${X64_SHA}" >> "$GITHUB_OUTPUT"
+
+          echo "arm64 SHA256: ${ARM64_SHA}"
+          echo "x64 SHA256: ${X64_SHA}"
+
+      - name: Update cask formula
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          ARM64_SHA="${{ steps.sha.outputs.arm64_sha }}"
+          X64_SHA="${{ steps.sha.outputs.x64_sha }}"
+
+          cat > homebrew/Casks/data-peek.rb << 'CASK_EOF'
+          cask "data-peek" do
+            arch arm: "arm64", intel: "x64"
+
+            version "VERSION_PLACEHOLDER"
+
+            on_arm do
+              sha256 "ARM64_SHA_PLACEHOLDER"
+            end
+
+            on_intel do
+              sha256 "X64_SHA_PLACEHOLDER"
+            end
+
+            url "https://github.com/Rohithgilla12/data-peek/releases/download/v#{version}/data-peek-#{version}-#{arch}.dmg",
+                verified: "github.com/Rohithgilla12/data-peek/"
+            name "Data Peek"
+            desc "Minimal, fast SQL client desktop application"
+            homepage "https://github.com/Rohithgilla12/data-peek"
+
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
+
+            depends_on macos: ">= :catalina"
+
+            app "Data Peek.app"
+
+            zap trash: [
+              "~/Library/Application Support/data-peek",
+              "~/Library/Preferences/dev.datapeek.app.plist",
+              "~/Library/Saved Application State/dev.datapeek.app.savedState",
+            ]
+          end
+          CASK_EOF
+
+          # Remove leading whitespace from heredoc
+          sed -i 's/^          //' homebrew/Casks/data-peek.rb
+
+          # Replace placeholders with actual values
+          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/" homebrew/Casks/data-peek.rb
+          sed -i "s/ARM64_SHA_PLACEHOLDER/${ARM64_SHA}/" homebrew/Casks/data-peek.rb
+          sed -i "s/X64_SHA_PLACEHOLDER/${X64_SHA}/" homebrew/Casks/data-peek.rb
+
+          echo "Updated cask formula:"
+          cat homebrew/Casks/data-peek.rb
+
+      - name: Commit and push updated cask
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add homebrew/Casks/data-peek.rb
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore: update Homebrew cask to v${VERSION}"
+          git push

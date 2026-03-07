@@ -87,6 +87,13 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 
 ## Installation
 
+### macOS: Homebrew
+
+```bash
+brew tap Rohithgilla12/data-peek
+brew install --cask data-peek
+```
+
 ### Download
 
 Download the latest release for your platform from [Releases](https://github.com/Rohithgilla12/data-peek/releases).
