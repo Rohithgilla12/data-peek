@@ -19,7 +19,8 @@ import {
   Maximize2,
   Square,
   Timer,
-  ActivitySquare
+  ActivitySquare,
+  Share2
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
@@ -65,6 +66,7 @@ import { ERDVisualization } from '@/components/erd-visualization'
 import { ExecutionPlanViewer } from '@/components/execution-plan-viewer'
 import { TableDesigner } from '@/components/table-designer'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
+import { ShareQueryDialog } from '@/components/share-query-dialog'
 import { TelemetryPanel } from '@/components/telemetry-panel'
 import { BenchmarkButton } from '@/components/benchmark-button'
 import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
@@ -167,6 +169,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Save query dialog state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+
+  // Share query dialog state
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
   // Get the createForeignKeyTab action
   const createForeignKeyTab = useTabStore((s) => s.createForeignKeyTab)
@@ -1050,6 +1055,25 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="gap-1.5 h-7"
+                        disabled={!tab.query.trim()}
+                        onClick={() => setShareDialogOpen(true)}
+                      >
+                        <Share2 className="size-3.5" />
+                        Share
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p className="text-xs">Generate a beautiful image of your query to share</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         className={`gap-1.5 h-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
                         onClick={() => setIsResultsCollapsed(!isResultsCollapsed)}
                       >
@@ -1499,6 +1523,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
       {/* Save Query Dialog */}
       <SaveQueryDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} query={tab.query} />
+
+      {/* Share Query Dialog */}
+      <ShareQueryDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        query={tab.query}
+        connectionType={tabConnection?.dbType}
+        connectionName={tabConnection?.name}
+      />
     </div>
   )
 }
