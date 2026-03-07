@@ -135,10 +135,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     const tunnelOverrides = tunnelSession
       ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
       : undefined
-const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-try {
-  await client.connect()
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
 
     try {
       await client.connect()
