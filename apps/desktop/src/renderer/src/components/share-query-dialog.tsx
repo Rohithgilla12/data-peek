@@ -312,7 +312,7 @@ interface ShareQueryDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   query: string
-  connectionType?: string
+  connectionType?: DatabaseType
   connectionName?: string
 }
 
@@ -405,19 +405,25 @@ export function ShareQueryDialog({
     }
   }, [])
 
+  const downloadBlob = useCallback((blob: Blob) => {
+    const url = URL.createObjectURL(blob)
+    try {
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `query-${Date.now()}.png`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } finally {
+      URL.revokeObjectURL(url)
+    }
+  }, [])
+
   const handleDownload = useCallback(async () => {
     const blob = await generateImage()
     if (!blob) return
-
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `query-${Date.now()}.png`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-  }, [generateImage])
+    downloadBlob(blob)
+  }, [generateImage, downloadBlob])
 
   const handleCopyToClipboard = useCallback(async () => {
     const blob = await generateImage()
@@ -429,10 +435,10 @@ export function ShareQueryDialog({
       setTimeout(() => setIsCopied(false), 2000)
     } catch (error) {
       console.error('Failed to copy to clipboard:', error)
-      // Fallback: download instead
-      await handleDownload()
+      // Fallback: download the already-generated blob instead
+      downloadBlob(blob)
     }
-  }, [generateImage, handleDownload])
+  }, [generateImage, downloadBlob])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -467,7 +473,7 @@ export function ShareQueryDialog({
                         : 'bg-white/20 text-white'
                     )}
                   >
-                    <DatabaseIcon dbType={connectionType as DatabaseType} className="size-3.5" />
+                    <DatabaseIcon dbType={connectionType} className="size-3.5" />
                     {connectionName || connectionType}
                   </Badge>
                 </div>
