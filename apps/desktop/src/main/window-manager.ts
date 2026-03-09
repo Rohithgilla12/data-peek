@@ -19,6 +19,8 @@ const CASCADE_OFFSET = 30
 class WindowManager {
   private windows = new Map<number, BrowserWindow>()
   private lastWindowPosition: { x: number; y: number } | null = null
+  private lastFocusedWindowId: number | null = null
+  private windowConnectionNames = new Map<number, string>()
 
   /**
    * Create a new application window
@@ -77,11 +79,13 @@ class WindowManager {
 
     window.on('ready-to-show', () => {
       window.show()
+      this.updateWindowTitles()
       scheduleMenuUpdate()
     })
 
-    // Update menu when window gains focus (to update checkmarks)
+    // Update menu when window gains focus and track last focused window
     window.on('focus', () => {
+      this.lastFocusedWindowId = window.id
       scheduleMenuUpdate()
     })
 
@@ -100,10 +104,15 @@ class WindowManager {
     // Cleanup when window is closed
     window.on('closed', () => {
       this.windows.delete(window.id)
+      this.windowConnectionNames.delete(window.id)
+      if (this.lastFocusedWindowId === window.id) {
+        this.lastFocusedWindowId = null
+      }
       // Reset cascade position if all windows closed
       if (this.windows.size === 0) {
         this.lastWindowPosition = null
       }
+      this.updateWindowTitles()
       scheduleMenuUpdate()
     })
 
@@ -203,12 +212,87 @@ class WindowManager {
   }
 
   /**
-   * Show the primary window (for macOS dock click)
+   * Show a window on macOS dock click.
+   * Prefers the last focused window; falls back to any visible window, then primary.
    */
   showPrimaryWindow(): void {
+    // Try last focused window first
+    if (this.lastFocusedWindowId) {
+      const lastFocused = this.windows.get(this.lastFocusedWindowId)
+      if (lastFocused && !lastFocused.isDestroyed()) {
+        lastFocused.show()
+        return
+      }
+    }
+
+    // Fall back to any existing window
     const primary = this.getPrimaryWindow()
     if (primary && !primary.isDestroyed()) {
       primary.show()
+    }
+  }
+
+  /**
+   * Set the connection name for a window and update all titles
+   */
+  setWindowConnectionName(windowId: number, connectionName: string | null): void {
+    if (connectionName) {
+      this.windowConnectionNames.set(windowId, connectionName)
+    } else {
+      this.windowConnectionNames.delete(windowId)
+    }
+    this.updateWindowTitles()
+    scheduleMenuUpdate()
+  }
+
+  /**
+   * Update window titles based on connection names.
+   * Single window with no connection: "Data Peek"
+   * Single window with connection: "Data Peek — mydb"
+   * Multiple windows with unique connections: "Data Peek — mydb", "Data Peek — otherdb"
+   * Multiple windows with same connection: "Data Peek — mydb — 1", "Data Peek — mydb — 2"
+   */
+  private updateWindowTitles(): void {
+    const windows = this.getAllWindows()
+
+    if (windows.length <= 1) {
+      const win = windows[0]
+      if (win && !win.isDestroyed()) {
+        const connName = this.windowConnectionNames.get(win.id)
+        win.setTitle(connName ? `Data Peek — ${connName}` : 'Data Peek')
+      }
+      return
+    }
+
+    // Count how many windows share each connection name
+    const nameCounts = new Map<string, number>()
+    for (const win of windows) {
+      const name = this.windowConnectionNames.get(win.id) || ''
+      nameCounts.set(name, (nameCounts.get(name) || 0) + 1)
+    }
+
+    // Track per-name index for numbering duplicates
+    const nameIndexes = new Map<string, number>()
+
+    for (const win of windows) {
+      if (win.isDestroyed()) continue
+
+      const connName = this.windowConnectionNames.get(win.id)
+      const key = connName || ''
+      const count = nameCounts.get(key) || 1
+      const idx = (nameIndexes.get(key) || 0) + 1
+      nameIndexes.set(key, idx)
+
+      let title: string
+      if (!connName) {
+        title = count > 1 ? `Data Peek — ${idx}` : 'Data Peek'
+      } else if (count > 1) {
+        title = `Data Peek — ${connName} — ${idx}`
+      } else {
+        title = `Data Peek — ${connName}`
+      }
+
+      win.setTitle(title)
     }
   }
 

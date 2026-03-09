@@ -1,4 +1,5 @@
 import { ipcMain, BrowserWindow } from 'electron'
+import { windowManager } from '../window-manager'
 
 export function registerWindowHandlers(): void {
   ipcMain.handle('minimize-window', () => {
@@ -18,4 +19,14 @@ export function registerWindowHandlers(): void {
   ipcMain.handle('close-window', () => {
     BrowserWindow.getFocusedWindow()?.close()
   })
+
+  ipcMain.on(
+    'window:set-connection-info',
+    (event, connectionName: string | null) => {
+      const win = BrowserWindow.fromWebContents(event.sender)
+      if (win) {
+        windowManager.setWindowConnectionName(win.id, connectionName)
+      }
+    }
+  )
 }

@@ -370,6 +370,7 @@ interface DataPeekApi {
     minimize: () => Promise<void>
     maximize: () => Promise<void>
     close: () => Promise<void>
+    setConnectionInfo: (connectionName: string | null) => void
   }
 }
 
