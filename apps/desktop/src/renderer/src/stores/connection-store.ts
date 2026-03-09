@@ -193,6 +193,14 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   setActiveConnection: (id) => {
     set({ activeConnectionId: id })
 
+    // Update window title with connection database name
+    if (id) {
+      const connection = get().connections.find((c) => c.id === id)
+      window.api.window.setConnectionInfo(connection?.database || connection?.name || null)
+    } else {
+      window.api.window.setConnectionInfo(null)
+    }
+
     // Fetch schemas when connection changes
     if (id) {
       get().fetchSchemas(id)
