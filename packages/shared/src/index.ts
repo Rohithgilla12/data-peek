@@ -1985,3 +1985,56 @@ export interface PgNotificationStats {
   avgPayloadSize: number
   connectedSince?: number
 }
+
+export interface ActiveQuery {
+  pid: number
+  user: string
+  database: string
+  state: string
+  duration: string
+  durationMs: number
+  query: string
+  waitEvent?: string
+  applicationName?: string
+}
+
+export interface TableSizeInfo {
+  schema: string
+  table: string
+  rowCountEstimate: number
+  dataSize: string
+  dataSizeBytes: number
+  indexSize: string
+  indexSizeBytes: number
+  totalSize: string
+  totalSizeBytes: number
+}
+
+export interface CacheStats {
+  bufferCacheHitRatio: number
+  indexHitRatio: number
+  tableCacheDetails?: Array<{
+    table: string
+    hitRatio: number
+    seqScans: number
+    indexScans: number
+  }>
+}
+
+export interface LockInfo {
+  blockedPid: number
+  blockedUser: string
+  blockedQuery: string
+  blockingPid: number
+  blockingUser: string
+  blockingQuery: string
+  lockType: string
+  relation?: string
+  waitDuration: string
+  waitDurationMs: number
+}
+
+export interface DatabaseSizeInfo {
+  totalSize: string
+  totalSizeBytes: number
+}
