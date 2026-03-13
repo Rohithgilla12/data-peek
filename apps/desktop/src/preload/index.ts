@@ -41,7 +41,9 @@ import type {
   UpdateDashboardInput,
   CreateWidgetInput,
   UpdateWidgetInput,
-  WidgetLayout
+  WidgetLayout,
+  ColumnStats,
+  ColumnStatsRequest
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -128,7 +130,11 @@ const api = {
       queryHistory: QueryHistoryItemForAnalysis[],
       analysisConfig?: Partial<PerformanceAnalysisConfig>
     ): Promise<IpcResponse<PerformanceAnalysisResult>> =>
-      ipcRenderer.invoke('db:analyze-performance', { config, query, queryHistory, analysisConfig })
+      ipcRenderer.invoke('db:analyze-performance', { config, query, queryHistory, analysisConfig }),
+    columnStats: (
+      config: ConnectionConfig,
+      request: ColumnStatsRequest
+    ): Promise<IpcResponse<ColumnStats>> => ipcRenderer.invoke('db:column-stats', config, request)
   },
   // DDL operations (Table Designer)
   ddl: {

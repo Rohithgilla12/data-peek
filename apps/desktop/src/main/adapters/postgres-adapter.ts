@@ -16,7 +16,11 @@ import {
   type CustomTypeInfo,
   type StatementResult,
   type RoutineInfo,
-  type RoutineParameterInfo
+  type RoutineParameterInfo,
+  type ColumnStats,
+  type ColumnStatsType,
+  type HistogramBucket,
+  type CommonValue
 } from '@shared/index'
 import type {
   DatabaseAdapter,
@@ -1100,6 +1104,222 @@ export class PostgresAdapter implements DatabaseAdapter {
           type: 'domain' as const
         }))
       ]
+    } finally {
+      await client.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  private classifyColumnType(dataType: string): ColumnStatsType {
+    const lower = dataType.toLowerCase()
+    if (
+      lower.includes('int') ||
+      lower.includes('numeric') ||
+      lower.includes('decimal') ||
+      lower.includes('float') ||
+      lower.includes('double') ||
+      lower.includes('real') ||
+      lower.includes('money') ||
+      lower === 'bigint' ||
+      lower === 'smallint' ||
+      lower === 'number'
+    ) {
+      return 'numeric'
+    }
+    if (
+      lower.includes('timestamp') ||
+      lower.includes('date') ||
+      lower.includes('time') ||
+      lower === 'interval'
+    ) {
+      return 'datetime'
+    }
+    if (lower === 'bool' || lower === 'boolean') {
+      return 'boolean'
+    }
+    if (
+      lower.includes('char') ||
+      lower.includes('text') ||
+      lower.includes('varchar') ||
+      lower.includes('string') ||
+      lower === 'name' ||
+      lower === 'citext'
+    ) {
+      return 'text'
+    }
+    return 'other'
+  }
+
+  async getColumnStats(
+    config: ConnectionConfig,
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStats> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
+
+    try {
+      await client.connect()
+
+      const statsType = this.classifyColumnType(dataType)
+      const quotedTable = `"${schema}"."${table}"`
+      const quotedCol = `"${column}"`
+
+      const baseResult = await client.query(`
+        SELECT
+          COUNT(*) AS total_rows,
+          COUNT(*) - COUNT(${quotedCol}) AS null_count,
+          COUNT(DISTINCT ${quotedCol}) AS distinct_count
+        FROM ${quotedTable}
+      `)
+
+      const totalRows = Number(baseResult.rows[0].total_rows)
+      const nullCount = Number(baseResult.rows[0].null_count)
+      const distinctCount = Number(baseResult.rows[0].distinct_count)
+      const nullPercentage = totalRows > 0 ? (nullCount / totalRows) * 100 : 0
+      const distinctPercentage = totalRows > 0 ? (distinctCount / totalRows) * 100 : 0
+
+      const stats: ColumnStats = {
+        column,
+        dataType,
+        statsType,
+        totalRows,
+        nullCount,
+        nullPercentage,
+        distinctCount,
+        distinctPercentage
+      }
+
+      if (statsType === 'numeric') {
+        const numResult = await client.query(`
+          SELECT
+            MIN(${quotedCol})::text AS min_val,
+            MAX(${quotedCol})::text AS max_val,
+            AVG(${quotedCol}::numeric) AS avg_val,
+            STDDEV(${quotedCol}::numeric) AS stddev_val
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        stats.min = numResult.rows[0]?.min_val ?? null
+        stats.max = numResult.rows[0]?.max_val ?? null
+        stats.avg = numResult.rows[0]?.avg_val != null ? Number(numResult.rows[0].avg_val) : null
+        stats.stdDev =
+          numResult.rows[0]?.stddev_val != null ? Number(numResult.rows[0].stddev_val) : null
+
+        if (totalRows <= 1_000_000 && totalRows > 0) {
+          const medianResult = await client.query(`
+            SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY ${quotedCol}::numeric) AS median_val
+            FROM ${quotedTable}
+            WHERE ${quotedCol} IS NOT NULL
+          `)
+          stats.median =
+            medianResult.rows[0]?.median_val != null
+              ? Number(medianResult.rows[0].median_val)
+              : null
+
+          const histResult = await client.query(`
+            WITH bounds AS (
+              SELECT MIN(${quotedCol}::numeric) AS min_val, MAX(${quotedCol}::numeric) AS max_val
+              FROM ${quotedTable}
+              WHERE ${quotedCol} IS NOT NULL
+            ),
+            bucketed AS (
+              SELECT
+                width_bucket(${quotedCol}::numeric, bounds.min_val, bounds.max_val + 1, 10) AS bucket,
+                COUNT(*) AS cnt
+              FROM ${quotedTable}, bounds
+              WHERE ${quotedCol} IS NOT NULL
+                AND bounds.min_val IS NOT NULL
+                AND bounds.max_val IS NOT NULL
+                AND bounds.min_val < bounds.max_val
+              GROUP BY bucket
+            )
+            SELECT
+              bucket,
+              cnt,
+              bounds.min_val + (bucket - 1) * (bounds.max_val - bounds.min_val) / 10.0 AS range_min,
+              bounds.min_val + bucket * (bounds.max_val - bounds.min_val) / 10.0 AS range_max
+            FROM bucketed, bounds
+            ORDER BY bucket
+          `)
+
+          if (histResult.rows.length > 0) {
+            const histogram: HistogramBucket[] = histResult.rows.map((row) => ({
+              min: Number(row.range_min),
+              max: Number(row.range_max),
+              count: Number(row.cnt)
+            }))
+            stats.histogram = histogram
+          }
+        }
+      } else if (statsType === 'text') {
+        const textResult = await client.query(`
+          SELECT
+            MIN(LENGTH(${quotedCol}::text)) AS min_length,
+            MAX(LENGTH(${quotedCol}::text)) AS max_length,
+            AVG(LENGTH(${quotedCol}::text)) AS avg_length
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        stats.minLength =
+          textResult.rows[0]?.min_length != null ? Number(textResult.rows[0].min_length) : null
+        stats.maxLength =
+          textResult.rows[0]?.max_length != null ? Number(textResult.rows[0].max_length) : null
+        stats.avgLength =
+          textResult.rows[0]?.avg_length != null ? Number(textResult.rows[0].avg_length) : null
+
+        const commonResult = await client.query(`
+          SELECT
+            ${quotedCol}::text AS val,
+            COUNT(*) AS cnt,
+            ROUND(COUNT(*) * 100.0 / ${totalRows}, 2) AS pct
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+          GROUP BY ${quotedCol}
+          ORDER BY cnt DESC
+          LIMIT 5
+        `)
+
+        const commonValues: CommonValue[] = commonResult.rows.map((row) => ({
+          value: row.val,
+          count: Number(row.cnt),
+          percentage: Number(row.pct)
+        }))
+        stats.commonValues = commonValues
+      } else if (statsType === 'datetime') {
+        const dtResult = await client.query(`
+          SELECT
+            MIN(${quotedCol})::text AS min_val,
+            MAX(${quotedCol})::text AS max_val
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        stats.min = dtResult.rows[0]?.min_val ?? null
+        stats.max = dtResult.rows[0]?.max_val ?? null
+      } else if (statsType === 'boolean') {
+        const boolResult = await client.query(`
+          SELECT
+            COUNT(*) FILTER (WHERE ${quotedCol} = true) AS true_count,
+            COUNT(*) FILTER (WHERE ${quotedCol} = false) AS false_count
+          FROM ${quotedTable}
+        `)
+
+        stats.trueCount = Number(boolResult.rows[0]?.true_count ?? 0)
+        stats.falseCount = Number(boolResult.rows[0]?.false_count ?? 0)
+      }
+
+      return stats
     } finally {
       await client.end().catch(() => {})
       closeTunnel(tunnelSession)

@@ -12,7 +12,8 @@ import type {
   IndexDefinition,
   SequenceInfo,
   CustomTypeInfo,
-  StatementResult
+  StatementResult,
+  ColumnStats
 } from '@shared/index'
 import type {
   DatabaseAdapter,
@@ -535,5 +536,16 @@ export class SQLiteAdapter implements DatabaseAdapter {
   async getTypes(_config: ConnectionConfig): Promise<CustomTypeInfo[]> {
     // SQLite doesn't have custom types
     return []
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getColumnStats(
+    _config: ConnectionConfig,
+    _schema: string,
+    _table: string,
+    _column: string,
+    _dataType: string
+  ): Promise<ColumnStats> {
+    throw new Error('getColumnStats not implemented for SQLite')
   }
 }

@@ -1808,3 +1808,47 @@ export type CreateWidgetInput = Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>
  * Input for updating a widget
  */
 export type UpdateWidgetInput = Partial<Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>>
+
+export interface ColumnStatsRequest {
+  schema: string
+  table: string
+  column: string
+  dataType: string
+}
+
+export type ColumnStatsType = 'numeric' | 'text' | 'datetime' | 'boolean' | 'other'
+
+export interface HistogramBucket {
+  min: number
+  max: number
+  count: number
+}
+
+export interface CommonValue {
+  value: string | null
+  count: number
+  percentage: number
+}
+
+export interface ColumnStats {
+  column: string
+  dataType: string
+  statsType: ColumnStatsType
+  totalRows: number
+  nullCount: number
+  nullPercentage: number
+  distinctCount: number
+  distinctPercentage: number
+  min?: string | number | null
+  max?: string | number | null
+  avg?: number | null
+  median?: number | null
+  stdDev?: number | null
+  minLength?: number | null
+  maxLength?: number | null
+  avgLength?: number | null
+  histogram?: HistogramBucket[]
+  commonValues?: CommonValue[]
+  trueCount?: number
+  falseCount?: number
+}

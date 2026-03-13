@@ -71,6 +71,9 @@ import { TelemetryPanel } from '@/components/telemetry-panel'
 import { BenchmarkButton } from '@/components/benchmark-button'
 import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
 import { Badge } from '@/components/ui/badge'
+import { ColumnStatsPanel } from '@/components/column-stats-panel'
+import { useColumnStatsStore } from '@/stores/column-stats-store'
+import type { DataTableColumn as DtColumn } from '@/components/data-table'
 
 interface TabQueryEditorProps {
   tabId: string
@@ -158,6 +161,18 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // FK Panel stack state
   const [fkPanels, setFkPanels] = useState<FKPanelItem[]>([])
+
+  // Column stats panel state
+  const {
+    stats: columnStatsMap,
+    isLoading: columnStatsLoading,
+    error: columnStatsError,
+    selectedColumn: columnStatsSelected,
+    isPanelOpen: columnStatsPanelOpen,
+    fetchStats: fetchColumnStats,
+    selectColumn: selectStatsColumn,
+    closePanel: closeColumnStatsPanel
+  } = useColumnStatsStore()
 
   // Execution plan state (resize logic extracted to hook)
   const [executionPlan, setExecutionPlan] = useState<{
@@ -745,6 +760,73 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     setFkPanels([])
   }, [])
 
+  // Column Stats: Handle column header stats click
+  const handleColumnStatsClick = useCallback(
+    (col: DtColumn) => {
+      if (!tabConnection || !tab || tab.type === 'erd' || tab.type === 'table-designer') return
+
+      const connectionId = tabConnection.id
+      const config = tabConnection as Parameters<typeof fetchColumnStats>[1]
+
+      let schema = 'public'
+      let table = ''
+
+      if (tab.type === 'table-preview') {
+        schema = tab.schemaName
+        table = tab.tableName
+      } else {
+        // For query tabs, try to find the column in schemas
+        for (const s of schemas) {
+          for (const t of s.tables) {
+            if (t.columns.some((c) => c.name === col.name)) {
+              schema = s.name
+              table = t.name
+              break
+            }
+          }
+          if (table) break
+        }
+      }
+
+      if (!table) {
+        // No table context available, still open panel with just column info
+        selectStatsColumn({
+          connectionId,
+          schema,
+          table: '',
+          column: col.name,
+          dataType: col.dataType,
+          config
+        })
+        return
+      }
+
+      selectStatsColumn({
+        connectionId,
+        schema,
+        table,
+        column: col.name,
+        dataType: col.dataType,
+        config
+      })
+
+      fetchColumnStats(connectionId, config, {
+        schema,
+        table,
+        column: col.name,
+        dataType: col.dataType
+      })
+    },
+    [tabConnection, tab, schemas, fetchColumnStats, selectStatsColumn]
+  )
+
+  const columnStatsData =
+    columnStatsSelected && columnStatsPanelOpen
+      ? columnStatsMap.get(
+          `${columnStatsSelected.connectionId}:${columnStatsSelected.schema}:${columnStatsSelected.table}:${columnStatsSelected.column}`
+        ) ?? null
+      : null
+
   // Generate SQL WHERE clause from filters
   const generateWhereClause = (filters: DataTableFilter[]): string => {
     if (filters.length === 0) return ''
@@ -1249,6 +1331,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       onSortingChange={setTableSorting}
                       onForeignKeyClick={handleFKClick}
                       onForeignKeyOpenTab={handleFKOpenTab}
+                      onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
                     />
                   )}
                 </div>
@@ -1516,6 +1599,24 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               plan={executionPlan.plan as Parameters<typeof ExecutionPlanViewer>[0]['plan']}
               durationMs={executionPlan.durationMs}
               onClose={() => setExecutionPlan(null)}
+            />
+          </div>
+        </>
+      )}
+
+      {/* Column Stats Panel */}
+      {columnStatsPanelOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40"
+            onClick={closeColumnStatsPanel}
+          />
+          <div className="fixed top-0 bottom-0 right-0 z-50 shadow-xl flex flex-col">
+            <ColumnStatsPanel
+              stats={columnStatsData}
+              isLoading={columnStatsLoading}
+              error={columnStatsError}
+              onClose={closeColumnStatsPanel}
             />
           </div>
         </>

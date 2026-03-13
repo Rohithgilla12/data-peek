@@ -32,7 +32,9 @@ import type {
   CreateWidgetInput,
   UpdateWidgetInput,
   WidgetLayout,
-  Snippet
+  Snippet,
+  ColumnStats,
+  ColumnStatsRequest
 } from '@shared/index'
 
 // AI Types
@@ -193,6 +195,10 @@ interface DataPeekApi {
       queryHistory: QueryHistoryItemForAnalysis[],
       analysisConfig?: Partial<PerformanceAnalysisConfig>
     ) => Promise<IpcResponse<PerformanceAnalysisResult>>
+    columnStats: (
+      config: ConnectionConfig,
+      request: ColumnStatsRequest
+    ) => Promise<IpcResponse<ColumnStats>>
   }
   ddl: {
     createTable: (

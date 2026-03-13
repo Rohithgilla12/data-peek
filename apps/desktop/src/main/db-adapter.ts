@@ -7,7 +7,8 @@ import type {
   SequenceInfo,
   CustomTypeInfo,
   StatementResult,
-  QueryTelemetry
+  QueryTelemetry,
+  ColumnStats
 } from '@shared/index'
 
 /**
@@ -96,6 +97,15 @@ export interface DatabaseAdapter {
 
   /** Get custom types (enums, etc.) */
   getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]>
+
+  /** Get column statistics (min, max, nulls, distinct, histogram) */
+  getColumnStats(
+    config: ConnectionConfig,
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStats>
 }
 
 // Import adapters

@@ -12,6 +12,7 @@ import { registerAIHandlers } from './ai-handlers'
 import { createLogger } from '../lib/logger'
 import { registerFileHandlers } from './file-handlers'
 import { registerWindowHandlers } from './window-handler'
+import { registerColumnStatsHandlers } from './column-stats-handlers'
 
 const log = createLogger('ipc')
 
@@ -59,6 +60,9 @@ export function registerAllHandlers(stores: IpcStores): void {
 
   // Window controls
   registerWindowHandlers()
+
+  // Column statistics
+  registerColumnStatsHandlers()
 
   log.debug('All handlers registered')
 }

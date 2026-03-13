@@ -11,7 +11,7 @@ import {
   type SortingState
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Link2, Copy } from 'lucide-react'
+import { ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Link2, Copy, BarChart2 } from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
 import { Input } from '@/components/ui/input'
 
@@ -21,6 +21,12 @@ import { FKCellValue } from '@/components/fk-cell-value'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getTypeColor } from '@/lib/type-colors'
 import { PaginationControls } from '@/components/pagination-controls'
@@ -57,6 +63,8 @@ interface DataTableProps<TData> {
   onForeignKeyClick?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   /** Called when user Cmd+clicks a FK cell (opens new tab) */
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
+  /** Called when user requests column statistics for a column */
+  onColumnStatsClick?: (column: DataTableColumn) => void
 }
 
 const CellValue = React.memo(function CellValue({
@@ -140,7 +148,8 @@ export function DataTable<TData extends Record<string, unknown>>({
   onSortingChange,
   onPageSizeChange,
   onForeignKeyClick,
-  onForeignKeyOpenTab
+  onForeignKeyOpenTab,
+  onColumnStatsClick
 }: DataTableProps<TData>) {
   const { defaultPageSize } = useSettingsStore()
   const pageSize = propPageSize ?? defaultPageSize
@@ -197,27 +206,49 @@ export function DataTable<TData extends Record<string, unknown>>({
             const isSorted = column.getIsSorted()
             return (
               <div className="flex flex-col gap-0.5">
-                <Button
-                  variant="ghost"
-                  className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                >
-                  <span>{displayName}</span>
-                  {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
-                  <Badge
-                    variant="outline"
-                    className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                <div className="flex items-center">
+                  <Button
+                    variant="ghost"
+                    className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50 flex-1"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
                   >
-                    {col.dataType}
-                  </Badge>
-                  {isSorted === 'asc' ? (
-                    <ArrowUp className="ml-1 size-3 text-primary" />
-                  ) : isSorted === 'desc' ? (
-                    <ArrowDown className="ml-1 size-3 text-primary" />
-                  ) : (
-                    <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                    <span>{displayName}</span>
+                    {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
+                    <Badge
+                      variant="outline"
+                      className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                    >
+                      {col.dataType}
+                    </Badge>
+                    {isSorted === 'asc' ? (
+                      <ArrowUp className="ml-1 size-3 text-primary" />
+                    ) : isSorted === 'desc' ? (
+                      <ArrowDown className="ml-1 size-3 text-primary" />
+                    ) : (
+                      <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                    )}
+                  </Button>
+                  {onColumnStatsClick && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-5 ml-0.5 opacity-0 group-hover/head:opacity-100 hover:opacity-100 focus:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <BarChart2 className="size-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => onColumnStatsClick(col)}>
+                          <BarChart2 className="size-3 mr-2" />
+                          Column Statistics
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                </Button>
+                </div>
                 {col.foreignKey && (
                   <span className="text-[9px] text-muted-foreground px-2 -mt-0.5">
                     → {col.foreignKey.referencedTable}
@@ -280,7 +311,7 @@ export function DataTable<TData extends Record<string, unknown>>({
             : 'includesString'
         }
       }),
-    [columnDefs, onForeignKeyClick, onForeignKeyOpenTab]
+    [columnDefs, onForeignKeyClick, onForeignKeyOpenTab, onColumnStatsClick]
   )
 
   const table = useReactTable({
@@ -400,7 +431,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
-                        className="h-10 text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/95"
+                        className="h-10 text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/95 group/head"
                       >
                         {header.isPlaceholder
                           ? null

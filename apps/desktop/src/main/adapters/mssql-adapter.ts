@@ -13,7 +13,10 @@ import type {
   CustomTypeInfo,
   StatementResult,
   RoutineInfo,
-  RoutineParameterInfo
+  RoutineParameterInfo,
+  ColumnStats,
+  ColumnStatsType,
+  CommonValue
 } from '@shared/index'
 import type {
   DatabaseAdapter,
@@ -1140,6 +1143,219 @@ export class MSSQLAdapter implements DatabaseAdapter {
         name: row.type_name,
         type: 'composite' as const // Treat as composite for now
       }))
+    } finally {
+      await pool.close().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  private classifyColumnType(dataType: string): ColumnStatsType {
+    const lower = dataType.toLowerCase()
+    if (
+      lower.includes('int') ||
+      lower.includes('decimal') ||
+      lower.includes('numeric') ||
+      lower.includes('float') ||
+      lower.includes('real') ||
+      lower.includes('money') ||
+      lower === 'number'
+    ) {
+      return 'numeric'
+    }
+    if (lower.includes('date') || lower.includes('time')) {
+      return 'datetime'
+    }
+    if (lower === 'bit') {
+      return 'boolean'
+    }
+    if (
+      lower.includes('char') ||
+      lower.includes('text') ||
+      lower.includes('varchar') ||
+      lower.includes('nvarchar') ||
+      lower.includes('nchar')
+    ) {
+      return 'text'
+    }
+    return 'other'
+  }
+
+  async getColumnStats(
+    config: ConnectionConfig,
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStats> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+
+    try {
+      await pool.connect()
+
+      const statsType = this.classifyColumnType(dataType)
+      const quotedTable = `[${schema}].[${table}]`
+      const quotedCol = `[${column}]`
+
+      const baseResult = await pool.request().query(`
+        SELECT
+          COUNT(*) AS total_rows,
+          COUNT(*) - COUNT(${quotedCol}) AS null_count,
+          COUNT(DISTINCT ${quotedCol}) AS distinct_count
+        FROM ${quotedTable}
+      `)
+
+      const baseRow = baseResult.recordset[0]
+      const totalRows = Number(baseRow.total_rows)
+      const nullCount = Number(baseRow.null_count)
+      const distinctCount = Number(baseRow.distinct_count)
+      const nullPercentage = totalRows > 0 ? (nullCount / totalRows) * 100 : 0
+      const distinctPercentage = totalRows > 0 ? (distinctCount / totalRows) * 100 : 0
+
+      const stats: ColumnStats = {
+        column,
+        dataType,
+        statsType,
+        totalRows,
+        nullCount,
+        nullPercentage,
+        distinctCount,
+        distinctPercentage
+      }
+
+      if (statsType === 'numeric') {
+        const numResult = await pool.request().query(`
+          SELECT
+            CAST(MIN(${quotedCol}) AS NVARCHAR(MAX)) AS min_val,
+            CAST(MAX(${quotedCol}) AS NVARCHAR(MAX)) AS max_val,
+            AVG(CAST(${quotedCol} AS FLOAT)) AS avg_val,
+            STDEV(CAST(${quotedCol} AS FLOAT)) AS stddev_val
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        const numRow = numResult.recordset[0]
+        stats.min = numRow?.min_val ?? null
+        stats.max = numRow?.max_val ?? null
+        stats.avg = numRow?.avg_val != null ? Number(numRow.avg_val) : null
+        stats.stdDev = numRow?.stddev_val != null ? Number(numRow.stddev_val) : null
+
+        if (totalRows <= 1_000_000 && totalRows > 0) {
+          const medianResult = await pool.request().query(`
+            SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(${quotedCol} AS FLOAT))
+              OVER () AS median_val
+            FROM ${quotedTable}
+            WHERE ${quotedCol} IS NOT NULL
+          `)
+          if (medianResult.recordset.length > 0) {
+            stats.median =
+              medianResult.recordset[0]?.median_val != null
+                ? Number(medianResult.recordset[0].median_val)
+                : null
+          }
+
+          const mmResult = await pool.request().query(`
+            SELECT
+              MIN(CAST(${quotedCol} AS FLOAT)) AS min_val,
+              MAX(CAST(${quotedCol} AS FLOAT)) AS max_val
+            FROM ${quotedTable}
+            WHERE ${quotedCol} IS NOT NULL
+          `)
+          const mmRow = mmResult.recordset[0]
+          const minVal = Number(mmRow?.min_val)
+          const maxVal = Number(mmRow?.max_val)
+
+          if (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal) {
+            const histResult = await pool.request().query(`
+              SELECT
+                NTILE(10) OVER (ORDER BY CAST(${quotedCol} AS FLOAT)) AS bucket,
+                CAST(${quotedCol} AS FLOAT) AS val
+              FROM ${quotedTable}
+              WHERE ${quotedCol} IS NOT NULL
+            `)
+
+            const bucketMap = new Map<number, { min: number; max: number; count: number }>()
+            for (const row of histResult.recordset) {
+              const b = Number(row.bucket)
+              const v = Number(row.val)
+              if (!bucketMap.has(b)) {
+                bucketMap.set(b, { min: v, max: v, count: 0 })
+              }
+              const entry = bucketMap.get(b)!
+              if (v < entry.min) entry.min = v
+              if (v > entry.max) entry.max = v
+              entry.count++
+            }
+
+            stats.histogram = Array.from(bucketMap.entries())
+              .sort(([a], [b]) => a - b)
+              .map(([, v]) => v)
+          }
+        }
+      } else if (statsType === 'text') {
+        const textResult = await pool.request().query(`
+          SELECT
+            MIN(LEN(${quotedCol})) AS min_length,
+            MAX(LEN(${quotedCol})) AS max_length,
+            AVG(CAST(LEN(${quotedCol}) AS FLOAT)) AS avg_length
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        const textRow = textResult.recordset[0]
+        stats.minLength = textRow?.min_length != null ? Number(textRow.min_length) : null
+        stats.maxLength = textRow?.max_length != null ? Number(textRow.max_length) : null
+        stats.avgLength = textRow?.avg_length != null ? Number(textRow.avg_length) : null
+
+        const commonResult = await pool.request().query(`
+          SELECT TOP 5
+            CAST(${quotedCol} AS NVARCHAR(MAX)) AS val,
+            COUNT(*) AS cnt,
+            ROUND(COUNT(*) * 100.0 / ${totalRows}, 2) AS pct
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+          GROUP BY CAST(${quotedCol} AS NVARCHAR(MAX))
+          ORDER BY cnt DESC
+        `)
+
+        const commonValues: CommonValue[] = commonResult.recordset.map((row) => ({
+          value: row.val != null ? String(row.val) : null,
+          count: Number(row.cnt),
+          percentage: Number(row.pct)
+        }))
+        stats.commonValues = commonValues
+      } else if (statsType === 'datetime') {
+        const dtResult = await pool.request().query(`
+          SELECT
+            CAST(MIN(${quotedCol}) AS NVARCHAR(MAX)) AS min_val,
+            CAST(MAX(${quotedCol}) AS NVARCHAR(MAX)) AS max_val
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        const dtRow = dtResult.recordset[0]
+        stats.min = dtRow?.min_val ?? null
+        stats.max = dtRow?.max_val ?? null
+      } else if (statsType === 'boolean') {
+        const boolResult = await pool.request().query(`
+          SELECT
+            SUM(CASE WHEN ${quotedCol} = 1 THEN 1 ELSE 0 END) AS true_count,
+            SUM(CASE WHEN ${quotedCol} = 0 THEN 1 ELSE 0 END) AS false_count
+          FROM ${quotedTable}
+        `)
+
+        const boolRow = boolResult.recordset[0]
+        stats.trueCount = Number(boolRow?.true_count ?? 0)
+        stats.falseCount = Number(boolRow?.false_count ?? 0)
+      }
+
+      return stats
     } finally {
       await pool.close().catch(() => {})
       closeTunnel(tunnelSession)
