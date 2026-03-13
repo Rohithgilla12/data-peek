@@ -94,7 +94,9 @@ async function connectListener(
     if (existing.reconnectTimer) clearTimeout(existing.reconnectTimer)
     try {
       await existing.client.end()
-    } catch {}
+    } catch {
+      // ignore close errors
+    }
     closeTunnel(existing.tunnelSession)
   }
 
@@ -344,7 +346,9 @@ export async function cleanup(): Promise<void> {
     if (entry.reconnectTimer) clearTimeout(entry.reconnectTimer)
     try {
       await entry.client.end()
-    } catch {}
+    } catch {
+      // ignore close errors
+    }
     closeTunnel(entry.tunnelSession)
     listeners.delete(connectionId)
   }
@@ -352,7 +356,9 @@ export async function cleanup(): Promise<void> {
   if (sqliteDb) {
     try {
       sqliteDb.close()
-    } catch {}
+    } catch {
+      // ignore close errors
+    }
     sqliteDb = null
   }
 }

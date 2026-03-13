@@ -197,7 +197,9 @@ export function PgNotificationsPanel({ tabId }: Props) {
       if (!tab?.connectionId) return
       try {
         await unsubscribe(tab.connectionId, channel)
-      } catch {}
+      } catch {
+        // ignore unsubscribe errors
+      }
     },
     [tab?.connectionId, unsubscribe]
   )
