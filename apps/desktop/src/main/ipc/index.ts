@@ -15,6 +15,7 @@ import { registerWindowHandlers } from './window-handler'
 import { registerColumnStatsHandlers } from './column-stats-handlers'
 import { registerImportHandlers } from './import-handlers'
 import { registerDataGenHandlers } from './data-gen-handlers'
+import { registerPgNotifyHandlers } from './pg-notify-handlers'
 
 const log = createLogger('ipc')
 
@@ -72,6 +73,9 @@ export function registerAllHandlers(stores: IpcStores): void {
   // Data generator
   registerDataGenHandlers()
 
+  // PostgreSQL LISTEN/NOTIFY
+  registerPgNotifyHandlers()
+
   log.debug('All handlers registered')
 }
 
@@ -87,3 +91,4 @@ export { registerDashboardHandlers } from './dashboard-handlers'
 export { registerAIHandlers } from './ai-handlers'
 export { registerImportHandlers } from './import-handlers'
 export { registerDataGenHandlers } from './data-gen-handlers'
+export { registerPgNotifyHandlers } from './pg-notify-handlers'

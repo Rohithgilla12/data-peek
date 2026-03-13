@@ -66,6 +66,7 @@ import { ERDVisualization } from '@/components/erd-visualization'
 import { ExecutionPlanViewer } from '@/components/execution-plan-viewer'
 import { TableDesigner } from '@/components/table-designer'
 import { DataGenerator } from '@/components/data-generator'
+import { PgNotificationsPanel } from '@/components/pg-notifications-panel'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
 import { ShareQueryDialog } from '@/components/share-query-dialog'
 import { TelemetryPanel } from '@/components/telemetry-panel'
@@ -267,6 +268,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       currentTab.type === 'erd' ||
       currentTab.type === 'table-designer' ||
       currentTab.type === 'data-generator' ||
+      currentTab.type === 'pg-notifications' ||
       !tabConnection ||
       currentTab.isExecuting ||
       !currentTab.query.trim()
@@ -410,7 +412,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   ])
 
   const handleCancelQuery = useCallback(async () => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator') return
+    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return
     if (!tab.isExecuting || !tab.executionId) return
 
     try {
@@ -447,7 +449,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   )
 
   const handleFormatQuery = () => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || !tab.query.trim()) return
+    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' || !tab.query.trim()) return
     const formatted = formatSQL(tab.query)
     updateTabQuery(tabId, formatted)
   }
@@ -460,6 +463,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         tab.type === 'erd' ||
         tab.type === 'table-designer' ||
         tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
         !tabConnection ||
         tab.isExecuting ||
         isRunningBenchmark ||
@@ -513,6 +517,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'erd' ||
       tab.type === 'table-designer' ||
       tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
       !tabConnection ||
       isExplaining ||
       !tab.query.trim()
@@ -552,6 +557,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'erd' ||
       tab.type === 'table-designer' ||
       tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
       !tabConnection ||
       isPerfAnalyzing ||
       !tab.query.trim()
@@ -615,7 +621,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Helper: Look up column info from schema (for FK details)
   const getColumnsWithFKInfo = useCallback((): DataTableColumn[] => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || !tab.result?.columns)
+    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' || !tab.result?.columns)
       return []
 
     // For table-preview tabs, we can directly look up the columns from schema
@@ -662,6 +669,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'erd' ||
       tab.type === 'table-designer' ||
       tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
       !tab.result?.columns ||
       tab.type !== 'table-preview'
     )
@@ -834,7 +842,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Column Stats: Handle column header stats click
   const handleColumnStatsClick = useCallback(
     (col: DtColumn) => {
-      if (!tabConnection || !tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator') return
+      if (!tabConnection || !tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return
 
       const connectionId = tabConnection.id
       const config = tabConnection as Parameters<typeof fetchColumnStats>[1]
@@ -918,7 +926,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Build a new query with filters/sorting applied
   const buildQueryWithFilters = (): string => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator') return ''
+    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return ''
 
     // For table preview tabs, rebuild from scratch
     if (tab.type === 'table-preview') {
@@ -1051,6 +1059,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Render Data Generator for data-generator tabs
   if (tab.type === 'data-generator') {
     return <DataGenerator tabId={tabId} />
+  }
+
+  // Render PG Notifications panel
+  if (tab.type === 'pg-notifications') {
+    return <PgNotificationsPanel tabId={tabId} />
   }
 
   // Get statement results for multi-statement queries

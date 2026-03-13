@@ -49,7 +49,9 @@ import type {
   CsvImportProgress,
   DataGenConfig,
   DataGenResult,
-  DataGenProgress
+  DataGenProgress,
+  PgNotificationEvent,
+  PgNotificationChannel
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -482,6 +484,36 @@ const api = {
   },
   files: {
     openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog')
+  },
+  pgNotify: {
+    subscribe: (
+      connectionId: string,
+      config: ConnectionConfig,
+      channel: string
+    ): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('pg-notify:subscribe', connectionId, config, channel),
+    unsubscribe: (connectionId: string, channel: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('pg-notify:unsubscribe', connectionId, channel),
+    send: (
+      config: ConnectionConfig,
+      channel: string,
+      payload: string
+    ): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('pg-notify:send', config, channel, payload),
+    getChannels: (connectionId: string): Promise<IpcResponse<PgNotificationChannel[]>> =>
+      ipcRenderer.invoke('pg-notify:get-channels', connectionId),
+    getHistory: (
+      connectionId: string,
+      limit?: number
+    ): Promise<IpcResponse<PgNotificationEvent[]>> =>
+      ipcRenderer.invoke('pg-notify:get-history', connectionId, limit),
+    clearHistory: (connectionId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('pg-notify:clear-history', connectionId),
+    onEvent: (callback: (event: PgNotificationEvent) => void): (() => void) => {
+      const handler = (_: unknown, event: PgNotificationEvent): void => callback(event)
+      ipcRenderer.on('pg-notify:event', handler)
+      return () => ipcRenderer.removeListener('pg-notify:event', handler)
+    }
   },
   window: {
     minimize: (): Promise<void> => ipcRenderer.invoke('minimize-window'),

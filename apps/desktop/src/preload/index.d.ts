@@ -40,7 +40,9 @@ import type {
   CsvImportProgress,
   DataGenConfig,
   DataGenResult,
-  DataGenProgress
+  DataGenProgress,
+  PgNotificationEvent,
+  PgNotificationChannel
 } from '@shared/index'
 
 // AI Types
@@ -385,6 +387,23 @@ interface DataPeekApi {
     removeProviderConfig: (provider: AIProvider) => Promise<IpcResponse<void>>
     setActiveProvider: (provider: AIProvider) => Promise<IpcResponse<void>>
     setActiveModel: (provider: AIProvider, model: string) => Promise<IpcResponse<void>>
+  }
+  pgNotify: {
+    subscribe: (
+      connectionId: string,
+      config: ConnectionConfig,
+      channel: string
+    ) => Promise<IpcResponse<void>>
+    unsubscribe: (connectionId: string, channel: string) => Promise<IpcResponse<void>>
+    send: (
+      config: ConnectionConfig,
+      channel: string,
+      payload: string
+    ) => Promise<IpcResponse<void>>
+    getChannels: (connectionId: string) => Promise<IpcResponse<PgNotificationChannel[]>>
+    getHistory: (connectionId: string, limit?: number) => Promise<IpcResponse<PgNotificationEvent[]>>
+    clearHistory: (connectionId: string) => Promise<IpcResponse<void>>
+    onEvent: (callback: (event: PgNotificationEvent) => void) => () => void
   }
   files: {
     openFilePicker: () => Promise<string | null>

@@ -1963,3 +1963,25 @@ export interface DataGenResult {
   durationMs: number
   error?: string
 }
+
+export interface PgNotificationEvent {
+  id: string
+  connectionId: string
+  channel: string
+  payload: string
+  receivedAt: number
+}
+
+export interface PgNotificationChannel {
+  name: string
+  isListening: boolean
+  eventCount: number
+  lastEventAt?: number
+}
+
+export interface PgNotificationStats {
+  eventsPerSecond: number
+  totalEvents: number
+  avgPayloadSize: number
+  connectedSince?: number
+}
