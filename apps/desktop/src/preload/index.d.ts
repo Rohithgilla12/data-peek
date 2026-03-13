@@ -42,7 +42,12 @@ import type {
   DataGenResult,
   DataGenProgress,
   PgNotificationEvent,
-  PgNotificationChannel
+  PgNotificationChannel,
+  ActiveQuery,
+  TableSizeInfo,
+  CacheStats,
+  LockInfo,
+  DatabaseSizeInfo
 } from '@shared/index'
 
 // AI Types
@@ -214,9 +219,15 @@ interface DataPeekApi {
     ) => Promise<IpcResponse<CsvImportResult>>
     cancelImport: () => Promise<IpcResponse<void>>
     onImportProgress: (callback: (progress: CsvImportProgress) => void) => () => void
-    generateData: (config: ConnectionConfig, genConfig: DataGenConfig) => Promise<IpcResponse<DataGenResult>>
+    generateData: (
+      config: ConnectionConfig,
+      genConfig: DataGenConfig
+    ) => Promise<IpcResponse<DataGenResult>>
     cancelGenerate: () => Promise<IpcResponse<void>>
-    generatePreview: (config: ConnectionConfig, genConfig: DataGenConfig) => Promise<IpcResponse<{ rows: unknown[][] }>>
+    generatePreview: (
+      config: ConnectionConfig,
+      genConfig: DataGenConfig
+    ) => Promise<IpcResponse<{ rows: unknown[][] }>>
     onGenerateProgress: (callback: (progress: DataGenProgress) => void) => () => void
   }
   ddl: {
@@ -395,15 +406,27 @@ interface DataPeekApi {
       channel: string
     ) => Promise<IpcResponse<void>>
     unsubscribe: (connectionId: string, channel: string) => Promise<IpcResponse<void>>
-    send: (
-      config: ConnectionConfig,
-      channel: string,
-      payload: string
-    ) => Promise<IpcResponse<void>>
+    send: (config: ConnectionConfig, channel: string, payload: string) => Promise<IpcResponse<void>>
     getChannels: (connectionId: string) => Promise<IpcResponse<PgNotificationChannel[]>>
-    getHistory: (connectionId: string, limit?: number) => Promise<IpcResponse<PgNotificationEvent[]>>
+    getHistory: (
+      connectionId: string,
+      limit?: number
+    ) => Promise<IpcResponse<PgNotificationEvent[]>>
     clearHistory: (connectionId: string) => Promise<IpcResponse<void>>
     onEvent: (callback: (event: PgNotificationEvent) => void) => () => void
+  }
+  health: {
+    activeQueries: (config: ConnectionConfig) => Promise<IpcResponse<ActiveQuery[]>>
+    tableSizes: (
+      config: ConnectionConfig,
+      schema?: string
+    ) => Promise<IpcResponse<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }>>
+    cacheStats: (config: ConnectionConfig) => Promise<IpcResponse<CacheStats>>
+    locks: (config: ConnectionConfig) => Promise<IpcResponse<LockInfo[]>>
+    killQuery: (
+      config: ConnectionConfig,
+      pid: number
+    ) => Promise<IpcResponse<{ success: boolean; error?: string }>>
   }
   files: {
     openFilePicker: () => Promise<string | null>

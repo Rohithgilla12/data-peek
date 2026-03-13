@@ -51,7 +51,12 @@ import type {
   DataGenResult,
   DataGenProgress,
   PgNotificationEvent,
-  PgNotificationChannel
+  PgNotificationChannel,
+  ActiveQuery,
+  TableSizeInfo,
+  CacheStats,
+  LockInfo,
+  DatabaseSizeInfo
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -160,8 +165,7 @@ const api = {
       genConfig: DataGenConfig
     ): Promise<IpcResponse<DataGenResult>> =>
       ipcRenderer.invoke('db:generate-data', config, genConfig),
-    cancelGenerate: (): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('db:generate-cancel'),
+    cancelGenerate: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('db:generate-cancel'),
     generatePreview: (
       config: ConnectionConfig,
       genConfig: DataGenConfig
@@ -485,6 +489,24 @@ const api = {
   files: {
     openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog')
   },
+  health: {
+    activeQueries: (config: ConnectionConfig): Promise<IpcResponse<ActiveQuery[]>> =>
+      ipcRenderer.invoke('db:active-queries', config),
+    tableSizes: (
+      config: ConnectionConfig,
+      schema?: string
+    ): Promise<IpcResponse<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }>> =>
+      ipcRenderer.invoke('db:table-sizes', config, schema),
+    cacheStats: (config: ConnectionConfig): Promise<IpcResponse<CacheStats>> =>
+      ipcRenderer.invoke('db:cache-stats', config),
+    locks: (config: ConnectionConfig): Promise<IpcResponse<LockInfo[]>> =>
+      ipcRenderer.invoke('db:locks', config),
+    killQuery: (
+      config: ConnectionConfig,
+      pid: number
+    ): Promise<IpcResponse<{ success: boolean; error?: string }>> =>
+      ipcRenderer.invoke('db:kill-query', config, pid)
+  },
   pgNotify: {
     subscribe: (
       connectionId: string,
@@ -498,8 +520,7 @@ const api = {
       config: ConnectionConfig,
       channel: string,
       payload: string
-    ): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('pg-notify:send', config, channel, payload),
+    ): Promise<IpcResponse<void>> => ipcRenderer.invoke('pg-notify:send', config, channel, payload),
     getChannels: (connectionId: string): Promise<IpcResponse<PgNotificationChannel[]>> =>
       ipcRenderer.invoke('pg-notify:get-channels', connectionId),
     getHistory: (
