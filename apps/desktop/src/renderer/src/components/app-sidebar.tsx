@@ -1,4 +1,4 @@
-import { Bell, MessageCircleQuestion, Settings2 } from 'lucide-react'
+import { Activity, Bell, MessageCircleQuestion, Settings2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 import { ConnectionSwitcher } from '@/components/connection-switcher'
@@ -39,11 +39,18 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     s.connections.find((c) => c.id === activeConnectionId)
   )
   const createPgNotificationsTab = useTabStore((s) => s.createPgNotificationsTab)
+  const createHealthMonitorTab = useTabStore((s) => s.createHealthMonitorTab)
   const isPostgres = activeConnection?.dbType === 'postgresql'
 
   const handleOpenNotifications = () => {
     if (activeConnectionId) {
       createPgNotificationsTab(activeConnectionId)
+    }
+  }
+
+  const handleOpenHealthMonitor = () => {
+    if (activeConnectionId) {
+      createHealthMonitorTab(activeConnectionId)
     }
   }
 
@@ -88,16 +95,24 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* Dashboards */}
         <Dashboards />
 
-        {isPostgres && (
+        {activeConnectionId && (
           <>
             <SidebarSeparator className="mx-3" />
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
+                  {isPostgres && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton onClick={handleOpenNotifications}>
+                        <Bell className="size-4" />
+                        <span>Notifications</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
                   <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleOpenNotifications}>
-                      <Bell className="size-4" />
-                      <span>Notifications</span>
+                    <SidebarMenuButton onClick={handleOpenHealthMonitor}>
+                      <Activity className="size-4" />
+                      <span>Health Monitor</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>

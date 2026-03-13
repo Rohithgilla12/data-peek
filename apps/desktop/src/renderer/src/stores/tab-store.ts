@@ -26,6 +26,7 @@ export type TabType =
   | 'table-designer'
   | 'data-generator'
   | 'pg-notifications'
+  | 'health-monitor'
 
 // Base tab interface
 interface BaseTab {
@@ -98,6 +99,11 @@ export interface PgNotificationsTab extends BaseTab {
   type: 'pg-notifications'
 }
 
+// Health Monitor tab
+export interface HealthMonitorTab extends BaseTab {
+  type: 'health-monitor'
+}
+
 export type Tab =
   | QueryTab
   | TablePreviewTab
@@ -105,6 +111,7 @@ export type Tab =
   | TableDesignerTab
   | DataGeneratorTab
   | PgNotificationsTab
+  | HealthMonitorTab
 
 // Persisted tab data (minimal for storage)
 interface PersistedTab {
@@ -139,6 +146,7 @@ interface TabState {
   createTableDesignerTab: (connectionId: string, schemaName: string, tableName?: string) => string
   createDataGeneratorTab: (connectionId: string, schemaName: string, tableName?: string) => string
   createPgNotificationsTab: (connectionId: string) => string
+  createHealthMonitorTab: (connectionId: string) => string
   closeTab: (tabId: string) => void
   closeAllTabs: () => void
   closeOtherTabs: (tabId: string) => void
@@ -210,6 +218,7 @@ interface TabState {
     tableName?: string
   ) => Tab | undefined
   findPgNotificationsTab: (connectionId: string) => Tab | undefined
+  findHealthMonitorTab: (connectionId: string) => Tab | undefined
 }
 
 export const useTabStore = create<TabState>()(
@@ -492,6 +501,37 @@ export const useTabStore = create<TabState>()(
         return id
       },
 
+      createHealthMonitorTab: (connectionId) => {
+        const existing = get().tabs.find(
+          (t) => t.type === 'health-monitor' && t.connectionId === connectionId
+        )
+        if (existing) {
+          set({ activeTabId: existing.id })
+          return existing.id
+        }
+
+        const id = crypto.randomUUID()
+        const tabs = get().tabs
+        const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.order)) : -1
+
+        const newTab: HealthMonitorTab = {
+          id,
+          type: 'health-monitor',
+          title: 'Health Monitor',
+          isPinned: false,
+          connectionId,
+          createdAt: Date.now(),
+          order: maxOrder + 1
+        }
+
+        set((state) => ({
+          tabs: [...state.tabs, newTab],
+          activeTabId: id
+        }))
+
+        return id
+      },
+
       closeTab: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
         if (!tab || tab.isPinned) return
@@ -614,7 +654,14 @@ export const useTabStore = create<TabState>()(
           tabs: state.tabs.map((t) => {
             if (t.id !== tabId) return t
             // ERD, TableDesigner, and DataGenerator tabs don't have executionId
-            if (t.type === 'erd' || t.type === 'table-designer' || t.type === 'data-generator' || t.type === 'pg-notifications') return t
+            if (
+              t.type === 'erd' ||
+              t.type === 'table-designer' ||
+              t.type === 'data-generator' ||
+              t.type === 'pg-notifications' ||
+              t.type === 'health-monitor'
+            )
+              return t
             // Only update executionId if provided, otherwise clear it when not executing
             const currentExecutionId = t.executionId
             const newExecutionId =
@@ -627,7 +674,12 @@ export const useTabStore = create<TabState>()(
       markTabSaved: (tabId) => {
         set((state) => ({
           tabs: state.tabs.map((t) =>
-            t.id === tabId && t.type !== 'erd' && t.type !== 'table-designer' && t.type !== 'data-generator' && t.type !== 'pg-notifications'
+            t.id === tabId &&
+            t.type !== 'erd' &&
+            t.type !== 'table-designer' &&
+            t.type !== 'data-generator' &&
+            t.type !== 'pg-notifications' &&
+            t.type !== 'health-monitor'
               ? { ...t, savedQuery: t.query }
               : t
           )
@@ -754,13 +806,28 @@ export const useTabStore = create<TabState>()(
         const tab = get().tabs.find((t) => t.id === tabId)
         if (!tab) return false
         // ERD and table-designer tabs are never dirty (table-designer uses its own store)
-        if (tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return false
+        if (
+          tab.type === 'erd' ||
+          tab.type === 'table-designer' ||
+          tab.type === 'data-generator' ||
+          tab.type === 'pg-notifications' ||
+          tab.type === 'health-monitor'
+        )
+          return false
         return tab.query !== tab.savedQuery
       },
 
       getTabPaginatedRows: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return []
+        if (
+          !tab ||
+          tab.type === 'erd' ||
+          tab.type === 'table-designer' ||
+          tab.type === 'data-generator' ||
+          tab.type === 'pg-notifications' ||
+          tab.type === 'health-monitor'
+        )
+          return []
         if (!tab.result) return []
         const start = (tab.currentPage - 1) * tab.pageSize
         return tab.result.rows.slice(start, start + tab.pageSize)
@@ -768,27 +835,59 @@ export const useTabStore = create<TabState>()(
 
       getTabTotalPages: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return 0
+        if (
+          !tab ||
+          tab.type === 'erd' ||
+          tab.type === 'table-designer' ||
+          tab.type === 'data-generator' ||
+          tab.type === 'pg-notifications' ||
+          tab.type === 'health-monitor'
+        )
+          return 0
         if (!tab.result) return 0
         return Math.ceil(tab.result.rowCount / tab.pageSize)
       },
 
       getActiveStatementResult: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return undefined
+        if (
+          !tab ||
+          tab.type === 'erd' ||
+          tab.type === 'table-designer' ||
+          tab.type === 'data-generator' ||
+          tab.type === 'pg-notifications' ||
+          tab.type === 'health-monitor'
+        )
+          return undefined
         if (!tab.multiResult?.statements) return undefined
         return tab.multiResult.statements[tab.activeResultIndex]
       },
 
       getAllStatementResults: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return []
+        if (
+          !tab ||
+          tab.type === 'erd' ||
+          tab.type === 'table-designer' ||
+          tab.type === 'data-generator' ||
+          tab.type === 'pg-notifications' ||
+          tab.type === 'health-monitor'
+        )
+          return []
         return tab.multiResult?.statements ?? []
       },
 
       getActiveResultPaginatedRows: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return []
+        if (
+          !tab ||
+          tab.type === 'erd' ||
+          tab.type === 'table-designer' ||
+          tab.type === 'data-generator' ||
+          tab.type === 'pg-notifications' ||
+          tab.type === 'health-monitor'
+        )
+          return []
         const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
         if (!statement) return []
         const start = (tab.currentPage - 1) * tab.pageSize
@@ -797,7 +896,15 @@ export const useTabStore = create<TabState>()(
 
       getActiveResultTotalPages: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || tab.type === 'data-generator' || tab.type === 'pg-notifications') return 0
+        if (
+          !tab ||
+          tab.type === 'erd' ||
+          tab.type === 'table-designer' ||
+          tab.type === 'data-generator' ||
+          tab.type === 'pg-notifications' ||
+          tab.type === 'health-monitor'
+        )
+          return 0
         const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
         if (!statement) return 0
         return Math.ceil(statement.rowCount / tab.pageSize)
@@ -845,6 +952,12 @@ export const useTabStore = create<TabState>()(
         return get().tabs.find(
           (t) => t.type === 'pg-notifications' && t.connectionId === connectionId
         )
+      },
+
+      findHealthMonitorTab: (connectionId) => {
+        return get().tabs.find(
+          (t) => t.type === 'health-monitor' && t.connectionId === connectionId
+        )
       }
     }),
     {
@@ -886,6 +999,10 @@ export const useTabStore = create<TabState>()(
             }
 
             if (t.type === 'pg-notifications') {
+              return base
+            }
+
+            if (t.type === 'health-monitor') {
               return base
             }
 
@@ -944,6 +1061,15 @@ export const useTabStore = create<TabState>()(
                 type: 'pg-notifications' as const,
                 createdAt: Date.now()
               } as PgNotificationsTab
+            }
+
+            // Health Monitor tabs
+            if (t.type === 'health-monitor') {
+              return {
+                ...t,
+                type: 'health-monitor' as const,
+                createdAt: Date.now()
+              } as HealthMonitorTab
             }
 
             const base = {
