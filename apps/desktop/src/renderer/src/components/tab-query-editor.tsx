@@ -74,6 +74,19 @@ import { Badge } from '@/components/ui/badge'
 import { ColumnStatsPanel } from '@/components/column-stats-panel'
 import { useColumnStatsStore } from '@/stores/column-stats-store'
 import type { DataTableColumn as DtColumn } from '@/components/data-table'
+import { MaskingToolbar } from '@/components/masking-toolbar'
+import { useMaskingStore } from '@/stores/masking-store'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
+import type { ExportData } from '@/lib/export'
 
 interface TabQueryEditorProps {
   tabId: string
@@ -188,8 +201,60 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Share query dialog state
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
+  // Export with masked columns confirmation
+  const [pendingExport, setPendingExport] = useState<null | {
+    type: 'csv' | 'json' | 'sql'
+    data: ExportData
+    filename: string
+  }>(null)
+
+  const getEffectiveMaskedColumns = useMaskingStore((s) => s.getEffectiveMaskedColumns)
+
   // Get the createForeignKeyTab action
   const createForeignKeyTab = useTabStore((s) => s.createForeignKeyTab)
+
+  const buildMaskedExportData = (data: ExportData): ExportData => {
+    const masked = getEffectiveMaskedColumns(
+      tabId,
+      data.columns.map((c) => c.name)
+    )
+    if (masked.size === 0) return data
+    return {
+      ...data,
+      rows: data.rows.map((row) => {
+        const newRow = { ...row }
+        for (const col of masked) {
+          newRow[col] = '[MASKED]'
+        }
+        return newRow
+      })
+    }
+  }
+
+  const handleExport = (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
+    const masked = getEffectiveMaskedColumns(
+      tabId,
+      data.columns.map((c) => c.name)
+    )
+    if (masked.size > 0) {
+      setPendingExport({ type, data, filename })
+      return
+    }
+    doExport(type, data, filename)
+  }
+
+  const doExport = (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
+    if (type === 'csv') {
+      downloadCSV(data, filename)
+    } else if (type === 'json') {
+      downloadJSON(data, filename)
+    } else {
+      downloadSQL(data, filename, {
+        tableName: tab?.type === 'table-preview' ? tab.tableName! : 'query_result',
+        schemaName: tab?.type === 'table-preview' ? tab.schemaName : undefined
+      })
+    }
+  }
 
   const handleRunQuery = useCallback(async () => {
     // Read fresh tab state from store to avoid stale closure issues
@@ -822,9 +887,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   const columnStatsData =
     columnStatsSelected && columnStatsPanelOpen
-      ? columnStatsMap.get(
+      ? (columnStatsMap.get(
           `${columnStatsSelected.connectionId}:${columnStatsSelected.schema}:${columnStatsSelected.table}:${columnStatsSelected.column}`
-        ) ?? null
+        ) ?? null)
       : null
 
   // Generate SQL WHERE clause from filters
@@ -1317,6 +1382,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                   ) : (
                     <DataTable
                       key={`result-${activeResultIndex}`}
+                      tabId={tabId}
                       columns={
                         hasMultipleResults
                           ? getActiveResultColumns().map((col) => ({
@@ -1472,6 +1538,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                    <MaskingToolbar tabId={tabId} />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-1.5 h-7">
@@ -1486,7 +1553,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            downloadCSV(tab.result, filename)
+                            handleExport('csv', tab.result, filename)
                           }}
                         >
                           <FileSpreadsheet className="size-4 text-muted-foreground" />
@@ -1498,7 +1565,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            downloadJSON(tab.result, filename)
+                            handleExport('json', tab.result, filename)
                           }}
                         >
                           <FileJson className="size-4 text-muted-foreground" />
@@ -1510,11 +1577,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            downloadSQL(tab.result, filename, {
-                              tableName:
-                                tab.type === 'table-preview' ? tab.tableName! : 'query_result',
-                              schemaName: tab.type === 'table-preview' ? tab.schemaName : undefined
-                            })
+                            handleExport('sql', tab.result, filename)
                           }}
                         >
                           <FileCode2 className="size-4 text-muted-foreground" />
@@ -1607,10 +1670,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       {/* Column Stats Panel */}
       {columnStatsPanelOpen && (
         <>
-          <div
-            className="fixed inset-0 z-40"
-            onClick={closeColumnStatsPanel}
-          />
+          <div className="fixed inset-0 z-40" onClick={closeColumnStatsPanel} />
           <div className="fixed top-0 bottom-0 right-0 z-50 shadow-xl flex flex-col">
             <ColumnStatsPanel
               stats={columnStatsData}
@@ -1633,6 +1693,33 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         connectionType={tabConnection?.dbType}
         connectionName={tabConnection?.name}
       />
+
+      {/* Export with masked columns confirmation */}
+      <AlertDialog open={!!pendingExport} onOpenChange={(open) => !open && setPendingExport(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export with masked columns?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Some columns are currently masked. The exported file will contain{' '}
+              <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">[MASKED]</code> in
+              place of sensitive values. Do you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!pendingExport) return
+                const maskedData = buildMaskedExportData(pendingExport.data)
+                doExport(pendingExport.type, maskedData, pendingExport.filename)
+                setPendingExport(null)
+              }}
+            >
+              Export with [MASKED] values
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

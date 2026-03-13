@@ -1,4 +1,5 @@
 export * from './connection-store'
+export * from './masking-store'
 export * from './column-stats-store'
 export * from './query-store'
 export * from './tab-store'
