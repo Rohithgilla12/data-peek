@@ -1910,3 +1910,56 @@ export interface BatchInsertResult {
   rowsSkipped: number
   rowsFailed: number
 }
+
+export type GeneratorType =
+  | 'auto-increment'
+  | 'uuid'
+  | 'faker'
+  | 'random-int'
+  | 'random-float'
+  | 'random-boolean'
+  | 'random-date'
+  | 'random-enum'
+  | 'fk-reference'
+  | 'fixed'
+  | 'null'
+  | 'expression'
+
+export interface ColumnGenerator {
+  columnName: string
+  dataType: string
+  generatorType: GeneratorType
+  fakerMethod?: string
+  fixedValue?: string
+  minValue?: number
+  maxValue?: number
+  enumValues?: string[]
+  nullPercentage: number
+  skip: boolean
+  fkTable?: string
+  fkColumn?: string
+}
+
+export interface DataGenConfig {
+  schema: string
+  table: string
+  rowCount: number
+  seed?: number
+  columns: ColumnGenerator[]
+  batchSize: number
+}
+
+export interface DataGenProgress {
+  phase: 'generating' | 'inserting' | 'complete' | 'error'
+  rowsGenerated: number
+  rowsInserted: number
+  totalRows: number
+  error?: string
+}
+
+export interface DataGenResult {
+  success: boolean
+  rowsInserted: number
+  durationMs: number
+  error?: string
+}

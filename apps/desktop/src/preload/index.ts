@@ -46,7 +46,10 @@ import type {
   ColumnStatsRequest,
   CsvImportRequest,
   CsvImportResult,
-  CsvImportProgress
+  CsvImportProgress,
+  DataGenConfig,
+  DataGenResult,
+  DataGenProgress
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -149,6 +152,23 @@ const api = {
       const handler = (_: unknown, progress: CsvImportProgress): void => callback(progress)
       ipcRenderer.on('db:import-progress', handler)
       return () => ipcRenderer.removeListener('db:import-progress', handler)
+    },
+    generateData: (
+      config: ConnectionConfig,
+      genConfig: DataGenConfig
+    ): Promise<IpcResponse<DataGenResult>> =>
+      ipcRenderer.invoke('db:generate-data', config, genConfig),
+    cancelGenerate: (): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('db:generate-cancel'),
+    generatePreview: (
+      config: ConnectionConfig,
+      genConfig: DataGenConfig
+    ): Promise<IpcResponse<{ rows: unknown[][] }>> =>
+      ipcRenderer.invoke('db:generate-preview', config, genConfig),
+    onGenerateProgress: (callback: (progress: DataGenProgress) => void): (() => void) => {
+      const handler = (_: unknown, progress: DataGenProgress): void => callback(progress)
+      ipcRenderer.on('db:generate-progress', handler)
+      return () => ipcRenderer.removeListener('db:generate-progress', handler)
     }
   },
   // DDL operations (Table Designer)

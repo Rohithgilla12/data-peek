@@ -14,6 +14,7 @@ import { registerFileHandlers } from './file-handlers'
 import { registerWindowHandlers } from './window-handler'
 import { registerColumnStatsHandlers } from './column-stats-handlers'
 import { registerImportHandlers } from './import-handlers'
+import { registerDataGenHandlers } from './data-gen-handlers'
 
 const log = createLogger('ipc')
 
@@ -68,6 +69,9 @@ export function registerAllHandlers(stores: IpcStores): void {
   // CSV import
   registerImportHandlers()
 
+  // Data generator
+  registerDataGenHandlers()
+
   log.debug('All handlers registered')
 }
 
@@ -82,3 +86,4 @@ export { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
 export { registerDashboardHandlers } from './dashboard-handlers'
 export { registerAIHandlers } from './ai-handlers'
 export { registerImportHandlers } from './import-handlers'
+export { registerDataGenHandlers } from './data-gen-handlers'

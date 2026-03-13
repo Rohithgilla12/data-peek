@@ -37,7 +37,10 @@ import type {
   ColumnStatsRequest,
   CsvImportRequest,
   CsvImportResult,
-  CsvImportProgress
+  CsvImportProgress,
+  DataGenConfig,
+  DataGenResult,
+  DataGenProgress
 } from '@shared/index'
 
 // AI Types
@@ -209,6 +212,10 @@ interface DataPeekApi {
     ) => Promise<IpcResponse<CsvImportResult>>
     cancelImport: () => Promise<IpcResponse<void>>
     onImportProgress: (callback: (progress: CsvImportProgress) => void) => () => void
+    generateData: (config: ConnectionConfig, genConfig: DataGenConfig) => Promise<IpcResponse<DataGenResult>>
+    cancelGenerate: () => Promise<IpcResponse<void>>
+    generatePreview: (config: ConnectionConfig, genConfig: DataGenConfig) => Promise<IpcResponse<{ rows: unknown[][] }>>
+    onGenerateProgress: (callback: (progress: DataGenProgress) => void) => () => void
   }
   ddl: {
     createTable: (
