@@ -1852,3 +1852,61 @@ export interface ColumnStats {
   trueCount?: number
   falseCount?: number
 }
+
+export interface CsvColumnMapping {
+  csvColumn: string
+  tableColumn: string | null
+  inferredType?: string
+}
+
+export interface CsvImportOptions {
+  batchSize: number
+  onConflict: 'error' | 'skip' | 'update'
+  truncateFirst: boolean
+  useTransaction: boolean
+  useCopy: boolean
+}
+
+export interface CsvImportRequest {
+  schema: string
+  table: string
+  columns: string[]
+  mappings: CsvColumnMapping[]
+  options: CsvImportOptions
+  createTable: boolean
+  tableDefinition?: {
+    columns: Array<{ name: string; dataType: string; isNullable: boolean }>
+  }
+}
+
+export interface CsvImportProgress {
+  phase: 'preparing' | 'importing' | 'complete' | 'error'
+  rowsImported: number
+  totalRows: number
+  currentBatch: number
+  totalBatches: number
+  error?: string
+}
+
+export interface CsvImportResult {
+  success: boolean
+  rowsImported: number
+  rowsSkipped: number
+  rowsFailed: number
+  error?: string
+  durationMs: number
+}
+
+export interface BatchInsertOptions {
+  schema: string
+  table: string
+  columns: string[]
+  onConflict: 'error' | 'skip' | 'update'
+  primaryKeyColumns?: string[]
+}
+
+export interface BatchInsertResult {
+  rowsInserted: number
+  rowsSkipped: number
+  rowsFailed: number
+}

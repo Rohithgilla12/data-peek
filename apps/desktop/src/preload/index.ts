@@ -43,7 +43,10 @@ import type {
   UpdateWidgetInput,
   WidgetLayout,
   ColumnStats,
-  ColumnStatsRequest
+  ColumnStatsRequest,
+  CsvImportRequest,
+  CsvImportResult,
+  CsvImportProgress
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -134,7 +137,19 @@ const api = {
     columnStats: (
       config: ConnectionConfig,
       request: ColumnStatsRequest
-    ): Promise<IpcResponse<ColumnStats>> => ipcRenderer.invoke('db:column-stats', config, request)
+    ): Promise<IpcResponse<ColumnStats>> => ipcRenderer.invoke('db:column-stats', config, request),
+    importCsv: (
+      config: ConnectionConfig,
+      request: CsvImportRequest,
+      rows: unknown[][]
+    ): Promise<IpcResponse<CsvImportResult>> =>
+      ipcRenderer.invoke('db:import-csv', config, request, rows),
+    cancelImport: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('db:import-cancel'),
+    onImportProgress: (callback: (progress: CsvImportProgress) => void): (() => void) => {
+      const handler = (_: unknown, progress: CsvImportProgress): void => callback(progress)
+      ipcRenderer.on('db:import-progress', handler)
+      return () => ipcRenderer.removeListener('db:import-progress', handler)
+    }
   },
   // DDL operations (Table Designer)
   ddl: {

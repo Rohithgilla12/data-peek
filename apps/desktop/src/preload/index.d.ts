@@ -34,7 +34,10 @@ import type {
   WidgetLayout,
   Snippet,
   ColumnStats,
-  ColumnStatsRequest
+  ColumnStatsRequest,
+  CsvImportRequest,
+  CsvImportResult,
+  CsvImportProgress
 } from '@shared/index'
 
 // AI Types
@@ -199,6 +202,13 @@ interface DataPeekApi {
       config: ConnectionConfig,
       request: ColumnStatsRequest
     ) => Promise<IpcResponse<ColumnStats>>
+    importCsv: (
+      config: ConnectionConfig,
+      request: CsvImportRequest,
+      rows: unknown[][]
+    ) => Promise<IpcResponse<CsvImportResult>>
+    cancelImport: () => Promise<IpcResponse<void>>
+    onImportProgress: (callback: (progress: CsvImportProgress) => void) => () => void
   }
   ddl: {
     createTable: (

@@ -13,6 +13,7 @@ import { createLogger } from '../lib/logger'
 import { registerFileHandlers } from './file-handlers'
 import { registerWindowHandlers } from './window-handler'
 import { registerColumnStatsHandlers } from './column-stats-handlers'
+import { registerImportHandlers } from './import-handlers'
 
 const log = createLogger('ipc')
 
@@ -64,6 +65,9 @@ export function registerAllHandlers(stores: IpcStores): void {
   // Column statistics
   registerColumnStatsHandlers()
 
+  // CSV import
+  registerImportHandlers()
+
   log.debug('All handlers registered')
 }
 
@@ -77,3 +81,4 @@ export { registerSnippetHandlers } from './snippet-handlers'
 export { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
 export { registerDashboardHandlers } from './dashboard-handlers'
 export { registerAIHandlers } from './ai-handlers'
+export { registerImportHandlers } from './import-handlers'

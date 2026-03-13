@@ -24,8 +24,11 @@ import {
   FileSpreadsheet,
   FileJson,
   FileCode2,
-  Focus
+  Focus,
+  Upload
 } from 'lucide-react'
+import { CsvImportDialog } from '@/components/csv-import-dialog'
+import { useImportStore } from '@/stores'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -103,6 +106,7 @@ interface VirtualizedSchemaItemsProps {
   onTableClick: (schemaName: string, table: TableInfo) => void
   onEditTable: (schemaName: string, tableName: string) => void
   onExportTable: (schemaName: string, tableName: string, format: 'csv' | 'json' | 'sql') => void
+  onImportCsv: (schemaName: string, tableName: string) => void
   onExecuteRoutine: (
     schemaName: string,
     routineName: string,
@@ -121,6 +125,7 @@ function VirtualizedSchemaItems({
   onTableClick,
   onEditTable,
   onExportTable,
+  onImportCsv,
   onExecuteRoutine
 }: VirtualizedSchemaItemsProps) {
   const parentRef = React.useRef<HTMLDivElement>(null)
@@ -237,6 +242,10 @@ function VirtualizedSchemaItems({
                         <DropdownMenuItem onClick={() => onEditTable(schemaName, table.name)}>
                           <Pencil className="size-4 mr-2" />
                           Edit Table
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onImportCsv(schemaName, table.name)}>
+                          <Upload className="size-4 mr-2" />
+                          Import CSV
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -618,6 +627,18 @@ export function SchemaExplorer() {
   const handleEditTable = (schemaName: string, tableName: string) => {
     if (!activeConnectionId) return
     createTableDesignerTab(activeConnectionId, schemaName, tableName)
+  }
+
+  const { setOpen: setImportOpen, setTargetTable: setImportTarget, reset: resetImport } = useImportStore()
+  const [importSchema, setImportSchema] = React.useState<string>('')
+  const [importTable, setImportTable] = React.useState<string>('')
+
+  const handleImportCsv = (schemaName: string, tableName: string) => {
+    resetImport()
+    setImportSchema(schemaName)
+    setImportTable(tableName)
+    setImportTarget(schemaName, tableName)
+    setImportOpen(true)
   }
 
   const handleExportTable = async (
@@ -1026,6 +1047,7 @@ export function SchemaExplorer() {
                             onTableClick={handleTableClick}
                             onEditTable={handleEditTable}
                             onExportTable={handleExportTable}
+                            onImportCsv={handleImportCsv}
                             onExecuteRoutine={handleExecuteRoutine}
                           />
                         )
@@ -1104,6 +1126,12 @@ export function SchemaExplorer() {
                                           >
                                             <Pencil className="size-4 mr-2" />
                                             Edit Table
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => handleImportCsv(schema.name, table.name)}
+                                          >
+                                            <Upload className="size-4 mr-2" />
+                                            Import CSV
                                           </DropdownMenuItem>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
@@ -1340,6 +1368,7 @@ export function SchemaExplorer() {
           )}
         </SidebarMenu>
       </SidebarGroupContent>
+      <CsvImportDialog defaultSchema={importSchema} defaultTable={importTable} />
     </SidebarGroup>
   )
 }
