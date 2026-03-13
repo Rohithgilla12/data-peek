@@ -16,6 +16,7 @@ import { registerColumnStatsHandlers } from './column-stats-handlers'
 import { registerImportHandlers } from './import-handlers'
 import { registerDataGenHandlers } from './data-gen-handlers'
 import { registerPgNotifyHandlers } from './pg-notify-handlers'
+import { registerHealthHandlers } from './health-handlers'
 
 const log = createLogger('ipc')
 
@@ -76,6 +77,9 @@ export function registerAllHandlers(stores: IpcStores): void {
   // PostgreSQL LISTEN/NOTIFY
   registerPgNotifyHandlers()
 
+  // Health monitor diagnostics
+  registerHealthHandlers()
+
   log.debug('All handlers registered')
 }
 
@@ -92,3 +96,4 @@ export { registerAIHandlers } from './ai-handlers'
 export { registerImportHandlers } from './import-handlers'
 export { registerDataGenHandlers } from './data-gen-handlers'
 export { registerPgNotifyHandlers } from './pg-notify-handlers'
+export { registerHealthHandlers } from './health-handlers'
