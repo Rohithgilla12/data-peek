@@ -18,7 +18,12 @@ import type {
   RoutineParameterInfo,
   ColumnStats,
   ColumnStatsType,
-  CommonValue
+  CommonValue,
+  ActiveQuery,
+  TableSizeInfo,
+  CacheStats,
+  LockInfo,
+  DatabaseSizeInfo
 } from '@shared/index'
 import type {
   DatabaseAdapter,
@@ -1284,5 +1289,252 @@ export class MySQLAdapter implements DatabaseAdapter {
       if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
+  }
+
+  async getActiveQueries(config: ConnectionConfig): Promise<ActiveQuery[]> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      const [rows] = await connection.query(`
+        SELECT
+          ID AS pid,
+          USER AS user,
+          DB AS db,
+          STATE AS state,
+          TIME AS time_sec,
+          INFO AS query,
+          COMMAND AS command
+        FROM information_schema.processlist
+        WHERE COMMAND != 'Sleep'
+          AND ID != CONNECTION_ID()
+          AND INFO IS NOT NULL
+        ORDER BY TIME DESC
+      `)
+
+      return (rows as Array<Record<string, unknown>>).map((row) => ({
+        pid: Number(row.pid),
+        user: String(row.user ?? ''),
+        database: String(row.db ?? ''),
+        state: String(row.state ?? row.command ?? ''),
+        duration: `${Number(row.time_sec ?? 0)}s`,
+        durationMs: Number(row.time_sec ?? 0) * 1000,
+        query: String(row.query ?? '')
+      }))
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getTableSizes(
+    config: ConnectionConfig,
+    schema?: string
+  ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      const dbName = schema || config.database || ''
+
+      const [dbSizeRows] = await connection.query(
+        `
+        SELECT
+          SUM(data_length + index_length) AS total_size_bytes
+        FROM information_schema.tables
+        WHERE table_schema = ?
+        `,
+        [dbName]
+      )
+      const dbRow = (dbSizeRows as Array<Record<string, unknown>>)[0]
+      const totalSizeBytes = Number(dbRow?.total_size_bytes ?? 0)
+
+      const dbSize: DatabaseSizeInfo = {
+        totalSize: this.formatBytes(totalSizeBytes),
+        totalSizeBytes
+      }
+
+      const [tableRows] = await connection.query(
+        `
+        SELECT
+          table_schema AS table_schema,
+          table_name AS table_name,
+          table_rows AS row_count_estimate,
+          data_length AS data_size_bytes,
+          index_length AS index_size_bytes,
+          data_length + index_length AS total_size_bytes
+        FROM information_schema.tables
+        WHERE table_schema = ?
+          AND table_type = 'BASE TABLE'
+        ORDER BY data_length + index_length DESC
+        `,
+        [dbName]
+      )
+
+      const tables: TableSizeInfo[] = (tableRows as Array<Record<string, unknown>>).map((row) => {
+        const dataSizeBytes = Number(row.data_size_bytes ?? 0)
+        const indexSizeBytes = Number(row.index_size_bytes ?? 0)
+        const tSizeBytes = Number(row.total_size_bytes ?? 0)
+        return {
+          schema: String(row.table_schema ?? ''),
+          table: String(row.table_name ?? ''),
+          rowCountEstimate: Number(row.row_count_estimate ?? 0),
+          dataSize: this.formatBytes(dataSizeBytes),
+          dataSizeBytes,
+          indexSize: this.formatBytes(indexSizeBytes),
+          indexSizeBytes,
+          totalSize: this.formatBytes(tSizeBytes),
+          totalSizeBytes: tSizeBytes
+        }
+      })
+
+      return { dbSize, tables }
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getCacheStats(config: ConnectionConfig): Promise<CacheStats> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      const [rows] = await connection.query(`
+        SHOW STATUS LIKE 'Innodb_buffer_pool_read%'
+      `)
+
+      const statusMap = new Map<string, number>()
+      for (const row of rows as Array<Record<string, unknown>>) {
+        statusMap.set(String(row.Variable_name), Number(row.Value ?? 0))
+      }
+
+      const readRequests = statusMap.get('Innodb_buffer_pool_read_requests') ?? 0
+      const reads = statusMap.get('Innodb_buffer_pool_reads') ?? 0
+      const bufferCacheHitRatio =
+        readRequests > 0 ? Math.round(((readRequests - reads) / readRequests) * 10000) / 100 : 0
+
+      return {
+        bufferCacheHitRatio,
+        indexHitRatio: bufferCacheHitRatio
+      }
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getLocks(config: ConnectionConfig): Promise<LockInfo[]> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      try {
+        const [rows] = await connection.query(`
+          SELECT
+            r.REQUESTING_ENGINE_TRANSACTION_ID AS blocked_trx,
+            r.BLOCKING_ENGINE_TRANSACTION_ID AS blocking_trx,
+            w.PROCESSLIST_ID AS blocked_pid,
+            w.PROCESSLIST_USER AS blocked_user,
+            w.PROCESSLIST_INFO AS blocked_query,
+            b.PROCESSLIST_ID AS blocking_pid,
+            b.PROCESSLIST_USER AS blocking_user,
+            b.PROCESSLIST_INFO AS blocking_query,
+            r.LOCK_TYPE AS lock_type,
+            CONCAT(r.OBJECT_SCHEMA, '.', r.OBJECT_NAME) AS relation,
+            TIMESTAMPDIFF(SECOND, w.PROCESSLIST_TIME, 0) AS wait_sec
+          FROM performance_schema.data_lock_waits r
+          JOIN performance_schema.threads w_t ON w_t.THREAD_ID = r.REQUESTING_THREAD_ID
+          JOIN performance_schema.processlist w ON w.ID = w_t.PROCESSLIST_ID
+          JOIN performance_schema.threads b_t ON b_t.THREAD_ID = r.BLOCKING_THREAD_ID
+          JOIN performance_schema.processlist b ON b.ID = b_t.PROCESSLIST_ID
+        `)
+
+        return (rows as Array<Record<string, unknown>>).map((row) => {
+          const waitSec = Math.abs(Number(row.wait_sec ?? 0))
+          return {
+            blockedPid: Number(row.blocked_pid ?? 0),
+            blockedUser: String(row.blocked_user ?? ''),
+            blockedQuery: String(row.blocked_query ?? ''),
+            blockingPid: Number(row.blocking_pid ?? 0),
+            blockingUser: String(row.blocking_user ?? ''),
+            blockingQuery: String(row.blocking_query ?? ''),
+            lockType: String(row.lock_type ?? ''),
+            relation: row.relation ? String(row.relation) : undefined,
+            waitDuration: `${waitSec}s`,
+            waitDurationMs: waitSec * 1000
+          }
+        })
+      } catch {
+        return []
+      }
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async killQuery(
+    config: ConnectionConfig,
+    pid: number
+  ): Promise<{ success: boolean; error?: string }> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+      await connection.query(`KILL QUERY ${Number(pid)}`)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 bytes'
+    const units = ['bytes', 'kB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
   }
 }

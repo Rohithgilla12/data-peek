@@ -20,7 +20,12 @@ import {
   type ColumnStats,
   type ColumnStatsType,
   type HistogramBucket,
-  type CommonValue
+  type CommonValue,
+  type ActiveQuery,
+  type TableSizeInfo,
+  type CacheStats,
+  type LockInfo,
+  type DatabaseSizeInfo
 } from '@shared/index'
 import type {
   DatabaseAdapter,
@@ -1320,6 +1325,278 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
 
       return stats
+    } finally {
+      await client.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getActiveQueries(config: ConnectionConfig): Promise<ActiveQuery[]> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
+
+    try {
+      await client.connect()
+
+      const result = await client.query(`
+        SELECT
+          pid,
+          usename AS user,
+          datname AS database,
+          state,
+          COALESCE(
+            EXTRACT(EPOCH FROM (now() - query_start))::text || 's',
+            '0s'
+          ) AS duration,
+          COALESCE(EXTRACT(EPOCH FROM (now() - query_start)) * 1000, 0)::bigint AS duration_ms,
+          query,
+          wait_event_type || ':' || wait_event AS wait_event,
+          application_name
+        FROM pg_stat_activity
+        WHERE state != 'idle'
+          AND pid != pg_backend_pid()
+          AND query NOT LIKE '%pg_stat_activity%'
+        ORDER BY query_start ASC NULLS LAST
+      `)
+
+      return result.rows.map((row) => ({
+        pid: Number(row.pid),
+        user: String(row.user ?? ''),
+        database: String(row.database ?? ''),
+        state: String(row.state ?? ''),
+        duration: String(row.duration ?? '0s'),
+        durationMs: Number(row.duration_ms ?? 0),
+        query: String(row.query ?? ''),
+        waitEvent: row.wait_event ? String(row.wait_event) : undefined,
+        applicationName: row.application_name ? String(row.application_name) : undefined
+      }))
+    } finally {
+      await client.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getTableSizes(
+    config: ConnectionConfig,
+    schema?: string
+  ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
+
+    try {
+      await client.connect()
+
+      const dbSizeResult = await client.query(`
+        SELECT
+          pg_size_pretty(pg_database_size(current_database())) AS total_size,
+          pg_database_size(current_database()) AS total_size_bytes
+      `)
+
+      const dbSize: DatabaseSizeInfo = {
+        totalSize: String(dbSizeResult.rows[0].total_size),
+        totalSizeBytes: Number(dbSizeResult.rows[0].total_size_bytes)
+      }
+
+      const schemaFilter = schema
+        ? `AND schemaname = $1`
+        : `AND schemaname NOT IN ('pg_catalog', 'information_schema')`
+      const params = schema ? [schema] : []
+
+      const tablesResult = await client.query(
+        `
+        SELECT
+          schemaname AS schema,
+          relname AS table,
+          n_live_tup AS row_count_estimate,
+          pg_size_pretty(pg_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname))) AS data_size,
+          pg_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname)) AS data_size_bytes,
+          pg_size_pretty(pg_indexes_size(quote_ident(schemaname) || '.' || quote_ident(relname))) AS index_size,
+          pg_indexes_size(quote_ident(schemaname) || '.' || quote_ident(relname)) AS index_size_bytes,
+          pg_size_pretty(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname))) AS total_size,
+          pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname)) AS total_size_bytes
+        FROM pg_stat_user_tables
+        WHERE 1=1 ${schemaFilter}
+        ORDER BY pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname)) DESC
+        `,
+        params
+      )
+
+      const tables: TableSizeInfo[] = tablesResult.rows.map((row) => ({
+        schema: String(row.schema),
+        table: String(row.table),
+        rowCountEstimate: Number(row.row_count_estimate ?? 0),
+        dataSize: String(row.data_size),
+        dataSizeBytes: Number(row.data_size_bytes ?? 0),
+        indexSize: String(row.index_size),
+        indexSizeBytes: Number(row.index_size_bytes ?? 0),
+        totalSize: String(row.total_size),
+        totalSizeBytes: Number(row.total_size_bytes ?? 0)
+      }))
+
+      return { dbSize, tables }
+    } finally {
+      await client.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getCacheStats(config: ConnectionConfig): Promise<CacheStats> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
+
+    try {
+      await client.connect()
+
+      const cacheResult = await client.query(`
+        SELECT
+          CASE WHEN SUM(heap_blks_hit) + SUM(heap_blks_read) = 0 THEN 0
+            ELSE ROUND(SUM(heap_blks_hit)::numeric / (SUM(heap_blks_hit) + SUM(heap_blks_read)) * 100, 2)
+          END AS buffer_cache_hit_ratio,
+          CASE WHEN SUM(idx_blks_hit) + SUM(idx_blks_read) = 0 THEN 0
+            ELSE ROUND(SUM(idx_blks_hit)::numeric / (SUM(idx_blks_hit) + SUM(idx_blks_read)) * 100, 2)
+          END AS index_hit_ratio
+        FROM pg_statio_user_tables
+      `)
+
+      const tableDetailsResult = await client.query(`
+        SELECT
+          schemaname || '.' || relname AS table,
+          CASE WHEN heap_blks_hit + heap_blks_read = 0 THEN 0
+            ELSE ROUND(heap_blks_hit::numeric / (heap_blks_hit + heap_blks_read) * 100, 2)
+          END AS hit_ratio,
+          COALESCE(seq_scan, 0) AS seq_scans,
+          COALESCE(idx_scan, 0) AS index_scans
+        FROM pg_statio_user_tables
+        JOIN pg_stat_user_tables USING (relid)
+        WHERE heap_blks_hit + heap_blks_read > 0
+        ORDER BY heap_blks_hit + heap_blks_read DESC
+        LIMIT 20
+      `)
+
+      return {
+        bufferCacheHitRatio: Number(cacheResult.rows[0]?.buffer_cache_hit_ratio ?? 0),
+        indexHitRatio: Number(cacheResult.rows[0]?.index_hit_ratio ?? 0),
+        tableCacheDetails: tableDetailsResult.rows.map((row) => ({
+          table: String(row.table),
+          hitRatio: Number(row.hit_ratio),
+          seqScans: Number(row.seq_scans),
+          indexScans: Number(row.index_scans)
+        }))
+      }
+    } finally {
+      await client.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getLocks(config: ConnectionConfig): Promise<LockInfo[]> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
+
+    try {
+      await client.connect()
+
+      const result = await client.query(`
+        SELECT
+          blocked.pid AS blocked_pid,
+          blocked_activity.usename AS blocked_user,
+          blocked_activity.query AS blocked_query,
+          blocking.pid AS blocking_pid,
+          blocking_activity.usename AS blocking_user,
+          blocking_activity.query AS blocking_query,
+          blocked.locktype AS lock_type,
+          COALESCE(blocked.relation::regclass::text, '') AS relation,
+          COALESCE(
+            EXTRACT(EPOCH FROM (now() - blocked_activity.query_start))::text || 's',
+            '0s'
+          ) AS wait_duration,
+          COALESCE(
+            EXTRACT(EPOCH FROM (now() - blocked_activity.query_start)) * 1000,
+            0
+          )::bigint AS wait_duration_ms
+        FROM pg_locks blocked
+        JOIN pg_stat_activity blocked_activity ON blocked.pid = blocked_activity.pid
+        JOIN pg_locks blocking ON (
+          blocked.locktype = blocking.locktype
+          AND blocked.database IS NOT DISTINCT FROM blocking.database
+          AND blocked.relation IS NOT DISTINCT FROM blocking.relation
+          AND blocked.page IS NOT DISTINCT FROM blocking.page
+          AND blocked.tuple IS NOT DISTINCT FROM blocking.tuple
+          AND blocked.virtualxid IS NOT DISTINCT FROM blocking.virtualxid
+          AND blocked.transactionid IS NOT DISTINCT FROM blocking.transactionid
+          AND blocked.classid IS NOT DISTINCT FROM blocking.classid
+          AND blocked.objid IS NOT DISTINCT FROM blocking.objid
+          AND blocked.objsubid IS NOT DISTINCT FROM blocking.objsubid
+          AND blocked.pid != blocking.pid
+        )
+        JOIN pg_stat_activity blocking_activity ON blocking.pid = blocking_activity.pid
+        WHERE NOT blocked.granted
+          AND blocking.granted
+        ORDER BY blocked_activity.query_start ASC
+      `)
+
+      return result.rows.map((row) => ({
+        blockedPid: Number(row.blocked_pid),
+        blockedUser: String(row.blocked_user ?? ''),
+        blockedQuery: String(row.blocked_query ?? ''),
+        blockingPid: Number(row.blocking_pid),
+        blockingUser: String(row.blocking_user ?? ''),
+        blockingQuery: String(row.blocking_query ?? ''),
+        lockType: String(row.lock_type ?? ''),
+        relation: row.relation ? String(row.relation) : undefined,
+        waitDuration: String(row.wait_duration ?? '0s'),
+        waitDurationMs: Number(row.wait_duration_ms ?? 0)
+      }))
+    } finally {
+      await client.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async killQuery(
+    config: ConnectionConfig,
+    pid: number
+  ): Promise<{ success: boolean; error?: string }> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
+
+    try {
+      await client.connect()
+      const result = await client.query('SELECT pg_cancel_backend($1) AS cancelled', [pid])
+      const cancelled = result.rows[0]?.cancelled === true
+      return cancelled
+        ? { success: true }
+        : { success: false, error: 'Failed to cancel query - process may have already completed' }
     } finally {
       await client.end().catch(() => {})
       closeTunnel(tunnelSession)
