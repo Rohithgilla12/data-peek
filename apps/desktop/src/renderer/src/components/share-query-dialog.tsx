@@ -468,9 +468,7 @@ export function ShareQueryDialog({
                     variant="secondary"
                     className={cn(
                       'gap-1.5 px-2.5 py-1',
-                      theme === 'light'
-                        ? 'bg-zinc-200 text-zinc-700'
-                        : 'bg-white/20 text-white'
+                      theme === 'light' ? 'bg-zinc-200 text-zinc-700' : 'bg-white/20 text-white'
                     )}
                   >
                     <DatabaseIcon dbType={connectionType} className="size-3.5" />
@@ -531,10 +529,7 @@ export function ShareQueryDialog({
 
               <div className="space-y-2">
                 <Label>Padding</Label>
-                <Select
-                  value={padding}
-                  onValueChange={(v) => setPadding(v as typeof padding)}
-                >
+                <Select value={padding} onValueChange={(v) => setPadding(v as typeof padding)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

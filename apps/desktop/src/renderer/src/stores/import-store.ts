@@ -145,9 +145,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
     if (!file) return
 
     const mappings: CsvColumnMapping[] = file.headers.map((header) => {
-      const match = tableColumns.find(
-        (col) => col.toLowerCase() === header.toLowerCase()
-      )
+      const match = tableColumns.find((col) => col.toLowerCase() === header.toLowerCase())
       return { csvColumn: header, tableColumn: match ?? null }
     })
     set({ columnMappings: mappings })
@@ -169,9 +167,7 @@ export const useImportStore = create<ImportState>((set, get) => ({
 
     set({ isImporting: true, error: null, result: null, progress: null })
 
-    const activeColumns = createNewTable
-      ? inferColumnTypes(file.headers, file.rows)
-      : undefined
+    const activeColumns = createNewTable ? inferColumnTypes(file.headers, file.rows) : undefined
 
     const mappingsToUse =
       columnMappings.length > 0

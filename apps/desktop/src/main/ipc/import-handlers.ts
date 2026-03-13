@@ -1,11 +1,12 @@
 import { ipcMain } from 'electron'
-import type { ConnectionConfig, CsvImportRequest, CsvImportProgress, CsvImportResult } from '@shared/index'
+import type {
+  ConnectionConfig,
+  CsvImportRequest,
+  CsvImportProgress,
+  CsvImportResult
+} from '@shared/index'
 import { getAdapter } from '../db-adapter'
-import {
-  batchInsert,
-  requestCancelBatchInsert,
-  resetCancelBatchInsert
-} from '../batch-insert'
+import { batchInsert, requestCancelBatchInsert, resetCancelBatchInsert } from '../batch-insert'
 import { createLogger } from '../lib/logger'
 import { quoteIdentifier } from '../sql-utils'
 
@@ -50,12 +51,7 @@ function buildCreateTableSql(
 export function registerImportHandlers(): void {
   ipcMain.handle(
     'db:import-csv',
-    async (
-      event,
-      config: ConnectionConfig,
-      request: CsvImportRequest,
-      rows: unknown[][]
-    ) => {
+    async (event, config: ConnectionConfig, request: CsvImportRequest, rows: unknown[][]) => {
       const startTime = Date.now()
       resetCancelBatchInsert()
 
@@ -91,9 +87,7 @@ export function registerImportHandlers(): void {
         if (request.options.truncateFirst) {
           const tableRef = buildTableRef(request.schema, request.table, dbType)
           const truncateSql =
-            dbType === 'mssql'
-              ? `TRUNCATE TABLE ${tableRef}`
-              : `TRUNCATE TABLE ${tableRef}`
+            dbType === 'mssql' ? `TRUNCATE TABLE ${tableRef}` : `TRUNCATE TABLE ${tableRef}`
           await adapter.execute(config, truncateSql, [])
         }
 

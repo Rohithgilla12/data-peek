@@ -26,27 +26,19 @@ export function registerPgNotifyHandlers(): void {
     }
   )
 
-  ipcMain.handle(
-    'pg-notify:unsubscribe',
-    async (_event, connectionId: string, channel: string) => {
-      try {
-        await unsubscribe(connectionId, channel)
-        return { success: true }
-      } catch (error) {
-        log.error('pg-notify:unsubscribe error:', error)
-        return { success: false, error: error instanceof Error ? error.message : String(error) }
-      }
+  ipcMain.handle('pg-notify:unsubscribe', async (_event, connectionId: string, channel: string) => {
+    try {
+      await unsubscribe(connectionId, channel)
+      return { success: true }
+    } catch (error) {
+      log.error('pg-notify:unsubscribe error:', error)
+      return { success: false, error: error instanceof Error ? error.message : String(error) }
     }
-  )
+  })
 
   ipcMain.handle(
     'pg-notify:send',
-    async (
-      _event,
-      config: ConnectionConfig,
-      channel: string,
-      payload: string
-    ) => {
+    async (_event, config: ConnectionConfig, channel: string, payload: string) => {
       try {
         await send(config, channel, payload)
         return { success: true }
@@ -67,18 +59,15 @@ export function registerPgNotifyHandlers(): void {
     }
   })
 
-  ipcMain.handle(
-    'pg-notify:get-history',
-    async (_event, connectionId: string, limit?: number) => {
-      try {
-        const events = getHistory(connectionId, limit)
-        return { success: true, data: events }
-      } catch (error) {
-        log.error('pg-notify:get-history error:', error)
-        return { success: false, error: error instanceof Error ? error.message : String(error) }
-      }
+  ipcMain.handle('pg-notify:get-history', async (_event, connectionId: string, limit?: number) => {
+    try {
+      const events = getHistory(connectionId, limit)
+      return { success: true, data: events }
+    } catch (error) {
+      log.error('pg-notify:get-history error:', error)
+      return { success: false, error: error instanceof Error ? error.message : String(error) }
     }
-  )
+  })
 
   ipcMain.handle('pg-notify:clear-history', async (_event, connectionId: string) => {
     try {

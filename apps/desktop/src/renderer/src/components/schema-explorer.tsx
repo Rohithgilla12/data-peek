@@ -637,7 +637,11 @@ export function SchemaExplorer() {
     createTableDesignerTab(activeConnectionId, schemaName, tableName)
   }
 
-  const { setOpen: setImportOpen, setTargetTable: setImportTarget, reset: resetImport } = useImportStore()
+  const {
+    setOpen: setImportOpen,
+    setTargetTable: setImportTarget,
+    reset: resetImport
+  } = useImportStore()
   const [importSchema, setImportSchema] = React.useState<string>('')
   const [importTable, setImportTable] = React.useState<string>('')
 

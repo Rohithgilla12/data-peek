@@ -20,13 +20,10 @@ export function registerWindowHandlers(): void {
     BrowserWindow.getFocusedWindow()?.close()
   })
 
-  ipcMain.on(
-    'window:set-connection-info',
-    (event, connectionName: string | null) => {
-      const win = BrowserWindow.fromWebContents(event.sender)
-      if (win) {
-        windowManager.setWindowConnectionName(win.id, connectionName)
-      }
+  ipcMain.on('window:set-connection-info', (event, connectionName: string | null) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win) {
+      windowManager.setWindowConnectionName(win.id, connectionName)
     }
-  )
+  })
 }

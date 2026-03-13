@@ -2,7 +2,12 @@ import type { DatabaseAdapter } from './db-adapter'
 import type { ConnectionConfig, BatchInsertOptions, BatchInsertResult } from '@shared/index'
 import { quoteIdentifier } from './sql-utils'
 
-type ProgressCallback = (inserted: number, total: number, batch: number, totalBatches: number) => void
+type ProgressCallback = (
+  inserted: number,
+  total: number,
+  batch: number,
+  totalBatches: number
+) => void
 
 const IDENTIFIER_QUOTES: Record<string, string> = {
   postgresql: '"',
@@ -154,12 +159,7 @@ export async function batchInsert(
       result.rowsFailed += batchRows.length
     }
 
-    onProgress?.(
-      result.rowsInserted,
-      rows.length,
-      batchIdx + 1,
-      totalBatches
-    )
+    onProgress?.(result.rowsInserted, rows.length, batchIdx + 1, totalBatches)
   }
 
   return result

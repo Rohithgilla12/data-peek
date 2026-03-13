@@ -33,7 +33,9 @@ function buildClientConfig(
       try {
         clientConfig.ssl = { rejectUnauthorized: true, ca: readFileSync(sslOptions.ca, 'utf-8') }
       } catch (err) {
-        throw new Error(`Failed to read CA certificate file: ${sslOptions.ca}. ${(err as Error).message}`)
+        throw new Error(
+          `Failed to read CA certificate file: ${sslOptions.ca}. ${(err as Error).message}`
+        )
       }
     } else {
       clientConfig.ssl = true
@@ -197,7 +199,8 @@ function persistEvent(event: PgNotificationEvent): void {
 
     if (count > MAX_EVENTS_PER_CONNECTION) {
       const excess = count - MAX_EVENTS_PER_CONNECTION
-      db.prepare(`
+      db.prepare(
+        `
         DELETE FROM pg_notification_events
         WHERE id IN (
           SELECT id FROM pg_notification_events
@@ -205,7 +208,8 @@ function persistEvent(event: PgNotificationEvent): void {
           ORDER BY received_at ASC
           LIMIT ?
         )
-      `).run(event.connectionId, excess)
+      `
+      ).run(event.connectionId, excess)
     }
   } catch (err) {
     log.error('Failed to persist notification event:', err)

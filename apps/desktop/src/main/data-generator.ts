@@ -31,7 +31,10 @@ const HEURISTICS: Heuristic[] = [
     pattern: /^(country)$/i,
     generator: { generatorType: 'faker', fakerMethod: 'location.country' }
   },
-  { pattern: /^(url|website)$/i, generator: { generatorType: 'faker', fakerMethod: 'internet.url' } },
+  {
+    pattern: /^(url|website)$/i,
+    generator: { generatorType: 'faker', fakerMethod: 'internet.url' }
+  },
   {
     pattern: /^(bio|description|about)$/i,
     generator: { generatorType: 'faker', fakerMethod: 'lorem.paragraph' }
@@ -183,10 +186,7 @@ function generateValue(
   }
 }
 
-export function generateRows(
-  config: DataGenConfig,
-  fkData: Map<string, unknown[]>
-): unknown[][] {
+export function generateRows(config: DataGenConfig, fkData: Map<string, unknown[]>): unknown[][] {
   if (config.seed != null) {
     faker.seed(config.seed)
   }
@@ -211,9 +211,7 @@ export async function resolveFK(
   fkColumn: string
 ): Promise<unknown[]> {
   const schemaPrefix =
-    schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo'
-      ? `"${schema}".`
-      : ''
+    schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo' ? `"${schema}".` : ''
   const sql = `SELECT "${fkColumn}" FROM ${schemaPrefix}"${fkTable}" LIMIT 1000`
 
   try {

@@ -1,13 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  Play,
-  Square,
-  Eye,
-  Loader2,
-  AlertCircle,
-  CheckCircle2,
-  Shuffle
-} from 'lucide-react'
+import { Play, Square, Eye, Loader2, AlertCircle, CheckCircle2, Shuffle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -128,7 +120,16 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
     )
   }
 
-  const { columnGenerators, previewRows, previewColumns, progress, isGenerating, isPreviewing, result, error } = tabState
+  const {
+    columnGenerators,
+    previewRows,
+    previewColumns,
+    progress,
+    isGenerating,
+    isPreviewing,
+    result,
+    error
+  } = tabState
 
   const progressPercent =
     progress && progress.totalRows > 0
@@ -233,7 +234,9 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
         <div
           className={cn(
             'flex items-center gap-2 px-4 py-2 border-b text-xs shrink-0',
-            result.success ? 'bg-green-500/10 text-green-700 dark:text-green-400' : 'bg-destructive/10 text-destructive'
+            result.success
+              ? 'bg-green-500/10 text-green-700 dark:text-green-400'
+              : 'bg-destructive/10 text-destructive'
           )}
         >
           {result.success ? (
@@ -243,7 +246,7 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
           )}
           {result.success
             ? `Inserted ${result.rowsInserted} rows in ${result.durationMs}ms`
-            : result.error ?? 'Generation failed'}
+            : (result.error ?? 'Generation failed')}
         </div>
       )}
 
@@ -266,12 +269,18 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-background border-b">
                 <tr>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground w-8">Skip</th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground w-8">
+                    Skip
+                  </th>
                   <th className="text-left px-4 py-2 font-medium text-muted-foreground">Column</th>
                   <th className="text-left px-4 py-2 font-medium text-muted-foreground">Type</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground w-40">Generator</th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground w-40">
+                    Generator
+                  </th>
                   <th className="text-left px-4 py-2 font-medium text-muted-foreground">Options</th>
-                  <th className="text-left px-4 py-2 font-medium text-muted-foreground w-24">Null %</th>
+                  <th className="text-left px-4 py-2 font-medium text-muted-foreground w-24">
+                    Null %
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -301,7 +310,10 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
                   <thead className="sticky top-0 bg-background border-b">
                     <tr>
                       {previewColumns.map((col) => (
-                        <th key={col} className="text-left px-3 py-2 font-medium text-muted-foreground whitespace-nowrap">
+                        <th
+                          key={col}
+                          className="text-left px-3 py-2 font-medium text-muted-foreground whitespace-nowrap"
+                        >
                           {col}
                         </th>
                       ))}
@@ -311,7 +323,10 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
                     {previewRows.map((row, rowIdx) => (
                       <tr key={rowIdx} className="border-b last:border-0 hover:bg-muted/30">
                         {row.map((cell, cellIdx) => (
-                          <td key={cellIdx} className="px-3 py-1.5 text-muted-foreground font-mono whitespace-nowrap max-w-[160px] truncate">
+                          <td
+                            key={cellIdx}
+                            className="px-3 py-1.5 text-muted-foreground font-mono whitespace-nowrap max-w-[160px] truncate"
+                          >
                             {cell === null ? (
                               <span className="text-muted-foreground/50 italic">null</span>
                             ) : (

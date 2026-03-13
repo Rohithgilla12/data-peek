@@ -30,11 +30,7 @@ interface PgNotificationState {
 
   subscribe: (connectionId: string, config: ConnectionConfig, channel: string) => Promise<void>
   unsubscribe: (connectionId: string, channel: string) => Promise<void>
-  sendNotification: (
-    config: ConnectionConfig,
-    channel: string,
-    payload: string
-  ) => Promise<void>
+  sendNotification: (config: ConnectionConfig, channel: string, payload: string) => Promise<void>
   loadHistory: (connectionId: string, limit?: number) => Promise<void>
   clearHistory: (connectionId: string) => Promise<void>
   setFilter: (filter: Partial<PgNotificationFilter>) => void

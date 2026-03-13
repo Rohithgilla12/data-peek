@@ -80,9 +80,7 @@ export function registerDataGenHandlers(): void {
           return { success: true, data: result }
         }
 
-        const activeColumns = genConfig.columns
-          .filter((c) => !c.skip)
-          .map((c) => c.columnName)
+        const activeColumns = genConfig.columns.filter((c) => !c.skip).map((c) => c.columnName)
 
         const batchResult = await batchInsert(
           adapter,

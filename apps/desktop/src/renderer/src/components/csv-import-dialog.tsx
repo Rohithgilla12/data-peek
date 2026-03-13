@@ -157,7 +157,12 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
   const tablesForSchema = schemas.find((s) => s.name === targetSchema)?.tables ?? []
 
   return (
-    <Sheet open={isOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
+    <Sheet
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) handleClose()
+      }}
+    >
       <SheetContent side="right" className="w-[600px] sm:max-w-[600px] flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
@@ -191,7 +196,10 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                 className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors ${
                   isDragging ? 'border-primary bg-primary/5' : 'border-muted-foreground/30'
                 }`}
-                onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
+                onDragOver={(e) => {
+                  e.preventDefault()
+                  setIsDragging(true)
+                }}
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleFileDrop}
               >
@@ -228,13 +236,17 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
               </div>
 
               <div className="space-y-3">
-                <Label className="text-xs font-medium text-muted-foreground">PREVIEW (first 10 rows)</Label>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  PREVIEW (first 10 rows)
+                </Label>
                 <div className="rounded-md border overflow-auto max-h-48">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         {file.headers.map((h) => (
-                          <TableHead key={h} className="text-xs whitespace-nowrap">{h}</TableHead>
+                          <TableHead key={h} className="text-xs whitespace-nowrap">
+                            {h}
+                          </TableHead>
                         ))}
                       </TableRow>
                     </TableHeader>
@@ -245,7 +257,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                             <TableCell key={j} className="text-xs max-w-[120px] truncate">
                               {cell === null || cell === undefined ? (
                                 <span className="text-muted-foreground italic">null</span>
-                              ) : String(cell)}
+                              ) : (
+                                String(cell)
+                              )}
                             </TableCell>
                           ))}
                         </TableRow>
@@ -261,7 +275,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                   checked={createNewTable}
                   onCheckedChange={setCreateNewTable}
                 />
-                <Label htmlFor="create-new-table" className="text-sm">Create new table</Label>
+                <Label htmlFor="create-new-table" className="text-sm">
+                  Create new table
+                </Label>
               </div>
 
               {createNewTable ? (
@@ -269,13 +285,18 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label className="text-xs">Schema</Label>
-                      <Select value={targetSchema} onValueChange={(v) => setTargetTable(v, targetTable)}>
+                      <Select
+                        value={targetSchema}
+                        onValueChange={(v) => setTargetTable(v, targetTable)}
+                      >
                         <SelectTrigger className="h-8 text-sm mt-1">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {allSchemas.map((s) => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -291,7 +312,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                     </div>
                   </div>
                   <div>
-                    <Label className="text-xs font-medium text-muted-foreground">INFERRED COLUMNS</Label>
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      INFERRED COLUMNS
+                    </Label>
                     <div className="mt-1 rounded-md border overflow-auto max-h-36">
                       <Table>
                         <TableHeader>
@@ -306,7 +329,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                             <TableRow key={col.name}>
                               <TableCell className="text-xs font-mono">{col.name}</TableCell>
                               <TableCell className="text-xs">
-                                <Badge variant="outline" className="text-[11px]">{col.dataType}</Badge>
+                                <Badge variant="outline" className="text-[11px]">
+                                  {col.dataType}
+                                </Badge>
                               </TableCell>
                               <TableCell className="text-xs">
                                 {col.isNullable ? 'Yes' : 'No'}
@@ -328,14 +353,19 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                       </SelectTrigger>
                       <SelectContent>
                         {allSchemas.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                          <SelectItem key={s} value={s}>
+                            {s}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
                     <Label className="text-xs">Table</Label>
-                    <Select value={targetTable} onValueChange={(v) => setTargetTable(targetSchema, v)}>
+                    <Select
+                      value={targetTable}
+                      onValueChange={(v) => setTargetTable(targetSchema, v)}
+                    >
                       <SelectTrigger className="h-8 text-sm mt-1">
                         <SelectValue placeholder="Select table" />
                       </SelectTrigger>
@@ -343,7 +373,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                         {tablesForSchema
                           .filter((t) => t.type === 'table')
                           .map((t) => (
-                            <SelectItem key={t.name} value={t.name}>{t.name}</SelectItem>
+                            <SelectItem key={t.name} value={t.name}>
+                              {t.name}
+                            </SelectItem>
                           ))}
                       </SelectContent>
                     </Select>
@@ -386,7 +418,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                           <span className="text-muted-foreground italic">Skip</span>
                         </SelectItem>
                         {columns.map((col) => (
-                          <SelectItem key={col} value={col}>{col}</SelectItem>
+                          <SelectItem key={col} value={col}>
+                            {col}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -400,7 +434,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
             <div className="space-y-5 pr-4">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Batch Size</Label>
-                <p className="text-xs text-muted-foreground">Rows inserted per database transaction</p>
+                <p className="text-xs text-muted-foreground">
+                  Rows inserted per database transaction
+                </p>
                 <div className="flex gap-2">
                   {BATCH_SIZE_OPTIONS.map((size) => (
                     <Button
@@ -417,7 +453,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium">On Conflict</Label>
-                <p className="text-xs text-muted-foreground">What to do when a row already exists</p>
+                <p className="text-xs text-muted-foreground">
+                  What to do when a row already exists
+                </p>
                 <div className="flex gap-2">
                   {(['error', 'skip', 'update'] as const).map((opt) => (
                     <Button
@@ -435,8 +473,12 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm font-medium" htmlFor="truncate-first">Truncate first</Label>
-                  <p className="text-xs text-muted-foreground">Delete all existing rows before import</p>
+                  <Label className="text-sm font-medium" htmlFor="truncate-first">
+                    Truncate first
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Delete all existing rows before import
+                  </p>
                 </div>
                 <Switch
                   id="truncate-first"
@@ -447,8 +489,12 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label className="text-sm font-medium" htmlFor="use-transaction">Use transaction</Label>
-                  <p className="text-xs text-muted-foreground">Rollback all changes if import fails</p>
+                  <Label className="text-sm font-medium" htmlFor="use-transaction">
+                    Use transaction
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Rollback all changes if import fails
+                  </p>
                 </div>
                 <Switch
                   id="use-transaction"
@@ -458,7 +504,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">SQL PREVIEW (first 3 rows)</Label>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  SQL PREVIEW (first 3 rows)
+                </Label>
                 {file && (
                   <pre className="text-xs bg-muted rounded-md p-3 overflow-auto max-h-36 font-mono">
                     {(() => {
@@ -466,14 +514,19 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                       if (mappedCols.length === 0 || !file) return 'No columns mapped'
                       const colNames = mappedCols.map((m) => m.tableColumn).join(', ')
                       const colIndexes = mappedCols.map((m) => file.headers.indexOf(m.csvColumn))
-                      return file.rows.slice(0, 3).map((row, i) => {
-                        const vals = colIndexes.map((idx) => {
-                          const v = row[idx]
-                          if (v === null || v === undefined || v === '') return 'NULL'
-                          return `'${String(v).replace(/'/g, "''")}'`
-                        }).join(', ')
-                        return `-- row ${i + 1}\nINSERT INTO ${targetSchema}.${targetTable} (${colNames})\nVALUES (${vals});`
-                      }).join('\n\n')
+                      return file.rows
+                        .slice(0, 3)
+                        .map((row, i) => {
+                          const vals = colIndexes
+                            .map((idx) => {
+                              const v = row[idx]
+                              if (v === null || v === undefined || v === '') return 'NULL'
+                              return `'${String(v).replace(/'/g, "''")}'`
+                            })
+                            .join(', ')
+                          return `-- row ${i + 1}\nINSERT INTO ${targetSchema}.${targetTable} (${colNames})\nVALUES (${vals});`
+                        })
+                        .join('\n\n')
                     })()}
                   </pre>
                 )}
@@ -491,8 +544,13 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                   </div>
                   <Progress value={progressPercent} className="h-2" />
                   <div className="flex justify-between text-xs text-muted-foreground">
-                    <span>{progress.rowsImported.toLocaleString()} / {progress.totalRows.toLocaleString()} rows</span>
-                    <span>Batch {progress.currentBatch} / {progress.totalBatches}</span>
+                    <span>
+                      {progress.rowsImported.toLocaleString()} /{' '}
+                      {progress.totalRows.toLocaleString()} rows
+                    </span>
+                    <span>
+                      Batch {progress.currentBatch} / {progress.totalBatches}
+                    </span>
                   </div>
                 </div>
               )}
@@ -533,9 +591,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                   <p className="text-xs text-muted-foreground">
                     Completed in {(result.durationMs / 1000).toFixed(2)}s
                   </p>
-                  {result.error && (
-                    <p className="text-xs text-destructive">{result.error}</p>
-                  )}
+                  {result.error && <p className="text-xs text-destructive">{result.error}</p>}
                 </div>
               )}
 
@@ -551,10 +607,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
 
         <div className="flex gap-2 pt-4 border-t mt-auto">
           {step > 1 && step < 5 && (
-            <Button
-              variant="outline"
-              onClick={() => setStep((step - 1) as 1 | 2 | 3 | 4 | 5)}
-            >
+            <Button variant="outline" onClick={() => setStep((step - 1) as 1 | 2 | 3 | 4 | 5)}>
               Back
             </Button>
           )}
@@ -599,7 +652,13 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
 
           {step === 5 && !isImporting && (
             <>
-              <Button variant="outline" onClick={() => { reset(); setOpen(true) }}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  reset()
+                  setOpen(true)
+                }}
+              >
                 Import Another
               </Button>
               <Button className="ml-auto" onClick={handleClose}>

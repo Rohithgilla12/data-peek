@@ -24,11 +24,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from '@/components/ui/collapsible'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import {
   useTabStore,
   useConnectionStore,
@@ -45,7 +41,11 @@ interface Props {
 
 function formatTimestamp(ms: number): string {
   const d = new Date(ms)
-  return d.toLocaleTimeString(undefined, { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0')
+  return (
+    d.toLocaleTimeString(undefined, { hour12: false }) +
+    '.' +
+    String(d.getMilliseconds()).padStart(3, '0')
+  )
 }
 
 function tryPrettyJson(payload: string): string | null {
@@ -171,7 +171,8 @@ export function PgNotificationsPanel({ tabId }: Props) {
 
   const filteredEvents = events.filter((e) => {
     if (filter.channel && e.channel !== filter.channel) return false
-    if (filter.search && !e.payload.toLowerCase().includes(filter.search.toLowerCase())) return false
+    if (filter.search && !e.payload.toLowerCase().includes(filter.search.toLowerCase()))
+      return false
     return true
   })
 
@@ -258,7 +259,11 @@ export function PgNotificationsPanel({ tabId }: Props) {
               disabled={!channelInput.trim() || isSubscribing}
               className="h-8 shrink-0"
             >
-              {isSubscribing ? <Loader2 className="size-3 animate-spin" /> : <Bell className="size-3 mr-1" />}
+              {isSubscribing ? (
+                <Loader2 className="size-3 animate-spin" />
+              ) : (
+                <Bell className="size-3 mr-1" />
+              )}
               Listen
             </Button>
           </div>
@@ -356,7 +361,11 @@ export function PgNotificationsPanel({ tabId }: Props) {
             <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
               <Activity className="size-3" />
               <span>Stats</span>
-              {isStatsOpen ? <ChevronDown className="size-3 ml-auto" /> : <ChevronUp className="size-3 ml-auto" />}
+              {isStatsOpen ? (
+                <ChevronDown className="size-3 ml-auto" />
+              ) : (
+                <ChevronUp className="size-3 ml-auto" />
+              )}
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
@@ -382,16 +391,19 @@ export function PgNotificationsPanel({ tabId }: Props) {
             <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full border-t border-border">
               <Send className="size-3" />
               <span>Send notification</span>
-              {isSendOpen ? <ChevronDown className="size-3 ml-auto" /> : <ChevronUp className="size-3 ml-auto" />}
+              {isSendOpen ? (
+                <ChevronDown className="size-3 ml-auto" />
+              ) : (
+                <ChevronUp className="size-3 ml-auto" />
+              )}
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="px-3 pb-3 flex flex-col gap-2">
-              <Select
-                value={sendChannel}
-                onValueChange={setSendChannel}
-              >
-                <SelectTrigger className={cn('h-8 text-sm', !sendChannel && 'text-muted-foreground')}>
+              <Select value={sendChannel} onValueChange={setSendChannel}>
+                <SelectTrigger
+                  className={cn('h-8 text-sm', !sendChannel && 'text-muted-foreground')}
+                >
                   <SelectValue placeholder="Select channel..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -421,7 +433,11 @@ export function PgNotificationsPanel({ tabId }: Props) {
                 disabled={!sendChannel || isSending}
                 className="self-end"
               >
-                {isSending ? <Loader2 className="size-3 mr-1 animate-spin" /> : <Send className="size-3 mr-1" />}
+                {isSending ? (
+                  <Loader2 className="size-3 mr-1 animate-spin" />
+                ) : (
+                  <Send className="size-3 mr-1" />
+                )}
                 Send
               </Button>
             </div>

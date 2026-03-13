@@ -44,11 +44,7 @@ interface DataGenStoreState {
     foreignKeys: ForeignKeyInfo[]
   ) => void
 
-  updateGenerator: (
-    tabId: string,
-    columnName: string,
-    updates: Partial<ColumnGenerator>
-  ) => void
+  updateGenerator: (tabId: string, columnName: string, updates: Partial<ColumnGenerator>) => void
 
   updateConfig: (tabId: string, updates: Partial<DataGenConfig>) => void
 
@@ -120,7 +116,9 @@ export const useDataGenStore = create<DataGenStoreState>((set, get) => ({
           config,
           columnGenerators: generators,
           previewRows: null,
-          previewColumns: columns.filter((c) => generators.find((g) => g.columnName === c.name && !g.skip)).map((c) => c.name),
+          previewColumns: columns
+            .filter((c) => generators.find((g) => g.columnName === c.name && !g.skip))
+            .map((c) => c.name),
           progress: null,
           isGenerating: false,
           isPreviewing: false,

@@ -78,7 +78,11 @@ function CommonValuesList({ values }: CommonValuesProps) {
         <div key={i} className="space-y-0.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono truncate max-w-[160px]">
-              {item.value === null ? <span className="text-muted-foreground italic">NULL</span> : item.value}
+              {item.value === null ? (
+                <span className="text-muted-foreground italic">NULL</span>
+              ) : (
+                item.value
+              )}
             </span>
             <span className="text-[10px] text-muted-foreground">
               {formatNumber(item.count, 0)} ({formatPercentage(item.percentage)})
@@ -227,9 +231,18 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                     </p>
                     <StatRow label="Min" value={stats.min != null ? String(stats.min) : null} />
                     <StatRow label="Max" value={stats.max != null ? String(stats.max) : null} />
-                    <StatRow label="Avg" value={stats.avg != null ? formatNumber(stats.avg) : null} />
-                    <StatRow label="Median" value={stats.median != null ? formatNumber(stats.median) : null} />
-                    <StatRow label="Std Dev" value={stats.stdDev != null ? formatNumber(stats.stdDev) : null} />
+                    <StatRow
+                      label="Avg"
+                      value={stats.avg != null ? formatNumber(stats.avg) : null}
+                    />
+                    <StatRow
+                      label="Median"
+                      value={stats.median != null ? formatNumber(stats.median) : null}
+                    />
+                    <StatRow
+                      label="Std Dev"
+                      value={stats.stdDev != null ? formatNumber(stats.stdDev) : null}
+                    />
                   </div>
                   {stats.histogram && stats.histogram.length > 0 && (
                     <>
