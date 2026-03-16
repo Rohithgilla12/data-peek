@@ -87,34 +87,59 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 
 ## Installation
 
-### macOS: Homebrew
+### Quick Install
+
+#### macOS and Linux
+
+```bash
+curl -fsSL install.cat/Rohithgilla12/data-peek | sh
+```
+
+The installer detects your platform, downloads the latest GitHub release, and installs:
+
+- **macOS**: the matching `.dmg`, copies `Data Peek.app`, and runs `xattr -cr` automatically
+- **Linux**: the latest `x86_64.AppImage` into `~/.local/bin/data-peek`
+
+#### Windows PowerShell
+
+```powershell
+irm install.cat/Rohithgilla12/data-peek | iex
+```
+
+The PowerShell installer downloads the latest `setup.exe` release and runs it for you.
+
+### Alternative Install Methods
+
+#### macOS: Homebrew
 
 ```bash
 brew tap Rohithgilla12/tap
 brew install --cask data-peek
 ```
 
-### Download
+#### Download
 
 Download the latest release for your platform from [Releases](https://github.com/Rohithgilla12/data-peek/releases).
 
 - **macOS**: `.dmg` (Intel & Apple Silicon)
 - **Windows**: `.exe` installer
-- **Linux**: `.AppImage`, `.deb`, or `.tar.gz` (Arch)
+- **Linux**: `.AppImage`, `.deb`, or `.tar.gz`
 
 ### macOS: Code Signing
 
 Starting from v0.4.0, data-peek is code signed and notarized for macOS. You should be able to open it directly without any warnings.
 
-If you're using an older version and see an "App is damaged" warning:
+If you install with the quick installer, it already runs the `xattr` cleanup for you.
+
+If you're using an older version or a manual install and see an "App is damaged" warning:
 
 **Option 1: Terminal command**
 ```bash
-xattr -cr /Applications/data-peek.app
+xattr -cr "/Applications/Data Peek.app"
 ```
 
 **Option 2: Right-click to open**
-1. Right-click (or Control+click) on data-peek.app
+1. Right-click (or Control+click) on `Data Peek.app`
 2. Select "Open" from the menu
 3. Click "Open" in the dialog
 
