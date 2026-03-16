@@ -29,6 +29,14 @@ need_cmd() {
   command -v "$1" >/dev/null 2>&1 || fail "Missing required command: $1"
 }
 
+run_sudo() {
+  if [ ! -r /dev/tty ]; then
+    fail "sudo access is required, but no interactive TTY is available"
+  fi
+
+  sudo "$@" < /dev/tty
+}
+
 download() {
   url="$1"
   output="$2"
@@ -116,9 +124,9 @@ install_macos() {
 
   info "Installing $app_name to $target_root..."
   if [ "$use_sudo" -eq 1 ]; then
-    sudo rm -rf "$target_path"
-    sudo cp -R "$app_path" "$target_root/"
-    sudo xattr -cr "$target_path"
+    run_sudo rm -rf "$target_path"
+    run_sudo cp -R "$app_path" "$target_root/"
+    run_sudo xattr -cr "$target_path"
   else
     rm -rf "$target_path"
     cp -R "$app_path" "$target_root/"
