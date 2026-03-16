@@ -40,18 +40,18 @@ run_sudo() {
 download() {
   url="$1"
   output="$2"
-  curl -fsSL --retry 3 --retry-all-errors --connect-timeout 10 -H "User-Agent: $USER_AGENT" "$url" -o "$output"
+  curl -fsSL --retry 3 --connect-timeout 10 -H "User-Agent: $USER_AGENT" "$url" -o "$output"
 }
 
 release_json() {
-  curl -fsSL --retry 3 --retry-all-errors --connect-timeout 10 -H "Accept: application/vnd.github+json" -H "User-Agent: $USER_AGENT" "$API_URL"
+  curl -fsSL --retry 3 --connect-timeout 10 -H "Accept: application/vnd.github+json" -H "User-Agent: $USER_AGENT" "$API_URL"
 }
 
 asset_url_for() {
   pattern="$1"
 
   printf '%s' "$RELEASE_JSON" \
-    | grep -o '"browser_download_url":"[^"]*"' \
+    | grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*"' \
     | cut -d '"' -f 4 \
     | sed 's#\\/#/#g' \
     | grep -E "$pattern" \
