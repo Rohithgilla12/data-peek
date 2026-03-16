@@ -2,6 +2,7 @@
 param()
 
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 
 $repoSlug = 'Rohithgilla12/data-peek'
 $apiUrl = "https://api.github.com/repos/$repoSlug/releases/latest"
@@ -18,7 +19,8 @@ if (-not $asset) {
   throw 'Could not find a Windows setup.exe asset in the latest release.'
 }
 
-$tempInstaller = Join-Path $env:TEMP $asset.name
+$tempDir = if ($env:TEMP) { $env:TEMP } else { [IO.Path]::GetTempPath() }
+$tempInstaller = Join-Path $tempDir $asset.name
 
 try {
   Write-Host 'Downloading Windows installer...'
@@ -29,7 +31,10 @@ try {
 
   if ($process.ExitCode -ne 0) {
     Write-Warning "Silent install exited with code $($process.ExitCode). Falling back to interactive installer."
-    Start-Process -FilePath $tempInstaller -Wait
+    $interactive = Start-Process -FilePath $tempInstaller -PassThru -Wait
+    if ($interactive.ExitCode -ne 0) {
+      throw "Interactive install failed with exit code $($interactive.ExitCode)."
+    }
   }
 
   Write-Host 'data-peek installation completed.'

@@ -92,7 +92,7 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 #### macOS and Linux
 
 ```bash
-curl -fsSL install.cat/Rohithgilla12/data-peek | sh
+curl -fsSL https://install.cat/Rohithgilla12/data-peek | sh
 ```
 
 The installer detects your platform, downloads the latest GitHub release, and installs:
@@ -103,7 +103,7 @@ The installer detects your platform, downloads the latest GitHub release, and in
 #### Windows PowerShell
 
 ```powershell
-irm install.cat/Rohithgilla12/data-peek | iex
+irm https://install.cat/Rohithgilla12/data-peek | iex
 ```
 
 The PowerShell installer downloads the latest `setup.exe` release and runs it for you.

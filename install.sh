@@ -40,19 +40,20 @@ run_sudo() {
 download() {
   url="$1"
   output="$2"
-  curl -fsSL -H "User-Agent: $USER_AGENT" "$url" -o "$output"
+  curl -fsSL --retry 3 --retry-all-errors --connect-timeout 10 -H "User-Agent: $USER_AGENT" "$url" -o "$output"
 }
 
 release_json() {
-  curl -fsSL -H "Accept: application/vnd.github+json" -H "User-Agent: $USER_AGENT" "$API_URL"
+  curl -fsSL --retry 3 --retry-all-errors --connect-timeout 10 -H "Accept: application/vnd.github+json" -H "User-Agent: $USER_AGENT" "$API_URL"
 }
 
 asset_url_for() {
   pattern="$1"
 
   printf '%s' "$RELEASE_JSON" \
-    | tr ' ' '\n' \
-    | grep -o 'https://github.com/[^"[:space:]]*/releases/download/[^"[:space:]]*' \
+    | grep -o '"browser_download_url":"[^"]*"' \
+    | cut -d '"' -f 4 \
+    | sed 's#\\/#/#g' \
     | grep -E "$pattern" \
     | head -n 1
 }
@@ -106,8 +107,9 @@ install_macos() {
   [ -n "$mount_point" ] || fail "Could not determine mounted volume"
   MOUNT_POINT="$mount_point"
 
-  app_path="$(find "$mount_point" -maxdepth 1 -name '*.app' -print | head -n 1)"
-  [ -n "$app_path" ] || fail "Could not find the app bundle in the mounted disk image"
+  set -- "$mount_point"/*.app
+  [ -e "$1" ] || fail "Could not find the app bundle in the mounted disk image"
+  app_path="$1"
   app_name="$(basename "$app_path")"
 
   target_root="/Applications"
@@ -175,10 +177,10 @@ install_linux() {
 need_cmd curl
 need_cmd grep
 need_cmd awk
-need_cmd find
 need_cmd head
 need_cmd basename
-need_cmd tr
+need_cmd cut
+need_cmd sed
 need_cmd mktemp
 
 RELEASE_JSON="$(release_json)"
