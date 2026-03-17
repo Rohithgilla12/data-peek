@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { CheckoutButton } from "./checkout-button";
+import { AnimateOnScroll } from "@/components/ui/animate-on-scroll";
 
 export function Pricing() {
   return (
@@ -18,7 +19,7 @@ export function Pricing() {
 
       <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
         {/* Section Header */}
-        <div className="text-center mb-10 sm:mb-16">
+        <AnimateOnScroll className="text-center mb-10 sm:mb-16">
           <p
             className="text-xs uppercase tracking-[0.2em] text-[--color-accent] mb-3 sm:mb-4"
             style={{ fontFamily: "var(--font-mono)" }}
@@ -39,12 +40,13 @@ export function Pricing() {
             <br />
             No subscriptions, no tricks.
           </p>
-        </div>
+        </AnimateOnScroll>
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto pt-4">
           {/* Personal - Free */}
-          <div className="relative rounded-2xl p-6 sm:p-8 bg-[--color-surface] border border-[--color-border] flex flex-col">
+          <AnimateOnScroll>
+          <div className="relative rounded-2xl p-6 sm:p-8 bg-[--color-surface] border border-[--color-border] flex flex-col h-full">
             <div className="mb-6">
               <h3
                 className="text-xl font-medium mb-4"
@@ -89,9 +91,11 @@ export function Pricing() {
               </Link>
             </Button>
           </div>
+          </AnimateOnScroll>
 
           {/* Pro - Highlighted */}
-          <div className="relative rounded-2xl flex flex-col overflow-visible">
+          <AnimateOnScroll delay={120}>
+          <div className="relative rounded-2xl flex flex-col overflow-visible h-full">
             {/* Gradient background container */}
             <div className="absolute inset-0 rounded-2xl bg-linear-to-br from-[--color-accent]/20 via-transparent to-[#a855f7]/20" />
             <div className="absolute inset-0 rounded-2xl border border-[--color-accent]/40" />
@@ -152,6 +156,7 @@ export function Pricing() {
               <CheckoutButton className="w-full text-base" />
             </div>
           </div>
+          </AnimateOnScroll>
         </div>
 
         {/* Trust badges */}

@@ -22,6 +22,7 @@ import {
   AppWindow,
   Activity,
 } from "lucide-react";
+import { AnimateOnScroll } from "@/components/ui/animate-on-scroll";
 
 const features = [
   {
@@ -168,7 +169,7 @@ export function Features() {
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         {/* Section Header */}
-        <div className="text-center mb-12 sm:mb-20">
+        <AnimateOnScroll className="text-center mb-12 sm:mb-20">
           <p
             className="text-xs uppercase tracking-[0.2em] text-[--color-accent] mb-3 sm:mb-4"
             style={{ fontFamily: "var(--font-mono)" }}
@@ -192,17 +193,14 @@ export function Features() {
             Built for developers who want to query their database, not fight
             their tools.
           </p>
-        </div>
+        </AnimateOnScroll>
 
         {/* Features Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {features.map((feature, index) => (
+            <AnimateOnScroll key={feature.title} delay={(index % 3) * 80}>
             <div
-              key={feature.title}
-              className="group relative p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] hover:border-[--color-border] hover:bg-[--color-surface-elevated] transition-all duration-300 hover:-translate-y-1"
-              style={{
-                animationDelay: `${index * 50}ms`,
-              }}
+              className="group relative p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] hover:border-[--color-border] hover:bg-[--color-surface-elevated] transition-all duration-300 hover:-translate-y-1 h-full"
             >
               {/* Icon */}
               <div
@@ -273,11 +271,12 @@ export function Features() {
                 }}
               />
             </div>
+            </AnimateOnScroll>
           ))}
         </div>
 
         {/* Feature Screenshots */}
-        <div className="mt-16 sm:mt-24 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        <AnimateOnScroll className="mt-16 sm:mt-24 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {/* AI Assistant Screenshot - Charts */}
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
@@ -291,7 +290,7 @@ export function Features() {
                 AI Charts & Metrics
               </h3>
             </div>
-            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border] screenshot-hover">
               <Image
                 src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/ai-assitant.png"
                 alt="AI Assistant generating charts and metrics"
@@ -317,7 +316,7 @@ export function Features() {
                 AI Query Generation
               </h3>
             </div>
-            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border] screenshot-hover">
               <Image
                 src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/ai-assitant-2.png"
                 alt="AI Assistant generating SQL queries"
@@ -329,10 +328,10 @@ export function Features() {
               />
             </div>
           </div>
-        </div>
+        </AnimateOnScroll>
 
         {/* Second row of screenshots */}
-        <div className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        <AnimateOnScroll className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {/* ER Diagram Screenshot */}
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
@@ -346,7 +345,7 @@ export function Features() {
                 ER Diagrams
               </h3>
             </div>
-            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border] screenshot-hover">
               <Image
                 src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/erd.png"
                 alt="Interactive ER diagram visualization"
@@ -372,7 +371,7 @@ export function Features() {
                 Command Palette
               </h3>
             </div>
-            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border] screenshot-hover">
               <Image
                 src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/command-bar.png"
                 alt="Command palette for quick actions"
@@ -384,10 +383,10 @@ export function Features() {
               />
             </div>
           </div>
-        </div>
+        </AnimateOnScroll>
 
         {/* Third row - Query Telemetry & Multi-Window */}
-        <div className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        <AnimateOnScroll className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {/* Query Telemetry Screenshot */}
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
@@ -401,7 +400,7 @@ export function Features() {
                 Query Telemetry
               </h3>
             </div>
-            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border] screenshot-hover">
               <Image
                 src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/query-telemetry.png"
                 alt="Query telemetry with waterfall visualization"
@@ -427,7 +426,7 @@ export function Features() {
                 Multi-Window
               </h3>
             </div>
-            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border] screenshot-hover">
               <Image
                 src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/multi-window.png"
                 alt="Multiple windows side by side"
@@ -439,10 +438,10 @@ export function Features() {
               />
             </div>
           </div>
-        </div>
+        </AnimateOnScroll>
 
         {/* Fourth row - Light Mode */}
-        <div className="mt-6 sm:mt-8">
+        <AnimateOnScroll className="mt-6 sm:mt-8">
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#60a5fa]/10 border border-[#60a5fa]/20 flex items-center justify-center">
@@ -455,7 +454,7 @@ export function Features() {
                 Light Mode
               </h3>
             </div>
-            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border]">
+            <div className="rounded-lg sm:rounded-xl overflow-hidden border border-[--color-border] screenshot-hover">
               <Image
                 src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/light-mode.png"
                 alt="Data Peek in light mode"
@@ -467,7 +466,7 @@ export function Features() {
               />
             </div>
           </div>
-        </div>
+        </AnimateOnScroll>
       </div>
     </section>
   );

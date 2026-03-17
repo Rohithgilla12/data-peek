@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { StructuredData } from '@/components/seo/structured-data'
+import { AnimateOnScroll } from '@/components/ui/animate-on-scroll'
 
 const faqs = [
   {
@@ -85,7 +86,7 @@ export function FAQ() {
 
       <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
         {/* Section Header */}
-        <div className="text-center mb-10 sm:mb-16">
+        <AnimateOnScroll className="text-center mb-10 sm:mb-16">
           <p
             className="text-xs uppercase tracking-[0.2em] text-[--color-accent] mb-3 sm:mb-4"
             style={{ fontFamily: 'var(--font-mono)' }}
@@ -98,7 +99,7 @@ export function FAQ() {
           >
             Questions? Answers.
           </h2>
-        </div>
+        </AnimateOnScroll>
 
         {/* FAQ List */}
         <div className="space-y-3 sm:space-y-4">
