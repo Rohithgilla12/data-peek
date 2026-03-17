@@ -249,7 +249,19 @@ export function EditableCell({
   const [editValue, setEditValue] = React.useState('')
   const [isJsonEditorOpen, setIsJsonEditorOpen] = React.useState(false)
   const [isTextEditorOpen, setIsTextEditorOpen] = React.useState(false)
+  const [justSaved, setJustSaved] = React.useState(false)
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const wasEditingRef = React.useRef(false)
+
+  // Detect when cell transitions from editing to not-editing (save)
+  React.useEffect(() => {
+    if (wasEditingRef.current && !isEditing && isModified) {
+      setJustSaved(true)
+      const timer = setTimeout(() => setJustSaved(false), 500)
+      return () => clearTimeout(timer)
+    }
+    wasEditingRef.current = isEditing
+  }, [isEditing, isModified])
 
   const isJson = dataType.toLowerCase().includes('json')
   const isText = isTextType(dataType)
@@ -450,8 +462,9 @@ export function EditableCell({
     <TooltipProvider>
       <div
         className={cn(
-          'group relative flex items-center gap-1 min-h-[28px]',
-          isDeleted && 'opacity-50'
+          'group relative flex items-center gap-1 min-h-[28px] rounded',
+          isDeleted && 'opacity-50',
+          justSaved && 'animate-cell-save'
         )}
       >
         {/* Modified indicator - amber left border */}

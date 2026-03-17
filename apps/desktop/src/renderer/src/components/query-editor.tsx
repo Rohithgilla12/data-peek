@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Play,
   Download,
@@ -36,10 +36,30 @@ export function QueryEditor() {
   const allSnippets = getAllSnippets()
 
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
+  const [flashClass, setFlashClass] = useState('')
+  const resultKeyRef = useRef(0)
 
   useEffect(() => {
     initializeSnippets()
   }, [initializeSnippets])
+
+  // Flash results area on success/error
+  useEffect(() => {
+    if (result) {
+      resultKeyRef.current += 1
+      setFlashClass('animate-flash-success')
+      const timer = setTimeout(() => setFlashClass(''), 400)
+      return () => clearTimeout(timer)
+    }
+  }, [result])
+
+  useEffect(() => {
+    if (error) {
+      setFlashClass('animate-flash-error')
+      const timer = setTimeout(() => setFlashClass(''), 400)
+      return () => clearTimeout(timer)
+    }
+  }, [error])
 
   const handleRunQuery = () => {
     console.log('[QueryEditor] handleRunQuery called')
@@ -145,7 +165,7 @@ export function QueryEditor() {
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <span
-                className={`size-1.5 rounded-full ${activeConnection.isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}
+                className={`size-1.5 rounded-full ${activeConnection.isConnected ? 'bg-green-500' : 'bg-yellow-500'} ${isExecuting ? 'animate-pulse' : ''}`}
               />
               {activeConnection.name}
             </span>
@@ -154,7 +174,7 @@ export function QueryEditor() {
       </div>
 
       {/* Results Section */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className={`flex flex-1 flex-col overflow-hidden ${flashClass}`}>
         {error ? (
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="max-w-md text-center space-y-2">
@@ -166,7 +186,7 @@ export function QueryEditor() {
         ) : result ? (
           <>
             {/* Results Table */}
-            <div className="flex-1 overflow-hidden p-3">
+            <div key={resultKeyRef.current} className="flex-1 overflow-hidden p-3 animate-fade-in-up">
               <DataTable
                 columns={result.columns}
                 data={result.rows as Record<string, unknown>[]}
@@ -175,7 +195,7 @@ export function QueryEditor() {
             </div>
 
             {/* Results Footer */}
-            <div className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-3 py-1.5 shrink-0">
+            <div key={`footer-${resultKeyRef.current}`} className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-3 py-1.5 shrink-0 animate-fade-in-up">
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <span className="size-1.5 rounded-full bg-green-500" />
