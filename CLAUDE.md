@@ -133,3 +133,24 @@ Zustand stores in `src/renderer/src/stores/`:
    - `README.md` - Add to the appropriate Features section
    - `docs/` - Update relevant documentation pages
    - `apps/web/` - Update marketing site if user-facing
+
+## Design Context
+
+### Users
+Developers (backend engineers, full-stack devs, data-curious builders) who need to quickly peek at database contents, debug queries, and explore schemas. They're mid-task — checking a migration, verifying data, or writing a query — and want to get in, get answers, and get out.
+
+### Brand Personality
+**Fast. Honest. Modern devtool.** Feels like it belongs alongside Linear and Raycast — not DBeaver or pgAdmin.
+
+### Aesthetic Direction
+Minimal, technical, monospace-native. Dark mode is the primary design target. Dense where useful, spacious where it aids scanning. No wizard flows, no gratuitous icons, no "website in a window" energy.
+
+### Color System
+Desktop app should converge toward electric cyan (`#22d3ee`) to match the marketing site. Cyan is more distinctive and ownable than generic blue, and fits the terminal-inspired identity. Full details in `.impeccable.md`.
+
+### Design Principles
+1. **Data is the UI** — Query results and schemas are the primary interface. Chrome minimizes its footprint.
+2. **Speed over ceremony** — No confirmation dialogs where undo works. Prefer inline editing, command palettes, keyboard shortcuts.
+3. **Dense but scannable** — Embrace information density, use typography weight and subtle color for hierarchy.
+4. **Native, not web-feeling** — Proper titlebar behavior, system font rendering, platform-appropriate shortcuts.
+5. **Quiet confidence** — No flashy animations or decorative elements. Motion only for state transitions, under 200ms.
