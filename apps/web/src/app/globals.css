@@ -222,3 +222,19 @@ body {
   background: var(--color-accent);
   color: var(--color-background);
 }
+
+/* Button press effect */
+button:active,
+a[role="button"]:active {
+  transform: translateY(1px);
+}
+
+/* Screenshot hover lift */
+.screenshot-hover {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease;
+}
+
+.screenshot-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.4);
+}

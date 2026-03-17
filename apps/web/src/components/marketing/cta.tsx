@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { ArrowRight, Download } from 'lucide-react'
+import { AnimateOnScroll } from '@/components/ui/animate-on-scroll'
 
 export function CTA() {
   return (
@@ -15,7 +16,7 @@ export function CTA() {
         }}
       />
 
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
+      <AnimateOnScroll className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 text-center">
         {/* Headline */}
         <h2
           className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-4 sm:mb-6"
@@ -64,7 +65,7 @@ export function CTA() {
             Works offline
           </span>
         </div>
-      </div>
+      </AnimateOnScroll>
     </section>
   )
 }
