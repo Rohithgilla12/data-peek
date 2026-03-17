@@ -1,0 +1,21 @@
+services:
+  data-peek:
+    build: .
+    ports:
+      - '3100:3100'
+    environment:
+      - PORT=3100
+      - DATA_DIR=/app/data
+      - NODE_ENV=production
+    volumes:
+      - data-peek-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'node', '-e', "fetch('http://localhost:3100/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  data-peek-data:

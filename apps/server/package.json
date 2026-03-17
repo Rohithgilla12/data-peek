@@ -1,0 +1,44 @@
+{
+  "name": "@data-peek/server",
+  "version": "0.15.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --require ./src/cjs-shims.cjs --import ./src/register.ts src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^2.0.17",
+    "@ai-sdk/google": "^2.0.12",
+    "@ai-sdk/groq": "^2.0.8",
+    "@ai-sdk/openai": "^2.0.24",
+    "@fastify/cors": "^11.0.1",
+    "@fastify/static": "^9.0.0",
+    "ai": "^5.0.0",
+    "better-sqlite3": "^12.4.6",
+    "cron-parser": "^5.4.0",
+    "dotenv": "^17.2.3",
+    "electron": "file:./shims/electron",
+    "electron-log": "file:./shims/electron-log",
+    "electron-store": "file:./shims/electron-store",
+    "fastify": "^5.3.3",
+    "mssql": "^11.0.1",
+    "mysql2": "^3.15.3",
+    "node-cron": "^3.0.3",
+    "pg": "^8.16.3",
+    "socket.io": "^4.8.1",
+    "ssh2": "^1.17.0",
+    "uuid": "^11.1.0",
+    "zod": "^3.25.42"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^22.14.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/ssh2": "^1.15.5",
+    "tsx": "^4.19.4",
+    "typescript": "^5.4.0"
+  }
+}
