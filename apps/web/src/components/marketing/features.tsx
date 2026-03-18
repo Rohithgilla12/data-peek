@@ -4,6 +4,7 @@ import {
   Zap,
   Keyboard,
   Eye,
+  EyeOff,
   Shield,
   Moon,
   Database,
@@ -12,6 +13,7 @@ import {
   GitBranch,
   Pencil,
   FileJson,
+  FileUp,
   Clock,
   Sparkles,
   BarChart3,
@@ -21,6 +23,8 @@ import {
   Lock,
   AppWindow,
   Activity,
+  Bell,
+  FlaskConical,
 } from "lucide-react";
 
 const features = [
@@ -68,7 +72,7 @@ const features = [
     color: "#10b981",
   },
   {
-    icon: Activity,
+    icon: Eye,
     title: "Performance Indicator",
     description:
       "Detect missing indexes, N+1 patterns, and slow queries. Auto-generated index suggestions.",
@@ -129,6 +133,49 @@ const features = [
     description:
       "Every query saved automatically. Search, filter, and re-run past queries instantly.",
     color: "#94a3b8",
+  },
+  {
+    icon: BarChart3,
+    title: "Column Statistics",
+    description:
+      "One-click data profiling. Min/max/avg, histograms, top values, null rates per column.",
+    color: "#06b6d4",
+  },
+  {
+    icon: EyeOff,
+    title: "Data Masking",
+    description:
+      "Blur sensitive columns for demos and screenshots. Auto-mask rules with regex patterns.",
+    color: "#f59e0b",
+  },
+  {
+    icon: FileUp,
+    title: "CSV Import",
+    description:
+      "Import CSV files with auto column mapping, type inference, batch insert, and conflict handling.",
+    color: "#10b981",
+  },
+  {
+    icon: FlaskConical,
+    title: "Data Generator",
+    description:
+      "Generate realistic fake data with Faker.js. FK-aware, preview before insert, up to 100k rows.",
+    color: "#8b5cf6",
+  },
+  {
+    icon: Activity,
+    title: "Health Monitor",
+    description:
+      "Dashboard with active queries, table sizes, cache hit ratios, and lock detection. Kill queries live.",
+    color: "#ef4444",
+    highlight: true,
+  },
+  {
+    icon: Bell,
+    title: "PG Notifications",
+    description:
+      "Subscribe to PostgreSQL LISTEN/NOTIFY channels. Real-time event log with send support.",
+    color: "#3b82f6",
   },
   {
     icon: FileJson,

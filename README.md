@@ -75,10 +75,19 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Table Designer** - Create and alter tables with full DDL support (columns, indexes, constraints, partitions)
 - **JSON Editor** - Dedicated editor for JSON/JSONB columns
 - **Export** - Export results to CSV, JSON, or Excel
+- **CSV Import** - Import CSV files with column mapping, type inference, and conflict handling
+- **Data Generator** - Generate realistic fake data with Faker.js, FK-aware, in a dedicated tab
+- **Column Statistics** - One-click data profiling per column (min/max/avg, histograms, top values)
+- **Data Masking** - Blur sensitive columns for demos and screenshots with auto-mask rules
 
 ### Visualization
 - **ERD Diagrams** - See table relationships with interactive entity-relationship diagrams
 - **Foreign Key Navigation** - Jump to related records with one click
+
+### Database Monitoring
+- **Connection Health Monitor** - Dashboard with active queries, table sizes, cache hit ratios, and lock detection
+- **PostgreSQL Notifications** - Subscribe to LISTEN/NOTIFY channels with real-time event log
+- **Kill Queries** - Terminate long-running or blocking queries from the health dashboard
 
 ### User Experience
 - **Dark/Light Mode** - Easy on the eyes, follows system preference
