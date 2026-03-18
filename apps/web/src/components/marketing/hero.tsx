@@ -1,8 +1,8 @@
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Github, Zap, Download, Sparkles } from "lucide-react";
+import { HeroTerminal } from "./hero-terminal";
 
 export function Hero() {
   return (
@@ -125,17 +125,9 @@ export function Hero() {
                 </span>
               </div>
 
-              {/* Hero Screenshot */}
+              {/* Live Terminal Demo */}
               <div className="mt-8 sm:mt-10 rounded-xl sm:rounded-2xl rounded-t-none border border-[--color-border] border-t-0 overflow-hidden shadow-2xl shadow-black/50">
-                <Image
-                  src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/hero.png"
-                  alt="Data Peek - SQL client with AI-powered querying"
-                  width={1200}
-                  height={800}
-                  className="w-full h-auto"
-                  priority
-                  quality={90}
-                />
+                <HeroTerminal />
               </div>
 
               {/* Glow Effect */}

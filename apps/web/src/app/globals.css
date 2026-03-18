@@ -238,3 +238,116 @@ a[role="button"]:active {
   transform: translateY(-4px);
   box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.4);
 }
+
+/* Data substrate - parallax background for features */
+@media (prefers-reduced-motion: no-preference) {
+  .data-substrate-parallax {
+    transform: translateY(calc(var(--scroll-y, 0) * -0.15px));
+    will-change: transform;
+  }
+
+  .data-flash {
+    animation: data-flash 0.4s ease-in-out infinite;
+    animation-duration: 30s;
+  }
+
+  @keyframes data-flash {
+    0%, 98%, 100% { opacity: 1; color: inherit; }
+    99% { opacity: 1; color: var(--color-accent); }
+  }
+}
+
+/* Feature card micro-interactions */
+@media (prefers-reduced-motion: no-preference) {
+  /* Flash - Lightning Fast */
+  .group:hover .effect-flash {
+    animation: icon-flash 0.4s ease-out;
+  }
+
+  @keyframes icon-flash {
+    0% { filter: brightness(1); box-shadow: none; }
+    30% { filter: brightness(2.5); box-shadow: 0 0 20px var(--feature-color, #fbbf24); }
+    100% { filter: brightness(1); box-shadow: none; }
+  }
+
+  /* Orbit - AI Assistant */
+  .group:hover .effect-orbit {
+    animation: icon-orbit 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes icon-orbit {
+    0% { transform: scale(1.1) rotate(0deg) translateX(0); }
+    25% { transform: scale(1.1) rotate(0deg) translateX(3px) translateY(-3px); }
+    50% { transform: scale(1.1) rotate(0deg) translateX(0) translateY(0); }
+    75% { transform: scale(1.1) rotate(0deg) translateX(-3px) translateY(3px); }
+    100% { transform: scale(1.1) rotate(0deg) translateX(0); }
+  }
+
+  /* Rotate - Query History */
+  .group:hover .effect-rotate .effect-icon {
+    transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    transform: rotate(360deg);
+  }
+
+  /* Wiggle - Inline Editing */
+  .group:hover .effect-wiggle {
+    animation: icon-wiggle 0.5s ease-in-out;
+  }
+
+  @keyframes icon-wiggle {
+    0%, 100% { transform: scale(1.1) translateX(0); }
+    20% { transform: scale(1.1) translateX(3px); }
+    40% { transform: scale(1.1) translateX(-2px); }
+    60% { transform: scale(1.1) translateX(2px); }
+    80% { transform: scale(1.1) translateX(-1px); }
+  }
+
+  /* Color cycle - Multi-Database */
+  .group:hover .effect-color-cycle .effect-color-cycle-icon {
+    animation: icon-color-cycle 1.2s steps(1) forwards;
+  }
+
+  @keyframes icon-color-cycle {
+    0% { color: #fb923c; }
+    25% { color: #22d3ee; }
+    50% { color: #3b82f6; }
+    75% { color: #8b5cf6; }
+    100% { color: #fb923c; }
+  }
+
+  /* Slide swap - Export Anywhere */
+  .group:hover .effect-slide-swap .effect-icon {
+    animation: icon-slide-out-in 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes icon-slide-out-in {
+    0% { transform: translateX(0); opacity: 1; }
+    40% { transform: translateX(8px); opacity: 0; }
+    41% { transform: translateX(-8px); opacity: 0; }
+    100% { transform: translateX(0); opacity: 1; }
+  }
+
+  /* Key press - Command Palette */
+  .effect-key-cap {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .group:hover .effect-key-cap {
+    animation: key-press 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .group:hover .effect-key-cap-delayed {
+    animation-delay: 0.08s;
+  }
+
+  @keyframes key-press {
+    0% { transform: translateY(0); box-shadow: 0 2px 0 var(--color-border); }
+    40% { transform: translateY(2px); box-shadow: 0 0 0 var(--color-border); }
+    100% { transform: translateY(0); box-shadow: 0 2px 0 var(--color-border); }
+  }
+
+  /* Default border color shift for cards with hover effects */
+  .group:hover {
+    border-color: color-mix(in srgb, var(--feature-color, var(--color-border)) 30%, var(--color-border));
+  }
+}

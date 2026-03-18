@@ -27,8 +27,19 @@ import {
   FlaskConical,
 } from "lucide-react";
 import { AnimateOnScroll } from "@/components/ui/animate-on-scroll";
+import { ScrambleText } from "./scramble-text";
+import { DataSubstrate } from "./data-substrate";
 
-const features = [
+type HoverEffect = 'flash' | 'orbit' | 'rotate' | 'wiggle' | 'color-cycle' | 'slide-swap' | 'key-press' | 'scramble' | undefined
+
+const features: Array<{
+  icon: typeof Sparkles
+  title: string
+  description: string
+  color: string
+  highlight?: boolean
+  hoverEffect?: HoverEffect
+}> = [
   {
     icon: Sparkles,
     title: "AI Assistant",
@@ -36,6 +47,7 @@ const features = [
       "Ask questions in plain English, get SQL queries. Generate charts and insights from your data.",
     color: "#a855f7",
     highlight: true,
+    hoverEffect: 'orbit',
   },
   {
     icon: Zap,
@@ -43,6 +55,7 @@ const features = [
     description:
       "Opens in under 2 seconds. No splash screens, no waiting. Just you and your data.",
     color: "#fbbf24",
+    hoverEffect: 'flash',
   },
   {
     icon: Command,
@@ -50,6 +63,7 @@ const features = [
     description:
       "Cmd+K to access everything. Find commands, switch connections, run queries instantly.",
     color: "#22d3ee",
+    hoverEffect: 'key-press',
   },
   {
     icon: Keyboard,
@@ -106,6 +120,7 @@ const features = [
     description:
       "Click to edit. Add, update, delete rows directly. Preview SQL before commit.",
     color: "#fbbf24",
+    hoverEffect: 'wiggle',
   },
   {
     icon: Bookmark,
@@ -134,6 +149,7 @@ const features = [
     description:
       "Every query saved automatically. Search, filter, and re-run past queries instantly.",
     color: "#94a3b8",
+    hoverEffect: 'rotate',
   },
   {
     icon: BarChart3,
@@ -184,6 +200,7 @@ const features = [
     description:
       "CSV, JSON, copy as SQL. Get your data out in the format you need.",
     color: "#4ade80",
+    hoverEffect: 'slide-swap',
   },
   {
     icon: Moon,
@@ -198,6 +215,7 @@ const features = [
     description:
       "No telemetry, no tracking. Your credentials stay encrypted on your machine.",
     color: "#22d3ee",
+    hoverEffect: 'scramble',
   },
   {
     icon: Database,
@@ -205,6 +223,7 @@ const features = [
     description:
       "PostgreSQL, MySQL, SQL Server, and SQLite. One client for all your databases.",
     color: "#fb923c",
+    hoverEffect: 'color-cycle',
   },
 ];
 
@@ -212,19 +231,20 @@ export function Features() {
   return (
     <section id="features" className="relative py-20 sm:py-32 overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0 grid-pattern opacity-50" />
+      <div className="absolute inset-0 grid-pattern opacity-30" />
+      <DataSubstrate />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         {/* Section Header */}
-        <AnimateOnScroll className="text-center mb-12 sm:mb-20">
+        <AnimateOnScroll className="text-center mb-10 sm:mb-16">
           <p
-            className="text-xs uppercase tracking-[0.2em] text-[--color-accent] mb-3 sm:mb-4"
+            className="text-[11px] uppercase tracking-[0.25em] text-[--color-accent] mb-4 sm:mb-5 font-medium"
             style={{ fontFamily: "var(--font-mono)" }}
           >
             Features
           </p>
           <h2
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-4 sm:mb-6 px-2"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-[1.05] mb-5 sm:mb-7 px-2"
             style={{ fontFamily: "var(--font-display)" }}
           >
             Everything you need.
@@ -234,7 +254,7 @@ export function Features() {
             </span>
           </h2>
           <p
-            className="text-base sm:text-lg text-[--color-text-secondary] max-w-2xl mx-auto px-2"
+            className="text-sm sm:text-base text-[--color-text-muted] max-w-[48ch] mx-auto px-2 leading-relaxed"
             style={{ fontFamily: "var(--font-body)" }}
           >
             Built for developers who want to query their database, not fight
@@ -243,38 +263,51 @@ export function Features() {
         </AnimateOnScroll>
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {features.map((feature, index) => (
             <AnimateOnScroll key={feature.title} delay={(index % 3) * 80}>
             <div
-              className="group relative p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] hover:border-[--color-border] hover:bg-[--color-surface-elevated] transition-all duration-300 hover:-translate-y-1 h-full"
+              className="group relative p-4 sm:p-5 rounded-xl bg-[--color-surface] border border-[--color-border] hover:bg-[--color-surface-elevated] transition-all duration-300 hover:-translate-y-0.5 h-full"
+              style={{
+                '--feature-color': feature.color,
+              } as React.CSSProperties}
             >
               {/* Icon */}
               <div
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center mb-3 sm:mb-4 transition-transform group-hover:scale-110"
+                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${feature.hoverEffect ? `effect-${feature.hoverEffect}` : ''}`}
                 style={{
                   backgroundColor: `${feature.color}15`,
                   border: `1px solid ${feature.color}30`,
                 }}
               >
                 <feature.icon
-                  className="w-4 h-4 sm:w-5 sm:h-5"
+                  className={`w-4 h-4 sm:w-5 sm:h-5 effect-icon ${feature.hoverEffect === 'color-cycle' ? 'effect-color-cycle-icon' : ''}`}
                   style={{ color: feature.color }}
                 />
               </div>
 
+              {/* Command Palette key caps */}
+              {feature.hoverEffect === 'key-press' && (
+                <div className="absolute top-4 right-4 sm:top-6 sm:right-6 hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <kbd className="effect-key-cap text-[9px] px-1.5 py-0.5 rounded bg-[--color-surface-elevated] border border-[--color-border] text-[--color-text-muted] font-mono">⌘</kbd>
+                  <kbd className="effect-key-cap effect-key-cap-delayed text-[9px] px-1.5 py-0.5 rounded bg-[--color-surface-elevated] border border-[--color-border] text-[--color-text-muted] font-mono">K</kbd>
+                </div>
+              )}
+
               {/* Content */}
               <h3
-                className="text-base sm:text-lg font-medium mb-1.5 sm:mb-2"
+                className="text-sm sm:text-base font-semibold tracking-tight mb-1 sm:mb-1.5"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 {feature.title}
               </h3>
               <p
-                className="text-xs sm:text-sm text-[--color-text-secondary] leading-relaxed"
+                className="text-xs sm:text-[13px] text-[--color-text-muted] leading-[1.6]"
                 style={{ fontFamily: "var(--font-body)" }}
               >
-                {feature.title === "Multi-Database" ? (
+                {feature.hoverEffect === 'scramble' ? (
+                  <ScrambleText text={feature.description} />
+                ) : feature.title === "Multi-Database" ? (
                   <>
                     <Link
                       href="/databases/postgresql"
@@ -323,15 +356,15 @@ export function Features() {
         </div>
 
         {/* Feature Screenshots */}
-        <AnimateOnScroll className="mt-16 sm:mt-24 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        <AnimateOnScroll className="mt-20 sm:mt-32 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {/* AI Assistant Screenshot - Charts */}
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+          <div>
+            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#a855f7]/10 border border-[#a855f7]/20 flex items-center justify-center">
                 <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#a855f7]" />
               </div>
               <h3
-                className="text-base sm:text-lg font-medium"
+                className="text-sm sm:text-base font-semibold tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 AI Charts & Metrics
@@ -351,13 +384,13 @@ export function Features() {
           </div>
 
           {/* AI Assistant Screenshot - Queries */}
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+          <div>
+            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[--color-accent]/10 border border-[--color-accent]/20 flex items-center justify-center">
                 <Code2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[--color-accent]" />
               </div>
               <h3
-                className="text-base sm:text-lg font-medium"
+                className="text-sm sm:text-base font-semibold tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 AI Query Generation
@@ -378,15 +411,15 @@ export function Features() {
         </AnimateOnScroll>
 
         {/* Second row of screenshots */}
-        <AnimateOnScroll className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        <AnimateOnScroll className="mt-8 sm:mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {/* ER Diagram Screenshot */}
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+          <div>
+            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#fb923c]/10 border border-[#fb923c]/20 flex items-center justify-center">
                 <GitBranch className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#fb923c]" />
               </div>
               <h3
-                className="text-base sm:text-lg font-medium"
+                className="text-sm sm:text-base font-semibold tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 ER Diagrams
@@ -406,13 +439,13 @@ export function Features() {
           </div>
 
           {/* Command Palette Screenshot */}
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+          <div>
+            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#22d3ee]/10 border border-[#22d3ee]/20 flex items-center justify-center">
                 <Command className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#22d3ee]" />
               </div>
               <h3
-                className="text-base sm:text-lg font-medium"
+                className="text-sm sm:text-base font-semibold tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 Command Palette
@@ -433,15 +466,15 @@ export function Features() {
         </AnimateOnScroll>
 
         {/* Third row - Query Telemetry & Multi-Window */}
-        <AnimateOnScroll className="mt-6 sm:mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
+        <AnimateOnScroll className="mt-8 sm:mt-10 grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
           {/* Query Telemetry Screenshot */}
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+          <div>
+            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#10b981]/10 border border-[#10b981]/20 flex items-center justify-center">
                 <Gauge className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#10b981]" />
               </div>
               <h3
-                className="text-base sm:text-lg font-medium"
+                className="text-sm sm:text-base font-semibold tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 Query Telemetry
@@ -461,13 +494,13 @@ export function Features() {
           </div>
 
           {/* Multi-Window Screenshot */}
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+          <div>
+            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#8b5cf6]/10 border border-[#8b5cf6]/20 flex items-center justify-center">
                 <AppWindow className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#8b5cf6]" />
               </div>
               <h3
-                className="text-base sm:text-lg font-medium"
+                className="text-sm sm:text-base font-semibold tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 Multi-Window
@@ -488,14 +521,14 @@ export function Features() {
         </AnimateOnScroll>
 
         {/* Fourth row - Light Mode */}
-        <AnimateOnScroll className="mt-6 sm:mt-8">
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
+        <AnimateOnScroll className="mt-8 sm:mt-10">
+          <div>
+            <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
               <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#60a5fa]/10 border border-[#60a5fa]/20 flex items-center justify-center">
                 <Moon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#60a5fa]" />
               </div>
               <h3
-                className="text-base sm:text-lg font-medium"
+                className="text-sm sm:text-base font-semibold tracking-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 Light Mode
