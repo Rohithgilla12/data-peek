@@ -105,6 +105,10 @@ function callFakerMethod(method: string): unknown {
   if (parts.length !== 2) return faker.lorem.word()
 
   const [ns, fn] = parts
+  if (ns === '__proto__' || ns === 'constructor' || ns === 'prototype') return faker.lorem.word()
+  if (fn === '__proto__' || fn === 'constructor' || fn === 'prototype') return faker.lorem.word()
+  const fakerAny = faker as unknown as Record<string, unknown>
+  const namespace = fakerAny[ns]
   const fakerAny = faker as unknown as Record<string, unknown>
   const namespace = fakerAny[ns]
   if (!namespace || typeof namespace !== 'object') return faker.lorem.word()

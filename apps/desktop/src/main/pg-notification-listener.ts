@@ -123,7 +123,7 @@ async function connectListener(
 
     client.on('notification', (msg) => {
       const event: PgNotificationEvent = {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         connectionId,
         channel: msg.channel,
         payload: msg.payload ?? '',

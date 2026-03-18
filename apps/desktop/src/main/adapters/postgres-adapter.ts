@@ -1175,7 +1175,9 @@ export class PostgresAdapter implements DatabaseAdapter {
       await client.connect()
 
       const statsType = this.classifyColumnType(dataType)
-      const quotedTable = `"${schema}"."${table}"`
+      const quoteIdent = (name: string) => '"' + name.replace(/"/g, '""') + '"'
+      const quotedTable = `${quoteIdent(schema)}.${quoteIdent(table)}`
+      const quotedCol = quoteIdent(column)
       const quotedCol = `"${column}"`
 
       const baseResult = await client.query(`

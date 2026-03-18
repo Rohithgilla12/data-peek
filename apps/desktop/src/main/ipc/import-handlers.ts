@@ -175,7 +175,7 @@ export function registerImportHandlers(): void {
           durationMs: Date.now() - startTime
         }
 
-        return { success: true, data: importResult }
+        return { success: false, error: errorMessage, data: importResult }
       }
     }
   )
