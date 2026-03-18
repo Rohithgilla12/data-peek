@@ -14,12 +14,14 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { useMaskingStore } from '@/stores/masking-store'
 
+const EMPTY_ARRAY: string[] = []
+
 interface MaskingToolbarProps {
   tabId: string
 }
 
 export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
-  const maskedColumnsArray = useMaskingStore((s) => s.maskedColumns[tabId] ?? [])
+  const maskedColumnsArray = useMaskingStore((s) => s.maskedColumns[tabId] ?? EMPTY_ARRAY)
   const autoMaskRules = useMaskingStore((s) => s.autoMaskRules)
   const hoverToPeek = useMaskingStore((s) => s.hoverToPeek)
   const autoMaskEnabled = useMaskingStore((s) => s.autoMaskEnabled)

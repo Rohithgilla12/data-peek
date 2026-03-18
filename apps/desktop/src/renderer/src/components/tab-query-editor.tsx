@@ -1449,6 +1449,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       onSortingChange={setTableSorting}
                       onForeignKeyClick={handleFKClick}
                       onForeignKeyOpenTab={handleFKOpenTab}
+                      onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
                       onChangesCommitted={handleRunQuery}
                       serverCurrentPage={tab.currentPage}
                       serverTotalRowCount={tab.totalRowCount}

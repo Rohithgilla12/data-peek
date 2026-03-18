@@ -40,6 +40,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  BarChart2,
   Copy,
   Filter,
   Link2,
@@ -90,6 +91,8 @@ interface EditableDataTableProps<TData> {
   onPageSizeChange?: (size: number) => void
   onForeignKeyClick?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
+  /** Called when user requests column statistics */
+  onColumnStatsClick?: (column: DataTableColumn) => void
   /** Called after changes are successfully committed */
   onChangesCommitted?: () => void
   /** Server-side pagination: current page (1-indexed) */
@@ -140,6 +143,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   onPageSizeChange,
   onForeignKeyClick,
   onForeignKeyOpenTab,
+  onColumnStatsClick,
   onChangesCommitted,
   serverCurrentPage,
   serverTotalRowCount,
@@ -675,6 +679,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    {onColumnStatsClick && (
+                      <DropdownMenuItem onClick={() => onColumnStatsClick(col)}>
+                        <BarChart2 className="size-3 mr-2" />
+                        Column Statistics
+                      </DropdownMenuItem>
+                    )}
+                    {onColumnStatsClick && <DropdownMenuSeparator />}
                     <DropdownMenuItem onClick={() => toggleColumnMask(tabId, col.name)}>
                       {isMasked ? (
                         <>
@@ -867,6 +878,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     enterEditMode,
     onForeignKeyClick,
     onForeignKeyOpenTab,
+    onColumnStatsClick,
     effectiveMasked,
     toggleColumnMask,
     hoverToPeek
