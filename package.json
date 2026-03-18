@@ -26,6 +26,7 @@
     "release": "bumpp package.json apps/*/package.json packages/*/package.json"
   },
   "devDependencies": {
+    "@types/papaparse": "^5.5.2",
     "bumpp": "^10.3.2",
     "prettier": "^3.2.0",
     "turbo": "^2.6.1",
@@ -47,5 +48,8 @@
       "ssh2",
       "unrs-resolver"
     ]
+  },
+  "dependencies": {
+    "papaparse": "^5.5.3"
   }
 }

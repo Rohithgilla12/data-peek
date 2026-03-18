@@ -1808,3 +1808,233 @@ export type CreateWidgetInput = Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>
  * Input for updating a widget
  */
 export type UpdateWidgetInput = Partial<Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>>
+
+export interface ColumnStatsRequest {
+  schema: string
+  table: string
+  column: string
+  dataType: string
+}
+
+export type ColumnStatsType = 'numeric' | 'text' | 'datetime' | 'boolean' | 'other'
+
+export interface HistogramBucket {
+  min: number
+  max: number
+  count: number
+}
+
+export interface CommonValue {
+  value: string | null
+  count: number
+  percentage: number
+}
+
+export interface ColumnStats {
+  column: string
+  dataType: string
+  statsType: ColumnStatsType
+  totalRows: number
+  nullCount: number
+  nullPercentage: number
+  distinctCount: number
+  distinctPercentage: number
+  min?: string | number | null
+  max?: string | number | null
+  avg?: number | null
+  median?: number | null
+  stdDev?: number | null
+  minLength?: number | null
+  maxLength?: number | null
+  avgLength?: number | null
+  histogram?: HistogramBucket[]
+  commonValues?: CommonValue[]
+  trueCount?: number
+  falseCount?: number
+}
+
+export interface CsvColumnMapping {
+  csvColumn: string
+  tableColumn: string | null
+  inferredType?: string
+}
+
+export interface CsvImportOptions {
+  batchSize: number
+  onConflict: 'error' | 'skip' | 'update'
+  truncateFirst: boolean
+  useTransaction: boolean
+  useCopy: boolean
+}
+
+export interface CsvImportRequest {
+  schema: string
+  table: string
+  columns: string[]
+  mappings: CsvColumnMapping[]
+  options: CsvImportOptions
+  createTable: boolean
+  tableDefinition?: {
+    columns: Array<{ name: string; dataType: string; isNullable: boolean }>
+  }
+}
+
+export interface CsvImportProgress {
+  phase: 'preparing' | 'importing' | 'complete' | 'error'
+  rowsImported: number
+  totalRows: number
+  currentBatch: number
+  totalBatches: number
+  error?: string
+}
+
+export interface CsvImportResult {
+  success: boolean
+  rowsImported: number
+  rowsSkipped: number
+  rowsFailed: number
+  error?: string
+  durationMs: number
+}
+
+export interface BatchInsertOptions {
+  schema: string
+  table: string
+  columns: string[]
+  onConflict: 'error' | 'skip' | 'update'
+  primaryKeyColumns?: string[]
+}
+
+export interface BatchInsertResult {
+  rowsInserted: number
+  rowsSkipped: number
+  rowsFailed: number
+}
+
+export type GeneratorType =
+  | 'auto-increment'
+  | 'uuid'
+  | 'faker'
+  | 'random-int'
+  | 'random-float'
+  | 'random-boolean'
+  | 'random-date'
+  | 'random-enum'
+  | 'fk-reference'
+  | 'fixed'
+  | 'null'
+  | 'expression'
+
+export interface ColumnGenerator {
+  columnName: string
+  dataType: string
+  generatorType: GeneratorType
+  fakerMethod?: string
+  fixedValue?: string
+  minValue?: number
+  maxValue?: number
+  enumValues?: string[]
+  nullPercentage: number
+  skip: boolean
+  fkTable?: string
+  fkColumn?: string
+}
+
+export interface DataGenConfig {
+  schema: string
+  table: string
+  rowCount: number
+  seed?: number
+  columns: ColumnGenerator[]
+  batchSize: number
+}
+
+export interface DataGenProgress {
+  phase: 'generating' | 'inserting' | 'complete' | 'error'
+  rowsGenerated: number
+  rowsInserted: number
+  totalRows: number
+  error?: string
+}
+
+export interface DataGenResult {
+  success: boolean
+  rowsInserted: number
+  durationMs: number
+  error?: string
+}
+
+export interface PgNotificationEvent {
+  id: string
+  connectionId: string
+  channel: string
+  payload: string
+  receivedAt: number
+}
+
+export interface PgNotificationChannel {
+  name: string
+  isListening: boolean
+  eventCount: number
+  lastEventAt?: number
+}
+
+export interface PgNotificationStats {
+  eventsPerSecond: number
+  totalEvents: number
+  avgPayloadSize: number
+  connectedSince?: number
+}
+
+export interface ActiveQuery {
+  pid: number
+  user: string
+  database: string
+  state: string
+  duration: string
+  durationMs: number
+  query: string
+  waitEvent?: string
+  applicationName?: string
+}
+
+export interface TableSizeInfo {
+  schema: string
+  table: string
+  rowCountEstimate: number
+  dataSize: string
+  dataSizeBytes: number
+  indexSize: string
+  indexSizeBytes: number
+  totalSize: string
+  totalSizeBytes: number
+}
+
+export interface CacheStats {
+  bufferCacheHitRatio: number
+  indexHitRatio: number
+  tableCacheDetails?: Array<{
+    table: string
+    hitRatio: number
+    seqScans: number
+    indexScans: number
+  }>
+}
+
+export interface LockInfo {
+  blockedPid: number
+  blockedUser: string
+  blockedQuery: string
+  blockingPid: number
+  blockingUser: string
+  blockingQuery: string
+  lockType: string
+  relation?: string
+  waitDuration: string
+  waitDurationMs: number
+}
+
+export interface DatabaseSizeInfo {
+  totalSize: string
+  totalSizeBytes: number
+}

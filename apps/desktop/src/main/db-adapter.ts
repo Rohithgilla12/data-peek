@@ -7,7 +7,13 @@ import type {
   SequenceInfo,
   CustomTypeInfo,
   StatementResult,
-  QueryTelemetry
+  QueryTelemetry,
+  ColumnStats,
+  ActiveQuery,
+  TableSizeInfo,
+  CacheStats,
+  LockInfo,
+  DatabaseSizeInfo
 } from '@shared/index'
 
 /**
@@ -96,6 +102,33 @@ export interface DatabaseAdapter {
 
   /** Get custom types (enums, etc.) */
   getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]>
+
+  /** Get column statistics (min, max, nulls, distinct, histogram) */
+  getColumnStats(
+    config: ConnectionConfig,
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStats>
+
+  /** Get active (non-idle) queries running on the server */
+  getActiveQueries(config: ConnectionConfig): Promise<ActiveQuery[]>
+
+  /** Get table sizes and total database size */
+  getTableSizes(
+    config: ConnectionConfig,
+    schema?: string
+  ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }>
+
+  /** Get buffer cache and index hit ratios */
+  getCacheStats(config: ConnectionConfig): Promise<CacheStats>
+
+  /** Get blocking lock information */
+  getLocks(config: ConnectionConfig): Promise<LockInfo[]>
+
+  /** Cancel/kill a running query by PID */
+  killQuery(config: ConnectionConfig, pid: number): Promise<{ success: boolean; error?: string }>
 }
 
 // Import adapters

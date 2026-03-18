@@ -41,7 +41,22 @@ import type {
   UpdateDashboardInput,
   CreateWidgetInput,
   UpdateWidgetInput,
-  WidgetLayout
+  WidgetLayout,
+  ColumnStats,
+  ColumnStatsRequest,
+  CsvImportRequest,
+  CsvImportResult,
+  CsvImportProgress,
+  DataGenConfig,
+  DataGenResult,
+  DataGenProgress,
+  PgNotificationEvent,
+  PgNotificationChannel,
+  ActiveQuery,
+  TableSizeInfo,
+  CacheStats,
+  LockInfo,
+  DatabaseSizeInfo
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -128,7 +143,39 @@ const api = {
       queryHistory: QueryHistoryItemForAnalysis[],
       analysisConfig?: Partial<PerformanceAnalysisConfig>
     ): Promise<IpcResponse<PerformanceAnalysisResult>> =>
-      ipcRenderer.invoke('db:analyze-performance', { config, query, queryHistory, analysisConfig })
+      ipcRenderer.invoke('db:analyze-performance', { config, query, queryHistory, analysisConfig }),
+    columnStats: (
+      config: ConnectionConfig,
+      request: ColumnStatsRequest
+    ): Promise<IpcResponse<ColumnStats>> => ipcRenderer.invoke('db:column-stats', config, request),
+    importCsv: (
+      config: ConnectionConfig,
+      request: CsvImportRequest,
+      rows: unknown[][]
+    ): Promise<IpcResponse<CsvImportResult>> =>
+      ipcRenderer.invoke('db:import-csv', config, request, rows),
+    cancelImport: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('db:import-cancel'),
+    onImportProgress: (callback: (progress: CsvImportProgress) => void): (() => void) => {
+      const handler = (_: unknown, progress: CsvImportProgress): void => callback(progress)
+      ipcRenderer.on('db:import-progress', handler)
+      return () => ipcRenderer.removeListener('db:import-progress', handler)
+    },
+    generateData: (
+      config: ConnectionConfig,
+      genConfig: DataGenConfig
+    ): Promise<IpcResponse<DataGenResult>> =>
+      ipcRenderer.invoke('db:generate-data', config, genConfig),
+    cancelGenerate: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('db:generate-cancel'),
+    generatePreview: (
+      config: ConnectionConfig,
+      genConfig: DataGenConfig
+    ): Promise<IpcResponse<{ rows: unknown[][] }>> =>
+      ipcRenderer.invoke('db:generate-preview', config, genConfig),
+    onGenerateProgress: (callback: (progress: DataGenProgress) => void): (() => void) => {
+      const handler = (_: unknown, progress: DataGenProgress): void => callback(progress)
+      ipcRenderer.on('db:generate-progress', handler)
+      return () => ipcRenderer.removeListener('db:generate-progress', handler)
+    }
   },
   // DDL operations (Table Designer)
   ddl: {
@@ -441,6 +488,53 @@ const api = {
   },
   files: {
     openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog')
+  },
+  health: {
+    activeQueries: (config: ConnectionConfig): Promise<IpcResponse<ActiveQuery[]>> =>
+      ipcRenderer.invoke('db:active-queries', config),
+    tableSizes: (
+      config: ConnectionConfig,
+      schema?: string
+    ): Promise<IpcResponse<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }>> =>
+      ipcRenderer.invoke('db:table-sizes', config, schema),
+    cacheStats: (config: ConnectionConfig): Promise<IpcResponse<CacheStats>> =>
+      ipcRenderer.invoke('db:cache-stats', config),
+    locks: (config: ConnectionConfig): Promise<IpcResponse<LockInfo[]>> =>
+      ipcRenderer.invoke('db:locks', config),
+    killQuery: (
+      config: ConnectionConfig,
+      pid: number
+    ): Promise<IpcResponse<{ success: boolean; error?: string }>> =>
+      ipcRenderer.invoke('db:kill-query', config, pid)
+  },
+  pgNotify: {
+    subscribe: (
+      connectionId: string,
+      config: ConnectionConfig,
+      channel: string
+    ): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('pg-notify:subscribe', connectionId, config, channel),
+    unsubscribe: (connectionId: string, channel: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('pg-notify:unsubscribe', connectionId, channel),
+    send: (
+      config: ConnectionConfig,
+      channel: string,
+      payload: string
+    ): Promise<IpcResponse<void>> => ipcRenderer.invoke('pg-notify:send', config, channel, payload),
+    getChannels: (connectionId: string): Promise<IpcResponse<PgNotificationChannel[]>> =>
+      ipcRenderer.invoke('pg-notify:get-channels', connectionId),
+    getHistory: (
+      connectionId: string,
+      limit?: number
+    ): Promise<IpcResponse<PgNotificationEvent[]>> =>
+      ipcRenderer.invoke('pg-notify:get-history', connectionId, limit),
+    clearHistory: (connectionId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('pg-notify:clear-history', connectionId),
+    onEvent: (callback: (event: PgNotificationEvent) => void): (() => void) => {
+      const handler = (_: unknown, event: PgNotificationEvent): void => callback(event)
+      ipcRenderer.on('pg-notify:event', handler)
+      return () => ipcRenderer.removeListener('pg-notify:event', handler)
+    }
   },
   window: {
     minimize: (): Promise<void> => ipcRenderer.invoke('minimize-window'),

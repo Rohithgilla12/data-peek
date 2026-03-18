@@ -1,4 +1,4 @@
-import { MessageCircleQuestion, Settings2 } from 'lucide-react'
+import { Activity, Bell, MessageCircleQuestion, Settings2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 import { ConnectionSwitcher } from '@/components/connection-switcher'
@@ -21,6 +21,7 @@ import {
   SidebarRail,
   SidebarSeparator
 } from '@/components/ui/sidebar'
+import { useConnectionStore, useTabStore } from '@/stores'
 import { cn } from '@/lib/utils'
 
 /**
@@ -33,6 +34,25 @@ import { cn } from '@/lib/utils'
  */
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const platform = window.electron.process.platform
+  const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
+  const activeConnection = useConnectionStore((s) =>
+    s.connections.find((c) => c.id === activeConnectionId)
+  )
+  const createPgNotificationsTab = useTabStore((s) => s.createPgNotificationsTab)
+  const createHealthMonitorTab = useTabStore((s) => s.createHealthMonitorTab)
+  const isPostgres = activeConnection?.dbType === 'postgresql'
+
+  const handleOpenNotifications = () => {
+    if (activeConnectionId) {
+      createPgNotificationsTab(activeConnectionId)
+    }
+  }
+
+  const handleOpenHealthMonitor = () => {
+    if (activeConnectionId) {
+      createHealthMonitorTab(activeConnectionId)
+    }
+  }
 
   return (
     <Sidebar className="border-r-0 bg-sidebar/80 backdrop-blur-xl" {...props}>
@@ -74,6 +94,32 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         {/* Dashboards */}
         <Dashboards />
+
+        {activeConnectionId && (
+          <>
+            <SidebarSeparator className="mx-3" />
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {isPostgres && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton onClick={handleOpenNotifications}>
+                        <Bell className="size-4" />
+                        <span>Notifications</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleOpenHealthMonitor}>
+                      <Activity className="size-4" />
+                      <span>Health Monitor</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
 
         {/* Secondary Navigation - Settings & Help */}
         <SidebarGroup className="mt-auto">

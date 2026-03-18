@@ -11,7 +11,18 @@ import {
   type SortingState
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowUpDown, ArrowUp, ArrowDown, Filter, X, Link2, Copy } from 'lucide-react'
+import {
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Filter,
+  X,
+  Link2,
+  Copy,
+  BarChart2,
+  Lock,
+  Unlock
+} from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
 import { Input } from '@/components/ui/input'
 
@@ -21,10 +32,18 @@ import { FKCellValue } from '@/components/fk-cell-value'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getTypeColor } from '@/lib/type-colors'
 import { PaginationControls } from '@/components/pagination-controls'
 import { useSettingsStore } from '@/stores/settings-store'
+import { useMaskingStore } from '@/stores/masking-store'
 
 const VIRTUALIZATION_THRESHOLD = 50
 const ROW_HEIGHT = 37
@@ -47,6 +66,7 @@ export interface DataTableColumn {
 }
 
 interface DataTableProps<TData> {
+  tabId?: string
   columns: DataTableColumn[]
   data: TData[]
   pageSize?: number
@@ -57,6 +77,8 @@ interface DataTableProps<TData> {
   onForeignKeyClick?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   /** Called when user Cmd+clicks a FK cell (opens new tab) */
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
+  /** Called when user requests column statistics for a column */
+  onColumnStatsClick?: (column: DataTableColumn) => void
 }
 
 const CellValue = React.memo(function CellValue({
@@ -132,7 +154,39 @@ const CellValue = React.memo(function CellValue({
   )
 })
 
+const MaskedCell = React.memo(function MaskedCell({
+  isMasked,
+  hoverToPeek,
+  children
+}: {
+  isMasked: boolean
+  hoverToPeek: boolean
+  children: React.ReactNode
+}) {
+  const [peeking, setPeeking] = React.useState(false)
+
+  if (!isMasked) return <>{children}</>
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (hoverToPeek && e.altKey) setPeeking(true)
+  }
+
+  const handleMouseLeave = () => setPeeking(false)
+
+  return (
+    <span
+      style={peeking ? undefined : { filter: 'blur(5px)', userSelect: 'none' }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="inline-block select-none"
+    >
+      {children}
+    </span>
+  )
+})
+
 export function DataTable<TData extends Record<string, unknown>>({
+  tabId,
   columns: columnDefs,
   data,
   pageSize: propPageSize,
@@ -140,9 +194,29 @@ export function DataTable<TData extends Record<string, unknown>>({
   onSortingChange,
   onPageSizeChange,
   onForeignKeyClick,
-  onForeignKeyOpenTab
+  onForeignKeyOpenTab,
+  onColumnStatsClick
 }: DataTableProps<TData>) {
   const { defaultPageSize } = useSettingsStore()
+  const toggleColumnMask = useMaskingStore((s) => s.toggleColumnMask)
+  const hoverToPeek = useMaskingStore((s) => s.hoverToPeek)
+  const maskedColumnsMap = useMaskingStore((s) => s.maskedColumns)
+  const autoMaskRules = useMaskingStore((s) => s.autoMaskRules)
+  const autoMaskEnabled = useMaskingStore((s) => s.autoMaskEnabled)
+  const getEffectiveMaskedColumns = useMaskingStore((s) => s.getEffectiveMaskedColumns)
+
+  const allColumnNames = React.useMemo(() => columnDefs.map((c) => c.name), [columnDefs])
+  const effectiveMasked = React.useMemo(
+    () => (tabId ? getEffectiveMaskedColumns(tabId, allColumnNames) : new Set<string>()),
+    [
+      tabId,
+      allColumnNames,
+      getEffectiveMaskedColumns,
+      maskedColumnsMap,
+      autoMaskRules,
+      autoMaskEnabled
+    ]
+  )
   const pageSize = propPageSize ?? defaultPageSize
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -195,29 +269,71 @@ export function DataTable<TData extends Record<string, unknown>>({
           accessorKey: col.name,
           header: ({ column }) => {
             const isSorted = column.getIsSorted()
+            const isMasked = effectiveMasked.has(col.name)
             return (
               <div className="flex flex-col gap-0.5">
-                <Button
-                  variant="ghost"
-                  className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-                >
-                  <span>{displayName}</span>
-                  {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
-                  <Badge
-                    variant="outline"
-                    className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                <div className="flex items-center">
+                  <Button
+                    variant="ghost"
+                    className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50 flex-1"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
                   >
-                    {col.dataType}
-                  </Badge>
-                  {isSorted === 'asc' ? (
-                    <ArrowUp className="ml-1 size-3 text-primary" />
-                  ) : isSorted === 'desc' ? (
-                    <ArrowDown className="ml-1 size-3 text-primary" />
-                  ) : (
-                    <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                    <span>{displayName}</span>
+                    {isMasked && <Lock className="ml-1 size-3 text-amber-500" />}
+                    {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
+                    <Badge
+                      variant="outline"
+                      className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                    >
+                      {col.dataType}
+                    </Badge>
+                    {isSorted === 'asc' ? (
+                      <ArrowUp className="ml-1 size-3 text-primary" />
+                    ) : isSorted === 'desc' ? (
+                      <ArrowDown className="ml-1 size-3 text-primary" />
+                    ) : (
+                      <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                    )}
+                  </Button>
+                  {(onColumnStatsClick || tabId) && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-5 ml-0.5 opacity-0 group-hover/head:opacity-100 hover:opacity-100 focus:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <BarChart2 className="size-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {onColumnStatsClick && (
+                          <DropdownMenuItem onClick={() => onColumnStatsClick(col)}>
+                            <BarChart2 className="size-3 mr-2" />
+                            Column Statistics
+                          </DropdownMenuItem>
+                        )}
+                        {onColumnStatsClick && tabId && <DropdownMenuSeparator />}
+                        {tabId && (
+                          <DropdownMenuItem onClick={() => toggleColumnMask(tabId, col.name)}>
+                            {isMasked ? (
+                              <>
+                                <Unlock className="size-3 mr-2" />
+                                Unmask Column
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="size-3 mr-2" />
+                                Mask Column
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   )}
-                </Button>
+                </div>
                 {col.foreignKey && (
                   <span className="text-[9px] text-muted-foreground px-2 -mt-0.5">
                     → {col.foreignKey.referencedTable}
@@ -226,16 +342,21 @@ export function DataTable<TData extends Record<string, unknown>>({
               </div>
             )
           },
-          cell: ({ getValue }) => (
-            <CellValue
-              value={getValue()}
-              dataType={col.dataType}
-              columnName={col.name}
-              foreignKey={col.foreignKey}
-              onForeignKeyClick={onForeignKeyClick}
-              onForeignKeyOpenTab={onForeignKeyOpenTab}
-            />
-          ),
+          cell: ({ getValue }) => {
+            const isMasked = effectiveMasked.has(col.name)
+            return (
+              <MaskedCell isMasked={isMasked} hoverToPeek={hoverToPeek}>
+                <CellValue
+                  value={getValue()}
+                  dataType={col.dataType}
+                  columnName={col.name}
+                  foreignKey={col.foreignKey}
+                  onForeignKeyClick={onForeignKeyClick}
+                  onForeignKeyOpenTab={onForeignKeyOpenTab}
+                />
+              </MaskedCell>
+            )
+          },
           filterFn: isNumeric
             ? (row, columnId, filterValue) => {
                 const value = row.getValue(columnId)
@@ -280,7 +401,16 @@ export function DataTable<TData extends Record<string, unknown>>({
             : 'includesString'
         }
       }),
-    [columnDefs, onForeignKeyClick, onForeignKeyOpenTab]
+    [
+      columnDefs,
+      onForeignKeyClick,
+      onForeignKeyOpenTab,
+      onColumnStatsClick,
+      effectiveMasked,
+      tabId,
+      toggleColumnMask,
+      hoverToPeek
+    ]
   )
 
   const table = useReactTable({
@@ -400,7 +530,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
-                        className="h-10 text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/95"
+                        className="h-10 text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/95 group/head"
                       >
                         {header.isPlaceholder
                           ? null

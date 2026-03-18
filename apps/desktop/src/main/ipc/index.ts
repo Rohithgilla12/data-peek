@@ -12,6 +12,11 @@ import { registerAIHandlers } from './ai-handlers'
 import { createLogger } from '../lib/logger'
 import { registerFileHandlers } from './file-handlers'
 import { registerWindowHandlers } from './window-handler'
+import { registerColumnStatsHandlers } from './column-stats-handlers'
+import { registerImportHandlers } from './import-handlers'
+import { registerDataGenHandlers } from './data-gen-handlers'
+import { registerPgNotifyHandlers } from './pg-notify-handlers'
+import { registerHealthHandlers } from './health-handlers'
 
 const log = createLogger('ipc')
 
@@ -60,6 +65,21 @@ export function registerAllHandlers(stores: IpcStores): void {
   // Window controls
   registerWindowHandlers()
 
+  // Column statistics
+  registerColumnStatsHandlers()
+
+  // CSV import
+  registerImportHandlers()
+
+  // Data generator
+  registerDataGenHandlers()
+
+  // PostgreSQL LISTEN/NOTIFY
+  registerPgNotifyHandlers()
+
+  // Health monitor diagnostics
+  registerHealthHandlers()
+
   log.debug('All handlers registered')
 }
 
@@ -73,3 +93,7 @@ export { registerSnippetHandlers } from './snippet-handlers'
 export { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
 export { registerDashboardHandlers } from './dashboard-handlers'
 export { registerAIHandlers } from './ai-handlers'
+export { registerImportHandlers } from './import-handlers'
+export { registerDataGenHandlers } from './data-gen-handlers'
+export { registerPgNotifyHandlers } from './pg-notify-handlers'
+export { registerHealthHandlers } from './health-handlers'

@@ -65,12 +65,31 @@ import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
 import { ERDVisualization } from '@/components/erd-visualization'
 import { ExecutionPlanViewer } from '@/components/execution-plan-viewer'
 import { TableDesigner } from '@/components/table-designer'
+import { DataGenerator } from '@/components/data-generator'
+import { PgNotificationsPanel } from '@/components/pg-notifications-panel'
+import { HealthMonitor } from '@/components/health-monitor'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
 import { ShareQueryDialog } from '@/components/share-query-dialog'
 import { TelemetryPanel } from '@/components/telemetry-panel'
 import { BenchmarkButton } from '@/components/benchmark-button'
 import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
 import { Badge } from '@/components/ui/badge'
+import { ColumnStatsPanel } from '@/components/column-stats-panel'
+import { useColumnStatsStore } from '@/stores/column-stats-store'
+import type { DataTableColumn as DtColumn } from '@/components/data-table'
+import { MaskingToolbar } from '@/components/masking-toolbar'
+import { useMaskingStore } from '@/stores/masking-store'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog'
+import type { ExportData } from '@/lib/export'
 
 interface TabQueryEditorProps {
   tabId: string
@@ -159,6 +178,18 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // FK Panel stack state
   const [fkPanels, setFkPanels] = useState<FKPanelItem[]>([])
 
+  // Column stats panel state
+  const {
+    stats: columnStatsMap,
+    isLoading: columnStatsLoading,
+    error: columnStatsError,
+    selectedColumn: columnStatsSelected,
+    isPanelOpen: columnStatsPanelOpen,
+    fetchStats: fetchColumnStats,
+    selectColumn: selectStatsColumn,
+    closePanel: closeColumnStatsPanel
+  } = useColumnStatsStore()
+
   // Execution plan state (resize logic extracted to hook)
   const [executionPlan, setExecutionPlan] = useState<{
     plan: unknown[]
@@ -173,8 +204,60 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Share query dialog state
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
 
+  // Export with masked columns confirmation
+  const [pendingExport, setPendingExport] = useState<null | {
+    type: 'csv' | 'json' | 'sql'
+    data: ExportData
+    filename: string
+  }>(null)
+
+  const getEffectiveMaskedColumns = useMaskingStore((s) => s.getEffectiveMaskedColumns)
+
   // Get the createForeignKeyTab action
   const createForeignKeyTab = useTabStore((s) => s.createForeignKeyTab)
+
+  const buildMaskedExportData = (data: ExportData): ExportData => {
+    const masked = getEffectiveMaskedColumns(
+      tabId,
+      data.columns.map((c) => c.name)
+    )
+    if (masked.size === 0) return data
+    return {
+      ...data,
+      rows: data.rows.map((row) => {
+        const newRow = { ...row }
+        for (const col of masked) {
+          newRow[col] = '[MASKED]'
+        }
+        return newRow
+      })
+    }
+  }
+
+  const handleExport = (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
+    const masked = getEffectiveMaskedColumns(
+      tabId,
+      data.columns.map((c) => c.name)
+    )
+    if (masked.size > 0) {
+      setPendingExport({ type, data, filename })
+      return
+    }
+    doExport(type, data, filename)
+  }
+
+  const doExport = (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
+    if (type === 'csv') {
+      downloadCSV(data, filename)
+    } else if (type === 'json') {
+      downloadJSON(data, filename)
+    } else {
+      downloadSQL(data, filename, {
+        tableName: tab?.type === 'table-preview' ? tab.tableName! : 'query_result',
+        schemaName: tab?.type === 'table-preview' ? tab.schemaName : undefined
+      })
+    }
+  }
 
   const handleRunQuery = useCallback(async () => {
     // Read fresh tab state from store to avoid stale closure issues
@@ -185,6 +268,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       !currentTab ||
       currentTab.type === 'erd' ||
       currentTab.type === 'table-designer' ||
+      currentTab.type === 'data-generator' ||
+      currentTab.type === 'pg-notifications' ||
+      currentTab.type === 'health-monitor' ||
       !tabConnection ||
       currentTab.isExecuting ||
       !currentTab.query.trim()
@@ -328,7 +414,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   ])
 
   const handleCancelQuery = useCallback(async () => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer') return
+    if (
+      !tab ||
+      tab.type === 'erd' ||
+      tab.type === 'table-designer' ||
+      tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
+      tab.type === 'health-monitor'
+    )
+      return
     if (!tab.isExecuting || !tab.executionId) return
 
     try {
@@ -365,7 +459,16 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   )
 
   const handleFormatQuery = () => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tab.query.trim()) return
+    if (
+      !tab ||
+      tab.type === 'erd' ||
+      tab.type === 'table-designer' ||
+      tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
+      tab.type === 'health-monitor' ||
+      !tab.query.trim()
+    )
+      return
     const formatted = formatSQL(tab.query)
     updateTabQuery(tabId, formatted)
   }
@@ -377,6 +480,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         !tab ||
         tab.type === 'erd' ||
         tab.type === 'table-designer' ||
+        tab.type === 'data-generator' ||
+        tab.type === 'pg-notifications' ||
+        tab.type === 'health-monitor' ||
         !tabConnection ||
         tab.isExecuting ||
         isRunningBenchmark ||
@@ -429,6 +535,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       !tab ||
       tab.type === 'erd' ||
       tab.type === 'table-designer' ||
+      tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
+      tab.type === 'health-monitor' ||
       !tabConnection ||
       isExplaining ||
       !tab.query.trim()
@@ -467,6 +576,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       !tab ||
       tab.type === 'erd' ||
       tab.type === 'table-designer' ||
+      tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
+      tab.type === 'health-monitor' ||
       !tabConnection ||
       isPerfAnalyzing ||
       !tab.query.trim()
@@ -530,7 +642,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Helper: Look up column info from schema (for FK details)
   const getColumnsWithFKInfo = useCallback((): DataTableColumn[] => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer' || !tab.result?.columns)
+    if (
+      !tab ||
+      tab.type === 'erd' ||
+      tab.type === 'table-designer' ||
+      tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
+      tab.type === 'health-monitor' ||
+      !tab.result?.columns
+    )
       return []
 
     // For table-preview tabs, we can directly look up the columns from schema
@@ -576,6 +696,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       !tab ||
       tab.type === 'erd' ||
       tab.type === 'table-designer' ||
+      tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
+      tab.type === 'health-monitor' ||
       !tab.result?.columns ||
       tab.type !== 'table-preview'
     )
@@ -745,6 +868,82 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     setFkPanels([])
   }, [])
 
+  // Column Stats: Handle column header stats click
+  const handleColumnStatsClick = useCallback(
+    (col: DtColumn) => {
+      if (
+        !tabConnection ||
+        !tab ||
+        tab.type === 'erd' ||
+        tab.type === 'table-designer' ||
+        tab.type === 'data-generator' ||
+        tab.type === 'pg-notifications' ||
+        tab.type === 'health-monitor'
+      )
+        return
+
+      const connectionId = tabConnection.id
+      const config = tabConnection as Parameters<typeof fetchColumnStats>[1]
+
+      let schema = 'public'
+      let table = ''
+
+      if (tab.type === 'table-preview') {
+        schema = tab.schemaName
+        table = tab.tableName
+      } else {
+        // For query tabs, try to find the column in schemas
+        for (const s of schemas) {
+          for (const t of s.tables) {
+            if (t.columns.some((c) => c.name === col.name)) {
+              schema = s.name
+              table = t.name
+              break
+            }
+          }
+          if (table) break
+        }
+      }
+
+      if (!table) {
+        // No table context available, still open panel with just column info
+        selectStatsColumn({
+          connectionId,
+          schema,
+          table: '',
+          column: col.name,
+          dataType: col.dataType,
+          config
+        })
+        return
+      }
+
+      selectStatsColumn({
+        connectionId,
+        schema,
+        table,
+        column: col.name,
+        dataType: col.dataType,
+        config
+      })
+
+      fetchColumnStats(connectionId, config, {
+        schema,
+        table,
+        column: col.name,
+        dataType: col.dataType
+      })
+    },
+    [tabConnection, tab, schemas, fetchColumnStats, selectStatsColumn]
+  )
+
+  const columnStatsData =
+    columnStatsSelected && columnStatsPanelOpen
+      ? (columnStatsMap.get(
+          `${columnStatsSelected.connectionId}:${columnStatsSelected.schema}:${columnStatsSelected.table}:${columnStatsSelected.column}`
+        ) ?? null)
+      : null
+
   // Generate SQL WHERE clause from filters
   const generateWhereClause = (filters: DataTableFilter[]): string => {
     if (filters.length === 0) return ''
@@ -765,7 +964,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Build a new query with filters/sorting applied
   const buildQueryWithFilters = (): string => {
-    if (!tab || tab.type === 'erd' || tab.type === 'table-designer') return ''
+    if (
+      !tab ||
+      tab.type === 'erd' ||
+      tab.type === 'table-designer' ||
+      tab.type === 'data-generator' ||
+      tab.type === 'pg-notifications' ||
+      tab.type === 'health-monitor'
+    )
+      return ''
 
     // For table preview tabs, rebuild from scratch
     if (tab.type === 'table-preview') {
@@ -893,6 +1100,21 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Render Table Designer for table-designer tabs
   if (tab.type === 'table-designer') {
     return <TableDesigner tabId={tabId} />
+  }
+
+  // Render Data Generator for data-generator tabs
+  if (tab.type === 'data-generator') {
+    return <DataGenerator tabId={tabId} />
+  }
+
+  // Render PG Notifications panel
+  if (tab.type === 'pg-notifications') {
+    return <PgNotificationsPanel tabId={tabId} />
+  }
+
+  // Render Health Monitor dashboard
+  if (tab.type === 'health-monitor') {
+    return <HealthMonitor tabId={tabId} />
   }
 
   // Get statement results for multi-statement queries
@@ -1227,6 +1449,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       onSortingChange={setTableSorting}
                       onForeignKeyClick={handleFKClick}
                       onForeignKeyOpenTab={handleFKOpenTab}
+                      onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
                       onChangesCommitted={handleRunQuery}
                       serverCurrentPage={tab.currentPage}
                       serverTotalRowCount={tab.totalRowCount}
@@ -1235,6 +1458,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                   ) : (
                     <DataTable
                       key={`result-${activeResultIndex}`}
+                      tabId={tabId}
                       columns={
                         hasMultipleResults
                           ? getActiveResultColumns().map((col) => ({
@@ -1249,6 +1473,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       onSortingChange={setTableSorting}
                       onForeignKeyClick={handleFKClick}
                       onForeignKeyOpenTab={handleFKOpenTab}
+                      onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
                     />
                   )}
                 </div>
@@ -1389,6 +1614,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                         </Tooltip>
                       </TooltipProvider>
                     )}
+                    <MaskingToolbar tabId={tabId} />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-1.5 h-7">
@@ -1403,7 +1629,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            downloadCSV(tab.result, filename)
+                            handleExport('csv', tab.result, filename)
                           }}
                         >
                           <FileSpreadsheet className="size-4 text-muted-foreground" />
@@ -1415,7 +1641,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            downloadJSON(tab.result, filename)
+                            handleExport('json', tab.result, filename)
                           }}
                         >
                           <FileJson className="size-4 text-muted-foreground" />
@@ -1427,11 +1653,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            downloadSQL(tab.result, filename, {
-                              tableName:
-                                tab.type === 'table-preview' ? tab.tableName! : 'query_result',
-                              schemaName: tab.type === 'table-preview' ? tab.schemaName : undefined
-                            })
+                            handleExport('sql', tab.result, filename)
                           }}
                         >
                           <FileCode2 className="size-4 text-muted-foreground" />
@@ -1521,6 +1743,21 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         </>
       )}
 
+      {/* Column Stats Panel */}
+      {columnStatsPanelOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={closeColumnStatsPanel} />
+          <div className="fixed top-0 bottom-0 right-0 z-50 shadow-xl flex flex-col">
+            <ColumnStatsPanel
+              stats={columnStatsData}
+              isLoading={columnStatsLoading}
+              error={columnStatsError}
+              onClose={closeColumnStatsPanel}
+            />
+          </div>
+        </>
+      )}
+
       {/* Save Query Dialog */}
       <SaveQueryDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} query={tab.query} />
 
@@ -1532,6 +1769,33 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         connectionType={tabConnection?.dbType}
         connectionName={tabConnection?.name}
       />
+
+      {/* Export with masked columns confirmation */}
+      <AlertDialog open={!!pendingExport} onOpenChange={(open) => !open && setPendingExport(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Export with masked columns?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Some columns are currently masked. The exported file will contain{' '}
+              <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">[MASKED]</code> in
+              place of sensitive values. Do you want to continue?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!pendingExport) return
+                const maskedData = buildMaskedExportData(pendingExport.data)
+                doExport(pendingExport.type, maskedData, pendingExport.filename)
+                setPendingExport(null)
+              }}
+            >
+              Export with [MASKED] values
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

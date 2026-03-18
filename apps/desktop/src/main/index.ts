@@ -17,6 +17,7 @@ import { setForceQuit } from './app-state'
 import { windowManager } from './window-manager'
 import { initSchedulerService, stopAllSchedules } from './scheduler-service'
 import { initDashboardService } from './dashboard-service'
+import { cleanup as cleanupPgNotify } from './pg-notification-listener'
 
 // Store instances
 let store: DpStorage<{ connections: ConnectionConfig[] }>
@@ -128,6 +129,7 @@ app.on('before-quit', () => {
   setForceQuit(true)
   stopPeriodicChecks()
   stopAllSchedules()
+  cleanupPgNotify()
 })
 
 // Quit when all windows are closed (except macOS)

@@ -24,8 +24,12 @@ import {
   FileSpreadsheet,
   FileJson,
   FileCode2,
-  Focus
+  Focus,
+  Upload,
+  Shuffle
 } from 'lucide-react'
+import { CsvImportDialog } from '@/components/csv-import-dialog'
+import { useImportStore } from '@/stores'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -103,6 +107,8 @@ interface VirtualizedSchemaItemsProps {
   onTableClick: (schemaName: string, table: TableInfo) => void
   onEditTable: (schemaName: string, tableName: string) => void
   onExportTable: (schemaName: string, tableName: string, format: 'csv' | 'json' | 'sql') => void
+  onImportCsv: (schemaName: string, tableName: string) => void
+  onGenerateData: (schemaName: string, tableName: string) => void
   onExecuteRoutine: (
     schemaName: string,
     routineName: string,
@@ -121,6 +127,8 @@ function VirtualizedSchemaItems({
   onTableClick,
   onEditTable,
   onExportTable,
+  onImportCsv,
+  onGenerateData,
   onExecuteRoutine
 }: VirtualizedSchemaItemsProps) {
   const parentRef = React.useRef<HTMLDivElement>(null)
@@ -237,6 +245,14 @@ function VirtualizedSchemaItems({
                         <DropdownMenuItem onClick={() => onEditTable(schemaName, table.name)}>
                           <Pencil className="size-4 mr-2" />
                           Edit Table
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onImportCsv(schemaName, table.name)}>
+                          <Upload className="size-4 mr-2" />
+                          Import CSV
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onGenerateData(schemaName, table.name)}>
+                          <Shuffle className="size-4 mr-2" />
+                          Generate Data
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
@@ -461,6 +477,7 @@ export function SchemaExplorer() {
   const setActiveTab = useTabStore((s) => s.setActiveTab)
   const createERDTab = useTabStore((s) => s.createERDTab)
   const createTableDesignerTab = useTabStore((s) => s.createTableDesignerTab)
+  const createDataGeneratorTab = useTabStore((s) => s.createDataGeneratorTab)
 
   const [expandedSchemas, setExpandedSchemas] = React.useState<Set<string>>(
     new Set(schemas.map((s) => s.name))
@@ -618,6 +635,27 @@ export function SchemaExplorer() {
   const handleEditTable = (schemaName: string, tableName: string) => {
     if (!activeConnectionId) return
     createTableDesignerTab(activeConnectionId, schemaName, tableName)
+  }
+
+  const {
+    setOpen: setImportOpen,
+    setTargetTable: setImportTarget,
+    reset: resetImport
+  } = useImportStore()
+  const [importSchema, setImportSchema] = React.useState<string>('')
+  const [importTable, setImportTable] = React.useState<string>('')
+
+  const handleGenerateData = (schemaName: string, tableName: string) => {
+    if (!activeConnectionId) return
+    createDataGeneratorTab(activeConnectionId, schemaName, tableName)
+  }
+
+  const handleImportCsv = (schemaName: string, tableName: string) => {
+    resetImport()
+    setImportSchema(schemaName)
+    setImportTable(tableName)
+    setImportTarget(schemaName, tableName)
+    setImportOpen(true)
   }
 
   const handleExportTable = async (
@@ -1026,6 +1064,8 @@ export function SchemaExplorer() {
                             onTableClick={handleTableClick}
                             onEditTable={handleEditTable}
                             onExportTable={handleExportTable}
+                            onImportCsv={handleImportCsv}
+                            onGenerateData={handleGenerateData}
                             onExecuteRoutine={handleExecuteRoutine}
                           />
                         )
@@ -1104,6 +1144,20 @@ export function SchemaExplorer() {
                                           >
                                             <Pencil className="size-4 mr-2" />
                                             Edit Table
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() => handleImportCsv(schema.name, table.name)}
+                                          >
+                                            <Upload className="size-4 mr-2" />
+                                            Import CSV
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            onClick={() =>
+                                              handleGenerateData(schema.name, table.name)
+                                            }
+                                          >
+                                            <Shuffle className="size-4 mr-2" />
+                                            Generate Data
                                           </DropdownMenuItem>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
@@ -1340,6 +1394,7 @@ export function SchemaExplorer() {
           )}
         </SidebarMenu>
       </SidebarGroupContent>
+      <CsvImportDialog defaultSchema={importSchema} defaultTable={importTable} />
     </SidebarGroup>
   )
 }

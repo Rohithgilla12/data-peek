@@ -15,7 +15,15 @@ import type {
   CustomTypeInfo,
   StatementResult,
   RoutineInfo,
-  RoutineParameterInfo
+  RoutineParameterInfo,
+  ColumnStats,
+  ColumnStatsType,
+  CommonValue,
+  ActiveQuery,
+  TableSizeInfo,
+  CacheStats,
+  LockInfo,
+  DatabaseSizeInfo
 } from '@shared/index'
 import type {
   DatabaseAdapter,
@@ -1067,5 +1075,468 @@ export class MySQLAdapter implements DatabaseAdapter {
       if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)
     }
+  }
+
+  private classifyColumnType(dataType: string): ColumnStatsType {
+    const lower = dataType.toLowerCase()
+    if (
+      lower.includes('int') ||
+      lower.includes('decimal') ||
+      lower.includes('numeric') ||
+      lower.includes('float') ||
+      lower.includes('double') ||
+      lower.includes('real') ||
+      lower.includes('bit')
+    ) {
+      return 'numeric'
+    }
+    if (lower.includes('date') || lower.includes('time') || lower.includes('year')) {
+      return 'datetime'
+    }
+    if (lower === 'boolean' || lower === 'tinyint(1)') {
+      return 'boolean'
+    }
+    if (
+      lower.includes('char') ||
+      lower.includes('text') ||
+      lower.includes('varchar') ||
+      lower.includes('enum') ||
+      lower.includes('set')
+    ) {
+      return 'text'
+    }
+    return 'other'
+  }
+
+  async getColumnStats(
+    config: ConnectionConfig,
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStats> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      const statsType = this.classifyColumnType(dataType)
+      const quoteIdent = (name: string) => '`' + name.replace(/`/g, '``') + '`'
+      const quotedTable = `${quoteIdent(schema)}.${quoteIdent(table)}`
+      const quotedCol = quoteIdent(column)
+      const quotedCol = `\`${column}\``
+
+      const [baseRows] = await connection.query(`
+        SELECT
+          COUNT(*) AS total_rows,
+          COUNT(*) - COUNT(${quotedCol}) AS null_count,
+          COUNT(DISTINCT ${quotedCol}) AS distinct_count
+        FROM ${quotedTable}
+      `)
+
+      const baseRow = (baseRows as Array<Record<string, unknown>>)[0]
+      const totalRows = Number(baseRow.total_rows)
+      const nullCount = Number(baseRow.null_count)
+      const distinctCount = Number(baseRow.distinct_count)
+      const nullPercentage = totalRows > 0 ? (nullCount / totalRows) * 100 : 0
+      const distinctPercentage = totalRows > 0 ? (distinctCount / totalRows) * 100 : 0
+
+      const stats: ColumnStats = {
+        column,
+        dataType,
+        statsType,
+        totalRows,
+        nullCount,
+        nullPercentage,
+        distinctCount,
+        distinctPercentage
+      }
+
+      if (statsType === 'numeric') {
+        const [numRows] = await connection.query(`
+          SELECT
+            MIN(${quotedCol}) AS min_val,
+            MAX(${quotedCol}) AS max_val,
+            AVG(${quotedCol}) AS avg_val,
+            STDDEV(${quotedCol}) AS stddev_val
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        const numRow = (numRows as Array<Record<string, unknown>>)[0]
+        stats.min = numRow?.min_val != null ? String(numRow.min_val) : null
+        stats.max = numRow?.max_val != null ? String(numRow.max_val) : null
+        stats.avg = numRow?.avg_val != null ? Number(numRow.avg_val) : null
+        stats.stdDev = numRow?.stddev_val != null ? Number(numRow.stddev_val) : null
+
+        if (totalRows > 0) {
+          const [minMaxRows] = await connection.query(`
+            SELECT MIN(${quotedCol}) AS min_val, MAX(${quotedCol}) AS max_val
+            FROM ${quotedTable}
+            WHERE ${quotedCol} IS NOT NULL
+          `)
+          const mmRow = (minMaxRows as Array<Record<string, unknown>>)[0]
+          const minVal = Number(mmRow?.min_val)
+          const maxVal = Number(mmRow?.max_val)
+
+          if (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal) {
+            const bucketSize = (maxVal - minVal) / 10
+            const cases = Array.from({ length: 10 }, (_, i) => {
+              const lo = minVal + i * bucketSize
+              const hi = minVal + (i + 1) * bucketSize
+              const label = i + 1
+              if (i === 9) {
+                return `WHEN ${quotedCol} >= ${lo} THEN ${label}`
+              }
+              return `WHEN ${quotedCol} >= ${lo} AND ${quotedCol} < ${hi} THEN ${label}`
+            }).join('\n              ')
+
+            const [histRows] = await connection.query(`
+              SELECT
+                bucket,
+                COUNT(*) AS cnt
+              FROM (
+                SELECT CASE
+                  ${cases}
+                  ELSE 1
+                END AS bucket
+                FROM ${quotedTable}
+                WHERE ${quotedCol} IS NOT NULL
+              ) t
+              GROUP BY bucket
+              ORDER BY bucket
+            `)
+
+            const histResult = histRows as Array<Record<string, unknown>>
+            if (histResult.length > 0) {
+              stats.histogram = histResult.map((row) => {
+                const b = Number(row.bucket) - 1
+                return {
+                  min: minVal + b * bucketSize,
+                  max: minVal + (b + 1) * bucketSize,
+                  count: Number(row.cnt)
+                }
+              })
+            }
+          }
+        }
+      } else if (statsType === 'text') {
+        const [textRows] = await connection.query(`
+          SELECT
+            MIN(CHAR_LENGTH(${quotedCol})) AS min_length,
+            MAX(CHAR_LENGTH(${quotedCol})) AS max_length,
+            AVG(CHAR_LENGTH(${quotedCol})) AS avg_length
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        const textRow = (textRows as Array<Record<string, unknown>>)[0]
+        stats.minLength = textRow?.min_length != null ? Number(textRow.min_length) : null
+        stats.maxLength = textRow?.max_length != null ? Number(textRow.max_length) : null
+        stats.avgLength = textRow?.avg_length != null ? Number(textRow.avg_length) : null
+
+        const [commonRows] = await connection.query(`
+          SELECT
+            ${quotedCol} AS val,
+            COUNT(*) AS cnt,
+            ROUND(COUNT(*) * 100.0 / ${totalRows}, 2) AS pct
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+          GROUP BY ${quotedCol}
+          ORDER BY cnt DESC
+          LIMIT 5
+        `)
+
+        const commonResult = commonRows as Array<Record<string, unknown>>
+        const commonValues: CommonValue[] = commonResult.map((row) => ({
+          value: row.val != null ? String(row.val) : null,
+          count: Number(row.cnt),
+          percentage: Number(row.pct)
+        }))
+        stats.commonValues = commonValues
+      } else if (statsType === 'datetime') {
+        const [dtRows] = await connection.query(`
+          SELECT
+            MIN(${quotedCol}) AS min_val,
+            MAX(${quotedCol}) AS max_val
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        const dtRow = (dtRows as Array<Record<string, unknown>>)[0]
+        stats.min = dtRow?.min_val != null ? String(dtRow.min_val) : null
+        stats.max = dtRow?.max_val != null ? String(dtRow.max_val) : null
+      } else if (statsType === 'boolean') {
+        const [boolRows] = await connection.query(`
+          SELECT
+            SUM(CASE WHEN ${quotedCol} = 1 THEN 1 ELSE 0 END) AS true_count,
+            SUM(CASE WHEN ${quotedCol} = 0 THEN 1 ELSE 0 END) AS false_count
+          FROM ${quotedTable}
+        `)
+
+        const boolRow = (boolRows as Array<Record<string, unknown>>)[0]
+        stats.trueCount = Number(boolRow?.true_count ?? 0)
+        stats.falseCount = Number(boolRow?.false_count ?? 0)
+      }
+
+      return stats
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getActiveQueries(config: ConnectionConfig): Promise<ActiveQuery[]> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      const [rows] = await connection.query(`
+        SELECT
+          ID AS pid,
+          USER AS user,
+          DB AS db,
+          STATE AS state,
+          TIME AS time_sec,
+          INFO AS query,
+          COMMAND AS command
+        FROM information_schema.processlist
+        WHERE COMMAND != 'Sleep'
+          AND ID != CONNECTION_ID()
+          AND INFO IS NOT NULL
+        ORDER BY TIME DESC
+      `)
+
+      return (rows as Array<Record<string, unknown>>).map((row) => ({
+        pid: Number(row.pid),
+        user: String(row.user ?? ''),
+        database: String(row.db ?? ''),
+        state: String(row.state ?? row.command ?? ''),
+        duration: `${Number(row.time_sec ?? 0)}s`,
+        durationMs: Number(row.time_sec ?? 0) * 1000,
+        query: String(row.query ?? '')
+      }))
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getTableSizes(
+    config: ConnectionConfig,
+    schema?: string
+  ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      const dbName = schema || config.database || ''
+
+      const [dbSizeRows] = await connection.query(
+        `
+        SELECT
+          SUM(data_length + index_length) AS total_size_bytes
+        FROM information_schema.tables
+        WHERE table_schema = ?
+        `,
+        [dbName]
+      )
+      const dbRow = (dbSizeRows as Array<Record<string, unknown>>)[0]
+      const totalSizeBytes = Number(dbRow?.total_size_bytes ?? 0)
+
+      const dbSize: DatabaseSizeInfo = {
+        totalSize: this.formatBytes(totalSizeBytes),
+        totalSizeBytes
+      }
+
+      const [tableRows] = await connection.query(
+        `
+        SELECT
+          table_schema AS table_schema,
+          table_name AS table_name,
+          table_rows AS row_count_estimate,
+          data_length AS data_size_bytes,
+          index_length AS index_size_bytes,
+          data_length + index_length AS total_size_bytes
+        FROM information_schema.tables
+        WHERE table_schema = ?
+          AND table_type = 'BASE TABLE'
+        ORDER BY data_length + index_length DESC
+        `,
+        [dbName]
+      )
+
+      const tables: TableSizeInfo[] = (tableRows as Array<Record<string, unknown>>).map((row) => {
+        const dataSizeBytes = Number(row.data_size_bytes ?? 0)
+        const indexSizeBytes = Number(row.index_size_bytes ?? 0)
+        const tSizeBytes = Number(row.total_size_bytes ?? 0)
+        return {
+          schema: String(row.table_schema ?? ''),
+          table: String(row.table_name ?? ''),
+          rowCountEstimate: Number(row.row_count_estimate ?? 0),
+          dataSize: this.formatBytes(dataSizeBytes),
+          dataSizeBytes,
+          indexSize: this.formatBytes(indexSizeBytes),
+          indexSizeBytes,
+          totalSize: this.formatBytes(tSizeBytes),
+          totalSizeBytes: tSizeBytes
+        }
+      })
+
+      return { dbSize, tables }
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getCacheStats(config: ConnectionConfig): Promise<CacheStats> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      const [rows] = await connection.query(`
+        SHOW STATUS LIKE 'Innodb_buffer_pool_read%'
+      `)
+
+      const statusMap = new Map<string, number>()
+      for (const row of rows as Array<Record<string, unknown>>) {
+        statusMap.set(String(row.Variable_name), Number(row.Value ?? 0))
+      }
+
+      const readRequests = statusMap.get('Innodb_buffer_pool_read_requests') ?? 0
+      const reads = statusMap.get('Innodb_buffer_pool_reads') ?? 0
+      const bufferCacheHitRatio =
+        readRequests > 0 ? Math.round(((readRequests - reads) / readRequests) * 10000) / 100 : 0
+
+      return {
+        bufferCacheHitRatio,
+        indexHitRatio: bufferCacheHitRatio
+      }
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getLocks(config: ConnectionConfig): Promise<LockInfo[]> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+
+      try {
+        const [rows] = await connection.query(`
+          SELECT
+            r.REQUESTING_ENGINE_TRANSACTION_ID AS blocked_trx,
+            r.BLOCKING_ENGINE_TRANSACTION_ID AS blocking_trx,
+            w.PROCESSLIST_ID AS blocked_pid,
+            w.PROCESSLIST_USER AS blocked_user,
+            w.PROCESSLIST_INFO AS blocked_query,
+            b.PROCESSLIST_ID AS blocking_pid,
+            b.PROCESSLIST_USER AS blocking_user,
+            b.PROCESSLIST_INFO AS blocking_query,
+            r.LOCK_TYPE AS lock_type,
+            CONCAT(r.OBJECT_SCHEMA, '.', r.OBJECT_NAME) AS relation,
+            TIMESTAMPDIFF(SECOND, w.PROCESSLIST_TIME, 0) AS wait_sec
+          FROM performance_schema.data_lock_waits r
+          JOIN performance_schema.threads w_t ON w_t.THREAD_ID = r.REQUESTING_THREAD_ID
+          JOIN performance_schema.processlist w ON w.ID = w_t.PROCESSLIST_ID
+          JOIN performance_schema.threads b_t ON b_t.THREAD_ID = r.BLOCKING_THREAD_ID
+          JOIN performance_schema.processlist b ON b.ID = b_t.PROCESSLIST_ID
+        `)
+
+        return (rows as Array<Record<string, unknown>>).map((row) => {
+          const waitSec = Math.abs(Number(row.wait_sec ?? 0))
+          return {
+            blockedPid: Number(row.blocked_pid ?? 0),
+            blockedUser: String(row.blocked_user ?? ''),
+            blockedQuery: String(row.blocked_query ?? ''),
+            blockingPid: Number(row.blocking_pid ?? 0),
+            blockingUser: String(row.blocking_user ?? ''),
+            blockingQuery: String(row.blocking_query ?? ''),
+            lockType: String(row.lock_type ?? ''),
+            relation: row.relation ? String(row.relation) : undefined,
+            waitDuration: `${waitSec}s`,
+            waitDurationMs: waitSec * 1000
+          }
+        })
+      } catch {
+        return []
+      }
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async killQuery(
+    config: ConnectionConfig,
+    pid: number
+  ): Promise<{ success: boolean; error?: string }> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+      await connection.query(`KILL QUERY ${Number(pid)}`)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 bytes'
+    const units = ['bytes', 'kB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
   }
 }

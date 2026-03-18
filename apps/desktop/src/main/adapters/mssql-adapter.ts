@@ -13,7 +13,15 @@ import type {
   CustomTypeInfo,
   StatementResult,
   RoutineInfo,
-  RoutineParameterInfo
+  RoutineParameterInfo,
+  ColumnStats,
+  ColumnStatsType,
+  CommonValue,
+  ActiveQuery,
+  TableSizeInfo,
+  CacheStats,
+  LockInfo,
+  DatabaseSizeInfo
 } from '@shared/index'
 import type {
   DatabaseAdapter,
@@ -1144,5 +1152,499 @@ export class MSSQLAdapter implements DatabaseAdapter {
       await pool.close().catch(() => {})
       closeTunnel(tunnelSession)
     }
+  }
+
+  private classifyColumnType(dataType: string): ColumnStatsType {
+    const lower = dataType.toLowerCase()
+    if (
+      lower.includes('int') ||
+      lower.includes('decimal') ||
+      lower.includes('numeric') ||
+      lower.includes('float') ||
+      lower.includes('real') ||
+      lower.includes('money') ||
+      lower === 'number'
+    ) {
+      return 'numeric'
+    }
+    if (lower.includes('date') || lower.includes('time')) {
+      return 'datetime'
+    }
+    if (lower === 'bit') {
+      return 'boolean'
+    }
+    if (
+      lower.includes('char') ||
+      lower.includes('text') ||
+      lower.includes('varchar') ||
+      lower.includes('nvarchar') ||
+      lower.includes('nchar')
+    ) {
+      return 'text'
+    }
+    return 'other'
+  }
+
+  async getColumnStats(
+    config: ConnectionConfig,
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStats> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+
+    try {
+      await pool.connect()
+
+      const statsType = this.classifyColumnType(dataType)
+      const quoteIdent = (name: string) => '[' + name.replace(/\]/g, ']]') + ']'
+      const quotedTable = `${quoteIdent(schema)}.${quoteIdent(table)}`
+      const quotedCol = quoteIdent(column)
+      const quotedCol = `[${column}]`
+
+      const baseResult = await pool.request().query(`
+        SELECT
+          COUNT(*) AS total_rows,
+          COUNT(*) - COUNT(${quotedCol}) AS null_count,
+          COUNT(DISTINCT ${quotedCol}) AS distinct_count
+        FROM ${quotedTable}
+      `)
+
+      const baseRow = baseResult.recordset[0]
+      const totalRows = Number(baseRow.total_rows)
+      const nullCount = Number(baseRow.null_count)
+      const distinctCount = Number(baseRow.distinct_count)
+      const nullPercentage = totalRows > 0 ? (nullCount / totalRows) * 100 : 0
+      const distinctPercentage = totalRows > 0 ? (distinctCount / totalRows) * 100 : 0
+
+      const stats: ColumnStats = {
+        column,
+        dataType,
+        statsType,
+        totalRows,
+        nullCount,
+        nullPercentage,
+        distinctCount,
+        distinctPercentage
+      }
+
+      if (statsType === 'numeric') {
+        const numResult = await pool.request().query(`
+          SELECT
+            CAST(MIN(${quotedCol}) AS NVARCHAR(MAX)) AS min_val,
+            CAST(MAX(${quotedCol}) AS NVARCHAR(MAX)) AS max_val,
+            AVG(CAST(${quotedCol} AS FLOAT)) AS avg_val,
+            STDEV(CAST(${quotedCol} AS FLOAT)) AS stddev_val
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        const numRow = numResult.recordset[0]
+        stats.min = numRow?.min_val ?? null
+        stats.max = numRow?.max_val ?? null
+        stats.avg = numRow?.avg_val != null ? Number(numRow.avg_val) : null
+        stats.stdDev = numRow?.stddev_val != null ? Number(numRow.stddev_val) : null
+
+        if (totalRows <= 1_000_000 && totalRows > 0) {
+          const medianResult = await pool.request().query(`
+            SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY CAST(${quotedCol} AS FLOAT))
+              OVER () AS median_val
+            FROM ${quotedTable}
+            WHERE ${quotedCol} IS NOT NULL
+          `)
+          if (medianResult.recordset.length > 0) {
+            stats.median =
+              medianResult.recordset[0]?.median_val != null
+                ? Number(medianResult.recordset[0].median_val)
+                : null
+          }
+
+          const mmResult = await pool.request().query(`
+            SELECT
+              MIN(CAST(${quotedCol} AS FLOAT)) AS min_val,
+              MAX(CAST(${quotedCol} AS FLOAT)) AS max_val
+            FROM ${quotedTable}
+            WHERE ${quotedCol} IS NOT NULL
+          `)
+          const mmRow = mmResult.recordset[0]
+          const minVal = Number(mmRow?.min_val)
+          const maxVal = Number(mmRow?.max_val)
+
+          if (!isNaN(minVal) && !isNaN(maxVal) && minVal < maxVal) {
+            const histResult = await pool.request().query(`
+              SELECT
+                NTILE(10) OVER (ORDER BY CAST(${quotedCol} AS FLOAT)) AS bucket,
+                CAST(${quotedCol} AS FLOAT) AS val
+              FROM ${quotedTable}
+              WHERE ${quotedCol} IS NOT NULL
+            `)
+
+            const bucketMap = new Map<number, { min: number; max: number; count: number }>()
+            for (const row of histResult.recordset) {
+              const b = Number(row.bucket)
+              const v = Number(row.val)
+              if (!bucketMap.has(b)) {
+                bucketMap.set(b, { min: v, max: v, count: 0 })
+              }
+              const entry = bucketMap.get(b)!
+              if (v < entry.min) entry.min = v
+              if (v > entry.max) entry.max = v
+              entry.count++
+            }
+
+            stats.histogram = Array.from(bucketMap.entries())
+              .sort(([a], [b]) => a - b)
+              .map(([, v]) => v)
+          }
+        }
+      } else if (statsType === 'text') {
+        const textResult = await pool.request().query(`
+          SELECT
+            MIN(LEN(${quotedCol})) AS min_length,
+            MAX(LEN(${quotedCol})) AS max_length,
+            AVG(CAST(LEN(${quotedCol}) AS FLOAT)) AS avg_length
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        const textRow = textResult.recordset[0]
+        stats.minLength = textRow?.min_length != null ? Number(textRow.min_length) : null
+        stats.maxLength = textRow?.max_length != null ? Number(textRow.max_length) : null
+        stats.avgLength = textRow?.avg_length != null ? Number(textRow.avg_length) : null
+
+        const commonResult = await pool.request().query(`
+          SELECT TOP 5
+            CAST(${quotedCol} AS NVARCHAR(MAX)) AS val,
+            COUNT(*) AS cnt,
+            ROUND(COUNT(*) * 100.0 / ${totalRows}, 2) AS pct
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+          GROUP BY CAST(${quotedCol} AS NVARCHAR(MAX))
+          ORDER BY cnt DESC
+        `)
+
+        const commonValues: CommonValue[] = commonResult.recordset.map((row) => ({
+          value: row.val != null ? String(row.val) : null,
+          count: Number(row.cnt),
+          percentage: Number(row.pct)
+        }))
+        stats.commonValues = commonValues
+      } else if (statsType === 'datetime') {
+        const dtResult = await pool.request().query(`
+          SELECT
+            CAST(MIN(${quotedCol}) AS NVARCHAR(MAX)) AS min_val,
+            CAST(MAX(${quotedCol}) AS NVARCHAR(MAX)) AS max_val
+          FROM ${quotedTable}
+          WHERE ${quotedCol} IS NOT NULL
+        `)
+
+        const dtRow = dtResult.recordset[0]
+        stats.min = dtRow?.min_val ?? null
+        stats.max = dtRow?.max_val ?? null
+      } else if (statsType === 'boolean') {
+        const boolResult = await pool.request().query(`
+          SELECT
+            SUM(CASE WHEN ${quotedCol} = 1 THEN 1 ELSE 0 END) AS true_count,
+            SUM(CASE WHEN ${quotedCol} = 0 THEN 1 ELSE 0 END) AS false_count
+          FROM ${quotedTable}
+        `)
+
+        const boolRow = boolResult.recordset[0]
+        stats.trueCount = Number(boolRow?.true_count ?? 0)
+        stats.falseCount = Number(boolRow?.false_count ?? 0)
+      }
+
+      return stats
+    } finally {
+      await pool.close().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getActiveQueries(config: ConnectionConfig): Promise<ActiveQuery[]> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+
+    try {
+      await pool.connect()
+
+      const result = await pool.request().query(`
+        SELECT
+          r.session_id AS pid,
+          s.login_name AS [user],
+          DB_NAME(r.database_id) AS [database],
+          r.status AS state,
+          r.total_elapsed_time AS duration_ms,
+          CAST(r.total_elapsed_time / 1000.0 AS VARCHAR) + 's' AS duration,
+          t.text AS query,
+          r.wait_type AS wait_event
+        FROM sys.dm_exec_requests r
+        JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id
+        CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) t
+        WHERE r.session_id != @@SPID
+          AND r.status != 'background'
+        ORDER BY r.total_elapsed_time DESC
+      `)
+
+      return result.recordset.map((row) => ({
+        pid: Number(row.pid),
+        user: String(row.user ?? ''),
+        database: String(row.database ?? ''),
+        state: String(row.state ?? ''),
+        duration: String(row.duration ?? '0s'),
+        durationMs: Number(row.duration_ms ?? 0),
+        query: String(row.query ?? ''),
+        waitEvent: row.wait_event ? String(row.wait_event) : undefined
+      }))
+    } finally {
+      await pool.close().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getTableSizes(
+    config: ConnectionConfig,
+    schema?: string
+  ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+
+    try {
+      await pool.connect()
+
+      const dbSizeResult = await pool.request().query(`
+        SELECT
+          SUM(size * 8 * 1024) AS total_size_bytes
+        FROM sys.database_files
+      `)
+      const totalSizeBytes = Number(dbSizeResult.recordset[0]?.total_size_bytes ?? 0)
+      const dbSize: DatabaseSizeInfo = {
+        totalSize: this.formatBytes(totalSizeBytes),
+        totalSizeBytes
+      }
+
+      const schemaFilter = schema ? `AND s.name = @schema` : ''
+      const request = pool.request()
+      if (schema) {
+        request.input('schema', sql.NVarChar, schema)
+      }
+
+      const tablesResult = await request.query(`
+        SELECT
+          s.name AS [schema],
+          t.name AS [table],
+          SUM(p.rows) AS row_count_estimate,
+          SUM(CASE WHEN i.index_id < 2
+            THEN a.used_pages * 8 * 1024
+            ELSE 0
+          END) AS data_size_bytes,
+          SUM(CASE WHEN i.index_id >= 2
+            THEN a.used_pages * 8 * 1024
+            ELSE 0
+          END) AS index_size_bytes,
+          SUM(a.used_pages * 8 * 1024) AS total_size_bytes
+        FROM sys.tables t
+        JOIN sys.schemas s ON t.schema_id = s.schema_id
+        JOIN sys.indexes i ON t.object_id = i.object_id
+        JOIN sys.partitions p ON i.object_id = p.object_id AND i.index_id = p.index_id
+        JOIN sys.allocation_units a ON p.partition_id = a.container_id
+        WHERE t.is_ms_shipped = 0
+          ${schemaFilter}
+        GROUP BY s.name, t.name
+        ORDER BY SUM(a.used_pages) DESC
+      `)
+
+      const tables: TableSizeInfo[] = tablesResult.recordset.map((row) => {
+        const dataSizeBytes = Number(row.data_size_bytes ?? 0)
+        const indexSizeBytes = Number(row.index_size_bytes ?? 0)
+        const tSizeBytes = Number(row.total_size_bytes ?? 0)
+        return {
+          schema: String(row.schema),
+          table: String(row.table),
+          rowCountEstimate: Number(row.row_count_estimate ?? 0),
+          dataSize: this.formatBytes(dataSizeBytes),
+          dataSizeBytes,
+          indexSize: this.formatBytes(indexSizeBytes),
+          indexSizeBytes,
+          totalSize: this.formatBytes(tSizeBytes),
+          totalSizeBytes: tSizeBytes
+        }
+      })
+
+      return { dbSize, tables }
+    } finally {
+      await pool.close().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getCacheStats(config: ConnectionConfig): Promise<CacheStats> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+
+    try {
+      await pool.connect()
+
+      const cacheResult = await pool.request().query(`
+        SELECT
+          CASE WHEN SUM(CAST(page_count AS BIGINT)) = 0 THEN 0
+            ELSE ROUND(
+              CAST(SUM(CASE WHEN is_modified = 0 THEN 1 ELSE 0 END) AS FLOAT)
+              / SUM(CAST(page_count AS BIGINT)) * 100, 2
+            )
+          END AS buffer_cache_hit_ratio
+        FROM sys.dm_os_buffer_descriptors
+        WHERE database_id = DB_ID()
+      `)
+
+      const bufferCacheHitRatio = Number(cacheResult.recordset[0]?.buffer_cache_hit_ratio ?? 0)
+
+      let indexHitRatio = bufferCacheHitRatio
+      try {
+        const indexResult = await pool.request().query(`
+          SELECT
+            CASE WHEN SUM(user_seeks + user_scans + user_lookups) = 0 THEN 0
+              ELSE ROUND(
+                CAST(SUM(user_seeks + user_lookups) AS FLOAT)
+                / SUM(user_seeks + user_scans + user_lookups) * 100, 2
+              )
+            END AS index_hit_ratio
+          FROM sys.dm_db_index_usage_stats
+          WHERE database_id = DB_ID()
+        `)
+        indexHitRatio = Number(indexResult.recordset[0]?.index_hit_ratio ?? bufferCacheHitRatio)
+      } catch {
+        // fall through with default
+      }
+
+      return {
+        bufferCacheHitRatio,
+        indexHitRatio
+      }
+    } finally {
+      await pool.close().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async getLocks(config: ConnectionConfig): Promise<LockInfo[]> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+
+    try {
+      await pool.connect()
+
+      const result = await pool.request().query(`
+        SELECT
+          blocked.request_session_id AS blocked_pid,
+          blocked_s.login_name AS blocked_user,
+          blocked_t.text AS blocked_query,
+          blocker.request_session_id AS blocking_pid,
+          blocker_s.login_name AS blocking_user,
+          blocker_t.text AS blocking_query,
+          blocked.resource_type AS lock_type,
+          blocked.resource_description AS relation,
+          r.total_elapsed_time AS wait_duration_ms,
+          CAST(r.total_elapsed_time / 1000.0 AS VARCHAR) + 's' AS wait_duration
+        FROM sys.dm_tran_locks blocked
+        JOIN sys.dm_exec_sessions blocked_s ON blocked.request_session_id = blocked_s.session_id
+        JOIN sys.dm_exec_requests r ON blocked.request_session_id = r.session_id
+        CROSS APPLY sys.dm_exec_sql_text(r.sql_handle) blocked_t
+        JOIN sys.dm_tran_locks blocker ON (
+          blocked.resource_type = blocker.resource_type
+          AND blocked.resource_database_id = blocker.resource_database_id
+          AND blocked.resource_associated_entity_id = blocker.resource_associated_entity_id
+          AND blocked.request_session_id != blocker.request_session_id
+        )
+        JOIN sys.dm_exec_sessions blocker_s ON blocker.request_session_id = blocker_s.session_id
+        OUTER APPLY (
+          SELECT TOP 1 req.sql_handle FROM sys.dm_exec_requests req
+          WHERE req.session_id = blocker.request_session_id
+        ) blocker_r
+        OUTER APPLY sys.dm_exec_sql_text(blocker_r.sql_handle) blocker_t
+        WHERE blocked.request_status = 'WAIT'
+          AND blocker.request_status = 'GRANT'
+      `)
+
+      return result.recordset.map((row) => ({
+        blockedPid: Number(row.blocked_pid ?? 0),
+        blockedUser: String(row.blocked_user ?? ''),
+        blockedQuery: String(row.blocked_query ?? ''),
+        blockingPid: Number(row.blocking_pid ?? 0),
+        blockingUser: String(row.blocking_user ?? ''),
+        blockingQuery: String(row.blocking_query ?? ''),
+        lockType: String(row.lock_type ?? ''),
+        relation: row.relation ? String(row.relation) : undefined,
+        waitDuration: String(row.wait_duration ?? '0s'),
+        waitDurationMs: Number(row.wait_duration_ms ?? 0)
+      }))
+    } finally {
+      await pool.close().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async killQuery(
+    config: ConnectionConfig,
+    pid: number
+  ): Promise<{ success: boolean; error?: string }> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+
+    try {
+      await pool.connect()
+      await pool.request().query(`KILL ${Number(pid)}`)
+      return { success: true }
+    } catch (err) {
+      return { success: false, error: String(err) }
+    } finally {
+      await pool.close().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  private formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 bytes'
+    const units = ['bytes', 'kB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(1024))
+    return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
   }
 }

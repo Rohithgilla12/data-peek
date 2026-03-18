@@ -21,6 +21,7 @@ import { getTypeColor } from '@/lib/type-colors'
 import { cn } from '@/lib/utils'
 import { useEditStore } from '@/stores/edit-store'
 import { useSettingsStore } from '@/stores/settings-store'
+import { useMaskingStore } from '@/stores/masking-store'
 import { PaginationControls } from '@/components/pagination-controls'
 import type { ColumnInfo, ConnectionConfig, EditContext, ForeignKeyInfo } from '@data-peek/shared'
 import {
@@ -39,12 +40,15 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  BarChart2,
   Copy,
   Filter,
   Link2,
+  Lock,
   MoreHorizontal,
   RotateCcw,
   Trash2,
+  Unlock,
   X
 } from 'lucide-react'
 import * as React from 'react'
@@ -87,6 +91,8 @@ interface EditableDataTableProps<TData> {
   onPageSizeChange?: (size: number) => void
   onForeignKeyClick?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
+  /** Called when user requests column statistics */
+  onColumnStatsClick?: (column: DataTableColumn) => void
   /** Called after changes are successfully committed */
   onChangesCommitted?: () => void
   /** Server-side pagination: current page (1-indexed) */
@@ -95,6 +101,33 @@ interface EditableDataTableProps<TData> {
   serverTotalRowCount?: number | null
   /** Server-side pagination: called when page or pageSize changes */
   onServerPaginationChange?: (page: number, pageSize: number) => void
+}
+
+function MaskedEditCell({
+  hoverToPeek,
+  children
+}: {
+  hoverToPeek: boolean
+  children: React.ReactNode
+}) {
+  const [peeking, setPeeking] = React.useState(false)
+
+  const handleMouseEnter = (e: React.MouseEvent) => {
+    if (hoverToPeek && e.altKey) setPeeking(true)
+  }
+
+  const handleMouseLeave = () => setPeeking(false)
+
+  return (
+    <span
+      style={peeking ? undefined : { filter: 'blur(5px)', userSelect: 'none' }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="inline-block select-none pointer-events-none"
+    >
+      {children}
+    </span>
+  )
 }
 
 export function EditableDataTable<TData extends Record<string, unknown>>({
@@ -110,6 +143,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   onPageSizeChange,
   onForeignKeyClick,
   onForeignKeyOpenTab,
+  onColumnStatsClick,
   onChangesCommitted,
   serverCurrentPage,
   serverTotalRowCount,
@@ -117,6 +151,27 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
 }: EditableDataTableProps<TData>) {
   const { defaultPageSize } = useSettingsStore()
   const pageSize = propPageSize ?? defaultPageSize
+
+  const toggleColumnMask = useMaskingStore((s) => s.toggleColumnMask)
+  const hoverToPeek = useMaskingStore((s) => s.hoverToPeek)
+  const maskedColumnsMap = useMaskingStore((s) => s.maskedColumns)
+  const autoMaskRules = useMaskingStore((s) => s.autoMaskRules)
+  const autoMaskEnabled = useMaskingStore((s) => s.autoMaskEnabled)
+  const getEffectiveMaskedColumns = useMaskingStore((s) => s.getEffectiveMaskedColumns)
+
+  const allColumnNames = React.useMemo(() => columnDefs.map((c) => c.name), [columnDefs])
+  const effectiveMasked = React.useMemo(
+    () => getEffectiveMaskedColumns(tabId, allColumnNames),
+    [
+      tabId,
+      allColumnNames,
+      getEffectiveMaskedColumns,
+      maskedColumnsMap,
+      autoMaskRules,
+      autoMaskEnabled
+    ]
+  )
+
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [showFilters, setShowFilters] = React.useState(false)
@@ -581,34 +636,72 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         accessorKey: col.name,
         header: ({ column }) => {
           const isSorted = column.getIsSorted()
+          const isMasked = effectiveMasked.has(col.name)
           return (
             <div className="flex flex-col gap-0.5">
-              <Button
-                variant="ghost"
-                className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50"
-                onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-              >
-                <span>{displayName}</span>
-                {col.isPrimaryKey && (
-                  <span className="ml-1 text-amber-500" title="Primary Key">
-                    🔑
-                  </span>
-                )}
-                {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
-                <Badge
-                  variant="outline"
-                  className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+              <div className="flex items-center">
+                <Button
+                  variant="ghost"
+                  className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50 flex-1"
+                  onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
                 >
-                  {col.dataType}
-                </Badge>
-                {isSorted === 'asc' ? (
-                  <ArrowUp className="ml-1 size-3 text-primary" />
-                ) : isSorted === 'desc' ? (
-                  <ArrowDown className="ml-1 size-3 text-primary" />
-                ) : (
-                  <ArrowUpDown className="ml-1 size-3 opacity-50" />
-                )}
-              </Button>
+                  <span>{displayName}</span>
+                  {col.isPrimaryKey && (
+                    <span className="ml-1 text-amber-500" title="Primary Key">
+                      🔑
+                    </span>
+                  )}
+                  {isMasked && <Lock className="ml-1 size-3 text-amber-500" />}
+                  {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
+                  <Badge
+                    variant="outline"
+                    className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                  >
+                    {col.dataType}
+                  </Badge>
+                  {isSorted === 'asc' ? (
+                    <ArrowUp className="ml-1 size-3 text-primary" />
+                  ) : isSorted === 'desc' ? (
+                    <ArrowDown className="ml-1 size-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                  )}
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-5 ml-0.5 opacity-0 group-hover/head:opacity-100 hover:opacity-100 focus:opacity-100"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <MoreHorizontal className="size-3" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    {onColumnStatsClick && (
+                      <DropdownMenuItem onClick={() => onColumnStatsClick(col)}>
+                        <BarChart2 className="size-3 mr-2" />
+                        Column Statistics
+                      </DropdownMenuItem>
+                    )}
+                    {onColumnStatsClick && <DropdownMenuSeparator />}
+                    <DropdownMenuItem onClick={() => toggleColumnMask(tabId, col.name)}>
+                      {isMasked ? (
+                        <>
+                          <Unlock className="size-3 mr-2" />
+                          Unmask Column
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="size-3 mr-2" />
+                          Mask Column
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
               {col.foreignKey && (
                 <span className="text-[9px] text-muted-foreground px-2 -mt-0.5">
                   → {col.foreignKey.referencedTable}
@@ -628,8 +721,28 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           const isEditing =
             tabEdit?.editingCell?.rowIndex === rowIndex &&
             tabEdit?.editingCell?.columnName === col.name
+          const isMasked = effectiveMasked.has(col.name)
 
           if (isEditMode) {
+            if (isMasked) {
+              return (
+                <MaskedEditCell hoverToPeek={hoverToPeek}>
+                  <EditableCell
+                    value={displayValue}
+                    originalValue={value}
+                    dataType={col.dataType}
+                    isEditing={false}
+                    isModified={isModified}
+                    isDeleted={isDeleted}
+                    enumValues={col.enumValues}
+                    columnName={col.name}
+                    onStartEdit={() => {}}
+                    onSave={() => {}}
+                    onCancel={() => {}}
+                  />
+                </MaskedEditCell>
+              )
+            }
             return (
               <EditableCell
                 value={displayValue}
@@ -656,48 +769,56 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           // Single-click to enter edit mode for simple cells
           // Double-click for cells with special interactive elements (JSON viewer, FK navigation)
           const handleActivate = () => {
-            if (!canEdit || !editContext) return
+            if (!canEdit || !editContext || isMasked) return
             enterEditMode(tabId, editContext)
             setTimeout(() => startCellEdit(tabId, rowIndex, col.name), 0)
           }
 
           if (value === null || value === undefined) {
-            return (
+            const nullContent = (
               <span
                 className={cn(
                   'text-muted-foreground/50 italic px-1 py-0.5 rounded',
-                  canEdit && 'cursor-pointer hover:bg-accent/50'
+                  canEdit && !isMasked && 'cursor-pointer hover:bg-accent/50'
                 )}
                 onClick={handleActivate}
               >
                 NULL
               </span>
             )
+            if (isMasked) {
+              return <MaskedEditCell hoverToPeek={hoverToPeek}>{nullContent}</MaskedEditCell>
+            }
+            return nullContent
           }
 
           // Handle JSON/JSONB types specially
           // Single-click opens viewer, double-click on cell background enters edit mode
           const lowerType = col.dataType.toLowerCase()
           if (lowerType.includes('json')) {
-            return (
+            const jsonContent = (
               <div
                 onDoubleClick={handleActivate}
-                className={cn('flex items-center', canEdit && 'cursor-pointer')}
-                title={canEdit ? 'Double-click to edit' : undefined}
+                className={cn('flex items-center', canEdit && !isMasked && 'cursor-pointer')}
+                title={canEdit && !isMasked ? 'Double-click to edit' : undefined}
               >
                 <JsonCellValue value={value} columnName={col.name} />
               </div>
             )
+            if (isMasked) {
+              return <MaskedEditCell hoverToPeek={hoverToPeek}>{jsonContent}</MaskedEditCell>
+            }
+            return jsonContent
           }
 
           // Handle Foreign Key columns
           // Single-click navigates, double-click on cell background enters edit mode
           if (col.foreignKey) {
-            return (
+            const fkContent = (
               <div
                 onDoubleClick={handleActivate}
-                className={cn('flex items-center', canEdit && 'cursor-pointer')}
-                title={canEdit ? 'Double-click to edit' : undefined}
+                className={cn('flex items-center', canEdit && !isMasked && 'cursor-pointer')}
+                title={canEdit && !isMasked ? 'Double-click to edit' : undefined}
               >
                 <FKCellValue
                   value={value}
@@ -707,22 +828,30 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 />
               </div>
             )
+            if (isMasked) {
+              return <MaskedEditCell hoverToPeek={hoverToPeek}>{fkContent}</MaskedEditCell>
+            }
+            return fkContent
           }
 
           const stringValue = String(value)
           const isLong = stringValue.length > 50
 
-          return (
+          const textContent = (
             <span
               className={cn(
                 'truncate max-w-[300px] block px-1 py-0.5 rounded',
-                canEdit && 'cursor-pointer hover:bg-accent/50'
+                canEdit && !isMasked && 'cursor-pointer hover:bg-accent/50'
               )}
               onClick={handleActivate}
             >
               {isLong ? stringValue.substring(0, 50) + '...' : stringValue}
             </span>
           )
+          if (isMasked) {
+            return <MaskedEditCell hoverToPeek={hoverToPeek}>{textContent}</MaskedEditCell>
+          }
+          return textContent
         },
         filterFn: 'includesString'
       })
@@ -748,7 +877,11 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     editContext,
     enterEditMode,
     onForeignKeyClick,
-    onForeignKeyOpenTab
+    onForeignKeyOpenTab,
+    onColumnStatsClick,
+    effectiveMasked,
+    toggleColumnMask,
+    hoverToPeek
   ])
 
   const table = useReactTable({
@@ -891,7 +1024,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       {headerGroup.headers.map((header) => (
                         <TableHead
                           key={header.id}
-                          className="h-10 text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/95"
+                          className="h-10 text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/95 group/head"
                           style={{ width: header.column.getSize() }}
                         >
                           {header.isPlaceholder
