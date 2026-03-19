@@ -8,6 +8,8 @@
     "dev": "turbo run dev --filter=@data-peek/desktop",
     "dev:web": "turbo run dev --filter=@data-peek/web",
     "dev:docs": "turbo run dev --filter=docs",
+    "dev:video": "turbo run dev --filter=@data-peek/video",
+    "render:video": "turbo run render --filter=@data-peek/video",
     "build": "turbo run build",
     "build:desktop": "turbo run build --filter=@data-peek/desktop",
     "build:web": "turbo run build --filter=@data-peek/web",

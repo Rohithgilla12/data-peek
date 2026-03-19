@@ -1208,7 +1208,6 @@ export class MSSQLAdapter implements DatabaseAdapter {
       const quoteIdent = (name: string) => '[' + name.replace(/\]/g, ']]') + ']'
       const quotedTable = `${quoteIdent(schema)}.${quoteIdent(table)}`
       const quotedCol = quoteIdent(column)
-      const quotedCol = `[${column}]`
 
       const baseResult = await pool.request().query(`
         SELECT

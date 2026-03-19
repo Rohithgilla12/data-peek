@@ -51,6 +51,7 @@ export function QueryEditor() {
       const timer = setTimeout(() => setFlashClass(''), 400)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [result])
 
   useEffect(() => {
@@ -59,6 +60,7 @@ export function QueryEditor() {
       const timer = setTimeout(() => setFlashClass(''), 400)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [error])
 
   const handleRunQuery = () => {

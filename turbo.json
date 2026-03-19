@@ -62,6 +62,10 @@
     "format": {
       "outputs": [],
       "cache": false
+    },
+    "render": {
+      "outputs": ["out/**"],
+      "cache": false
     }
   }
 }

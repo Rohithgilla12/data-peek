@@ -261,6 +261,7 @@ export function EditableCell({
       return () => clearTimeout(timer)
     }
     wasEditingRef.current = isEditing
+    return undefined
   }, [isEditing, isModified])
 
   const isJson = dataType.toLowerCase().includes('json')

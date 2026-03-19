@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto'
 import { Client, type ClientConfig } from 'pg'
 import { BrowserWindow, app } from 'electron'
 import { join } from 'path'

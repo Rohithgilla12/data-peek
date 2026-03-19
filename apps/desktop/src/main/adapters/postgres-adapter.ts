@@ -1178,7 +1178,6 @@ export class PostgresAdapter implements DatabaseAdapter {
       const quoteIdent = (name: string) => '"' + name.replace(/"/g, '""') + '"'
       const quotedTable = `${quoteIdent(schema)}.${quoteIdent(table)}`
       const quotedCol = quoteIdent(column)
-      const quotedCol = `"${column}"`
 
       const baseResult = await client.query(`
         SELECT
