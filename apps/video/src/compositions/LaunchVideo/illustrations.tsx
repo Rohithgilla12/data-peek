@@ -134,6 +134,7 @@ export const DataMaskingIllustration: React.FC = () => {
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
+        position: 'relative',
       }}
     >
       <div
