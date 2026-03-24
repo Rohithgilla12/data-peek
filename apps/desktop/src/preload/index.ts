@@ -56,7 +56,13 @@ import type {
   TableSizeInfo,
   CacheStats,
   LockInfo,
-  DatabaseSizeInfo
+  DatabaseSizeInfo,
+  PgExportOptions,
+  PgExportProgress,
+  PgExportResult,
+  PgImportOptions,
+  PgImportProgress,
+  PgImportResult
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -534,6 +540,28 @@ const api = {
       const handler = (_: unknown, event: PgNotificationEvent): void => callback(event)
       ipcRenderer.on('pg-notify:event', handler)
       return () => ipcRenderer.removeListener('pg-notify:event', handler)
+    }
+  },
+  pgDump: {
+    export: (
+      config: ConnectionConfig,
+      options: PgExportOptions
+    ): Promise<IpcResponse<PgExportResult>> => ipcRenderer.invoke('db:pg-export', config, options),
+    cancelExport: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('db:pg-export-cancel'),
+    onExportProgress: (callback: (progress: PgExportProgress) => void): (() => void) => {
+      const handler = (_: unknown, progress: PgExportProgress): void => callback(progress)
+      ipcRenderer.on('db:pg-export-progress', handler)
+      return () => ipcRenderer.removeListener('db:pg-export-progress', handler)
+    },
+    import: (
+      config: ConnectionConfig,
+      options: PgImportOptions
+    ): Promise<IpcResponse<PgImportResult>> => ipcRenderer.invoke('db:pg-import', config, options),
+    cancelImport: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('db:pg-import-cancel'),
+    onImportProgress: (callback: (progress: PgImportProgress) => void): (() => void) => {
+      const handler = (_: unknown, progress: PgImportProgress): void => callback(progress)
+      ipcRenderer.on('db:pg-import-progress', handler)
+      return () => ipcRenderer.removeListener('db:pg-import-progress', handler)
     }
   },
   window: {

@@ -47,7 +47,13 @@ import type {
   TableSizeInfo,
   CacheStats,
   LockInfo,
-  DatabaseSizeInfo
+  DatabaseSizeInfo,
+  PgExportOptions,
+  PgExportProgress,
+  PgExportResult,
+  PgImportOptions,
+  PgImportProgress,
+  PgImportResult
 } from '@shared/index'
 
 // AI Types
@@ -427,6 +433,20 @@ interface DataPeekApi {
       config: ConnectionConfig,
       pid: number
     ) => Promise<IpcResponse<{ success: boolean; error?: string }>>
+  }
+  pgDump: {
+    export: (
+      config: ConnectionConfig,
+      options: PgExportOptions
+    ) => Promise<IpcResponse<PgExportResult>>
+    cancelExport: () => Promise<IpcResponse<void>>
+    onExportProgress: (callback: (progress: PgExportProgress) => void) => () => void
+    import: (
+      config: ConnectionConfig,
+      options: PgImportOptions
+    ) => Promise<IpcResponse<PgImportResult>>
+    cancelImport: () => Promise<IpcResponse<void>>
+    onImportProgress: (callback: (progress: PgImportProgress) => void) => () => void
   }
   files: {
     openFilePicker: () => Promise<string | null>

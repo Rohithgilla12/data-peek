@@ -17,6 +17,7 @@ import { registerImportHandlers } from './import-handlers'
 import { registerDataGenHandlers } from './data-gen-handlers'
 import { registerPgNotifyHandlers } from './pg-notify-handlers'
 import { registerHealthHandlers } from './health-handlers'
+import { registerPgExportImportHandlers } from './pg-export-import-handlers'
 
 const log = createLogger('ipc')
 
@@ -80,6 +81,9 @@ export function registerAllHandlers(stores: IpcStores): void {
   // Health monitor diagnostics
   registerHealthHandlers()
 
+  // PostgreSQL export/import (pg_dump/pg_restore)
+  registerPgExportImportHandlers()
+
   log.debug('All handlers registered')
 }
 
@@ -97,3 +101,4 @@ export { registerImportHandlers } from './import-handlers'
 export { registerDataGenHandlers } from './data-gen-handlers'
 export { registerPgNotifyHandlers } from './pg-notify-handlers'
 export { registerHealthHandlers } from './health-handlers'
+export { registerPgExportImportHandlers } from './pg-export-import-handlers'
