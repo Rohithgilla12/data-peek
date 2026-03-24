@@ -122,8 +122,7 @@ The PowerShell installer downloads the latest `setup.exe` release and runs it fo
 #### macOS: Homebrew
 
 ```bash
-brew tap Rohithgilla12/tap
-brew install --cask data-peek
+brew install --cask Rohithgilla12/tap/data-peek
 ```
 
 #### Download
