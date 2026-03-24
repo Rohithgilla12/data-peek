@@ -24,7 +24,7 @@ cask "data-peek" do
 
   depends_on macos: ">= :catalina"
 
-  app "Data Peek.app"
+  app "data-peek.app"
 
   zap trash: [
     "~/Library/Application Support/data-peek",
