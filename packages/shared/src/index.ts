@@ -2038,3 +2038,81 @@ export interface DatabaseSizeInfo {
   totalSize: string
   totalSizeBytes: number
 }
+
+// ── PostgreSQL Export/Import (pg_dump / pg_restore) ──────────────────────────
+
+export type PgExportMode = 'full' | 'schema-only' | 'data-only'
+
+export interface PgExportOptions {
+  mode: PgExportMode
+  schemas: string[]
+  tables: string[]
+  excludeTables: string[]
+  includeTypes: boolean
+  includeSequences: boolean
+  includeFunctions: boolean
+  includeViews: boolean
+  dataBatchSize: number
+  includeDropStatements: boolean
+  includeTransaction: boolean
+}
+
+export type PgExportPhase =
+  | 'preparing'
+  | 'types'
+  | 'sequences'
+  | 'tables'
+  | 'data'
+  | 'indexes'
+  | 'foreign_keys'
+  | 'views'
+  | 'functions'
+  | 'complete'
+  | 'error'
+
+export interface PgExportProgress {
+  phase: PgExportPhase
+  currentObject: string
+  objectsProcessed: number
+  totalObjects: number
+  rowsExported: number
+  bytesWritten: number
+  error?: string
+}
+
+export interface PgExportResult {
+  success: boolean
+  filePath: string
+  tablesExported: number
+  rowsExported: number
+  bytesWritten: number
+  durationMs: number
+  error?: string
+}
+
+export type PgImportOnError = 'abort' | 'skip'
+
+export interface PgImportOptions {
+  onError: PgImportOnError
+  useTransaction: boolean
+}
+
+export type PgImportPhase = 'reading' | 'executing' | 'complete' | 'error'
+
+export interface PgImportProgress {
+  phase: PgImportPhase
+  statementsExecuted: number
+  totalStatements: number
+  currentStatement: string
+  errorsEncountered: number
+  error?: string
+}
+
+export interface PgImportResult {
+  success: boolean
+  statementsExecuted: number
+  statementsSkipped: number
+  statementsFailed: number
+  errors: Array<{ statementIndex: number; statement: string; error: string }>
+  durationMs: number
+}

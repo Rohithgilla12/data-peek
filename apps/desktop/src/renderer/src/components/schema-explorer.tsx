@@ -26,10 +26,13 @@ import {
   FileCode2,
   Focus,
   Upload,
+  Download,
   Shuffle
 } from 'lucide-react'
 import { CsvImportDialog } from '@/components/csv-import-dialog'
-import { useImportStore } from '@/stores'
+import { PgExportDialog } from '@/components/pg-export-dialog'
+import { PgImportDialog } from '@/components/pg-import-dialog'
+import { useImportStore, usePgDumpStore } from '@/stores'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -642,8 +645,24 @@ export function SchemaExplorer() {
     setTargetTable: setImportTarget,
     reset: resetImport
   } = useImportStore()
+  const {
+    setExportDialogOpen,
+    setImportDialogOpen,
+    resetExport,
+    resetImport: resetPgImport
+  } = usePgDumpStore()
   const [importSchema, setImportSchema] = React.useState<string>('')
   const [importTable, setImportTable] = React.useState<string>('')
+
+  const handleDatabaseExport = () => {
+    resetExport()
+    setExportDialogOpen(true)
+  }
+
+  const handleDatabaseImport = () => {
+    resetPgImport()
+    setImportDialogOpen(true)
+  }
 
   const handleGenerateData = (schemaName: string, tableName: string) => {
     if (!activeConnectionId) return
@@ -847,6 +866,28 @@ export function SchemaExplorer() {
           >
             <Network className="size-3.5" />
           </Button>
+          {getActiveConnection()?.dbType === 'postgresql' && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-5 p-0 hover:bg-sidebar-accent"
+                onClick={handleDatabaseExport}
+                title="Export database (pg_dump)"
+              >
+                <Download className="size-3.5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="size-5 p-0 hover:bg-sidebar-accent"
+                onClick={handleDatabaseImport}
+                title="Import SQL file"
+              >
+                <Upload className="size-3.5" />
+              </Button>
+            </>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -1395,6 +1436,8 @@ export function SchemaExplorer() {
         </SidebarMenu>
       </SidebarGroupContent>
       <CsvImportDialog defaultSchema={importSchema} defaultTable={importTable} />
+      <PgExportDialog />
+      <PgImportDialog />
     </SidebarGroup>
   )
 }
