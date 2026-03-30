@@ -1,5 +1,6 @@
 import { Client, type ClientConfig } from 'pg'
 import { readFileSync } from 'fs'
+import { randomUUID } from 'crypto'
 import {
   resolvePostgresType,
   type ConnectionConfig,
@@ -173,7 +174,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
     const collectTelemetry = options?.collectTelemetry ?? false
-    const executionId = options?.executionId ?? crypto.randomUUID()
+    const executionId = options?.executionId ?? randomUUID()
 
     // Start telemetry collection if requested
     if (collectTelemetry) {
