@@ -91,6 +91,17 @@ import {
 } from '@/components/ui/alert-dialog'
 import type { ExportData } from '@/lib/export'
 
+/** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
+function ensureArray(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
+    const inner = value.slice(1, -1)
+    if (inner === '') return []
+    return inner.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
+  }
+  return undefined
+}
+
 interface TabQueryEditorProps {
   tabId: string
 }
@@ -717,7 +728,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         foreignKey: schemaCol?.foreignKey,
         isPrimaryKey: schemaCol?.isPrimaryKey ?? false,
         isNullable: schemaCol?.isNullable ?? true,
-        enumValues: schemaCol?.enumValues ?? getEnumValues(col.dataType)
+        enumValues: ensureArray(schemaCol?.enumValues) ?? ensureArray(getEnumValues(col.dataType))
       }
     })
   }, [tab, schemas, getEnumValues])

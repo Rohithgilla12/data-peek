@@ -35,3 +35,7 @@ coverage/
 
 # MCP
 .playwright-mcp/
+
+# Superpowers
+.superpowers/
+docs/superpowers/
