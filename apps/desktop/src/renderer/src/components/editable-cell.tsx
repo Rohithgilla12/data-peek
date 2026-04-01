@@ -311,7 +311,7 @@ export function EditableCell({
   if (isEditing) {
     const inputType = getInputType(dataType)
     const isBoolean = dataType.toLowerCase() === 'boolean' || dataType.toLowerCase() === 'bool'
-    const isEnum = enumValues && enumValues.length > 0
+    const isEnum = Array.isArray(enumValues) && enumValues.length > 0
 
     // JSON editing uses a sheet editor
     if (isJson && isJsonEditorOpen) {

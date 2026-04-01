@@ -350,7 +350,7 @@ function SmartField({
         )}
 
         {/* Enum Field */}
-        {fieldType === 'enum' && enumValues && enumValues.length > 0 ? (
+        {fieldType === 'enum' && Array.isArray(enumValues) && enumValues.length > 0 ? (
           <Select value={displayValue || ''} onValueChange={(v) => onChange(v || null)}>
             <SelectTrigger className="h-9 flex-1 bg-muted/30 border-border/50 focus:ring-cyan-500/50">
               <SelectValue placeholder="Select value..." />

@@ -44,6 +44,24 @@ import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 const splitPgStatements = (sql: string) => splitStatements(sql, 'postgresql')
 
 /**
+ * Parse a PostgreSQL array literal string like "{val1,val2}" into a JS array.
+ * The pg driver sometimes returns array_agg results as raw strings instead of
+ * parsed JS arrays (especially for name[] / _name type).
+ */
+function parsePostgresArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      const inner = trimmed.slice(1, -1)
+      if (inner === '') return []
+      return inner.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
+    }
+  }
+  return []
+}
+
+/**
  * Build pg Client configuration from ConnectionConfig
  * Properly handles SSL options for cloud databases like AWS RDS
  *
@@ -581,8 +599,9 @@ export class PostgresAdapter implements DatabaseAdapter {
       // Also map "schema.typname" -> string[] for schema-qualified lookups
       const enumMap = new Map<string, string[]>()
       for (const row of enumTypesResult.rows) {
-        enumMap.set(row.name, row.values)
-        enumMap.set(`${row.schema}.${row.name}`, row.values)
+        const values = parsePostgresArray(row.values)
+        enumMap.set(row.name, values)
+        enumMap.set(`${row.schema}.${row.name}`, values)
       }
 
       // Build parameters lookup map: "schema.specific_name" -> RoutineParameterInfo[]
@@ -699,7 +718,8 @@ export class PostgresAdapter implements DatabaseAdapter {
 
           // Check for enum type (USER-DEFINED data_type indicates enum/composite)
           // Look up enum values by the base udt_name
-          const enumValues = enumMap.get(row.udt_name)
+          const rawEnumValues = enumMap.get(row.udt_name)
+          const enumValues = Array.isArray(rawEnumValues) ? rawEnumValues : undefined
 
           const column: ColumnInfo = {
             name: row.column_name,
@@ -1102,7 +1122,7 @@ export class PostgresAdapter implements DatabaseAdapter {
           schema: row.schema,
           name: row.name,
           type: 'enum' as const,
-          values: row.values
+          values: Array.isArray(row.values) ? row.values : parsePostgresArray(row.values)
         })),
         ...domainsResult.rows.map((row) => ({
           schema: row.schema,

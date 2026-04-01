@@ -1,0 +1,106 @@
+<h2>Data Masking — How should masked values look?</h2>
+<p class="subtitle">When a column is masked, what do users see in place of the real data?</p>
+
+<div class="options">
+  <div class="option" data-choice="blur" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Blur Effect</h3>
+      <p>CSS blur filter on the cell text. Data is still there but unreadable. Hover to peek (optional). Looks slick in screenshots.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-body" style="padding: 16px; font-size: 13px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #333;">
+              <th style="text-align: left; padding: 6px; color: #aaa;">id</th>
+              <th style="text-align: left; padding: 6px; color: #aaa;">email 🔒</th>
+              <th style="text-align: left; padding: 6px; color: #aaa;">name</th>
+            </tr>
+            <tr style="border-bottom: 1px solid #222;">
+              <td style="padding: 6px;">1</td>
+              <td style="padding: 6px; filter: blur(5px); user-select: none;">john@example.com</td>
+              <td style="padding: 6px;">John Doe</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #222;">
+              <td style="padding: 6px;">2</td>
+              <td style="padding: 6px; filter: blur(5px); user-select: none;">jane@company.io</td>
+              <td style="padding: 6px;">Jane Smith</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px;">3</td>
+              <td style="padding: 6px; filter: blur(5px); user-select: none;">bob@startup.dev</td>
+              <td style="padding: 6px;">Bob Wilson</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="redact" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Redacted (••••••)</h3>
+      <p>Replace values with dots or asterisks. Clean, unambiguous. No data leaks even if someone inspects the DOM.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-body" style="padding: 16px; font-size: 13px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #333;">
+              <th style="text-align: left; padding: 6px; color: #aaa;">id</th>
+              <th style="text-align: left; padding: 6px; color: #aaa;">email 🔒</th>
+              <th style="text-align: left; padding: 6px; color: #aaa;">name</th>
+            </tr>
+            <tr style="border-bottom: 1px solid #222;">
+              <td style="padding: 6px;">1</td>
+              <td style="padding: 6px; color: #666;">••••••••••••</td>
+              <td style="padding: 6px;">John Doe</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #222;">
+              <td style="padding: 6px;">2</td>
+              <td style="padding: 6px; color: #666;">••••••••••••</td>
+              <td style="padding: 6px;">Jane Smith</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px;">3</td>
+              <td style="padding: 6px; color: #666;">••••••••••••</td>
+              <td style="padding: 6px;">Bob Wilson</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="partial" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Partial Mask</h3>
+      <p>Show first/last few characters with the middle masked. Useful for identifying records while hiding sensitive parts. e.g. <code>jo••@••••le.com</code></p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-body" style="padding: 16px; font-size: 13px;">
+          <table style="width: 100%; border-collapse: collapse;">
+            <tr style="border-bottom: 1px solid #333;">
+              <th style="text-align: left; padding: 6px; color: #aaa;">id</th>
+              <th style="text-align: left; padding: 6px; color: #aaa;">email 🔒</th>
+              <th style="text-align: left; padding: 6px; color: #aaa;">name</th>
+            </tr>
+            <tr style="border-bottom: 1px solid #222;">
+              <td style="padding: 6px;">1</td>
+              <td style="padding: 6px;">jo••@••••le.com</td>
+              <td style="padding: 6px;">John Doe</td>
+            </tr>
+            <tr style="border-bottom: 1px solid #222;">
+              <td style="padding: 6px;">2</td>
+              <td style="padding: 6px;">ja••@••••ny.io</td>
+              <td style="padding: 6px;">Jane Smith</td>
+            </tr>
+            <tr>
+              <td style="padding: 6px;">3</td>
+              <td style="padding: 6px;">bo••@••••up.dev</td>
+              <td style="padding: 6px;">Bob Wilson</td>
+            </tr>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

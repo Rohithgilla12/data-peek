@@ -410,7 +410,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   // Build enum values map
   const enumValuesMap: Record<string, string[]> = {}
   columnDefs.forEach((col) => {
-    if (col.enumValues && col.enumValues.length > 0) {
+    if (Array.isArray(col.enumValues) && col.enumValues.length > 0) {
       enumValuesMap[col.name] = col.enumValues
     }
   })

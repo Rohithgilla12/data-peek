@@ -1,0 +1,62 @@
+<h2>Data Generator — Where does it live?</h2>
+<p class="subtitle">How should users access the fake data generator?</p>
+
+<div class="options">
+  <div class="option" data-choice="standalone" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Standalone Dialog</h3>
+      <p>Accessible from context menu (right-click table → "Generate Data") or command palette. Opens a dialog where you configure row count and per-column generators.</p>
+      <div class="mockup" style="margin-top: 12px;">
+        <div class="mockup-body" style="padding: 16px; font-size: 13px;">
+          <div style="background: #1a1a2e; border: 1px solid #444; border-radius: 8px; padding: 16px; max-width: 420px; margin: 0 auto;">
+            <div style="font-weight: 600; font-size: 15px; margin-bottom: 12px;">Generate Data → users</div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <span style="color: #aaa;">Rows to generate:</span>
+              <span style="background: #2a2a2a; padding: 4px 12px; border-radius: 4px; border: 1px solid #555;">100</span>
+            </div>
+            <div style="border: 1px solid #333; border-radius: 6px; overflow: hidden;">
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; font-size: 12px;">
+                <div style="padding: 6px 10px; background: #222; color: #888; border-bottom: 1px solid #333;">Column</div>
+                <div style="padding: 6px 10px; background: #222; color: #888; border-bottom: 1px solid #333;">Type</div>
+                <div style="padding: 6px 10px; background: #222; color: #888; border-bottom: 1px solid #333;">Generator</div>
+                <div style="padding: 6px 10px; border-bottom: 1px solid #222;">id</div>
+                <div style="padding: 6px 10px; border-bottom: 1px solid #222; color: #888;">serial</div>
+                <div style="padding: 6px 10px; border-bottom: 1px solid #222; color: #666;">auto-increment</div>
+                <div style="padding: 6px 10px; border-bottom: 1px solid #222;">name</div>
+                <div style="padding: 6px 10px; border-bottom: 1px solid #222; color: #888;">varchar</div>
+                <div style="padding: 6px 10px; border-bottom: 1px solid #222; color: #5588ff;">faker.person.fullName</div>
+                <div style="padding: 6px 10px; border-bottom: 1px solid #222;">email</div>
+                <div style="padding: 6px 10px; border-bottom: 1px solid #222; color: #888;">varchar</div>
+                <div style="padding: 6px 10px; border-bottom: 1px solid #222; color: #5588ff;">faker.internet.email</div>
+                <div style="padding: 6px 10px;">age</div>
+                <div style="padding: 6px 10px; color: #888;">integer</div>
+                <div style="padding: 6px 10px; color: #5588ff;">faker.number.int(18,99)</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end;">
+              <div style="padding: 6px 16px; background: #2a2a2a; border-radius: 4px; color: #aaa;">Preview</div>
+              <div style="padding: 6px 16px; background: #336; border-radius: 4px; color: #fff;">Generate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="tab" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Dedicated Tab</h3>
+      <p>Opens as a new tab (like Table Designer). More room for configuration — preview generated rows, see SQL, configure FK relationships between tables. Better for bulk generation across multiple tables.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="inline" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Inline in Add Row Sheet</h3>
+      <p>Extend the existing "Add Row" sheet with a "Generate" toggle. When enabled, each field shows a generator dropdown instead of manual input. Keeps it lightweight and discoverable.</p>
+    </div>
+  </div>
+</div>

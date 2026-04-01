@@ -1,0 +1,52 @@
+<h2>Which features should we build first?</h2>
+<p class="subtitle">Click to select your top 3 priorities — we'll build all 6, but order matters</p>
+
+<div class="options" data-multiselect>
+  <div class="option" data-choice="data-masking" onclick="toggleSelect(this)">
+    <div class="letter">1</div>
+    <div class="content">
+      <h3>Data Masking</h3>
+      <p>Blur or hide sensitive columns in query results. Great for demos, screenshots, and pair programming. Toggle per-column or via rules (e.g. mask all "email" columns).</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="column-stats" onclick="toggleSelect(this)">
+    <div class="letter">2</div>
+    <div class="content">
+      <h3>Column Statistics</h3>
+      <p>One-click data profiling — show min, max, null count, distinct count, avg, and value distribution per column. Appears as a slide-out panel or inline below the header.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="data-generator" onclick="toggleSelect(this)">
+    <div class="letter">3</div>
+    <div class="content">
+      <h3>Data Generator</h3>
+      <p>Generate realistic fake data for testing. Schema-aware — reads your table structure and generates matching data with Faker. Supports foreign key relationships.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="csv-import" onclick="toggleSelect(this)">
+    <div class="letter">4</div>
+    <div class="content">
+      <h3>CSV Import</h3>
+      <p>Drag-and-drop or file-pick a CSV to import into an existing or new table. Preview data, map columns, handle type conversion, and show progress.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="db-notifications" onclick="toggleSelect(this)">
+    <div class="letter">5</div>
+    <div class="content">
+      <h3>Database Notifications (PostgreSQL)</h3>
+      <p>Listen to NOTIFY channels in real-time. See events streaming in as they happen. Subscribe/unsubscribe to channels, with a live event log.</p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="health-monitor" onclick="toggleSelect(this)">
+    <div class="letter">6</div>
+    <div class="content">
+      <h3>Connection Health Monitor</h3>
+      <p>Dashboard showing connection pool stats, active queries, database size, uptime, and replication status. Auto-refresh with configurable intervals.</p>
+    </div>
+  </div>
+</div>

@@ -4,10 +4,12 @@ import {
   createRoute,
   createMemoryHistory,
   Outlet,
-  Link
+  Link,
+  useRouter,
+  type ErrorComponentProps
 } from '@tanstack/react-router'
-import { useState, useEffect, useCallback } from 'react'
-import { Moon, Sun, Monitor, Sparkles, Command } from 'lucide-react'
+import { useState, useEffect, useCallback, Component, type ReactNode } from 'react'
+import { Moon, Sun, Monitor, Sparkles, Command, AlertTriangle } from 'lucide-react'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import { CommandPalette } from '@/components/command-palette'
@@ -696,27 +698,112 @@ function SettingsPage() {
   )
 }
 
+function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
+  const router = useRouter()
+
+  return (
+    <div className="flex flex-1 items-center justify-center p-8">
+      <div className="flex flex-col items-center gap-4 max-w-md text-center">
+        <AlertTriangle className="size-10 text-amber-500" />
+        <h2 className="text-lg font-semibold">Something went wrong</h2>
+        <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
+          {error.message}
+        </pre>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={reset}>
+            Try Again
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              reset()
+              router.navigate({ to: '/' })
+            }}
+          >
+            Go Home
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export class RootErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground p-8">
+          <div className="flex flex-col items-center gap-4 max-w-md text-center">
+            <AlertTriangle className="size-10 text-amber-500" />
+            <h2 className="text-lg font-semibold">Something went wrong</h2>
+            <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
+              {this.state.error?.message}
+            </pre>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null })
+                }}
+              >
+                Try Again
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null })
+                  window.location.reload()
+                }}
+              >
+                Reload App
+              </Button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 // Create routes
 const rootRoute = createRootRoute({
-  component: RootLayout
+  component: RootLayout,
+  errorComponent: RouteErrorComponent
 })
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: TabContainer
+  component: TabContainer,
+  errorComponent: RouteErrorComponent
 })
 
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
-  component: SettingsPage
+  component: SettingsPage,
+  errorComponent: RouteErrorComponent
 })
 
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dashboard/$dashboardId',
-  component: DashboardView
+  component: DashboardView,
+  errorComponent: RouteErrorComponent
 })
 
 // Create route tree
