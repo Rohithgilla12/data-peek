@@ -67,19 +67,17 @@ export function generateIndexSuggestion(
 
   parts.push(name)
   parts.push('ON')
-  parts.push(`${schema}.${tableName}`)
+  parts.push(`"${schema}"."${tableName}"`)
 
-  // Add method if specified (and not default btree)
   if (method && method !== 'btree') {
     parts.push(`USING ${method}`)
   }
 
-  // Column list
-  parts.push(`(${columns.join(', ')})`)
+  parts.push(`(${columns.map((c) => `"${c}"`).join(', ')})`)
 
   // Include columns for covering index (PostgreSQL 11+)
   if (includeColumns && includeColumns.length > 0) {
-    parts.push(`INCLUDE (${includeColumns.join(', ')})`)
+    parts.push(`INCLUDE (${includeColumns.map((c) => `"${c}"`).join(', ')})`)
   }
 
   // Partial index WHERE clause

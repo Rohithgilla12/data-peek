@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input'
 import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react'
 import { useImportStore, inferColumnTypes, type ParsedCsvFile } from '@/stores/import-store'
 import { useConnectionStore } from '@/stores'
+import { buildFullyQualifiedTableRef, quoteIdentifier } from '@/lib/sql-helpers'
 
 interface CsvImportDialogProps {
   defaultSchema?: string
@@ -69,6 +70,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
 
   const schemas = useConnectionStore((s) => s.schemas)
   const getActiveConnection = useConnectionStore((s) => s.getActiveConnection)
+  const dbType = useConnectionStore(
+    (s) => s.connections.find((c) => c.id === s.activeConnectionId)?.dbType
+  )
 
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [isDragging, setIsDragging] = React.useState(false)
@@ -512,8 +516,15 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                     {(() => {
                       const mappedCols = columnMappings.filter((m) => m.tableColumn !== null)
                       if (mappedCols.length === 0 || !file) return 'No columns mapped'
-                      const colNames = mappedCols.map((m) => m.tableColumn).join(', ')
+                      const colNames = mappedCols
+                        .map((m) => quoteIdentifier(m.tableColumn!, dbType))
+                        .join(', ')
                       const colIndexes = mappedCols.map((m) => file.headers.indexOf(m.csvColumn))
+                      const tableRef = buildFullyQualifiedTableRef(
+                        targetSchema,
+                        targetTable,
+                        dbType
+                      )
                       return file.rows
                         .slice(0, 3)
                         .map((row, i) => {
@@ -524,7 +535,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                               return `'${String(v).replace(/'/g, "''")}'`
                             })
                             .join(', ')
-                          return `-- row ${i + 1}\nINSERT INTO ${targetSchema}.${targetTable} (${colNames})\nVALUES (${vals});`
+                          return `-- row ${i + 1}\nINSERT INTO ${tableRef} (${colNames})\nVALUES (${vals});`
                         })
                         .join('\n\n')
                     })()}

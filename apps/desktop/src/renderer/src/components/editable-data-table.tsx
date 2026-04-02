@@ -16,7 +16,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { generateLimitClause } from '@/lib/sql-helpers'
+import {
+  generateLimitClause,
+  buildFullyQualifiedTableRef,
+  quoteIdentifier
+} from '@/lib/sql-helpers'
 import { getTypeColor } from '@/lib/type-colors'
 import { cn } from '@/lib/utils'
 import { useEditStore } from '@/stores/edit-store'
@@ -434,11 +438,18 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             const fk = col.foreignKey!
             // Query the referenced table - limit to 1000 rows for performance
             // Use TOP for MSSQL, LIMIT for other databases
-            const limitClause = generateLimitClause(connection?.dbType, 1000)
+            const dbType = connection?.dbType
+            const limitClause = generateLimitClause(dbType, 1000)
+            const tableRef = buildFullyQualifiedTableRef(
+              fk.referencedSchema,
+              fk.referencedTable,
+              dbType
+            )
+            const quotedCol = quoteIdentifier(fk.referencedColumn, dbType)
             const query =
-              connection?.dbType === 'mssql'
-                ? `SELECT ${limitClause} DISTINCT "${fk.referencedColumn}" FROM "${fk.referencedSchema}"."${fk.referencedTable}" ORDER BY "${fk.referencedColumn}"`
-                : `SELECT DISTINCT "${fk.referencedColumn}" FROM "${fk.referencedSchema}"."${fk.referencedTable}" ORDER BY "${fk.referencedColumn}" ${limitClause}`
+              dbType === 'mssql'
+                ? `SELECT ${limitClause} DISTINCT ${quotedCol} FROM ${tableRef} ORDER BY ${quotedCol}`
+                : `SELECT DISTINCT ${quotedCol} FROM ${tableRef} ORDER BY ${quotedCol} ${limitClause}`
 
             try {
               const result = await window.api.db.query(connection, query)
