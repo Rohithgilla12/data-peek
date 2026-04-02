@@ -1821,7 +1821,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         open={shareResultsOpen}
         onOpenChange={setShareResultsOpen}
         title="Share Results"
-        description="Generate a shareable image of your query results"
+        description="Generate a shareable image of your query results. Review data before sharing — the image may contain sensitive values."
         filenamePrefix="query-results"
       >
         {(theme: ShareImageTheme) => {

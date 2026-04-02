@@ -36,6 +36,8 @@ interface ShareImageDialogProps {
   description?: string
   children: (theme: ShareImageTheme) => ReactNode
   filenamePrefix?: string
+  header?: (theme: ShareImageTheme) => ReactNode
+  extraOptions?: ReactNode
 }
 
 export function ShareImageDialog({
@@ -44,7 +46,9 @@ export function ShareImageDialog({
   title,
   description,
   children,
-  filenamePrefix = 'data-peek'
+  filenamePrefix = 'data-peek',
+  header,
+  extraOptions
 }: ShareImageDialogProps) {
   const renderRef = useRef<HTMLDivElement>(null)
   const [isGenerating, setIsGenerating] = useState(false)
@@ -175,12 +179,10 @@ export function ShareImageDialog({
           <div className="rounded-lg overflow-hidden border border-border/50">
             <div
               ref={renderRef}
-              className={cn(
-                'transition-all duration-200',
-                getBackgroundClass(backgroundStyle),
-                getPaddingClass(padding)
-              )}
+              className={cn(getBackgroundClass(backgroundStyle), getPaddingClass(padding))}
             >
+              {header && header(theme)}
+
               {/* Content block */}
               <div
                 className={cn(
@@ -245,6 +247,7 @@ export function ShareImageDialog({
             </div>
 
             <div className="space-y-4">
+              {extraOptions}
               <div className="flex items-center justify-between">
                 <Label htmlFor="show-branding-img">Show Branding</Label>
                 <Switch
