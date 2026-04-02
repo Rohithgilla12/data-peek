@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import {
   generateMetadata as generateSeoMetadata,
@@ -39,7 +40,7 @@ export default function RootLayout({
     <ClerkProvider
       appearance={{
         variables: {
-          colorPrimary: "#22d3ee",
+          colorPrimary: "#6b8cf5",
           colorBackground: "#111113",
           colorInputBackground: "#18181b",
           colorInputText: "#fafafa",
@@ -73,6 +74,7 @@ export default function RootLayout({
             strategy="afterInteractive"
             async
           />
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>

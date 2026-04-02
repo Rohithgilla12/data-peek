@@ -126,7 +126,7 @@ async function sendLicenseEmail(
     subject: `Your data-peek ${planLabel} license - Thank you for contributing!`,
     html: `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h1 style="color: #22d3ee;">Thank you for contributing to data-peek!</h1>
+        <h1 style="color: #6b8cf5;">Thank you for contributing to data-peek!</h1>
 
         <p>Hi ${name || 'there'},</p>
 
@@ -139,7 +139,7 @@ async function sendLicenseEmail(
 
         <h3>Quick Start:</h3>
         <ol>
-          <li>Download data-peek from <a href="https://www.datapeek.dev/download?utm_source=email&utm_medium=license&utm_content=contributor" style="color: #22d3ee;">datapeek.dev/download</a></li>
+          <li>Download data-peek from <a href="https://www.datapeek.dev/download?utm_source=email&utm_medium=license&utm_content=contributor" style="color: #6b8cf5;">datapeek.dev/download</a></li>
           <li>Open the app and go to <strong>Settings → License</strong></li>
           <li>Enter your license key</li>
         </ol>

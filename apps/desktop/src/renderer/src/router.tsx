@@ -4,11 +4,14 @@ import {
   createRoute,
   createMemoryHistory,
   Outlet,
-  Link
+  Link,
+  useRouter,
+  type ErrorComponentProps
 } from '@tanstack/react-router'
-import { useState, useEffect, useCallback } from 'react'
-import { Moon, Sun, Monitor, Sparkles, Command } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
+import { Moon, Sun, Monitor, Sparkles, Command, AlertTriangle } from 'lucide-react'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
+import { usePokemonTracker } from '@/hooks/use-pokemon-tracker'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import { CommandPalette } from '@/components/command-palette'
 import { SavedQueriesDialog } from '@/components/saved-queries-dialog'
@@ -27,6 +30,7 @@ import { LicenseSettingsModal } from '@/components/license-settings-modal'
 import { AIChatPanel, AISettingsModal } from '@/components/ai'
 import { SettingsModal } from '@/components/settings-modal'
 import { Notifications } from '@/components/notifications'
+import { PokemonBuddy } from '@/components/pokemon-buddy'
 import { useAIStore } from '@/stores/ai-store'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -36,6 +40,7 @@ import { cn, keys } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TitlebarActions } from '@/components/titlebar-actions'
+import { useHotkeys, type UseHotkeyDefinition, type Hotkey } from '@tanstack/react-hotkeys'
 
 // Command palette page type for direct navigation
 type CommandPalettePage = 'home' | 'connections' | 'connections:switch' | 'saved-queries'
@@ -146,45 +151,21 @@ function LayoutContent() {
   }, [])
 
   // Global keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMeta = e.metaKey || e.ctrlKey
-
-      // Cmd+K: Open command palette
-      if (isMeta && e.key === 'k' && !e.shiftKey) {
-        e.preventDefault()
-        openCommandPalette('home')
-        return
-      }
-
-      // Cmd+P: Open command palette directly to connections list
-      if (isMeta && e.key === 'p' && !e.shiftKey) {
-        e.preventDefault()
-        openCommandPalette('connections:switch')
-        return
-      }
-
-      // Cmd+I: Toggle AI panel
-      if (isMeta && e.key === 'i' && !e.shiftKey) {
-        e.preventDefault()
-        toggleAIPanel()
-        return
-      }
-
-      // Cmd+Shift+1-9: Switch to connection N
-      if (isMeta && e.shiftKey && e.key >= '1' && e.key <= '9') {
-        e.preventDefault()
-        const connectionIndex = parseInt(e.key) - 1
-        if (connections[connectionIndex]) {
-          handleSelectConnection(connections[connectionIndex].id)
+  const globalHotkeys = useMemo<UseHotkeyDefinition[]>(
+    () => [
+      { hotkey: 'Mod+K', callback: () => openCommandPalette('home') },
+      { hotkey: 'Mod+P', callback: () => openCommandPalette('connections:switch') },
+      { hotkey: 'Mod+I', callback: () => toggleAIPanel() },
+      ...Array.from({ length: 9 }, (_, i) => ({
+        hotkey: `Mod+Shift+${i + 1}` as Hotkey,
+        callback: () => {
+          if (connections[i]) handleSelectConnection(connections[i].id)
         }
-        return
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [connections, handleSelectConnection, openCommandPalette, toggleAIPanel])
+      }))
+    ],
+    [connections, handleSelectConnection, openCommandPalette, toggleAIPanel]
+  )
+  useHotkeys(globalHotkeys)
 
   return (
     <>
@@ -348,11 +329,17 @@ function RootLayout() {
   // Initialize auto-updater notifications
   useAutoUpdater()
 
+  const pokemonBuddyEnabled = useSettingsStore((s) => s.pokemonBuddyEnabled)
+
+  // Track queries for Pokemon buddy analytics
+  usePokemonTracker()
+
   return (
     <ThemeProvider defaultTheme="dark" storageKey="data-peek-theme">
       <SidebarProvider>
         <LayoutContent />
         <Notifications />
+        {pokemonBuddyEnabled && <PokemonBuddy />}
       </SidebarProvider>
     </ThemeProvider>
   )
@@ -432,7 +419,11 @@ function SettingsPage() {
     hideQuickQueryPanel,
     setHideQuickQueryPanel,
     queryTimeoutMs,
-    setQueryTimeoutMs
+    setQueryTimeoutMs,
+    pokemonBuddyEnabled,
+    setPokemonBuddyEnabled,
+    jsonExpandDepth,
+    setJsonExpandDepth
   } = useSettingsStore()
 
   return (
@@ -443,7 +434,7 @@ function SettingsPage() {
         </Link>
         <h1 className="text-2xl font-semibold">Settings</h1>
       </div>
-      <div className="space-y-6 max-w-2xl">
+      <div className="space-y-6 max-w-2xl pb-10">
         {/* License */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">License</h2>
@@ -511,6 +502,27 @@ function SettingsPage() {
               icon={Monitor}
               currentTheme={theme}
               onSelect={setTheme}
+            />
+          </div>
+        </div>
+
+        {/* Fun Features */}
+        <div className="rounded-lg border border-border/50 bg-card p-4">
+          <h2 className="text-lg font-medium mb-2">Fun Features</h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            Enable fun features to personalize your experience.
+          </p>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="pokemon-buddy">Pokemon Buddy</Label>
+              <p className="text-xs text-muted-foreground">
+                Show a friendly Pokemon buddy in the sidebar
+              </p>
+            </div>
+            <Switch
+              id="pokemon-buddy"
+              checked={pokemonBuddyEnabled}
+              onCheckedChange={setPokemonBuddyEnabled}
             />
           </div>
         </div>
@@ -651,7 +663,7 @@ function SettingsPage() {
           <p className="text-sm text-muted-foreground mb-4">
             Configure how JSON data is displayed in results.
           </p>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div className="space-y-0.5">
               <Label htmlFor="expand-json">Expand JSON by default</Label>
               <p className="text-xs text-muted-foreground">
@@ -662,6 +674,26 @@ function SettingsPage() {
               id="expand-json"
               checked={expandJsonByDefault}
               onCheckedChange={setExpandJsonByDefault}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="json-depth">Default JSON expansion depth</Label>
+              <p className="text-xs text-muted-foreground">
+                How many levels deep JSON should be expanded
+              </p>
+            </div>
+            <Input
+              id="json-depth"
+              type="number"
+              min={1}
+              max={10}
+              className="w-24"
+              value={jsonExpandDepth}
+              onChange={(e) => {
+                const val = parseInt(e.target.value)
+                if (!isNaN(val)) setJsonExpandDepth(val)
+              }}
             />
           </div>
         </div>
@@ -696,27 +728,112 @@ function SettingsPage() {
   )
 }
 
+function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
+  const router = useRouter()
+
+  return (
+    <div className="flex flex-1 items-center justify-center p-8">
+      <div className="flex flex-col items-center gap-4 max-w-md text-center">
+        <AlertTriangle className="size-10 text-amber-500" />
+        <h2 className="text-lg font-semibold">Something went wrong</h2>
+        <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
+          {error.message}
+        </pre>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={reset}>
+            Try Again
+          </Button>
+          <Button
+            size="sm"
+            onClick={() => {
+              reset()
+              router.navigate({ to: '/' })
+            }}
+          >
+            Go Home
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+export class RootErrorBoundary extends Component<
+  { children: ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground p-8">
+          <div className="flex flex-col items-center gap-4 max-w-md text-center">
+            <AlertTriangle className="size-10 text-amber-500" />
+            <h2 className="text-lg font-semibold">Something went wrong</h2>
+            <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
+              {this.state.error?.message}
+            </pre>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null })
+                }}
+              >
+                Try Again
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  this.setState({ hasError: false, error: null })
+                  window.location.reload()
+                }}
+              >
+                Reload App
+              </Button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
+
 // Create routes
 const rootRoute = createRootRoute({
-  component: RootLayout
+  component: RootLayout,
+  errorComponent: RouteErrorComponent
 })
 
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: TabContainer
+  component: TabContainer,
+  errorComponent: RouteErrorComponent
 })
 
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
-  component: SettingsPage
+  component: SettingsPage,
+  errorComponent: RouteErrorComponent
 })
 
 const dashboardRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dashboard/$dashboardId',
-  component: DashboardView
+  component: DashboardView,
+  errorComponent: RouteErrorComponent
 })
 
 // Create route tree

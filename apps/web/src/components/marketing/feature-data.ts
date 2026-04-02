@@ -76,7 +76,7 @@ export const features: Feature[] = [
     title: 'Command Palette',
     description:
       'Cmd+K to access everything. Find commands, switch connections, run queries instantly.',
-    color: '#22d3ee',
+    color: '#6b8cf5',
     tier: 'hero',
     hoverEffect: 'key-press',
     screenshot: `${R2}/command-bar.png`,
@@ -199,7 +199,7 @@ export const features: Feature[] = [
     title: 'Column Statistics',
     description:
       'One-click data profiling. Min/max/avg, histograms, top values, null rates per column.',
-    color: '#06b6d4',
+    color: '#5570d9',
     tier: 'solid',
   },
   {
@@ -258,7 +258,7 @@ export const features: Feature[] = [
     title: 'Privacy-First',
     description:
       'No telemetry, no tracking. Your credentials stay encrypted on your machine.',
-    color: '#22d3ee',
+    color: '#6b8cf5',
     tier: 'solid',
     hoverEffect: 'scramble',
   },

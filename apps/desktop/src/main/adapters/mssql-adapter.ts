@@ -1,4 +1,5 @@
 import sql from 'mssql'
+import { randomUUID } from 'crypto'
 import type {
   ConnectionConfig,
   SchemaInfo,
@@ -329,7 +330,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
     const collectTelemetry = options?.collectTelemetry ?? false
-    const executionId = options?.executionId ?? crypto.randomUUID()
+    const executionId = options?.executionId ?? randomUUID()
 
     // Start telemetry collection if requested
     if (collectTelemetry) {

@@ -62,7 +62,7 @@ const features: Array<{
     title: "Command Palette",
     description:
       "Cmd+K to access everything. Find commands, switch connections, run queries instantly.",
-    color: "#22d3ee",
+    color: "#6b8cf5",
     hoverEffect: 'key-press',
   },
   {
@@ -156,7 +156,7 @@ const features: Array<{
     title: "Column Statistics",
     description:
       "One-click data profiling. Min/max/avg, histograms, top values, null rates per column.",
-    color: "#06b6d4",
+    color: "#5570d9",
   },
   {
     icon: EyeOff,
@@ -214,7 +214,7 @@ const features: Array<{
     title: "Privacy-First",
     description:
       "No telemetry, no tracking. Your credentials stay encrypted on your machine.",
-    color: "#22d3ee",
+    color: "#6b8cf5",
     hoverEffect: 'scramble',
   },
   {
@@ -441,8 +441,8 @@ export function Features() {
           {/* Command Palette Screenshot */}
           <div>
             <div className="flex items-center gap-2.5 mb-3 sm:mb-4">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#22d3ee]/10 border border-[#22d3ee]/20 flex items-center justify-center">
-                <Command className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#22d3ee]" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#6b8cf5]/10 border border-[#6b8cf5]/20 flex items-center justify-center">
+                <Command className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#6b8cf5]" />
               </div>
               <h3
                 className="text-sm sm:text-base font-semibold tracking-tight"

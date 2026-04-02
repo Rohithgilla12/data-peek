@@ -6,14 +6,14 @@ export const brand = {
   textPrimary: '#fafafa',
   textSecondary: '#a1a1aa',
   textMuted: '#71717a',
-  accent: '#22d3ee',
-  accentDim: '#0891b2',
+  accent: '#6b8cf5',
+  accentDim: '#3b52c4',
   purple: '#a855f7',
   amber: '#fbbf24',
 } as const
 
 export const featureColors = {
-  columnStats: '#06b6d4',
+  columnStats: '#5570d9',
   dataMasking: '#f59e0b',
   csvImport: '#10b981',
   dataGenerator: '#8b5cf6',

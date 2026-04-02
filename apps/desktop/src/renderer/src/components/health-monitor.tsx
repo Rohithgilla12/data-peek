@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Activity, RefreshCw, Loader2, Skull, CheckCircle2 } from 'lucide-react'
+import { Activity, RefreshCw, Loader2, Skull, CheckCircle2, Share2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,6 +28,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image-dialog'
+import {
+  ShareActiveQueries,
+  ShareTableSizes,
+  ShareCacheStats,
+  ShareLocks
+} from '@/components/health-share-content'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useHealthStore } from '@/stores/health-store'
 import { useTabStore } from '@/stores/tab-store'
@@ -44,6 +52,22 @@ const REFRESH_OPTIONS = [
   { label: '30s', value: '30000' },
   { label: 'Off', value: '0' }
 ]
+
+type ShareCardType = 'activeQueries' | 'tableSizes' | 'cacheStats' | 'locks'
+
+const SHARE_DIALOG_TITLES: Record<ShareCardType, string> = {
+  activeQueries: 'Share Active Queries',
+  tableSizes: 'Share Table Sizes',
+  cacheStats: 'Share Cache Hit Ratios',
+  locks: 'Share Locks & Blocking'
+}
+
+const SHARE_DIALOG_PREFIXES: Record<ShareCardType, string> = {
+  activeQueries: 'active-queries',
+  tableSizes: 'table-sizes',
+  cacheStats: 'cache-stats',
+  locks: 'locks'
+}
 
 export function HealthMonitor({ tabId }: HealthMonitorProps) {
   const tab = useTabStore((s) => s.getTab(tabId))
@@ -65,6 +89,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
   const killQuery = useHealthStore((s) => s.killQuery)
 
   const [sizeSort, setSizeSort] = useState<'total' | 'data' | 'index' | 'rows'>('total')
+  const [shareCard, setShareCard] = useState<ShareCardType | null>(null)
 
   useEffect(() => {
     if (!connection) return
@@ -126,6 +151,8 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
     return 'text-red-500'
   }
 
+  const connLabel = connection?.name || connection?.host || ''
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b px-4 py-2">
@@ -153,315 +180,421 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
         </div>
       </div>
 
-      <div className="grid flex-1 grid-cols-2 gap-3 overflow-auto p-3">
-        {/* Active Queries */}
-        <Card className="flex flex-col overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-between text-sm">
-              Active Queries
-              {isLoading.activeQueries && <Loader2 className="size-3 animate-spin" />}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
-            {errors.activeQueries ? (
-              <p className="text-xs text-destructive">{errors.activeQueries}</p>
-            ) : activeQueries.length === 0 ? (
-              <p className="py-4 text-center text-xs text-muted-foreground">No active queries</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-14 text-xs">PID</TableHead>
-                    <TableHead className="w-20 text-xs">User</TableHead>
-                    <TableHead className="w-20 text-xs">State</TableHead>
-                    <TableHead className="w-20 text-xs">Duration</TableHead>
-                    <TableHead className="text-xs">Query</TableHead>
-                    <TableHead className="w-14 text-xs" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {activeQueries.map((q) => (
-                    <TableRow key={q.pid}>
-                      <TableCell className="text-xs">{q.pid}</TableCell>
-                      <TableCell className="text-xs">{q.user}</TableCell>
-                      <TableCell className="text-xs">{q.state}</TableCell>
-                      <TableCell
-                        className={cn(
-                          'text-xs',
-                          q.durationMs > 60000 && 'font-medium text-red-500'
-                        )}
+      <TooltipProvider>
+        <div className="grid flex-1 grid-cols-2 gap-3 overflow-auto p-3">
+          {/* Active Queries */}
+          <Card className="flex flex-col overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center justify-between text-sm">
+                Active Queries
+                <div className="flex items-center gap-1">
+                  {isLoading.activeQueries && <Loader2 className="size-3 animate-spin" />}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => setShareCard('activeQueries')}
                       >
-                        {q.duration}
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate text-xs font-mono">
-                        {q.query.slice(0, 100)}
-                      </TableCell>
-                      <TableCell>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                            >
-                              <Skull className="size-3" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Kill Query?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Cancel the query running on PID {q.pid} (user: {q.user})? This will
-                                attempt to cancel the current statement.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleKillQuery(q.pid)}>
-                                Kill Query
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Table Sizes */}
-        <Card className="flex flex-col overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-between text-sm">
-              <div className="flex items-center gap-2">
-                Table Sizes
-                {dbSize && (
-                  <span className="text-xs font-normal text-muted-foreground">
-                    DB Total: {dbSize.totalSize}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1">
-                {isLoading.tableSizes && <Loader2 className="size-3 animate-spin" />}
-                <Select value={sizeSort} onValueChange={(v) => setSizeSort(v as typeof sizeSort)}>
-                  <SelectTrigger className="h-6 w-20 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="total">Total</SelectItem>
-                    <SelectItem value="data">Data</SelectItem>
-                    <SelectItem value="index">Index</SelectItem>
-                    <SelectItem value="rows">Rows</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
-            {errors.tableSizes ? (
-              <p className="text-xs text-destructive">{errors.tableSizes}</p>
-            ) : sortedTableSizes.length === 0 ? (
-              <p className="py-4 text-center text-xs text-muted-foreground">No tables found</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-xs">Table</TableHead>
-                    <TableHead className="w-20 text-right text-xs">Est. Rows</TableHead>
-                    <TableHead className="w-20 text-right text-xs">Data</TableHead>
-                    <TableHead className="w-20 text-right text-xs">Index</TableHead>
-                    <TableHead className="w-20 text-right text-xs">Total</TableHead>
-                    <TableHead className="w-24 text-xs" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedTableSizes.slice(0, 50).map((t) => (
-                    <TableRow key={`${t.schema}.${t.table}`}>
-                      <TableCell className="text-xs">
-                        <span className="text-muted-foreground">{t.schema}.</span>
-                        {t.table}
-                      </TableCell>
-                      <TableCell className="text-right text-xs">
-                        {t.rowCountEstimate.toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right text-xs">{t.dataSize}</TableCell>
-                      <TableCell className="text-right text-xs">{t.indexSize}</TableCell>
-                      <TableCell className="text-right text-xs font-medium">
-                        {t.totalSize}
-                      </TableCell>
-                      <TableCell>
-                        <div className="h-2 w-full rounded-full bg-muted">
-                          <div
-                            className="h-2 rounded-full bg-primary/60"
-                            style={{
-                              width: `${maxTotalSize > 0 ? (t.totalSizeBytes / maxTotalSize) * 100 : 0}%`
-                            }}
-                          />
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Cache Hit Ratios */}
-        <Card className="flex flex-col overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-between text-sm">
-              Cache Hit Ratios
-              {isLoading.cacheStats && <Loader2 className="size-3 animate-spin" />}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-auto px-3 pb-3">
-            {errors.cacheStats ? (
-              <p className="text-xs text-destructive">{errors.cacheStats}</p>
-            ) : !cacheStats ? (
-              <p className="py-4 text-center text-xs text-muted-foreground">Loading...</p>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="rounded-lg border p-4 text-center">
-                    <p className="text-xs text-muted-foreground">Buffer Cache</p>
-                    <p
-                      className={cn(
-                        'text-3xl font-bold',
-                        cacheColor(cacheStats.bufferCacheHitRatio)
-                      )}
-                    >
-                      {cacheStats.bufferCacheHitRatio}%
-                    </p>
-                  </div>
-                  <div className="rounded-lg border p-4 text-center">
-                    <p className="text-xs text-muted-foreground">Index Cache</p>
-                    <p className={cn('text-3xl font-bold', cacheColor(cacheStats.indexHitRatio))}>
-                      {cacheStats.indexHitRatio}%
-                    </p>
-                  </div>
+                        <Share2 className="size-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p className="text-xs">Share as image</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
-                {cacheStats.tableCacheDetails && cacheStats.tableCacheDetails.length > 0 && (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-xs">Table</TableHead>
-                        <TableHead className="w-16 text-right text-xs">Hit %</TableHead>
-                        <TableHead className="w-20 text-right text-xs">Seq Scans</TableHead>
-                        <TableHead className="w-20 text-right text-xs">Idx Scans</TableHead>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
+              {errors.activeQueries ? (
+                <p className="text-xs text-destructive">{errors.activeQueries}</p>
+              ) : activeQueries.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">No active queries</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-14 text-xs">PID</TableHead>
+                      <TableHead className="w-20 text-xs">User</TableHead>
+                      <TableHead className="w-20 text-xs">State</TableHead>
+                      <TableHead className="w-20 text-xs">Duration</TableHead>
+                      <TableHead className="text-xs">Query</TableHead>
+                      <TableHead className="w-14 text-xs" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activeQueries.map((q) => (
+                      <TableRow key={q.pid}>
+                        <TableCell className="text-xs">{q.pid}</TableCell>
+                        <TableCell className="text-xs">{q.user}</TableCell>
+                        <TableCell className="text-xs">{q.state}</TableCell>
+                        <TableCell
+                          className={cn(
+                            'text-xs',
+                            q.durationMs > 60000 && 'font-medium text-red-500'
+                          )}
+                        >
+                          {q.duration}
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate text-xs font-mono">
+                          {q.query.slice(0, 100)}
+                        </TableCell>
+                        <TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              >
+                                <Skull className="size-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Kill Query?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Cancel the query running on PID {q.pid} (user: {q.user})? This
+                                  will attempt to cancel the current statement.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleKillQuery(q.pid)}>
+                                  Kill Query
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
                       </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {cacheStats.tableCacheDetails.slice(0, 15).map((t) => (
-                        <TableRow key={t.table}>
-                          <TableCell className="text-xs">{t.table}</TableCell>
-                          <TableCell className={cn('text-right text-xs', cacheColor(t.hitRatio))}>
-                            {t.hitRatio}%
-                          </TableCell>
-                          <TableCell className="text-right text-xs">
-                            {t.seqScans.toLocaleString()}
-                          </TableCell>
-                          <TableCell className="text-right text-xs">
-                            {t.indexScans.toLocaleString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
 
-        {/* Locks & Blocking */}
-        <Card className="flex flex-col overflow-hidden">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center justify-between text-sm">
-              Locks &amp; Blocking
-              {isLoading.locks && <Loader2 className="size-3 animate-spin" />}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
-            {errors.locks ? (
-              <p className="text-xs text-destructive">{errors.locks}</p>
-            ) : locks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8">
-                <CheckCircle2 className="size-6 text-green-500" />
-                <p className="text-sm text-green-600">No blocking locks</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-20 text-xs">Blocked</TableHead>
-                    <TableHead className="w-20 text-xs">Blocker</TableHead>
-                    <TableHead className="w-20 text-xs">Type</TableHead>
-                    <TableHead className="text-xs">Relation</TableHead>
-                    <TableHead className="w-16 text-xs">Wait</TableHead>
-                    <TableHead className="w-14 text-xs" />
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {locks.map((l, i) => (
-                    <TableRow key={`${l.blockedPid}-${l.blockingPid}-${i}`}>
-                      <TableCell className="text-xs">
-                        <span className="font-medium">{l.blockedPid}</span>
-                        <span className="text-muted-foreground"> ({l.blockedUser})</span>
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <span className="font-medium">{l.blockingPid}</span>
-                        <span className="text-muted-foreground"> ({l.blockingUser})</span>
-                      </TableCell>
-                      <TableCell className="text-xs">{l.lockType}</TableCell>
-                      <TableCell className="text-xs">{l.relation || '-'}</TableCell>
-                      <TableCell
+          {/* Table Sizes */}
+          <Card className="flex max-h-[500px] flex-col overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  Table Sizes
+                  {dbSize && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      DB Total: {dbSize.totalSize}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-1">
+                  {isLoading.tableSizes && <Loader2 className="size-3 animate-spin" />}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => setShareCard('tableSizes')}
+                      >
+                        <Share2 className="size-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p className="text-xs">Share as image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Select value={sizeSort} onValueChange={(v) => setSizeSort(v as typeof sizeSort)}>
+                    <SelectTrigger className="h-6 w-20 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="total">Total</SelectItem>
+                      <SelectItem value="data">Data</SelectItem>
+                      <SelectItem value="index">Index</SelectItem>
+                      <SelectItem value="rows">Rows</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
+              {errors.tableSizes ? (
+                <p className="text-xs text-destructive">{errors.tableSizes}</p>
+              ) : sortedTableSizes.length === 0 ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">No tables found</p>
+              ) : (
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-card">
+                    <TableRow>
+                      <TableHead className="text-xs">Table</TableHead>
+                      <TableHead className="w-20 text-right text-xs">Est. Rows</TableHead>
+                      <TableHead className="w-20 text-right text-xs">Data</TableHead>
+                      <TableHead className="w-20 text-right text-xs">Index</TableHead>
+                      <TableHead className="w-20 text-right text-xs">Total</TableHead>
+                      <TableHead className="w-24 text-xs" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedTableSizes.slice(0, 50).map((t) => (
+                      <TableRow key={`${t.schema}.${t.table}`}>
+                        <TableCell className="text-xs">
+                          <span className="text-muted-foreground">{t.schema}.</span>
+                          {t.table}
+                        </TableCell>
+                        <TableCell className="text-right text-xs">
+                          {t.rowCountEstimate.toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right text-xs">{t.dataSize}</TableCell>
+                        <TableCell className="text-right text-xs">{t.indexSize}</TableCell>
+                        <TableCell className="text-right text-xs font-medium">
+                          {t.totalSize}
+                        </TableCell>
+                        <TableCell>
+                          <div className="h-2 w-full rounded-full bg-muted">
+                            <div
+                              className="h-2 rounded-full bg-primary/60"
+                              style={{
+                                width: `${maxTotalSize > 0 ? (t.totalSizeBytes / maxTotalSize) * 100 : 0}%`
+                              }}
+                            />
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Cache Hit Ratios */}
+          <Card className="flex flex-col overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center justify-between text-sm">
+                Cache Hit Ratios
+                <div className="flex items-center gap-1">
+                  {isLoading.cacheStats && <Loader2 className="size-3 animate-spin" />}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => setShareCard('cacheStats')}
+                      >
+                        <Share2 className="size-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p className="text-xs">Share as image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-auto px-3 pb-3">
+              {errors.cacheStats ? (
+                <p className="text-xs text-destructive">{errors.cacheStats}</p>
+              ) : !cacheStats ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">Loading...</p>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-lg border p-4 text-center">
+                      <p className="text-xs text-muted-foreground">Buffer Cache</p>
+                      <p
                         className={cn(
-                          'text-xs',
-                          l.waitDurationMs > 30000 && 'font-medium text-red-500'
+                          'text-3xl font-bold',
+                          cacheColor(cacheStats.bufferCacheHitRatio)
                         )}
                       >
-                        {l.waitDuration}
-                      </TableCell>
-                      <TableCell>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 text-destructive hover:text-destructive"
-                            >
-                              <Skull className="size-3" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Kill Blocker?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Cancel the blocking query on PID {l.blockingPid} (user:{' '}
-                                {l.blockingUser})? This will unblock PID {l.blockedPid}.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleKillBlocker(l.blockingPid)}>
-                                Kill Blocker
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
+                        {cacheStats.bufferCacheHitRatio}%
+                      </p>
+                    </div>
+                    <div className="rounded-lg border p-4 text-center">
+                      <p className="text-xs text-muted-foreground">Index Cache</p>
+                      <p className={cn('text-3xl font-bold', cacheColor(cacheStats.indexHitRatio))}>
+                        {cacheStats.indexHitRatio}%
+                      </p>
+                    </div>
+                  </div>
+                  {cacheStats.tableCacheDetails && cacheStats.tableCacheDetails.length > 0 && (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-xs">Table</TableHead>
+                          <TableHead className="w-16 text-right text-xs">Hit %</TableHead>
+                          <TableHead className="w-20 text-right text-xs">Seq Scans</TableHead>
+                          <TableHead className="w-20 text-right text-xs">Idx Scans</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {cacheStats.tableCacheDetails.slice(0, 15).map((t) => (
+                          <TableRow key={t.table}>
+                            <TableCell className="text-xs">{t.table}</TableCell>
+                            <TableCell className={cn('text-right text-xs', cacheColor(t.hitRatio))}>
+                              {t.hitRatio}%
+                            </TableCell>
+                            <TableCell className="text-right text-xs">
+                              {t.seqScans.toLocaleString()}
+                            </TableCell>
+                            <TableCell className="text-right text-xs">
+                              {t.indexScans.toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Locks & Blocking */}
+          <Card className="flex flex-col overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center justify-between text-sm">
+                Locks &amp; Blocking
+                <div className="flex items-center gap-1">
+                  {isLoading.locks && <Loader2 className="size-3 animate-spin" />}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 w-6 p-0"
+                        onClick={() => setShareCard('locks')}
+                      >
+                        <Share2 className="size-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p className="text-xs">Share as image</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
+              {errors.locks ? (
+                <p className="text-xs text-destructive">{errors.locks}</p>
+              ) : locks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 py-8">
+                  <CheckCircle2 className="size-6 text-green-500" />
+                  <p className="text-sm text-green-600">No blocking locks</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-20 text-xs">Blocked</TableHead>
+                      <TableHead className="w-20 text-xs">Blocker</TableHead>
+                      <TableHead className="w-20 text-xs">Type</TableHead>
+                      <TableHead className="text-xs">Relation</TableHead>
+                      <TableHead className="w-16 text-xs">Wait</TableHead>
+                      <TableHead className="w-14 text-xs" />
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+                  </TableHeader>
+                  <TableBody>
+                    {locks.map((l, i) => (
+                      <TableRow key={`${l.blockedPid}-${l.blockingPid}-${i}`}>
+                        <TableCell className="text-xs">
+                          <span className="font-medium">{l.blockedPid}</span>
+                          <span className="text-muted-foreground"> ({l.blockedUser})</span>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <span className="font-medium">{l.blockingPid}</span>
+                          <span className="text-muted-foreground"> ({l.blockingUser})</span>
+                        </TableCell>
+                        <TableCell className="text-xs">{l.lockType}</TableCell>
+                        <TableCell className="text-xs">{l.relation || '-'}</TableCell>
+                        <TableCell
+                          className={cn(
+                            'text-xs',
+                            l.waitDurationMs > 30000 && 'font-medium text-red-500'
+                          )}
+                        >
+                          {l.waitDuration}
+                        </TableCell>
+                        <TableCell>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                              >
+                                <Skull className="size-3" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Kill Blocker?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Cancel the blocking query on PID {l.blockingPid} (user:{' '}
+                                  {l.blockingUser})? This will unblock PID {l.blockedPid}.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleKillBlocker(l.blockingPid)}>
+                                  Kill Blocker
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </TooltipProvider>
+
+      {/* Share Image Dialog */}
+      <ShareImageDialog
+        open={!!shareCard}
+        onOpenChange={(open) => !open && setShareCard(null)}
+        title={shareCard ? SHARE_DIALOG_TITLES[shareCard] : ''}
+        description="Generate a shareable image of this panel. The image may include connection names or hostnames."
+        filenamePrefix={shareCard ? SHARE_DIALOG_PREFIXES[shareCard] : 'health'}
+      >
+        {(theme: ShareImageTheme, _background) => {
+          switch (shareCard) {
+            case 'activeQueries':
+              return (
+                <ShareActiveQueries
+                  theme={theme}
+                  activeQueries={activeQueries}
+                  connLabel={connLabel}
+                />
+              )
+            case 'tableSizes':
+              return (
+                <ShareTableSizes
+                  theme={theme}
+                  sortedTableSizes={sortedTableSizes}
+                  maxTotalSize={maxTotalSize}
+                  dbSize={dbSize}
+                  connLabel={connLabel}
+                />
+              )
+            case 'cacheStats':
+              return <ShareCacheStats theme={theme} cacheStats={cacheStats} connLabel={connLabel} />
+            case 'locks':
+              return <ShareLocks theme={theme} locks={locks} connLabel={connLabel} />
+            default:
+              return null
+          }
+        }}
+      </ShareImageDialog>
     </div>
   )
 }

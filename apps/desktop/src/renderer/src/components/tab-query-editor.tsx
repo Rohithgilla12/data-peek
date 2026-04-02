@@ -56,9 +56,15 @@ import {
 import type { EditContext } from '@data-peek/shared'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
-import { keys } from '@/lib/utils'
+import { cn, keys } from '@/lib/utils'
 import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
-import { buildQualifiedTableRef, buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
+import {
+  buildQualifiedTableRef,
+  buildFullyQualifiedTableRef,
+  buildSelectQuery,
+  buildCountQuery,
+  quoteIdentifier
+} from '@/lib/sql-helpers'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
@@ -70,6 +76,7 @@ import { PgNotificationsPanel } from '@/components/pg-notifications-panel'
 import { HealthMonitor } from '@/components/health-monitor'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
 import { ShareQueryDialog } from '@/components/share-query-dialog'
+import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image-dialog'
 import { TelemetryPanel } from '@/components/telemetry-panel'
 import { BenchmarkButton } from '@/components/benchmark-button'
 import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
@@ -90,6 +97,17 @@ import {
   AlertDialogTitle
 } from '@/components/ui/alert-dialog'
 import type { ExportData } from '@/lib/export'
+
+/** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
+function ensureArray(value: unknown): string[] | undefined {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
+    const inner = value.slice(1, -1)
+    if (inner === '') return []
+    return inner.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
+  }
+  return undefined
+}
 
 interface TabQueryEditorProps {
   tabId: string
@@ -203,6 +221,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Share query dialog state
   const [shareDialogOpen, setShareDialogOpen] = useState(false)
+
+  // Share results image dialog state
+  const [shareResultsOpen, setShareResultsOpen] = useState(false)
 
   // Export with masked columns confirmation
   const [pendingExport, setPendingExport] = useState<null | {
@@ -717,7 +738,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         foreignKey: schemaCol?.foreignKey,
         isPrimaryKey: schemaCol?.isPrimaryKey ?? false,
         isNullable: schemaCol?.isNullable ?? true,
-        enumValues: schemaCol?.enumValues ?? getEnumValues(col.dataType)
+        enumValues: ensureArray(schemaCol?.enumValues) ?? ensureArray(getEnumValues(col.dataType))
       }
     })
   }, [tab, schemas, getEnumValues])
@@ -749,12 +770,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     ): Promise<{ data?: Record<string, unknown>; columns?: ColumnInfo[]; error?: string }> => {
       if (!tabConnection) return { error: 'No connection' }
 
-      // Build table reference (handle MSSQL's dbo schema)
-      const defaultSchema = tabConnection.dbType === 'mssql' ? 'dbo' : 'public'
-      const tableRef =
-        fk.referencedSchema === defaultSchema
-          ? fk.referencedTable
-          : `${fk.referencedSchema}.${fk.referencedTable}`
+      const tableRef = buildFullyQualifiedTableRef(
+        fk.referencedSchema,
+        fk.referencedTable,
+        tabConnection.dbType
+      )
 
       // Format value for SQL
       let formattedValue: string
@@ -766,7 +786,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         formattedValue = String(value)
       }
 
-      const whereClause = `WHERE "${fk.referencedColumn}" = ${formattedValue}`
+      const quotedCol = quoteIdentifier(fk.referencedColumn, tabConnection.dbType)
+      const whereClause = `WHERE ${quotedCol} = ${formattedValue}`
       const query = buildSelectQuery(tableRef, tabConnection.dbType, {
         where: whereClause,
         limit: 1
@@ -947,18 +968,24 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Generate SQL WHERE clause from filters
   const generateWhereClause = (filters: DataTableFilter[]): string => {
     if (filters.length === 0) return ''
+    const dbType = tabConnection?.dbType
     const conditions = filters.map((f) => {
-      // Escape single quotes in value
       const escapedValue = f.value.replace(/'/g, "''")
-      return `"${f.column}" ILIKE '%${escapedValue}%'`
+      const quotedCol = quoteIdentifier(f.column, dbType)
+      if (dbType === 'mssql' || dbType === 'mysql') {
+        return `${quotedCol} LIKE '%${escapedValue}%'`
+      }
+      return `${quotedCol} ILIKE '%${escapedValue}%'`
     })
     return `WHERE ${conditions.join(' AND ')}`
   }
 
-  // Generate SQL ORDER BY clause from sorting
   const generateOrderByClause = (sorting: DataTableSort[]): string => {
     if (sorting.length === 0) return ''
-    const orders = sorting.map((s) => `"${s.column}" ${s.direction.toUpperCase()}`)
+    const dbType = tabConnection?.dbType
+    const orders = sorting.map(
+      (s) => `${quoteIdentifier(s.column, dbType)} ${s.direction.toUpperCase()}`
+    )
     return `ORDER BY ${orders.join(', ')}`
   }
 
@@ -1247,6 +1274,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
             />
             {!isEditorCollapsed && (
               <>
+                <div className="mx-1 h-4 w-px bg-border/60" />
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1290,17 +1318,17 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                <div className="mx-1 h-4 w-px bg-border/60" />
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className={`gap-1.5 h-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
+                        size="icon-sm"
+                        className={`h-7 w-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
                         onClick={() => setIsResultsCollapsed(!isResultsCollapsed)}
                       >
                         <Maximize2 className="size-3.5" />
-                        {isResultsCollapsed ? 'Restore' : 'Focus'}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
@@ -1615,6 +1643,24 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       </TooltipProvider>
                     )}
                     <MaskingToolbar tabId={tabId} />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 h-7"
+                            onClick={() => setShareResultsOpen(true)}
+                          >
+                            <Share2 className="size-3.5" />
+                            Share
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-xs">Share results as an image</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="sm" className="gap-1.5 h-7">
@@ -1769,6 +1815,107 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         connectionType={tabConnection?.dbType}
         connectionName={tabConnection?.name}
       />
+
+      {/* Share Results Image Dialog */}
+      <ShareImageDialog
+        open={shareResultsOpen}
+        onOpenChange={setShareResultsOpen}
+        title="Share Results"
+        description="Generate a shareable image of your query results. Review data before sharing — the image may contain sensitive values."
+        filenamePrefix="query-results"
+      >
+        {(theme: ShareImageTheme) => {
+          const result = tab.result
+          if (!result || result.columns.length === 0) {
+            const mutedColor = theme === 'light' ? 'text-zinc-500' : 'text-zinc-400'
+            return <p className={cn('py-4 text-center text-xs', mutedColor)}>No results to share</p>
+          }
+
+          const textColor = theme === 'light' ? 'text-zinc-800' : 'text-zinc-100'
+          const mutedColor = theme === 'light' ? 'text-zinc-500' : 'text-zinc-400'
+          const headerColor = theme === 'light' ? 'text-zinc-700' : 'text-zinc-300'
+          const borderColor = theme === 'light' ? 'border-zinc-200' : 'border-zinc-700'
+          const maxRows = 25
+          const visibleRows = result.rows.slice(0, maxRows)
+          const visibleCols = result.columns.slice(0, 10)
+          const connLabel = tabConnection?.name || tabConnection?.host || ''
+
+          return (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <p className={cn('text-sm font-semibold', textColor)}>
+                    {result.tableName || 'Query Results'}
+                  </p>
+                  <p className={cn('text-xs', mutedColor)}>
+                    {result.rowCount} rows &middot; {result.durationMs}ms
+                  </p>
+                </div>
+                {connLabel && <p className={cn('text-xs', mutedColor)}>{connLabel}</p>}
+              </div>
+              <div className="overflow-hidden">
+                <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr className={cn(borderColor)} style={{ borderBottom: '1px solid' }}>
+                      {visibleCols.map((col) => (
+                        <th
+                          key={col.name}
+                          className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}
+                        >
+                          {col.name}
+                        </th>
+                      ))}
+                      {result.columns.length > 10 && (
+                        <th className={cn('py-1.5 text-left font-medium', mutedColor)}>
+                          +{result.columns.length - 10} more
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleRows.map((row, rowIdx) => (
+                      <tr
+                        key={rowIdx}
+                        className={cn(borderColor)}
+                        style={{ borderBottom: '1px solid' }}
+                      >
+                        {visibleCols.map((col) => {
+                          const val = row[col.name]
+                          const display =
+                            val === null
+                              ? 'NULL'
+                              : typeof val === 'object'
+                                ? JSON.stringify(val)
+                                : String(val)
+                          return (
+                            <td
+                              key={col.name}
+                              className={cn(
+                                'max-w-[200px] truncate py-1.5 pr-3 font-mono',
+                                val === null ? mutedColor : textColor
+                              )}
+                            >
+                              {display.length > 50 ? display.slice(0, 50) + '...' : display}
+                            </td>
+                          )
+                        })}
+                        {result.columns.length > 10 && (
+                          <td className={cn('py-1.5 pr-3', mutedColor)}>...</td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {result.rows.length > maxRows && (
+                  <p className={cn('mt-2 text-xs', mutedColor)}>
+                    Showing {maxRows} of {result.rows.length} rows
+                  </p>
+                )}
+              </div>
+            </div>
+          )
+        }}
+      </ShareImageDialog>
 
       {/* Export with masked columns confirmation */}
       <AlertDialog open={!!pendingExport} onOpenChange={(open) => !open && setPendingExport(null)}>

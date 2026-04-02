@@ -1,27 +1,14 @@
-import { useState, useRef, useCallback, useEffect } from 'react'
-import { toBlob } from 'html-to-image'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Copy, Download, Check, Loader2 } from 'lucide-react'
+  ShareImageDialog,
+  type ShareImageTheme,
+  type BackgroundStyle
+} from '@/components/share-image-dialog'
 import { DatabaseIcon } from '@/components/database-icons'
 import type { DatabaseType } from '@shared/index'
-import { cn } from '@/lib/utils'
+
 import { SQL_KEYWORDS as SQL_KEYWORDS_ARRAY } from '@/constants/sql-keywords'
 
 // Additional keywords not in the shared list (window functions, MSSQL, etc.)
@@ -242,71 +229,135 @@ function tokenizeSQL(sql: string): Token[] {
   return tokens
 }
 
-function HighlightedSQL({ sql, theme }: { sql: string; theme: 'dark' | 'light' }) {
-  const tokens = tokenizeSQL(sql)
-
-  const getColor = (type: Token['type']) => {
-    if (theme === 'dark') {
-      switch (type) {
-        case 'keyword':
-          return '#60a5fa' // blue-400
-        case 'function':
-          return '#f472b6' // pink-400
-        case 'string':
-          return '#4ade80' // green-400
-        case 'number':
-          return '#fb923c' // orange-400
-        case 'comment':
-          return '#6b7280' // gray-500
-        case 'operator':
-          return '#c084fc' // purple-400
-        default:
-          return '#e5e7eb' // gray-200
-      }
-    } else {
-      switch (type) {
-        case 'keyword':
-          return '#2563eb' // blue-600
-        case 'function':
-          return '#db2777' // pink-600
-        case 'string':
-          return '#16a34a' // green-600
-        case 'number':
-          return '#ea580c' // orange-600
-        case 'comment':
-          return '#9ca3af' // gray-400
-        case 'operator':
-          return '#9333ea' // purple-600
-        default:
-          return '#1f2937' // gray-800
-      }
-    }
-  }
-
-  return (
-    <code className="font-mono text-sm leading-relaxed">
-      {tokens.map((token, i) => (
-        <span
-          key={i}
-          style={{
-            color: getColor(token.type),
-            fontWeight: token.type === 'keyword' ? 600 : 400,
-            fontStyle: token.type === 'comment' ? 'italic' : 'normal'
-          }}
-        >
-          {token.value}
-        </span>
-      ))}
-    </code>
-  )
+type SyntaxColorSet = {
+  keyword: string
+  function: string
+  string: string
+  number: string
+  comment: string
+  operator: string
+  default: string
 }
 
-type BackgroundStyle =
-  | 'gradient-blue'
-  | 'gradient-purple'
-  | 'gradient-green'
-  | 'solid-dark'
-  | 'solid-light'
+const SYNTAX_COLORS: Record<string, SyntaxColorSet> = {
+  dark: {
+    keyword: 'oklch(0.7 0.15 250)',
+    function: 'oklch(0.75 0.12 330)',
+    string: 'oklch(0.75 0.14 150)',
+    number: 'oklch(0.75 0.13 70)',
+    comment: 'oklch(0.5 0.02 250)',
+    operator: 'oklch(0.65 0.1 290)',
+    default: 'oklch(0.87 0 0)'
+  },
+  light: {
+    keyword: 'oklch(0.45 0.15 250)',
+    function: 'oklch(0.5 0.15 330)',
+    string: 'oklch(0.45 0.15 150)',
+    number: 'oklch(0.5 0.13 70)',
+    comment: 'oklch(0.6 0.02 250)',
+    operator: 'oklch(0.45 0.12 290)',
+    default: 'oklch(0.2 0 0)'
+  },
+  vercel: {
+    keyword: 'oklch(69.36% 0.2223 3.91)',
+    function: 'oklch(69.87% 0.2037 309.51)',
+    string: 'oklch(73.1% 0.2158 148.29)',
+    number: '#ffffff',
+    comment: 'hsla(0, 0%, 63%, 1)',
+    operator: 'oklch(71.7% 0.1648 250.79)',
+    default: 'hsla(0, 0%, 93%, 1)'
+  },
+  supabase: {
+    keyword: '#bda4ff',
+    function: '#3ecf8e',
+    string: '#ffcda1',
+    number: '#ededed',
+    comment: '#7e7e7e',
+    operator: '#bda4ff',
+    default: '#ffffff'
+  },
+  candy: {
+    keyword: 'oklch(0.7 0.18 290)',
+    function: 'oklch(0.75 0.15 330)',
+    string: 'oklch(0.8 0.12 85)',
+    number: 'oklch(0.85 0 0)',
+    comment: 'oklch(0.55 0.05 290)',
+    operator: 'oklch(0.7 0.1 250)',
+    default: 'oklch(0.95 0 0)'
+  }
+}
+
+function getSyntaxColors(theme: ShareImageTheme, background: BackgroundStyle): SyntaxColorSet {
+  if (background in SYNTAX_COLORS) {
+    return SYNTAX_COLORS[background]
+  }
+  return SYNTAX_COLORS[theme]
+}
+
+function HighlightedSQL({
+  sql,
+  theme,
+  background
+}: {
+  sql: string
+  theme: 'dark' | 'light'
+  background: BackgroundStyle
+}) {
+  const tokens = tokenizeSQL(sql)
+  const colors = getSyntaxColors(theme, background)
+
+  const getColor = (type: Token['type']) => {
+    return colors[type as keyof typeof colors] ?? colors.default
+  }
+
+  const lines = sql.split('\n')
+  const lineCount = lines.length
+
+  return (
+    <div className="flex font-mono text-[13px] leading-[1.7]">
+      <div
+        className="shrink-0 select-none pr-4 text-right"
+        style={{
+          color: theme === 'light' ? 'oklch(0.7 0.01 250)' : 'oklch(0.35 0.02 250)',
+          width: lineCount > 99 ? '3.5ch' : '2.5ch'
+        }}
+        aria-hidden="true"
+      >
+        {lines.map((_, i) => (
+          <div key={i}>{i + 1}</div>
+        ))}
+      </div>
+      <div
+        className="shrink-0 mr-4"
+        style={{
+          width: '1px',
+          background: theme === 'light' ? 'oklch(0.88 0.01 250)' : 'oklch(0.25 0.02 250)'
+        }}
+      />
+      <code className="min-w-0 flex-1 whitespace-pre-wrap break-words">
+        {tokens.map((token, i) => {
+          const color = getColor(token.type)
+          const isKeyword = token.type === 'keyword'
+          return (
+            <span
+              key={i}
+              style={{
+                color,
+                fontWeight: isKeyword ? 600 : 400,
+                fontStyle: token.type === 'comment' ? 'italic' : 'normal',
+                ...(isKeyword && theme === 'dark'
+                  ? { textShadow: `0 0 12px oklch(0.5 0.15 250 / 0.4)` }
+                  : {})
+              }}
+            >
+              {token.value}
+            </span>
+          )
+        })}
+      </code>
+    </div>
+  )
+}
 
 interface ShareQueryDialogProps {
   open: boolean
@@ -316,6 +367,55 @@ interface ShareQueryDialogProps {
   connectionName?: string
 }
 
+function WindowChrome({
+  theme,
+  connectionType,
+  connectionName,
+  showBadge
+}: {
+  theme: ShareImageTheme
+  connectionType?: DatabaseType
+  connectionName?: string
+  showBadge: boolean
+}) {
+  const light = theme === 'light'
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-2.5"
+      style={{
+        background: light ? 'oklch(0.95 0.005 250)' : 'oklch(0.16 0.008 260)',
+        borderBottom: `1px solid ${light ? 'oklch(0.88 0.01 250)' : 'oklch(0.22 0.015 250)'}`
+      }}
+    >
+      <div className="flex items-center gap-1.5">
+        <div
+          className="size-3 rounded-full"
+          style={{ background: light ? 'oklch(0.75 0.01 0)' : 'oklch(0.35 0.01 0)' }}
+        />
+        <div
+          className="size-3 rounded-full"
+          style={{ background: light ? 'oklch(0.75 0.01 0)' : 'oklch(0.35 0.01 0)' }}
+        />
+        <div
+          className="size-3 rounded-full"
+          style={{ background: light ? 'oklch(0.75 0.01 0)' : 'oklch(0.35 0.01 0)' }}
+        />
+      </div>
+      {showBadge && connectionType && (
+        <div
+          className="flex items-center gap-1.5 font-mono text-[11px]"
+          style={{
+            color: light ? 'oklch(0.45 0.04 250)' : 'oklch(0.6 0.04 250)'
+          }}
+        >
+          <DatabaseIcon dbType={connectionType} className="size-3" />
+          <span>{connectionName || connectionType}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ShareQueryDialog({
   open,
   onOpenChange,
@@ -323,270 +423,72 @@ export function ShareQueryDialog({
   connectionType,
   connectionName
 }: ShareQueryDialogProps) {
-  const renderRef = useRef<HTMLDivElement>(null)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [isCopied, setIsCopied] = useState(false)
-
-  // Customization options
   const [showBadge, setShowBadge] = useState(true)
-  const [showBranding, setShowBranding] = useState(true)
-  const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyle>('gradient-blue')
-  const [padding, setPadding] = useState<'compact' | 'normal' | 'spacious'>('normal')
-
-  // Reset copy state when dialog closes
-  useEffect(() => {
-    if (!open) {
-      setIsCopied(false)
-    }
-  }, [open])
-
-  const getBackgroundClass = (style: BackgroundStyle) => {
-    switch (style) {
-      case 'gradient-blue':
-        return 'bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800'
-      case 'gradient-purple':
-        return 'bg-gradient-to-br from-purple-600 via-violet-700 to-indigo-800'
-      case 'gradient-green':
-        return 'bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800'
-      case 'solid-dark':
-        return 'bg-zinc-900'
-      case 'solid-light':
-        return 'bg-zinc-100'
-    }
-  }
-
-  const getCodeBackgroundClass = (style: BackgroundStyle) => {
-    if (style === 'solid-light') {
-      return 'bg-white/90'
-    }
-    return 'bg-black/40'
-  }
-
-  const getPaddingClass = (p: typeof padding) => {
-    switch (p) {
-      case 'compact':
-        return 'p-4'
-      case 'normal':
-        return 'p-6'
-      case 'spacious':
-        return 'p-10'
-    }
-  }
-
-  const getCodePaddingClass = (p: typeof padding) => {
-    switch (p) {
-      case 'compact':
-        return 'p-4'
-      case 'normal':
-        return 'p-6'
-      case 'spacious':
-        return 'p-8'
-    }
-  }
-
-  const theme = backgroundStyle === 'solid-light' ? 'light' : 'dark'
-
-  const generateImage = useCallback(async (): Promise<Blob | null> => {
-    if (!renderRef.current) return null
-
-    try {
-      setIsGenerating(true)
-
-      const blob = await toBlob(renderRef.current, {
-        pixelRatio: 2 // Higher quality
-      })
-
-      return blob
-    } catch (error) {
-      console.error('Failed to generate image:', error)
-      return null
-    } finally {
-      setIsGenerating(false)
-    }
-  }, [])
-
-  const downloadBlob = useCallback((blob: Blob) => {
-    const url = URL.createObjectURL(blob)
-    try {
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `query-${Date.now()}.png`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    } finally {
-      URL.revokeObjectURL(url)
-    }
-  }, [])
-
-  const handleDownload = useCallback(async () => {
-    const blob = await generateImage()
-    if (!blob) return
-    downloadBlob(blob)
-  }, [generateImage, downloadBlob])
-
-  const handleCopyToClipboard = useCallback(async () => {
-    const blob = await generateImage()
-    if (!blob) return
-
-    try {
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
-      setIsCopied(true)
-      setTimeout(() => setIsCopied(false), 2000)
-    } catch (error) {
-      console.error('Failed to copy to clipboard:', error)
-      // Fallback: download the already-generated blob instead
-      downloadBlob(blob)
-    }
-  }, [generateImage, downloadBlob])
+  const [showLineNumbers, setShowLineNumbers] = useState(true)
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Share Query</DialogTitle>
-          <DialogDescription>
-            Generate a beautiful image of your SQL query to share
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-6">
-          {/* Preview */}
-          <div className="rounded-lg overflow-hidden border border-border/50">
-            <div
-              ref={renderRef}
-              className={cn(
-                'transition-all duration-200',
-                getBackgroundClass(backgroundStyle),
-                getPaddingClass(padding)
-              )}
-            >
-              {/* Connection badge */}
-              {showBadge && connectionType && (
-                <div className="flex items-center gap-2 mb-4">
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      'gap-1.5 px-2.5 py-1',
-                      theme === 'light' ? 'bg-zinc-200 text-zinc-700' : 'bg-white/20 text-white'
-                    )}
-                  >
-                    <DatabaseIcon dbType={connectionType} className="size-3.5" />
-                    {connectionName || connectionType}
-                  </Badge>
-                </div>
-              )}
-
-              {/* Code block - removed backdrop-blur-sm for image export compatibility */}
-              <div
-                className={cn(
-                  'rounded-lg',
-                  getCodeBackgroundClass(backgroundStyle),
-                  getCodePaddingClass(padding)
-                )}
-              >
-                <pre className="whitespace-pre-wrap break-words">
-                  <HighlightedSQL sql={query} theme={theme} />
-                </pre>
-              </div>
-
-              {/* Branding */}
-              {showBranding && (
-                <div
-                  className={cn(
-                    'mt-4 flex items-center justify-end gap-2 text-xs',
-                    theme === 'light' ? 'text-zinc-500' : 'text-white/60'
-                  )}
-                >
-                  <span>Made with</span>
-                  <span className="font-semibold">data-peek</span>
-                </div>
-              )}
-            </div>
+    <ShareImageDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      title="Share Query"
+      description="Generate a beautiful image of your SQL query to share"
+      filenamePrefix="query"
+      extraOptions={
+        <>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="show-badge">Show Database Badge</Label>
+            <Switch id="show-badge" checked={showBadge} onCheckedChange={setShowBadge} />
           </div>
-
-          {/* Options */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label>Background</Label>
-                <Select
-                  value={backgroundStyle}
-                  onValueChange={(v) => setBackgroundStyle(v as BackgroundStyle)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="gradient-blue">Blue Gradient</SelectItem>
-                    <SelectItem value="gradient-purple">Purple Gradient</SelectItem>
-                    <SelectItem value="gradient-green">Green Gradient</SelectItem>
-                    <SelectItem value="solid-dark">Solid Dark</SelectItem>
-                    <SelectItem value="solid-light">Solid Light</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Padding</Label>
-                <Select value={padding} onValueChange={(v) => setPadding(v as typeof padding)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="compact">Compact</SelectItem>
-                    <SelectItem value="normal">Normal</SelectItem>
-                    <SelectItem value="spacious">Spacious</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="show-badge">Show Database Badge</Label>
-                <Switch id="show-badge" checked={showBadge} onCheckedChange={setShowBadge} />
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Label htmlFor="show-branding">Show Branding</Label>
-                <Switch
-                  id="show-branding"
-                  checked={showBranding}
-                  onCheckedChange={setShowBranding}
-                />
-              </div>
-            </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="show-lines">Show Line Numbers</Label>
+            <Switch
+              id="show-lines"
+              checked={showLineNumbers}
+              onCheckedChange={setShowLineNumbers}
+            />
           </div>
-
-          {/* Actions */}
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={handleDownload}
-              disabled={isGenerating}
-              className="gap-2"
-            >
-              {isGenerating ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                <Download className="size-4" />
-              )}
-              Save as PNG
-            </Button>
-            <Button onClick={handleCopyToClipboard} disabled={isGenerating} className="gap-2">
-              {isGenerating ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : isCopied ? (
-                <Check className="size-4" />
-              ) : (
-                <Copy className="size-4" />
-              )}
-              {isCopied ? 'Copied!' : 'Copy to Clipboard'}
-            </Button>
+        </>
+      }
+    >
+      {(theme: ShareImageTheme, background: BackgroundStyle) => (
+        <div style={{ margin: '-1.5rem', overflow: 'hidden' }}>
+          <WindowChrome
+            theme={theme}
+            connectionType={connectionType}
+            connectionName={connectionName}
+            showBadge={showBadge}
+          />
+          <div className="p-5">
+            {showLineNumbers ? (
+              <HighlightedSQL sql={query} theme={theme} background={background} />
+            ) : (
+              <code className="font-mono text-[13px] leading-[1.7] whitespace-pre-wrap break-words">
+                {tokenizeSQL(query).map((token, i) => {
+                  const colors = getSyntaxColors(theme, background)
+                  const color =
+                    colors[token.type as keyof typeof colors] ?? colors.default
+                  const isKeyword = token.type === 'keyword'
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        color,
+                        fontWeight: isKeyword ? 600 : 400,
+                        fontStyle: token.type === 'comment' ? 'italic' : 'normal',
+                        ...(isKeyword && theme === 'dark'
+                          ? { textShadow: '0 0 12px oklch(0.5 0.15 250 / 0.4)' }
+                          : {})
+                      }}
+                    >
+                      {token.value}
+                    </span>
+                  )
+                })}
+              </code>
+            )}
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      )}
+    </ShareImageDialog>
   )
 }

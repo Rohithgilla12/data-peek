@@ -16,7 +16,11 @@ import {
 import { Input } from '@/components/ui/input'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { generateLimitClause } from '@/lib/sql-helpers'
+import {
+  generateLimitClause,
+  buildFullyQualifiedTableRef,
+  quoteIdentifier
+} from '@/lib/sql-helpers'
 import { getTypeColor } from '@/lib/type-colors'
 import { cn } from '@/lib/utils'
 import { useEditStore } from '@/stores/edit-store'
@@ -51,6 +55,7 @@ import {
   Unlock,
   X
 } from 'lucide-react'
+import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import * as React from 'react'
 
 const VIRTUALIZATION_THRESHOLD = 50
@@ -239,67 +244,54 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   })
 
   // Keyboard shortcuts for edit mode
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMeta = e.metaKey || e.ctrlKey
-      const isEditing = tabEdit?.editingCell !== null
-
-      // Cmd+S: Save changes (when in edit mode with pending changes)
-      if (isMeta && e.key === 's' && !e.shiftKey) {
-        if (isEditMode && hasChanges) {
-          e.preventDefault()
-          keyboardHandlersRef.current.handleSaveChanges()
-          return
-        }
-      }
-
-      // Escape: Exit edit mode (when not editing a cell)
-      if (e.key === 'Escape' && isEditMode && !isEditing) {
-        e.preventDefault()
-        if (hasChanges) {
-          // Has changes - let the toolbar handle the confirmation dialog
-          keyboardHandlersRef.current.handleToggleEditMode()
-        } else {
-          exitEditMode(tabId)
-        }
-        return
-      }
-
-      // Cmd+Shift+A: Add new row (when in edit mode or can edit)
-      if (isMeta && e.shiftKey && e.key === 'A') {
-        if (canEdit && hasPrimaryKey) {
-          e.preventDefault()
+  const isEditing = tabEdit?.editingCell !== null
+  const editHotkeys = React.useMemo<UseHotkeyDefinition[]>(
+    () => [
+      {
+        hotkey: 'Mod+S',
+        callback: () => keyboardHandlersRef.current.handleSaveChanges(),
+        options: { enabled: isEditMode && hasChanges }
+      },
+      {
+        hotkey: 'Escape',
+        callback: () => {
+          if (hasChanges) {
+            keyboardHandlersRef.current.handleToggleEditMode()
+          } else {
+            exitEditMode(tabId)
+          }
+        },
+        options: { enabled: isEditMode && !isEditing }
+      },
+      {
+        hotkey: 'Mod+Shift+A',
+        callback: () => {
           if (!isEditMode && editContext) {
             enterEditMode(tabId, editContext)
           }
           keyboardHandlersRef.current.handleAddRowWithSheet()
-          return
-        }
+        },
+        options: { enabled: canEdit && !!hasPrimaryKey }
+      },
+      {
+        hotkey: 'Mod+Shift+Z',
+        callback: () => keyboardHandlersRef.current.handleDiscardChanges(),
+        options: { enabled: isEditMode && hasChanges }
       }
-
-      // Cmd+Shift+Z: Discard/revert changes (when in edit mode with pending changes)
-      if (isMeta && e.shiftKey && e.key === 'Z') {
-        if (isEditMode && hasChanges) {
-          e.preventDefault()
-          keyboardHandlersRef.current.handleDiscardChanges()
-          return
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [
-    isEditMode,
-    hasChanges,
-    tabEdit?.editingCell,
-    tabId,
-    canEdit,
-    hasPrimaryKey,
-    editContext,
-    enterEditMode,
-    exitEditMode
-  ])
+    ],
+    [
+      isEditMode,
+      hasChanges,
+      isEditing,
+      tabId,
+      canEdit,
+      hasPrimaryKey,
+      editContext,
+      enterEditMode,
+      exitEditMode
+    ]
+  )
+  useHotkeys(editHotkeys)
 
   // Listen for menu events (for menu bar shortcuts)
   React.useEffect(() => {
@@ -410,7 +402,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   // Build enum values map
   const enumValuesMap: Record<string, string[]> = {}
   columnDefs.forEach((col) => {
-    if (col.enumValues && col.enumValues.length > 0) {
+    if (Array.isArray(col.enumValues) && col.enumValues.length > 0) {
       enumValuesMap[col.name] = col.enumValues
     }
   })
@@ -434,11 +426,18 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             const fk = col.foreignKey!
             // Query the referenced table - limit to 1000 rows for performance
             // Use TOP for MSSQL, LIMIT for other databases
-            const limitClause = generateLimitClause(connection?.dbType, 1000)
+            const dbType = connection?.dbType
+            const limitClause = generateLimitClause(dbType, 1000)
+            const tableRef = buildFullyQualifiedTableRef(
+              fk.referencedSchema,
+              fk.referencedTable,
+              dbType
+            )
+            const quotedCol = quoteIdentifier(fk.referencedColumn, dbType)
             const query =
-              connection?.dbType === 'mssql'
-                ? `SELECT ${limitClause} DISTINCT "${fk.referencedColumn}" FROM "${fk.referencedSchema}"."${fk.referencedTable}" ORDER BY "${fk.referencedColumn}"`
-                : `SELECT DISTINCT "${fk.referencedColumn}" FROM "${fk.referencedSchema}"."${fk.referencedTable}" ORDER BY "${fk.referencedColumn}" ${limitClause}`
+              dbType === 'mssql'
+                ? `SELECT ${limitClause} DISTINCT ${quotedCol} FROM ${tableRef} ORDER BY ${quotedCol}`
+                : `SELECT DISTINCT ${quotedCol} FROM ${tableRef} ORDER BY ${quotedCol} ${limitClause}`
 
             try {
               const result = await window.api.db.query(connection, query)

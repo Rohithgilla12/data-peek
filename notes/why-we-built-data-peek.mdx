@@ -1,0 +1,125 @@
+---
+title: "Why We Built data-peek: A SQL Client That Gets Out of Your Way"
+description: "Every SQL client felt like it was built for DBAs in 2005. So we made one for developers in 2026."
+date: "2026-03-28"
+author: "Rohith Gilla"
+tags: ["data-peek", "product", "developer-tools", "sql-client"]
+---
+
+# Why We Built data-peek: A SQL Client That Gets Out of Your Way
+
+## The Moment That Started It All
+
+I was debugging a failing API endpoint at 11 PM on a Tuesday. The fix was simple — I just needed to check whether a row existed in a table. That's it. One SELECT query.
+
+So I opened pgAdmin.
+
+Forty-five seconds later, it was still loading. The tree view was expanding nodes I didn't ask for. The query tool opened in a new browser tab that immediately stole focus. I typed my query, hit execute, and got a connection error because the server profile had expired. I re-entered my credentials, ran the query again, got my answer in 200 milliseconds, and closed the whole thing in frustration.
+
+The actual database work took less than a second. Everything around it took two minutes and most of my remaining patience.
+
+If this sounds familiar, you're the person I built data-peek for.
+
+## The State of SQL Clients Is... Not Great
+
+I've used them all. pgAdmin, DBeaver, DataGrip, MySQL Workbench, Azure Data Studio, TablePlus, Postico — the list goes on. They range from "enterprise Java application that wants 2GB of RAM to show you a table" to "actually pretty good but costs more than my streaming subscriptions combined."
+
+Here's what bothered me most: every SQL client seemed to assume I wanted to live inside it. They all wanted to be my IDE, my migration tool, my ER diagram designer, my database administration suite, and possibly my operating system. I just wanted to look at some data.
+
+DBeaver would greet me with a "Tip of the Day" dialog. pgAdmin needed a browser. MySQL Workbench crashed if you looked at it wrong. And don't get me started on JDBC driver configuration — if you've ever rage-quit a SQL client because it asked you to configure a JDBC driver, this is for you.
+
+The tools that were fast and simple (like psql in the terminal) lacked the visual feedback that makes data exploration actually pleasant. The tools that were visual were slow and complicated. There was nothing in between.
+
+## So I Built the Thing I Wanted
+
+data-peek started as a weekend project with a single premise: what if a SQL client opened as fast as a text editor and got out of your way just as quickly?
+
+The core design philosophy fits in one line: **simple over feature-rich, keyboard-first, fast to open and query.**
+
+That's not a compromise — it's the whole point. I didn't want to build a tool that could do 200 things. I wanted to build a tool that did 10 things so well that you never thought about them.
+
+We could have added 200 features. We chose to make 10 features actually good.
+
+## Decisions That Define data-peek
+
+Every product is shaped by its "no" decisions as much as its "yes" ones. Here are some of the choices that make data-peek feel the way it does.
+
+### Dark Mode First
+
+This isn't a "we also support dark mode" situation. Dark mode is the primary design target. The entire UI was designed for dark backgrounds first, because that's what developers actually use. Light mode exists, but dark mode is the citizen, not the afterthought.
+
+The color system is built around electric cyan on dark surfaces — closer to a terminal than a website. data-peek should feel like it belongs next to your code editor, not next to Salesforce.
+
+### Monaco Editor (The Same Editor as VS Code)
+
+Your query editor should feel exactly like your code editor. Same keyboard shortcuts, same syntax highlighting, same autocomplete behavior. We use Monaco — the editor engine that powers VS Code — because relearning keyboard shortcuts for every tool is a waste of your brain.
+
+You already know how to use it. That's the point.
+
+### No Wizard Flows
+
+There is no "New Connection Wizard" with seven steps and a progress bar. You fill in host, port, database, user, password. You click connect. That's it.
+
+No "choose your adventure" dialogs. No "are you sure?" confirmations where an undo would work fine. No modals stacked on modals. Every interaction should feel like it respects the fact that you have somewhere else to be.
+
+### Inline Editing
+
+See a wrong value? Click it, fix it, done. No separate "edit record" form that opens in a new panel. No "switch to edit mode." The data is right there. Just change it.
+
+### Command Palette
+
+Press Cmd+K and search for what you need. If you've used VS Code, Raycast, or Linear, you already understand why this matters. Discovery through search is faster than discovery through menu hierarchies, especially when you can't remember which menu something is hiding in.
+
+### Keyboard-First Everything
+
+Tab between connections. Cmd+Enter to execute. Cmd+N for new tab. Cmd+W to close. Ctrl+Space for autocomplete. The mouse is there if you want it, but you shouldn't need it.
+
+## Who data-peek Is For
+
+data-peek is for developers who are in the middle of something else.
+
+You're a backend engineer debugging why your API is returning stale data. You're a full-stack dev checking whether your migration actually ran. You're writing a new feature and you need to quickly understand the shape of a table you didn't create. You're verifying that your seed script worked before you push.
+
+You don't want to "open your database tool." You want to peek at your data, get an answer, and go back to what you were doing. That's literally why it's called data-peek.
+
+We support PostgreSQL, MySQL, and Microsoft SQL Server — which covers the vast majority of what developers actually use day to day.
+
+## What data-peek Is NOT
+
+Let me save you some time if you're evaluating this for the wrong use case.
+
+**data-peek is not a DBA tool.** If you need to manage tablespaces, configure replication, set up user permissions, or tune query plans across a fleet of production databases, this is not your tool. You want something with more buttons.
+
+**data-peek is not a migration tool.** We don't generate migration files, track schema versions, or integrate with Flyway. Use Prisma, Drizzle, or whatever your ORM provides. We'll happily show you the result of your migrations, though.
+
+**data-peek is not trying to replace DataGrip for power users.** If you spend 8 hours a day inside a SQL client writing complex multi-file query projects with version control integration, DataGrip is excellent and worth every penny. data-peek is for the other 95% of developers who open a SQL client for 5 minutes at a time.
+
+**data-peek is not an analytics platform.** No charts, no dashboards, no scheduled reports. If you need BI, use a BI tool. We just show you the rows.
+
+The narrowness is intentional. Every feature we don't add is a feature that can't slow down startup, clutter the UI, or confuse the interface. Saying no is the hardest part of building a tool like this, and it's also the most important part.
+
+## The Technical Bits (If You're Curious)
+
+data-peek is an Electron app built with React and TypeScript. I know, I know — "Electron is bloated." But here's the thing: Electron lets us ship on Mac, Windows, and Linux from a single codebase, and when you're disciplined about performance, it's perfectly fast. Our cold start time is under 2 seconds. That's faster than most "native" database tools.
+
+The architecture is deliberately simple. The Electron main process handles all database connections and query execution. The renderer is a React app with Zustand for state management. Communication happens over IPC with a typed contract, so the renderer never touches a database driver directly. It's boring on purpose — boring means fewer bugs, easier debugging, and less time fighting the framework.
+
+We use the actual database drivers — `pg` for PostgreSQL, `mysql2` for MySQL, `mssql` for SQL Server. No abstraction layers, no ORMs, no JDBC. When you run a query, it goes straight to the database with minimal overhead.
+
+## The Part Where I'm Honest
+
+data-peek isn't perfect. There are things I wish it did better and things I know we'll improve over time.
+
+The autocomplete could be smarter. The schema browser could be richer. There are edge cases in SQL Server support that I haven't tested because, frankly, I don't use SQL Server that often and I'm sorry about that.
+
+But here's what I keep coming back to: the tools that try to be everything for everyone end up being mediocre at the thing that matters most — letting you quickly look at your data. data-peek does that one thing really, really well. Everything else we add has to earn its place by not making that core experience worse.
+
+## Try It
+
+data-peek is free for personal use. If you're a developer who just wants a SQL client that opens fast, stays out of your way, and doesn't ask you to configure a JDBC driver, give it a shot.
+
+Download it at [datapeek.dev](https://datapeek.dev).
+
+If you love it, tell a friend. If you hate it, tell me — I'm [@RohithGilla](https://twitter.com/RohithGilla) on Twitter and genuinely want to hear what's broken or missing. The best features we've shipped came from developers who opened an issue and said "hey, this thing is annoying."
+
+That's how data-peek started, after all. Something was annoying, and I decided to fix it.

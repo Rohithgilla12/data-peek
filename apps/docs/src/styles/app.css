@@ -4,7 +4,7 @@
 
 /* =============================================================================
    DATA-PEEK TERMINAL THEME
-   A terminal-inspired documentation theme with electric cyan accents
+   A terminal-inspired documentation theme with blue accents
    ============================================================================= */
 
 /* Geist Mono Font */
@@ -62,8 +62,8 @@
   --border: 228 228 231;
   --input: 228 228 231;
 
-  /* Primary = Electric Cyan */
-  --primary: 8 145 178;
+  /* Primary = Blue */
+  --primary: 59 82 196;
   --primary-foreground: 255 255 255;
 
   /* Secondary */
@@ -78,7 +78,7 @@
   --destructive: 239 68 68;
   --destructive-foreground: 255 255 255;
 
-  --ring: 8 145 178;
+  --ring: 59 82 196;
 
   /* Radius */
   --radius: 0.5rem;
@@ -92,10 +92,10 @@
   --dp-text-primary: #0a0a0b;
   --dp-text-secondary: #52525b;
   --dp-text-muted: #71717a;
-  --dp-accent: #0891b2;
-  --dp-accent-dim: #22d3ee;
-  --dp-accent-glow: rgba(8, 145, 178, 0.15);
-  --dp-accent-subtle: rgba(8, 145, 178, 0.08);
+  --dp-accent: #3b52c4;
+  --dp-accent-dim: #6b8cf5;
+  --dp-accent-glow: rgba(59, 82, 196, 0.15);
+  --dp-accent-subtle: rgba(59, 82, 196, 0.08);
 }
 
 /* Dark theme overrides for Fumadocs */
@@ -112,8 +112,8 @@
   --border: 39 39 42;
   --input: 39 39 42;
 
-  /* Primary = Electric Cyan */
-  --primary: 34 211 238;
+  /* Primary = Blue */
+  --primary: 107 140 245;
   --primary-foreground: 6 6 7;
 
   /* Secondary */
@@ -128,7 +128,7 @@
   --destructive: 248 113 113;
   --destructive-foreground: 6 6 7;
 
-  --ring: 34 211 238;
+  --ring: 107 140 245;
 
   /* Dark mode custom props */
   --dp-background: #0a0a0b;
@@ -139,10 +139,10 @@
   --dp-text-primary: #fafafa;
   --dp-text-secondary: #a1a1aa;
   --dp-text-muted: #71717a;
-  --dp-accent: #22d3ee;
-  --dp-accent-dim: #0891b2;
-  --dp-accent-glow: rgba(34, 211, 238, 0.15);
-  --dp-accent-subtle: rgba(34, 211, 238, 0.08);
+  --dp-accent: #6b8cf5;
+  --dp-accent-dim: #3b52c4;
+  --dp-accent-glow: rgba(107, 140, 245, 0.15);
+  --dp-accent-subtle: rgba(107, 140, 245, 0.08);
 
   /* Fumadocs specific overrides */
   --fd-background: var(--dp-background);

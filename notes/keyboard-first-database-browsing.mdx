@@ -1,0 +1,135 @@
+---
+title: "Keyboard-First Database Browsing: How data-peek Saves You Time"
+description: "Every keyboard shortcut, workflow trick, and productivity hack in data-peek — because your mouse is holding you back"
+date: "2026-03-27"
+author: "Rohith Gilla"
+tags: ["data-peek", "productivity", "keyboard-shortcuts", "developer-tools"]
+---
+
+# Keyboard-First Database Browsing: How data-peek Saves You Time
+
+I promise this isn't a Vim tutorial. You can leave whenever you want.
+
+But if you've ever used a traditional database GUI, you know the drill. You open the app. You wait. You right-click on a connection. Expand the tree. Right-click on a schema. Expand again. Find the table. Right-click. "Query Table." Wait for the window to load. Click the execute button because you couldn't remember if it was F5 or F9 or Ctrl+Shift+E. Stare at results. Right-click a cell to copy it. Repeat until retirement.
+
+That's not a workflow. That's a point-and-click adventure game from the 90s, minus the fun.
+
+## The Problem with Click-Heavy Database Tools
+
+Most database GUIs were designed in an era when mice were the primary input device and toolbars needed seventeen icons across the top of every window. They ship with powerful features buried under layers of menus, tree views, and modal dialogs.
+
+For developers who spend their days in VS Code, Raycast, or Linear, this feels like switching from a sports car to a shopping cart. You know exactly what you want to do. You just need the tool to keep up.
+
+The cost is real. Every time you reach for the mouse to click "Execute," you break flow. Every right-click menu interrupts your train of thought. And when you're debugging a production issue at 11 PM, those interruptions add up fast.
+
+## How data-peek Thinks About Input
+
+data-peek was built around one idea: the fastest way to interact with your database is through your keyboard. Not because keyboards are inherently superior (though they are), but because developers already think in terms of commands and keystrokes. We just built a SQL client that respects that.
+
+If you use VS Code, Raycast, or Linear, you already know what keyboard-first means. It's not about memorizing a hundred shortcuts. It's about the tool being designed so that the most common actions are always one or two keystrokes away, and everything else is discoverable through a command palette.
+
+Here's what a typical session in data-peek looks like:
+
+1. Open the app (it launches in under a second)
+2. **Cmd+K** to open the command palette and connect to your database
+3. Type your query in the Monaco editor
+4. **Cmd+Enter** to execute
+5. **Tab** through the results grid
+6. Done
+
+No tree navigation. No right-click menus. No waiting.
+
+## The Shortcut Map
+
+Here are the shortcuts that make data-peek feel less like a database tool and more like an extension of your editor:
+
+**Navigation and Tabs**
+
+- **Cmd+T** -- New tab. You're working on multiple queries? Open multiple tabs. Same as your browser, same as your editor.
+- **Cmd+W** -- Close the current tab.
+- **Cmd+Shift+N** -- New window entirely, for when you need two databases side by side.
+- **Cmd+B** -- Toggle the sidebar. When you need more room for results, collapse it. When you need to browse schemas, bring it back.
+- **Cmd+1-9** -- Jump directly to a saved connection by number. Your production Postgres is always Cmd+1. Staging MySQL is Cmd+2. No hunting through lists.
+
+**Querying**
+
+- **Cmd+Enter** -- Execute the current query. This is the one you'll use a hundred times a day. It's exactly where you expect it.
+- **Shift+Alt+F** -- Format your SQL. Turn that single-line monstrosity into something readable.
+- **Cmd+K** -- Clear results when you're done staring at them.
+- **Cmd+Shift+S** -- Open saved queries. Bookmark the queries you run often and pull them up instantly.
+
+**Editing Data**
+
+- **Cmd+S** -- Save pending changes. After inline-editing cells in the results grid, commit them to the database.
+- **Cmd+Shift+Z** -- Discard changes. Changed your mind? Undo everything before it hits the database.
+- **Cmd+Shift+A** -- Add a new row directly in the results grid.
+
+**Everything Else**
+
+- **Cmd+,** -- Open settings. Same shortcut as every other Mac app you use.
+
+## Inline Editing: No More UPDATE Statements by Hand
+
+Here's where keyboard-first really shines. In most database tools, editing a single cell means either:
+
+A) Writing `UPDATE users SET email = 'new@email.com' WHERE id = 42;` by hand, or
+B) Right-clicking, selecting "Edit Row," waiting for a modal, changing the value, clicking Save, clicking Confirm, clicking OK, clicking Yes I'm Sure, clicking Please Stop Asking Me.
+
+In data-peek, you click a cell (okay, one click -- your trackpad deserves that much), type the new value, and hit **Cmd+Enter** to save. Or **Tab** to the next cell and keep editing. data-peek tracks all your pending changes and shows you the generated SQL before anything touches the database. When you're ready, **Cmd+S** commits everything.
+
+Want to add a row? **Cmd+Shift+A**. Fill in the values. Save. Want to discard? **Cmd+Shift+Z**. No confirmation dialogs. No "are you sure?" prompts. Because undo exists and you're an adult.
+
+## The Speed Comparison
+
+Let's count the interactions for a simple task: "Change a user's email address in the users table."
+
+**Traditional database GUI:**
+
+1. Expand connection in tree view (click)
+2. Expand schema (click)
+3. Find the users table (scroll, click)
+4. Right-click, "Select Top 1000" (two clicks)
+5. Wait for results to load
+6. Find the row (scroll)
+7. Right-click the cell (click)
+8. Select "Edit" (click)
+9. Type the new value
+10. Click Save (click)
+11. Confirm dialog (click)
+
+That's roughly 9 clicks, a scroll, and a context menu. Plus the waiting.
+
+**data-peek:**
+
+1. **Cmd+Enter** to run your query (which is already in the editor from last time)
+2. Click the cell
+3. Type the new value
+4. **Cmd+S**
+
+One click, three keystrokes. Your trackpad called. It wants a vacation.
+
+## The Command Palette
+
+The command palette (**Cmd+K**) is the escape hatch for everything. Can't remember a shortcut? Open the palette and search. Want to connect to a database? Palette. Switch between recent queries? Palette.
+
+This is the same pattern you already use in VS Code (Cmd+Shift+P), Raycast (Cmd+Space), and Spotlight. It means you never have to memorize anything -- just remember Cmd+K and search for what you need.
+
+## Multiple Tabs, Multiple Contexts
+
+Real work isn't linear. You're checking the users table while writing a migration that touches the orders table while verifying that the products table has the right foreign keys.
+
+data-peek's tab system (**Cmd+T** to open, **Cmd+W** to close) lets you keep multiple queries and results open simultaneously. Each tab maintains its own editor state, results, and scroll position. Switch between them the same way you switch between files in your editor.
+
+## Schema Browsing Without the Tree
+
+The sidebar shows your database schema in a searchable, scannable list. Type to filter. Click a table name to see its columns, types, and constraints. Click a column to insert its name into your query. **Cmd+B** to toggle the whole thing away when you need the screen real estate.
+
+No expanding and collapsing nodes. No waiting for lazy-loaded tree branches. Just a fast, flat list that gets out of your way.
+
+## Try It
+
+data-peek is free for personal use and supports PostgreSQL, MySQL, and Microsoft SQL Server. It runs on macOS, Windows, and Linux.
+
+If you've been putting up with slow, click-heavy database tools because "that's just how they are" -- they don't have to be. Download data-peek from [datapeek.dev](https://datapeek.dev) and see what a keyboard-first SQL client feels like.
+
+Your wrists will thank you. Your trackpad will write you a postcard from wherever trackpads go on vacation.

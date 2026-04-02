@@ -9,6 +9,7 @@ import { ScheduledQueries } from '@/components/scheduled-queries'
 import { SchemaExplorer } from '@/components/schema-explorer'
 import { SidebarQuickQuery } from '@/components/sidebar-quick-query'
 import { Snippets } from '@/components/snippets'
+import { FunAnalytics } from '@/components/fun-analytics'
 import {
   Sidebar,
   SidebarContent,
@@ -22,6 +23,7 @@ import {
   SidebarSeparator
 } from '@/components/ui/sidebar'
 import { useConnectionStore, useTabStore } from '@/stores'
+import { useSettingsStore } from '@/stores/settings-store'
 import { cn } from '@/lib/utils'
 
 /**
@@ -41,6 +43,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const createPgNotificationsTab = useTabStore((s) => s.createPgNotificationsTab)
   const createHealthMonitorTab = useTabStore((s) => s.createHealthMonitorTab)
   const isPostgres = activeConnection?.dbType === 'postgresql'
+  const pokemonBuddyEnabled = useSettingsStore((s) => s.pokemonBuddyEnabled)
 
   const handleOpenNotifications = () => {
     if (activeConnectionId) {
@@ -70,54 +73,50 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* Schema Explorer */}
         <SchemaExplorer />
 
-        <SidebarSeparator className="mx-3" />
-
-        {/* Query History */}
-        <QueryHistory />
-
-        <SidebarSeparator className="mx-3" />
-
-        {/* Saved Queries */}
-        <SavedQueries />
-
-        <SidebarSeparator className="mx-3" />
-
-        {/* Snippets */}
-        <Snippets />
-
-        <SidebarSeparator className="mx-3" />
-
-        {/* Scheduled Queries */}
-        <ScheduledQueries />
-
-        <SidebarSeparator className="mx-3" />
-
-        {/* Dashboards */}
-        <Dashboards />
-
         {activeConnectionId && (
           <>
             <SidebarSeparator className="mx-3" />
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {isPostgres && (
+
+            {/* Query Tools: History, Saved, Snippets */}
+            <QueryHistory />
+            <SavedQueries />
+            <Snippets />
+
+            <SidebarSeparator className="mx-3" />
+
+            {/* Automation & Monitoring */}
+            <ScheduledQueries />
+            <Dashboards />
+
+            {(isPostgres || activeConnectionId) && (
+              <SidebarGroup>
+                <SidebarGroupContent>
+                  <SidebarMenu>
+                    {isPostgres && (
+                      <SidebarMenuItem>
+                        <SidebarMenuButton onClick={handleOpenNotifications}>
+                          <Bell className="size-4" />
+                          <span>Notifications</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    )}
                     <SidebarMenuItem>
-                      <SidebarMenuButton onClick={handleOpenNotifications}>
-                        <Bell className="size-4" />
-                        <span>Notifications</span>
+                      <SidebarMenuButton onClick={handleOpenHealthMonitor}>
+                        <Activity className="size-4" />
+                        <span>Health Monitor</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  )}
-                  <SidebarMenuItem>
-                    <SidebarMenuButton onClick={handleOpenHealthMonitor}>
-                      <Activity className="size-4" />
-                      <span>Health Monitor</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+                  </SidebarMenu>
+                </SidebarGroupContent>
+              </SidebarGroup>
+            )}
+          </>
+        )}
+
+        {pokemonBuddyEnabled && (
+          <>
+            <SidebarSeparator className="mx-3" />
+            <FunAnalytics />
           </>
         )}
 

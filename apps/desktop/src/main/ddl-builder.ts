@@ -223,9 +223,31 @@ function buildConstraintDef(constraint: ConstraintDefinition, dialect: DdlDialec
 
     case 'exclude': {
       if (constraint.excludeElements && constraint.excludeElements.length > 0) {
-        const using = constraint.excludeUsing || 'gist'
+        const validMethods = ['gist', 'spgist', 'gin', 'btree', 'hash', 'brin']
+        const using = validMethods.includes(constraint.excludeUsing || 'gist')
+          ? constraint.excludeUsing || 'gist'
+          : 'gist'
+        const validOperators = [
+          '=',
+          '&&',
+          '<',
+          '>',
+          '<=',
+          '>=',
+          '<<',
+          '>>',
+          '&<',
+          '&>',
+          '-|-',
+          '@>',
+          '<@',
+          '~='
+        ]
         const elements = constraint.excludeElements
-          .map((e) => `${quoteIdentifier(e.column, dialect)} WITH ${e.operator}`)
+          .map((e) => {
+            const op = validOperators.includes(e.operator) ? e.operator : '='
+            return `${quoteIdentifier(e.column, dialect)} WITH ${op}`
+          })
           .join(', ')
         parts.push(`EXCLUDE USING ${using} (${elements})`)
       }

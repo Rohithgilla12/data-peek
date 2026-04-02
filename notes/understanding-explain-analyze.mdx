@@ -1,0 +1,241 @@
+---
+title: "Understanding EXPLAIN ANALYZE: A Visual Guide to Query Plans"
+description: "Query plans look like alien hieroglyphics the first time. Here's how to actually read them and make your queries faster."
+date: "2026-03-26"
+author: "Rohith Gilla"
+tags: ["postgresql", "performance", "explain", "query-optimization"]
+---
+
+# Understanding EXPLAIN ANALYZE: A Visual Guide to Query Plans
+
+You just ran a query and it took 14 seconds. You know it should be faster, but you have no idea where the time went. So you do what every developer eventually does: you slap `EXPLAIN ANALYZE` in front of it and hit enter.
+
+And then you see... this:
+
+```sql
+Nested Loop Left Join  (cost=1.12..845.20 rows=100 width=72) (actual time=0.045..12847.331 rows=50000 loops=1)
+  ->  Index Scan using idx_users_id on users u  (cost=0.56..8.58 rows=1 width=40) (actual time=0.012..0.015 rows=1 loops=1)
+  ->  Index Scan using idx_orders_user_id on orders o  (cost=0.56..831.62 rows=100 width=32) (actual time=0.030..12840.102 rows=50000 loops=1)
+```
+
+Don't close the tab. This stuff is actually readable once you know what you're looking at.
+
+## EXPLAIN vs EXPLAIN ANALYZE: Planning vs Doing
+
+These two commands look similar but do fundamentally different things.
+
+**EXPLAIN** asks the query planner: "Hey, what *would* you do if I ran this query?" It returns a plan based on table statistics, without actually touching any data. It's fast, safe, and gives you estimates.
+
+```sql
+EXPLAIN SELECT * FROM orders WHERE customer_id = 42;
+```
+
+**EXPLAIN ANALYZE** says: "Actually run the query and tell me what *really* happened." It executes the query, measures real timings, and compares the planner's estimates to reality.
+
+```sql
+EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;
+```
+
+The key difference: EXPLAIN ANALYZE actually runs the query. If you're explaining a `DELETE FROM users`, it will delete your users. Wrap destructive queries in a transaction and roll back:
+
+```sql
+BEGIN;
+EXPLAIN ANALYZE DELETE FROM orders WHERE created_at < '2020-01-01';
+ROLLBACK;
+```
+
+## Anatomy of a Query Plan
+
+Let's start with a simple query and break down every number in the output.
+
+```sql
+EXPLAIN ANALYZE SELECT * FROM orders WHERE total > 500;
+```
+
+```sql
+Seq Scan on orders  (cost=0.00..18334.00 rows=5420 width=64) (actual time=0.021..112.340 rows=5318 loops=1)
+  Filter: (total > 500)
+  Rows Removed by Filter: 994682
+Planning Time: 0.085 ms
+Execution Time: 112.985 ms
+```
+
+Here's what each piece means:
+
+**Seq Scan on orders** -- The node type. This is a sequential scan, meaning PostgreSQL is reading the entire table row by row. A Seq Scan on a 10 million row table is the database equivalent of reading the entire dictionary to find one word.
+
+**cost=0.00..18334.00** -- The planner's estimated cost. The first number (0.00) is the startup cost before the first row can be returned. The second number (18334.00) is the total estimated cost. These aren't milliseconds; they're arbitrary units used internally to compare plans.
+
+**rows=5420** -- The planner's estimate of how many rows will match. Compare this to the actual count to see if statistics are stale.
+
+**actual time=0.021..112.340** -- Real wall-clock time in milliseconds. First number is time to first row, second is time to last row.
+
+**rows=5318** -- The actual number of rows returned. The planner estimated 5420; reality was 5318. That's a solid estimate.
+
+**loops=1** -- How many times this node was executed. In nested loops, inner nodes can run thousands of times.
+
+**Rows Removed by Filter: 994682** -- Almost a million rows were read and thrown away. This is a red flag. If you're filtering out 99.5% of the data, an index would help enormously.
+
+## The Node Types You'll See Most
+
+### Seq Scan (Sequential Scan)
+
+Reads every row in the table. Sometimes this is fine (small tables, or when you genuinely need most of the data). On large tables with selective filters, it's usually a problem.
+
+### Index Scan
+
+Uses a B-tree (or other) index to jump directly to matching rows, then fetches the full row from the heap. This is what you want for selective queries on large tables.
+
+```sql
+Index Scan using idx_orders_customer_id on orders  (cost=0.43..8.45 rows=5 width=64) (actual time=0.019..0.025 rows=4 loops=1)
+  Index Cond: (customer_id = 42)
+```
+
+### Index Only Scan
+
+Even better than an Index Scan. If the index contains all the columns the query needs, PostgreSQL doesn't need to visit the table at all. Make sure your table is well-vacuumed for these to work.
+
+### Bitmap Heap Scan
+
+A two-phase approach. First, a Bitmap Index Scan builds a bitmap of matching pages. Then the Bitmap Heap Scan reads those pages. This is PostgreSQL's compromise between a full sequential scan and an index scan, used when too many rows match for an index scan to be efficient but too few for a sequential scan.
+
+```sql
+Bitmap Heap Scan on orders  (cost=52.58..3412.80 rows=2400 width=64) (actual time=1.205..15.340 rows=2389 loops=1)
+  Recheck Cond: (status = 'pending')
+  ->  Bitmap Index Scan on idx_orders_status  (cost=0.00..51.98 rows=2400 width=0) (actual time=0.980..0.980 rows=2389 loops=1)
+        Index Cond: (status = 'pending')
+```
+
+### Hash Join
+
+Builds a hash table from the smaller relation, then probes it with rows from the larger one. Efficient for equi-joins on larger datasets.
+
+```sql
+Hash Join  (cost=230.00..15230.00 rows=100000 width=96) (actual time=3.150..85.420 rows=99834 loops=1)
+  Hash Cond: (orders.customer_id = customers.id)
+  ->  Seq Scan on orders  (cost=0.00..14000.00 rows=1000000 width=64) (actual time=0.010..42.300 rows=1000000 loops=1)
+  ->  Hash  (cost=155.00..155.00 rows=6000 width=32) (actual time=2.980..2.980 rows=6000 loops=1)
+        Buckets: 8192  Batches: 1  Memory Usage: 352kB
+        ->  Seq Scan on customers  (cost=0.00..155.00 rows=6000 width=32) (actual time=0.008..1.200 rows=6000 loops=1)
+```
+
+### Nested Loop
+
+Iterates through the outer relation and, for each row, scans the inner relation. Great when the outer side has very few rows and the inner side has an index. If your query planner chose a Nested Loop on two large tables, it's not optimizing -- it's given up.
+
+### Sort and Aggregate
+
+Sort nodes appear for ORDER BY, MERGE JOIN, and certain GROUP BY operations. Aggregate nodes handle COUNT, SUM, AVG, and friends. Watch for `Sort Method: external merge  Disk` -- that means the sort spilled to disk because `work_mem` was too small.
+
+## Spotting Problems
+
+Three patterns should immediately catch your eye.
+
+### 1. Sequential Scans on Large Tables with Selective Filters
+
+```sql
+Seq Scan on events  (cost=0.00..385420.00 rows=12 width=128) (actual time=4521.001..4523.150 rows=11 loops=1)
+  Filter: (event_type = 'account_deleted')
+  Rows Removed by Filter: 10423891
+```
+
+Eleven rows out of ten million. This is screaming for an index on `event_type`.
+
+### 2. Wildly Wrong Row Estimates
+
+```sql
+Nested Loop  (cost=0.87..45.20 rows=1 width=72) (actual time=0.045..8542.331 rows=85000 loops=1)
+```
+
+The planner expected 1 row, got 85,000. When estimates are this far off, the planner picks the wrong strategy entirely. The fix is usually `ANALYZE your_table` to refresh statistics, or increasing `default_statistics_target` for columns with unusual distributions.
+
+### 3. High Loop Counts on Expensive Inner Nodes
+
+```sql
+->  Index Scan using idx_products_id on products  (cost=0.43..8.45 rows=1 width=32) (actual time=0.015..0.018 rows=1 loops=85000)
+```
+
+Each individual execution is fast (0.018ms), but multiply by 85,000 loops and you've spent 1.5 seconds on this one node. The `actual time` values are *per loop*. Total time is `actual time * loops`.
+
+## Before and After: Adding an Index
+
+Let's see a concrete improvement. Here's a query finding recent large orders for a specific customer:
+
+```sql
+EXPLAIN ANALYZE
+SELECT id, total, created_at
+FROM orders
+WHERE customer_id = 7842
+  AND total > 100
+ORDER BY created_at DESC
+LIMIT 10;
+```
+
+**Before (no index on customer_id):**
+
+```sql
+Limit  (cost=25432.10..25432.12 rows=10 width=24) (actual time=892.451..892.460 rows=10 loops=1)
+  ->  Sort  (cost=25432.10..25432.45 rows=140 width=24) (actual time=892.448..892.453 rows=10 loops=1)
+        Sort Key: created_at DESC
+        Sort Method: top-N heapsort  Memory: 25kB
+        ->  Seq Scan on orders  (cost=0.00..25431.00 rows=140 width=24) (actual time=0.031..891.204 rows=137 loops=1)
+              Filter: ((customer_id = 7842) AND (total > 100))
+              Rows Removed by Filter: 999863
+Planning Time: 0.152 ms
+Execution Time: 892.510 ms
+```
+
+Almost 900ms spent reading the entire million-row table to find 137 rows. Now let's add an index:
+
+```sql
+CREATE INDEX idx_orders_customer_id ON orders (customer_id);
+```
+
+**After:**
+
+```sql
+Limit  (cost=12.85..12.88 rows=10 width=24) (actual time=0.098..0.105 rows=10 loops=1)
+  ->  Sort  (cost=12.85..13.20 rows=140 width=24) (actual time=0.096..0.100 rows=10 loops=1)
+        Sort Key: created_at DESC
+        Sort Method: top-N heapsort  Memory: 25kB
+        ->  Index Scan using idx_orders_customer_id on orders  (cost=0.42..12.08 rows=140 width=24) (actual time=0.024..0.062 rows=137 loops=1)
+              Index Cond: (customer_id = 7842)
+              Filter: (total > 100)
+              Rows Removed by Filter: 15
+Planning Time: 0.285 ms
+Execution Time: 0.138 ms
+```
+
+From 892ms to 0.138ms. A 6,400x improvement. The index let PostgreSQL jump straight to the 152 rows for customer 7842, apply the `total > 100` filter (removing only 15 rows instead of 999,863), and sort the small result set in memory.
+
+For even better performance, a composite index on `(customer_id, created_at DESC)` would let PostgreSQL skip the sort entirely and satisfy the LIMIT by just reading the first 10 index entries.
+
+## Common EXPLAIN Gotchas
+
+### Cold Cache vs Warm Cache
+
+The first run after a restart will be slow because data is read from disk. Subsequent runs are faster because pages are cached in shared buffers and the OS page cache. Always run EXPLAIN ANALYZE at least twice and use the second result for comparison. Better yet, use `EXPLAIN (ANALYZE, BUFFERS)` to see exactly how many blocks came from cache vs disk.
+
+### Parameterized Queries and Prepared Statements
+
+PostgreSQL creates generic plans for prepared statements after a few executions. The generic plan might use different strategies than what you see with literal values in EXPLAIN. If your app uses prepared statements (most ORMs do), you might see different plans in production than in your testing.
+
+### Stale Statistics
+
+The planner relies on `pg_statistic` to estimate row counts and value distributions. If you've just loaded a large batch of data, the statistics might be wildly out of date. Run `ANALYZE tablename` after bulk operations. Autovacuum handles this in steady state, but it can lag behind large changes.
+
+### EXPLAIN Doesn't Show Everything
+
+Some overhead doesn't show up in EXPLAIN ANALYZE: network transfer time, client-side processing, connection overhead, and lock wait time. If your query is fast in EXPLAIN ANALYZE but slow in your application, look at these external factors.
+
+### The JIT Trap
+
+PostgreSQL 11+ can JIT-compile expressions. Sometimes JIT compilation time exceeds the time it saves. If you see large `JIT` sections in your plan, try `SET jit = off` and compare.
+
+## Reading Plans in data-peek
+
+Squinting at raw EXPLAIN output in a terminal works, but it's not exactly pleasant, especially for complex queries with deeply nested nodes.
+
+data-peek has a built-in Explain button that runs EXPLAIN ANALYZE and formats the output so you don't have to squint at raw text. Select your query, hit the Explain button, and get a structured view of the plan with timings highlighted. It makes it much easier to spot which node is consuming the most time and whether the planner's estimates are drifting from reality.
+
+The next time a query is slow, don't guess. Read the plan. The database is already telling you exactly what's wrong -- you just need to know the language.

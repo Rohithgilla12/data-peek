@@ -12,10 +12,10 @@
   --color-text-secondary: #a1a1aa;
   --color-text-muted: #71717a;
 
-  /* Accent - Electric Cyan */
-  --color-accent: #22d3ee;
-  --color-accent-dim: #0891b2;
-  --color-accent-glow: rgba(34, 211, 238, 0.15);
+  /* Accent - Blue */
+  --color-accent: #6b8cf5;
+  --color-accent-dim: #3b52c4;
+  --color-accent-glow: rgba(107, 140, 245, 0.15);
 
   /* Success/Warning/Error */
   --color-success: #4ade80;
@@ -189,7 +189,7 @@ body {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(90deg, transparent 0%, rgba(34, 211, 238, 0.03) 50%, transparent 100%);
+    linear-gradient(90deg, transparent 0%, rgba(107, 140, 245, 0.03) 50%, transparent 100%);
   animation: shimmer 3s ease-in-out infinite;
 }
 
@@ -308,7 +308,7 @@ a[role="button"]:active {
 
   @keyframes icon-color-cycle {
     0% { color: #fb923c; }
-    25% { color: #22d3ee; }
+    25% { color: #6b8cf5; }
     50% { color: #3b82f6; }
     75% { color: #8b5cf6; }
     100% { color: #fb923c; }

@@ -1,0 +1,226 @@
+---
+title: "How to Export SQL Query Results to CSV, JSON, and Excel"
+description: "The complete guide to getting data out of your database and into the format your PM actually asked for"
+date: "2026-03-29"
+author: "Rohith Gilla"
+tags: ["sql", "csv", "export", "postgresql", "mysql"]
+---
+
+# How to Export SQL Query Results to CSV, JSON, and Excel
+
+Your PM doesn't want a database dump. They want a spreadsheet. Let's bridge that cultural divide.
+
+Getting data out of a database sounds like the simplest thing in the world. You've got the data. You've got the query. You just need it... somewhere else. And yet, here you are, Googling "postgres export csv" for the fourth time this year. No judgment. We all do it.
+
+This guide covers every practical method for exporting SQL query results to CSV, JSON, and Excel -- from raw command-line tools to GUI clients to quick scripts. We'll cover PostgreSQL, MySQL, and the inevitable gotchas that make this task more annoying than it has any right to be.
+
+## Exporting to CSV
+
+CSV is the lingua franca of data exchange. Everyone can open it. Everyone can import it. Everyone will complain about the encoding.
+
+### PostgreSQL: The COPY Command
+
+The fastest way to export from PostgreSQL is the server-side `COPY` command:
+
+```sql
+COPY (SELECT * FROM users WHERE created_at > '2026-01-01')
+TO '/tmp/users_export.csv'
+WITH (FORMAT csv, HEADER true);
+```
+
+This writes directly from the server to the server's filesystem. It's fast. It's also the source of the most common error you'll hit: **permission denied**. The PostgreSQL process needs write access to that path. If you're connecting to a remote server (which you almost certainly are), this won't write to your local machine.
+
+That's where `\copy` comes in -- the psql client-side variant:
+
+```bash
+psql -h myhost -d mydb -c "\copy (SELECT * FROM users WHERE active = true) TO './users.csv' WITH (FORMAT csv, HEADER true)"
+```
+
+The backslash version runs on your machine, not the server. Same syntax, different execution context. This is usually what you actually want.
+
+### MySQL: SELECT INTO OUTFILE
+
+MySQL's equivalent is `SELECT ... INTO OUTFILE`:
+
+```sql
+SELECT * FROM orders
+WHERE order_date > '2026-01-01'
+INTO OUTFILE '/tmp/orders.csv'
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n';
+```
+
+Same permission headache as PostgreSQL's `COPY`. The file is written on the MySQL server, not your local machine. And if the file already exists? MySQL will refuse to overwrite it. You'll need to delete it first or pick a new name.
+
+For local export, `mysql` with some flags does the trick:
+
+```bash
+mysql -h myhost -u myuser -p mydb -e "SELECT * FROM orders WHERE order_date > '2026-01-01'" | tr '\t' ',' > orders.csv
+```
+
+Fair warning: that `tr` hack doesn't handle commas inside field values. For anything production-grade, use a proper tool or script.
+
+### The psql Shortcut Most People Don't Know
+
+You can set psql's output format to CSV directly:
+
+```bash
+psql -h myhost -d mydb --csv -c "SELECT * FROM users LIMIT 100" > users.csv
+```
+
+The `--csv` flag was added in PostgreSQL 12 and is criminally underused. It handles quoting, escaping, and headers automatically.
+
+## Exporting to JSON
+
+JSON export is where things get interesting because both PostgreSQL and MySQL have native JSON support built in.
+
+### PostgreSQL: json_agg and row_to_json
+
+PostgreSQL can build JSON for you right in the query:
+
+```sql
+SELECT json_agg(row_to_json(t))
+FROM (
+  SELECT id, name, email, created_at
+  FROM users
+  WHERE active = true
+  LIMIT 100
+) t;
+```
+
+This returns a single JSON array containing all your rows. Combine it with `\copy` or psql output redirection:
+
+```bash
+psql -h myhost -d mydb -t -A -c "
+  SELECT json_agg(row_to_json(t))
+  FROM (SELECT id, name, email FROM users LIMIT 100) t
+" > users.json
+```
+
+The `-t` flag removes headers, `-A` removes alignment padding. Without these, you'll get a "JSON" file that no parser on earth will accept.
+
+### MySQL: JSON_ARRAYAGG and JSON_OBJECT
+
+MySQL 5.7+ has similar capabilities:
+
+```sql
+SELECT JSON_ARRAYAGG(
+  JSON_OBJECT('id', id, 'name', name, 'email', email)
+)
+FROM users
+WHERE active = 1
+LIMIT 100;
+```
+
+It's more verbose since you need to explicitly name each field, but it works. Redirect the output the same way:
+
+```bash
+mysql -h myhost -u myuser -p mydb -N -r -e "
+  SELECT JSON_ARRAYAGG(JSON_OBJECT('id', id, 'name', name, 'email', email))
+  FROM users LIMIT 100
+" > users.json
+```
+
+## Exporting to Excel
+
+Nothing says "I'm a professional" like emailing a 50MB CSV and calling it an Excel file.
+
+Real talk: databases don't natively export to `.xlsx`. You have two paths -- export to CSV and open in Excel (which works 90% of the time), or use a script to generate a proper Excel file.
+
+### The CSV-to-Excel Path
+
+Export your CSV using any method above, then open it in Excel. But beware -- Excel has opinions about your data:
+
+- Phone numbers starting with `0` get silently truncated (Excel treats them as numbers)
+- Dates get reformatted to whatever locale your machine is set to
+- Anything that looks like a formula (`=SUM(...)`, or even just `=1+1`) gets executed
+- Long numeric IDs (like `12345678901234567`) lose precision past 15 digits
+
+The classic workaround is to prefix problematic fields with a tab character or single quote in your CSV, but that's fragile. For reliable Excel output, use a library.
+
+### Python: openpyxl or pandas
+
+The most reliable way to get from database to Excel:
+
+```python
+import pandas as pd
+from sqlalchemy import create_engine
+
+engine = create_engine("postgresql://user:pass@localhost/mydb")
+df = pd.read_sql("SELECT * FROM orders WHERE total > 100", engine)
+df.to_excel("orders.xlsx", index=False, sheet_name="Orders")
+```
+
+Three lines. Handles types correctly. Dates stay as dates. Numbers stay as numbers. Your PM will be impressed, which is alarming but fine.
+
+### Node.js: exceljs
+
+If Python isn't your thing:
+
+```javascript
+import pg from 'pg'
+import ExcelJS from 'exceljs'
+
+const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
+await client.connect()
+
+const { rows } = await client.query('SELECT * FROM orders WHERE total > 100')
+const workbook = new ExcelJS.Workbook()
+const sheet = workbook.addWorksheet('Orders')
+
+sheet.columns = Object.keys(rows[0]).map(key => ({ header: key, key }))
+rows.forEach(row => sheet.addRow(row))
+
+await workbook.xlsx.writeFile('orders.xlsx')
+await client.end()
+```
+
+A few more lines, but you get full control over formatting, column widths, and multiple sheets.
+
+## Programmatic Export Scripts
+
+Sometimes you need a reusable script that handles the full pipeline. Here's a compact Python example that exports to all three formats:
+
+```python
+import pandas as pd
+from sqlalchemy import create_engine
+
+engine = create_engine("postgresql://user:pass@localhost/mydb")
+query = "SELECT * FROM transactions WHERE created_at >= '2026-01-01'"
+df = pd.read_sql(query, engine)
+
+df.to_csv("transactions.csv", index=False)
+df.to_json("transactions.json", orient="records", date_format="iso")
+df.to_excel("transactions.xlsx", index=False)
+```
+
+Pandas handles encoding, date serialization, and type coercion across all three formats. If you find yourself exporting data more than once a week, a script like this pays for itself immediately.
+
+## Common Gotchas
+
+A non-exhaustive list of things that will ruin your afternoon:
+
+**Encoding.** If your data contains non-ASCII characters (names, addresses, anything from a real-world database), make sure you're exporting as UTF-8. PostgreSQL's `\copy` defaults to the client encoding, which may or may not be what you want. Add `ENCODING 'UTF8'` to be safe.
+
+**NULL vs empty string.** `COPY` and `INTO OUTFILE` represent NULL differently. PostgreSQL uses `\N` by default, MySQL uses `\N` too but only with `INTO OUTFILE`. In CSV output, an empty field and a NULL field look identical unless you configure `FORCE_NULL` or use a sentinel value. Downstream consumers will thank you for being explicit.
+
+**Date formats.** ISO 8601 (`2026-03-29T10:30:00Z`) is the only sane choice for export. If your PM asks for `MM/DD/YYYY`, do the conversion in the query or post-processing. Don't let your database locale settings silently pick a format.
+
+**Large exports.** If you're exporting millions of rows, stream the output. Don't try to `json_agg` ten million rows into a single JSON value -- PostgreSQL will cheerfully try, your server's memory will not be cheerful about it. Use cursors or `COPY` for large datasets.
+
+**Excel row limits.** Excel maxes out at 1,048,576 rows. If your export is bigger than that, you either need multiple sheets, a different format, or a frank conversation with whoever is trying to open a million rows in a spreadsheet.
+
+## The Easy Way
+
+All of the above works. It's also a lot of ceremony for something that should be simple.
+
+In [data-peek](https://datapeek.dev), exporting is one click. Run your query, hit the export button, pick your format. Done. No `COPY` commands, no file permission headaches, no piping through `tr` and hoping for the best. CSV, JSON, and Excel -- all with correct encoding, proper NULL handling, and dates that don't make you question your life choices.
+
+It supports PostgreSQL, MySQL, and SQL Server, so you don't need three different workflows for three different databases. Write the query, see the results, export. That's it.
+
+## Wrapping Up
+
+Exporting data from a database is one of those tasks that sounds trivial until you actually do it. Between file permissions, encoding issues, Excel's creative interpretation of your data, and the twelve different syntaxes across database engines, there are plenty of ways for a "quick export" to eat an hour of your day.
+
+Pick the method that fits your situation: `\copy` for quick one-offs from PostgreSQL, `--csv` for psql power users, pandas for anything going to Excel, and a proper GUI client when you're tired of remembering flags. Your PM is waiting for that spreadsheet, and they sent the follow-up Slack message seven minutes ago.

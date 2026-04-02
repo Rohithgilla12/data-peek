@@ -2,7 +2,12 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { QueryResult } from './query-store'
 import type { StatementResult } from '@data-peek/shared'
-import { buildQualifiedTableRef, buildSelectQuery, quoteIdentifier } from '@/lib/sql-helpers'
+import {
+  buildQualifiedTableRef,
+  buildFullyQualifiedTableRef,
+  buildSelectQuery,
+  quoteIdentifier
+} from '@/lib/sql-helpers'
 import { useConnectionStore } from './connection-store'
 import { useSettingsStore } from './settings-store'
 
@@ -275,9 +280,7 @@ export const useTabStore = create<TabState>()(
         // Get default page size from settings
         const pageSize = useSettingsStore.getState().defaultPageSize
 
-        // Build table reference (handle MSSQL's dbo schema)
-        const defaultSchema = dbType === 'mssql' ? 'dbo' : 'public'
-        const tableRef = schemaName === defaultSchema ? tableName : `${schemaName}.${tableName}`
+        const tableRef = buildFullyQualifiedTableRef(schemaName, tableName, dbType)
         const sqlTableRef = buildQualifiedTableRef(schemaName, tableName, dbType)
         const query = buildSelectQuery(sqlTableRef, dbType, { limit: pageSize })
 
@@ -1089,9 +1092,7 @@ export const useTabStore = create<TabState>()(
             if (t.type === 'table-preview') {
               const schemaName = (t as unknown as TablePreviewTab).schemaName ?? ''
               const tableName = (t as unknown as TablePreviewTab).tableName ?? ''
-              // Rebuild tableRef - we'll use schemaName.tableName format
-              // The actual default schema handling will be done when query is executed
-              const tableRef = schemaName ? `${schemaName}.${tableName}` : tableName
+              const tableRef = buildFullyQualifiedTableRef(schemaName, tableName, undefined)
               return {
                 ...base,
                 type: 'table-preview' as const,

@@ -1,7 +1,18 @@
 import { faker } from '@faker-js/faker/locale/en'
-import type { ColumnGenerator, DataGenConfig, GeneratorType } from '@shared/index'
+import type { ColumnGenerator, DataGenConfig, GeneratorType, ConnectionConfig } from '@shared/index'
 import type { DatabaseAdapter } from './db-adapter'
-import type { ConnectionConfig } from '@shared/index'
+import { quoteIdentifier } from './sql-utils'
+
+const IDENTIFIER_QUOTES: Record<string, string> = {
+  postgresql: '"',
+  mysql: '`',
+  sqlite: '"',
+  mssql: '['
+}
+
+function quoteId(name: string, dbType: string): string {
+  return quoteIdentifier(name, IDENTIFIER_QUOTES[dbType] ?? '"')
+}
 
 interface Heuristic {
   pattern: RegExp
@@ -212,9 +223,16 @@ export async function resolveFK(
   fkTable: string,
   fkColumn: string
 ): Promise<unknown[]> {
-  const schemaPrefix =
-    schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo' ? `"${schema}".` : ''
-  const sql = `SELECT "${fkColumn}" FROM ${schemaPrefix}"${fkTable}" LIMIT 1000`
+  const dbType = connectionConfig.dbType
+  const quotedTable = quoteId(fkTable, dbType)
+  const tableRef =
+    schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo'
+      ? `${quoteId(schema, dbType)}.${quotedTable}`
+      : quotedTable
+  const sql =
+    dbType === 'mssql'
+      ? `SELECT TOP 1000 ${quoteId(fkColumn, dbType)} FROM ${tableRef}`
+      : `SELECT ${quoteId(fkColumn, dbType)} FROM ${tableRef} LIMIT 1000`
 
   try {
     const result = await adapter.query(connectionConfig, sql)

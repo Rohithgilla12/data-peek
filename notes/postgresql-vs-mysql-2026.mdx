@@ -1,0 +1,280 @@
+---
+title: "PostgreSQL vs MySQL in 2026: A Developer's Honest Comparison"
+description: "No fanboy wars, no benchmarks from 2014 — just an honest look at when to pick PostgreSQL and when MySQL is the better call"
+date: "2026-03-30"
+author: "Rohith Gilla"
+tags: ["postgresql", "mysql", "comparison", "databases"]
+---
+
+# PostgreSQL vs MySQL in 2026: A Developer's Honest Comparison
+
+Every few years, someone drops a "PostgreSQL vs MySQL" article that reads like it was written by a database vendor's marketing team. This is not that article.
+
+I have spent years building tools that connect to both databases daily. I have seen teams thrive with MySQL and I have seen teams thrive with Postgres. The right choice depends on what you are actually building, not what Hacker News told you last Tuesday.
+
+Let's break it down honestly.
+
+## The Type System
+
+PostgreSQL's type system is so strict it would reject your Tinder profile. And honestly, that is a feature.
+
+Postgres gives you enums, composite types, arrays, ranges, domains, and custom types. You can define a type that only accepts positive integers, or an email address that must match a regex, directly at the database level.
+
+```sql
+-- PostgreSQL: Custom domain with validation
+CREATE DOMAIN email AS TEXT
+CHECK (VALUE ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$');
+
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  contact email NOT NULL
+);
+
+-- This will fail at the database level
+INSERT INTO users (contact) VALUES ('not-an-email');
+```
+
+MySQL takes a more relaxed approach. It will happily let you insert `'0000-00-00'` as a date if you are running in a permissive SQL mode. MySQL 8.4 has tightened things up with stricter defaults, but you will still encounter legacy instances running in modes that silently truncate data.
+
+```sql
+-- MySQL: You get the basics, and they work fine
+CREATE TABLE users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  contact VARCHAR(255) NOT NULL,
+  status ENUM('active', 'inactive', 'pending')
+);
+```
+
+**Verdict**: If your data model is complex and correctness matters at the storage layer, Postgres wins. If your schema is straightforward and you validate in application code anyway, MySQL is perfectly fine.
+
+## JSON Support
+
+Both databases handle JSON in 2026, but the experience is noticeably different.
+
+PostgreSQL has had first-class JSON support since version 9.2, and the `jsonb` type is genuinely powerful. You can index JSON fields, query nested paths efficiently, and use JSON in joins and aggregations like it is a regular column.
+
+```sql
+-- PostgreSQL: JSONB with indexing
+CREATE TABLE events (
+  id SERIAL PRIMARY KEY,
+  payload JSONB NOT NULL
+);
+
+CREATE INDEX idx_events_payload ON events USING GIN (payload);
+
+-- Query nested JSON with clean syntax
+SELECT *
+FROM events
+WHERE payload @> '{"type": "purchase", "metadata": {"region": "eu"}}';
+
+-- Aggregate JSON values directly
+SELECT payload->>'type' AS event_type, COUNT(*)
+FROM events
+GROUP BY payload->>'type';
+```
+
+MySQL added a JSON column type in 5.7, and it works. But querying deeply nested JSON is more verbose, and indexing JSON requires generated columns.
+
+```sql
+-- MySQL: JSON with generated column for indexing
+CREATE TABLE events (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  payload JSON NOT NULL,
+  event_type VARCHAR(50) GENERATED ALWAYS AS (payload->>'$.type') STORED
+);
+
+CREATE INDEX idx_event_type ON events (event_type);
+
+-- Querying nested JSON
+SELECT *
+FROM events
+WHERE JSON_EXTRACT(payload, '$.type') = 'purchase'
+  AND JSON_EXTRACT(payload, '$.metadata.region') = 'eu';
+```
+
+**Verdict**: If JSON is a core part of your data model, Postgres is the better pick. If you occasionally store a blob of config or metadata as JSON, MySQL handles it just fine.
+
+## The GROUP BY Situation
+
+MySQL's `GROUP BY` behavior has caused more surprise Slack messages than any deployment I have ever seen. Historically, MySQL would let you select non-aggregated columns that were not in the `GROUP BY` clause and just return... whatever value it felt like from the group.
+
+```sql
+-- MySQL (with ONLY_FULL_GROUP_BY disabled):
+-- This runs without error. The `name` value is non-deterministic.
+SELECT department, name, COUNT(*)
+FROM employees
+GROUP BY department;
+```
+
+PostgreSQL has always rejected this, and rightfully so:
+
+```sql
+-- PostgreSQL: This is an error, as it should be
+-- ERROR: column "employees.name" must appear in the GROUP BY clause
+-- or be used in an aggregate function
+SELECT department, name, COUNT(*)
+FROM employees
+GROUP BY department;
+```
+
+Modern MySQL (8.0+) enables `ONLY_FULL_GROUP_BY` by default, which matches the Postgres behavior. But if you are inheriting a codebase that depends on the old behavior, you are in for a fun afternoon of debugging.
+
+## UPSERT Syntax
+
+Both support upsert operations, but the syntax diverges.
+
+```sql
+-- PostgreSQL: ON CONFLICT
+INSERT INTO products (sku, name, price)
+VALUES ('ABC-123', 'Widget', 29.99)
+ON CONFLICT (sku)
+DO UPDATE SET
+  name = EXCLUDED.name,
+  price = EXCLUDED.price;
+```
+
+```sql
+-- MySQL: ON DUPLICATE KEY UPDATE
+INSERT INTO products (sku, name, price)
+VALUES ('ABC-123', 'Widget', 29.99)
+ON DUPLICATE KEY UPDATE
+  name = VALUES(name),
+  price = VALUES(price);
+```
+
+Postgres uses `EXCLUDED` to reference the incoming row, MySQL uses `VALUES()`. Both work, but Postgres also lets you specify exactly which constraint to target with `ON CONFLICT`, which is useful when a table has multiple unique constraints.
+
+**Verdict**: Postgres is slightly more flexible here. In practice, both get the job done.
+
+## Window Functions
+
+Both databases have solid window function support in 2026. This was not always the case -- MySQL only gained window functions in 8.0.
+
+```sql
+-- Works identically in both PostgreSQL and MySQL
+SELECT
+  employee_id,
+  department,
+  salary,
+  RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_rank,
+  salary - LAG(salary) OVER (PARTITION BY department ORDER BY salary) AS diff_from_prev
+FROM employees;
+```
+
+Where Postgres pulls ahead is in the range of window frame options and the ability to use custom aggregate functions as window functions. But for the 90% use case, they are equivalent.
+
+## Extensions vs Plugins
+
+This is where Postgres really flexes. The extension ecosystem is one of the strongest arguments for choosing PostgreSQL.
+
+| Extension | What it does |
+|-----------|-------------|
+| PostGIS | Full geospatial database |
+| pg_trgm | Fuzzy text search |
+| pgvector | Vector similarity search for AI/ML |
+| TimescaleDB | Time-series data at scale |
+| Citus | Distributed Postgres (horizontal sharding) |
+| pg_cron | Scheduled jobs inside the database |
+| pg_stat_statements | Query performance analysis |
+
+MySQL has plugins, but the ecosystem is thinner. ProxySQL, Vitess for sharding, and the audit plugin are the big ones. For vector search, MySQL 9.0 added `VECTOR` type support, but the surrounding ecosystem is still catching up to what pgvector offers.
+
+**Verdict**: Postgres extensions can turn your database into a geospatial engine, a vector store, or a time-series database without leaving the Postgres ecosystem. That is a significant advantage.
+
+## Replication and Scaling
+
+MySQL's replication story is, and has always been, excellent. Setting up read replicas is straightforward, well-documented, and battle-tested at massive scale. There is a reason MySQL powers a significant portion of the internet's largest properties.
+
+- **MySQL**: Native async replication, semi-sync replication, Group Replication (multi-primary), InnoDB Cluster for HA. Vitess for horizontal sharding at internet scale.
+- **PostgreSQL**: Streaming replication (async and sync), logical replication, Citus for sharding. Patroni or pg_auto_failover for HA.
+
+MySQL's Group Replication and InnoDB Cluster give you a more "batteries included" high-availability setup. Postgres typically requires third-party tooling (Patroni, pgBouncer) to achieve comparable HA setups, though the result is equally robust.
+
+**Verdict**: For read-heavy workloads where you need many replicas, MySQL has a slight edge in simplicity. For complex replication scenarios (like replicating a subset of tables), Postgres's logical replication is more flexible.
+
+## Hosting Options
+
+Both are exceptionally well-supported by managed database providers in 2026:
+
+| Provider | PostgreSQL | MySQL |
+|----------|-----------|-------|
+| AWS RDS / Aurora | Yes | Yes |
+| Google Cloud SQL | Yes | Yes |
+| Azure | Yes | Yes |
+| PlanetScale | No | Yes |
+| Neon | Yes | No |
+| Supabase | Yes | No |
+| Turso | No | No (libSQL) |
+| Railway | Yes | Yes |
+| Render | Yes | No |
+
+The developer-experience-focused platforms (Neon, Supabase) tend to bet on Postgres. PlanetScale remains MySQL's strongest managed offering with its branching and schema migration workflow.
+
+**Verdict**: You will not have trouble hosting either one. The ecosystem of Postgres-first startups has grown significantly, which means more tooling, tutorials, and integrations assume Postgres.
+
+## Performance Characteristics
+
+This is where most comparison articles go wrong by posting benchmarks that do not reflect real workloads. Here is what actually matters:
+
+**MySQL tends to be faster at**: Simple primary key lookups, high-concurrency read-heavy workloads, bulk inserts into simple schemas.
+
+**Postgres tends to be faster at**: Complex queries with multiple joins, analytical workloads, queries involving JSON or full-text search, workloads that mix reads and writes.
+
+The gap has narrowed substantially. For most web applications, neither database will be the bottleneck. Your ORM generating N+1 queries will cause more performance problems than the choice between MySQL and Postgres.
+
+## Developer Experience
+
+This is subjective, but patterns are worth noting:
+
+**PostgreSQL**: Better `EXPLAIN ANALYZE` output, more informative error messages, the `psql` CLI is powerful (try `\d+` on a table). The documentation is famously thorough. Feels like a database that respects your intelligence.
+
+**MySQL**: `mysql` CLI is straightforward, `SHOW CREATE TABLE` is useful, the manual is clear. The MySQL Shell (mysqlsh) has improved significantly. Feels like a database that respects your time.
+
+```sql
+-- PostgreSQL: EXPLAIN with actual execution stats
+EXPLAIN (ANALYZE, BUFFERS, FORMAT TEXT)
+SELECT * FROM orders WHERE created_at > NOW() - INTERVAL '7 days';
+
+-- MySQL: Similar, slightly different syntax
+EXPLAIN ANALYZE
+SELECT * FROM orders WHERE created_at > NOW() - INTERVAL 7 DAY;
+```
+
+## Community and Ecosystem
+
+PostgreSQL's community has grown aggressively. The "just use Postgres" crowd can be tiresome, but the underlying trend is real -- most new ORMs, frameworks, and SaaS tools assume Postgres as the default. Prisma, Drizzle, and Rails all work with both, but Postgres tends to get features first.
+
+MySQL has the backing of Oracle (for better or worse) and the MariaDB fork continues as a community-driven alternative. The MySQL ecosystem is mature, stable, and well-understood. Boring, in the best sense of the word.
+
+## When to Pick What
+
+**Choose PostgreSQL when**:
+- Your data model is complex (lots of relationships, constraints, custom types)
+- You need strong JSON support as a core feature
+- You want to use extensions like PostGIS, pgvector, or TimescaleDB
+- You are building something analytical or data-heavy
+- Your team values strictness and correctness at the database layer
+- You are starting a new project and do not have a strong reason to pick MySQL
+
+**Choose MySQL when**:
+- You need proven, simple read replication at scale
+- Your workload is primarily read-heavy with simple queries
+- You are using PlanetScale or need its branching workflow
+- Your team already knows MySQL well and the project does not need Postgres-specific features
+- You are working with a WordPress, Laravel, or legacy PHP stack
+- You value operational simplicity and a well-trodden path
+
+**Either works great when**:
+- You are building a standard web application with a typical CRUD workload
+- You have a competent team that can operate either database
+- Your cloud provider manages the database for you
+
+## The Honest Answer
+
+If you are starting fresh in 2026 and have no constraints pushing you either direction, PostgreSQL is the safer default. Not because MySQL is bad -- it is not -- but because the ecosystem momentum, extension system, and type safety give you more room to grow without hitting walls.
+
+But if someone on your team says "I have run MySQL in production for ten years and I know exactly how to operate it," that operational expertise is worth more than any feature comparison matrix. A well-run MySQL instance beats a poorly-run Postgres instance every single time.
+
+The database you understand is the database you should use.
+
+Whether you pick Postgres or MySQL, [data-peek](https://datapeek.dev) connects to both in seconds -- so you can stop debating and start querying.

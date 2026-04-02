@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { Search, Plus, Loader2, FolderOpen } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { useConnectionStore } from '@/stores'
 import { cn } from '@/lib/utils'
+import { useHotkeys, type UseHotkeyDefinition, type Hotkey } from '@tanstack/react-hotkeys'
 import { AddConnectionDialog } from './add-connection-dialog'
 import { DatabaseIcon } from './database-icons'
 
@@ -106,24 +107,19 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
     [flatList, selectedIndex, handleSelectConnection, onOpenChange]
   )
 
-  // Handle Cmd+1-9 within the picker
-  useEffect(() => {
-    if (!open) return
-
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      const isMeta = e.metaKey || e.ctrlKey
-      if (isMeta && e.shiftKey && e.key >= '1' && e.key <= '9') {
-        e.preventDefault()
-        const index = parseInt(e.key) - 1
-        if (connections[index]) {
-          handleSelectConnection(connections[index].id)
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleGlobalKeyDown)
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown)
-  }, [open, connections, handleSelectConnection])
+  // Handle Cmd+Shift+1-9 within the picker
+  const pickerHotkeys = useMemo<UseHotkeyDefinition[]>(
+    () =>
+      Array.from({ length: 9 }, (_, i) => ({
+        hotkey: `Mod+Shift+${i + 1}` as Hotkey,
+        callback: () => {
+          if (connections[i]) handleSelectConnection(connections[i].id)
+        },
+        options: { enabled: open, conflictBehavior: 'allow' as const }
+      })),
+    [open, connections, handleSelectConnection]
+  )
+  useHotkeys(pickerHotkeys)
 
   return (
     <>

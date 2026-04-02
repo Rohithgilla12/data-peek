@@ -23,6 +23,7 @@ import type {
   AIProviderConfig
 } from '@shared/index'
 import { DEFAULT_MODELS } from '@shared/index'
+import { randomUUID } from 'crypto'
 
 // Re-export types for main process consumers
 export type {
@@ -550,7 +551,7 @@ function migrateLegacyToSessions(messages: StoredChatMessage[]): ChatSession[] {
 
   const now = new Date().toISOString()
   const session: ChatSession = {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     title: generateSessionTitle(messages),
     messages,
     createdAt: messages[0]?.createdAt || now,
@@ -595,7 +596,7 @@ export function getChatSession(connectionId: string, sessionId: string): ChatSes
 export function createChatSession(connectionId: string, title?: string): ChatSession {
   const now = new Date().toISOString()
   const session: ChatSession = {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     title: title || 'New Chat',
     messages: [],
     createdAt: now,

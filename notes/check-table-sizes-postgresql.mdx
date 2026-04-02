@@ -1,0 +1,223 @@
+---
+title: "How to Check Table Sizes in PostgreSQL"
+description: "Every query to find bloated tables, wasted space, and the real size of your PostgreSQL database — with examples you can run right now"
+date: "2026-03-31"
+author: "Rohith Gilla"
+tags: ["postgresql", "database", "performance", "sql"]
+---
+
+# How to Check Table Sizes in PostgreSQL
+
+You know that feeling when your deployment fails because the disk is full, and you're sitting there wondering how your "tiny little side project" database is somehow 40GB? Yeah. Been there.
+
+PostgreSQL doesn't exactly make it obvious where your space went. There's no big friendly dashboard that says "hey, your `audit_logs` table is eating 87% of your disk." You have to ask, and you have to know the right questions.
+
+Here's every query I reach for when I need to figure out what's going on.
+
+## The Quick Answer: How Big Is This Table?
+
+If you just need the size of a single table, this is your go-to:
+
+```sql
+SELECT pg_size_pretty(pg_total_relation_size('your_table_name'));
+```
+
+This gives you the **total** size -- table data, indexes, TOAST data, everything. It's the number you actually care about.
+
+But maybe you want to break it down. Here's the full picture for one table:
+
+```sql
+SELECT
+  pg_size_pretty(pg_relation_size('your_table_name')) AS table_size,
+  pg_size_pretty(pg_indexes_size('your_table_name')) AS index_size,
+  pg_size_pretty(pg_total_relation_size('your_table_name')) AS total_size;
+```
+
+The distinction matters. `pg_relation_size` is just the table data itself. `pg_indexes_size` is all indexes on that table combined. `pg_total_relation_size` is the whole enchilada -- data + indexes + TOAST + free space map + visibility map.
+
+Sometimes your indexes are bigger than your actual data. That's... not great, but also more common than you'd think.
+
+## Every Table, Sorted By Size
+
+This is the query I run most often. It lists every table in your database, sorted from biggest to smallest:
+
+```sql
+SELECT
+  schemaname || '.' || tablename AS table_full_name,
+  pg_size_pretty(pg_total_relation_size(schemaname || '.' || tablename)) AS total_size,
+  pg_size_pretty(pg_relation_size(schemaname || '.' || tablename)) AS data_size,
+  pg_size_pretty(pg_indexes_size(schemaname || '.' || tablename)) AS index_size
+FROM pg_tables
+WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+ORDER BY pg_total_relation_size(schemaname || '.' || tablename) DESC;
+```
+
+Fair warning: the output might hurt your feelings. That "small config table" you set up two years ago? The one that should have maybe 50 rows? Yeah, it's 4GB now because someone thought it would be clever to store JSON blobs in a `text` column and never added a cleanup job.
+
+We've all been there.
+
+## Top 10 Biggest Tables
+
+Same idea but if you just want the highlights (or lowlights):
+
+```sql
+SELECT
+  schemaname || '.' || tablename AS table_full_name,
+  pg_size_pretty(pg_total_relation_size(schemaname || '.' || tablename)) AS total_size,
+  pg_size_pretty(pg_relation_size(schemaname || '.' || tablename)) AS data_size,
+  pg_size_pretty(pg_indexes_size(schemaname || '.' || tablename)) AS index_size,
+  (pg_total_relation_size(schemaname || '.' || tablename))::numeric / NULLIF(pg_relation_size(schemaname || '.' || tablename), 0) AS bloat_ratio
+FROM pg_tables
+WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+ORDER BY pg_total_relation_size(schemaname || '.' || tablename) DESC
+LIMIT 10;
+```
+
+I added a `bloat_ratio` column here. If that number is way above 2, it means your indexes and overhead are significantly larger than your actual data. That's a hint you might have some cleanup to do.
+
+## Index Sizes: The Silent Space Hog
+
+Indexes are sneaky. You add a few during development, a couple more during that "quick performance fix" at 2am, and suddenly they're consuming more space than the tables they're supposed to help.
+
+Here's how to see all indexes and their sizes:
+
+```sql
+SELECT
+  schemaname || '.' || indexname AS index_name,
+  schemaname || '.' || tablename AS table_name,
+  pg_size_pretty(pg_relation_size(schemaname || '.' || indexname)) AS index_size
+FROM pg_indexes
+WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+ORDER BY pg_relation_size(schemaname || '.' || indexname) DESC;
+```
+
+If you see indexes that are suspiciously large, or if you have five indexes on the same table that nobody ever uses, it might be time for a conversation with your past self. The `pg_stat_user_indexes` view can tell you which indexes are actually being used:
+
+```sql
+SELECT
+  schemaname || '.' || indexrelname AS index_name,
+  idx_scan AS times_used,
+  pg_size_pretty(pg_relation_size(indexrelid)) AS size
+FROM pg_stat_user_indexes
+ORDER BY idx_scan ASC, pg_relation_size(indexrelid) DESC;
+```
+
+Indexes with zero scans and non-trivial size? Those are just paying rent to live on your disk.
+
+## Total Database Size
+
+Sometimes you don't care about individual tables. You just need to know the total damage:
+
+```sql
+SELECT pg_size_pretty(pg_database_size(current_database()));
+```
+
+Or if you want to see all databases on the server:
+
+```sql
+SELECT
+  datname,
+  pg_size_pretty(pg_database_size(datname)) AS size
+FROM pg_database
+ORDER BY pg_database_size(datname) DESC;
+```
+
+Your database is bigger than your Docker image. And honestly, that's saying something given the state of most Docker images.
+
+## TOAST Table Sizes
+
+TOAST (The Oversized-Attribute Storage Technique -- yes, that's actually what it stands for) is PostgreSQL's way of handling large values. When a row gets too big to fit on a single page, PG moves the large columns into a separate TOAST table.
+
+This matters because TOAST tables can be **huge** and they don't show up in `pg_relation_size`. They're part of `pg_total_relation_size`, but if you want to see them explicitly:
+
+```sql
+SELECT
+  c.relname AS table_name,
+  pg_size_pretty(pg_relation_size(c.reltoastrelid)) AS toast_size
+FROM pg_class c
+JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.reltoastrelid != 0
+  AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+ORDER BY pg_relation_size(c.reltoastrelid) DESC;
+```
+
+If you're storing large JSON documents, bytea columns, or long text fields, check this. I once tracked down a mystery 12GB to a TOAST table belonging to a `notifications` table where someone was storing the entire HTML email body in a `content` column. Fun times.
+
+## Why Tables Get So Big: The Bloat Problem
+
+So you've run these queries and discovered that a table with 100,000 rows is somehow 8GB. What gives?
+
+**Dead tuples.** PostgreSQL uses MVCC (Multi-Version Concurrency Control), which means when you UPDATE or DELETE a row, the old version doesn't disappear immediately. It becomes a "dead tuple" -- still taking up space on disk, invisible to new queries, but physically present.
+
+This is by design. Other transactions might still need to see the old version. But once nobody needs it anymore, it's just waste.
+
+**VACUUM** is the process that cleans up dead tuples. PostgreSQL runs autovacuum in the background, but it's not always aggressive enough, especially on busy tables with lots of updates.
+
+You can check how many dead tuples a table has:
+
+```sql
+SELECT
+  schemaname || '.' || relname AS table_name,
+  n_live_tup,
+  n_dead_tup,
+  ROUND(n_dead_tup::numeric / NULLIF(n_live_tup, 0) * 100, 2) AS dead_pct,
+  last_autovacuum,
+  last_autoanalyze
+FROM pg_stat_user_tables
+WHERE n_dead_tup > 0
+ORDER BY n_dead_tup DESC;
+```
+
+If `dead_pct` is above 10-20%, autovacuum probably isn't keeping up. You might need to tune its settings or run a manual `VACUUM`:
+
+```sql
+VACUUM VERBOSE your_table_name;
+```
+
+For truly dire situations -- when a table has ballooned way beyond what the data justifies -- `VACUUM FULL` will rewrite the entire table and reclaim the space. But it takes an **exclusive lock** on the table, so don't run it on production during peak hours unless you enjoy explaining outages.
+
+```sql
+VACUUM FULL your_table_name;
+```
+
+**Index bloat** is the other culprit. Indexes can become bloated for similar reasons -- B-tree pages that are mostly empty after lots of deletions. PostgreSQL 14+ has some improvements here, but it's still worth monitoring. The `REINDEX` command can rebuild a bloated index:
+
+```sql
+REINDEX TABLE your_table_name;
+```
+
+Or if you can't afford downtime, `REINDEX CONCURRENTLY` (PostgreSQL 12+) does it without locking:
+
+```sql
+REINDEX TABLE CONCURRENTLY your_table_name;
+```
+
+## The All-In-One Dashboard Query
+
+Here's my go-to "give me everything" query that I keep saved. It combines table size, row counts, dead tuple info, and last vacuum time into one result:
+
+```sql
+SELECT
+  t.schemaname || '.' || t.relname AS table_name,
+  pg_size_pretty(pg_total_relation_size(t.schemaname || '.' || t.relname)) AS total_size,
+  pg_size_pretty(pg_relation_size(t.schemaname || '.' || t.relname)) AS data_size,
+  pg_size_pretty(pg_indexes_size(t.schemaname || '.' || t.relname)) AS index_size,
+  t.n_live_tup AS live_rows,
+  t.n_dead_tup AS dead_rows,
+  COALESCE(t.last_autovacuum::text, 'never') AS last_vacuum
+FROM pg_stat_user_tables t
+ORDER BY pg_total_relation_size(t.schemaname || '.' || t.relname) DESC
+LIMIT 20;
+```
+
+This tells you almost everything you need to know in one shot. Big tables with lots of dead rows and "never" in the vacuum column? That's your problem child.
+
+## Wrapping Up
+
+Disk space issues in PostgreSQL almost always come down to one of three things: tables that grew beyond expectations, bloat from insufficient vacuuming, or indexes that nobody uses but everybody forgot about. The queries above should help you find which one it is.
+
+The fix is usually some combination of: tune autovacuum, drop unused indexes, archive old data, and maybe have a team conversation about that `audit_logs` table that's been growing unbounded since 2019.
+
+**Pro tip:** In [data-peek](https://datapeek.dev), you can run any of these queries against your PostgreSQL database and instantly see the results in a clean, sortable table. Need to share the findings with your team? Export to CSV or JSON with one click. It's built for exactly this kind of quick investigation -- connect, query, get answers, get out.
+
+Happy debugging. May your tables be small and your vacuums be frequent.

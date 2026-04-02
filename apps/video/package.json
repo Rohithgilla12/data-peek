@@ -1,10 +1,10 @@
 {
   "name": "@data-peek/video",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "private": true,
   "scripts": {
     "dev": "remotion studio",
-    "build": "remotion render LaunchVideo out/launch-v0.16.0.mp4",
+    "build": "remotion render ReleaseVideo-v0-17-0 out/release-v0.17.0.mp4",
     "render": "node render.mjs",
     "typecheck": "tsc --noEmit"
   },
@@ -12,6 +12,7 @@
     "@remotion/bundler": "4.0.436",
     "@remotion/cli": "4.0.436",
     "@remotion/fonts": "4.0.436",
+    "@remotion/media": "4.0.436",
     "@remotion/renderer": "4.0.436",
     "@remotion/transitions": "4.0.436",
     "lucide-react": "^0.469.0",
