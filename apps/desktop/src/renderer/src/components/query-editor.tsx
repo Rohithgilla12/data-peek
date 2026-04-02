@@ -188,7 +188,10 @@ export function QueryEditor() {
         ) : result ? (
           <>
             {/* Results Table */}
-            <div key={resultKeyRef.current} className="flex-1 overflow-hidden p-3 animate-fade-in-up">
+            <div
+              key={resultKeyRef.current}
+              className="flex-1 overflow-hidden p-3 animate-fade-in-up"
+            >
               <DataTable
                 columns={result.columns}
                 data={result.rows as Record<string, unknown>[]}
@@ -197,7 +200,10 @@ export function QueryEditor() {
             </div>
 
             {/* Results Footer */}
-            <div key={`footer-${resultKeyRef.current}`} className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-3 py-1.5 shrink-0 animate-fade-in-up">
+            <div
+              key={`footer-${resultKeyRef.current}`}
+              className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-3 py-1.5 shrink-0 animate-fade-in-up"
+            >
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <span className="size-1.5 rounded-full bg-green-500" />

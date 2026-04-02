@@ -39,3 +39,15 @@ coverage/
 # Superpowers
 .superpowers/
 docs/superpowers/
+
+# AI assistant configs
+.agents/
+.claude/
+.factory/
+.goose/
+.junie/
+.qwen/
+.trae/
+.windsurf/
+skills/
+skills-lock.json
