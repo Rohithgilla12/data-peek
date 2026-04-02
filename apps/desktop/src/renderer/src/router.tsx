@@ -11,6 +11,7 @@ import {
 import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
 import { Moon, Sun, Monitor, Sparkles, Command, AlertTriangle } from 'lucide-react'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
+import { usePokemonTracker } from '@/hooks/use-pokemon-tracker'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import { CommandPalette } from '@/components/command-palette'
 import { SavedQueriesDialog } from '@/components/saved-queries-dialog'
@@ -29,6 +30,7 @@ import { LicenseSettingsModal } from '@/components/license-settings-modal'
 import { AIChatPanel, AISettingsModal } from '@/components/ai'
 import { SettingsModal } from '@/components/settings-modal'
 import { Notifications } from '@/components/notifications'
+import { PokemonBuddy } from '@/components/pokemon-buddy'
 import { useAIStore } from '@/stores/ai-store'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
@@ -327,11 +329,15 @@ function RootLayout() {
   // Initialize auto-updater notifications
   useAutoUpdater()
 
+  // Track queries for Pokemon buddy analytics
+  usePokemonTracker()
+
   return (
     <ThemeProvider defaultTheme="dark" storageKey="data-peek-theme">
       <SidebarProvider>
         <LayoutContent />
         <Notifications />
+        <PokemonBuddy />
       </SidebarProvider>
     </ThemeProvider>
   )

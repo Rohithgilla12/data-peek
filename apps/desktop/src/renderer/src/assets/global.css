@@ -23,12 +23,12 @@
   --destructive: oklch(0.583 0.2387 28.4765);
   --destructive-foreground: oklch(0.9702 0 0);
   --border: oklch(0.85 0.008 250);
-  --input: oklch(0.90 0 0);
+  --input: oklch(0.9 0 0);
   --ring: oklch(0.45 0.15 250);
   --chart-1: oklch(0.45 0.15 250);
   --chart-2: oklch(0.55 0.15 200);
-  --chart-3: oklch(0.50 0.15 150);
-  --chart-4: oklch(0.60 0.15 100);
+  --chart-3: oklch(0.5 0.15 150);
+  --chart-4: oklch(0.6 0.15 100);
   --chart-5: oklch(0.55 0.15 50);
   --radius: 0.625rem;
   --sidebar: oklch(0.97 0.005 250 / 0.8);
@@ -385,4 +385,172 @@ input[type='number'] {
 
 .animate-cell-save {
   animation: cell-save-flash 500ms ease-out forwards;
+}
+
+/* ========================================
+   Pokemon Buddy Animations
+   ======================================== */
+
+/* Pixelated rendering for Pokemon sprites */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* Idle floating animation */
+@keyframes pokemon-idle-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.pokemon-idle {
+  animation: pokemon-idle-float 3s ease-in-out infinite;
+}
+
+/* Happy bounce */
+@keyframes pokemon-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    transform: translateY(-8px) scale(1.05);
+  }
+  50% {
+    transform: translateY(0) scale(0.95);
+  }
+  75% {
+    transform: translateY(-4px) scale(1.02);
+  }
+}
+
+.pokemon-bounce {
+  animation: pokemon-bounce 0.6s ease-in-out;
+}
+
+/* Excited spin */
+@keyframes pokemon-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(10deg) scale(1.1);
+  }
+  50% {
+    transform: rotate(-10deg) scale(1.1);
+  }
+  75% {
+    transform: rotate(5deg) scale(1.05);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.pokemon-spin {
+  animation: pokemon-spin 0.5s ease-in-out;
+}
+
+/* Sad drooping */
+@keyframes pokemon-sad-droop {
+  0% {
+    transform: translateY(0) rotate(0);
+    filter: brightness(1);
+  }
+  100% {
+    transform: translateY(2px) rotate(-5deg);
+    filter: brightness(0.7);
+  }
+}
+
+.pokemon-sad {
+  animation: pokemon-sad-droop 0.4s ease-out forwards;
+}
+
+/* Attack lunge */
+@keyframes pokemon-attack-lunge {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  30% {
+    transform: translateX(-10px) scale(1.1);
+  }
+  50% {
+    transform: translateX(15px) scale(1.15);
+  }
+  70% {
+    transform: translateX(-5px) scale(1.05);
+  }
+  100% {
+    transform: translateX(0) scale(1);
+  }
+}
+
+.pokemon-attack {
+  animation: pokemon-attack-lunge 0.6s ease-in-out;
+}
+
+/* Sleep bob */
+@keyframes pokemon-sleep-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(1px) rotate(3deg);
+    opacity: 0.5;
+  }
+}
+
+.pokemon-sleep {
+  animation: pokemon-sleep-bob 2s ease-in-out infinite;
+}
+
+/* Move name float up animation */
+@keyframes move-float-up {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -20px) scale(1.1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -30px) scale(0.9);
+  }
+}
+
+.animate-move-float {
+  animation: move-float-up 1.5s ease-out forwards;
+}
+
+/* Achievement pop-in */
+@keyframes achievement-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.05);
+  }
+  70% {
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-achievement-pop {
+  animation: achievement-pop 0.5s ease-out;
 }

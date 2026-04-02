@@ -9,6 +9,7 @@ import { ScheduledQueries } from '@/components/scheduled-queries'
 import { SchemaExplorer } from '@/components/schema-explorer'
 import { SidebarQuickQuery } from '@/components/sidebar-quick-query'
 import { Snippets } from '@/components/snippets'
+import { FunAnalytics } from '@/components/fun-analytics'
 import {
   Sidebar,
   SidebarContent,
@@ -109,6 +110,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             )}
           </>
         )}
+
+        {/* Fun Analytics & Pokemon Buddy Stats */}
+        <SidebarSeparator className="mx-3" />
+        <FunAnalytics />
 
         {/* Secondary Navigation - Settings & Help */}
         <SidebarGroup className="mt-auto">
