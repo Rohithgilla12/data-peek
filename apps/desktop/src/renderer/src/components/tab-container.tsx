@@ -23,7 +23,7 @@ export function TabContainer() {
   // Keyboard shortcuts
   const tabHotkeys = useMemo<UseHotkeyDefinition[]>(
     () => [
-      { hotkey: 'Mod+T', callback: () => handleNewTab() },
+      { hotkey: 'Mod+T', callback: handleNewTab },
       {
         hotkey: 'Mod+W',
         callback: () => {
