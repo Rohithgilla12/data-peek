@@ -295,3 +295,194 @@ export function splitStatements(sql: string, dbType: DatabaseType): string[] {
 export function createStatementSplitter(dbType: DatabaseType): (sql: string) => string[] {
   return (sql: string) => splitStatements(sql, dbType)
 }
+
+/**
+ * Stream-based SQL statement splitter.
+ * Reads chunks from an async iterable (like a file stream) and yields individual statements.
+ * Highly memory efficient for parsing huge SQL dumps.
+ *
+ * @param stream - Async iterable of string or Buffer chunks
+ * @param dbType - Database type for dialect-specific parsing
+ * @returns AsyncGenerator yielding individual SQL statements
+ */
+export async function* splitStatementsStream(
+  stream: AsyncIterable<string | Buffer>,
+  dbType: DatabaseType
+): AsyncGenerator<string> {
+  const config = SQL_PARSER_CONFIGS[dbType]
+  let buffer = ''
+
+  for await (const chunk of stream) {
+    buffer += typeof chunk === 'string' ? chunk : chunk.toString('utf8')
+
+    let i = 0
+    let lastValidSplit = 0
+
+    while (i < buffer.length) {
+      const char = buffer[i]
+      const nextChar = i + 1 < buffer.length ? buffer[i + 1] : ''
+
+      // Handle single-quoted strings
+      if (char === "'") {
+        i++
+        while (i < buffer.length) {
+          if (buffer[i] === "'" && buffer[i + 1] === "'") {
+            i += 2
+          } else if (
+            config.backslashEscape &&
+            buffer[i] === '\\' &&
+            buffer[i + 1] === "'"
+          ) {
+            i += 2
+          } else if (buffer[i] === "'") {
+            i++
+            break
+          } else {
+            i++
+          }
+        }
+        continue
+      }
+
+      // Handle double-quoted identifiers/strings
+      if (char === '"') {
+        i++
+        while (i < buffer.length) {
+          if (buffer[i] === '"' && buffer[i + 1] === '"') {
+            i += 2
+          } else if (buffer[i] === '"') {
+            i++
+            break
+          } else {
+            i++
+          }
+        }
+        continue
+      }
+
+      // Handle backtick-quoted identifiers (MySQL)
+      if (config.backtickIdentifiers && char === '`') {
+        i++
+        while (i < buffer.length) {
+          if (buffer[i] === '`' && buffer[i + 1] === '`') {
+            i += 2
+          } else if (buffer[i] === '`') {
+            i++
+            break
+          } else {
+            i++
+          }
+        }
+        continue
+      }
+
+      // Handle bracket-quoted identifiers (MSSQL)
+      if (config.bracketIdentifiers && char === '[') {
+        i++
+        while (i < buffer.length) {
+          if (buffer[i] === ']' && buffer[i + 1] === ']') {
+            i += 2
+          } else if (buffer[i] === ']') {
+            i++
+            break
+          } else {
+            i++
+          }
+        }
+        continue
+      }
+
+      // Handle dollar-quoted strings (PostgreSQL)
+      if (config.dollarQuotes && char === '$') {
+        let tag = '$'
+        let j = i + 1
+        while (j < buffer.length && (buffer[j].match(/[a-zA-Z0-9_]/) || buffer[j] === '$')) {
+          tag += buffer[j]
+          if (buffer[j] === '$') {
+            j++
+            break
+          }
+          j++
+        }
+        if (tag.endsWith('$') && tag.length >= 2) {
+          i = j
+          const closeIdx = buffer.indexOf(tag, i)
+          if (closeIdx !== -1) {
+            i = closeIdx + tag.length
+          } else {
+            i = buffer.length
+          }
+          continue
+        }
+      }
+
+      // Handle hash line comments (MySQL)
+      if (config.hashLineComment && char === '#') {
+        i++
+        while (i < buffer.length && buffer[i] !== '\n') {
+          i++
+        }
+        continue
+      }
+
+      // Handle line comments (--)
+      if (char === '-' && nextChar === '-') {
+        i += 2
+        while (i < buffer.length && buffer[i] !== '\n') {
+          i++
+        }
+        continue
+      }
+
+      // Handle block comments (/* */)
+      if (char === '/' && nextChar === '*') {
+        i += 2
+        if (config.nestedBlockComments) {
+          let depth = 1
+          while (i < buffer.length && depth > 0) {
+            if (buffer[i] === '/' && buffer[i + 1] === '*') {
+              depth++
+              i += 2
+            } else if (buffer[i] === '*' && buffer[i + 1] === '/') {
+              depth--
+              i += 2
+            } else {
+              i++
+            }
+          }
+        } else {
+          while (i < buffer.length) {
+            if (buffer[i] === '*' && buffer[i + 1] === '/') {
+              i += 2
+              break
+            } else {
+              i++
+            }
+          }
+        }
+        continue
+      }
+
+      // Statement separator
+      if (char === ';') {
+        const stmt = buffer.substring(lastValidSplit, i).trim()
+        if (stmt) {
+          yield stmt
+        }
+        i++
+        lastValidSplit = i
+        continue
+      }
+
+      i++
+    }
+
+    buffer = buffer.substring(lastValidSplit)
+  }
+
+  const lastStmt = buffer.trim()
+  if (lastStmt) {
+    yield lastStmt
+  }
+}
+

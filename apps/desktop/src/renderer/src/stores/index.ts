@@ -17,8 +17,5 @@ export * from './import-store'
 export * from './data-gen-store'
 export * from './pg-notification-store'
 export * from './health-store'
-<<<<<<< HEAD
 export * from './pg-dump-store'
-=======
 export * from './pokemon-buddy-store'
->>>>>>> main

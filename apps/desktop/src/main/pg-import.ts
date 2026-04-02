@@ -1,5 +1,5 @@
 import { Client } from 'pg'
-import { promises as fs } from 'fs'
+import { createReadStream } from 'fs'
 import type {
   ConnectionConfig,
   PgImportOptions,
@@ -8,7 +8,7 @@ import type {
 } from '@shared/index'
 import { buildClientConfig } from './adapters/postgres-adapter'
 import { createTunnel, closeTunnel, TunnelSession } from './ssh-tunnel-service'
-import { splitStatements } from './lib/sql-parser'
+import { splitStatementsStream } from './lib/sql-parser'
 import { createLogger } from './lib/logger'
 
 const log = createLogger('pg-import')
@@ -31,6 +31,7 @@ export async function pgImport(
   let statementsExecuted = 0
   let statementsSkipped = 0
   let statementsFailed = 0
+  let statementIndex = 0
   const errors: Array<{ statementIndex: number; statement: string; error: string }> = []
   let tunnelSession: TunnelSession | null = null
 
@@ -54,31 +55,7 @@ export async function pgImport(
   }
 
   try {
-    // Read the SQL file
-    sendProgress('reading', 0, 'Reading file...')
-    const sql = await fs.readFile(filePath, 'utf8')
-
     if (cancelToken.cancelled) throw new Error('Import cancelled')
-
-    // Split into statements
-    const statements = splitStatements(sql, 'postgresql').filter((s) => {
-      // Strip leading comment lines, then check if real SQL remains
-      const stripped = s.replace(/^(\s*--[^\n]*\n)*/gm, '').trim()
-      return stripped.length > 0
-    })
-
-    log.info(`Parsed ${statements.length} statements from ${filePath}`)
-
-    if (statements.length === 0) {
-      return {
-        success: true,
-        statementsExecuted: 0,
-        statementsSkipped: 0,
-        statementsFailed: 0,
-        errors: [],
-        durationMs: Date.now() - startTime
-      }
-    }
 
     // Connect
     if (config.ssh) {
@@ -96,9 +73,16 @@ export async function pgImport(
         await client.query('BEGIN')
       }
 
-      sendProgress('executing', statements.length, '')
+      sendProgress('executing', 0, 'Starting import...')
 
-      for (let i = 0; i < statements.length; i++) {
+      const fileStream = createReadStream(filePath, { highWaterMark: 1024 * 1024 })
+      const statementStream = splitStatementsStream(fileStream, 'postgresql')
+
+      for await (const stmt of statementStream) {
+        // Strip leading comment lines, then check if real SQL remains
+        const stripped = stmt.replace(/^(\s*--[^\n]*\n)*/gm, '').trim()
+        if (stripped.length === 0) continue
+
         if (cancelToken.cancelled) {
           if (options.useTransaction) {
             await client.query('ROLLBACK').catch(() => {})
@@ -106,25 +90,24 @@ export async function pgImport(
           throw new Error('Import cancelled')
         }
 
-        const stmt = statements[i]
         const useSavepoints = options.useTransaction && options.onError === 'skip'
 
         if (useSavepoints) {
-          await client.query(`SAVEPOINT sp_${i}`)
+          await client.query(`SAVEPOINT sp_${statementIndex}`)
         }
 
         try {
-          await client.query(stmt)
+          await client.query(stripped)
           statementsExecuted++
           if (useSavepoints) {
-            await client.query(`RELEASE SAVEPOINT sp_${i}`)
+            await client.query(`RELEASE SAVEPOINT sp_${statementIndex}`)
           }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err)
           statementsFailed++
           errors.push({
-            statementIndex: i,
-            statement: stmt.slice(0, 500),
+            statementIndex,
+            statement: stripped.slice(0, 500),
             error: errorMessage
           })
 
@@ -132,19 +115,20 @@ export async function pgImport(
             if (options.useTransaction) {
               await client.query('ROLLBACK').catch(() => {})
             }
-            throw new Error(`Statement ${i + 1} failed: ${errorMessage}`)
+            throw new Error(`Statement ${statementIndex + 1} failed: ${errorMessage}`)
           }
 
           if (useSavepoints) {
-            await client.query(`ROLLBACK TO SAVEPOINT sp_${i}`)
+            await client.query(`ROLLBACK TO SAVEPOINT sp_${statementIndex}`)
           }
 
           // skip-and-continue
           statementsSkipped++
-          log.warn(`Skipping statement ${i + 1}: ${errorMessage}`)
+          log.warn(`Skipping statement ${statementIndex + 1}: ${errorMessage}`)
         }
 
-        sendProgress('executing', statements.length, stmt)
+        statementIndex++
+        sendProgress('executing', 0, stripped)
       }
 
       if (options.useTransaction) {
@@ -163,7 +147,7 @@ export async function pgImport(
       durationMs: Date.now() - startTime
     }
 
-    sendProgress('complete', statements.length, '')
+    sendProgress('complete', 0, '')
     log.info(
       `Import complete: ${statementsExecuted} executed, ${statementsSkipped} skipped, ${statementsFailed} failed in ${result.durationMs}ms`
     )

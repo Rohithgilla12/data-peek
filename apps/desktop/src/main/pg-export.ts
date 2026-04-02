@@ -27,6 +27,26 @@ function qualifiedName(schema: string, name: string): string {
   return `${quoteIdent(schema)}.${quoteIdent(name)}`
 }
 
+/**
+ * Parse a PostgreSQL array literal string like "{val1,val2}" into a JS array.
+ * The pg driver sometimes returns array_agg results as raw strings instead of
+ * parsed JS arrays.
+ */
+function parsePostgresArray(value: unknown): string[] {
+  if (Array.isArray(value)) return value
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      const inner = trimmed.slice(1, -1)
+      if (inner === '') return []
+      // Simple split by comma, handles basic identifiers
+      // For more complex cases with escaped quotes, a more robust parser would be needed
+      return inner.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
+    }
+  }
+  return []
+}
+
 // Excluded system schemas
 const SYSTEM_SCHEMAS = new Set([
   'pg_catalog',
@@ -141,7 +161,9 @@ export async function pgExport(
         if (options.includeDropStatements) {
           emit(`DROP TYPE IF EXISTS ${qualifiedName(row.schema, row.name)} CASCADE;\n`)
         }
-        const labels = row.labels.map((l: string) => `'${l.replace(/'/g, "''")}'`).join(', ')
+        const labels = parsePostgresArray(row.labels)
+          .map((l: string) => `'${l.replace(/'/g, "''")}'`)
+          .join(', ')
         emit(`CREATE TYPE ${qualifiedName(row.schema, row.name)} AS ENUM (${labels});\n\n`)
       }
 
@@ -191,7 +213,7 @@ export async function pgExport(
         if (options.includeDropStatements) {
           emit(`DROP TYPE IF EXISTS ${qualifiedName(row.schema, row.name)} CASCADE;\n`)
         }
-        const attrs = (row.attrs as string[]).join(',\n  ')
+        const attrs = parsePostgresArray(row.attrs).join(',\n  ')
         emit(`CREATE TYPE ${qualifiedName(row.schema, row.name)} AS (\n  ${attrs}\n);\n\n`)
       }
     }
@@ -337,7 +359,7 @@ export async function pgExport(
         )
 
         for (const pk of pkResult.rows) {
-          const pkCols = (pk.columns as string[]).map(quoteIdent).join(', ')
+          const pkCols = parsePostgresArray(pk.columns).map(quoteIdent).join(', ')
           colDefs.push(`  CONSTRAINT ${quoteIdent(pk.constraint_name)} PRIMARY KEY (${pkCols})`)
         }
 
@@ -356,7 +378,7 @@ export async function pgExport(
         )
 
         for (const u of uniqueResult.rows) {
-          const uCols = (u.columns as string[]).map(quoteIdent).join(', ')
+          const uCols = parsePostgresArray(u.columns).map(quoteIdent).join(', ')
           colDefs.push(`  CONSTRAINT ${quoteIdent(u.constraint_name)} UNIQUE (${uCols})`)
         }
 
