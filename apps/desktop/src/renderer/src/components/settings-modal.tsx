@@ -21,12 +21,16 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const {
     hideQueryEditorByDefault,
     expandJsonByDefault,
+    jsonExpandDepth,
     hideQuickQueryPanel,
     queryTimeoutMs,
+    pokemonBuddyEnabled,
     setHideQueryEditorByDefault,
     setExpandJsonByDefault,
+    setJsonExpandDepth,
     setHideQuickQueryPanel,
     setQueryTimeoutMs,
+    setPokemonBuddyEnabled,
     resetSettings
   } = useSettingsStore()
 
@@ -41,7 +45,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           <DialogDescription>Configure your data-peek preferences.</DialogDescription>
         </DialogHeader>
 
-        <div className="py-4 space-y-6">
+        <div className="py-4 space-y-6 max-h-[60vh] overflow-y-auto pr-2">
           {/* Query Editor Section */}
           <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
@@ -98,6 +102,46 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                 id="expand-json"
                 checked={expandJsonByDefault}
                 onCheckedChange={setExpandJsonByDefault}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="json-depth">Default JSON expansion depth</Label>
+                <p className="text-xs text-muted-foreground">
+                  How many levels deep JSON should be expanded
+                </p>
+              </div>
+              <Input
+                id="json-depth"
+                type="number"
+                min={1}
+                max={10}
+                className="w-24"
+                value={jsonExpandDepth}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value)
+                  if (!isNaN(val)) setJsonExpandDepth(val)
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Fun Features Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Fun Features
+            </h3>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="pokemon-buddy">Pokemon Buddy</Label>
+                <p className="text-xs text-muted-foreground">
+                  Show a friendly Pokemon buddy in the sidebar
+                </p>
+              </div>
+              <Switch
+                id="pokemon-buddy"
+                checked={pokemonBuddyEnabled}
+                onCheckedChange={setPokemonBuddyEnabled}
               />
             </div>
           </div>
