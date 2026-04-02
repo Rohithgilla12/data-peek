@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Activity, RefreshCw, Loader2, Skull, CheckCircle2 } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { Activity, RefreshCw, Loader2, Skull, CheckCircle2, Share2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,6 +28,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from '@/components/ui/alert-dialog'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image-dialog'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useHealthStore } from '@/stores/health-store'
 import { useTabStore } from '@/stores/tab-store'
@@ -65,6 +67,9 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
   const killQuery = useHealthStore((s) => s.killQuery)
 
   const [sizeSort, setSizeSort] = useState<'total' | 'data' | 'index' | 'rows'>('total')
+  const [shareCard, setShareCard] = useState<
+    'activeQueries' | 'tableSizes' | 'cacheStats' | 'locks' | null
+  >(null)
 
   useEffect(() => {
     if (!connection) return
@@ -126,6 +131,340 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
     return 'text-red-500'
   }
 
+  const shareCacheColor = (ratio: number, theme: ShareImageTheme) => {
+    if (ratio >= 99) return theme === 'light' ? 'text-green-600' : 'text-green-400'
+    if (ratio >= 95) return theme === 'light' ? 'text-yellow-600' : 'text-yellow-400'
+    return theme === 'light' ? 'text-red-600' : 'text-red-400'
+  }
+
+  const shareButton = (card: typeof shareCard) => (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-6 w-6 p-0"
+            onClick={() => setShareCard(card)}
+          >
+            <Share2 className="size-3" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top">
+          <p className="text-xs">Share as image</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  )
+
+  const renderShareContent = (theme: ShareImageTheme): ReactNode => {
+    const textColor = theme === 'light' ? 'text-zinc-800' : 'text-zinc-100'
+    const mutedColor = theme === 'light' ? 'text-zinc-500' : 'text-zinc-400'
+    const headerColor = theme === 'light' ? 'text-zinc-700' : 'text-zinc-300'
+    const borderColor = theme === 'light' ? 'border-zinc-200' : 'border-zinc-700'
+    const barBg = theme === 'light' ? 'bg-zinc-200' : 'bg-zinc-700'
+    const barFill = theme === 'light' ? 'bg-blue-500' : 'bg-blue-400'
+
+    const connLabel = connection?.name || connection?.host || ''
+
+    switch (shareCard) {
+      case 'activeQueries':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className={cn('text-sm font-semibold', textColor)}>Active Queries</p>
+              {connLabel && <p className={cn('text-xs', mutedColor)}>{connLabel}</p>}
+            </div>
+            {activeQueries.length === 0 ? (
+              <p className={cn('py-4 text-center text-xs', mutedColor)}>No active queries</p>
+            ) : (
+              <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr className={cn(borderColor)} style={{ borderBottom: '1px solid' }}>
+                    <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>PID</th>
+                    <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>User</th>
+                    <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>State</th>
+                    <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>
+                      Duration
+                    </th>
+                    <th className={cn('py-1.5 text-left font-medium', headerColor)}>Query</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activeQueries.map((q) => (
+                    <tr
+                      key={q.pid}
+                      className={cn(borderColor)}
+                      style={{ borderBottom: '1px solid' }}
+                    >
+                      <td className={cn('py-1.5 pr-3', textColor)}>{q.pid}</td>
+                      <td className={cn('py-1.5 pr-3', textColor)}>{q.user}</td>
+                      <td className={cn('py-1.5 pr-3', textColor)}>{q.state}</td>
+                      <td
+                        className={cn(
+                          'py-1.5 pr-3',
+                          q.durationMs > 60000
+                            ? theme === 'light'
+                              ? 'font-medium text-red-600'
+                              : 'font-medium text-red-400'
+                            : textColor
+                        )}
+                      >
+                        {q.duration}
+                      </td>
+                      <td className={cn('py-1.5 font-mono', textColor)}>{q.query.slice(0, 80)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+
+      case 'tableSizes':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <p className={cn('text-sm font-semibold', textColor)}>Table Sizes</p>
+                {dbSize && (
+                  <p className={cn('text-xs', mutedColor)}>DB Total: {dbSize.totalSize}</p>
+                )}
+              </div>
+              {connLabel && <p className={cn('text-xs', mutedColor)}>{connLabel}</p>}
+            </div>
+            {sortedTableSizes.length === 0 ? (
+              <p className={cn('py-4 text-center text-xs', mutedColor)}>No tables found</p>
+            ) : (
+              <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr className={cn(borderColor)} style={{ borderBottom: '1px solid' }}>
+                    <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>Table</th>
+                    <th className={cn('py-1.5 pr-3 text-right font-medium', headerColor)}>
+                      Est. Rows
+                    </th>
+                    <th className={cn('py-1.5 pr-3 text-right font-medium', headerColor)}>Data</th>
+                    <th className={cn('py-1.5 pr-3 text-right font-medium', headerColor)}>Index</th>
+                    <th className={cn('py-1.5 pr-3 text-right font-medium', headerColor)}>Total</th>
+                    <th className={cn('w-24 py-1.5 font-medium', headerColor)} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedTableSizes.slice(0, 30).map((t) => (
+                    <tr
+                      key={`${t.schema}.${t.table}`}
+                      className={cn(borderColor)}
+                      style={{ borderBottom: '1px solid' }}
+                    >
+                      <td className={cn('py-1.5 pr-3', textColor)}>
+                        <span className={mutedColor}>{t.schema}.</span>
+                        {t.table}
+                      </td>
+                      <td className={cn('py-1.5 pr-3 text-right', textColor)}>
+                        {t.rowCountEstimate.toLocaleString()}
+                      </td>
+                      <td className={cn('py-1.5 pr-3 text-right', textColor)}>{t.dataSize}</td>
+                      <td className={cn('py-1.5 pr-3 text-right', textColor)}>{t.indexSize}</td>
+                      <td className={cn('py-1.5 pr-3 text-right font-medium', textColor)}>
+                        {t.totalSize}
+                      </td>
+                      <td className="w-24 py-1.5">
+                        <div className={cn('h-2 w-full rounded-full', barBg)}>
+                          <div
+                            className={cn('h-2 rounded-full', barFill)}
+                            style={{
+                              width: `${maxTotalSize > 0 ? (t.totalSizeBytes / maxTotalSize) * 100 : 0}%`
+                            }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+
+      case 'cacheStats':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className={cn('text-sm font-semibold', textColor)}>Cache Hit Ratios</p>
+              {connLabel && <p className={cn('text-xs', mutedColor)}>{connLabel}</p>}
+            </div>
+            {!cacheStats ? (
+              <p className={cn('py-4 text-center text-xs', mutedColor)}>No data</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div
+                    className={cn('rounded-lg border p-4 text-center', borderColor)}
+                    style={{ borderWidth: '1px' }}
+                  >
+                    <p className={cn('text-xs', mutedColor)}>Buffer Cache</p>
+                    <p
+                      className={cn(
+                        'text-3xl font-bold',
+                        shareCacheColor(cacheStats.bufferCacheHitRatio, theme)
+                      )}
+                    >
+                      {cacheStats.bufferCacheHitRatio}%
+                    </p>
+                  </div>
+                  <div
+                    className={cn('rounded-lg border p-4 text-center', borderColor)}
+                    style={{ borderWidth: '1px' }}
+                  >
+                    <p className={cn('text-xs', mutedColor)}>Index Cache</p>
+                    <p
+                      className={cn(
+                        'text-3xl font-bold',
+                        shareCacheColor(cacheStats.indexHitRatio, theme)
+                      )}
+                    >
+                      {cacheStats.indexHitRatio}%
+                    </p>
+                  </div>
+                </div>
+                {cacheStats.tableCacheDetails && cacheStats.tableCacheDetails.length > 0 && (
+                  <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr className={cn(borderColor)} style={{ borderBottom: '1px solid' }}>
+                        <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>
+                          Table
+                        </th>
+                        <th className={cn('py-1.5 pr-3 text-right font-medium', headerColor)}>
+                          Hit %
+                        </th>
+                        <th className={cn('py-1.5 pr-3 text-right font-medium', headerColor)}>
+                          Seq Scans
+                        </th>
+                        <th className={cn('py-1.5 text-right font-medium', headerColor)}>
+                          Idx Scans
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {cacheStats.tableCacheDetails.slice(0, 15).map((t) => (
+                        <tr
+                          key={t.table}
+                          className={cn(borderColor)}
+                          style={{ borderBottom: '1px solid' }}
+                        >
+                          <td className={cn('py-1.5 pr-3', textColor)}>{t.table}</td>
+                          <td
+                            className={cn(
+                              'py-1.5 pr-3 text-right',
+                              shareCacheColor(t.hitRatio, theme)
+                            )}
+                          >
+                            {t.hitRatio}%
+                          </td>
+                          <td className={cn('py-1.5 pr-3 text-right', textColor)}>
+                            {t.seqScans.toLocaleString()}
+                          </td>
+                          <td className={cn('py-1.5 text-right', textColor)}>
+                            {t.indexScans.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )}
+          </div>
+        )
+
+      case 'locks':
+        return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className={cn('text-sm font-semibold', textColor)}>Locks &amp; Blocking</p>
+              {connLabel && <p className={cn('text-xs', mutedColor)}>{connLabel}</p>}
+            </div>
+            {locks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-6">
+                <p
+                  className={cn('text-sm', theme === 'light' ? 'text-green-600' : 'text-green-400')}
+                >
+                  No blocking locks
+                </p>
+              </div>
+            ) : (
+              <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr className={cn(borderColor)} style={{ borderBottom: '1px solid' }}>
+                    <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>
+                      Blocked
+                    </th>
+                    <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>
+                      Blocker
+                    </th>
+                    <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>Type</th>
+                    <th className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}>
+                      Relation
+                    </th>
+                    <th className={cn('py-1.5 text-left font-medium', headerColor)}>Wait</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {locks.map((l, i) => (
+                    <tr
+                      key={`${l.blockedPid}-${l.blockingPid}-${i}`}
+                      className={cn(borderColor)}
+                      style={{ borderBottom: '1px solid' }}
+                    >
+                      <td className={cn('py-1.5 pr-3', textColor)}>
+                        <span className="font-medium">{l.blockedPid}</span>
+                        <span className={mutedColor}> ({l.blockedUser})</span>
+                      </td>
+                      <td className={cn('py-1.5 pr-3', textColor)}>
+                        <span className="font-medium">{l.blockingPid}</span>
+                        <span className={mutedColor}> ({l.blockingUser})</span>
+                      </td>
+                      <td className={cn('py-1.5 pr-3', textColor)}>{l.lockType}</td>
+                      <td className={cn('py-1.5 pr-3', textColor)}>{l.relation || '-'}</td>
+                      <td
+                        className={cn(
+                          'py-1.5',
+                          l.waitDurationMs > 30000
+                            ? theme === 'light'
+                              ? 'font-medium text-red-600'
+                              : 'font-medium text-red-400'
+                            : textColor
+                        )}
+                      >
+                        {l.waitDuration}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+
+      default:
+        return null
+    }
+  }
+
+  const shareDialogTitles: Record<string, string> = {
+    activeQueries: 'Share Active Queries',
+    tableSizes: 'Share Table Sizes',
+    cacheStats: 'Share Cache Hit Ratios',
+    locks: 'Share Locks & Blocking'
+  }
+
+  const shareDialogPrefixes: Record<string, string> = {
+    activeQueries: 'active-queries',
+    tableSizes: 'table-sizes',
+    cacheStats: 'cache-stats',
+    locks: 'locks'
+  }
+
   return (
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b px-4 py-2">
@@ -159,7 +498,10 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between text-sm">
               Active Queries
-              {isLoading.activeQueries && <Loader2 className="size-3 animate-spin" />}
+              <div className="flex items-center gap-1">
+                {isLoading.activeQueries && <Loader2 className="size-3 animate-spin" />}
+                {shareButton('activeQueries')}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
@@ -246,6 +588,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               </div>
               <div className="flex items-center gap-1">
                 {isLoading.tableSizes && <Loader2 className="size-3 animate-spin" />}
+                {shareButton('tableSizes')}
                 <Select value={sizeSort} onValueChange={(v) => setSizeSort(v as typeof sizeSort)}>
                   <SelectTrigger className="h-6 w-20 text-xs">
                     <SelectValue />
@@ -315,7 +658,10 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between text-sm">
               Cache Hit Ratios
-              {isLoading.cacheStats && <Loader2 className="size-3 animate-spin" />}
+              <div className="flex items-center gap-1">
+                {isLoading.cacheStats && <Loader2 className="size-3 animate-spin" />}
+                {shareButton('cacheStats')}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto px-3 pb-3">
@@ -382,7 +728,10 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between text-sm">
               Locks &amp; Blocking
-              {isLoading.locks && <Loader2 className="size-3 animate-spin" />}
+              <div className="flex items-center gap-1">
+                {isLoading.locks && <Loader2 className="size-3 animate-spin" />}
+                {shareButton('locks')}
+              </div>
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
@@ -462,6 +811,17 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Share Image Dialog */}
+      <ShareImageDialog
+        open={!!shareCard}
+        onOpenChange={(open) => !open && setShareCard(null)}
+        title={shareCard ? shareDialogTitles[shareCard] : ''}
+        description="Generate a shareable image of this health dashboard panel"
+        filenamePrefix={shareCard ? shareDialogPrefixes[shareCard] : 'health'}
+      >
+        {renderShareContent}
+      </ShareImageDialog>
     </div>
   )
 }
