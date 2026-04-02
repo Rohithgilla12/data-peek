@@ -115,7 +115,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
         callback: () => {
           if (connections[i]) handleSelectConnection(connections[i].id)
         },
-        options: { enabled: open }
+        options: { enabled: open, conflictBehavior: 'allow' as const }
       })),
     [open, connections, handleSelectConnection]
   )
