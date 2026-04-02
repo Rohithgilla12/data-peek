@@ -296,11 +296,8 @@ export function AddConnectionDialog({
   }
 
   const handleEnvironmentSelect = (preset: EnvironmentPreset) => {
-    if (environment && 'preset' in environment && environment.preset === preset) {
+    if (environment?.preset === preset) {
       setEnvironment(undefined)
-      if ((preset as string) === 'custom') setShowCustomEnv(false)
-    } else if (preset === ('custom' as unknown as EnvironmentPreset)) {
-      // handled by handleCustomEnvironment
     } else {
       setEnvironment({ preset })
       setShowCustomEnv(false)
@@ -645,9 +642,7 @@ export function AddConnectionDialog({
                         style={{
                           backgroundColor: color,
                           borderColor:
-                            customEnvColor === color
-                              ? 'var(--foreground)'
-                              : 'transparent'
+                            customEnvColor === color ? 'var(--foreground)' : 'transparent'
                         }}
                         title={color}
                       />

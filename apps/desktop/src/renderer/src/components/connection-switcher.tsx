@@ -26,12 +26,9 @@ import { useNavigate } from '@tanstack/react-router'
 import { AddConnectionDialog } from './add-connection-dialog'
 import { DatabaseIcon } from './database-icons'
 import { resolveEnvironment } from '@/lib/environment'
+import type { ConnectionEnvironment } from '@shared/index'
 
-function EnvironmentBadge({
-  environment
-}: {
-  environment?: import('@shared/index').ConnectionEnvironment
-}) {
+function EnvironmentBadge({ environment }: { environment?: ConnectionEnvironment }) {
   const resolved = resolveEnvironment(environment)
   if (!resolved) return null
   return (
@@ -78,6 +75,7 @@ export function ConnectionSwitcher() {
   }, [setupConnectionSync])
 
   const activeConnection = connections.find((c) => c.id === activeConnectionId)
+  const activeEnv = resolveEnvironment(activeConnection?.environment)
 
   const handleSelectConnection = async (connectionId: string) => {
     // Set connecting status
@@ -170,15 +168,12 @@ export function ConnectionSwitcher() {
   return (
     <SidebarMenu>
       <SidebarMenuItem className="relative">
-        {(() => {
-          const activeEnv = resolveEnvironment(activeConnection?.environment)
-          return activeEnv ? (
-            <div
-              className="absolute top-0 left-0 right-0 h-0.5 transition-colors duration-150"
-              style={{ backgroundColor: activeEnv.color }}
-            />
-          ) : null
-        })()}
+        {activeEnv && (
+          <div
+            className="absolute top-0 left-0 right-0 h-0.5 transition-colors duration-150"
+            style={{ backgroundColor: activeEnv.color }}
+          />
+        )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton className="w-fit px-1.5">

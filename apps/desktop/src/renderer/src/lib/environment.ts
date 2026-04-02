@@ -5,7 +5,7 @@ const ENVIRONMENT_PRESETS: Record<EnvironmentPreset, { label: string; color: str
   staging: { label: 'STG', color: 'oklch(0.75 0.15 70)' },
   uat: { label: 'UAT', color: 'oklch(0.8 0.15 95)' },
   development: { label: 'DEV', color: 'oklch(0.7 0.17 150)' },
-  local: { label: 'LOCAL', color: 'oklch(0.65 0.15 250)' },
+  local: { label: 'LOCAL', color: 'oklch(0.65 0.15 250)' }
 }
 
 export const CUSTOM_COLOR_PALETTE = [
@@ -16,7 +16,7 @@ export const CUSTOM_COLOR_PALETTE = [
   'oklch(0.7 0.17 150)',
   'oklch(0.7 0.12 195)',
   'oklch(0.65 0.15 250)',
-  'oklch(0.7 0.15 310)',
+  'oklch(0.7 0.15 310)'
 ]
 
 export function resolveEnvironment(

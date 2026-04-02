@@ -429,11 +429,11 @@ export interface MSSQLConnectionOptions {
   };
 }
 
-export type EnvironmentPreset = 'production' | 'staging' | 'uat' | 'development' | 'local'
+export type EnvironmentPreset = 'production' | 'staging' | 'uat' | 'development' | 'local';
 
 export type ConnectionEnvironment =
   | { preset: EnvironmentPreset }
-  | { preset: 'custom'; customLabel: string; customColor: string }
+  | { preset: 'custom'; customLabel: string; customColor: string };
 
 export interface ConnectionConfig {
   id: string;
