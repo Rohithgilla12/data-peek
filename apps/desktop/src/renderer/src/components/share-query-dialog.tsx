@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image-dialog'
@@ -226,62 +225,81 @@ function tokenizeSQL(sql: string): Token[] {
   return tokens
 }
 
+const SYNTAX_COLORS = {
+  dark: {
+    keyword: 'oklch(0.7 0.15 250)',
+    function: 'oklch(0.75 0.12 330)',
+    string: 'oklch(0.75 0.14 150)',
+    number: 'oklch(0.75 0.13 70)',
+    comment: 'oklch(0.5 0.02 250)',
+    operator: 'oklch(0.65 0.1 290)',
+    default: 'oklch(0.87 0 0)'
+  },
+  light: {
+    keyword: 'oklch(0.45 0.15 250)',
+    function: 'oklch(0.5 0.15 330)',
+    string: 'oklch(0.45 0.15 150)',
+    number: 'oklch(0.5 0.13 70)',
+    comment: 'oklch(0.6 0.02 250)',
+    operator: 'oklch(0.45 0.12 290)',
+    default: 'oklch(0.2 0 0)'
+  }
+} as const
+
 function HighlightedSQL({ sql, theme }: { sql: string; theme: 'dark' | 'light' }) {
   const tokens = tokenizeSQL(sql)
+  const colors = SYNTAX_COLORS[theme]
 
   const getColor = (type: Token['type']) => {
-    if (theme === 'dark') {
-      switch (type) {
-        case 'keyword':
-          return 'oklch(0.7 0.15 250)'
-        case 'function':
-          return 'oklch(0.75 0.12 330)'
-        case 'string':
-          return 'oklch(0.75 0.14 150)'
-        case 'number':
-          return 'oklch(0.75 0.13 70)'
-        case 'comment':
-          return 'oklch(0.5 0.02 250)'
-        case 'operator':
-          return 'oklch(0.65 0.1 290)'
-        default:
-          return 'oklch(0.87 0 0)'
-      }
-    } else {
-      switch (type) {
-        case 'keyword':
-          return 'oklch(0.45 0.15 250)'
-        case 'function':
-          return 'oklch(0.5 0.15 330)'
-        case 'string':
-          return 'oklch(0.45 0.15 150)'
-        case 'number':
-          return 'oklch(0.5 0.13 70)'
-        case 'comment':
-          return 'oklch(0.6 0.02 250)'
-        case 'operator':
-          return 'oklch(0.45 0.12 290)'
-        default:
-          return 'oklch(0.2 0 0)'
-      }
-    }
+    return colors[type as keyof typeof colors] ?? colors.default
   }
 
+  const lines = sql.split('\n')
+  const lineCount = lines.length
+
   return (
-    <code className="font-mono text-sm leading-relaxed">
-      {tokens.map((token, i) => (
-        <span
-          key={i}
-          style={{
-            color: getColor(token.type),
-            fontWeight: token.type === 'keyword' ? 600 : 400,
-            fontStyle: token.type === 'comment' ? 'italic' : 'normal'
-          }}
-        >
-          {token.value}
-        </span>
-      ))}
-    </code>
+    <div className="flex font-mono text-[13px] leading-[1.7]">
+      <div
+        className="shrink-0 select-none pr-4 text-right"
+        style={{
+          color: theme === 'light' ? 'oklch(0.7 0.01 250)' : 'oklch(0.35 0.02 250)',
+          width: lineCount > 99 ? '3.5ch' : '2.5ch'
+        }}
+        aria-hidden="true"
+      >
+        {lines.map((_, i) => (
+          <div key={i}>{i + 1}</div>
+        ))}
+      </div>
+      <div
+        className="shrink-0 mr-4"
+        style={{
+          width: '1px',
+          background: theme === 'light' ? 'oklch(0.88 0.01 250)' : 'oklch(0.25 0.02 250)'
+        }}
+      />
+      <code className="min-w-0 flex-1 whitespace-pre-wrap break-words">
+        {tokens.map((token, i) => {
+          const color = getColor(token.type)
+          const isKeyword = token.type === 'keyword'
+          return (
+            <span
+              key={i}
+              style={{
+                color,
+                fontWeight: isKeyword ? 600 : 400,
+                fontStyle: token.type === 'comment' ? 'italic' : 'normal',
+                ...(isKeyword && theme === 'dark'
+                  ? { textShadow: `0 0 12px oklch(0.5 0.15 250 / 0.4)` }
+                  : {})
+              }}
+            >
+              {token.value}
+            </span>
+          )
+        })}
+      </code>
+    </div>
   )
 }
 
@@ -293,6 +311,55 @@ interface ShareQueryDialogProps {
   connectionName?: string
 }
 
+function WindowChrome({
+  theme,
+  connectionType,
+  connectionName,
+  showBadge
+}: {
+  theme: ShareImageTheme
+  connectionType?: DatabaseType
+  connectionName?: string
+  showBadge: boolean
+}) {
+  const light = theme === 'light'
+  return (
+    <div
+      className="flex items-center gap-3 px-4 py-2.5"
+      style={{
+        background: light ? 'oklch(0.95 0.005 250)' : 'oklch(0.16 0.008 260)',
+        borderBottom: `1px solid ${light ? 'oklch(0.88 0.01 250)' : 'oklch(0.22 0.015 250)'}`
+      }}
+    >
+      <div className="flex items-center gap-1.5">
+        <div
+          className="size-3 rounded-full"
+          style={{ background: light ? 'oklch(0.75 0.01 0)' : 'oklch(0.35 0.01 0)' }}
+        />
+        <div
+          className="size-3 rounded-full"
+          style={{ background: light ? 'oklch(0.75 0.01 0)' : 'oklch(0.35 0.01 0)' }}
+        />
+        <div
+          className="size-3 rounded-full"
+          style={{ background: light ? 'oklch(0.75 0.01 0)' : 'oklch(0.35 0.01 0)' }}
+        />
+      </div>
+      {showBadge && connectionType && (
+        <div
+          className="flex items-center gap-1.5 font-mono text-[11px]"
+          style={{
+            color: light ? 'oklch(0.45 0.04 250)' : 'oklch(0.6 0.04 250)'
+          }}
+        >
+          <DatabaseIcon dbType={connectionType} className="size-3" />
+          <span>{connectionName || connectionType}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export function ShareQueryDialog({
   open,
   onOpenChange,
@@ -301,6 +368,7 @@ export function ShareQueryDialog({
   connectionName
 }: ShareQueryDialogProps) {
   const [showBadge, setShowBadge] = useState(true)
+  const [showLineNumbers, setShowLineNumbers] = useState(true)
 
   return (
     <ShareImageDialog
@@ -309,42 +377,61 @@ export function ShareQueryDialog({
       title="Share Query"
       description="Generate a beautiful image of your SQL query to share"
       filenamePrefix="query"
-      header={
-        showBadge && connectionType
-          ? (theme: ShareImageTheme) => (
-              <div className="flex items-center gap-2 mb-4">
-                <Badge
-                  variant="secondary"
-                  className="gap-1.5 px-2.5 py-1 font-mono text-xs"
-                  style={{
-                    background:
-                      theme === 'light'
-                        ? 'oklch(0.92 0.01 250)'
-                        : 'oklch(0.25 0.03 250)',
-                    color:
-                      theme === 'light'
-                        ? 'oklch(0.35 0.05 250)'
-                        : 'oklch(0.75 0.05 250)'
-                  }}
-                >
-                  <DatabaseIcon dbType={connectionType} className="size-3.5" />
-                  {connectionName || connectionType}
-                </Badge>
-              </div>
-            )
-          : undefined
-      }
       extraOptions={
-        <div className="flex items-center justify-between">
-          <Label htmlFor="show-badge">Show Database Badge</Label>
-          <Switch id="show-badge" checked={showBadge} onCheckedChange={setShowBadge} />
-        </div>
+        <>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="show-badge">Show Database Badge</Label>
+            <Switch id="show-badge" checked={showBadge} onCheckedChange={setShowBadge} />
+          </div>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="show-lines">Show Line Numbers</Label>
+            <Switch
+              id="show-lines"
+              checked={showLineNumbers}
+              onCheckedChange={setShowLineNumbers}
+            />
+          </div>
+        </>
       }
     >
       {(theme: ShareImageTheme) => (
-        <pre className="whitespace-pre-wrap break-words">
-          <HighlightedSQL sql={query} theme={theme} />
-        </pre>
+        <div style={{ margin: '-1.5rem', overflow: 'hidden' }}>
+          <WindowChrome
+            theme={theme}
+            connectionType={connectionType}
+            connectionName={connectionName}
+            showBadge={showBadge}
+          />
+          <div className="p-5">
+            {showLineNumbers ? (
+              <HighlightedSQL sql={query} theme={theme} />
+            ) : (
+              <code className="font-mono text-[13px] leading-[1.7] whitespace-pre-wrap break-words">
+                {tokenizeSQL(query).map((token, i) => {
+                  const colors = SYNTAX_COLORS[theme]
+                  const color =
+                    colors[token.type as keyof typeof colors] ?? colors.default
+                  const isKeyword = token.type === 'keyword'
+                  return (
+                    <span
+                      key={i}
+                      style={{
+                        color,
+                        fontWeight: isKeyword ? 600 : 400,
+                        fontStyle: token.type === 'comment' ? 'italic' : 'normal',
+                        ...(isKeyword && theme === 'dark'
+                          ? { textShadow: '0 0 12px oklch(0.5 0.15 250 / 0.4)' }
+                          : {})
+                      }}
+                    >
+                      {token.value}
+                    </span>
+                  )
+                })}
+              </code>
+            )}
+          </div>
+        </div>
       )}
     </ShareImageDialog>
   )

@@ -185,30 +185,47 @@ export function ShareImageDialog({
           <div className="overflow-hidden rounded-lg border border-border/50">
             <div
               ref={renderRef}
-              className={getPaddingClass(padding)}
+              className={cn('relative', getPaddingClass(padding))}
               style={getBackgroundStyle(backgroundStyle)}
             >
-              {header && header(theme)}
-
-              <div
-                className={cn('rounded-md', getContentPaddingClass(padding))}
-                style={getContentStyle(backgroundStyle)}
+              <svg
+                className="pointer-events-none absolute inset-0 size-full"
+                style={{ opacity: theme === 'light' ? 0.03 : 0.04, mixBlendMode: 'overlay' }}
               >
-                {children(theme)}
-              </div>
+                <filter id="noise">
+                  <feTurbulence
+                    type="fractalNoise"
+                    baseFrequency="0.8"
+                    numOctaves="4"
+                    stitchTiles="stitch"
+                  />
+                </filter>
+                <rect width="100%" height="100%" filter="url(#noise)" />
+              </svg>
 
-              {showBranding && (
+              <div className="relative">
+                {header && header(theme)}
+
                 <div
-                  className="mt-3 flex items-center justify-end gap-1.5 font-mono text-[0.6875rem] tracking-wide"
-                  style={{
-                    color:
-                      theme === 'light' ? 'oklch(0.55 0.02 250)' : 'oklch(0.55 0.08 250)'
-                  }}
+                  className={cn('rounded-md', getContentPaddingClass(padding))}
+                  style={getContentStyle(backgroundStyle)}
                 >
-                  <span style={{ opacity: 0.7 }}>via</span>
-                  <span className="font-semibold">data-peek</span>
+                  {children(theme)}
                 </div>
-              )}
+
+                {showBranding && (
+                  <div
+                    className="mt-3 flex items-center justify-end gap-1.5 font-mono text-[0.6875rem] tracking-wide"
+                    style={{
+                      color:
+                        theme === 'light' ? 'oklch(0.55 0.02 250)' : 'oklch(0.55 0.08 250)'
+                    }}
+                  >
+                    <span style={{ opacity: 0.7 }}>via</span>
+                    <span className="font-semibold">data-peek</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
