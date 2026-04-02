@@ -55,6 +55,7 @@ import {
   Unlock,
   X
 } from 'lucide-react'
+import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import * as React from 'react'
 
 const VIRTUALIZATION_THRESHOLD = 50
@@ -243,67 +244,54 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   })
 
   // Keyboard shortcuts for edit mode
-  React.useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMeta = e.metaKey || e.ctrlKey
-      const isEditing = tabEdit?.editingCell !== null
-
-      // Cmd+S: Save changes (when in edit mode with pending changes)
-      if (isMeta && e.key === 's' && !e.shiftKey) {
-        if (isEditMode && hasChanges) {
-          e.preventDefault()
-          keyboardHandlersRef.current.handleSaveChanges()
-          return
-        }
-      }
-
-      // Escape: Exit edit mode (when not editing a cell)
-      if (e.key === 'Escape' && isEditMode && !isEditing) {
-        e.preventDefault()
-        if (hasChanges) {
-          // Has changes - let the toolbar handle the confirmation dialog
-          keyboardHandlersRef.current.handleToggleEditMode()
-        } else {
-          exitEditMode(tabId)
-        }
-        return
-      }
-
-      // Cmd+Shift+A: Add new row (when in edit mode or can edit)
-      if (isMeta && e.shiftKey && e.key === 'A') {
-        if (canEdit && hasPrimaryKey) {
-          e.preventDefault()
+  const isEditing = tabEdit?.editingCell !== null
+  const editHotkeys = React.useMemo<UseHotkeyDefinition[]>(
+    () => [
+      {
+        hotkey: 'Mod+S',
+        callback: () => keyboardHandlersRef.current.handleSaveChanges(),
+        options: { enabled: isEditMode && hasChanges }
+      },
+      {
+        hotkey: 'Escape',
+        callback: () => {
+          if (hasChanges) {
+            keyboardHandlersRef.current.handleToggleEditMode()
+          } else {
+            exitEditMode(tabId)
+          }
+        },
+        options: { enabled: isEditMode && !isEditing }
+      },
+      {
+        hotkey: 'Mod+Shift+A',
+        callback: () => {
           if (!isEditMode && editContext) {
             enterEditMode(tabId, editContext)
           }
           keyboardHandlersRef.current.handleAddRowWithSheet()
-          return
-        }
+        },
+        options: { enabled: canEdit && !!hasPrimaryKey }
+      },
+      {
+        hotkey: 'Mod+Shift+Z',
+        callback: () => keyboardHandlersRef.current.handleDiscardChanges(),
+        options: { enabled: isEditMode && hasChanges }
       }
-
-      // Cmd+Shift+Z: Discard/revert changes (when in edit mode with pending changes)
-      if (isMeta && e.shiftKey && e.key === 'Z') {
-        if (isEditMode && hasChanges) {
-          e.preventDefault()
-          keyboardHandlersRef.current.handleDiscardChanges()
-          return
-        }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [
-    isEditMode,
-    hasChanges,
-    tabEdit?.editingCell,
-    tabId,
-    canEdit,
-    hasPrimaryKey,
-    editContext,
-    enterEditMode,
-    exitEditMode
-  ])
+    ],
+    [
+      isEditMode,
+      hasChanges,
+      isEditing,
+      tabId,
+      canEdit,
+      hasPrimaryKey,
+      editContext,
+      enterEditMode,
+      exitEditMode
+    ]
+  )
+  useHotkeys(editHotkeys)
 
   // Listen for menu events (for menu bar shortcuts)
   React.useEffect(() => {

@@ -8,7 +8,7 @@ import {
   useRouter,
   type ErrorComponentProps
 } from '@tanstack/react-router'
-import { useState, useEffect, useCallback, Component, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
 import { Moon, Sun, Monitor, Sparkles, Command, AlertTriangle } from 'lucide-react'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
@@ -38,6 +38,7 @@ import { cn, keys } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { TitlebarActions } from '@/components/titlebar-actions'
+import { useHotkeys, type UseHotkeyDefinition, type Hotkey } from '@tanstack/react-hotkeys'
 
 // Command palette page type for direct navigation
 type CommandPalettePage = 'home' | 'connections' | 'connections:switch' | 'saved-queries'
@@ -148,45 +149,21 @@ function LayoutContent() {
   }, [])
 
   // Global keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isMeta = e.metaKey || e.ctrlKey
-
-      // Cmd+K: Open command palette
-      if (isMeta && e.key === 'k' && !e.shiftKey) {
-        e.preventDefault()
-        openCommandPalette('home')
-        return
-      }
-
-      // Cmd+P: Open command palette directly to connections list
-      if (isMeta && e.key === 'p' && !e.shiftKey) {
-        e.preventDefault()
-        openCommandPalette('connections:switch')
-        return
-      }
-
-      // Cmd+I: Toggle AI panel
-      if (isMeta && e.key === 'i' && !e.shiftKey) {
-        e.preventDefault()
-        toggleAIPanel()
-        return
-      }
-
-      // Cmd+Shift+1-9: Switch to connection N
-      if (isMeta && e.shiftKey && e.key >= '1' && e.key <= '9') {
-        e.preventDefault()
-        const connectionIndex = parseInt(e.key) - 1
-        if (connections[connectionIndex]) {
-          handleSelectConnection(connections[connectionIndex].id)
+  const globalHotkeys = useMemo<UseHotkeyDefinition[]>(
+    () => [
+      { hotkey: 'Mod+K', callback: () => openCommandPalette('home') },
+      { hotkey: 'Mod+P', callback: () => openCommandPalette('connections:switch') },
+      { hotkey: 'Mod+I', callback: () => toggleAIPanel() },
+      ...Array.from({ length: 9 }, (_, i) => ({
+        hotkey: `Mod+Shift+${i + 1}` as Hotkey,
+        callback: () => {
+          if (connections[i]) handleSelectConnection(connections[i].id)
         }
-        return
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [connections, handleSelectConnection, openCommandPalette, toggleAIPanel])
+      }))
+    ],
+    [connections, handleSelectConnection, openCommandPalette, toggleAIPanel]
+  )
+  useHotkeys(globalHotkeys)
 
   return (
     <>

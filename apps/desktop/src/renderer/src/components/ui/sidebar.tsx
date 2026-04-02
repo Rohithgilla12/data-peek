@@ -2,6 +2,7 @@ import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { PanelLeftIcon } from 'lucide-react'
+import { useHotkey } from '@tanstack/react-hotkeys'
 
 import { useIsMobile } from '@/hooks/use-mobile'
 import { cn } from '@/lib/utils'
@@ -25,7 +26,6 @@ const SIDEBAR_WIDTH_MIN = 224 // 14rem in pixels
 const SIDEBAR_WIDTH_MAX = 512 // 32rem in pixels
 const SIDEBAR_WIDTH_MOBILE = '18rem'
 const SIDEBAR_WIDTH_ICON = '3rem'
-const SIDEBAR_KEYBOARD_SHORTCUT = 'b'
 const SIDEBAR_WIDTH_STORAGE_KEY = 'sidebar_width'
 
 type SidebarContextProps = {
@@ -115,17 +115,7 @@ function SidebarProvider({
   }, [isMobile, setOpen, setOpenMobile])
 
   // Adds a keyboard shortcut to toggle the sidebar.
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault()
-        toggleSidebar()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [toggleSidebar])
+  useHotkey('Mod+B', () => toggleSidebar())
 
   // Listen for menu IPC event to toggle sidebar
   React.useEffect(() => {

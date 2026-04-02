@@ -53,6 +53,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@radix-ui/react-visually-hidden": "^1.2.4",
     "@tailwindcss/vite": "^4.1.17",
+    "@tanstack/react-hotkeys": "^0.9.1",
     "@tanstack/react-router": "^1.139.7",
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
