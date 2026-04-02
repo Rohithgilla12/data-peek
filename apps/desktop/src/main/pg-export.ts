@@ -1,7 +1,5 @@
 import { Client } from 'pg'
-import { createWriteStream } from 'fs'
-import { pipeline } from 'stream/promises'
-import { Readable } from 'stream'
+import { createWriteStream, type WriteStream } from 'fs'
 import type {
   ConnectionConfig,
   PgExportOptions,
@@ -12,7 +10,7 @@ import type {
 import { resolvePostgresType } from '@shared/index'
 import { buildClientConfig } from './adapters/postgres-adapter'
 import { createTunnel, closeTunnel, TunnelSession } from './ssh-tunnel-service'
-import { escapeSQLValue, escapeSQLIdentifier } from './lib/sql-value-escape'
+import { escapeSQLValue, escapeSQLIdentifier } from '@shared/sql-escape'
 import { createLogger } from './lib/logger'
 
 const log = createLogger('pg-export')
@@ -93,11 +91,10 @@ export async function pgExport(
     : undefined
   const client = new Client(buildClientConfig(config, tunnelOverrides))
 
-  // Collect all SQL parts then write at the end via streaming
-  const parts: string[] = []
+  const writable: WriteStream = createWriteStream(filePath, 'utf8')
 
   function emit(sql: string): void {
-    parts.push(sql)
+    writable.write(sql)
     bytesWritten += Buffer.byteLength(sql, 'utf8')
   }
 
@@ -518,6 +515,10 @@ export async function pgExport(
         sendProgress('data', qName, i, tablesToExport.length)
 
         // Use a cursor for streaming large tables
+        const batchSize = Math.max(
+          1,
+          Math.min(10000, Math.floor(Number(options.dataBatchSize) || 100))
+        )
         await client.query('BEGIN')
         const cursorName = 'export_cursor'
         await client.query(`DECLARE ${cursorName} CURSOR FOR SELECT * FROM ${qName}`)
@@ -534,9 +535,7 @@ export async function pgExport(
             throw new Error('Export cancelled')
           }
 
-          const fetchResult = await client.query(
-            `FETCH ${options.dataBatchSize} FROM ${cursorName}`
-          )
+          const fetchResult = await client.query(`FETCH ${batchSize} FROM ${cursorName}`)
 
           if (fetchResult.rows.length === 0) {
             hasRows = false
@@ -709,12 +708,13 @@ export async function pgExport(
 
     emit(`\n-- Export complete\n`)
 
-    // Write all parts to file
+    // Finalize file
     sendProgress('complete', 'Writing file...', 0, 0)
 
-    const readable = Readable.from(parts)
-    const writable = createWriteStream(filePath, 'utf8')
-    await pipeline(readable, writable)
+    await new Promise<void>((resolve, reject) => {
+      writable.end(() => resolve())
+      writable.on('error', reject)
+    })
 
     const result: PgExportResult = {
       success: true,
@@ -755,6 +755,7 @@ export async function pgExport(
       error: message
     }
   } finally {
+    writable.destroy()
     await client.end().catch(() => {})
     closeTunnel(tunnelSession)
   }

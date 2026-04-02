@@ -1,4 +1,10 @@
 export { PG_TYPE_MAP, resolvePostgresType } from "./type-maps";
+export {
+  escapeSQLValue,
+  escapeSQLIdentifier,
+  isSQLKeyword,
+  type SQLDialect,
+} from "./sql-escape";
 
 /**
  * Base URL for the data-peek website
@@ -412,11 +418,11 @@ export interface SSLConnectionOptions {
  */
 export interface MSSQLConnectionOptions {
   authentication?:
-  | "SQL Server Authentication"
-  | "ActiveDirectoryIntegrated"
-  | "ActiveDirectoryPassword"
-  | "ActiveDirectoryServicePrincipal"
-  | "ActiveDirectoryDeviceCodeFlow";
+    | "SQL Server Authentication"
+    | "ActiveDirectoryIntegrated"
+    | "ActiveDirectoryPassword"
+    | "ActiveDirectoryServicePrincipal"
+    | "ActiveDirectoryDeviceCodeFlow";
   encrypt?: boolean;
   trustServerCertificate?: boolean;
   enableArithAbort?: boolean;
@@ -990,11 +996,11 @@ export type AlterConstraintOperation =
 export type AlterIndexOperation =
   | { type: "create_index"; index: IndexDefinition }
   | {
-    type: "drop_index";
-    name: string;
-    cascade?: boolean;
-    concurrent?: boolean;
-  }
+      type: "drop_index";
+      name: string;
+      cascade?: boolean;
+      concurrent?: boolean;
+    }
   | { type: "rename_index"; oldName: string; newName: string }
   | { type: "reindex"; name: string; concurrent?: boolean };
 
@@ -1350,51 +1356,51 @@ export interface MultiStatementResultWithTelemetry extends MultiStatementResult 
 /**
  * Severity levels for performance issues
  */
-export type PerformanceIssueSeverity = 'critical' | 'warning' | 'info'
+export type PerformanceIssueSeverity = "critical" | "warning" | "info";
 
 /**
  * Categories of performance issues detected during analysis
  */
 export type PerformanceIssueType =
-  | 'missing_index'
-  | 'n_plus_one'
-  | 'slow_query'
-  | 'high_filter_ratio'
-  | 'row_estimate_off'
-  | 'disk_spill'
+  | "missing_index"
+  | "n_plus_one"
+  | "slow_query"
+  | "high_filter_ratio"
+  | "row_estimate_off"
+  | "disk_spill";
 
 /**
  * A single performance issue detected during query analysis
  */
 export interface PerformanceIssue {
   /** Unique identifier for this issue */
-  id: string
+  id: string;
   /** Type of performance issue */
-  type: PerformanceIssueType
+  type: PerformanceIssueType;
   /** Severity level */
-  severity: PerformanceIssueSeverity
+  severity: PerformanceIssueSeverity;
   /** Short title describing the issue */
-  title: string
+  title: string;
   /** Detailed description of the issue */
-  message: string
+  message: string;
   /** Actionable suggestion to fix the issue */
-  suggestion: string
+  suggestion: string;
   /** Table name if applicable */
-  tableName?: string
+  tableName?: string;
   /** Column name if applicable */
-  columnName?: string
+  columnName?: string;
   /** Suggested CREATE INDEX statement */
-  indexSuggestion?: string
+  indexSuggestion?: string;
   /** Related queries for N+1 patterns */
-  relatedQueries?: string[]
+  relatedQueries?: string[];
   /** Threshold that was exceeded (for slow queries) */
-  threshold?: number
+  threshold?: number;
   /** Actual value that exceeded the threshold */
-  actualValue?: number
+  actualValue?: number;
   /** Plan node type from EXPLAIN (e.g., 'Seq Scan') */
-  planNodeType?: string
+  planNodeType?: string;
   /** Additional details from the plan node */
-  planNodeDetails?: Record<string, unknown>
+  planNodeDetails?: Record<string, unknown>;
 }
 
 /**
@@ -1402,19 +1408,19 @@ export interface PerformanceIssue {
  */
 export interface NplusOnePattern {
   /** Normalized query fingerprint */
-  fingerprint: string
+  fingerprint: string;
   /** Query template with placeholders */
-  queryTemplate: string
+  queryTemplate: string;
   /** Number of occurrences detected */
-  occurrences: number
+  occurrences: number;
   /** Sample queries (limited to 3) */
-  querySamples: string[]
+  querySamples: string[];
   /** Table name extracted from query */
-  tableName?: string
+  tableName?: string;
   /** Column name in WHERE clause */
-  columnName?: string
+  columnName?: string;
   /** Time window in which these occurred (ms) */
-  timeWindowMs: number
+  timeWindowMs: number;
 }
 
 /**
@@ -1422,29 +1428,29 @@ export interface NplusOnePattern {
  */
 export interface PerformanceAnalysisResult {
   /** Unique identifier for this analysis */
-  queryId: string
+  queryId: string;
   /** Original query that was analyzed */
-  query: string
+  query: string;
   /** Unix timestamp when analysis was performed */
-  analyzedAt: number
+  analyzedAt: number;
   /** Time taken to perform analysis (ms) */
-  durationMs: number
+  durationMs: number;
   /** Issue counts by severity */
   issueCount: {
-    critical: number
-    warning: number
-    info: number
-  }
+    critical: number;
+    warning: number;
+    info: number;
+  };
   /** Detected performance issues */
-  issues: PerformanceIssue[]
+  issues: PerformanceIssue[];
   /** Detected N+1 patterns */
-  nplusOnePatterns: NplusOnePattern[]
+  nplusOnePatterns: NplusOnePattern[];
   /** Raw EXPLAIN plan for reference */
-  explainPlan?: unknown
+  explainPlan?: unknown;
   /** Database type */
-  dbType: 'postgresql'
+  dbType: "postgresql";
   /** Connection identifier */
-  connectionId: string
+  connectionId: string;
 }
 
 /**
@@ -1452,13 +1458,13 @@ export interface PerformanceAnalysisResult {
  */
 export interface PerformanceAnalysisConfig {
   /** Threshold for slow query warning (default: 1000ms) */
-  slowQueryThresholdMs: number
+  slowQueryThresholdMs: number;
   /** Time window for N+1 detection (default: 5000ms) */
-  nplusOneWindowMs: number
+  nplusOneWindowMs: number;
   /** Minimum occurrences to flag N+1 (default: 3) */
-  nplusOneMinOccurrences: number
+  nplusOneMinOccurrences: number;
   /** Number of recent queries to analyze for N+1 (default: 50) */
-  historyLookbackCount: number
+  historyLookbackCount: number;
 }
 
 /**
@@ -1466,11 +1472,11 @@ export interface PerformanceAnalysisConfig {
  */
 export interface QueryHistoryItemForAnalysis {
   /** The SQL query */
-  query: string
+  query: string;
   /** Unix timestamp when executed */
-  timestamp: number
+  timestamp: number;
   /** Connection ID */
-  connectionId: string
+  connectionId: string;
 }
 
 // ============================================================================
@@ -1481,73 +1487,76 @@ export interface QueryHistoryItemForAnalysis {
  * Cron schedule expression or preset
  */
 export type SchedulePreset =
-  | 'every_minute'
-  | 'every_5_minutes'
-  | 'every_15_minutes'
-  | 'every_30_minutes'
-  | 'every_hour'
-  | 'every_6_hours'
-  | 'every_12_hours'
-  | 'daily'
-  | 'weekly'
-  | 'monthly'
-  | 'custom'
+  | "every_minute"
+  | "every_5_minutes"
+  | "every_15_minutes"
+  | "every_30_minutes"
+  | "every_hour"
+  | "every_6_hours"
+  | "every_12_hours"
+  | "daily"
+  | "weekly"
+  | "monthly"
+  | "custom";
 
 /**
  * Maps schedule presets to human-readable labels and cron expressions
  */
-export const SCHEDULE_PRESETS: Record<Exclude<SchedulePreset, 'custom'>, { label: string; cron: string }> = {
-  every_minute: { label: 'Every minute', cron: '* * * * *' },
-  every_5_minutes: { label: 'Every 5 minutes', cron: '*/5 * * * *' },
-  every_15_minutes: { label: 'Every 15 minutes', cron: '*/15 * * * *' },
-  every_30_minutes: { label: 'Every 30 minutes', cron: '*/30 * * * *' },
-  every_hour: { label: 'Every hour', cron: '0 * * * *' },
-  every_6_hours: { label: 'Every 6 hours', cron: '0 */6 * * *' },
-  every_12_hours: { label: 'Every 12 hours', cron: '0 */12 * * *' },
-  daily: { label: 'Daily at midnight', cron: '0 0 * * *' },
-  weekly: { label: 'Weekly on Sunday', cron: '0 0 * * 0' },
-  monthly: { label: 'Monthly on 1st', cron: '0 0 1 * *' }
-}
+export const SCHEDULE_PRESETS: Record<
+  Exclude<SchedulePreset, "custom">,
+  { label: string; cron: string }
+> = {
+  every_minute: { label: "Every minute", cron: "* * * * *" },
+  every_5_minutes: { label: "Every 5 minutes", cron: "*/5 * * * *" },
+  every_15_minutes: { label: "Every 15 minutes", cron: "*/15 * * * *" },
+  every_30_minutes: { label: "Every 30 minutes", cron: "*/30 * * * *" },
+  every_hour: { label: "Every hour", cron: "0 * * * *" },
+  every_6_hours: { label: "Every 6 hours", cron: "0 */6 * * *" },
+  every_12_hours: { label: "Every 12 hours", cron: "0 */12 * * *" },
+  daily: { label: "Daily at midnight", cron: "0 0 * * *" },
+  weekly: { label: "Weekly on Sunday", cron: "0 0 * * 0" },
+  monthly: { label: "Monthly on 1st", cron: "0 0 1 * *" },
+};
 
 /**
  * Schedule configuration for a scheduled query
  */
 export interface ScheduleConfig {
   /** Preset schedule type */
-  preset: SchedulePreset
+  preset: SchedulePreset;
   /** Custom cron expression (when preset is 'custom') */
-  cronExpression?: string
+  cronExpression?: string;
   /** Timezone for schedule (default: local) */
-  timezone?: string
+  timezone?: string;
 }
 
 /**
  * Status of a scheduled query
  */
-export type ScheduledQueryStatus = 'active' | 'paused' | 'error'
+export type ScheduledQueryStatus = "active" | "paused" | "error";
 
 /**
  * Result of a scheduled query execution
  */
 export interface ScheduledQueryRun {
   /** Unique run identifier */
-  id: string
+  id: string;
   /** Scheduled query ID */
-  scheduledQueryId: string
+  scheduledQueryId: string;
   /** When the run started (Unix timestamp) */
-  startedAt: number
+  startedAt: number;
   /** When the run completed (Unix timestamp) */
-  completedAt?: number
+  completedAt?: number;
   /** Duration in milliseconds */
-  durationMs?: number
+  durationMs?: number;
   /** Whether the run succeeded */
-  success: boolean
+  success: boolean;
   /** Error message if failed */
-  error?: string
+  error?: string;
   /** Number of rows returned/affected */
-  rowCount?: number
+  rowCount?: number;
   /** Truncated preview of results (first few rows) */
-  resultPreview?: Record<string, unknown>[]
+  resultPreview?: Record<string, unknown>[];
 }
 
 /**
@@ -1555,35 +1564,35 @@ export interface ScheduledQueryRun {
  */
 export interface ScheduledQuery {
   /** Unique identifier */
-  id: string
+  id: string;
   /** Display name for the scheduled query */
-  name: string
+  name: string;
   /** The SQL query to execute */
-  query: string
+  query: string;
   /** Optional description */
-  description?: string
+  description?: string;
   /** Connection ID to run against (required) */
-  connectionId: string
+  connectionId: string;
   /** Schedule configuration */
-  schedule: ScheduleConfig
+  schedule: ScheduleConfig;
   /** Current status */
-  status: ScheduledQueryStatus
+  status: ScheduledQueryStatus;
   /** Whether to show desktop notifications on completion */
-  notifyOnComplete: boolean
+  notifyOnComplete: boolean;
   /** Whether to show desktop notifications on failure */
-  notifyOnError: boolean
+  notifyOnError: boolean;
   /** Maximum number of runs to keep in history */
-  maxHistoryRuns: number
+  maxHistoryRuns: number;
   /** Last error message (if status is 'error') */
-  lastError?: string
+  lastError?: string;
   /** Next scheduled run time (Unix timestamp) */
-  nextRunAt?: number
+  nextRunAt?: number;
   /** Last run time (Unix timestamp) */
-  lastRunAt?: number
+  lastRunAt?: number;
   /** When the scheduled query was created (Unix timestamp) */
-  createdAt: number
+  createdAt: number;
   /** When the scheduled query was last updated (Unix timestamp) */
-  updatedAt: number
+  updatedAt: number;
 }
 
 /**
@@ -1591,19 +1600,25 @@ export interface ScheduledQuery {
  */
 export type CreateScheduledQueryInput = Omit<
   ScheduledQuery,
-  'id' | 'status' | 'lastError' | 'nextRunAt' | 'lastRunAt' | 'createdAt' | 'updatedAt'
->
+  | "id"
+  | "status"
+  | "lastError"
+  | "nextRunAt"
+  | "lastRunAt"
+  | "createdAt"
+  | "updatedAt"
+>;
 
 /**
  * Input for updating a scheduled query
  */
 export type UpdateScheduledQueryInput = Partial<
-  Omit<ScheduledQuery, 'id' | 'createdAt' | 'updatedAt'>
->
+  Omit<ScheduledQuery, "id" | "createdAt" | "updatedAt">
+>;
 
-export type WidgetType = 'chart' | 'kpi' | 'table'
-export type ChartWidgetType = 'bar' | 'line' | 'area' | 'pie'
-export type KPIFormat = 'number' | 'currency' | 'percent' | 'duration'
+export type WidgetType = "chart" | "kpi" | "table";
+export type ChartWidgetType = "bar" | "line" | "area" | "pie";
+export type KPIFormat = "number" | "currency" | "percent" | "duration";
 
 /**
  * Data source configuration for a widget
@@ -1611,94 +1626,97 @@ export type KPIFormat = 'number' | 'currency' | 'percent' | 'duration'
  */
 export interface WidgetDataSource {
   /** Whether to use a saved query or inline SQL */
-  type: 'saved-query' | 'inline'
+  type: "saved-query" | "inline";
   /** Reference to saved query (when type is 'saved-query') */
-  savedQueryId?: string
+  savedQueryId?: string;
   /** Inline SQL query (when type is 'inline') */
-  sql?: string
+  sql?: string;
   /** Connection to execute against */
-  connectionId: string
+  connectionId: string;
 }
 
 /**
  * Configuration for chart widgets
  */
 export interface ChartWidgetConfig {
-  widgetType: 'chart'
-  chartType: ChartWidgetType
+  widgetType: "chart";
+  chartType: ChartWidgetType;
   /** Column to use for X axis */
-  xKey: string
+  xKey: string;
   /** Columns to use for Y axis (supports multiple series) */
-  yKeys: string[]
+  yKeys: string[];
   /** Custom colors for series */
-  colors?: string[]
+  colors?: string[];
   /** Whether to show legend */
-  showLegend?: boolean
+  showLegend?: boolean;
   /** Whether to show grid lines */
-  showGrid?: boolean
+  showGrid?: boolean;
   /** Chart title */
-  title?: string
+  title?: string;
   /** Chart description */
-  description?: string
+  description?: string;
 }
 
 /**
  * Configuration for KPI/metric widgets
  */
 export interface KPIWidgetConfig {
-  widgetType: 'kpi'
+  widgetType: "kpi";
   /** Display format for the value */
-  format: KPIFormat
+  format: KPIFormat;
   /** Label shown above the value */
-  label: string
+  label: string;
   /** Column containing the main value */
-  valueKey: string
+  valueKey: string;
   /** Column for trend calculation (optional) */
-  trendKey?: string
+  trendKey?: string;
   /** Whether up is good or bad for trend coloring */
-  trendType?: 'up-good' | 'down-good'
+  trendType?: "up-good" | "down-good";
   /** Column for sparkline data (optional) */
-  sparklineKey?: string
+  sparklineKey?: string;
   /** Prefix for value display (e.g., '$') */
-  prefix?: string
+  prefix?: string;
   /** Suffix for value display (e.g., '%') */
-  suffix?: string
+  suffix?: string;
 }
 
 /**
  * Configuration for table preview widgets
  */
 export interface TableWidgetConfig {
-  widgetType: 'table'
+  widgetType: "table";
   /** Maximum rows to display */
-  maxRows: number
+  maxRows: number;
   /** Specific columns to show (all if not specified) */
-  columns?: string[]
+  columns?: string[];
   /** Default sort configuration */
-  sortBy?: { column: string; direction: 'asc' | 'desc' }
+  sortBy?: { column: string; direction: "asc" | "desc" };
 }
 
 /**
  * Union type for all widget configurations
  */
-export type WidgetConfig = ChartWidgetConfig | KPIWidgetConfig | TableWidgetConfig
+export type WidgetConfig =
+  | ChartWidgetConfig
+  | KPIWidgetConfig
+  | TableWidgetConfig;
 
 /**
  * Widget position and size in the grid layout
  */
 export interface WidgetLayout {
   /** X position in grid units */
-  x: number
+  x: number;
   /** Y position in grid units */
-  y: number
+  y: number;
   /** Width in grid units */
-  w: number
+  w: number;
   /** Height in grid units */
-  h: number
+  h: number;
   /** Minimum width (optional) */
-  minW?: number
+  minW?: number;
   /** Minimum height (optional) */
-  minH?: number
+  minH?: number;
 }
 
 /**
@@ -1706,23 +1724,23 @@ export interface WidgetLayout {
  */
 export interface Widget {
   /** Unique identifier */
-  id: string
+  id: string;
   /** Display name */
-  name: string
+  name: string;
   /** Data source configuration */
-  dataSource: WidgetDataSource
+  dataSource: WidgetDataSource;
   /** Widget-specific configuration */
-  config: WidgetConfig
+  config: WidgetConfig;
   /** Position and size in grid */
-  layout: WidgetLayout
+  layout: WidgetLayout;
   /** Auto-refresh interval in seconds (optional) */
-  refreshInterval?: number
+  refreshInterval?: number;
   /** Whether this widget was AI-generated */
-  aiGenerated?: boolean
+  aiGenerated?: boolean;
   /** When the widget was created (Unix timestamp) */
-  createdAt: number
+  createdAt: number;
   /** When the widget was last updated (Unix timestamp) */
-  updatedAt: number
+  updatedAt: number;
 }
 
 /**
@@ -1730,21 +1748,21 @@ export interface Widget {
  */
 export interface WidgetRunResult {
   /** Widget ID */
-  widgetId: string
+  widgetId: string;
   /** Whether execution succeeded */
-  success: boolean
+  success: boolean;
   /** Query result data */
-  data?: Record<string, unknown>[]
+  data?: Record<string, unknown>[];
   /** Column metadata */
-  fields?: QueryField[]
+  fields?: QueryField[];
   /** Error message if failed */
-  error?: string
+  error?: string;
   /** Execution duration in milliseconds */
-  durationMs: number
+  durationMs: number;
   /** Number of rows returned */
-  rowCount: number
+  rowCount: number;
   /** When the query was executed (Unix timestamp) */
-  executedAt: number
+  executedAt: number;
 }
 
 /**
@@ -1752,36 +1770,36 @@ export interface WidgetRunResult {
  */
 export interface Dashboard {
   /** Unique identifier */
-  id: string
+  id: string;
   /** Display name */
-  name: string
+  name: string;
   /** Optional description */
-  description?: string
+  description?: string;
   /** Tags for organization */
-  tags: string[]
+  tags: string[];
   /** Widgets in this dashboard */
-  widgets: Widget[]
+  widgets: Widget[];
   /** Number of columns in the grid layout */
-  layoutCols: number
+  layoutCols: number;
   /** Auto-refresh schedule configuration */
   refreshSchedule?: {
     /** Whether auto-refresh is enabled */
-    enabled: boolean
+    enabled: boolean;
     /** Schedule preset */
-    preset: SchedulePreset
+    preset: SchedulePreset;
     /** Custom cron expression (when preset is 'custom') */
-    cronExpression?: string
+    cronExpression?: string;
     /** Timezone for schedule */
-    timezone?: string
-  }
+    timezone?: string;
+  };
   /** When the dashboard was created (Unix timestamp) */
-  createdAt: number
+  createdAt: number;
   /** When the dashboard was last updated (Unix timestamp) */
-  updatedAt: number
+  updatedAt: number;
   /** Version number for conflict detection (future sync) */
-  version: number
+  version: number;
   /** Server-assigned sync ID (for future cloud sync) */
-  syncId?: string
+  syncId?: string;
 }
 
 /**
@@ -1789,330 +1807,337 @@ export interface Dashboard {
  */
 export type CreateDashboardInput = Omit<
   Dashboard,
-  'id' | 'createdAt' | 'updatedAt' | 'version'
->
+  "id" | "createdAt" | "updatedAt" | "version"
+>;
 
 /**
  * Input for updating a dashboard
  */
 export type UpdateDashboardInput = Partial<
-  Omit<Dashboard, 'id' | 'createdAt' | 'updatedAt'>
->
+  Omit<Dashboard, "id" | "createdAt" | "updatedAt">
+>;
 
 /**
  * Input for creating a new widget
  */
-export type CreateWidgetInput = Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>
+export type CreateWidgetInput = Omit<Widget, "id" | "createdAt" | "updatedAt">;
 
 /**
  * Input for updating a widget
  */
-export type UpdateWidgetInput = Partial<Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>>
+export type UpdateWidgetInput = Partial<
+  Omit<Widget, "id" | "createdAt" | "updatedAt">
+>;
 
 export interface ColumnStatsRequest {
-  schema: string
-  table: string
-  column: string
-  dataType: string
+  schema: string;
+  table: string;
+  column: string;
+  dataType: string;
 }
 
-export type ColumnStatsType = 'numeric' | 'text' | 'datetime' | 'boolean' | 'other'
+export type ColumnStatsType =
+  | "numeric"
+  | "text"
+  | "datetime"
+  | "boolean"
+  | "other";
 
 export interface HistogramBucket {
-  min: number
-  max: number
-  count: number
+  min: number;
+  max: number;
+  count: number;
 }
 
 export interface CommonValue {
-  value: string | null
-  count: number
-  percentage: number
+  value: string | null;
+  count: number;
+  percentage: number;
 }
 
 export interface ColumnStats {
-  column: string
-  dataType: string
-  statsType: ColumnStatsType
-  totalRows: number
-  nullCount: number
-  nullPercentage: number
-  distinctCount: number
-  distinctPercentage: number
-  min?: string | number | null
-  max?: string | number | null
-  avg?: number | null
-  median?: number | null
-  stdDev?: number | null
-  minLength?: number | null
-  maxLength?: number | null
-  avgLength?: number | null
-  histogram?: HistogramBucket[]
-  commonValues?: CommonValue[]
-  trueCount?: number
-  falseCount?: number
+  column: string;
+  dataType: string;
+  statsType: ColumnStatsType;
+  totalRows: number;
+  nullCount: number;
+  nullPercentage: number;
+  distinctCount: number;
+  distinctPercentage: number;
+  min?: string | number | null;
+  max?: string | number | null;
+  avg?: number | null;
+  median?: number | null;
+  stdDev?: number | null;
+  minLength?: number | null;
+  maxLength?: number | null;
+  avgLength?: number | null;
+  histogram?: HistogramBucket[];
+  commonValues?: CommonValue[];
+  trueCount?: number;
+  falseCount?: number;
 }
 
 export interface CsvColumnMapping {
-  csvColumn: string
-  tableColumn: string | null
-  inferredType?: string
+  csvColumn: string;
+  tableColumn: string | null;
+  inferredType?: string;
 }
 
 export interface CsvImportOptions {
-  batchSize: number
-  onConflict: 'error' | 'skip' | 'update'
-  truncateFirst: boolean
-  useTransaction: boolean
-  useCopy: boolean
+  batchSize: number;
+  onConflict: "error" | "skip" | "update";
+  truncateFirst: boolean;
+  useTransaction: boolean;
+  useCopy: boolean;
 }
 
 export interface CsvImportRequest {
-  schema: string
-  table: string
-  columns: string[]
-  mappings: CsvColumnMapping[]
-  options: CsvImportOptions
-  createTable: boolean
+  schema: string;
+  table: string;
+  columns: string[];
+  mappings: CsvColumnMapping[];
+  options: CsvImportOptions;
+  createTable: boolean;
   tableDefinition?: {
-    columns: Array<{ name: string; dataType: string; isNullable: boolean }>
-  }
+    columns: Array<{ name: string; dataType: string; isNullable: boolean }>;
+  };
 }
 
 export interface CsvImportProgress {
-  phase: 'preparing' | 'importing' | 'complete' | 'error'
-  rowsImported: number
-  totalRows: number
-  currentBatch: number
-  totalBatches: number
-  error?: string
+  phase: "preparing" | "importing" | "complete" | "error";
+  rowsImported: number;
+  totalRows: number;
+  currentBatch: number;
+  totalBatches: number;
+  error?: string;
 }
 
 export interface CsvImportResult {
-  success: boolean
-  rowsImported: number
-  rowsSkipped: number
-  rowsFailed: number
-  error?: string
-  durationMs: number
+  success: boolean;
+  rowsImported: number;
+  rowsSkipped: number;
+  rowsFailed: number;
+  error?: string;
+  durationMs: number;
 }
 
 export interface BatchInsertOptions {
-  schema: string
-  table: string
-  columns: string[]
-  onConflict: 'error' | 'skip' | 'update'
-  primaryKeyColumns?: string[]
+  schema: string;
+  table: string;
+  columns: string[];
+  onConflict: "error" | "skip" | "update";
+  primaryKeyColumns?: string[];
 }
 
 export interface BatchInsertResult {
-  rowsInserted: number
-  rowsSkipped: number
-  rowsFailed: number
+  rowsInserted: number;
+  rowsSkipped: number;
+  rowsFailed: number;
 }
 
 export type GeneratorType =
-  | 'auto-increment'
-  | 'uuid'
-  | 'faker'
-  | 'random-int'
-  | 'random-float'
-  | 'random-boolean'
-  | 'random-date'
-  | 'random-enum'
-  | 'fk-reference'
-  | 'fixed'
-  | 'null'
-  | 'expression'
+  | "auto-increment"
+  | "uuid"
+  | "faker"
+  | "random-int"
+  | "random-float"
+  | "random-boolean"
+  | "random-date"
+  | "random-enum"
+  | "fk-reference"
+  | "fixed"
+  | "null"
+  | "expression";
 
 export interface ColumnGenerator {
-  columnName: string
-  dataType: string
-  generatorType: GeneratorType
-  fakerMethod?: string
-  fixedValue?: string
-  minValue?: number
-  maxValue?: number
-  enumValues?: string[]
-  nullPercentage: number
-  skip: boolean
-  fkTable?: string
-  fkColumn?: string
+  columnName: string;
+  dataType: string;
+  generatorType: GeneratorType;
+  fakerMethod?: string;
+  fixedValue?: string;
+  minValue?: number;
+  maxValue?: number;
+  enumValues?: string[];
+  nullPercentage: number;
+  skip: boolean;
+  fkTable?: string;
+  fkColumn?: string;
 }
 
 export interface DataGenConfig {
-  schema: string
-  table: string
-  rowCount: number
-  seed?: number
-  columns: ColumnGenerator[]
-  batchSize: number
+  schema: string;
+  table: string;
+  rowCount: number;
+  seed?: number;
+  columns: ColumnGenerator[];
+  batchSize: number;
 }
 
 export interface DataGenProgress {
-  phase: 'generating' | 'inserting' | 'complete' | 'error'
-  rowsGenerated: number
-  rowsInserted: number
-  totalRows: number
-  error?: string
+  phase: "generating" | "inserting" | "complete" | "error";
+  rowsGenerated: number;
+  rowsInserted: number;
+  totalRows: number;
+  error?: string;
 }
 
 export interface DataGenResult {
-  success: boolean
-  rowsInserted: number
-  durationMs: number
-  error?: string
+  success: boolean;
+  rowsInserted: number;
+  durationMs: number;
+  error?: string;
 }
 
 export interface PgNotificationEvent {
-  id: string
-  connectionId: string
-  channel: string
-  payload: string
-  receivedAt: number
+  id: string;
+  connectionId: string;
+  channel: string;
+  payload: string;
+  receivedAt: number;
 }
 
 export interface PgNotificationChannel {
-  name: string
-  isListening: boolean
-  eventCount: number
-  lastEventAt?: number
+  name: string;
+  isListening: boolean;
+  eventCount: number;
+  lastEventAt?: number;
 }
 
 export interface PgNotificationStats {
-  eventsPerSecond: number
-  totalEvents: number
-  avgPayloadSize: number
-  connectedSince?: number
+  eventsPerSecond: number;
+  totalEvents: number;
+  avgPayloadSize: number;
+  connectedSince?: number;
 }
 
 export interface ActiveQuery {
-  pid: number
-  user: string
-  database: string
-  state: string
-  duration: string
-  durationMs: number
-  query: string
-  waitEvent?: string
-  applicationName?: string
+  pid: number;
+  user: string;
+  database: string;
+  state: string;
+  duration: string;
+  durationMs: number;
+  query: string;
+  waitEvent?: string;
+  applicationName?: string;
 }
 
 export interface TableSizeInfo {
-  schema: string
-  table: string
-  rowCountEstimate: number
-  dataSize: string
-  dataSizeBytes: number
-  indexSize: string
-  indexSizeBytes: number
-  totalSize: string
-  totalSizeBytes: number
+  schema: string;
+  table: string;
+  rowCountEstimate: number;
+  dataSize: string;
+  dataSizeBytes: number;
+  indexSize: string;
+  indexSizeBytes: number;
+  totalSize: string;
+  totalSizeBytes: number;
 }
 
 export interface CacheStats {
-  bufferCacheHitRatio: number
-  indexHitRatio: number
+  bufferCacheHitRatio: number;
+  indexHitRatio: number;
   tableCacheDetails?: Array<{
-    table: string
-    hitRatio: number
-    seqScans: number
-    indexScans: number
-  }>
+    table: string;
+    hitRatio: number;
+    seqScans: number;
+    indexScans: number;
+  }>;
 }
 
 export interface LockInfo {
-  blockedPid: number
-  blockedUser: string
-  blockedQuery: string
-  blockingPid: number
-  blockingUser: string
-  blockingQuery: string
-  lockType: string
-  relation?: string
-  waitDuration: string
-  waitDurationMs: number
+  blockedPid: number;
+  blockedUser: string;
+  blockedQuery: string;
+  blockingPid: number;
+  blockingUser: string;
+  blockingQuery: string;
+  lockType: string;
+  relation?: string;
+  waitDuration: string;
+  waitDurationMs: number;
 }
 
 export interface DatabaseSizeInfo {
-  totalSize: string
-  totalSizeBytes: number
+  totalSize: string;
+  totalSizeBytes: number;
 }
 
 // ── PostgreSQL Export/Import (pg_dump / pg_restore) ──────────────────────────
 
-export type PgExportMode = 'full' | 'schema-only' | 'data-only'
+export type PgExportMode = "full" | "schema-only" | "data-only";
 
 export interface PgExportOptions {
-  mode: PgExportMode
-  schemas: string[]
-  tables: string[]
-  excludeTables: string[]
-  includeTypes: boolean
-  includeSequences: boolean
-  includeFunctions: boolean
-  includeViews: boolean
-  dataBatchSize: number
-  includeDropStatements: boolean
-  includeTransaction: boolean
+  mode: PgExportMode;
+  schemas: string[];
+  tables: string[];
+  excludeTables: string[];
+  includeTypes: boolean;
+  includeSequences: boolean;
+  includeFunctions: boolean;
+  includeViews: boolean;
+  dataBatchSize: number;
+  includeDropStatements: boolean;
+  includeTransaction: boolean;
 }
 
 export type PgExportPhase =
-  | 'preparing'
-  | 'types'
-  | 'sequences'
-  | 'tables'
-  | 'data'
-  | 'indexes'
-  | 'foreign_keys'
-  | 'views'
-  | 'functions'
-  | 'complete'
-  | 'error'
+  | "preparing"
+  | "types"
+  | "sequences"
+  | "tables"
+  | "data"
+  | "indexes"
+  | "foreign_keys"
+  | "views"
+  | "functions"
+  | "complete"
+  | "error";
 
 export interface PgExportProgress {
-  phase: PgExportPhase
-  currentObject: string
-  objectsProcessed: number
-  totalObjects: number
-  rowsExported: number
-  bytesWritten: number
-  error?: string
+  phase: PgExportPhase;
+  currentObject: string;
+  objectsProcessed: number;
+  totalObjects: number;
+  rowsExported: number;
+  bytesWritten: number;
+  error?: string;
 }
 
 export interface PgExportResult {
-  success: boolean
-  filePath: string
-  tablesExported: number
-  rowsExported: number
-  bytesWritten: number
-  durationMs: number
-  error?: string
+  success: boolean;
+  filePath: string;
+  tablesExported: number;
+  rowsExported: number;
+  bytesWritten: number;
+  durationMs: number;
+  error?: string;
 }
 
-export type PgImportOnError = 'abort' | 'skip'
+export type PgImportOnError = "abort" | "skip";
 
 export interface PgImportOptions {
-  onError: PgImportOnError
-  useTransaction: boolean
+  onError: PgImportOnError;
+  useTransaction: boolean;
 }
 
-export type PgImportPhase = 'reading' | 'executing' | 'complete' | 'error'
+export type PgImportPhase = "reading" | "executing" | "complete" | "error";
 
 export interface PgImportProgress {
-  phase: PgImportPhase
-  statementsExecuted: number
-  totalStatements: number
-  currentStatement: string
-  errorsEncountered: number
-  error?: string
+  phase: PgImportPhase;
+  statementsExecuted: number;
+  totalStatements: number;
+  currentStatement: string;
+  errorsEncountered: number;
+  error?: string;
 }
 
 export interface PgImportResult {
-  success: boolean
-  statementsExecuted: number
-  statementsSkipped: number
-  statementsFailed: number
-  errors: Array<{ statementIndex: number; statement: string; error: string }>
-  durationMs: number
+  success: boolean;
+  statementsExecuted: number;
+  statementsSkipped: number;
+  statementsFailed: number;
+  errors: Array<{ statementIndex: number; statement: string; error: string }>;
+  durationMs: number;
 }

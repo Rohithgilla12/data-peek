@@ -1,5 +1,11 @@
 // Export utilities for CSV, JSON, SQL, and Excel formats
 
+export { escapeSQLValue, escapeSQLIdentifier, isSQLKeyword } from '@shared/sql-escape'
+export type { SQLDialect } from '@shared/sql-escape'
+
+import { escapeSQLIdentifier, escapeSQLValue } from '@shared/sql-escape'
+import type { SQLDialect } from '@shared/sql-escape'
+
 export interface ExportOptions {
   filename: string
   format: 'csv' | 'json' | 'sql' | 'xlsx'
@@ -10,7 +16,6 @@ export interface ExportData {
   rows: Record<string, unknown>[]
 }
 
-// Convert value to CSV-safe string
 export function escapeCSVValue(value: unknown): string {
   if (value === null || value === undefined) {
     return ''
@@ -18,7 +23,6 @@ export function escapeCSVValue(value: unknown): string {
 
   const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
 
-  // Escape if contains comma, newline, or double quotes
   if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
     return `"${stringValue.replace(/"/g, '""')}"`
   }
@@ -26,7 +30,6 @@ export function escapeCSVValue(value: unknown): string {
   return stringValue
 }
 
-// Export data to CSV format
 export function exportToCSV(data: ExportData): string {
   const headers = data.columns.map((col) => escapeCSVValue(col.name)).join(',')
   const rows = data.rows.map((row) =>
@@ -35,7 +38,6 @@ export function exportToCSV(data: ExportData): string {
   return [headers, ...rows].join('\n')
 }
 
-// Export data to JSON format
 export function exportToJSON(data: ExportData, pretty: boolean = true): string {
   const jsonData = data.rows.map((row) => {
     const obj: Record<string, unknown> = {}
@@ -45,271 +47,6 @@ export function exportToJSON(data: ExportData, pretty: boolean = true): string {
     return obj
   })
   return pretty ? JSON.stringify(jsonData, null, 2) : JSON.stringify(jsonData)
-}
-
-// SQL dialect for database-specific syntax
-export type SQLDialect = 'postgresql' | 'mysql' | 'mssql' | 'standard'
-
-// Escape SQL string value based on data type and dialect
-export function escapeSQLValue(
-  value: unknown,
-  dataType: string,
-  dialect: SQLDialect = 'standard'
-): string {
-  if (value === null || value === undefined) {
-    return 'NULL'
-  }
-
-  const lowerType = dataType.toLowerCase()
-
-  // Boolean types
-  if (lowerType.includes('bool') || lowerType === 'bit') {
-    if (dialect === 'mysql' || dialect === 'mssql') {
-      return value ? '1' : '0'
-    }
-    return value ? 'TRUE' : 'FALSE'
-  }
-
-  // Handle special numeric values
-  if (typeof value === 'number') {
-    if (Number.isNaN(value)) {
-      return dialect === 'postgresql' ? "'NaN'::float" : 'NULL'
-    }
-    if (!Number.isFinite(value)) {
-      if (dialect === 'postgresql') {
-        return value > 0 ? "'Infinity'::float" : "'-Infinity'::float"
-      }
-      return 'NULL'
-    }
-  }
-
-  // Handle BigInt
-  if (typeof value === 'bigint') {
-    return value.toString()
-  }
-
-  // Numeric types - don't quote
-  if (
-    lowerType.includes('int') ||
-    lowerType.includes('numeric') ||
-    lowerType.includes('decimal') ||
-    lowerType.includes('float') ||
-    lowerType.includes('double') ||
-    lowerType.includes('real') ||
-    lowerType.includes('money') ||
-    lowerType.includes('serial') ||
-    lowerType === 'number'
-  ) {
-    // Validate it's actually a number
-    const numVal = Number(value)
-    if (!Number.isNaN(numVal)) {
-      return String(value)
-    }
-    // Fall through to string handling if not a valid number
-  }
-
-  // UUID types
-  if (lowerType.includes('uuid') || lowerType.includes('uniqueidentifier')) {
-    const strValue = String(value)
-    return `'${strValue.replace(/'/g, "''")}'`
-  }
-
-  // Date/Time types
-  if (lowerType.includes('date') || lowerType.includes('time') || lowerType.includes('timestamp')) {
-    if (value instanceof Date) {
-      const isoString = value.toISOString()
-      if (lowerType === 'date') {
-        return `'${isoString.split('T')[0]}'`
-      }
-      if (lowerType === 'time' || lowerType === 'time without time zone') {
-        return `'${isoString.split('T')[1].replace('Z', '')}'`
-      }
-      return `'${isoString}'`
-    }
-    // String date value
-    const strValue = String(value)
-    return `'${strValue.replace(/'/g, "''")}'`
-  }
-
-  // Binary/Bytea types
-  if (
-    lowerType.includes('bytea') ||
-    lowerType.includes('binary') ||
-    lowerType.includes('blob') ||
-    lowerType.includes('varbinary')
-  ) {
-    if (value instanceof Uint8Array || value instanceof ArrayBuffer) {
-      const bytes = value instanceof ArrayBuffer ? new Uint8Array(value) : value
-      const hex = Array.from(bytes)
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('')
-      if (dialect === 'postgresql') {
-        return `'\\x${hex}'`
-      }
-      if (dialect === 'mysql') {
-        return `X'${hex}'`
-      }
-      if (dialect === 'mssql') {
-        return `0x${hex}`
-      }
-      return `'${hex}'`
-    }
-    // Assume it's already a hex string or base64
-    const strValue = String(value)
-    return `'${strValue.replace(/'/g, "''")}'`
-  }
-
-  // JSON/JSONB types
-  if (lowerType.includes('json')) {
-    const jsonStr = typeof value === 'string' ? value : JSON.stringify(value)
-    const escaped = jsonStr.replace(/'/g, "''")
-    if (dialect === 'postgresql' && lowerType === 'jsonb') {
-      return `'${escaped}'::jsonb`
-    }
-    return `'${escaped}'`
-  }
-
-  // Array types (PostgreSQL)
-  if (lowerType.startsWith('_') || lowerType.includes('[]') || lowerType === 'array') {
-    if (Array.isArray(value)) {
-      if (dialect === 'postgresql') {
-        const arrayLiteral = JSON.stringify(value)
-          .replace(/^\[/, '{')
-          .replace(/\]$/, '}')
-          .replace(/'/g, "''")
-        return `'${arrayLiteral}'`
-      }
-      return `'${JSON.stringify(value).replace(/'/g, "''")}'`
-    }
-  }
-
-  // Handle arrays that weren't caught by type
-  if (Array.isArray(value)) {
-    return `'${JSON.stringify(value).replace(/'/g, "''")}'`
-  }
-
-  // Object types (for complex types)
-  if (typeof value === 'object' && value !== null) {
-    return `'${JSON.stringify(value).replace(/'/g, "''")}'`
-  }
-
-  // String and other types - quote and escape
-  const stringValue = String(value)
-  return `'${stringValue.replace(/'/g, "''")}'`
-}
-
-// Escape SQL identifier (table/column name) based on dialect
-export function escapeSQLIdentifier(name: string, dialect: SQLDialect = 'standard'): string {
-  // Check if identifier needs quoting
-  const needsQuoting = !/^[a-z_][a-z0-9_]*$/i.test(name) || isSQLKeyword(name)
-
-  if (!needsQuoting) {
-    return name
-  }
-
-  switch (dialect) {
-    case 'mysql':
-      return `\`${name.replace(/`/g, '``')}\``
-    case 'mssql':
-      return `[${name.replace(/\]/g, ']]')}]`
-    default:
-      // PostgreSQL and standard SQL use double quotes
-      return `"${name.replace(/"/g, '""')}"`
-  }
-}
-
-// SQL reserved keywords (common across dialects)
-const SQL_KEYWORDS = new Set([
-  'select',
-  'from',
-  'where',
-  'insert',
-  'update',
-  'delete',
-  'create',
-  'drop',
-  'alter',
-  'table',
-  'index',
-  'view',
-  'order',
-  'by',
-  'group',
-  'having',
-  'join',
-  'left',
-  'right',
-  'inner',
-  'outer',
-  'cross',
-  'full',
-  'on',
-  'and',
-  'or',
-  'not',
-  'null',
-  'true',
-  'false',
-  'as',
-  'in',
-  'is',
-  'like',
-  'between',
-  'case',
-  'when',
-  'then',
-  'else',
-  'end',
-  'user',
-  'role',
-  'grant',
-  'revoke',
-  'limit',
-  'offset',
-  'values',
-  'set',
-  'primary',
-  'key',
-  'foreign',
-  'references',
-  'unique',
-  'check',
-  'default',
-  'constraint',
-  'asc',
-  'desc',
-  'distinct',
-  'all',
-  'any',
-  'exists',
-  'union',
-  'intersect',
-  'except',
-  'into',
-  'with',
-  'recursive',
-  'using',
-  'natural',
-  'partition',
-  'over',
-  'window',
-  'row',
-  'rows',
-  'range',
-  'current',
-  'first',
-  'last',
-  'next',
-  'prior',
-  'fetch',
-  'percent',
-  'only',
-  'ties'
-])
-
-// Check if a word is a SQL reserved keyword
-export function isSQLKeyword(word: string): boolean {
-  return SQL_KEYWORDS.has(word.toLowerCase())
 }
 
 export interface SQLExportOptions {

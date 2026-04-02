@@ -12,15 +12,17 @@ import { createLogger } from '../lib/logger'
 
 const log = createLogger('pg-export-import-handlers')
 
-let exportCancelToken = { cancelled: false }
-let importCancelToken = { cancelled: false }
+const exportCancelTokens = new Map<number, { cancelled: boolean }>()
+const importCancelTokens = new Map<number, { cancelled: boolean }>()
 
 export function registerPgExportImportHandlers(): void {
   // ── Export ──────────────────────────────────────────────────────────────
   ipcMain.handle(
     'db:pg-export',
     async (event, config: ConnectionConfig, options: PgExportOptions) => {
-      exportCancelToken = { cancelled: false }
+      const senderId = event.sender.id
+      const exportCancelToken = { cancelled: false }
+      exportCancelTokens.set(senderId, exportCancelToken)
 
       // Show save dialog
       const result = await dialog.showSaveDialog({
@@ -57,12 +59,15 @@ export function registerPgExportImportHandlers(): void {
         const message = error instanceof Error ? error.message : String(error)
         log.error('Export handler error:', error)
         return { success: false, error: message }
+      } finally {
+        exportCancelTokens.delete(senderId)
       }
     }
   )
 
-  ipcMain.handle('db:pg-export-cancel', async () => {
-    exportCancelToken.cancelled = true
+  ipcMain.handle('db:pg-export-cancel', async (event) => {
+    const token = exportCancelTokens.get(event.sender.id)
+    if (token) token.cancelled = true
     return { success: true }
   })
 
@@ -70,7 +75,9 @@ export function registerPgExportImportHandlers(): void {
   ipcMain.handle(
     'db:pg-import',
     async (event, config: ConnectionConfig, options: PgImportOptions) => {
-      importCancelToken = { cancelled: false }
+      const senderId = event.sender.id
+      const importCancelToken = { cancelled: false }
+      importCancelTokens.set(senderId, importCancelToken)
 
       // Show open dialog
       const result = await dialog.showOpenDialog({
@@ -111,12 +118,15 @@ export function registerPgExportImportHandlers(): void {
         const message = error instanceof Error ? error.message : String(error)
         log.error('Import handler error:', error)
         return { success: false, error: message }
+      } finally {
+        importCancelTokens.delete(senderId)
       }
     }
   )
 
-  ipcMain.handle('db:pg-import-cancel', async () => {
-    importCancelToken.cancelled = true
+  ipcMain.handle('db:pg-import-cancel', async (event) => {
+    const token = importCancelTokens.get(event.sender.id)
+    if (token) token.cancelled = true
     return { success: true }
   })
 }

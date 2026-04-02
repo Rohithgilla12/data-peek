@@ -62,9 +62,9 @@ export async function pgImport(
 
     // Split into statements
     const statements = splitStatements(sql, 'postgresql').filter((s) => {
-      const trimmed = s.trim()
-      // Skip empty statements and comments-only
-      return trimmed.length > 0 && !trimmed.startsWith('--')
+      // Strip leading comment lines, then check if real SQL remains
+      const stripped = s.replace(/^(\s*--[^\n]*\n)*/gm, '').trim()
+      return stripped.length > 0
     })
 
     log.info(`Parsed ${statements.length} statements from ${filePath}`)
@@ -107,10 +107,18 @@ export async function pgImport(
         }
 
         const stmt = statements[i]
+        const useSavepoints = options.useTransaction && options.onError === 'skip'
+
+        if (useSavepoints) {
+          await client.query(`SAVEPOINT sp_${i}`)
+        }
 
         try {
           await client.query(stmt)
           statementsExecuted++
+          if (useSavepoints) {
+            await client.query(`RELEASE SAVEPOINT sp_${i}`)
+          }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : String(err)
           statementsFailed++
@@ -125,6 +133,10 @@ export async function pgImport(
               await client.query('ROLLBACK').catch(() => {})
             }
             throw new Error(`Statement ${i + 1} failed: ${errorMessage}`)
+          }
+
+          if (useSavepoints) {
+            await client.query(`ROLLBACK TO SAVEPOINT sp_${i}`)
           }
 
           // skip-and-continue
