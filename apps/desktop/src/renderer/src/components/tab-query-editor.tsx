@@ -968,10 +968,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     const conditions = filters.map((f) => {
       const escapedValue = f.value.replace(/'/g, "''")
       const quotedCol = quoteIdentifier(f.column, dbType)
-      if (dbType === 'mssql') {
-        return `${quotedCol} LIKE '%${escapedValue}%'`
-      }
-      if (dbType === 'mysql') {
+      if (dbType === 'mssql' || dbType === 'mysql') {
         return `${quotedCol} LIKE '%${escapedValue}%'`
       }
       return `${quotedCol} ILIKE '%${escapedValue}%'`
@@ -982,7 +979,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const generateOrderByClause = (sorting: DataTableSort[]): string => {
     if (sorting.length === 0) return ''
     const dbType = tabConnection?.dbType
-    const orders = sorting.map((s) => `${quoteIdentifier(s.column, dbType)} ${s.direction.toUpperCase()}`)
+    const orders = sorting.map(
+      (s) => `${quoteIdentifier(s.column, dbType)} ${s.direction.toUpperCase()}`
+    )
     return `ORDER BY ${orders.join(', ')}`
   }
 

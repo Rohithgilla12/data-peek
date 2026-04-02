@@ -229,7 +229,10 @@ export async function resolveFK(
     schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo'
       ? `${quoteId(schema, dbType)}.${quotedTable}`
       : quotedTable
-  const sql = `SELECT ${quoteId(fkColumn, dbType)} FROM ${tableRef} LIMIT 1000`
+  const sql =
+    dbType === 'mssql'
+      ? `SELECT TOP 1000 ${quoteId(fkColumn, dbType)} FROM ${tableRef}`
+      : `SELECT ${quoteId(fkColumn, dbType)} FROM ${tableRef} LIMIT 1000`
 
   try {
     const result = await adapter.query(connectionConfig, sql)
