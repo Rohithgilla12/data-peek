@@ -268,11 +268,22 @@ interface PokemonBuddyState {
   resetStats: () => void
 }
 
+// Single mood-reset timer — cleared and re-set on each mood change to avoid races
+let moodResetTimer: ReturnType<typeof setTimeout> | null = null
+
+function scheduleMoodReset(set: (s: Partial<PokemonBuddyState>) => void, delayMs = 2000) {
+  if (moodResetTimer) clearTimeout(moodResetTimer)
+  moodResetTimer = setTimeout(() => {
+    moodResetTimer = null
+    set({ mood: 'idle' })
+  }, delayMs)
+}
+
 export const usePokemonBuddyStore = create<PokemonBuddyState>()(
   persist(
     (set, get) => ({
       // Initial state
-      activePokemonId: POKEMON_ROSTER[Math.floor(Math.random() * POKEMON_ROSTER.length)].id,
+      activePokemonId: 25,
       buddyLevel: 1,
       buddyXp: 0,
       mood: 'idle',
@@ -285,7 +296,7 @@ export const usePokemonBuddyStore = create<PokemonBuddyState>()(
       successfulQueries: 0,
       failedQueries: 0,
       totalRowsFetched: 0,
-      fastestQueryMs: Infinity,
+      fastestQueryMs: -1,
       slowestQueryMs: 0,
       currentStreak: 0,
       bestStreak: 0,
@@ -325,8 +336,7 @@ export const usePokemonBuddyStore = create<PokemonBuddyState>()(
           }
         }
 
-        // Reset mood after delay
-        setTimeout(() => set({ mood: 'idle' }), 2000)
+        scheduleMoodReset(set)
       },
 
       setMood: (mood) => set({ mood }),
@@ -335,9 +345,7 @@ export const usePokemonBuddyStore = create<PokemonBuddyState>()(
 
       triggerMove: (moveName) => {
         set({ showMoveAnimation: moveName, mood: 'attacking' })
-        setTimeout(() => {
-          set({ showMoveAnimation: null, mood: 'idle' })
-        }, 1500)
+        scheduleMoodReset((partial) => set({ ...partial, showMoveAnimation: null }), 1500)
       },
 
       clearMoveAnimation: () => set({ showMoveAnimation: null }),
@@ -349,10 +357,8 @@ export const usePokemonBuddyStore = create<PokemonBuddyState>()(
         const newStreak = state.currentStreak + 1
         const newBestStreak = Math.max(state.bestStreak, newStreak)
         const newTotalRows = state.totalRowsFetched + rowCount
-        const newFastest = Math.min(
-          state.fastestQueryMs === Infinity ? durationMs : state.fastestQueryMs,
-          durationMs
-        )
+        const newFastest =
+          state.fastestQueryMs < 0 ? durationMs : Math.min(state.fastestQueryMs, durationMs)
         const newSlowest = Math.max(state.slowestQueryMs, durationMs)
         const wasConsecutiveErrors = state.consecutiveErrors >= 3
 
@@ -413,7 +419,7 @@ export const usePokemonBuddyStore = create<PokemonBuddyState>()(
         if (wasConsecutiveErrors) checkAchievement('error_recovery')
 
         const hour = new Date().getHours()
-        if (hour >= 0 && hour < 5) checkAchievement('night_owl')
+        if (hour >= 0 && hour < 4) checkAchievement('night_owl')
         if (hour >= 4 && hour < 6) checkAchievement('early_bird')
 
         update.achievements = newAchievements
@@ -422,9 +428,7 @@ export const usePokemonBuddyStore = create<PokemonBuddyState>()(
         set(update)
 
         // Reset mood after delay
-        setTimeout(() => {
-          if (get().mood === newMood) set({ mood: 'idle' })
-        }, 2000)
+        scheduleMoodReset(set)
       },
 
       recordQueryError: () => {
@@ -437,10 +441,7 @@ export const usePokemonBuddyStore = create<PokemonBuddyState>()(
           mood: 'sad'
         })
 
-        // Reset mood after delay
-        setTimeout(() => {
-          if (get().mood === 'sad') set({ mood: 'idle' })
-        }, 3000)
+        scheduleMoodReset(set, 3000)
       },
 
       dismissAchievement: () => set({ latestAchievement: null }),
@@ -451,7 +452,7 @@ export const usePokemonBuddyStore = create<PokemonBuddyState>()(
           successfulQueries: 0,
           failedQueries: 0,
           totalRowsFetched: 0,
-          fastestQueryMs: Infinity,
+          fastestQueryMs: -1,
           slowestQueryMs: 0,
           currentStreak: 0,
           bestStreak: 0,
@@ -492,12 +493,24 @@ export function getActivePokemon(id: number): PokemonData {
   return POKEMON_ROSTER.find((p) => p.id === id) ?? POKEMON_ROSTER[0]
 }
 
-// Sprite URL helper using PokeAPI GitHub sprites
+// Local sprite imports — bundled so the app works offline
+const staticSprites = import.meta.glob('@/assets/sprites/static/*.png', {
+  eager: true,
+  import: 'default'
+}) as Record<string, string>
+
+const animatedSprites = import.meta.glob('@/assets/sprites/animated/*.gif', {
+  eager: true,
+  import: 'default'
+}) as Record<string, string>
+
 export function getPokemonSpriteUrl(pokemonId: number, animated = false): string {
   if (animated) {
-    return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/versions/generation-v/black-white/animated/${pokemonId}.gif`
+    const key = Object.keys(animatedSprites).find((k) => k.endsWith(`/${pokemonId}.gif`))
+    if (key) return animatedSprites[key]
   }
-  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`
+  const key = Object.keys(staticSprites).find((k) => k.endsWith(`/${pokemonId}.png`))
+  return key ? staticSprites[key] : ''
 }
 
 // Type color mapping for moves

@@ -189,33 +189,45 @@ export function PokemonBuddy() {
   const xpNeeded = xpForLevel(buddyLevel)
   const xpPercent = (buddyXp / xpNeeded) * 100
 
-  // Animated sprite URL
+  // Sprite URLs — derived from activePokemonId so they update on switch
   const spriteUrl = getPokemonSpriteUrl(activePokemonId, true)
   const fallbackUrl = getPokemonSpriteUrl(activePokemonId, false)
-  const [currentSprite, setCurrentSprite] = useState(spriteUrl)
+  const [spriteError, setSpriteError] = useState(false)
+  const currentSprite = spriteError ? fallbackUrl : spriteUrl
 
-  // Walking animation - move the pokemon around slowly
+  // Reset error state when the Pokemon changes
+  useEffect(() => {
+    setSpriteError(false)
+  }, [activePokemonId])
+
+  // Walking animation — uses chained setTimeout so each tick gets a fresh random delay
   useEffect(() => {
     if (mood !== 'idle' || isDragging) return
 
-    const walkInterval = setInterval(
-      () => {
-        const store = usePokemonBuddyStore.getState()
-        const direction = Math.random() > 0.5 ? 1 : -1
-        const distance = Math.random() * 8 + 2
-        const newPos = Math.max(5, Math.min(95, store.positionX + direction * distance))
-        usePokemonBuddyStore.setState({ positionX: newPos })
-      },
-      4000 + Math.random() * 3000
-    )
+    let timerId: ReturnType<typeof setTimeout>
 
-    return () => clearInterval(walkInterval)
+    const scheduleWalk = () => {
+      timerId = setTimeout(
+        () => {
+          const store = usePokemonBuddyStore.getState()
+          const direction = Math.random() > 0.5 ? 1 : -1
+          const distance = Math.random() * 8 + 2
+          const newPos = Math.max(5, Math.min(95, store.positionX + direction * distance))
+          usePokemonBuddyStore.setState({ positionX: newPos })
+          scheduleWalk()
+        },
+        4000 + Math.random() * 3000
+      )
+    }
+
+    scheduleWalk()
+
+    return () => clearTimeout(timerId)
   }, [mood, isDragging])
 
-  // Handle sprite load error - fallback to static
   const handleSpriteError = useCallback(() => {
-    setCurrentSprite(fallbackUrl)
-  }, [fallbackUrl])
+    setSpriteError(true)
+  }, [])
 
   // Drag handling
   const handleMouseDown = useCallback(

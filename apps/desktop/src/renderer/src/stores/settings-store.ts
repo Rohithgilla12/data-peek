@@ -18,6 +18,9 @@ export interface AppSettings {
   // Pagination settings
   /** Default page size for data tables */
   defaultPageSize: PageSizeOption
+  // Fun features
+  /** Show Pokemon buddy and fun analytics widgets */
+  pokemonBuddyEnabled: boolean
 }
 
 interface SettingsState extends AppSettings {
@@ -27,6 +30,7 @@ interface SettingsState extends AppSettings {
   setJsonExpandDepth: (depth: number) => void
   setQueryTimeoutMs: (value: number) => void
   setDefaultPageSize: (size: PageSizeOption) => void
+  setPokemonBuddyEnabled: (value: boolean) => void
   resetSettings: () => void
   setHideQuickQueryPanel: (value: boolean) => void
 }
@@ -37,7 +41,8 @@ const defaultSettings: AppSettings = {
   jsonExpandDepth: 2,
   hideQuickQueryPanel: true,
   queryTimeoutMs: 0, // 0 = no timeout
-  defaultPageSize: 100
+  defaultPageSize: 100,
+  pokemonBuddyEnabled: false
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -49,6 +54,7 @@ export const useSettingsStore = create<SettingsState>()(
       setJsonExpandDepth: (depth) => set({ jsonExpandDepth: depth }),
       setQueryTimeoutMs: (value) => set({ queryTimeoutMs: value }),
       setDefaultPageSize: (size) => set({ defaultPageSize: size }),
+      setPokemonBuddyEnabled: (value) => set({ pokemonBuddyEnabled: value }),
       setHideQuickQueryPanel: (value) => set({ hideQuickQueryPanel: value }),
       resetSettings: () => set(defaultSettings)
     }),

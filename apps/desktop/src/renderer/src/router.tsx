@@ -329,6 +329,8 @@ function RootLayout() {
   // Initialize auto-updater notifications
   useAutoUpdater()
 
+  const pokemonBuddyEnabled = useSettingsStore((s) => s.pokemonBuddyEnabled)
+
   // Track queries for Pokemon buddy analytics
   usePokemonTracker()
 
@@ -337,7 +339,7 @@ function RootLayout() {
       <SidebarProvider>
         <LayoutContent />
         <Notifications />
-        <PokemonBuddy />
+        {pokemonBuddyEnabled && <PokemonBuddy />}
       </SidebarProvider>
     </ThemeProvider>
   )
