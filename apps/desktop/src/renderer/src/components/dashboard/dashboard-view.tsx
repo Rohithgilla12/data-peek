@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
 import {
   LayoutDashboard,
@@ -13,6 +13,7 @@ import {
 
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import { useDashboardStore } from '@/stores'
 import { AddWidgetDialog } from './add-widget-dialog'
 import { DashboardFormDialog } from './dashboard-form-dialog'
@@ -84,46 +85,52 @@ export function DashboardView() {
     }
   }, [dashboard, refreshAllWidgets])
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement
-      const isInputFocused =
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target.isContentEditable ||
-        target.closest('[role="dialog"]') !== null ||
-        target.closest('.monaco-editor') !== null
+  // Check if the keyboard event target is inside a dialog or Monaco editor
+  const isInDialogOrEditor = useCallback((event: KeyboardEvent) => {
+    const target = event.target as HTMLElement
+    return target.closest('[role="dialog"]') !== null || target.closest('.monaco-editor') !== null
+  }, [])
 
-      if (isInputFocused) {
-        return
-      }
-
-      if (e.key === 'r' && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault()
-        if (dashboard && dashboard.widgets.length > 0 && !isRefreshing) {
-          handleRefresh()
+  const dashboardHotkeys = useMemo<UseHotkeyDefinition[]>(
+    () => [
+      {
+        hotkey: 'R',
+        callback: (event) => {
+          if (isInDialogOrEditor(event)) return
+          if (dashboard && dashboard.widgets.length > 0 && !isRefreshing) handleRefresh()
+        },
+        options: { enabled: !!dashboard }
+      },
+      {
+        hotkey: 'E',
+        callback: (event) => {
+          if (isInDialogOrEditor(event)) return
+          setEditMode(!editMode)
         }
+      },
+      {
+        hotkey: 'N',
+        callback: (event) => {
+          if (isInDialogOrEditor(event)) return
+          setIsAddWidgetOpen(true)
+        }
+      },
+      {
+        hotkey: 'A',
+        callback: (event) => {
+          if (isInDialogOrEditor(event)) return
+          setIsAddWidgetOpen(true)
+        }
+      },
+      {
+        hotkey: 'Escape',
+        callback: () => setEditMode(false),
+        options: { enabled: editMode }
       }
-
-      if (e.key === 'e' && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault()
-        setEditMode(!editMode)
-      }
-
-      if ((e.key === 'n' || e.key === 'a') && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault()
-        setIsAddWidgetOpen(true)
-      }
-
-      if (e.key === 'Escape' && editMode) {
-        e.preventDefault()
-        setEditMode(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [dashboard, editMode, isRefreshing, setEditMode, handleRefresh])
+    ],
+    [dashboard, editMode, isRefreshing, setEditMode, handleRefresh, isInDialogOrEditor]
+  )
+  useHotkeys(dashboardHotkeys)
 
   if (!dashboard) {
     return (
