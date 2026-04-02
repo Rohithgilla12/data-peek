@@ -52,7 +52,7 @@ const categories: Category[] = [
     id: 'editor',
     label: 'Editor & Query',
     icon: Gauge,
-    color: '#22d3ee',
+    color: '#6b8cf5',
     features: features.filter((f) =>
       [
         'Monaco Editor',

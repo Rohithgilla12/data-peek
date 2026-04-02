@@ -518,7 +518,7 @@ export const HealthMonitorIllustration: React.FC = () => {
     { label: 'Active Queries', value: '12', color: featureColors.healthMonitor },
     { label: 'Cache Hit', value: `${gaugeValue.toFixed(1)}%`, color: '#10b981' },
     { label: 'Table Size', value: '2.4 GB', color: '#f59e0b' },
-    { label: 'Locks', value: '0', color: '#22d3ee' },
+    { label: 'Locks', value: '0', color: '#6b8cf5' },
   ]
 
   return (

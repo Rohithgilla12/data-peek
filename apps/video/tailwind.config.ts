@@ -12,8 +12,8 @@ const config: Config = {
         'text-primary': '#fafafa',
         'text-secondary': '#a1a1aa',
         'text-muted': '#71717a',
-        accent: '#22d3ee',
-        'accent-dim': '#0891b2',
+        accent: '#6b8cf5',
+        'accent-dim': '#3b52c4',
       },
       fontFamily: {
         mono: ['Geist Mono', 'monospace'],

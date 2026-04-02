@@ -233,7 +233,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
         </Card>
 
         {/* Table Sizes */}
-        <Card className="flex flex-col overflow-hidden">
+        <Card className="flex max-h-[500px] flex-col overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
@@ -267,7 +267,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               <p className="py-4 text-center text-xs text-muted-foreground">No tables found</p>
             ) : (
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 z-10 bg-card">
                   <TableRow>
                     <TableHead className="text-xs">Table</TableHead>
                     <TableHead className="w-20 text-right text-xs">Est. Rows</TableHead>

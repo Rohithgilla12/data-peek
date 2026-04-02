@@ -58,7 +58,13 @@ import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { keys } from '@/lib/utils'
 import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
-import { buildQualifiedTableRef, buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
+import {
+  buildQualifiedTableRef,
+  buildFullyQualifiedTableRef,
+  buildSelectQuery,
+  buildCountQuery,
+  quoteIdentifier
+} from '@/lib/sql-helpers'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
@@ -760,12 +766,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     ): Promise<{ data?: Record<string, unknown>; columns?: ColumnInfo[]; error?: string }> => {
       if (!tabConnection) return { error: 'No connection' }
 
-      // Build table reference (handle MSSQL's dbo schema)
-      const defaultSchema = tabConnection.dbType === 'mssql' ? 'dbo' : 'public'
-      const tableRef =
-        fk.referencedSchema === defaultSchema
-          ? fk.referencedTable
-          : `${fk.referencedSchema}.${fk.referencedTable}`
+      const tableRef = buildFullyQualifiedTableRef(
+        fk.referencedSchema,
+        fk.referencedTable,
+        tabConnection.dbType
+      )
 
       // Format value for SQL
       let formattedValue: string
@@ -777,7 +782,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         formattedValue = String(value)
       }
 
-      const whereClause = `WHERE "${fk.referencedColumn}" = ${formattedValue}`
+      const quotedCol = quoteIdentifier(fk.referencedColumn, tabConnection.dbType)
+      const whereClause = `WHERE ${quotedCol} = ${formattedValue}`
       const query = buildSelectQuery(tableRef, tabConnection.dbType, {
         where: whereClause,
         limit: 1
@@ -958,18 +964,24 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Generate SQL WHERE clause from filters
   const generateWhereClause = (filters: DataTableFilter[]): string => {
     if (filters.length === 0) return ''
+    const dbType = tabConnection?.dbType
     const conditions = filters.map((f) => {
-      // Escape single quotes in value
       const escapedValue = f.value.replace(/'/g, "''")
-      return `"${f.column}" ILIKE '%${escapedValue}%'`
+      const quotedCol = quoteIdentifier(f.column, dbType)
+      if (dbType === 'mssql' || dbType === 'mysql') {
+        return `${quotedCol} LIKE '%${escapedValue}%'`
+      }
+      return `${quotedCol} ILIKE '%${escapedValue}%'`
     })
     return `WHERE ${conditions.join(' AND ')}`
   }
 
-  // Generate SQL ORDER BY clause from sorting
   const generateOrderByClause = (sorting: DataTableSort[]): string => {
     if (sorting.length === 0) return ''
-    const orders = sorting.map((s) => `"${s.column}" ${s.direction.toUpperCase()}`)
+    const dbType = tabConnection?.dbType
+    const orders = sorting.map(
+      (s) => `${quoteIdentifier(s.column, dbType)} ${s.direction.toUpperCase()}`
+    )
     return `ORDER BY ${orders.join(', ')}`
   }
 
@@ -1258,6 +1270,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
             />
             {!isEditorCollapsed && (
               <>
+                <div className="mx-1 h-4 w-px bg-border/60" />
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1301,17 +1314,17 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                <div className="mx-1 h-4 w-px bg-border/60" />
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className={`gap-1.5 h-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
+                        size="icon-sm"
+                        className={`h-7 w-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
                         onClick={() => setIsResultsCollapsed(!isResultsCollapsed)}
                       >
                         <Maximize2 className="size-3.5" />
-                        {isResultsCollapsed ? 'Restore' : 'Focus'}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">
