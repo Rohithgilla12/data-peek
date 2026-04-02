@@ -5,7 +5,7 @@ import { Switch } from '@/components/ui/switch'
 import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image-dialog'
 import { DatabaseIcon } from '@/components/database-icons'
 import type { DatabaseType } from '@shared/index'
-import { cn } from '@/lib/utils'
+
 import { SQL_KEYWORDS as SQL_KEYWORDS_ARRAY } from '@/constants/sql-keywords'
 
 // Additional keywords not in the shared list (window functions, MSSQL, etc.)
@@ -233,36 +233,36 @@ function HighlightedSQL({ sql, theme }: { sql: string; theme: 'dark' | 'light' }
     if (theme === 'dark') {
       switch (type) {
         case 'keyword':
-          return '#60a5fa' // blue-400
+          return 'oklch(0.7 0.15 250)'
         case 'function':
-          return '#f472b6' // pink-400
+          return 'oklch(0.75 0.12 330)'
         case 'string':
-          return '#4ade80' // green-400
+          return 'oklch(0.75 0.14 150)'
         case 'number':
-          return '#fb923c' // orange-400
+          return 'oklch(0.75 0.13 70)'
         case 'comment':
-          return '#6b7280' // gray-500
+          return 'oklch(0.5 0.02 250)'
         case 'operator':
-          return '#c084fc' // purple-400
+          return 'oklch(0.65 0.1 290)'
         default:
-          return '#e5e7eb' // gray-200
+          return 'oklch(0.87 0 0)'
       }
     } else {
       switch (type) {
         case 'keyword':
-          return '#2563eb' // blue-600
+          return 'oklch(0.45 0.15 250)'
         case 'function':
-          return '#db2777' // pink-600
+          return 'oklch(0.5 0.15 330)'
         case 'string':
-          return '#16a34a' // green-600
+          return 'oklch(0.45 0.15 150)'
         case 'number':
-          return '#ea580c' // orange-600
+          return 'oklch(0.5 0.13 70)'
         case 'comment':
-          return '#9ca3af' // gray-400
+          return 'oklch(0.6 0.02 250)'
         case 'operator':
-          return '#9333ea' // purple-600
+          return 'oklch(0.45 0.12 290)'
         default:
-          return '#1f2937' // gray-800
+          return 'oklch(0.2 0 0)'
       }
     }
   }
@@ -315,10 +315,17 @@ export function ShareQueryDialog({
               <div className="flex items-center gap-2 mb-4">
                 <Badge
                   variant="secondary"
-                  className={cn(
-                    'gap-1.5 px-2.5 py-1',
-                    theme === 'light' ? 'bg-zinc-200 text-zinc-700' : 'bg-white/20 text-white'
-                  )}
+                  className="gap-1.5 px-2.5 py-1 font-mono text-xs"
+                  style={{
+                    background:
+                      theme === 'light'
+                        ? 'oklch(0.92 0.01 250)'
+                        : 'oklch(0.25 0.03 250)',
+                    color:
+                      theme === 'light'
+                        ? 'oklch(0.35 0.05 250)'
+                        : 'oklch(0.75 0.05 250)'
+                  }}
                 >
                   <DatabaseIcon dbType={connectionType} className="size-3.5" />
                   {connectionName || connectionType}

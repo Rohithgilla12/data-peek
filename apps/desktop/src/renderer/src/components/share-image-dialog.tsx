@@ -21,9 +21,9 @@ import { Copy, Download, Check, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type BackgroundStyle =
-  | 'gradient-blue'
-  | 'gradient-purple'
-  | 'gradient-green'
+  | 'brand-blue'
+  | 'brand-deep'
+  | 'midnight'
   | 'solid-dark'
   | 'solid-light'
 
@@ -55,7 +55,7 @@ export function ShareImageDialog({
   const [isCopied, setIsCopied] = useState(false)
 
   const [showBranding, setShowBranding] = useState(true)
-  const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyle>('gradient-blue')
+  const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyle>('brand-blue')
   const [padding, setPadding] = useState<'compact' | 'normal' | 'spacious'>('normal')
 
   useEffect(() => {
@@ -64,26 +64,32 @@ export function ShareImageDialog({
     }
   }, [open])
 
-  const getBackgroundClass = (style: BackgroundStyle) => {
+  const getBackgroundStyle = (style: BackgroundStyle): React.CSSProperties => {
     switch (style) {
-      case 'gradient-blue':
-        return 'bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800'
-      case 'gradient-purple':
-        return 'bg-gradient-to-br from-purple-600 via-violet-700 to-indigo-800'
-      case 'gradient-green':
-        return 'bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800'
+      case 'brand-blue':
+        return { background: 'oklch(0.35 0.12 250)' }
+      case 'brand-deep':
+        return { background: 'oklch(0.25 0.08 250)' }
+      case 'midnight':
+        return { background: 'oklch(0.16 0.005 260)' }
       case 'solid-dark':
-        return 'bg-zinc-900'
+        return { background: 'oklch(0.13 0 0)' }
       case 'solid-light':
-        return 'bg-zinc-100'
+        return { background: 'oklch(0.96 0.005 250)' }
     }
   }
 
-  const getContentBackgroundClass = (style: BackgroundStyle) => {
+  const getContentStyle = (style: BackgroundStyle): React.CSSProperties => {
     if (style === 'solid-light') {
-      return 'bg-white/90'
+      return {
+        background: 'oklch(0.985 0 0)',
+        borderTop: '1px solid oklch(0.9 0.01 250)'
+      }
     }
-    return 'bg-black/40'
+    return {
+      background: 'oklch(0.13 0.005 260)',
+      borderTop: '1px solid oklch(0.25 0.02 250)'
+    }
   }
 
   const getPaddingClass = (p: typeof padding) => {
@@ -176,33 +182,30 @@ export function ShareImageDialog({
 
         <div className="space-y-6">
           {/* Preview */}
-          <div className="rounded-lg overflow-hidden border border-border/50">
+          <div className="overflow-hidden rounded-lg border border-border/50">
             <div
               ref={renderRef}
-              className={cn(getBackgroundClass(backgroundStyle), getPaddingClass(padding))}
+              className={getPaddingClass(padding)}
+              style={getBackgroundStyle(backgroundStyle)}
             >
               {header && header(theme)}
 
-              {/* Content block */}
               <div
-                className={cn(
-                  'rounded-lg',
-                  getContentBackgroundClass(backgroundStyle),
-                  getContentPaddingClass(padding)
-                )}
+                className={cn('rounded-md', getContentPaddingClass(padding))}
+                style={getContentStyle(backgroundStyle)}
               >
                 {children(theme)}
               </div>
 
-              {/* Branding */}
               {showBranding && (
                 <div
-                  className={cn(
-                    'mt-4 flex items-center justify-end gap-2 text-xs',
-                    theme === 'light' ? 'text-zinc-500' : 'text-white/60'
-                  )}
+                  className="mt-3 flex items-center justify-end gap-1.5 font-mono text-[0.6875rem] tracking-wide"
+                  style={{
+                    color:
+                      theme === 'light' ? 'oklch(0.55 0.02 250)' : 'oklch(0.55 0.08 250)'
+                  }}
                 >
-                  <span>Made with</span>
+                  <span style={{ opacity: 0.7 }}>via</span>
                   <span className="font-semibold">data-peek</span>
                 </div>
               )}
@@ -222,11 +225,11 @@ export function ShareImageDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gradient-blue">Blue Gradient</SelectItem>
-                    <SelectItem value="gradient-purple">Purple Gradient</SelectItem>
-                    <SelectItem value="gradient-green">Green Gradient</SelectItem>
-                    <SelectItem value="solid-dark">Solid Dark</SelectItem>
-                    <SelectItem value="solid-light">Solid Light</SelectItem>
+                    <SelectItem value="brand-blue">Brand Blue</SelectItem>
+                    <SelectItem value="brand-deep">Deep Blue</SelectItem>
+                    <SelectItem value="midnight">Midnight</SelectItem>
+                    <SelectItem value="solid-dark">Carbon</SelectItem>
+                    <SelectItem value="solid-light">Light</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

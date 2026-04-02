@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import type { ShareImageTheme } from '@/components/share-image-dialog'
 import type {
   ActiveQuery,
@@ -7,28 +7,37 @@ import type {
   LockInfo,
   DatabaseSizeInfo
 } from '@shared/index'
-import { cn } from '@/lib/utils'
 
-function themeColors(theme: ShareImageTheme) {
+function themeStyles(theme: ShareImageTheme) {
+  const light = theme === 'light'
   return {
-    text: theme === 'light' ? 'text-zinc-800' : 'text-zinc-100',
-    muted: theme === 'light' ? 'text-zinc-500' : 'text-zinc-400',
-    header: theme === 'light' ? 'text-zinc-700' : 'text-zinc-300',
-    border: theme === 'light' ? 'border-zinc-200' : 'border-zinc-700',
-    barBg: theme === 'light' ? 'bg-zinc-200' : 'bg-zinc-700',
-    barFill: theme === 'light' ? 'bg-blue-500' : 'bg-blue-400'
+    text: { color: light ? 'oklch(0.2 0 0)' : 'oklch(0.9 0 0)' } as CSSProperties,
+    muted: { color: light ? 'oklch(0.5 0.02 250)' : 'oklch(0.6 0.02 250)' } as CSSProperties,
+    header: { color: light ? 'oklch(0.35 0.03 250)' : 'oklch(0.75 0.03 250)' } as CSSProperties,
+    border: { borderColor: light ? 'oklch(0.88 0.01 250)' : 'oklch(0.3 0.02 250)' } as CSSProperties,
+    barBg: light ? 'oklch(0.9 0.01 250)' : 'oklch(0.3 0.02 250)',
+    barFill: light ? 'oklch(0.55 0.15 250)' : 'oklch(0.65 0.15 250)'
   }
 }
 
-function cacheColor(ratio: number, theme: ShareImageTheme) {
-  if (ratio >= 99) return theme === 'light' ? 'text-green-600' : 'text-green-400'
-  if (ratio >= 95) return theme === 'light' ? 'text-yellow-600' : 'text-yellow-400'
-  return theme === 'light' ? 'text-red-600' : 'text-red-400'
+function cacheColor(ratio: number, theme: ShareImageTheme): CSSProperties {
+  const light = theme === 'light'
+  if (ratio >= 99) return { color: light ? 'oklch(0.45 0.17 150)' : 'oklch(0.7 0.17 150)' }
+  if (ratio >= 95) return { color: light ? 'oklch(0.5 0.15 85)' : 'oklch(0.75 0.15 85)' }
+  return { color: light ? 'oklch(0.5 0.2 25)' : 'oklch(0.7 0.2 25)' }
 }
 
-function ConnectionLabel({ label, className }: { label: string; className: string }) {
+function durationWarning(theme: ShareImageTheme): CSSProperties {
+  return { color: theme === 'light' ? 'oklch(0.5 0.2 25)' : 'oklch(0.7 0.2 25)' }
+}
+
+function successColor(theme: ShareImageTheme): CSSProperties {
+  return { color: theme === 'light' ? 'oklch(0.45 0.17 150)' : 'oklch(0.7 0.17 150)' }
+}
+
+function ConnectionLabel({ label, style }: { label: string; style: CSSProperties }) {
   if (!label) return null
-  return <p className={className}>{label}</p>
+  return <p className="text-xs" style={style}>{label}</p>
 }
 
 interface ShareHeaderProps {
@@ -39,14 +48,14 @@ interface ShareHeaderProps {
 }
 
 function ShareHeader({ title, connLabel, theme, extra }: ShareHeaderProps) {
-  const c = themeColors(theme)
+  const c = themeStyles(theme)
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-2">
-        <p className={cn('text-sm font-semibold', c.text)}>{title}</p>
+        <p className="text-sm font-semibold" style={c.text}>{title}</p>
         {extra}
       </div>
-      <ConnectionLabel label={connLabel} className={cn('text-xs', c.muted)} />
+      <ConnectionLabel label={connLabel} style={c.muted} />
     </div>
   )
 }
@@ -60,42 +69,36 @@ export function ShareActiveQueries({
   activeQueries: ActiveQuery[]
   connLabel: string
 }) {
-  const c = themeColors(theme)
+  const c = themeStyles(theme)
   return (
     <div className="space-y-3">
       <ShareHeader title="Active Queries" connLabel={connLabel} theme={theme} />
       {activeQueries.length === 0 ? (
-        <p className={cn('py-4 text-center text-xs', c.muted)}>No active queries</p>
+        <p className="py-4 text-center text-xs" style={c.muted}>No active queries</p>
       ) : (
         <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
           <thead>
-            <tr className={cn(c.border)} style={{ borderBottom: '1px solid' }}>
-              <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>PID</th>
-              <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>User</th>
-              <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>State</th>
-              <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>Duration</th>
-              <th className={cn('py-1.5 text-left font-medium', c.header)}>Query</th>
+            <tr style={{ borderBottom: '1px solid', ...c.border }}>
+              <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>PID</th>
+              <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>User</th>
+              <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>State</th>
+              <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>Duration</th>
+              <th className="py-1.5 text-left font-medium" style={c.header}>Query</th>
             </tr>
           </thead>
           <tbody>
             {activeQueries.map((q) => (
-              <tr key={q.pid} className={cn(c.border)} style={{ borderBottom: '1px solid' }}>
-                <td className={cn('py-1.5 pr-3', c.text)}>{q.pid}</td>
-                <td className={cn('py-1.5 pr-3', c.text)}>{q.user}</td>
-                <td className={cn('py-1.5 pr-3', c.text)}>{q.state}</td>
+              <tr key={q.pid} style={{ borderBottom: '1px solid', ...c.border }}>
+                <td className="py-1.5 pr-3" style={c.text}>{q.pid}</td>
+                <td className="py-1.5 pr-3" style={c.text}>{q.user}</td>
+                <td className="py-1.5 pr-3" style={c.text}>{q.state}</td>
                 <td
-                  className={cn(
-                    'py-1.5 pr-3',
-                    q.durationMs > 60000
-                      ? theme === 'light'
-                        ? 'font-medium text-red-600'
-                        : 'font-medium text-red-400'
-                      : c.text
-                  )}
+                  className={q.durationMs > 60000 ? 'py-1.5 pr-3 font-medium' : 'py-1.5 pr-3'}
+                  style={q.durationMs > 60000 ? durationWarning(theme) : c.text}
                 >
                   {q.duration}
                 </td>
-                <td className={cn('py-1.5 font-mono', c.text)}>{q.query.slice(0, 80)}</td>
+                <td className="py-1.5 font-mono" style={c.text}>{q.query.slice(0, 80)}</td>
               </tr>
             ))}
           </tbody>
@@ -118,51 +121,51 @@ export function ShareTableSizes({
   dbSize: DatabaseSizeInfo | null
   connLabel: string
 }) {
-  const c = themeColors(theme)
+  const c = themeStyles(theme)
   return (
     <div className="space-y-3">
       <ShareHeader
         title="Table Sizes"
         connLabel={connLabel}
         theme={theme}
-        extra={dbSize && <p className={cn('text-xs', c.muted)}>DB Total: {dbSize.totalSize}</p>}
+        extra={dbSize && <p className="text-xs" style={c.muted}>DB Total: {dbSize.totalSize}</p>}
       />
       {sortedTableSizes.length === 0 ? (
-        <p className={cn('py-4 text-center text-xs', c.muted)}>No tables found</p>
+        <p className="py-4 text-center text-xs" style={c.muted}>No tables found</p>
       ) : (
         <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
           <thead>
-            <tr className={cn(c.border)} style={{ borderBottom: '1px solid' }}>
-              <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>Table</th>
-              <th className={cn('py-1.5 pr-3 text-right font-medium', c.header)}>Est. Rows</th>
-              <th className={cn('py-1.5 pr-3 text-right font-medium', c.header)}>Data</th>
-              <th className={cn('py-1.5 pr-3 text-right font-medium', c.header)}>Index</th>
-              <th className={cn('py-1.5 pr-3 text-right font-medium', c.header)}>Total</th>
-              <th className={cn('w-24 py-1.5 font-medium', c.header)} />
+            <tr style={{ borderBottom: '1px solid', ...c.border }}>
+              <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>Table</th>
+              <th className="py-1.5 pr-3 text-right font-medium" style={c.header}>Est. Rows</th>
+              <th className="py-1.5 pr-3 text-right font-medium" style={c.header}>Data</th>
+              <th className="py-1.5 pr-3 text-right font-medium" style={c.header}>Index</th>
+              <th className="py-1.5 pr-3 text-right font-medium" style={c.header}>Total</th>
+              <th className="w-24 py-1.5 font-medium" style={c.header} />
             </tr>
           </thead>
           <tbody>
             {sortedTableSizes.slice(0, 30).map((t) => (
               <tr
                 key={`${t.schema}.${t.table}`}
-                className={cn(c.border)}
-                style={{ borderBottom: '1px solid' }}
+                style={{ borderBottom: '1px solid', ...c.border }}
               >
-                <td className={cn('py-1.5 pr-3', c.text)}>
-                  <span className={c.muted}>{t.schema}.</span>
+                <td className="py-1.5 pr-3" style={c.text}>
+                  <span style={c.muted}>{t.schema}.</span>
                   {t.table}
                 </td>
-                <td className={cn('py-1.5 pr-3 text-right', c.text)}>
+                <td className="py-1.5 pr-3 text-right" style={c.text}>
                   {t.rowCountEstimate.toLocaleString()}
                 </td>
-                <td className={cn('py-1.5 pr-3 text-right', c.text)}>{t.dataSize}</td>
-                <td className={cn('py-1.5 pr-3 text-right', c.text)}>{t.indexSize}</td>
-                <td className={cn('py-1.5 pr-3 text-right font-medium', c.text)}>{t.totalSize}</td>
+                <td className="py-1.5 pr-3 text-right" style={c.text}>{t.dataSize}</td>
+                <td className="py-1.5 pr-3 text-right" style={c.text}>{t.indexSize}</td>
+                <td className="py-1.5 pr-3 text-right font-medium" style={c.text}>{t.totalSize}</td>
                 <td className="w-24 py-1.5">
-                  <div className={cn('h-2 w-full rounded-full', c.barBg)}>
+                  <div className="h-2 w-full rounded-full" style={{ backgroundColor: c.barBg }}>
                     <div
-                      className={cn('h-2 rounded-full', c.barFill)}
+                      className="h-2 rounded-full"
                       style={{
+                        backgroundColor: c.barFill,
                         width: `${maxTotalSize > 0 ? (t.totalSizeBytes / maxTotalSize) * 100 : 0}%`
                       }}
                     />
@@ -186,35 +189,36 @@ export function ShareCacheStats({
   cacheStats: CacheStats | null
   connLabel: string
 }) {
-  const c = themeColors(theme)
+  const c = themeStyles(theme)
   return (
     <div className="space-y-3">
       <ShareHeader title="Cache Hit Ratios" connLabel={connLabel} theme={theme} />
       {!cacheStats ? (
-        <p className={cn('py-4 text-center text-xs', c.muted)}>No data</p>
+        <p className="py-4 text-center text-xs" style={c.muted}>No data</p>
       ) : (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div
-              className={cn('rounded-lg border p-4 text-center', c.border)}
-              style={{ borderWidth: '1px' }}
+              className="rounded-lg p-4 text-center"
+              style={{ borderWidth: '1px', borderStyle: 'solid', ...c.border }}
             >
-              <p className={cn('text-xs', c.muted)}>Buffer Cache</p>
+              <p className="text-xs" style={c.muted}>Buffer Cache</p>
               <p
-                className={cn(
-                  'text-3xl font-bold',
-                  cacheColor(cacheStats.bufferCacheHitRatio, theme)
-                )}
+                className="text-3xl font-bold"
+                style={cacheColor(cacheStats.bufferCacheHitRatio, theme)}
               >
                 {cacheStats.bufferCacheHitRatio}%
               </p>
             </div>
             <div
-              className={cn('rounded-lg border p-4 text-center', c.border)}
-              style={{ borderWidth: '1px' }}
+              className="rounded-lg p-4 text-center"
+              style={{ borderWidth: '1px', borderStyle: 'solid', ...c.border }}
             >
-              <p className={cn('text-xs', c.muted)}>Index Cache</p>
-              <p className={cn('text-3xl font-bold', cacheColor(cacheStats.indexHitRatio, theme))}>
+              <p className="text-xs" style={c.muted}>Index Cache</p>
+              <p
+                className="text-3xl font-bold"
+                style={cacheColor(cacheStats.indexHitRatio, theme)}
+              >
                 {cacheStats.indexHitRatio}%
               </p>
             </div>
@@ -222,24 +226,24 @@ export function ShareCacheStats({
           {cacheStats.tableCacheDetails && cacheStats.tableCacheDetails.length > 0 && (
             <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
               <thead>
-                <tr className={cn(c.border)} style={{ borderBottom: '1px solid' }}>
-                  <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>Table</th>
-                  <th className={cn('py-1.5 pr-3 text-right font-medium', c.header)}>Hit %</th>
-                  <th className={cn('py-1.5 pr-3 text-right font-medium', c.header)}>Seq Scans</th>
-                  <th className={cn('py-1.5 text-right font-medium', c.header)}>Idx Scans</th>
+                <tr style={{ borderBottom: '1px solid', ...c.border }}>
+                  <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>Table</th>
+                  <th className="py-1.5 pr-3 text-right font-medium" style={c.header}>Hit %</th>
+                  <th className="py-1.5 pr-3 text-right font-medium" style={c.header}>Seq Scans</th>
+                  <th className="py-1.5 text-right font-medium" style={c.header}>Idx Scans</th>
                 </tr>
               </thead>
               <tbody>
                 {cacheStats.tableCacheDetails.slice(0, 15).map((t) => (
-                  <tr key={t.table} className={cn(c.border)} style={{ borderBottom: '1px solid' }}>
-                    <td className={cn('py-1.5 pr-3', c.text)}>{t.table}</td>
-                    <td className={cn('py-1.5 pr-3 text-right', cacheColor(t.hitRatio, theme))}>
+                  <tr key={t.table} style={{ borderBottom: '1px solid', ...c.border }}>
+                    <td className="py-1.5 pr-3" style={c.text}>{t.table}</td>
+                    <td className="py-1.5 pr-3 text-right" style={cacheColor(t.hitRatio, theme)}>
                       {t.hitRatio}%
                     </td>
-                    <td className={cn('py-1.5 pr-3 text-right', c.text)}>
+                    <td className="py-1.5 pr-3 text-right" style={c.text}>
                       {t.seqScans.toLocaleString()}
                     </td>
-                    <td className={cn('py-1.5 text-right', c.text)}>
+                    <td className="py-1.5 text-right" style={c.text}>
                       {t.indexScans.toLocaleString()}
                     </td>
                   </tr>
@@ -262,53 +266,46 @@ export function ShareLocks({
   locks: LockInfo[]
   connLabel: string
 }) {
-  const c = themeColors(theme)
+  const c = themeStyles(theme)
   return (
     <div className="space-y-3">
       <ShareHeader title="Locks &amp; Blocking" connLabel={connLabel} theme={theme} />
       {locks.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-2 py-6">
-          <p className={cn('text-sm', theme === 'light' ? 'text-green-600' : 'text-green-400')}>
+          <p className="text-sm" style={successColor(theme)}>
             No blocking locks
           </p>
         </div>
       ) : (
         <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
           <thead>
-            <tr className={cn(c.border)} style={{ borderBottom: '1px solid' }}>
-              <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>Blocked</th>
-              <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>Blocker</th>
-              <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>Type</th>
-              <th className={cn('py-1.5 pr-3 text-left font-medium', c.header)}>Relation</th>
-              <th className={cn('py-1.5 text-left font-medium', c.header)}>Wait</th>
+            <tr style={{ borderBottom: '1px solid', ...c.border }}>
+              <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>Blocked</th>
+              <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>Blocker</th>
+              <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>Type</th>
+              <th className="py-1.5 pr-3 text-left font-medium" style={c.header}>Relation</th>
+              <th className="py-1.5 text-left font-medium" style={c.header}>Wait</th>
             </tr>
           </thead>
           <tbody>
             {locks.map((l, i) => (
               <tr
                 key={`${l.blockedPid}-${l.blockingPid}-${i}`}
-                className={cn(c.border)}
-                style={{ borderBottom: '1px solid' }}
+                style={{ borderBottom: '1px solid', ...c.border }}
               >
-                <td className={cn('py-1.5 pr-3', c.text)}>
+                <td className="py-1.5 pr-3" style={c.text}>
                   <span className="font-medium">{l.blockedPid}</span>
-                  <span className={c.muted}> ({l.blockedUser})</span>
+                  <span style={c.muted}> ({l.blockedUser})</span>
                 </td>
-                <td className={cn('py-1.5 pr-3', c.text)}>
+                <td className="py-1.5 pr-3" style={c.text}>
                   <span className="font-medium">{l.blockingPid}</span>
-                  <span className={c.muted}> ({l.blockingUser})</span>
+                  <span style={c.muted}> ({l.blockingUser})</span>
                 </td>
-                <td className={cn('py-1.5 pr-3', c.text)}>{l.lockType}</td>
-                <td className={cn('py-1.5 pr-3', c.text)}>{l.relation || '-'}</td>
+                <td className="py-1.5 pr-3" style={c.text}>{l.lockType}</td>
+                <td className="py-1.5 pr-3" style={c.text}>{l.relation || '-'}</td>
                 <td
-                  className={cn(
-                    'py-1.5',
-                    l.waitDurationMs > 30000
-                      ? theme === 'light'
-                        ? 'font-medium text-red-600'
-                        : 'font-medium text-red-400'
-                      : c.text
-                  )}
+                  className={l.waitDurationMs > 30000 ? 'py-1.5 font-medium' : 'py-1.5'}
+                  style={l.waitDurationMs > 30000 ? durationWarning(theme) : c.text}
                 >
                   {l.waitDuration}
                 </td>
