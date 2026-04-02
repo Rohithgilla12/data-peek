@@ -8,6 +8,7 @@ import * as React from "react";
 import appCss from "@/styles/app.css?url";
 import { RootProvider } from "fumadocs-ui/provider/tanstack";
 import { generateMetaTags, DOCS_CONFIG, getOrganizationStructuredData } from "@/lib/seo";
+import { Analytics } from "@vercel/analytics/react";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -79,6 +80,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         >
           {children}
         </RootProvider>
+        <Analytics />
         <Scripts />
       </body>
     </html>

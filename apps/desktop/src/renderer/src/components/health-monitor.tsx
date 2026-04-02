@@ -566,7 +566,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
         description="Generate a shareable image of this panel. The image may include connection names or hostnames."
         filenamePrefix={shareCard ? SHARE_DIALOG_PREFIXES[shareCard] : 'health'}
       >
-        {(theme: ShareImageTheme) => {
+        {(theme: ShareImageTheme, _background) => {
           switch (shareCard) {
             case 'activeQueries':
               return (

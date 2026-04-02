@@ -429,6 +429,12 @@ export interface MSSQLConnectionOptions {
   };
 }
 
+export type EnvironmentPreset = 'production' | 'staging' | 'uat' | 'development' | 'local';
+
+export type ConnectionEnvironment =
+  | { preset: EnvironmentPreset }
+  | { preset: 'custom'; customLabel: string; customColor: string };
+
 export interface ConnectionConfig {
   id: string;
   name: string;
@@ -448,6 +454,7 @@ export interface ConnectionConfig {
   mssqlOptions?: MSSQLConnectionOptions;
   /** SQLite-specific connection options (only used when dbType is 'sqlite') */
   sqliteOptions?: SQLiteConnectionOptions;
+  environment?: ConnectionEnvironment;
 }
 
 export interface SSHConfig {

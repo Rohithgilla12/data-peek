@@ -28,6 +28,8 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { SSHConfigSection } from './ssh-config-section'
 import type { SSHConfig, SSLConnectionOptions } from '@shared/index'
 import type { DatabaseType } from '@shared/index'
+import type { ConnectionEnvironment, EnvironmentPreset } from '@shared/index'
+import { ENVIRONMENT_PRESETS, CUSTOM_COLOR_PALETTE } from '@/lib/environment'
 
 interface AddConnectionDialogProps {
   open: boolean
@@ -62,6 +64,10 @@ export function AddConnectionDialog({
   const [ssl, setSsl] = useState(false)
   const [ssh, setSsh] = useState(false)
   const [showDatabasePassword, setShowDatabasePassword] = useState(false)
+  const [environment, setEnvironment] = useState<ConnectionEnvironment | undefined>(undefined)
+  const [showCustomEnv, setShowCustomEnv] = useState(false)
+  const [customEnvLabel, setCustomEnvLabel] = useState('')
+  const [customEnvColor, setCustomEnvColor] = useState(CUSTOM_COLOR_PALETTE[0])
 
   const handleDatabasePasswordToggle = () => {
     setShowDatabasePassword(!showDatabasePassword)
@@ -136,6 +142,17 @@ export function AddConnectionDialog({
       setParseError(null)
       setTestResult(null)
       setTestError(null)
+
+      setEnvironment(editConnection.environment)
+      if (editConnection.environment?.preset === 'custom') {
+        setShowCustomEnv(true)
+        setCustomEnvLabel(editConnection.environment.customLabel)
+        setCustomEnvColor(editConnection.environment.customColor)
+      } else {
+        setShowCustomEnv(false)
+        setCustomEnvLabel('')
+        setCustomEnvColor(CUSTOM_COLOR_PALETTE[0])
+      }
     }
   }, [editConnection, open])
 
@@ -231,6 +248,10 @@ export function AddConnectionDialog({
     setMssqlOptions(undefined)
     setTestResult(null)
     setTestError(null)
+    setEnvironment(undefined)
+    setShowCustomEnv(false)
+    setCustomEnvLabel('')
+    setCustomEnvColor(CUSTOM_COLOR_PALETTE[0])
   }
 
   const handleClose = () => {
@@ -269,8 +290,51 @@ export function AddConnectionDialog({
       dstPort: parseInt(port, 10) || 0,
       sshConfig: sshConfigForConnection,
       ...(ssl && { sslOptions }),
-      ...(dbType === 'mssql' && mssqlOptions && { mssqlOptions })
+      ...(dbType === 'mssql' && mssqlOptions && { mssqlOptions }),
+      ...(environment && { environment })
     }
+  }
+
+  const handleEnvironmentSelect = (preset: EnvironmentPreset) => {
+    if (environment?.preset === preset) {
+      setEnvironment(undefined)
+    } else {
+      setEnvironment({ preset })
+      setShowCustomEnv(false)
+    }
+  }
+
+  const handleCustomEnvironment = () => {
+    if (showCustomEnv && environment?.preset === 'custom') {
+      setShowCustomEnv(false)
+      setEnvironment(undefined)
+    } else {
+      setShowCustomEnv(true)
+      setEnvironment({
+        preset: 'custom',
+        customLabel: customEnvLabel || 'CUSTOM',
+        customColor: customEnvColor
+      })
+    }
+  }
+
+  const handleCustomLabelChange = (value: string) => {
+    const label = value.slice(0, 10).toUpperCase()
+    setCustomEnvLabel(label)
+    setEnvironment({
+      preset: 'custom',
+      customLabel: label || 'CUSTOM',
+      customColor: customEnvColor
+    })
+  }
+
+  const handleCustomColorChange = (color: string) => {
+    setCustomEnvColor(color)
+    setEnvironment({
+      preset: 'custom',
+      customLabel: customEnvLabel || 'CUSTOM',
+      customColor: color
+    })
   }
 
   const handleTestConnection = async () => {
@@ -496,6 +560,97 @@ export function AddConnectionDialog({
             <p className="text-xs text-muted-foreground">
               Optional. Defaults to host/database if empty.
             </p>
+          </div>
+
+          {/* Environment Tag */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Environment</label>
+            <p className="text-xs text-muted-foreground">
+              Optional. Adds a visual indicator to help identify this connection.
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {(Object.keys(ENVIRONMENT_PRESETS) as EnvironmentPreset[]).map((preset) => {
+                const { label, color } = ENVIRONMENT_PRESETS[preset]
+                const isSelected = environment?.preset === preset
+                return (
+                  <button
+                    key={preset}
+                    type="button"
+                    onClick={() => handleEnvironmentSelect(preset)}
+                    className="rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wide font-mono transition-colors border"
+                    style={
+                      isSelected
+                        ? {
+                            backgroundColor: `color-mix(in oklch, ${color} 15%, transparent)`,
+                            borderColor: `color-mix(in oklch, ${color} 30%, transparent)`,
+                            color: color
+                          }
+                        : {
+                            backgroundColor: 'transparent',
+                            borderColor: 'var(--border)',
+                            color: 'var(--muted-foreground)'
+                          }
+                    }
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+              <button
+                type="button"
+                onClick={handleCustomEnvironment}
+                className="rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wide font-mono transition-colors border"
+                style={
+                  showCustomEnv
+                    ? {
+                        backgroundColor: `color-mix(in oklch, ${customEnvColor} 15%, transparent)`,
+                        borderColor: `color-mix(in oklch, ${customEnvColor} 30%, transparent)`,
+                        color: customEnvColor
+                      }
+                    : {
+                        backgroundColor: 'transparent',
+                        borderColor: 'var(--border)',
+                        color: 'var(--muted-foreground)'
+                      }
+                }
+              >
+                Custom
+              </button>
+            </div>
+
+            {showCustomEnv && (
+              <div className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium">Label</label>
+                  <Input
+                    value={customEnvLabel}
+                    onChange={(e) => handleCustomLabelChange(e.target.value)}
+                    placeholder="CUSTOM"
+                    maxLength={10}
+                    className="font-mono text-xs uppercase h-8"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-medium">Color</label>
+                  <div className="flex gap-1.5">
+                    {CUSTOM_COLOR_PALETTE.map((color) => (
+                      <button
+                        key={color}
+                        type="button"
+                        onClick={() => handleCustomColorChange(color)}
+                        className="size-6 rounded-full border-2 transition-transform hover:scale-110"
+                        style={{
+                          backgroundColor: color,
+                          borderColor:
+                            customEnvColor === color ? 'var(--foreground)' : 'transparent'
+                        }}
+                        title={color}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* SQLite-specific form */}

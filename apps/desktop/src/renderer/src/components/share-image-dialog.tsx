@@ -21,20 +21,28 @@ import { Copy, Download, Check, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type BackgroundStyle =
-  | 'gradient-blue'
-  | 'gradient-purple'
-  | 'gradient-green'
+  | 'brand-blue'
+  | 'brand-deep'
+  | 'midnight'
   | 'solid-dark'
   | 'solid-light'
+  | 'raindrop'
+  | 'falcon'
+  | 'sunset'
+  | 'breeze'
+  | 'vercel'
+  | 'supabase'
+  | 'candy'
 
 export type ShareImageTheme = 'dark' | 'light'
+export type { BackgroundStyle }
 
 interface ShareImageDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
   description?: string
-  children: (theme: ShareImageTheme) => ReactNode
+  children: (theme: ShareImageTheme, background: BackgroundStyle) => ReactNode
   filenamePrefix?: string
   header?: (theme: ShareImageTheme) => ReactNode
   extraOptions?: ReactNode
@@ -55,7 +63,7 @@ export function ShareImageDialog({
   const [isCopied, setIsCopied] = useState(false)
 
   const [showBranding, setShowBranding] = useState(true)
-  const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyle>('gradient-blue')
+  const [backgroundStyle, setBackgroundStyle] = useState<BackgroundStyle>('brand-blue')
   const [padding, setPadding] = useState<'compact' | 'normal' | 'spacious'>('normal')
 
   useEffect(() => {
@@ -64,26 +72,62 @@ export function ShareImageDialog({
     }
   }, [open])
 
-  const getBackgroundClass = (style: BackgroundStyle) => {
+  const getBackgroundStyle = (style: BackgroundStyle): React.CSSProperties => {
     switch (style) {
-      case 'gradient-blue':
-        return 'bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800'
-      case 'gradient-purple':
-        return 'bg-gradient-to-br from-purple-600 via-violet-700 to-indigo-800'
-      case 'gradient-green':
-        return 'bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800'
+      case 'brand-blue':
+        return { background: 'oklch(0.35 0.12 250)' }
+      case 'brand-deep':
+        return { background: 'oklch(0.25 0.08 250)' }
+      case 'midnight':
+        return { background: 'oklch(0.16 0.005 260)' }
       case 'solid-dark':
-        return 'bg-zinc-900'
+        return { background: 'oklch(0.13 0 0)' }
       case 'solid-light':
-        return 'bg-zinc-100'
+        return { background: 'oklch(0.96 0.005 250)' }
+      case 'raindrop':
+        return {
+          background:
+            'linear-gradient(140deg, oklch(0.65 0.12 240) 0%, oklch(0.35 0.12 260) 100%)'
+        }
+      case 'falcon':
+        return {
+          background:
+            'linear-gradient(140deg, oklch(0.8 0.06 210) 0%, oklch(0.3 0.04 280) 100%)'
+        }
+      case 'sunset':
+        return {
+          background:
+            'linear-gradient(140deg, oklch(0.8 0.14 85) 0%, oklch(0.6 0.18 30) 100%)'
+        }
+      case 'breeze':
+        return {
+          background:
+            'linear-gradient(140deg, oklch(0.55 0.18 340) 0%, oklch(0.45 0.18 290) 100%)'
+        }
+      case 'vercel':
+        return {
+          background: 'linear-gradient(140deg, #232323 0%, #1f1f1f 100%)'
+        }
+      case 'supabase':
+        return { background: '#121212' }
+      case 'candy':
+        return {
+          background: 'linear-gradient(140deg, #a58efb 0%, #e9bff8 100%)'
+        }
     }
   }
 
-  const getContentBackgroundClass = (style: BackgroundStyle) => {
+  const getContentStyle = (style: BackgroundStyle): React.CSSProperties => {
     if (style === 'solid-light') {
-      return 'bg-white/90'
+      return {
+        background: 'oklch(0.985 0 0)',
+        borderTop: '1px solid oklch(0.9 0.01 250)'
+      }
     }
-    return 'bg-black/40'
+    return {
+      background: 'oklch(0.13 0.005 260)',
+      borderTop: '1px solid oklch(0.25 0.02 250)'
+    }
   }
 
   const getPaddingClass = (p: typeof padding) => {
@@ -108,7 +152,8 @@ export function ShareImageDialog({
     }
   }
 
-  const theme: ShareImageTheme = backgroundStyle === 'solid-light' ? 'light' : 'dark'
+  const theme: ShareImageTheme =
+    backgroundStyle === 'solid-light' || backgroundStyle === 'sunset' ? 'light' : 'dark'
 
   const generateImage = useCallback(async (): Promise<Blob | null> => {
     if (!renderRef.current) return null
@@ -176,36 +221,50 @@ export function ShareImageDialog({
 
         <div className="space-y-6">
           {/* Preview */}
-          <div className="rounded-lg overflow-hidden border border-border/50">
+          <div className="overflow-hidden rounded-lg border border-border/50">
             <div
               ref={renderRef}
-              className={cn(getBackgroundClass(backgroundStyle), getPaddingClass(padding))}
+              className={cn('relative', getPaddingClass(padding))}
+              style={getBackgroundStyle(backgroundStyle)}
             >
-              {header && header(theme)}
-
-              {/* Content block */}
-              <div
-                className={cn(
-                  'rounded-lg',
-                  getContentBackgroundClass(backgroundStyle),
-                  getContentPaddingClass(padding)
-                )}
+              <svg
+                className="pointer-events-none absolute inset-0 size-full"
+                style={{ opacity: theme === 'light' ? 0.03 : 0.04, mixBlendMode: 'overlay' }}
               >
-                {children(theme)}
-              </div>
+                <filter id="noise">
+                  <feTurbulence
+                    type="fractalNoise"
+                    baseFrequency="0.8"
+                    numOctaves="4"
+                    stitchTiles="stitch"
+                  />
+                </filter>
+                <rect width="100%" height="100%" filter="url(#noise)" />
+              </svg>
 
-              {/* Branding */}
-              {showBranding && (
+              <div className="relative">
+                {header && header(theme)}
+
                 <div
-                  className={cn(
-                    'mt-4 flex items-center justify-end gap-2 text-xs',
-                    theme === 'light' ? 'text-zinc-500' : 'text-white/60'
-                  )}
+                  className={cn('rounded-md', getContentPaddingClass(padding))}
+                  style={getContentStyle(backgroundStyle)}
                 >
-                  <span>Made with</span>
-                  <span className="font-semibold">data-peek</span>
+                  {children(theme, backgroundStyle)}
                 </div>
-              )}
+
+                {showBranding && (
+                  <div
+                    className="mt-3 flex items-center justify-end gap-1.5 font-mono text-[0.6875rem] tracking-wide"
+                    style={{
+                      color:
+                        theme === 'light' ? 'oklch(0.55 0.02 250)' : 'oklch(0.55 0.08 250)'
+                    }}
+                  >
+                    <span style={{ opacity: 0.7 }}>via</span>
+                    <span className="font-semibold">data-peek</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -222,11 +281,18 @@ export function ShareImageDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gradient-blue">Blue Gradient</SelectItem>
-                    <SelectItem value="gradient-purple">Purple Gradient</SelectItem>
-                    <SelectItem value="gradient-green">Green Gradient</SelectItem>
-                    <SelectItem value="solid-dark">Solid Dark</SelectItem>
-                    <SelectItem value="solid-light">Solid Light</SelectItem>
+                    <SelectItem value="brand-blue">Brand Blue</SelectItem>
+                    <SelectItem value="brand-deep">Deep Blue</SelectItem>
+                    <SelectItem value="midnight">Midnight</SelectItem>
+                    <SelectItem value="raindrop">Raindrop</SelectItem>
+                    <SelectItem value="falcon">Falcon</SelectItem>
+                    <SelectItem value="sunset">Sunset</SelectItem>
+                    <SelectItem value="breeze">Breeze</SelectItem>
+                    <SelectItem value="vercel">Vercel</SelectItem>
+                    <SelectItem value="supabase">Supabase</SelectItem>
+                    <SelectItem value="candy">Candy</SelectItem>
+                    <SelectItem value="solid-dark">Carbon</SelectItem>
+                    <SelectItem value="solid-light">Light</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

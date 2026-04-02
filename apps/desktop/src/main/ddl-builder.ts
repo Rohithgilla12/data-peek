@@ -227,7 +227,22 @@ function buildConstraintDef(constraint: ConstraintDefinition, dialect: DdlDialec
         const using = validMethods.includes(constraint.excludeUsing || 'gist')
           ? constraint.excludeUsing || 'gist'
           : 'gist'
-        const validOperators = ['=', '&&', '<', '>', '<=', '>=', '<<', '>>', '&<', '&>', '-|-', '@>', '<@', '~=']
+        const validOperators = [
+          '=',
+          '&&',
+          '<',
+          '>',
+          '<=',
+          '>=',
+          '<<',
+          '>>',
+          '&<',
+          '&>',
+          '-|-',
+          '@>',
+          '<@',
+          '~='
+        ]
         const elements = constraint.excludeElements
           .map((e) => {
             const op = validOperators.includes(e.operator) ? e.operator : '='
