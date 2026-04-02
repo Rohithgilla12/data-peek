@@ -1271,6 +1271,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
             />
             {!isEditorCollapsed && (
               <>
+                <div className="mx-1 h-4 w-px bg-border/60" />
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1314,17 +1315,17 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                <div className="mx-1 h-4 w-px bg-border/60" />
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
-                        size="sm"
-                        className={`gap-1.5 h-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
+                        size="icon-sm"
+                        className={`h-7 w-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
                         onClick={() => setIsResultsCollapsed(!isResultsCollapsed)}
                       >
                         <Maximize2 className="size-3.5" />
-                        {isResultsCollapsed ? 'Restore' : 'Focus'}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="bottom">

@@ -52,11 +52,11 @@ function Home() {
           {/* Logo */}
           <div className="mb-8 flex justify-center">
             <div className="relative">
-              <div className="absolute inset-0 blur-2xl opacity-30 bg-[#22d3ee] rounded-full scale-150" />
+              <div className="absolute inset-0 blur-2xl opacity-30 bg-[#6b8cf5] rounded-full scale-150" />
               <img
                 src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/data-peek-icon.png"
                 alt="data-peek"
-                className="relative h-20 w-20 rounded-2xl shadow-lg shadow-[#22d3ee]/20"
+                className="relative h-20 w-20 rounded-2xl shadow-lg shadow-[#6b8cf5]/20"
               />
             </div>
           </div>
@@ -64,16 +64,16 @@ function Home() {
           {/* Title */}
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
             <span className="text-foreground">data-peek</span>{" "}
-            <span className="text-[#22d3ee]">docs</span>
+            <span className="text-[#6b8cf5]">docs</span>
           </h1>
 
           {/* Tagline */}
           <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
             Everything you need to know about the minimal, fast, and lightweight
-            SQL client for <span className="text-[#22d3ee]">PostgreSQL</span>,{" "}
-            <span className="text-[#22d3ee]">MySQL</span>,{" "}
-            <span className="text-[#22d3ee]">SQL Server</span>, and{" "}
-            <span className="text-[#22d3ee]">SQLite</span>.
+            SQL client for <span className="text-[#6b8cf5]">PostgreSQL</span>,{" "}
+            <span className="text-[#6b8cf5]">MySQL</span>,{" "}
+            <span className="text-[#6b8cf5]">SQL Server</span>, and{" "}
+            <span className="text-[#6b8cf5]">SQLite</span>.
           </p>
 
           {/* CTA Buttons */}
@@ -81,7 +81,7 @@ function Home() {
             <Link
               to="/docs/$"
               params={{ _splat: "" }}
-              className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#22d3ee] font-semibold text-sm transition-all hover:bg-[#67e8f9] hover:shadow-lg hover:shadow-[#22d3ee]/20"
+              className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#6b8cf5] font-semibold text-sm transition-all hover:bg-[#8da6f8] hover:shadow-lg hover:shadow-[#6b8cf5]/20"
               style={{ color: "#0f172a" }}
             >
               <Icon svg={Book} className="w-4 h-4" />
@@ -94,7 +94,7 @@ function Home() {
               href="https://github.com/Rohithgilla12/data-peek"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-border text-foreground font-medium text-sm transition-all hover:border-[#22d3ee] hover:text-[#22d3ee]"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-border text-foreground font-medium text-sm transition-all hover:border-[#6b8cf5] hover:text-[#6b8cf5]"
             >
               <Icon svg={Github} className="w-4 h-4" />
               View on GitHub
@@ -104,8 +104,8 @@ function Home() {
 
         {/* Feature highlights */}
         <div className="relative z-10 mt-20 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#22d3ee]/30 hover:bg-card">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#22d3ee]/10 text-[#22d3ee] mb-4">
+          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#6b8cf5]/30 hover:bg-card">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#6b8cf5]/10 text-[#6b8cf5] mb-4">
               <Icon svg={Zap} className="w-5 h-5" />
             </div>
             <h3 className="text-foreground font-semibold mb-2">
@@ -117,8 +117,8 @@ function Home() {
             </p>
           </div>
 
-          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#22d3ee]/30 hover:bg-card">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#22d3ee]/10 text-[#22d3ee] mb-4">
+          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#6b8cf5]/30 hover:bg-card">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#6b8cf5]/10 text-[#6b8cf5] mb-4">
               <Icon svg={Keyboard} className="w-5 h-5" />
             </div>
             <h3 className="text-foreground font-semibold mb-2">
@@ -130,8 +130,8 @@ function Home() {
             </p>
           </div>
 
-          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#22d3ee]/30 hover:bg-card">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#22d3ee]/10 text-[#22d3ee] mb-4">
+          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#6b8cf5]/30 hover:bg-card">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#6b8cf5]/10 text-[#6b8cf5] mb-4">
               <Icon svg={Moon} className="w-5 h-5" />
             </div>
             <h3 className="text-foreground font-semibold mb-2">
@@ -146,8 +146,8 @@ function Home() {
 
         {/* Terminal decoration */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground text-sm font-mono opacity-50">
-          <span className="text-[#22d3ee]">$</span> data-peek --help
-          <span className="inline-block w-2 h-4 bg-[#22d3ee] ml-1 animate-pulse" />
+          <span className="text-[#6b8cf5]">$</span> data-peek --help
+          <span className="inline-block w-2 h-4 bg-[#6b8cf5] ml-1 animate-pulse" />
         </div>
       </main>
     </HomeLayout>

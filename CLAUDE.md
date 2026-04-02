@@ -146,7 +146,7 @@ Developers (backend engineers, full-stack devs, data-curious builders) who need 
 Minimal, technical, monospace-native. Dark mode is the primary design target. Dense where useful, spacious where it aids scanning. No wizard flows, no gratuitous icons, no "website in a window" energy.
 
 ### Color System
-Desktop app should converge toward electric cyan (`#22d3ee`) to match the marketing site. Cyan is more distinctive and ownable than generic blue, and fits the terminal-inspired identity. Full details in `.impeccable.md`.
+OKLCH blue (hue 250°) is the canonical accent color across all apps. Desktop app is the source of truth — marketing site, docs, and video assets all use the same blue palette (`#6b8cf5` bright / `#3b52c4` deep). Full details in `.impeccable.md`.
 
 ### Design Principles
 1. **Data is the UI** — Query results and schemas are the primary interface. Chrome minimizes its footprint.

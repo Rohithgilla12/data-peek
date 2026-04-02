@@ -13,7 +13,7 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
   startFrame = 0,
   charsPerSecond = 20,
   style,
-  cursorColor = '#22d3ee',
+  cursorColor = '#6b8cf5',
 }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()

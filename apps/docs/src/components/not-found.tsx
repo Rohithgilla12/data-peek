@@ -8,11 +8,11 @@ export function NotFound() {
       <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center text-center px-6">
         {/* Glitchy 404 */}
         <div className="relative mb-6">
-          <h1 className="text-[8rem] md:text-[12rem] font-bold text-[#22d3ee]/10 leading-none select-none">
+          <h1 className="text-[8rem] md:text-[12rem] font-bold text-[#6b8cf5]/10 leading-none select-none">
             404
           </h1>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-6xl md:text-8xl font-bold text-[#22d3ee]">404</span>
+            <span className="text-6xl md:text-8xl font-bold text-[#6b8cf5]">404</span>
           </div>
         </div>
 
@@ -35,7 +35,7 @@ export function NotFound() {
         {/* CTA */}
         <Link
           to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#22d3ee] text-[#0a0a0b] font-semibold text-sm transition-all hover:bg-[#fafafa] hover:shadow-lg hover:shadow-[#22d3ee]/20"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#6b8cf5] text-[#0a0a0b] font-semibold text-sm transition-all hover:bg-[#fafafa] hover:shadow-lg hover:shadow-[#6b8cf5]/20"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"

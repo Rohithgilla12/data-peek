@@ -17,19 +17,19 @@
   --secondary: oklch(0.96 0 0);
   --secondary-foreground: oklch(0.2046 0 0);
   --muted: oklch(0.96 0.005 250);
-  --muted-foreground: oklch(0.5 0 0);
+  --muted-foreground: oklch(0.45 0 0);
   --accent: oklch(0.96 0.01 250);
   --accent-foreground: oklch(0.2046 0 0);
   --destructive: oklch(0.583 0.2387 28.4765);
   --destructive-foreground: oklch(0.9702 0 0);
-  --border: oklch(0.88 0.005 250);
-  --input: oklch(0.92 0 0);
+  --border: oklch(0.85 0.008 250);
+  --input: oklch(0.90 0 0);
   --ring: oklch(0.45 0.15 250);
-  --chart-1: oklch(0.5555 0 0);
-  --chart-2: oklch(0.5555 0 0);
-  --chart-3: oklch(0.5555 0 0);
-  --chart-4: oklch(0.5555 0 0);
-  --chart-5: oklch(0.5555 0 0);
+  --chart-1: oklch(0.45 0.15 250);
+  --chart-2: oklch(0.55 0.15 200);
+  --chart-3: oklch(0.50 0.15 150);
+  --chart-4: oklch(0.60 0.15 100);
+  --chart-5: oklch(0.55 0.15 50);
   --radius: 0.625rem;
   --sidebar: oklch(0.97 0.005 250 / 0.8);
   --sidebar-foreground: oklch(0.25 0 0);
@@ -37,7 +37,7 @@
   --sidebar-primary-foreground: oklch(0.9851 0 0);
   --sidebar-accent: oklch(0.94 0.01 250);
   --sidebar-accent-foreground: oklch(0.2046 0 0);
-  --sidebar-border: oklch(0.88 0.005 250);
+  --sidebar-border: oklch(0.85 0.008 250);
   --sidebar-ring: oklch(0.45 0.15 250);
   --font-sans:
     'Geist Variable', -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,

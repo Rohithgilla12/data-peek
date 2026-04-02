@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from 'react'
-import { FileCode, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TabBar } from '@/components/tab-bar'
 import { TabQueryEditor } from '@/components/tab-query-editor'
@@ -84,19 +84,17 @@ export function TabContainer() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <TabBar />
         <div className="flex flex-1 items-center justify-center">
-          <div className="text-center space-y-4">
-            <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-              <FileCode className="size-8 text-muted-foreground" />
-            </div>
-            <div>
-              <h2 className="text-lg font-medium">No tabs open</h2>
-              <p className="text-sm text-muted-foreground mt-1">
-                Click the + button or select a table to get started
-              </p>
-            </div>
+          <div className="text-center space-y-3">
+            <h2 className="text-lg font-medium">Ready to query</h2>
+            <p className="text-sm text-muted-foreground">
+              Open a new tab or select a table from the sidebar
+            </p>
             <Button onClick={handleNewTab} className="gap-2">
               <Plus className="size-4" />
               New Query
+              <kbd className="ml-1 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+                {window.electron.process.platform === 'darwin' ? '⌘' : 'Ctrl+'}T
+              </kbd>
             </Button>
           </div>
         </div>
