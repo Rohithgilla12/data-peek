@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import {
   ConnectionConfig,
+  ConnectionEnvironment,
   SchemaInfo,
   TableInfo,
   ColumnInfo,
@@ -40,6 +41,7 @@ export interface Connection {
   sslOptions?: SSLConnectionOptions
   mssqlOptions?: MSSQLConnectionOptions
   sqliteOptions?: SQLiteConnectionOptions
+  environment?: ConnectionEnvironment
 }
 
 export interface ConnectionWithStatus extends Connection {
