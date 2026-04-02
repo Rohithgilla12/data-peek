@@ -1432,25 +1432,35 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
 
       const schemaFilter = schema
-        ? `AND schemaname = $1`
-        : `AND schemaname NOT IN ('pg_catalog', 'information_schema')`
+        ? `AND s.schemaname = $1`
+        : `AND s.schemaname NOT IN ('pg_catalog', 'information_schema')`
       const params = schema ? [schema] : []
 
       const tablesResult = await client.query(
         `
         SELECT
-          schemaname AS schema,
-          relname AS table,
-          n_live_tup AS row_count_estimate,
-          pg_size_pretty(pg_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname))) AS data_size,
-          pg_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname)) AS data_size_bytes,
-          pg_size_pretty(pg_indexes_size(quote_ident(schemaname) || '.' || quote_ident(relname))) AS index_size,
-          pg_indexes_size(quote_ident(schemaname) || '.' || quote_ident(relname)) AS index_size_bytes,
-          pg_size_pretty(pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname))) AS total_size,
-          pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname)) AS total_size_bytes
-        FROM pg_stat_user_tables
-        WHERE 1=1 ${schemaFilter}
-        ORDER BY pg_total_relation_size(quote_ident(schemaname) || '.' || quote_ident(relname)) DESC
+          schema, "table", row_count_estimate,
+          pg_size_pretty(data_size_bytes) AS data_size,
+          data_size_bytes,
+          pg_size_pretty(index_size_bytes) AS index_size,
+          index_size_bytes,
+          pg_size_pretty(total_size_bytes) AS total_size,
+          total_size_bytes
+        FROM (
+          SELECT
+            s.schemaname AS schema,
+            s.relname AS "table",
+            s.n_live_tup AS row_count_estimate,
+            pg_relation_size(c.oid) AS data_size_bytes,
+            pg_indexes_size(c.oid) AS index_size_bytes,
+            pg_total_relation_size(c.oid) AS total_size_bytes
+          FROM pg_stat_user_tables s
+          JOIN pg_class c ON c.relname = s.relname
+          JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = s.schemaname
+          WHERE 1=1 ${schemaFilter}
+        ) t
+        ORDER BY total_size_bytes DESC
+        LIMIT 50
         `,
         params
       )
@@ -1500,16 +1510,16 @@ export class PostgresAdapter implements DatabaseAdapter {
 
       const tableDetailsResult = await client.query(`
         SELECT
-          schemaname || '.' || relname AS table,
-          CASE WHEN heap_blks_hit + heap_blks_read = 0 THEN 0
-            ELSE ROUND(heap_blks_hit::numeric / (heap_blks_hit + heap_blks_read) * 100, 2)
+          sio.schemaname || '.' || sio.relname AS table,
+          CASE WHEN sio.heap_blks_hit + sio.heap_blks_read = 0 THEN 0
+            ELSE ROUND(sio.heap_blks_hit::numeric / (sio.heap_blks_hit + sio.heap_blks_read) * 100, 2)
           END AS hit_ratio,
-          COALESCE(seq_scan, 0) AS seq_scans,
-          COALESCE(idx_scan, 0) AS index_scans
-        FROM pg_statio_user_tables
-        JOIN pg_stat_user_tables USING (relid)
-        WHERE heap_blks_hit + heap_blks_read > 0
-        ORDER BY heap_blks_hit + heap_blks_read DESC
+          COALESCE(st.seq_scan, 0) AS seq_scans,
+          COALESCE(st.idx_scan, 0) AS index_scans
+        FROM pg_statio_user_tables sio
+        JOIN pg_stat_user_tables st ON sio.relid = st.relid
+        WHERE sio.heap_blks_hit + sio.heap_blks_read > 0
+        ORDER BY sio.heap_blks_hit + sio.heap_blks_read DESC
         LIMIT 20
       `)
 
