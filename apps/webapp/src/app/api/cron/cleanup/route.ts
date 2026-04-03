@@ -1,0 +1,51 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { lt, eq } from 'drizzle-orm'
+import { db } from '@/db'
+import { queryHistory, licenses } from '@/db/schema'
+
+export async function GET(req: NextRequest) {
+  const authHeader = req.headers.get('authorization')
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const now = new Date()
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000)
+
+  // Delete history older than 90 days for all users (even Pro)
+  const { rowCount: proDeleted } = await db
+    .delete(queryHistory)
+    .where(lt(queryHistory.executedAt, ninetyDaysAgo))
+
+  // Delete history older than 7 days for free users
+  // Get all customer IDs that have an active license (Pro users)
+  const proCustomers = await db.query.licenses.findMany({
+    where: eq(licenses.status, 'active'),
+    columns: { customerId: true },
+  })
+  const proCustomerIds = new Set(proCustomers.map((l) => l.customerId))
+
+  const allFreeHistory = await db.query.queryHistory.findMany({
+    where: lt(queryHistory.executedAt, sevenDaysAgo),
+    columns: { id: true, customerId: true },
+  })
+
+  const freeHistoryIds = allFreeHistory
+    .filter((h) => !proCustomerIds.has(h.customerId))
+    .map((h) => h.id)
+
+  let freeDeleted = 0
+  if (freeHistoryIds.length > 0) {
+    for (const id of freeHistoryIds) {
+      await db.delete(queryHistory).where(eq(queryHistory.id, id))
+      freeDeleted++
+    }
+  }
+
+  return NextResponse.json({
+    success: true,
+    deleted: { proExpired: proDeleted ?? 0, freeExpired: freeDeleted },
+    timestamp: now.toISOString(),
+  })
+}
