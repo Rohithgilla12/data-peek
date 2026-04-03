@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "remotion studio",
-    "build": "remotion render ReleaseVideo-v0-17-0 out/release-v0.17.0.mp4",
+    "build": "remotion render ReleaseVideo-v0-18-0 out/release-v0.18.0.mp4",
     "render": "node render.mjs",
     "typecheck": "tsc --noEmit"
   },
