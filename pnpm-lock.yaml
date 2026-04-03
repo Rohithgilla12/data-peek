@@ -535,9 +535,18 @@ importers:
       '@clerk/nextjs':
         specifier: ^6.35.5
         version: 6.35.5(next@16.0.7(@opentelemetry/api@1.9.0)(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@monaco-editor/react':
+        specifier: ^4.7.0
+        version: 4.7.0(monaco-editor@0.55.1)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@tanstack/react-query':
         specifier: ^5.75.5
         version: 5.96.1(react@19.2.0)
+      '@tanstack/react-table':
+        specifier: ^8.21.3
+        version: 8.21.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@tanstack/react-virtual':
+        specifier: ^3.13.12
+        version: 3.13.12(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
       '@trpc/client':
         specifier: ^11.1.2
         version: 11.16.0(@trpc/server@11.16.0(typescript@5.9.3))(typescript@5.9.3)
@@ -556,6 +565,9 @@ importers:
       lucide-react:
         specifier: ^0.510.0
         version: 0.510.0(react@19.2.0)
+      monaco-editor:
+        specifier: ^0.55.1
+        version: 0.55.1
       mysql2:
         specifier: ^3.15.3
         version: 3.15.3
