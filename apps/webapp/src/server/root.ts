@@ -5,6 +5,7 @@ import { queriesRouter } from './routers/queries'
 import { savedQueriesRouter } from './routers/saved-queries'
 import { historyRouter } from './routers/history'
 import { healthRouter } from './routers/health'
+import { columnStatsRouter } from './routers/column-stats'
 
 export const appRouter = createRouter({
   connections: connectionsRouter,
@@ -13,6 +14,7 @@ export const appRouter = createRouter({
   savedQueries: savedQueriesRouter,
   history: historyRouter,
   health: healthRouter,
+  columnStats: columnStatsRouter,
 })
 
 export type AppRouter = typeof appRouter
