@@ -12,7 +12,7 @@ export function TabContainer() {
         <button
           key={tab.id}
           onClick={() => setActiveTab(tab.id)}
-          className={`group flex items-center gap-1.5 px-4 py-2 text-xs transition-colors border-b-2 ${
+          className={`group flex items-center gap-1.5 px-4 py-2 text-xs transition-all duration-200 border-b-2 ${
             tab.id === activeTabId
               ? 'border-accent text-foreground'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -32,7 +32,7 @@ export function TabContainer() {
       ))}
       <button
         onClick={addTab}
-        className="px-3 py-2 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+        className="px-3 py-2 text-muted-foreground/50 hover:text-muted-foreground transition-all duration-200 hover:scale-110"
       >
         <Plus className="h-3.5 w-3.5" />
       </button>

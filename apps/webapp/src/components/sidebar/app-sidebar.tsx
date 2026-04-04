@@ -21,7 +21,7 @@ export function AppSidebar() {
   return (
     <aside className="flex h-screen w-56 flex-col border-r border-border bg-background">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-        <div className="h-2 w-2 rounded-full bg-accent" />
+        <div className="h-2 w-2 rounded-full bg-accent animate-pulse-glow" />
         <span className="text-sm font-semibold font-mono">data-peek</span>
       </div>
 
@@ -36,10 +36,10 @@ export function AppSidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-colors ${
+              className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-sm transition-all duration-200 press-effect ${
                 isActive
                   ? 'bg-accent/10 text-accent'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                  : 'text-muted-foreground hover:bg-muted hover:text-foreground hover:translate-x-0.5'
               }`}
             >
               <item.icon className="h-4 w-4" />

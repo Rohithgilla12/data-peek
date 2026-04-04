@@ -22,7 +22,7 @@ export function ResultsStatus({
 }: ResultsStatusProps) {
   if (isExecuting) {
     return (
-      <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border text-xs">
+      <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border text-xs animate-fade-in">
         <Loader2 className="h-3 w-3 animate-spin text-accent" />
         <span className="text-muted-foreground">Executing...</span>
       </div>
@@ -31,7 +31,7 @@ export function ResultsStatus({
 
   if (error) {
     return (
-      <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border text-xs">
+      <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border text-xs animate-shake">
         <XCircle className="h-3 w-3 text-destructive" />
         <span className="text-destructive truncate">{error}</span>
       </div>
@@ -40,8 +40,8 @@ export function ResultsStatus({
 
   if (rowCount !== null) {
     return (
-      <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border text-xs">
-        <CheckCircle className="h-3 w-3 text-success" />
+      <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border text-xs animate-slide-up">
+        <CheckCircle className="h-3 w-3 text-success animate-check-pop" />
         <span className="text-success">
           {rowCount.toLocaleString()} row{rowCount !== 1 ? 's' : ''}
         </span>

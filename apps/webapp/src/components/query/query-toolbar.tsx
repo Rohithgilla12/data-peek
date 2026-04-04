@@ -18,7 +18,7 @@ export function QueryToolbar({ onExecute, onExplain, isExecuting }: QueryToolbar
       <button
         onClick={onExecute}
         disabled={isExecuting}
-        className="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1 text-xs font-medium text-accent-foreground hover:bg-accent/90 transition-colors disabled:opacity-50"
+        className="flex items-center gap-1.5 rounded-md bg-accent px-3 py-1 text-xs font-medium text-accent-foreground hover:bg-accent/90 hover:shadow-[0_0_12px_oklch(0.62_0.15_250/0.3)] transition-all duration-200 press-effect disabled:opacity-50"
       >
         {isExecuting ? (
           <Loader2 className="h-3 w-3 animate-spin" />

@@ -67,7 +67,8 @@ export default function QueryPage() {
 
   if (!activeConnectionId) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+      <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2 animate-fade-in">
+        <div className="h-3 w-3 rounded-full bg-accent/30 animate-pulse-glow mb-2" />
         <p className="text-sm">Select a connection from the sidebar to start querying</p>
       </div>
     )

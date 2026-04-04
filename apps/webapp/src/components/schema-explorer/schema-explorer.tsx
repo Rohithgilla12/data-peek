@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { ChevronRight, ChevronDown, Database, Loader2 } from 'lucide-react'
+import { ChevronRight, Database, Loader2 } from 'lucide-react'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useSchemaStore } from '@/stores/schema-store'
@@ -51,21 +51,20 @@ export function SchemaExplorer() {
               onClick={() => toggleSchema(schema.name)}
               className="flex w-full items-center gap-1.5 px-3 py-1 text-xs hover:bg-muted/50 transition-colors"
             >
-              {isExpanded ? (
-                <ChevronDown className="h-3 w-3 text-muted-foreground" />
-              ) : (
-                <ChevronRight className="h-3 w-3 text-muted-foreground" />
-              )}
+              <ChevronRight className={`h-3 w-3 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
               <Database className="h-3 w-3 text-accent" />
               <span className="font-medium text-foreground">{schema.name}</span>
               <span className="ml-auto text-[10px] text-muted-foreground">
                 {schema.tables.length}
               </span>
             </button>
-            {isExpanded &&
-              schema.tables.map((table) => (
-                <SchemaTableItem key={table.name} table={table} schemaName={schema.name} />
-              ))}
+            {isExpanded && (
+              <div className="animate-expand">
+                {schema.tables.map((table) => (
+                  <SchemaTableItem key={table.name} table={table} schemaName={schema.name} />
+                ))}
+              </div>
+            )}
           </div>
         )
       })}

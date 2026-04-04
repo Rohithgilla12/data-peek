@@ -29,7 +29,7 @@ export function ConnectionCard({ connection }: ConnectionCardProps) {
   })
 
   return (
-    <div className="rounded-lg border border-border bg-muted/30 p-4">
+    <div className="rounded-lg border border-border bg-muted/30 p-4 animate-fade-in transition-all duration-200 hover:border-border/80 hover:bg-muted/40">
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-md bg-accent/10">
@@ -82,8 +82,8 @@ export function ConnectionCard({ connection }: ConnectionCardProps) {
         <div
           className={`mt-3 rounded-md px-3 py-1.5 text-xs ${
             testMutation.data.success
-              ? 'bg-success/10 text-success'
-              : 'bg-destructive/10 text-destructive'
+              ? 'bg-success/10 text-success animate-slide-up'
+              : 'bg-destructive/10 text-destructive animate-shake'
           }`}
         >
           {testMutation.data.message}
