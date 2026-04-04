@@ -91,32 +91,46 @@ export default function QueryPage() {
 
   return (
     <div className="flex h-full flex-col">
+      {/* Tab bar */}
       <TabContainer />
-      <QueryToolbar
-        onExecute={handleExecute}
-        onExplain={handleExplain}
-        isExecuting={activeTab?.isExecuting ?? false}
-      />
-      <div className="flex-1 min-h-0" style={{ height: '50%' }}>
-        <SqlEditor
-          value={activeTab?.sql ?? ''}
-          onChange={(sql) => updateSql(activeTabId, sql)}
+
+      {/* Editor section */}
+      <div className="flex flex-col border-b border-border" style={{ height: '45%' }}>
+        <div className="flex-1 min-h-0">
+          <SqlEditor
+            value={activeTab?.sql ?? ''}
+            onChange={(sql) => updateSql(activeTabId, sql)}
+            onExecute={handleExecute}
+          />
+        </div>
+        {/* Toolbar BELOW editor — matches desktop layout */}
+        <QueryToolbar
           onExecute={handleExecute}
+          onExplain={handleExplain}
+          isExecuting={activeTab?.isExecuting ?? false}
         />
       </div>
-      <div className="flex flex-col min-h-0" style={{ height: '50%' }}>
-        <ResultsStatus
-          rowCount={activeTab?.results?.rowCount ?? null}
-          durationMs={activeTab?.results?.durationMs ?? null}
-          error={activeTab?.error ?? null}
-          isExecuting={activeTab?.isExecuting ?? false}
-          rows={activeTab?.results?.rows}
-          fields={activeTab?.results?.fields}
-        />
-        {activeTab?.results && (
+
+      {/* Results section */}
+      <div className="flex flex-col flex-1 min-h-0">
+        {activeTab?.results ? (
           <ResultsTable rows={activeTab.results.rows} fields={activeTab.results.fields} />
+        ) : activeTab?.error ? (
+          <div className="flex-1" />
+        ) : (
+          <div className="flex-1" />
         )}
       </div>
+
+      {/* Bottom status bar — matches desktop "● 25 rows returned 466ms" */}
+      <ResultsStatus
+        rowCount={activeTab?.results?.rowCount ?? null}
+        durationMs={activeTab?.results?.durationMs ?? null}
+        error={activeTab?.error ?? null}
+        isExecuting={activeTab?.isExecuting ?? false}
+        rows={activeTab?.results?.rows}
+        fields={activeTab?.results?.fields}
+      />
     </div>
   )
 }
