@@ -3,6 +3,7 @@
 import { Play, FileSearch, Loader2 } from 'lucide-react'
 import { trpc } from '@/lib/trpc-client'
 import { ProBadge } from '@/components/upgrade/pro-badge'
+import { SaveQueryDialog } from '@/components/query/save-query-dialog'
 
 interface QueryToolbarProps {
   onExecute: () => void
@@ -43,6 +44,7 @@ export function QueryToolbar({ onExecute, onExplain, isExecuting }: QueryToolbar
           Explain
         </button>
       )}
+      <SaveQueryDialog />
     </div>
   )
 }
