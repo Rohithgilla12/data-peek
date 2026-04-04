@@ -1,6 +1,8 @@
 'use client'
 
 import { Play, FileSearch, Loader2 } from 'lucide-react'
+import { trpc } from '@/lib/trpc-client'
+import { ProBadge } from '@/components/upgrade/pro-badge'
 
 interface QueryToolbarProps {
   onExecute: () => void
@@ -9,6 +11,8 @@ interface QueryToolbarProps {
 }
 
 export function QueryToolbar({ onExecute, onExplain, isExecuting }: QueryToolbarProps) {
+  const { data: usage } = trpc.usage.current.useQuery()
+
   return (
     <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border">
       <button
@@ -24,14 +28,21 @@ export function QueryToolbar({ onExecute, onExplain, isExecuting }: QueryToolbar
         Run
         <kbd className="ml-1 text-[10px] opacity-60">&#8984;&#8629;</kbd>
       </button>
-      <button
-        onClick={onExplain}
-        disabled={isExecuting}
-        className="flex items-center gap-1.5 rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors disabled:opacity-50"
-      >
-        <FileSearch className="h-3 w-3" />
-        Explain
-      </button>
+      {usage?.plan === 'free' ? (
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Explain</span>
+          <ProBadge feature="EXPLAIN Plans" />
+        </div>
+      ) : (
+        <button
+          onClick={onExplain}
+          disabled={isExecuting}
+          className="flex items-center gap-1.5 rounded-md bg-muted px-3 py-1 text-xs text-muted-foreground hover:bg-muted/80 hover:text-foreground transition-colors disabled:opacity-50"
+        >
+          <FileSearch className="h-3 w-3" />
+          Explain
+        </button>
+      )}
     </div>
   )
 }

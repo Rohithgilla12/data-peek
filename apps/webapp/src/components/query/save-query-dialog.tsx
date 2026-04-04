@@ -5,6 +5,7 @@ import { Bookmark, X } from 'lucide-react'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useQueryStore } from '@/stores/query-store'
+import { ProBadge } from '@/components/upgrade/pro-badge'
 
 export function SaveQueryDialog() {
   const [open, setOpen] = useState(false)
@@ -14,6 +15,7 @@ export function SaveQueryDialog() {
   const { tabs, activeTabId } = useQueryStore()
   const activeTab = tabs.find((t) => t.id === activeTabId)
   const utils = trpc.useUtils()
+  const { data: usage } = trpc.usage.current.useQuery()
 
   const saveMutation = trpc.savedQueries.create.useMutation({
     onSuccess: () => {
@@ -25,6 +27,18 @@ export function SaveQueryDialog() {
   })
 
   if (!open) {
+    if (
+      usage?.plan === 'free' &&
+      (usage?.usage.savedQueriesUsed ?? 0) >= (usage?.limits.savedQueries ?? 10)
+    ) {
+      return (
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-muted-foreground">Save</span>
+          <ProBadge feature="Unlimited Saved Queries" />
+        </div>
+      )
+    }
+
     return (
       <button
         onClick={() => setOpen(true)}

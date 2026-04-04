@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Activity, Database, Gauge, Lock, RefreshCw } from 'lucide-react'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
+import { ProGate } from '@/components/upgrade/pro-gate'
 
 export default function HealthPage() {
   const { activeConnectionId } = useConnectionStore()
@@ -97,82 +98,88 @@ export default function HealthPage() {
           </div>
         </div>
 
-        <div className="rounded-lg border border-border p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Database className="h-4 w-4 text-accent" />
-            <h2 className="text-sm font-medium">Table Sizes</h2>
-            <span className="ml-auto text-xs text-muted-foreground">{tableSizes?.dbSize}</span>
-          </div>
-          <div className="space-y-1 max-h-60 overflow-y-auto">
-            {tableSizes?.tables.slice(0, 20).map((t) => (
-              <div
-                key={`${t.schema}.${t.table}`}
-                className="flex items-center gap-2 text-xs py-0.5"
-              >
-                <span className="text-foreground truncate flex-1">
-                  {t.schema}.{t.table}
-                </span>
-                <span className="text-muted-foreground">{t.rows.toLocaleString()} rows</span>
-                <span className="text-accent font-mono">{t.totalSize}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="rounded-lg border border-border p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Gauge className="h-4 w-4 text-accent" />
-            <h2 className="text-sm font-medium">Cache Hit Ratios</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <div
-                className={`text-2xl font-bold ${ratioColor(cacheStats?.bufferHitRatio ?? 0)}`}
-              >
-                {cacheStats?.bufferHitRatio ?? 0}%
-              </div>
-              <div className="text-xs text-muted-foreground">Buffer Cache</div>
+        <ProGate feature="Table Sizes">
+          <div className="rounded-lg border border-border p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Database className="h-4 w-4 text-accent" />
+              <h2 className="text-sm font-medium">Table Sizes</h2>
+              <span className="ml-auto text-xs text-muted-foreground">{tableSizes?.dbSize}</span>
             </div>
-            <div className="text-center">
-              <div
-                className={`text-2xl font-bold ${ratioColor(cacheStats?.indexHitRatio ?? 0)}`}
-              >
-                {cacheStats?.indexHitRatio ?? 0}%
-              </div>
-              <div className="text-xs text-muted-foreground">Index Cache</div>
+            <div className="space-y-1 max-h-60 overflow-y-auto">
+              {tableSizes?.tables.slice(0, 20).map((t) => (
+                <div
+                  key={`${t.schema}.${t.table}`}
+                  className="flex items-center gap-2 text-xs py-0.5"
+                >
+                  <span className="text-foreground truncate flex-1">
+                    {t.schema}.{t.table}
+                  </span>
+                  <span className="text-muted-foreground">{t.rows.toLocaleString()} rows</span>
+                  <span className="text-accent font-mono">{t.totalSize}</span>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
+        </ProGate>
 
-        <div className="rounded-lg border border-border p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Lock className="h-4 w-4 text-accent" />
-            <h2 className="text-sm font-medium">Locks & Blocking</h2>
-            <span className="ml-auto text-xs text-muted-foreground">{locks?.length ?? 0}</span>
-          </div>
-          {locks?.length === 0 && <p className="text-xs text-success">No blocking locks</p>}
-          <div className="space-y-2 max-h-60 overflow-y-auto">
-            {locks?.map((l, i) => (
-              <div key={i} className="rounded bg-muted/30 p-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-destructive">
-                    PID {l.blockedPid} blocked by {l.blockingPid}
-                  </span>
-                  <span
-                    className={
-                      l.waitDurationMs > 30000 ? 'text-destructive' : 'text-muted-foreground'
-                    }
-                  >
-                    {l.waitDuration}
-                  </span>
+        <ProGate feature="Cache Hit Ratios">
+          <div className="rounded-lg border border-border p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Gauge className="h-4 w-4 text-accent" />
+              <h2 className="text-sm font-medium">Cache Hit Ratios</h2>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center">
+                <div
+                  className={`text-2xl font-bold ${ratioColor(cacheStats?.bufferHitRatio ?? 0)}`}
+                >
+                  {cacheStats?.bufferHitRatio ?? 0}%
                 </div>
-                <div className="text-muted-foreground">
-                  {l.lockType} on {l.relation || 'unknown'}
-                </div>
+                <div className="text-xs text-muted-foreground">Buffer Cache</div>
               </div>
-            ))}
+              <div className="text-center">
+                <div
+                  className={`text-2xl font-bold ${ratioColor(cacheStats?.indexHitRatio ?? 0)}`}
+                >
+                  {cacheStats?.indexHitRatio ?? 0}%
+                </div>
+                <div className="text-xs text-muted-foreground">Index Cache</div>
+              </div>
+            </div>
           </div>
-        </div>
+        </ProGate>
+
+        <ProGate feature="Locks & Blocking">
+          <div className="rounded-lg border border-border p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Lock className="h-4 w-4 text-accent" />
+              <h2 className="text-sm font-medium">Locks & Blocking</h2>
+              <span className="ml-auto text-xs text-muted-foreground">{locks?.length ?? 0}</span>
+            </div>
+            {locks?.length === 0 && <p className="text-xs text-success">No blocking locks</p>}
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {locks?.map((l, i) => (
+                <div key={i} className="rounded bg-muted/30 p-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-destructive">
+                      PID {l.blockedPid} blocked by {l.blockingPid}
+                    </span>
+                    <span
+                      className={
+                        l.waitDurationMs > 30000 ? 'text-destructive' : 'text-muted-foreground'
+                      }
+                    >
+                      {l.waitDuration}
+                    </span>
+                  </div>
+                  <div className="text-muted-foreground">
+                    {l.lockType} on {l.relation || 'unknown'}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </ProGate>
       </div>
     </div>
   )
