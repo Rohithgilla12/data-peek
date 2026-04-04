@@ -17,6 +17,7 @@ import type {
   ActiveQuery,
   TableSizeEntry,
   LockEntry,
+  ColumnStatsResult,
 } from './types'
 
 export class PostgresWebAdapter implements WebDatabaseAdapter {
@@ -29,7 +30,7 @@ export class PostgresWebAdapter implements WebDatabaseAdapter {
       database: creds.database,
       user: creds.user,
       password: creds.password,
-      ssl: creds.ssl ? { rejectUnauthorized: false } : undefined,
+      ssl: creds.ssl === false ? undefined : { rejectUnauthorized: false },
       connectionTimeoutMillis: 10000,
     })
     await this.client.connect()
@@ -353,6 +354,47 @@ export class PostgresWebAdapter implements WebDatabaseAdapter {
       waitDuration: r.wait_duration ? String(r.wait_duration) : '0s',
       waitDurationMs: r.wait_duration_ms || 0,
     }))
+  }
+  async getColumnStats(
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStatsResult> {
+    if (!this.client) throw new Error('Not connected')
+    const ident = `"${schema}"."${table}"`
+    const colIdent = `"${column}"`
+
+    const [countResult, statsResult, topResult] = await Promise.all([
+      this.client.query(
+        `SELECT COUNT(*) as total, COUNT(*) - COUNT(${colIdent}) as nulls, COUNT(DISTINCT ${colIdent}) as distinct_count FROM ${ident}`
+      ),
+      this.client.query(
+        `SELECT MIN(${colIdent}::text) as min_val, MAX(${colIdent}::text) as max_val FROM ${ident} WHERE ${colIdent} IS NOT NULL`
+      ),
+      this.client.query(
+        `SELECT ${colIdent}::text as value, COUNT(*) as count FROM ${ident} WHERE ${colIdent} IS NOT NULL GROUP BY ${colIdent} ORDER BY count DESC LIMIT 10`
+      ),
+    ])
+
+    const total = Number(countResult.rows[0]?.total) || 0
+    const nullCount = Number(countResult.rows[0]?.nulls) || 0
+    const distinctCount = Number(countResult.rows[0]?.distinct_count) || 0
+
+    return {
+      totalRows: total,
+      nullCount,
+      nullPercent: total > 0 ? Math.round((nullCount / total) * 10000) / 100 : 0,
+      distinctCount,
+      distinctPercent: total > 0 ? Math.round((distinctCount / total) * 10000) / 100 : 0,
+      min: statsResult.rows[0]?.min_val ?? undefined,
+      max: statsResult.rows[0]?.max_val ?? undefined,
+      topValues: topResult.rows.map((r: { value: string | null; count: string | number }) => ({
+        value: r.value ?? 'NULL',
+        count: Number(r.count),
+        percent: total > 0 ? Math.round((Number(r.count) / total) * 10000) / 100 : 0,
+      })),
+    }
   }
 }
 

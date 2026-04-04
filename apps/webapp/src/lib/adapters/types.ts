@@ -51,6 +51,18 @@ export interface LockEntry {
   waitDurationMs: number
 }
 
+export interface ColumnStatsResult {
+  totalRows: number
+  nullCount: number
+  nullPercent: number
+  distinctCount: number
+  distinctPercent: number
+  min?: string
+  max?: string
+  avg?: string
+  topValues?: { value: string; count: number; percent: number }[]
+}
+
 export interface WebDatabaseAdapter {
   connect(creds: ConnectionCredentials): Promise<void>
   disconnect(): Promise<void>
@@ -61,4 +73,10 @@ export interface WebDatabaseAdapter {
   getTableSizes(): Promise<{ dbSize: string; tables: TableSizeEntry[] }>
   getCacheStats(): Promise<{ bufferHitRatio: number; indexHitRatio: number }>
   getLocks(): Promise<LockEntry[]>
+  getColumnStats(
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStatsResult>
 }

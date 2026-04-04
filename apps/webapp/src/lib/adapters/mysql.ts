@@ -16,6 +16,7 @@ import type {
   ActiveQuery,
   TableSizeEntry,
   LockEntry,
+  ColumnStatsResult,
 } from './types'
 
 const MYSQL_TYPE_MAP: Record<number, string> = {
@@ -312,6 +313,61 @@ export class MySQLWebAdapter implements WebDatabaseAdapter {
       waitDuration: `${r.wait_seconds || 0}s`,
       waitDurationMs: (r.wait_seconds || 0) * 1000,
     }))
+  }
+  async getColumnStats(
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStatsResult> {
+    if (!this.connection) throw new Error('Not connected')
+    const ident = `\`${schema}\`.\`${table}\``
+    const colIdent = `\`${column}\``
+
+    const [[countRows], [statsRows], [topRows]] = await Promise.all([
+      this.connection.query(
+        `SELECT COUNT(*) as total, COUNT(*) - COUNT(${colIdent}) as nulls, COUNT(DISTINCT ${colIdent}) as distinct_count FROM ${ident}`
+      ),
+      this.connection.query(
+        `SELECT MIN(CAST(${colIdent} AS CHAR)) as min_val, MAX(CAST(${colIdent} AS CHAR)) as max_val FROM ${ident} WHERE ${colIdent} IS NOT NULL`
+      ),
+      this.connection.query(
+        `SELECT CAST(${colIdent} AS CHAR) as value, COUNT(*) as count FROM ${ident} WHERE ${colIdent} IS NOT NULL GROUP BY ${colIdent} ORDER BY count DESC LIMIT 10`
+      ),
+    ])
+
+    interface CountRow {
+      total: string | number
+      nulls: string | number
+      distinct_count: string | number
+    }
+    interface StatsRow {
+      min_val: string | null
+      max_val: string | null
+    }
+    interface TopValueRow {
+      value: string | null
+      count: string | number
+    }
+
+    const total = Number((countRows as CountRow[])[0]?.total) || 0
+    const nullCount = Number((countRows as CountRow[])[0]?.nulls) || 0
+    const distinctCount = Number((countRows as CountRow[])[0]?.distinct_count) || 0
+
+    return {
+      totalRows: total,
+      nullCount,
+      nullPercent: total > 0 ? Math.round((nullCount / total) * 10000) / 100 : 0,
+      distinctCount,
+      distinctPercent: total > 0 ? Math.round((distinctCount / total) * 10000) / 100 : 0,
+      min: (statsRows as StatsRow[])[0]?.min_val ?? undefined,
+      max: (statsRows as StatsRow[])[0]?.max_val ?? undefined,
+      topValues: (topRows as TopValueRow[]).map((r) => ({
+        value: r.value ?? 'NULL',
+        count: Number(r.count),
+        percent: total > 0 ? Math.round((Number(r.count) / total) * 10000) / 100 : 0,
+      })),
+    }
   }
 }
 
