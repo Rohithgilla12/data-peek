@@ -120,9 +120,31 @@ const CellValue = React.memo(function CellValue({
     return <span className="text-muted-foreground/50 italic">NULL</span>
   }
 
+  // Handle boolean types with colored display
+  if (lowerType.includes('bool')) {
+    const boolVal = value === true || value === 'true' || value === 't' || value === 1
+    return (
+      <button
+        onClick={() => copy(String(value))}
+        className={`text-xs font-mono px-1.5 py-0.5 -mx-1 rounded hover:bg-accent/50 transition-colors ${
+          boolVal ? 'text-green-500' : 'text-red-400'
+        }`}
+      >
+        {String(value)}
+      </button>
+    )
+  }
+
   const stringValue = String(value)
   const isLong = stringValue.length > 50
-  const isMono = lowerType.includes('uuid') || lowerType.includes('int')
+  const isMono =
+    lowerType.includes('uuid') ||
+    lowerType.includes('int') ||
+    lowerType.includes('numeric') ||
+    lowerType.includes('decimal') ||
+    lowerType.includes('float') ||
+    lowerType.includes('double') ||
+    lowerType.includes('money')
 
   return (
     <TooltipProvider>

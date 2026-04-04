@@ -1741,11 +1741,39 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <p className="text-muted-foreground">Run a query to see results</p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Press {keys.mod}+Enter to execute
-                  </p>
+                <div className="text-center space-y-3 max-w-sm">
+                  <div className="size-10 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
+                    <Play className="size-5 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      {tab.query.trim() ? 'Ready to execute' : 'Write a query to get started'}
+                    </p>
+                    <p className="text-xs text-muted-foreground/60">
+                      {tab.query.trim()
+                        ? `Press ${keys.mod}+Enter to run your query`
+                        : 'Browse the schema explorer to view tables, or type a SQL query above'}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-4 pt-1">
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                      <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
+                        {keys.mod}Enter
+                      </kbd>
+                      <span>Run</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                      <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
+                        {keys.mod}
+                        {keys.shift}F
+                      </kbd>
+                      <span>Format</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                      <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">{keys.mod}K</kbd>
+                      <span>Search</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
