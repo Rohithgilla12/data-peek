@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
+import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
@@ -26,7 +27,9 @@ export default function RootLayout({
     >
       <html lang="en" className="dark">
         <body className="antialiased">
-          <Providers>{children}</Providers>
+          <Providers>
+            <NuqsAdapter>{children}</NuqsAdapter>
+          </Providers>
         </body>
       </html>
     </ClerkProvider>

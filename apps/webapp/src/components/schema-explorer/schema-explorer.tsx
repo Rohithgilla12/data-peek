@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
+import { useQueryState, parseAsString } from 'nuqs'
 import { ChevronRight, Database, Loader2, Search } from 'lucide-react'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
@@ -10,7 +11,7 @@ import { SchemaTableItem } from './schema-table-item'
 export function SchemaExplorer() {
   const { activeConnectionId } = useConnectionStore()
   const { schemas, setSchemas, expandedSchemas, toggleSchema } = useSchemaStore()
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useQueryState('schemaSearch', parseAsString.withDefault(''))
 
   const { data, isLoading, error } = trpc.schema.getSchemas.useQuery(
     { connectionId: activeConnectionId! },

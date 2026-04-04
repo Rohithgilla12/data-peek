@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useQueryState, parseAsStringLiteral } from 'nuqs'
 import { SchemaExplorer } from '@/components/schema-explorer/schema-explorer'
 import { SavedQueriesPanel } from '@/components/saved-queries/saved-queries-panel'
 import { QueryHistoryPanel } from '@/components/history/query-history-panel'
@@ -10,10 +10,14 @@ const tabs = [
   { id: 'saved', label: 'Saved' },
   { id: 'history', label: 'History' },
 ] as const
-type TabId = (typeof tabs)[number]['id']
+
+const sidebarTabs = ['schema', 'saved', 'history'] as const
 
 export function SidebarContent() {
-  const [activeTab, setActiveTab] = useState<TabId>('schema')
+  const [activeTab, setActiveTab] = useQueryState(
+    'sidebar',
+    parseAsStringLiteral(sidebarTabs).withDefault('schema'),
+  )
   return (
     <div className="flex flex-1 flex-col min-h-0">
       <div className="flex border-b border-border">
