@@ -1,6 +1,6 @@
 'use client'
 
-import { Key, ArrowRight } from 'lucide-react'
+import { Key, Link2 } from 'lucide-react'
 import type { ColumnInfo } from '@shared/index'
 
 const typeColors: Record<string, string> = {
@@ -33,16 +33,38 @@ const typeColors: Record<string, string> = {
 export function SchemaColumnItem({ column }: { column: ColumnInfo }) {
   const typeColor = typeColors[column.dataType] ?? 'text-muted-foreground'
 
+  const fkRef = column.foreignKey
+    ? `${column.foreignKey.referencedSchema}.${column.foreignKey.referencedTable}.${column.foreignKey.referencedColumn}`
+    : null
+
   return (
-    <div className="flex items-center gap-2 py-0.5 pl-10 pr-3 text-xs hover:bg-muted/50 group">
-      {column.isPrimaryKey && <Key className="h-3 w-3 text-yellow-500 flex-shrink-0" />}
+    <div
+      className="flex items-center gap-2 py-0.5 pl-10 pr-3 text-xs hover:bg-muted/50 group"
+      title={
+        [
+          fkRef ? `FK → ${fkRef}` : null,
+          column.defaultValue ? `Default: ${column.defaultValue}` : null,
+        ]
+          .filter(Boolean)
+          .join('\n') || undefined
+      }
+    >
+      {column.isPrimaryKey ? (
+        <Key className="h-3 w-3 text-yellow-500 flex-shrink-0" />
+      ) : column.foreignKey ? (
+        <Link2 className="h-3 w-3 text-accent flex-shrink-0" />
+      ) : null}
       <span className="text-foreground truncate">{column.name}</span>
+      {column.defaultValue && (
+        <span className="text-[9px] text-muted-foreground/50 flex-shrink-0 truncate max-w-[80px]">
+          ={column.defaultValue}
+        </span>
+      )}
       <span className={`ml-auto flex-shrink-0 font-mono text-[10px] ${typeColor}`}>
         {column.dataType}
       </span>
       {column.foreignKey && (
         <span className="flex items-center gap-0.5 text-[10px] text-accent flex-shrink-0">
-          <ArrowRight className="h-2.5 w-2.5" />
           {column.foreignKey.referencedTable}
         </span>
       )}
