@@ -4,7 +4,6 @@ import type {
 } from './adapters/types'
 import { PostgresWebAdapter } from './adapters/postgres'
 import { MySQLWebAdapter } from './adapters/mysql'
-import { MSSQLWebAdapter } from './adapters/mssql'
 import { decryptCredentials } from './encryption'
 
 interface CachedConnection {
@@ -41,8 +40,6 @@ function createAdapter(dbType: string): WebDatabaseAdapter {
       return new PostgresWebAdapter()
     case 'mysql':
       return new MySQLWebAdapter()
-    case 'mssql':
-      return new MSSQLWebAdapter()
     default:
       throw new Error(`Unsupported database type: ${dbType}`)
   }

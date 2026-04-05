@@ -28,7 +28,6 @@
     "drizzle-orm": "^0.44.7",
     "lucide-react": "^0.510.0",
     "monaco-editor": "^0.55.1",
-    "mssql": "^11.0.1",
     "mysql2": "^3.15.3",
     "next": "16.0.7",
     "nuqs": "^2.8.9",
@@ -43,7 +42,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/mssql": "^9.1.8",
     "@types/node": "^22",
     "@types/pg": "^8.15.6",
     "@types/react": "^19",

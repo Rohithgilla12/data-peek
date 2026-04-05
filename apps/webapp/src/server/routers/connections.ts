@@ -7,7 +7,7 @@ import { encryptCredentials, decryptCredentials } from "@/lib/encryption";
 
 const connectionInput = z.object({
   name: z.string().min(1).max(100),
-  dbType: z.enum(["postgresql", "mysql", "mssql"]),
+  dbType: z.enum(["postgresql", "mysql"]),
   environment: z
     .enum(["production", "staging", "development", "local"])
     .default("development"),
@@ -216,23 +216,6 @@ export const connectionsRouter = createRouter({
           });
           await conn.query("SELECT 1");
           await conn.end();
-        } else if (connection.dbType === "mssql") {
-          const mssql = await import("mssql");
-          const pool = new mssql.default.ConnectionPool({
-            server: credentials.host,
-            port: credentials.port,
-            database: credentials.database,
-            user: credentials.user,
-            password: credentials.password,
-            options: {
-              encrypt: connection.sslEnabled,
-              trustServerCertificate: true,
-              connectTimeout: 10000,
-            },
-          });
-          await pool.connect();
-          await pool.request().query("SELECT 1");
-          await pool.close();
         }
 
         await ctx.db

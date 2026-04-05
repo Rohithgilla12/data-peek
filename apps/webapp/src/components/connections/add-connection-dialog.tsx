@@ -5,7 +5,7 @@ import { Plus, X, Link } from 'lucide-react'
 import { trpc } from '@/lib/trpc-client'
 
 function parseConnectionString(str: string): {
-  dbType: 'postgresql' | 'mysql' | 'mssql'
+  dbType: 'postgresql' | 'mysql'
   host: string
   port: number
   database: string
@@ -16,11 +16,9 @@ function parseConnectionString(str: string): {
   try {
     const trimmed = str.trim()
 
-    let dbType: 'postgresql' | 'mysql' | 'mssql' = 'postgresql'
+    let dbType: 'postgresql' | 'mysql' = 'postgresql'
     if (trimmed.startsWith('mysql://')) {
       dbType = 'mysql'
-    } else if (trimmed.startsWith('mssql://') || trimmed.startsWith('sqlserver://')) {
-      dbType = 'mssql'
     } else if (
       !trimmed.startsWith('postgresql://') &&
       !trimmed.startsWith('postgres://')
@@ -30,7 +28,7 @@ function parseConnectionString(str: string): {
 
     const url = new URL(trimmed)
     const host = url.hostname
-    const defaultPort = dbType === 'postgresql' ? 5432 : dbType === 'mysql' ? 3306 : 1433
+    const defaultPort = dbType === 'postgresql' ? 5432 : 3306
     const port = url.port ? parseInt(url.port) : defaultPort
     const database = url.pathname.replace(/^\//, '')
     const user = decodeURIComponent(url.username)
@@ -67,7 +65,7 @@ export function AddConnectionDialog() {
 
   const [form, setForm] = useState({
     name: '',
-    dbType: 'postgresql' as 'postgresql' | 'mysql' | 'mssql',
+    dbType: 'postgresql' as 'postgresql' | 'mysql',
     environment: 'development' as 'production' | 'staging' | 'development' | 'local',
     host: '',
     port: 5432,
@@ -85,7 +83,7 @@ export function AddConnectionDialog() {
   function handleUrlParse() {
     const parsed = parseConnectionString(connectionString)
     if (!parsed) {
-      setParseError('Invalid connection string. Expected: postgresql://user:pass@host:port/dbname or mssql://user:pass@host:1433/dbname')
+      setParseError('Invalid connection string. Expected: postgresql://user:pass@host:port/dbname or mysql://user:pass@host:3306/dbname')
       return
     }
     setParseError('')
@@ -146,7 +144,7 @@ export function AddConnectionDialog() {
               className="mt-1 w-full rounded-md border border-border bg-input px-3 py-1.5 text-sm text-foreground font-mono focus:outline-none focus:ring-1 focus:ring-ring"
             />
             <p className="mt-1 text-[10px] text-muted-foreground">
-              Supports postgresql://, postgres://, mysql://, mssql://, and sqlserver:// URLs
+              Supports postgresql://, postgres://, and mysql:// URLs
             </p>
           </div>
           {parseError && <p className="text-xs text-destructive">{parseError}</p>}
@@ -180,16 +178,15 @@ export function AddConnectionDialog() {
             <select
               value={form.dbType}
               onChange={(e) => {
-                const dbType = e.target.value as 'postgresql' | 'mysql' | 'mssql'
+                const dbType = e.target.value as 'postgresql' | 'mysql'
                 updateField('dbType', dbType)
-                const defaultPort = dbType === 'postgresql' ? 5432 : dbType === 'mysql' ? 3306 : 1433
+                const defaultPort = dbType === 'postgresql' ? 5432 : 3306
                 updateField('port', defaultPort)
               }}
               className="mt-1 w-full rounded-md border border-border bg-input px-3 py-1.5 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
             >
               <option value="postgresql">PostgreSQL</option>
               <option value="mysql">MySQL</option>
-              <option value="mssql">SQL Server</option>
             </select>
           </div>
         </div>
