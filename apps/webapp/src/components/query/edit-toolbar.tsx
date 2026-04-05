@@ -1,25 +1,95 @@
-'use client'
+"use client";
 
-import { Pencil, Save, X, Plus, Trash2 } from 'lucide-react'
-import { Button, Badge } from '@data-peek/ui'
-import { useEditStore } from '@/stores/edit-store'
-import { useQueryStore } from '@/stores/query-store'
+import { Pencil, Save, X, Plus } from "lucide-react";
+import { Button, Badge } from "@data-peek/ui";
+import { useEditStore } from "@/stores/edit-store";
+import { useSchemaStore } from "@/stores/schema-store";
+import { useQueryStore } from "@/stores/query-store";
 
 interface EditToolbarProps {
-  tabId: string
-  onSave: () => void
-  onAddRow: () => void
-  isSaving: boolean
+  tabId: string;
+  onSave: () => void;
+  onAddRow: () => void;
+  isSaving: boolean;
 }
 
-export function EditToolbar({ tabId, onSave, onAddRow, isSaving }: EditToolbarProps) {
-  const { isInEditMode, enterEditMode, exitEditMode, revertAllChanges, hasPendingChanges, getPendingChangesCount } =
-    useEditStore()
+function getEditContextFromSql(
+  sql: string,
+  schemas: {
+    name: string;
+    tables: {
+      name: string;
+      type: string;
+      columns: {
+        name: string;
+        dataType: string;
+        isNullable: boolean;
+        isPrimaryKey: boolean;
+        defaultValue?: string;
+        ordinalPosition: number;
+      }[];
+    }[];
+  }[],
+) {
+  const match =
+    sql.match(/\bFROM\s+(?:"([^"]+)"|(\w+))\.(?:"([^"]+)"|(\w+))/i) ??
+    sql.match(/\bFROM\s+(?:"([^"]+)"|(\w+))\b/i);
 
-  const isEditing = isInEditMode(tabId)
-  const hasChanges = hasPendingChanges(tabId)
-  const counts = getPendingChangesCount(tabId)
-  const totalChanges = counts.updates + counts.inserts + counts.deletes
+  if (!match) return null;
+
+  let schemaName: string | undefined;
+  let tableName: string;
+
+  if (match[3] || match[4]) {
+    schemaName = match[1] ?? match[2];
+    tableName = match[3] ?? match[4];
+  } else {
+    tableName = match[1] ?? match[2];
+  }
+
+  for (const schema of schemas) {
+    if (schemaName && schema.name !== schemaName) continue;
+    const tableInfo = schema.tables.find((t) => t.name === tableName);
+    if (!tableInfo) continue;
+    const primaryKeyColumns = tableInfo.columns
+      .filter((c) => c.isPrimaryKey)
+      .map((c) => c.name);
+    if (primaryKeyColumns.length === 0) continue;
+    return {
+      schema: schema.name,
+      table: tableInfo.name,
+      primaryKeyColumns,
+      columns: tableInfo.columns,
+    };
+  }
+  return null;
+}
+
+export function EditToolbar({
+  tabId,
+  onSave,
+  onAddRow,
+  isSaving,
+}: EditToolbarProps) {
+  const {
+    isInEditMode,
+    enterEditMode,
+    exitEditMode,
+    revertAllChanges,
+    hasPendingChanges,
+    getPendingChangesCount,
+  } = useEditStore();
+  const { schemas } = useSchemaStore();
+  const activeTab = useQueryStore((s) => s.tabs.find((t) => t.id === tabId));
+
+  const isEditing = isInEditMode(tabId);
+  const hasChanges = hasPendingChanges(tabId);
+  const counts = getPendingChangesCount(tabId);
+  const totalChanges = counts.updates + counts.inserts + counts.deletes;
+
+  const editContext = activeTab?.sql
+    ? getEditContextFromSql(activeTab.sql, schemas)
+    : null;
 
   if (!isEditing) {
     return (
@@ -27,25 +97,28 @@ export function EditToolbar({ tabId, onSave, onAddRow, isSaving }: EditToolbarPr
         variant="ghost"
         size="sm"
         onClick={() => {
-          enterEditMode(tabId, {
-            schema: '',
-            table: '',
-            primaryKeyColumns: [],
-            columns: [],
-          })
+          if (editContext) enterEditMode(tabId, editContext);
         }}
+        disabled={!editContext}
         className="gap-1.5 text-muted-foreground"
-        title="Enter edit mode"
+        title={
+          editContext
+            ? "Enter edit mode"
+            : "Edit mode requires a single-table query with primary keys"
+        }
       >
         <Pencil className="h-3 w-3" />
         Edit
       </Button>
-    )
+    );
   }
 
   return (
     <div className="flex items-center gap-1.5 px-3 py-1 border-b border-accent/20 bg-accent/5 shrink-0">
-      <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-accent/30 text-accent">
+      <Badge
+        variant="outline"
+        className="text-[10px] px-1.5 py-0 border-accent/30 text-accent"
+      >
         EDIT MODE
       </Badge>
 
@@ -64,11 +137,16 @@ export function EditToolbar({ tabId, onSave, onAddRow, isSaving }: EditToolbarPr
 
       {hasChanges && (
         <span className="text-[10px] text-muted-foreground tabular-nums">
-          {counts.updates > 0 && `${counts.updates} update${counts.updates > 1 ? 's' : ''}`}
-          {counts.updates > 0 && (counts.inserts > 0 || counts.deletes > 0) && ', '}
-          {counts.inserts > 0 && `${counts.inserts} insert${counts.inserts > 1 ? 's' : ''}`}
-          {counts.inserts > 0 && counts.deletes > 0 && ', '}
-          {counts.deletes > 0 && `${counts.deletes} delete${counts.deletes > 1 ? 's' : ''}`}
+          {counts.updates > 0 &&
+            `${counts.updates} update${counts.updates > 1 ? "s" : ""}`}
+          {counts.updates > 0 &&
+            (counts.inserts > 0 || counts.deletes > 0) &&
+            ", "}
+          {counts.inserts > 0 &&
+            `${counts.inserts} insert${counts.inserts > 1 ? "s" : ""}`}
+          {counts.inserts > 0 && counts.deletes > 0 && ", "}
+          {counts.deletes > 0 &&
+            `${counts.deletes} delete${counts.deletes > 1 ? "s" : ""}`}
         </span>
       )}
 
@@ -99,13 +177,13 @@ export function EditToolbar({ tabId, onSave, onAddRow, isSaving }: EditToolbarPr
         variant="ghost"
         size="sm"
         onClick={() => {
-          revertAllChanges(tabId)
-          exitEditMode(tabId)
+          revertAllChanges(tabId);
+          exitEditMode(tabId);
         }}
         className="gap-1 text-xs text-muted-foreground"
       >
         Exit Edit
       </Button>
     </div>
-  )
+  );
 }

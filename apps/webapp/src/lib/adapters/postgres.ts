@@ -27,6 +27,7 @@ function escapeIdentifier(s: string): string {
 export class PostgresWebAdapter implements WebDatabaseAdapter {
   private client: pg.Client | null = null;
   private connectionConfig: pg.ClientConfig | null = null;
+  private backendPid: number | null = null;
 
   async connect(creds: ConnectionCredentials): Promise<void> {
     this.connectionConfig = {
@@ -41,6 +42,8 @@ export class PostgresWebAdapter implements WebDatabaseAdapter {
     this.client = new pg.Client(this.connectionConfig);
     await this.client.connect();
     await this.client.query("SET statement_timeout = 30000");
+    const pidResult = await this.client.query("SELECT pg_backend_pid() as pid");
+    this.backendPid = pidResult.rows[0]?.pid ?? null;
   }
 
   async disconnect(): Promise<void> {
@@ -53,9 +56,9 @@ export class PostgresWebAdapter implements WebDatabaseAdapter {
   async query(sql: string, timeoutMs = 30000): Promise<WebQueryResult> {
     if (!this.client) throw new Error("Not connected");
 
-    await this.client.query(
-      `SET statement_timeout = ${Math.min(timeoutMs, 300000)}`,
-    );
+    await this.client.query("SET statement_timeout TO $1", [
+      Math.min(timeoutMs, 300000),
+    ]);
 
     const start = performance.now();
     const result = await this.client.query(sql);
@@ -92,15 +95,13 @@ export class PostgresWebAdapter implements WebDatabaseAdapter {
   }
 
   async cancelQuery(): Promise<void> {
-    if (!this.client || !this.connectionConfig) return;
+    if (!this.backendPid || !this.connectionConfig) return;
     const cancelClient = new pg.Client(this.connectionConfig);
     try {
       await cancelClient.connect();
-      const pidResult = await this.client.query("SELECT pg_backend_pid() as pid");
-      const pid = pidResult.rows[0]?.pid;
-      if (pid) {
-        await cancelClient.query("SELECT pg_cancel_backend($1)", [pid]);
-      }
+      await cancelClient.query("SELECT pg_cancel_backend($1)", [
+        this.backendPid,
+      ]);
     } finally {
       await cancelClient.end().catch(() => {});
     }
@@ -112,9 +113,9 @@ export class PostgresWebAdapter implements WebDatabaseAdapter {
   ): Promise<{ rowsAffected: number; durationMs: number }> {
     if (!this.client) throw new Error("Not connected");
 
-    await this.client.query(
-      `SET statement_timeout = ${Math.min(timeoutMs, 300000)}`,
-    );
+    await this.client.query("SET statement_timeout TO $1", [
+      Math.min(timeoutMs, 300000),
+    ]);
 
     const start = performance.now();
     const result = await this.client.query(sql);
