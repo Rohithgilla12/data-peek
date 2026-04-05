@@ -82,6 +82,80 @@ export const queriesRouter = createRouter({
       }
     }),
 
+  cancel: protectedProcedure
+    .input(
+      z.object({
+        connectionId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const connection = await ctx.db.query.userConnections.findFirst({
+        where: and(
+          eq(userConnections.id, input.connectionId),
+          eq(userConnections.customerId, ctx.customerId)
+        ),
+      })
+
+      if (!connection) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Connection not found' })
+      }
+
+      const adapter = await getAdapter(
+        connection.id,
+        connection.dbType,
+        connection.encryptedCredentials,
+        connection.iv,
+        connection.authTag,
+        ctx.userId
+      )
+
+      try {
+        await adapter.cancelQuery()
+        return { success: true }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Cancel failed'
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message })
+      }
+    }),
+
+  executeEdit: protectedProcedure
+    .input(
+      z.object({
+        connectionId: z.string().uuid(),
+        sql: z.string().min(1).max(100000),
+        timeoutMs: z.number().int().min(1000).max(300000).default(30000),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const connection = await ctx.db.query.userConnections.findFirst({
+        where: and(
+          eq(userConnections.id, input.connectionId),
+          eq(userConnections.customerId, ctx.customerId)
+        ),
+      })
+
+      if (!connection) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Connection not found' })
+      }
+
+      const adapter = await getAdapter(
+        connection.id,
+        connection.dbType,
+        connection.encryptedCredentials,
+        connection.iv,
+        connection.authTag,
+        ctx.userId
+      )
+
+      try {
+        const result = await adapter.execute(input.sql, input.timeoutMs)
+        return result
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Edit execution failed'
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message })
+      }
+    }),
+
   explain: protectedProcedure
     .input(
       z.object({

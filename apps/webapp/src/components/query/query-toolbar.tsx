@@ -1,6 +1,6 @@
 'use client'
 
-import { Play, FileSearch, Loader2, Wand2, Square } from 'lucide-react'
+import { Play, FileSearch, Wand2, Square } from 'lucide-react'
 import { Button } from '@data-peek/ui'
 import { trpc } from '@/lib/trpc-client'
 import { ProBadge } from '@/components/upgrade/pro-badge'
@@ -10,10 +10,12 @@ import { useConnectionStore } from '@/stores/connection-store'
 interface QueryToolbarProps {
   onExecute: () => void
   onExplain: () => void
+  onFormat: () => void
+  onCancel: () => void
   isExecuting: boolean
 }
 
-export function QueryToolbar({ onExecute, onExplain, isExecuting }: QueryToolbarProps) {
+export function QueryToolbar({ onExecute, onExplain, onFormat, onCancel, isExecuting }: QueryToolbarProps) {
   const { data: usage } = trpc.usage.current.useQuery()
   const { data: connections } = trpc.connections.list.useQuery()
   const { activeConnectionId } = useConnectionStore()
@@ -22,25 +24,26 @@ export function QueryToolbar({ onExecute, onExplain, isExecuting }: QueryToolbar
   return (
     <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-border bg-muted/30 shrink-0">
       {/* Run / Cancel button */}
-      <Button
-        size="sm"
-        onClick={onExecute}
-        disabled={isExecuting}
-        className="gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90 hover:shadow-[0_0_12px_oklch(0.62_0.15_250/0.3)] transition-all duration-200 press-effect"
-      >
-        {isExecuting ? (
-          <>
-            <Square className="h-3 w-3 fill-current" />
-            Cancel
-          </>
-        ) : (
-          <>
-            <Play className="h-3 w-3" />
-            Run
-            <kbd className="ml-1 text-[10px] opacity-60">&#8984;&#8629;</kbd>
-          </>
-        )}
-      </Button>
+      {isExecuting ? (
+        <Button
+          size="sm"
+          onClick={onCancel}
+          className="gap-1.5 bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-all duration-200 press-effect"
+        >
+          <Square className="h-3 w-3 fill-current" />
+          Cancel
+        </Button>
+      ) : (
+        <Button
+          size="sm"
+          onClick={onExecute}
+          className="gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90 hover:shadow-[0_0_12px_oklch(0.62_0.15_250/0.3)] transition-all duration-200 press-effect"
+        >
+          <Play className="h-3 w-3" />
+          Run
+          <kbd className="ml-1 text-[10px] opacity-60">&#8984;&#8629;</kbd>
+        </Button>
+      )}
 
       {/* Explain */}
       {usage?.plan === 'free' ? (
@@ -64,13 +67,14 @@ export function QueryToolbar({ onExecute, onExplain, isExecuting }: QueryToolbar
       {/* Separator */}
       <div className="h-4 w-px bg-border mx-1" />
 
-      {/* Format — TODO: wire up sql-formatter */}
+      {/* Format */}
       <Button
         variant="ghost"
         size="sm"
+        onClick={onFormat}
+        disabled={isExecuting}
         className="gap-1.5 text-muted-foreground"
-        title="Format SQL (coming soon)"
-        disabled
+        title="Format SQL (⌘⇧F)"
       >
         <Wand2 className="h-3 w-3" />
         Format

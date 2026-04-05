@@ -8,13 +8,16 @@ interface SqlEditorProps {
   value: string
   onChange: (value: string) => void
   onExecute: () => void
+  onFormat?: () => void
+  editorRef?: React.MutableRefObject<editor.IStandaloneCodeEditor | null>
 }
 
-export function SqlEditor({ value, onChange, onExecute }: SqlEditorProps) {
-  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+export function SqlEditor({ value, onChange, onExecute, onFormat, editorRef }: SqlEditorProps) {
+  const localRef = useRef<editor.IStandaloneCodeEditor | null>(null)
 
   const handleMount: OnMount = useCallback((editor, monaco) => {
-    editorRef.current = editor
+    localRef.current = editor
+    if (editorRef) editorRef.current = editor
 
     monaco.editor.defineTheme('data-peek-dark', {
       base: 'vs-dark',
@@ -43,8 +46,12 @@ export function SqlEditor({ value, onChange, onExecute }: SqlEditorProps) {
       onExecute()
     })
 
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
+      onFormat?.()
+    })
+
     editor.focus()
-  }, [onExecute])
+  }, [onExecute, onFormat, editorRef])
 
   return (
     <Editor
