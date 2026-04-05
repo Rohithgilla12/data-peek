@@ -74,7 +74,7 @@ const CellValue = memo(function CellValue({ value, dataType }: { value: unknown;
 
   if (typeof value === 'boolean' || dataType === 'bool' || dataType === 'boolean') {
     return (
-      <button onClick={handleCopy} className={`text-left hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${value ? 'text-green-400' : 'text-red-400'}`}>
+      <button onClick={handleCopy} className={`text-left font-mono text-xs hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${value ? 'text-green-400' : 'text-red-400'}`}>
         {String(value)}
       </button>
     )
@@ -92,7 +92,14 @@ const CellValue = memo(function CellValue({ value, dataType }: { value: unknown;
 
   const str = String(value)
   const isLong = str.length > 50
-  const isMono = dataType.includes('uuid') || dataType.includes('int')
+  const isMono =
+    dataType.includes('uuid') ||
+    dataType.includes('int') ||
+    dataType.includes('numeric') ||
+    dataType.includes('decimal') ||
+    dataType.includes('float') ||
+    dataType.includes('double') ||
+    dataType.includes('money')
 
   return (
     <button

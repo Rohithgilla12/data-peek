@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect } from 'react'
+import { Play } from 'lucide-react'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useQueryStore } from '@/stores/query-store'
@@ -118,7 +119,29 @@ export default function QueryPage() {
         ) : activeTab?.error ? (
           <div className="flex-1" />
         ) : (
-          <div className="flex-1" />
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center space-y-3 max-w-sm">
+              <div className="size-10 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
+                <Play className="size-5 text-muted-foreground" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  {activeTab?.sql.trim() ? 'Ready to execute' : 'Write a query to get started'}
+                </p>
+                <p className="text-xs text-muted-foreground/60">
+                  {activeTab?.sql.trim()
+                    ? 'Press \u2318/Ctrl+Enter to run your query'
+                    : 'Browse the schema explorer to view tables, or type a SQL query above'}
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-4 pt-1">
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                  <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">\u2318/Ctrl+Enter</kbd>
+                  <span>Run</span>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

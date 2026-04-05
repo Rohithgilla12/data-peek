@@ -833,6 +833,27 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             return fkContent
           }
 
+          // Handle boolean types with colored display
+          if (lowerType.includes('bool')) {
+            const boolVal = value === true || value === 'true' || value === 't' || value === 1
+            const boolContent = (
+              <span
+                className={cn(
+                  'text-xs font-mono px-1.5 py-0.5 rounded',
+                  boolVal ? 'text-green-500' : 'text-red-400',
+                  canEdit && !isMasked && 'cursor-pointer hover:bg-accent/50'
+                )}
+                onClick={handleActivate}
+              >
+                {String(value)}
+              </span>
+            )
+            if (isMasked) {
+              return <MaskedEditCell hoverToPeek={hoverToPeek}>{boolContent}</MaskedEditCell>
+            }
+            return boolContent
+          }
+
           const stringValue = String(value)
           const isLong = stringValue.length > 50
 

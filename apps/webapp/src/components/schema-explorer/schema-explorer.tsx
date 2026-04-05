@@ -68,7 +68,7 @@ export function SchemaExplorer() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tables, routines..."
+            placeholder="Search tables, columns, routines..."
             className="w-full rounded-md border border-border/50 bg-input/50 pl-7 pr-2 py-1 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
@@ -103,7 +103,7 @@ export function SchemaExplorer() {
         })}
         {filteredSchemas.length === 0 && search && (
           <div className="px-3 py-4 text-xs text-muted-foreground text-center">
-            No tables match "{search}"
+            No tables or columns match "{search}"
           </div>
         )}
       </div>
