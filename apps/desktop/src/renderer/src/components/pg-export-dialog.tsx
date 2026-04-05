@@ -1,13 +1,5 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Progress } from '@/components/ui/progress'
+
+import { Button, Label, Progress, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@data-peek/ui'
 import { usePgDumpStore } from '@/stores/pg-dump-store'
 import { useConnectionStore } from '@/stores'
 import type { PgExportMode, SchemaInfo } from '@shared/index'

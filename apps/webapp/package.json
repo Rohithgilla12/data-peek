@@ -1,0 +1,51 @@
+{
+  "name": "@data-peek/webapp",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack --port 3001",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@clerk/nextjs": "^6.35.5",
+    "@data-peek/ui": "workspace:*",
+    "@monaco-editor/react": "^4.7.0",
+    "@tanstack/react-query": "^5.75.5",
+    "@tanstack/react-table": "^8.21.3",
+    "@tanstack/react-virtual": "^3.13.12",
+    "@trpc/client": "^11.1.2",
+    "@trpc/next": "^11.1.2",
+    "@trpc/react-query": "^11.1.2",
+    "@trpc/server": "^11.1.2",
+    "drizzle-orm": "^0.44.7",
+    "lucide-react": "^0.510.0",
+    "monaco-editor": "^0.55.1",
+    "mysql2": "^3.15.3",
+    "next": "16.0.7",
+    "nuqs": "^2.8.9",
+    "pg": "^8.16.3",
+    "postgres": "^3.4.7",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "superjson": "^2.2.6",
+    "zod": "^3.24.4",
+    "zustand": "^5.0.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^22",
+    "@types/pg": "^8.15.6",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.7",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

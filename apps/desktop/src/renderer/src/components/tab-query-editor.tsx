@@ -22,15 +22,10 @@ import {
   ActivitySquare,
   Share2
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, cn, keys, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Badge, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@data-peek/ui'
 import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
 import { usePanelCollapse } from '@/hooks/use-panel-collapse'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+
 import {
   useTabStore,
   useConnectionStore,
@@ -56,7 +51,6 @@ import {
 import type { EditContext } from '@data-peek/shared'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
-import { cn, keys } from '@/lib/utils'
 import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
 import {
   buildQualifiedTableRef,
@@ -66,7 +60,6 @@ import {
   quoteIdentifier
 } from '@/lib/sql-helpers'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
 import { ERDVisualization } from '@/components/erd-visualization'
 import { ExecutionPlanViewer } from '@/components/execution-plan-viewer'
@@ -80,22 +73,11 @@ import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image
 import { TelemetryPanel } from '@/components/telemetry-panel'
 import { BenchmarkButton } from '@/components/benchmark-button'
 import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
-import { Badge } from '@/components/ui/badge'
 import { ColumnStatsPanel } from '@/components/column-stats-panel'
 import { useColumnStatsStore } from '@/stores/column-stats-store'
 import type { DataTableColumn as DtColumn } from '@/components/data-table'
 import { MaskingToolbar } from '@/components/masking-toolbar'
 import { useMaskingStore } from '@/stores/masking-store'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog'
 import type { ExportData } from '@/lib/export'
 
 /** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
@@ -1741,11 +1723,39 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center">
-                <div className="text-center space-y-2">
-                  <p className="text-muted-foreground">Run a query to see results</p>
-                  <p className="text-xs text-muted-foreground/70">
-                    Press {keys.mod}+Enter to execute
-                  </p>
+                <div className="text-center space-y-3 max-w-sm">
+                  <div className="size-10 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
+                    <Play className="size-5 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      {tab.query.trim() ? 'Ready to execute' : 'Write a query to get started'}
+                    </p>
+                    <p className="text-xs text-muted-foreground/60">
+                      {tab.query.trim()
+                        ? `Press ${keys.mod}+Enter to run your query`
+                        : 'Browse the schema explorer to view tables, or type a SQL query above'}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-center gap-4 pt-1">
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                      <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
+                        {keys.mod}Enter
+                      </kbd>
+                      <span>Run</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                      <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
+                        {keys.mod}
+                        {keys.shift}F
+                      </kbd>
+                      <span>Format</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                      <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">{keys.mod}K</kbd>
+                      <span>Search</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

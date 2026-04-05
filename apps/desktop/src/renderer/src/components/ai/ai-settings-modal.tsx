@@ -11,25 +11,8 @@ import {
   Key,
   CheckCircle2
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { cn } from '@/lib/utils'
+import { Button, Input, Label, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@data-peek/ui'
+
 import type { AIProvider, AIMultiProviderConfig, AIProviderConfig } from '@shared/index'
 import { AI_PROVIDERS } from '@shared/index'
 

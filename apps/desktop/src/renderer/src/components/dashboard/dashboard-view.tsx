@@ -11,8 +11,7 @@ import {
   Timer
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@data-peek/ui'
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import { useDashboardStore } from '@/stores'
 import { AddWidgetDialog } from './add-widget-dialog'

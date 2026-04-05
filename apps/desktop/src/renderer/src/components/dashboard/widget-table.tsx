@@ -1,14 +1,7 @@
 import { useMemo, useState } from 'react'
 import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table'
-import { cn } from '@/lib/utils'
+
+import { cn, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@data-peek/ui'
 import type { TableWidgetConfig } from '@shared/index'
 
 interface WidgetTableProps {

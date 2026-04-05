@@ -1,9 +1,4 @@
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { cn } from '@/lib/utils'
+import { Badge, Button, Input, Popover, PopoverContent, PopoverTrigger, ScrollArea, cn } from '@data-peek/ui'
 import type { ColumnInfo, SchemaInfo } from '@shared/index'
 import {
   Background,

@@ -1,24 +1,8 @@
 import { useState, useEffect } from 'react'
 import { Check, Play, Loader2, FileText, Database } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+import { Button, Input, Label, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+
 import { SQLEditor } from '@/components/sql-editor'
 import { useConnectionStore, useSavedQueryStore, useDashboardStore } from '@/stores'
 import type {

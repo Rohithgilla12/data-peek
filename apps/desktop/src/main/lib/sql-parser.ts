@@ -328,11 +328,7 @@ export async function* splitStatementsStream(
         while (i < buffer.length) {
           if (buffer[i] === "'" && buffer[i + 1] === "'") {
             i += 2
-          } else if (
-            config.backslashEscape &&
-            buffer[i] === '\\' &&
-            buffer[i + 1] === "'"
-          ) {
+          } else if (config.backslashEscape && buffer[i] === '\\' && buffer[i + 1] === "'") {
             i += 2
           } else if (buffer[i] === "'") {
             i++
@@ -485,4 +481,3 @@ export async function* splitStatementsStream(
     yield lastStmt
   }
 }
-

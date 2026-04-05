@@ -1,18 +1,8 @@
 import { useState } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronRight, AlertCircle, Database } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Button, Input, Checkbox, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+
 import type { IndexDefinition, IndexColumn, IndexMethod, ColumnDefinition } from '@data-peek/shared'
-import { cn } from '@/lib/utils'
 import type { ValidationError } from '@/stores/ddl-store'
 
 const INDEX_METHODS: { value: IndexMethod; label: string; description: string }[] = [

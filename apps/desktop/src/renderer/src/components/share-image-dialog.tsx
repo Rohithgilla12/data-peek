@@ -1,24 +1,8 @@
 import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
 import { toBlob } from 'html-to-image'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+
+import { Button, Label, Switch, cn, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
 import { Copy, Download, Check, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 type BackgroundStyle =
   | 'brand-blue'
@@ -86,23 +70,19 @@ export function ShareImageDialog({
         return { background: 'oklch(0.96 0.005 250)' }
       case 'raindrop':
         return {
-          background:
-            'linear-gradient(140deg, oklch(0.65 0.12 240) 0%, oklch(0.35 0.12 260) 100%)'
+          background: 'linear-gradient(140deg, oklch(0.65 0.12 240) 0%, oklch(0.35 0.12 260) 100%)'
         }
       case 'falcon':
         return {
-          background:
-            'linear-gradient(140deg, oklch(0.8 0.06 210) 0%, oklch(0.3 0.04 280) 100%)'
+          background: 'linear-gradient(140deg, oklch(0.8 0.06 210) 0%, oklch(0.3 0.04 280) 100%)'
         }
       case 'sunset':
         return {
-          background:
-            'linear-gradient(140deg, oklch(0.8 0.14 85) 0%, oklch(0.6 0.18 30) 100%)'
+          background: 'linear-gradient(140deg, oklch(0.8 0.14 85) 0%, oklch(0.6 0.18 30) 100%)'
         }
       case 'breeze':
         return {
-          background:
-            'linear-gradient(140deg, oklch(0.55 0.18 340) 0%, oklch(0.45 0.18 290) 100%)'
+          background: 'linear-gradient(140deg, oklch(0.55 0.18 340) 0%, oklch(0.45 0.18 290) 100%)'
         }
       case 'vercel':
         return {
@@ -256,8 +236,7 @@ export function ShareImageDialog({
                   <div
                     className="mt-3 flex items-center justify-end gap-1.5 font-mono text-[0.6875rem] tracking-wide"
                     style={{
-                      color:
-                        theme === 'light' ? 'oklch(0.55 0.02 250)' : 'oklch(0.55 0.08 250)'
+                      color: theme === 'light' ? 'oklch(0.55 0.02 250)' : 'oklch(0.55 0.08 250)'
                     }}
                   >
                     <span style={{ opacity: 0.7 }}>via</span>

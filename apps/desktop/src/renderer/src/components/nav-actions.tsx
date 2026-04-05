@@ -13,21 +13,10 @@ import {
   Sparkles
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem
-} from '@/components/ui/sidebar'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button, Popover, PopoverContent, PopoverTrigger, Tooltip, TooltipContent, TooltipTrigger, keys, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@data-peek/ui'
+
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { formatSQL } from '@/lib/sql-formatter'
-import { keys } from '@/lib/utils'
 import { useQueryStore, useConnectionStore } from '@/stores'
 import { exportToSQL } from '@/lib/export'
 

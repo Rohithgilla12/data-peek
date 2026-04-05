@@ -13,10 +13,9 @@ import {
   horizontalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, cn } from '@data-peek/ui'
 import { Tab } from '@/components/tab'
 import { useTabStore, useConnectionStore } from '@/stores'
-import { cn } from '@/lib/utils'
 
 interface TabBarProps {
   className?: string

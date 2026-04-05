@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { User, Sparkles, Copy, Check, AlertTriangle, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@data-peek/ui'
 import { AISQLPreview } from './ai-sql-preview'
 import { AIChart, type ChartData } from './ai-chart'
 import { AIMetricCard, type MetricData } from './ai-metric-card'

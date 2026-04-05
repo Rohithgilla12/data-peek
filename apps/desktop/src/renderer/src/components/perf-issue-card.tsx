@@ -11,8 +11,7 @@ import {
   Clock,
   Repeat
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { cn, Button } from '@data-peek/ui'
 import type { PerformanceIssue, PerformanceIssueType } from '@data-peek/shared'
 
 interface PerfIssueCardProps {

@@ -1,15 +1,6 @@
 import { Settings } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
+import { Button, Switch, Label, Input, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@data-peek/ui'
+
 import { useSettingsStore } from '@/stores/settings-store'
 
 interface SettingsModalProps {

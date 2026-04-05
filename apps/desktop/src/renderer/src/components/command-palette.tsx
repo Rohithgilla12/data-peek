@@ -19,24 +19,13 @@ import {
   PinOff,
   Pencil
 } from 'lucide-react'
-import {
-  Command,
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-  CommandShortcut
-} from '@/components/ui/command'
+
 import { useTheme } from '@/components/theme-provider'
 import { DatabaseIcon } from '@/components/database-icons'
 import { useConnectionStore, useTabStore } from '@/stores'
 import { useSavedQueryStore } from '@/stores/saved-queries-store'
 import { useAIStore } from '@/stores/ai-store'
-import { cn, keys } from '@/lib/utils'
-import { useSidebar } from '@/components/ui/sidebar'
+import { cn, keys, useSidebar, Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator, CommandShortcut } from '@data-peek/ui'
 import type { SavedQuery } from '@shared/index'
 
 // Page types for navigation

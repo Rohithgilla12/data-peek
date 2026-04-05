@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { X, Link2, ChevronRight, Loader2, AlertCircle, Copy, Check } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { Button, Badge } from '@data-peek/ui'
 import type { ForeignKeyInfo, ConnectionConfig, ColumnInfo } from '@data-peek/shared'
 
 // Panel item in the stack

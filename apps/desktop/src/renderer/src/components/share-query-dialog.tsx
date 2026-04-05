@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { Label, Switch } from '@data-peek/ui'
 import {
   ShareImageDialog,
   type ShareImageTheme,
@@ -465,8 +464,7 @@ export function ShareQueryDialog({
               <code className="font-mono text-[13px] leading-[1.7] whitespace-pre-wrap break-words">
                 {tokenizeSQL(query).map((token, i) => {
                   const colors = getSyntaxColors(theme, background)
-                  const color =
-                    colors[token.type as keyof typeof colors] ?? colors.default
+                  const color = colors[token.type as keyof typeof colors] ?? colors.default
                   const isKeyword = token.type === 'keyword'
                   return (
                     <span

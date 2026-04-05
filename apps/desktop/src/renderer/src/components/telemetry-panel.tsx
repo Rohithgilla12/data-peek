@@ -1,4 +1,4 @@
-import { cn } from '@/lib/utils'
+import { cn, Button, Switch, Label } from '@data-peek/ui'
 import {
   calcPercentile,
   calcStdDev,
@@ -17,9 +17,6 @@ import {
   BarChart3,
   GanttChart
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Switch } from '@/components/ui/switch'
-import { Label } from '@/components/ui/label'
 import type { TelemetryViewMode } from '@/stores/telemetry-store'
 
 interface TelemetryPanelProps {

@@ -1,14 +1,7 @@
 import * as React from 'react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Input } from '@/components/ui/input'
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+
 import { useSettingsStore, PAGE_SIZE_OPTIONS, type PageSizeOption } from '@/stores/settings-store'
 
 interface PaginationControlsProps {

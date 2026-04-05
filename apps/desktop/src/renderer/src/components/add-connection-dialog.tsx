@@ -11,20 +11,11 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
-} from '@/components/ui/sheet'
+import { Button, Input, Collapsible, CollapsibleContent, CollapsibleTrigger, Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@data-peek/ui'
+
 import { useConnectionStore, type Connection } from '@/stores'
 import { DB_DEFAULTS, parseConnectionString } from '@/lib/connection-string-parser'
 import { PostgreSQLIcon, MySQLIcon, MSSQLIcon, SQLiteIcon } from './database-icons'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { SSHConfigSection } from './ssh-config-section'
 import type { SSHConfig, SSLConnectionOptions } from '@shared/index'
 import type { DatabaseType } from '@shared/index'

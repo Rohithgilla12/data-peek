@@ -9,9 +9,7 @@ import {
   ChevronRight,
   Repeat
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import { cn, Button, Badge } from '@data-peek/ui'
 import { PerfIssueCard } from './perf-issue-card'
 import type { PerformanceAnalysisResult, NplusOnePattern } from '@data-peek/shared'
 

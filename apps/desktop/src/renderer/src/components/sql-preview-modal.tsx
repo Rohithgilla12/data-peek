@@ -1,16 +1,7 @@
 import { Copy, Check, FileCode, AlertCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
+import { Button, Badge, cn, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@data-peek/ui'
+
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { cn } from '@/lib/utils'
 
 interface SqlPreviewModalProps {
   open: boolean

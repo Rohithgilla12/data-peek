@@ -1,10 +1,6 @@
 import { X, BarChart2 } from 'lucide-react'
 import type { ColumnStats, HistogramBucket, CommonValue } from '@shared/index'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Button, Badge, ScrollArea, Separator, Skeleton } from '@data-peek/ui'
 
 interface StatRowProps {
   label: string

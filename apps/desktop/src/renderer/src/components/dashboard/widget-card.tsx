@@ -9,15 +9,8 @@ import {
   Minimize2
 } from 'lucide-react'
 
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+import { Button, Card, CardContent, CardHeader, CardTitle, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@data-peek/ui'
+
 import { useDashboardStore } from '@/stores'
 import type { Widget, ChartWidgetConfig, KPIWidgetConfig, TableWidgetConfig } from '@shared/index'
 import { WidgetChart } from './widget-chart'

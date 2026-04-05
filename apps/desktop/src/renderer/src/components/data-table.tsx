@@ -24,21 +24,11 @@ import {
   Unlock
 } from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
-import { Input } from '@/components/ui/input'
+import { Input, Button, TableBody, TableCell, TableHead, TableHeader, TableRow, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Badge, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@data-peek/ui'
 
-import { Button } from '@/components/ui/button'
 import { JsonCellValue } from '@/components/json-cell-value'
 import { FKCellValue } from '@/components/fk-cell-value'
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Badge } from '@/components/ui/badge'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getTypeColor } from '@/lib/type-colors'
 import { PaginationControls } from '@/components/pagination-controls'
@@ -120,9 +110,31 @@ const CellValue = React.memo(function CellValue({
     return <span className="text-muted-foreground/50 italic">NULL</span>
   }
 
+  // Handle boolean types with colored display
+  if (lowerType.includes('bool')) {
+    const boolVal = value === true || value === 'true' || value === 't' || value === 1
+    return (
+      <button
+        onClick={() => copy(String(value))}
+        className={`text-xs font-mono px-1.5 py-0.5 -mx-1 rounded hover:bg-accent/50 transition-colors ${
+          boolVal ? 'text-green-500' : 'text-red-400'
+        }`}
+      >
+        {String(value)}
+      </button>
+    )
+  }
+
   const stringValue = String(value)
   const isLong = stringValue.length > 50
-  const isMono = lowerType.includes('uuid') || lowerType.includes('int')
+  const isMono =
+    lowerType.includes('uuid') ||
+    lowerType.includes('int') ||
+    lowerType.includes('numeric') ||
+    lowerType.includes('decimal') ||
+    lowerType.includes('float') ||
+    lowerType.includes('double') ||
+    lowerType.includes('money')
 
   return (
     <TooltipProvider>

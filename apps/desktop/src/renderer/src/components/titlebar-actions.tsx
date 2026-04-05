@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { X, Square, Minus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@data-peek/ui'
 
 export function TitlebarActions() {
   const handleMinimize = useCallback(() => {

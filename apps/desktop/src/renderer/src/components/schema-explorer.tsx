@@ -27,40 +27,16 @@ import {
   Focus,
   Upload,
   Download,
-  Shuffle
+  Shuffle,
+  Link2
 } from 'lucide-react'
 import { CsvImportDialog } from '@/components/csv-import-dialog'
 import { PgExportDialog } from '@/components/pg-export-dialog'
 import { PgImportDialog } from '@/components/pg-import-dialog'
 import { useImportStore, usePgDumpStore } from '@/stores'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-  DropdownMenuCheckboxItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem
-} from '@/components/ui/sidebar'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Badge, Button, Collapsible, CollapsibleContent, CollapsibleTrigger, Input, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator, DropdownMenuCheckboxItem, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from '@data-peek/ui'
+
 import { useConnectionStore, useTabStore, notify } from '@/stores'
 import type { TableInfo, RoutineInfo, QueryResult as IpcQueryResult } from '@shared/index'
 import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
@@ -227,7 +203,24 @@ function VirtualizedSchemaItems({
                         mview
                       </Badge>
                     )}
+                    {!isExpanded && (
+                      <span className="text-[10px] text-muted-foreground/60 group-hover/table:hidden">
+                        {table.columns.length}
+                      </span>
+                    )}
                   </SidebarMenuSubButton>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-5 p-0 opacity-0 group-hover/table:opacity-100 transition-opacity text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onTableClick(schemaName, table)
+                    }}
+                    title={`View ${table.name} data`}
+                  >
+                    <Play className="size-3" />
+                  </Button>
                   {table.type === 'table' && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -286,21 +279,28 @@ function VirtualizedSchemaItems({
                       <TooltipProvider key={column.name}>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default">
+                            <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default group/col">
                               {column.isPrimaryKey ? (
-                                <Key className="size-3 text-yellow-500" />
+                                <Key className="size-3 text-yellow-500 shrink-0" />
+                              ) : column.foreignKey ? (
+                                <Link2 className="size-3 text-blue-400 shrink-0" />
                               ) : (
-                                <Columns3 className="size-3" />
+                                <Columns3 className="size-3 shrink-0" />
                               )}
                               <span
-                                className={column.isPrimaryKey ? 'font-medium text-foreground' : ''}
+                                className={`truncate ${column.isPrimaryKey ? 'font-medium text-foreground' : ''}`}
                               >
                                 {column.name}
                               </span>
                               {!column.isNullable && !column.isPrimaryKey && (
-                                <span className="text-red-400 text-[10px]">*</span>
+                                <span className="text-red-400 text-[10px] shrink-0">*</span>
                               )}
                               <DataTypeBadge type={column.dataType} />
+                              {column.foreignKey && (
+                                <span className="text-[9px] text-blue-400/80 shrink-0 hidden group-hover/col:inline">
+                                  → {column.foreignKey.referencedTable}
+                                </span>
+                              )}
                             </div>
                           </TooltipTrigger>
                           <TooltipContent side="right" className="text-xs">
@@ -315,6 +315,19 @@ function VirtualizedSchemaItems({
                               </div>
                               {column.isPrimaryKey && (
                                 <div className="text-yellow-500">Primary Key</div>
+                              )}
+                              {column.foreignKey && (
+                                <div className="text-blue-400">
+                                  FK → {column.foreignKey.referencedSchema}.
+                                  {column.foreignKey.referencedTable}.
+                                  {column.foreignKey.referencedColumn}
+                                </div>
+                              )}
+                              {column.defaultValue && (
+                                <div>
+                                  <span className="text-muted-foreground">Default: </span>
+                                  {column.defaultValue}
+                                </div>
                               )}
                             </div>
                           </TooltipContent>
@@ -518,8 +531,13 @@ export function SchemaExplorer() {
           if (table.type === 'table' && !showTables) return false
           if (table.type === 'view' && !showViews) return false
           if (table.type === 'materialized_view' && !showMaterializedViews) return false
-          // Search filter
-          if (query && !table.name.toLowerCase().includes(query)) return false
+          // Search filter - match table name or column names
+          if (
+            query &&
+            !table.name.toLowerCase().includes(query) &&
+            !table.columns.some((c) => c.name.toLowerCase().includes(query))
+          )
+            return false
           return true
         })
 
@@ -528,8 +546,13 @@ export function SchemaExplorer() {
           // Type filter
           if (routine.type === 'function' && !showFunctions) return false
           if (routine.type === 'procedure' && !showProcedures) return false
-          // Search filter
-          if (query && !routine.name.toLowerCase().includes(query)) return false
+          // Search filter - match routine name or parameter names
+          if (
+            query &&
+            !routine.name.toLowerCase().includes(query) &&
+            !routine.parameters.some((p) => p.name.toLowerCase().includes(query))
+          )
+            return false
           return true
         })
 
@@ -1028,7 +1051,7 @@ export function SchemaExplorer() {
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search tables, routines..."
+              placeholder="Search tables, columns, routines..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="h-7 pl-7 pr-7 text-xs"
@@ -1048,7 +1071,9 @@ export function SchemaExplorer() {
         <SidebarMenu>
           {filteredSchemas.length === 0 ? (
             <div className="px-2 py-4 text-xs text-muted-foreground text-center">
-              {searchQuery ? 'No tables or routines match your search' : 'No schemas found'}
+              {searchQuery
+                ? 'No tables, columns, or routines match your search'
+                : 'No schemas found'}
             </div>
           ) : (
             filteredSchemas.map((schema) => (
@@ -1143,7 +1168,7 @@ export function SchemaExplorer() {
                                       <Table2
                                         className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : table.type === 'materialized_view' ? 'text-teal-500' : 'text-muted-foreground'}`}
                                       />
-                                      <span className="flex-1">{table.name}</span>
+                                      <span className="flex-1 truncate">{table.name}</span>
                                       {table.type === 'view' && (
                                         <Badge
                                           variant="outline"
@@ -1160,7 +1185,24 @@ export function SchemaExplorer() {
                                           mview
                                         </Badge>
                                       )}
+                                      {!expandedTables.has(`${schema.name}.${table.name}`) && (
+                                        <span className="text-[10px] text-muted-foreground/60 group-hover/table:hidden">
+                                          {table.columns.length}
+                                        </span>
+                                      )}
                                     </SidebarMenuSubButton>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="size-5 p-0 opacity-0 group-hover/table:opacity-100 transition-opacity text-primary"
+                                      onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleTableClick(schema.name, table)
+                                      }}
+                                      title={`View ${table.name} data`}
+                                    >
+                                      <Play className="size-3" />
+                                    </Button>
                                     {table.type === 'table' && (
                                       <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -1235,27 +1277,34 @@ export function SchemaExplorer() {
                                         <TooltipProvider key={column.name}>
                                           <Tooltip>
                                             <TooltipTrigger asChild>
-                                              <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default">
+                                              <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default group/col">
                                                 {column.isPrimaryKey ? (
-                                                  <Key className="size-3 text-yellow-500" />
+                                                  <Key className="size-3 text-yellow-500 shrink-0" />
+                                                ) : column.foreignKey ? (
+                                                  <Link2 className="size-3 text-blue-400 shrink-0" />
                                                 ) : (
-                                                  <Columns3 className="size-3" />
+                                                  <Columns3 className="size-3 shrink-0" />
                                                 )}
                                                 <span
-                                                  className={
+                                                  className={`truncate ${
                                                     column.isPrimaryKey
                                                       ? 'font-medium text-foreground'
                                                       : ''
-                                                  }
+                                                  }`}
                                                 >
                                                   {column.name}
                                                 </span>
                                                 {!column.isNullable && !column.isPrimaryKey && (
-                                                  <span className="text-red-400 text-[10px]">
+                                                  <span className="text-red-400 text-[10px] shrink-0">
                                                     *
                                                   </span>
                                                 )}
                                                 <DataTypeBadge type={column.dataType} />
+                                                {column.foreignKey && (
+                                                  <span className="text-[9px] text-blue-400/80 shrink-0 hidden group-hover/col:inline">
+                                                    → {column.foreignKey.referencedTable}
+                                                  </span>
+                                                )}
                                               </div>
                                             </TooltipTrigger>
                                             <TooltipContent side="right" className="text-xs">
@@ -1274,6 +1323,21 @@ export function SchemaExplorer() {
                                                 </div>
                                                 {column.isPrimaryKey && (
                                                   <div className="text-yellow-500">Primary Key</div>
+                                                )}
+                                                {column.foreignKey && (
+                                                  <div className="text-blue-400">
+                                                    FK → {column.foreignKey.referencedSchema}.
+                                                    {column.foreignKey.referencedTable}.
+                                                    {column.foreignKey.referencedColumn}
+                                                  </div>
+                                                )}
+                                                {column.defaultValue && (
+                                                  <div>
+                                                    <span className="text-muted-foreground">
+                                                      Default:{' '}
+                                                    </span>
+                                                    {column.defaultValue}
+                                                  </div>
                                                 )}
                                               </div>
                                             </TooltipContent>
