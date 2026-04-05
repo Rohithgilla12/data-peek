@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, sql } from 'drizzle-orm'
 import { TRPCError } from '@trpc/server'
 import { createRouter, protectedProcedure } from '../trpc'
 import { savedQueries } from '@/db/schema'
@@ -92,15 +92,16 @@ export const savedQueriesRouter = createRouter({
   incrementUsage: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
-      const existing = await ctx.db.query.savedQueries.findFirst({
-        where: and(eq(savedQueries.id, input.id), eq(savedQueries.customerId, ctx.customerId)),
-      })
-      if (!existing) throw new TRPCError({ code: 'NOT_FOUND' })
-
-      await ctx.db
+      const result = await ctx.db
         .update(savedQueries)
-        .set({ usageCount: (existing.usageCount ?? 0) + 1, updatedAt: new Date() })
-        .where(eq(savedQueries.id, input.id))
+        .set({ usageCount: sql`${savedQueries.usageCount} + 1`, updatedAt: new Date() })
+        .where(and(eq(savedQueries.id, input.id), eq(savedQueries.customerId, ctx.customerId)))
+        .returning({ id: savedQueries.id })
+
+      if (result.length === 0) {
+        throw new TRPCError({ code: 'NOT_FOUND' })
+      }
+
       return { success: true }
     }),
 })

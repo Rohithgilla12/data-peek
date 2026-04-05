@@ -56,19 +56,27 @@ export const queriesRouter = createRouter({
           rowCount: result.rowCount,
         })
 
-        await incrementUsage(ctx.customerId, 'queryCount')
+        try {
+          await incrementUsage(ctx.customerId, 'queryCount')
+        } catch (usageErr) {
+          console.error('Failed to increment usage counter', { customerId: ctx.customerId, error: usageErr })
+        }
 
         return result
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Query execution failed'
 
-        await ctx.db.insert(queryHistory).values({
-          customerId: ctx.customerId,
-          connectionId: input.connectionId,
-          query: input.sql,
-          status: 'error',
-          errorMessage: message,
-        })
+        try {
+          await ctx.db.insert(queryHistory).values({
+            customerId: ctx.customerId,
+            connectionId: input.connectionId,
+            query: input.sql,
+            status: 'error',
+            errorMessage: message,
+          })
+        } catch (historyErr) {
+          console.error('Failed to write error to query history', { customerId: ctx.customerId, error: historyErr })
+        }
 
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message })
       }
@@ -103,6 +111,11 @@ export const queriesRouter = createRouter({
         ctx.userId
       )
 
-      return adapter.explain(input.sql, input.analyze)
+      try {
+        return await adapter.explain(input.sql, input.analyze)
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Explain failed'
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message })
+      }
     }),
 })

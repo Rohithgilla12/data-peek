@@ -15,7 +15,9 @@ function cleanupStaleConnections() {
   const now = Date.now()
   for (const [key, cached] of connectionCache) {
     if (now - cached.lastUsed > CACHE_TTL_MS) {
-      cached.adapter.disconnect().catch(() => {})
+      cached.adapter.disconnect().catch((err) => {
+        console.error('Failed to disconnect stale connection', { connectionId: key, error: err })
+      })
       connectionCache.delete(key)
     }
   }
@@ -52,7 +54,9 @@ export async function getAdapter(
 export async function releaseAdapter(connectionId: string): Promise<void> {
   const cached = connectionCache.get(connectionId)
   if (cached) {
-    await cached.adapter.disconnect().catch(() => {})
+    await cached.adapter.disconnect().catch((err) => {
+      console.error('Failed to release adapter connection', { connectionId, error: err })
+    })
     connectionCache.delete(connectionId)
   }
 }

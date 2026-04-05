@@ -33,10 +33,15 @@ export function decryptCredentials(
   authTag: Buffer,
   userId: string
 ): Record<string, unknown> {
-  const key = deriveKey(userId)
-  const decipher = createDecipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH })
-  decipher.setAuthTag(authTag)
+  try {
+    const key = deriveKey(userId)
+    const decipher = createDecipheriv(ALGORITHM, key, iv, { authTagLength: AUTH_TAG_LENGTH })
+    decipher.setAuthTag(authTag)
 
-  const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()])
-  return JSON.parse(decrypted.toString('utf8'))
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()])
+    return JSON.parse(decrypted.toString('utf8'))
+  } catch (err) {
+    console.error('Credential decryption failed', { userId, error: err instanceof Error ? err.message : String(err) })
+    throw new Error('Failed to decrypt connection credentials. The connection may need to be re-created.')
+  }
 }
