@@ -1,18 +1,9 @@
 import * as React from 'react'
 import { Play, Send, ChevronDown, Clock } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import {
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem
-} from '@/components/ui/sidebar'
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@data-peek/ui'
+
 import { SQLEditor } from '@/components/sql-editor'
 import { useQueryStore, useConnectionStore, useTabStore, useSettingsStore } from '@/stores'
-import { cn } from '@/lib/utils'
 
 export function SidebarQuickQuery() {
   const hideQuickQueryPanel = useSettingsStore((s) => s.hideQuickQueryPanel)

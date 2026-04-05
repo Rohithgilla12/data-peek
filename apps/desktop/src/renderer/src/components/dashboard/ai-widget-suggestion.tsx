@@ -10,7 +10,7 @@ import {
   Table2
 } from 'lucide-react'
 
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@data-peek/ui'
 import type { ChartWidgetType, KPIFormat, WidgetType } from '@shared/index'
 
 interface AIWidgetSuggestionProps {

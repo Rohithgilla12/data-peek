@@ -18,17 +18,8 @@ import {
   Pencil,
   Check
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
+import { Button, Badge, ScrollArea, Tooltip, TooltipContent, TooltipTrigger, cn, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@data-peek/ui'
+
 import { AIMessage } from './ai-message'
 import { AISuggestions } from './ai-suggestions'
 import type { ConnectionConfig, SchemaInfo } from '@data-peek/shared'

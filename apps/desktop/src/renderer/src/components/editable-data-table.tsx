@@ -4,25 +4,14 @@ import { EditableCell } from '@/components/editable-cell'
 import { FKCellValue } from '@/components/fk-cell-value'
 import { JsonCellValue } from '@/components/json-cell-value'
 import { SqlPreviewModal } from '@/components/sql-preview-modal'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Input } from '@/components/ui/input'
-import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Badge, Button, Input, TableBody, TableCell, TableHead, TableHeader, TableRow, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@data-peek/ui'
+
 import {
   generateLimitClause,
   buildFullyQualifiedTableRef,
   quoteIdentifier
 } from '@/lib/sql-helpers'
 import { getTypeColor } from '@/lib/type-colors'
-import { cn } from '@/lib/utils'
 import { useEditStore } from '@/stores/edit-store'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useMaskingStore } from '@/stores/masking-store'

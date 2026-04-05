@@ -1,21 +1,9 @@
 import { useState, useMemo, useEffect } from 'react'
 import { Code2, Copy, Play, Trash2, Search, X, Filter, Pencil, Plus } from 'lucide-react'
 import type { SnippetCategory } from '@shared/index'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Button, Badge, Input, Dialog, DialogContent, DialogHeader, DialogTitle, ScrollArea, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+
 import { useSnippetStore, useConnectionStore, useTabStore } from '@/stores'
-import { cn } from '@/lib/utils'
 import { getSnippetCategoryColor, cleanSnippetTemplate } from '@/lib/built-in-snippets'
 import { CreateSnippetDialog } from './create-snippet-dialog'
 

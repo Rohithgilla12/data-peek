@@ -1,7 +1,6 @@
 import * as React from 'react'
 import { ExternalLink, Clock, Table2, ChevronDown, ChevronUp } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { Button, cn } from '@data-peek/ui'
 
 interface AIQueryResultProps {
   columns: Array<{ name: string; type: string }>

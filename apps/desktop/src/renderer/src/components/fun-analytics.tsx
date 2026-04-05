@@ -21,9 +21,7 @@ import {
   xpForLevel,
   type Achievement
 } from '@/stores/pokemon-buddy-store'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from '@/components/ui/sidebar'
-import { cn } from '@/lib/utils'
+import { Collapsible, CollapsibleContent, CollapsibleTrigger, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, cn } from '@data-peek/ui'
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms.toFixed(0)}ms`

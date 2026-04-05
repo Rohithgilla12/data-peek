@@ -11,19 +11,13 @@ import {
   Wand2,
   Bookmark
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+import { Button, keys, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@data-peek/ui'
+
 import { useQueryStore, useConnectionStore, useSnippetStore } from '@/stores'
 import { DataTable } from '@/components/data-table'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
-import { keys } from '@/lib/utils'
 
 export function QueryEditor() {
   const activeConnection = useConnectionStore((s) => s.getActiveConnection())

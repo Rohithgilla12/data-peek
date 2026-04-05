@@ -1,15 +1,7 @@
 import { useState } from 'react'
 import { Loader2, Key, ExternalLink } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
+import { Button, Input, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@data-peek/ui'
+
 import { useLicenseStore } from '@/stores/license-store'
 import { buildTrackingUrl } from '@shared/index'
 

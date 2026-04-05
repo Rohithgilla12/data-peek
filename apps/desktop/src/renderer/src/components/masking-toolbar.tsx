@@ -1,17 +1,7 @@
 import * as React from 'react'
 import { Eye, EyeOff, Lock, Plus, Trash2, X } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { Switch } from '@/components/ui/switch'
+import { Button, Badge, Input, Switch, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@data-peek/ui'
+
 import { useMaskingStore } from '@/stores/masking-store'
 
 const EMPTY_ARRAY: string[] = []

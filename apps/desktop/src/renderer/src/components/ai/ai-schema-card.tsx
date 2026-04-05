@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Table2, Key, ChevronDown, ChevronUp, Hash, Type } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@data-peek/ui'
 
 interface Column {
   name: string

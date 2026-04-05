@@ -1,20 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Play, Square, Eye, Loader2, AlertCircle, CheckCircle2, Shuffle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button, Input, Checkbox, ScrollArea, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+
 import { useTabStore, useConnectionStore, useDataGenStore } from '@/stores'
 import type { DataGeneratorTab } from '@/stores/tab-store'
 import type { ColumnGenerator, GeneratorType } from '@data-peek/shared'
-import { cn } from '@/lib/utils'
 
 const GENERATOR_TYPES: { value: GeneratorType; label: string }[] = [
   { value: 'auto-increment', label: 'Auto Increment' },

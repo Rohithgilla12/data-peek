@@ -1,17 +1,8 @@
 import { CheckCircle2, Database, FileText, Loader2, Play, RefreshCw, Search } from 'lucide-react'
 
 import { SQLEditor } from '@/components/sql-editor'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { cn } from '@/lib/utils'
+import { Input, Label, ScrollArea, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+
 import type {
   ChartWidgetType,
   ConnectionConfig,

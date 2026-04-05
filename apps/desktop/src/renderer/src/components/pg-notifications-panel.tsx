@@ -12,19 +12,8 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Button, Input, Textarea, Badge, ScrollArea, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+
 import {
   useTabStore,
   useConnectionStore,
@@ -33,7 +22,6 @@ import {
 } from '@/stores'
 import type { PgNotificationsTab } from '@/stores/tab-store'
 import type { PgNotificationEvent } from '@data-peek/shared'
-import { cn } from '@/lib/utils'
 
 interface Props {
   tabId: string

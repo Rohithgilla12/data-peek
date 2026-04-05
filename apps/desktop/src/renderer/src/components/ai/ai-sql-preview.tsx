@@ -9,9 +9,8 @@ import {
   Code2,
   Loader2
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, cn } from '@data-peek/ui'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { cn } from '@/lib/utils'
 
 interface AISQLPreviewProps {
   sql: string

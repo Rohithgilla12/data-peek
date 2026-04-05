@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { Label, Switch } from '@data-peek/ui'
 import {
   ShareImageDialog,
   type ShareImageTheme,

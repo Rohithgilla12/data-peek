@@ -1,13 +1,6 @@
 import { Eye, EyeOff, FolderOpen } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+
 import type { SSHAuthenticationMethod, SSHConfig } from '@shared/index'
 import { useState } from 'react'
 

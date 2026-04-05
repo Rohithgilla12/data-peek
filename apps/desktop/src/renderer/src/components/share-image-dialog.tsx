@@ -1,24 +1,8 @@
 import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
 import { toBlob } from 'html-to-image'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+
+import { Button, Label, Switch, cn, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
 import { Copy, Download, Check, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 
 type BackgroundStyle =
   | 'brand-blue'

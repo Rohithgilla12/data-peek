@@ -9,7 +9,7 @@ import {
   xpForLevel,
   type PokemonMove
 } from '@/stores/pokemon-buddy-store'
-import { cn } from '@/lib/utils'
+import { cn } from '@data-peek/ui'
 
 // Move effect animation component
 function MoveEffect({ move, onComplete }: { move: PokemonMove; onComplete: () => void }) {

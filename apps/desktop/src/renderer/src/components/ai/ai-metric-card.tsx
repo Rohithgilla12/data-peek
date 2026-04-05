@@ -1,5 +1,5 @@
 import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '@data-peek/ui'
 
 type MetricFormat = 'number' | 'currency' | 'percent' | 'duration'
 type TrendDirection = 'up' | 'down' | 'neutral'

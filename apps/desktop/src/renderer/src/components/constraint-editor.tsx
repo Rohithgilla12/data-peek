@@ -10,22 +10,8 @@ import {
   ChevronRight,
   AlertCircle
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+import { Button, Input, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@data-peek/ui'
+
 import type {
   ConstraintDefinition,
   ConstraintType,
@@ -33,7 +19,6 @@ import type {
   ColumnDefinition,
   SchemaInfo
 } from '@data-peek/shared'
-import { cn } from '@/lib/utils'
 import type { ValidationError } from '@/stores/ddl-store'
 
 const CONSTRAINT_TYPES: { type: ConstraintType; label: string; icon: typeof Key }[] = [

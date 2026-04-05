@@ -1,6 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button } from '@data-peek/ui'
 import { TabBar } from '@/components/tab-bar'
 import { TabQueryEditor } from '@/components/tab-query-editor'
 import { useTabStore, useConnectionStore } from '@/stores'

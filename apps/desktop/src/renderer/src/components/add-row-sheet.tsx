@@ -1,28 +1,6 @@
 import * as React from 'react'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter
-} from '@/components/ui/sheet'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+
+import { Button, Input, Label, Badge, Switch, Textarea, ScrollArea, Popover, PopoverContent, PopoverTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
 import {
   Sparkles,
   Clock,
@@ -44,7 +22,6 @@ import {
   Check,
   ChevronsUpDown
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
 import type { ColumnInfo } from '@data-peek/shared'
 
 // Field type detection

@@ -22,15 +22,10 @@ import {
   ActivitySquare,
   Share2
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { Button, cn, keys, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Badge, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@data-peek/ui'
 import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
 import { usePanelCollapse } from '@/hooks/use-panel-collapse'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+
 import {
   useTabStore,
   useConnectionStore,
@@ -56,7 +51,6 @@ import {
 import type { EditContext } from '@data-peek/shared'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
-import { cn, keys } from '@/lib/utils'
 import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
 import {
   buildQualifiedTableRef,
@@ -66,7 +60,6 @@ import {
   quoteIdentifier
 } from '@/lib/sql-helpers'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
 import { ERDVisualization } from '@/components/erd-visualization'
 import { ExecutionPlanViewer } from '@/components/execution-plan-viewer'
@@ -80,22 +73,11 @@ import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image
 import { TelemetryPanel } from '@/components/telemetry-panel'
 import { BenchmarkButton } from '@/components/benchmark-button'
 import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
-import { Badge } from '@/components/ui/badge'
 import { ColumnStatsPanel } from '@/components/column-stats-panel'
 import { useColumnStatsStore } from '@/stores/column-stats-store'
 import type { DataTableColumn as DtColumn } from '@/components/data-table'
 import { MaskingToolbar } from '@/components/masking-toolbar'
 import { useMaskingStore } from '@/stores/masking-store'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog'
 import type { ExportData } from '@/lib/export'
 
 /** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */

@@ -12,31 +12,12 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button, Input, Checkbox, Collapsible, CollapsibleContent, CollapsibleTrigger, ScrollArea, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@data-peek/ui'
+
 import { useTabStore, useConnectionStore } from '@/stores'
 import { useDDLStore, type ValidationError } from '@/stores/ddl-store'
 import type { TableDesignerTab } from '@/stores/tab-store'
 import type { ColumnDefinition, PostgresDataType, ConstraintType } from '@data-peek/shared'
-import { cn } from '@/lib/utils'
 import { ConstraintEditor } from '@/components/constraint-editor'
 import { IndexEditor } from '@/components/index-editor'
 

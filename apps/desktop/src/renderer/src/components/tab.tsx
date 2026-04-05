@@ -1,15 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { FileCode, Table2, Pin, X, Network } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from '@data-peek/ui'
 import type { Tab as TabType } from '@/stores/tab-store'
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger
-} from '@/components/ui/context-menu'
 
 interface TabProps {
   tab: TabType

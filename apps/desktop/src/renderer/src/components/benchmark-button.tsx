@@ -1,14 +1,5 @@
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+import { cn, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@data-peek/ui'
 import { Timer, Loader2, ChevronDown, Gauge } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 interface BenchmarkButtonProps {
   onBenchmark: (runCount: number) => void
