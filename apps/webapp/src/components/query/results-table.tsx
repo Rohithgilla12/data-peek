@@ -27,6 +27,20 @@ import {
   ChevronRight,
   ChevronsRight,
 } from 'lucide-react'
+import {
+  Button,
+  Badge,
+  Input,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@data-peek/ui'
 import type { QueryField } from '@shared/index'
 
 const typeColors: Record<string, string> = {
@@ -146,9 +160,9 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                   onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
                 >
                   <span>{field.name || `(column ${index + 1})`}</span>
-                  <span className={`text-[9px] px-1 py-0 font-mono border border-current/20 rounded ${typeColor}`}>
+                  <Badge variant="outline" className={`text-[9px] px-1 py-0 font-mono border-current/20 ${typeColor}`}>
                     {field.dataType}
-                  </span>
+                  </Badge>
                   {isSorted === 'asc' ? (
                     <ArrowUp className="ml-auto size-3 text-accent" />
                   ) : isSorted === 'desc' ? (
@@ -238,28 +252,32 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
       {/* Filter toggle bar */}
       <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/30 shrink-0">
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-              showFilters ? 'bg-muted text-foreground' : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+            className={`gap-1.5 text-xs ${
+              showFilters ? 'bg-muted text-foreground' : 'text-muted-foreground'
             }`}
           >
             <Filter className="size-3" />
             Filter
             {activeFilterCount > 0 && (
-              <span className="rounded-full bg-accent/20 px-1.5 text-[10px] text-accent ml-0.5">
+              <Badge variant="secondary" className="rounded-full bg-accent/20 px-1.5 text-[10px] text-accent ml-0.5">
                 {activeFilterCount}
-              </span>
+              </Badge>
             )}
-          </button>
+          </Button>
           {activeFilterCount > 0 && (
-            <button
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setColumnFilters([])}
-              className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="gap-1 text-xs text-muted-foreground"
             >
               <X className="size-3" />
               Clear all
-            </button>
+            </Button>
           )}
         </div>
         <div className="text-xs text-muted-foreground">
@@ -273,41 +291,41 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
       <div className="flex-1 min-h-0 border-b border-border/50 relative">
         <div ref={tableContainerRef} className="absolute inset-0 overflow-auto">
           <table className="w-full min-w-max text-sm">
-            <thead className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
+            <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <Fragment key={headerGroup.id}>
-                  <tr ref={headerRef} className="border-b border-border/50">
+                  <TableRow ref={headerRef} className="border-b border-border/50">
                     {headerGroup.headers.map((header) => (
-                      <th
+                      <TableHead
                         key={header.id}
-                        className="h-10 text-xs font-medium text-muted-foreground whitespace-nowrap bg-muted/95 px-4"
+                        className="text-xs text-muted-foreground bg-muted/95 px-4"
                       >
                         {header.isPlaceholder
                           ? null
                           : flexRender(header.column.columnDef.header, header.getContext())}
-                      </th>
+                      </TableHead>
                     ))}
-                  </tr>
+                  </TableRow>
                   {showFilters && (
-                    <tr className="border-b border-border/50 bg-muted/80">
+                    <TableRow className="border-b border-border/50 bg-muted/80 hover:bg-muted/80">
                       {headerGroup.headers.map((header) => (
-                        <th key={`filter-${header.id}`} className="h-9 py-1 px-2 bg-muted/80">
+                        <TableHead key={`filter-${header.id}`} className="h-9 py-1 px-2 bg-muted/80">
                           {header.column.getCanFilter() ? (
-                            <input
+                            <Input
                               placeholder="Filter..."
                               value={(header.column.getFilterValue() as string) ?? ''}
                               onChange={(e) => header.column.setFilterValue(e.target.value || undefined)}
-                              className="h-7 w-full rounded-md border border-border bg-background/80 px-2 text-xs text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-ring"
+                              className="h-7 text-xs bg-background/80 placeholder:text-muted-foreground/40"
                             />
                           ) : null}
-                        </th>
+                        </TableHead>
                       ))}
-                    </tr>
+                    </TableRow>
                   )}
                 </Fragment>
               ))}
-            </thead>
-            <tbody>
+            </TableHeader>
+            <TableBody>
               {tableRows.length ? (
                 shouldVirtualize && columnWidths.length > 0 ? (
                   <tr>
@@ -353,27 +371,27 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                   </tr>
                 ) : (
                   tableRows.map((row) => (
-                    <tr key={row.id} className="hover:bg-accent/30 border-b border-border/30 transition-colors">
+                    <TableRow key={row.id} className="hover:bg-accent/30 border-b border-border/30">
                       {row.getVisibleCells().map((cell) => {
                         const meta = cell.column.columnDef.meta as { dataType?: string } | undefined
                         const isNum = meta?.dataType ? numericTypes.has(meta.dataType) : false
                         return (
-                          <td key={cell.id} className={`py-2 px-4 text-sm whitespace-nowrap ${isNum ? 'text-right' : ''}`}>
+                          <TableCell key={cell.id} className={`py-2 px-4 text-sm ${isNum ? 'text-right' : ''}`}>
                             {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </td>
+                          </TableCell>
                         )
                       })}
-                    </tr>
+                    </TableRow>
                   ))
                 )
               ) : (
-                <tr>
-                  <td colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
                     No results.
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               )}
-            </tbody>
+            </TableBody>
           </table>
         </div>
       </div>
@@ -403,21 +421,21 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
           </select>
 
           <div className="flex items-center gap-0.5">
-            <button onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()} className="rounded p-1 hover:bg-muted disabled:opacity-30 transition-colors">
+            <Button variant="ghost" size="icon" className="size-7" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
               <ChevronsLeft className="size-3.5" />
-            </button>
-            <button onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()} className="rounded p-1 hover:bg-muted disabled:opacity-30 transition-colors">
+            </Button>
+            <Button variant="ghost" size="icon" className="size-7" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
               <ChevronLeft className="size-3.5" />
-            </button>
+            </Button>
             <span className="px-2 tabular-nums">
               {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
             </span>
-            <button onClick={() => table.nextPage()} disabled={!table.getCanNextPage()} className="rounded p-1 hover:bg-muted disabled:opacity-30 transition-colors">
+            <Button variant="ghost" size="icon" className="size-7" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
               <ChevronRight className="size-3.5" />
-            </button>
-            <button onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()} className="rounded p-1 hover:bg-muted disabled:opacity-30 transition-colors">
+            </Button>
+            <Button variant="ghost" size="icon" className="size-7" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
               <ChevronsRight className="size-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { Database, Trash2, Plug, Clock } from 'lucide-react'
+import { Button, Badge } from '@data-peek/ui'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
 
@@ -44,19 +45,23 @@ export function ConnectionCard({ connection }: ConnectionCardProps) {
           </div>
         </div>
         <div className="flex gap-1">
-          <button
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-muted-foreground"
             onClick={() => {
               setActiveConnection(connection.id)
             }}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             title="Use this connection"
           >
             <Plug className="h-4 w-4" />
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-muted-foreground"
             onClick={() => testMutation.mutate({ id: connection.id })}
             disabled={testMutation.isPending}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
             title="Test connection"
           >
             {testMutation.isPending ? (
@@ -64,30 +69,33 @@ export function ConnectionCard({ connection }: ConnectionCardProps) {
             ) : (
               <Database className="h-4 w-4" />
             )}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 text-muted-foreground hover:bg-destructive/80 hover:text-foreground"
             onClick={() => {
               if (confirm('Delete this connection?')) {
                 deleteMutation.mutate({ id: connection.id })
               }
             }}
-            className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/80 hover:text-foreground transition-colors"
             title="Delete connection"
           >
             <Trash2 className="h-4 w-4" />
-          </button>
+          </Button>
         </div>
       </div>
       {testMutation.data && (
-        <div
-          className={`mt-3 rounded-md px-3 py-1.5 text-xs ${
+        <Badge
+          variant="outline"
+          className={`mt-3 w-full justify-start rounded-md px-3 py-1.5 text-xs ${
             testMutation.data.success
-              ? 'bg-success/10 text-success animate-slide-up'
-              : 'bg-destructive/10 text-destructive animate-shake'
+              ? 'border-success/30 bg-success/10 text-success animate-slide-up'
+              : 'border-destructive/30 bg-destructive/10 text-destructive animate-shake'
           }`}
         >
           {testMutation.data.message}
-        </div>
+        </Badge>
       )}
     </div>
   )
