@@ -26,6 +26,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
+  Trash2,
+  Undo2,
 } from 'lucide-react'
 import {
   Button,
@@ -36,12 +38,10 @@ import {
   TableHead,
   TableRow,
   TableCell,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
 } from '@data-peek/ui'
 import type { QueryField } from '@shared/index'
+import { useEditStore } from '@/stores/edit-store'
+import { useQueryStore } from '@/stores/query-store'
 
 const typeColors: Record<string, string> = {
   int4: 'text-blue-400', int8: 'text-blue-400', integer: 'text-blue-400', bigint: 'text-blue-400',
@@ -132,6 +132,78 @@ const CellValue = memo(function CellValue({ value, dataType }: { value: unknown;
   )
 })
 
+function EditableCell({
+  value,
+  dataType,
+  rowIndex,
+  columnName,
+  tabId,
+  row,
+}: {
+  value: unknown
+  dataType: string
+  rowIndex: number
+  columnName: string
+  tabId: string
+  row: Record<string, unknown>
+}) {
+  const { isInEditMode, startCellEdit, cancelCellEdit, updateCellValue, isCellModified, getModifiedCellValue } = useEditStore()
+  const isEditing = isInEditMode(tabId)
+  const tabEdit = useEditStore((s) => s.tabEdits.get(tabId))
+  const isActiveCell = tabEdit?.editingCell?.rowIndex === rowIndex && tabEdit?.editingCell?.columnName === columnName
+  const isModified = isCellModified(tabId, rowIndex, columnName)
+  const displayValue = isModified ? getModifiedCellValue(tabId, rowIndex, columnName) : value
+  const [editValue, setEditValue] = useState('')
+
+  useEffect(() => {
+    if (isActiveCell) {
+      setEditValue(displayValue === null || displayValue === undefined ? '' : String(displayValue))
+    }
+  }, [isActiveCell, displayValue])
+
+  if (!isEditing) {
+    return <CellValue value={value} dataType={dataType} />
+  }
+
+  if (isActiveCell) {
+    return (
+      <input
+        autoFocus
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={() => {
+          const newValue = editValue === '' ? null : editValue
+          updateCellValue(tabId, rowIndex, columnName, newValue, row)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const newValue = editValue === '' ? null : editValue
+            updateCellValue(tabId, rowIndex, columnName, newValue, row)
+          } else if (e.key === 'Escape') {
+            cancelCellEdit(tabId)
+          }
+        }}
+        className="w-full h-6 bg-background border border-accent/50 rounded px-1 text-xs outline-none focus:border-accent"
+      />
+    )
+  }
+
+  return (
+    <button
+      className={`text-left w-full truncate px-1 -mx-1 rounded transition-colors cursor-text hover:bg-accent/20 ${
+        isModified ? 'bg-accent/10 text-accent ring-1 ring-accent/20' : ''
+      }`}
+      onClick={() => startCellEdit(tabId, rowIndex, columnName)}
+    >
+      {displayValue === null || displayValue === undefined ? (
+        <span className="text-muted-foreground/50 italic">NULL</span>
+      ) : (
+        <span className={isModified ? 'text-accent' : ''}>{String(displayValue)}</span>
+      )}
+    </button>
+  )
+}
+
 export function ResultsTable({ rows, fields }: ResultsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
@@ -140,9 +212,48 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
   const headerRef = useRef<HTMLTableRowElement>(null)
   const [columnWidths, setColumnWidths] = useState<number[]>([])
 
-  const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(
-    () =>
-      fields.map((field, index) => {
+  const { activeTabId } = useQueryStore()
+  const { isInEditMode, isRowMarkedForDeletion, markRowForDeletion, unmarkRowForDeletion } = useEditStore()
+  const isEditing = isInEditMode(activeTabId)
+
+  const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
+    const cols: ColumnDef<Record<string, unknown>>[] = []
+
+    if (isEditing) {
+      cols.push({
+        id: '_actions',
+        header: () => <span className="text-[10px]">Actions</span>,
+        cell: ({ row }) => {
+          const rowIndex = row.index
+          const isDeleted = isRowMarkedForDeletion(activeTabId, rowIndex)
+          return (
+            <div className="flex items-center gap-0.5">
+              {isDeleted ? (
+                <button
+                  onClick={() => unmarkRowForDeletion(activeTabId, rowIndex)}
+                  className="p-0.5 rounded hover:bg-accent/20 text-muted-foreground"
+                  title="Undo delete"
+                >
+                  <Undo2 className="size-3" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => markRowForDeletion(activeTabId, rowIndex, row.original)}
+                  className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
+                  title="Delete row"
+                >
+                  <Trash2 className="size-3" />
+                </button>
+              )}
+            </div>
+          )
+        },
+        size: 50,
+      })
+    }
+
+    cols.push(
+      ...fields.map((field, index) => {
         const columnId = field.name || `_col_${index}`
         const lowerType = field.dataType.toLowerCase()
         const isNumeric = numericTypes.has(lowerType)
@@ -150,7 +261,7 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
         return {
           id: columnId,
           accessorKey: field.name,
-          header: ({ column }) => {
+          header: ({ column }: { column: any }) => {
             const isSorted = column.getIsSorted()
             const typeColor = typeColors[field.dataType] ?? 'text-muted-foreground'
             return (
@@ -174,7 +285,21 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
               </div>
             )
           },
-          cell: ({ getValue }) => <CellValue value={getValue()} dataType={field.dataType} />,
+          cell: ({ getValue, row }: { getValue: () => unknown; row: Row<Record<string, unknown>> }) => {
+            if (isEditing) {
+              return (
+                <EditableCell
+                  value={getValue()}
+                  dataType={field.dataType}
+                  rowIndex={row.index}
+                  columnName={field.name}
+                  tabId={activeTabId}
+                  row={row.original}
+                />
+              )
+            }
+            return <CellValue value={getValue()} dataType={field.dataType} />
+          },
           filterFn: isNumeric
             ? (row: Row<Record<string, unknown>>, columnId: string, filterValue: unknown) => {
                 const value = row.getValue(columnId)
@@ -190,10 +315,12 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                 return String(numValue).includes(filterStr)
               }
             : 'includesString',
-        }
-      }),
-    [fields]
-  )
+        } as ColumnDef<Record<string, unknown>>
+      })
+    )
+
+    return cols
+  }, [fields, isEditing, activeTabId, isRowMarkedForDeletion, markRowForDeletion, unmarkRowForDeletion])
 
   const table = useReactTable({
     data: rows,
@@ -314,7 +441,7 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                             <Input
                               placeholder="Filter..."
                               value={(header.column.getFilterValue() as string) ?? ''}
-                              onChange={(e) => header.column.setFilterValue(e.target.value || undefined)}
+                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => header.column.setFilterValue(e.target.value || undefined)}
                               className="h-7 text-xs bg-background/80 placeholder:text-muted-foreground/40"
                             />
                           ) : null}
@@ -336,11 +463,14 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                       >
                         {virtualizer.getVirtualItems().map((virtualRow) => {
                           const row = tableRows[virtualRow.index]
+                          const isDeleted = isEditing && isRowMarkedForDeletion(activeTabId, row.index)
                           return (
                             <div
                               key={row.id}
                               role="row"
-                              className="hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center"
+                              className={`hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center ${
+                                isDeleted ? 'bg-destructive/10 line-through opacity-50' : ''
+                              }`}
                               style={{
                                 position: 'absolute',
                                 top: 0,
@@ -370,19 +500,27 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                     </td>
                   </tr>
                 ) : (
-                  tableRows.map((row) => (
-                    <TableRow key={row.id} className="hover:bg-accent/30 border-b border-border/30">
-                      {row.getVisibleCells().map((cell) => {
-                        const meta = cell.column.columnDef.meta as { dataType?: string } | undefined
-                        const isNum = meta?.dataType ? numericTypes.has(meta.dataType) : false
-                        return (
-                          <TableCell key={cell.id} className={`py-2 px-4 text-sm ${isNum ? 'text-right' : ''}`}>
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        )
-                      })}
-                    </TableRow>
-                  ))
+                  tableRows.map((row) => {
+                    const isDeleted = isEditing && isRowMarkedForDeletion(activeTabId, row.index)
+                    return (
+                      <TableRow
+                        key={row.id}
+                        className={`hover:bg-accent/30 border-b border-border/30 ${
+                          isDeleted ? 'bg-destructive/10 line-through opacity-50' : ''
+                        }`}
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const meta = cell.column.columnDef.meta as { dataType?: string } | undefined
+                          const isNum = meta?.dataType ? numericTypes.has(meta.dataType) : false
+                          return (
+                            <TableCell key={cell.id} className={`py-2 px-4 text-sm ${isNum ? 'text-right' : ''}`}>
+                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            </TableCell>
+                          )
+                        })}
+                      </TableRow>
+                    )
+                  })
                 )
               ) : (
                 <TableRow>

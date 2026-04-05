@@ -1,26 +1,44 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play } from 'lucide-react'
+import type { editor } from 'monaco-editor'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
 import { useQueryStore } from '@/stores/query-store'
+import { useEditStore } from '@/stores/edit-store'
+import { formatSQL } from '@/lib/sql-formatter'
 import { SqlEditor } from '@/components/query/sql-editor'
 import { QueryToolbar } from '@/components/query/query-toolbar'
 import { ResultsTable } from '@/components/query/results-table'
 import { ResultsStatus } from '@/components/query/results-status'
 import { TabContainer } from '@/components/query/tab-container'
+import { EditToolbar } from '@/components/query/edit-toolbar'
 
 export default function QueryPage() {
   const { activeConnectionId } = useConnectionStore()
   const { tabs, activeTabId, updateSql, setResults, setError, setExecuting } = useQueryStore()
   const activeTab = tabs.find((t) => t.id === activeTabId)
+  const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const { isInEditMode, buildEditSql, clearPendingChanges, addNewRow, getEditContext } = useEditStore()
+  const isEditing = isInEditMode(activeTabId)
+  const { data: connections } = trpc.connections.list.useQuery()
+  const activeConn = connections?.find((c) => c.id === activeConnectionId)
 
   const executeMutation = trpc.queries.execute.useMutation()
   const explainMutation = trpc.queries.explain.useMutation()
+  const cancelMutation = trpc.queries.cancel.useMutation()
+  const editMutation = trpc.queries.executeEdit.useMutation()
 
   const executeQuery = useCallback((sql: string) => {
     if (!activeConnectionId || !sql.trim()) return
+
+    abortControllerRef.current?.abort()
+    const controller = new AbortController()
+    abortControllerRef.current = controller
 
     setExecuting(activeTabId, true)
     setError(activeTabId, null)
@@ -29,12 +47,16 @@ export default function QueryPage() {
       { connectionId: activeConnectionId, sql },
       {
         onSuccess: (result) => {
-          setResults(activeTabId, result)
-          setExecuting(activeTabId, false)
+          if (!controller.signal.aborted) {
+            setResults(activeTabId, result)
+            setExecuting(activeTabId, false)
+          }
         },
         onError: (error) => {
-          setError(activeTabId, error.message)
-          setExecuting(activeTabId, false)
+          if (!controller.signal.aborted) {
+            setError(activeTabId, error.message)
+            setExecuting(activeTabId, false)
+          }
         },
       }
     )
@@ -45,15 +67,85 @@ export default function QueryPage() {
     executeQuery(activeTab.sql)
   }, [activeTab, executeQuery])
 
+  const handleCancel = useCallback(() => {
+    if (!activeConnectionId) return
+    abortControllerRef.current?.abort()
+    cancelMutation.mutate(
+      { connectionId: activeConnectionId },
+      {
+        onSettled: () => {
+          setExecuting(activeTabId, false)
+          setError(activeTabId, 'Query cancelled')
+        },
+      }
+    )
+  }, [activeConnectionId, activeTabId, cancelMutation, setExecuting, setError])
+
+  const handleFormat = useCallback(() => {
+    const store = useQueryStore.getState()
+    const tab = store.tabs.find((t) => t.id === store.activeTabId)
+    if (!tab?.sql.trim()) return
+    const formatted = formatSQL(tab.sql)
+    updateSql(store.activeTabId, formatted)
+  }, [updateSql])
+
+  const handleSaveEdits = useCallback(async () => {
+    if (!activeConnectionId || !activeTab?.results) return
+
+    const dbType = activeConn?.dbType ?? 'postgresql'
+    const statements = buildEditSql(activeTabId, activeTab.results.rows, dbType)
+    if (statements.length === 0) return
+
+    setIsSaving(true)
+    try {
+      const combinedSql = statements.join(';\n')
+      await editMutation.mutateAsync({
+        connectionId: activeConnectionId,
+        sql: combinedSql,
+      })
+      clearPendingChanges(activeTabId)
+      // Re-execute the original query to refresh results
+      if (activeTab.sql.trim()) {
+        executeQuery(activeTab.sql)
+      }
+    } catch (error) {
+      setError(activeTabId, error instanceof Error ? error.message : 'Save failed')
+    } finally {
+      setIsSaving(false)
+    }
+  }, [activeConnectionId, activeTabId, activeTab, activeConn, buildEditSql, clearPendingChanges, editMutation, executeQuery, setError])
+
+  const handleAddRow = useCallback(() => {
+    const context = getEditContext(activeTabId)
+    const defaultValues: Record<string, unknown> = {}
+    if (context) {
+      for (const col of context.columns) {
+        defaultValues[col.name] = null
+      }
+    } else if (activeTab?.results?.fields) {
+      for (const field of activeTab.results.fields) {
+        defaultValues[field.name] = null
+      }
+    }
+    addNewRow(activeTabId, defaultValues)
+  }, [activeTabId, getEditContext, addNewRow, activeTab])
+
   useEffect(() => {
     function onExecuteEvent() {
       const store = useQueryStore.getState()
       const tab = store.tabs.find((t) => t.id === store.activeTabId)
       if (tab?.sql.trim()) executeQuery(tab.sql)
     }
+    function onFormatEvent() {
+      handleFormat()
+    }
     window.addEventListener('datapeek:execute', onExecuteEvent)
-    return () => window.removeEventListener('datapeek:execute', onExecuteEvent)
-  }, [executeQuery])
+    window.addEventListener('datapeek:format', onFormatEvent)
+    return () => {
+      window.removeEventListener('datapeek:execute', onExecuteEvent)
+      window.removeEventListener('datapeek:format', onFormatEvent)
+    }
+  }, [executeQuery, handleFormat])
 
   const handleExplain = useCallback(() => {
     if (!activeConnectionId || !activeTab?.sql.trim()) return
@@ -102,15 +194,29 @@ export default function QueryPage() {
             value={activeTab?.sql ?? ''}
             onChange={(sql) => updateSql(activeTabId, sql)}
             onExecute={handleExecute}
+            onFormat={handleFormat}
+            editorRef={editorRef}
           />
         </div>
         {/* Toolbar BELOW editor — matches desktop layout */}
         <QueryToolbar
           onExecute={handleExecute}
           onExplain={handleExplain}
+          onFormat={handleFormat}
+          onCancel={handleCancel}
           isExecuting={activeTab?.isExecuting ?? false}
         />
       </div>
+
+      {/* Edit toolbar */}
+      {activeTab?.results && (
+        <EditToolbar
+          tabId={activeTabId}
+          onSave={handleSaveEdits}
+          onAddRow={handleAddRow}
+          isSaving={isSaving}
+        />
+      )}
 
       {/* Results section */}
       <div className="flex flex-col flex-1 min-h-0">
@@ -139,13 +245,17 @@ export default function QueryPage() {
                   <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">\u2318/Ctrl+Enter</kbd>
                   <span>Run</span>
                 </div>
+                <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                  <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">\u2318K</kbd>
+                  <span>Commands</span>
+                </div>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Bottom status bar — matches desktop "● 25 rows returned 466ms" */}
+      {/* Bottom status bar */}
       <ResultsStatus
         rowCount={activeTab?.results?.rowCount ?? null}
         durationMs={activeTab?.results?.durationMs ?? null}

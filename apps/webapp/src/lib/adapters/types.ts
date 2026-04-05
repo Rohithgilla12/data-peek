@@ -67,6 +67,7 @@ export interface WebDatabaseAdapter {
   connect(creds: ConnectionCredentials): Promise<void>
   disconnect(): Promise<void>
   query(sql: string, timeoutMs?: number): Promise<WebQueryResult>
+  cancelQuery(): Promise<void>
   getSchemas(): Promise<SchemaInfo[]>
   explain(sql: string, analyze: boolean): Promise<WebExplainResult>
   getActiveQueries(): Promise<ActiveQuery[]>
@@ -79,4 +80,5 @@ export interface WebDatabaseAdapter {
     column: string,
     dataType: string
   ): Promise<ColumnStatsResult>
+  execute(sql: string, timeoutMs?: number): Promise<{ rowsAffected: number; durationMs: number }>
 }

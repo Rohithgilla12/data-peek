@@ -26,9 +26,10 @@ function escapeIdentifier(s: string): string {
 
 export class PostgresWebAdapter implements WebDatabaseAdapter {
   private client: pg.Client | null = null;
+  private connectionConfig: pg.ClientConfig | null = null;
 
   async connect(creds: ConnectionCredentials): Promise<void> {
-    this.client = new pg.Client({
+    this.connectionConfig = {
       host: creds.host,
       port: creds.port,
       database: creds.database,
@@ -36,7 +37,8 @@ export class PostgresWebAdapter implements WebDatabaseAdapter {
       password: creds.password,
       ssl: creds.ssl ? { rejectUnauthorized: false } : undefined,
       connectionTimeoutMillis: 10000,
-    });
+    };
+    this.client = new pg.Client(this.connectionConfig);
     await this.client.connect();
     await this.client.query("SET statement_timeout = 30000");
   }
@@ -85,6 +87,41 @@ export class PostgresWebAdapter implements WebDatabaseAdapter {
 
     return {
       plan: result.rows[0]?.["QUERY PLAN"] ?? result.rows,
+      durationMs,
+    };
+  }
+
+  async cancelQuery(): Promise<void> {
+    if (!this.client || !this.connectionConfig) return;
+    const cancelClient = new pg.Client(this.connectionConfig);
+    try {
+      await cancelClient.connect();
+      const pidResult = await this.client.query("SELECT pg_backend_pid() as pid");
+      const pid = pidResult.rows[0]?.pid;
+      if (pid) {
+        await cancelClient.query("SELECT pg_cancel_backend($1)", [pid]);
+      }
+    } finally {
+      await cancelClient.end().catch(() => {});
+    }
+  }
+
+  async execute(
+    sql: string,
+    timeoutMs = 30000,
+  ): Promise<{ rowsAffected: number; durationMs: number }> {
+    if (!this.client) throw new Error("Not connected");
+
+    await this.client.query(
+      `SET statement_timeout = ${Math.min(timeoutMs, 300000)}`,
+    );
+
+    const start = performance.now();
+    const result = await this.client.query(sql);
+    const durationMs = Math.round(performance.now() - start);
+
+    return {
+      rowsAffected: result.rowCount ?? 0,
       durationMs,
     };
   }

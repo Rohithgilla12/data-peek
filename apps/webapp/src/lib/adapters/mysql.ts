@@ -95,9 +95,10 @@ interface MySQLParameterRow {
 
 export class MySQLWebAdapter implements WebDatabaseAdapter {
   private connection: mysql.Connection | null = null
+  private connectionConfig: mysql.ConnectionOptions | null = null
 
   async connect(creds: ConnectionCredentials): Promise<void> {
-    this.connection = await mysql.createConnection({
+    this.connectionConfig = {
       host: creds.host,
       port: creds.port,
       database: creds.database,
@@ -105,7 +106,8 @@ export class MySQLWebAdapter implements WebDatabaseAdapter {
       password: creds.password,
       ssl: creds.ssl ? { rejectUnauthorized: false } : undefined,
       connectTimeout: 10000,
-    })
+    }
+    this.connection = await mysql.createConnection(this.connectionConfig)
   }
 
   async disconnect(): Promise<void> {
@@ -147,6 +149,38 @@ export class MySQLWebAdapter implements WebDatabaseAdapter {
 
     return {
       plan: Array.isArray(rows) ? rows : rows,
+      durationMs,
+    }
+  }
+
+  async cancelQuery(): Promise<void> {
+    if (!this.connection || !this.connectionConfig) return
+    const cancelConn = await mysql.createConnection(this.connectionConfig)
+    try {
+      const [rows] = await this.connection.query('SELECT CONNECTION_ID() as id')
+      const threadId = (rows as { id: number }[])[0]?.id
+      if (threadId) {
+        await cancelConn.query(`KILL QUERY ${threadId}`)
+      }
+    } finally {
+      await cancelConn.end().catch(() => {})
+    }
+  }
+
+  async execute(
+    sql: string,
+    timeoutMs = 30000
+  ): Promise<{ rowsAffected: number; durationMs: number }> {
+    if (!this.connection) throw new Error('Not connected')
+
+    const start = performance.now()
+    const [result] = await this.connection.query({ sql, timeout: timeoutMs })
+    const durationMs = Math.round(performance.now() - start)
+
+    const affectedRows = (result as mysql.ResultSetHeader)?.affectedRows ?? 0
+
+    return {
+      rowsAffected: affectedRows,
       durationMs,
     }
   }
