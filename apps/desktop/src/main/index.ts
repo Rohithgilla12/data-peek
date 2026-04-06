@@ -18,6 +18,7 @@ import { windowManager } from './window-manager'
 import { initSchedulerService, stopAllSchedules } from './scheduler-service'
 import { initDashboardService } from './dashboard-service'
 import { cleanup as cleanupPgNotify } from './pg-notification-listener'
+import { closeAllTunnels } from './ssh-tunnel-service'
 
 // Store instances
 let store: DpStorage<{ connections: ConnectionConfig[] }>
@@ -130,6 +131,7 @@ app.on('before-quit', () => {
   stopPeriodicChecks()
   stopAllSchedules()
   cleanupPgNotify()
+  closeAllTunnels()
 })
 
 // Quit when all windows are closed (except macOS)

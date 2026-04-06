@@ -414,9 +414,11 @@ export function AddConnectionDialog({
 
     if (sshConfig.authMethod === 'Password') {
       return !!sshConfig.password
-    } else {
+    } else if (sshConfig.authMethod === 'Public Key') {
       return !!sshConfig.privateKeyPath
     }
+    // SSH Agent: no additional fields needed
+    return true
   }
 
   const isSqliteValid = () => {

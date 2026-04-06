@@ -1224,7 +1224,7 @@ export interface Snippet {
   updatedAt: number;
 }
 
-export type SSHAuthenticationMethod = "Password" | "Public Key";
+export type SSHAuthenticationMethod = "Password" | "Public Key" | "SSH Agent";
 
 /**
  * Individual timing phase within query execution

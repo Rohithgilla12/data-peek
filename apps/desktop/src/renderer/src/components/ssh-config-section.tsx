@@ -1,5 +1,13 @@
 import { Eye, EyeOff, FolderOpen } from 'lucide-react'
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import type { SSHAuthenticationMethod, SSHConfig } from '@shared/index'
 import { useState } from 'react'
@@ -85,6 +93,7 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
           <SelectContent>
             <SelectItem value="Password">Password</SelectItem>
             <SelectItem value="Public Key">Public Key</SelectItem>
+            <SelectItem value="SSH Agent">SSH Agent</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -166,6 +175,13 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
             </div>
           </div>
         </>
+      )}
+
+      {config.authMethod === 'SSH Agent' && (
+        <p className="text-xs text-muted-foreground">
+          Uses your system SSH agent (ssh-agent on macOS/Linux, Pageant on Windows). Make sure your
+          key is loaded in the agent.
+        </p>
       )}
     </div>
   )
