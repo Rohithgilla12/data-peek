@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
+import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
@@ -30,6 +31,7 @@ export default function RootLayout({
           <Providers>
             <NuqsAdapter>{children}</NuqsAdapter>
           </Providers>
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
