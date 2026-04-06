@@ -4,27 +4,20 @@ import { useState } from 'react'
 import { Bookmark, X } from 'lucide-react'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
-import { useQueryStore } from '@/stores/query-store'
+import { useQueryTabs } from '@/hooks/use-query-tabs'
+import { useSavedQueries } from '@/hooks/use-saved-queries'
 import { ProBadge } from '@/components/upgrade/pro-badge'
 
 export function SaveQueryDialog() {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
   const { activeConnectionId } = useConnectionStore()
-  const { tabs, activeTabId } = useQueryStore()
+  const { tabs, activeTabId } = useQueryTabs()
   const activeTab = tabs.find((t) => t.id === activeTabId)
-  const utils = trpc.useUtils()
+  const { create } = useSavedQueries()
   const { data: usage } = trpc.usage.current.useQuery()
-
-  const saveMutation = trpc.savedQueries.create.useMutation({
-    onSuccess: () => {
-      utils.savedQueries.list.invalidate()
-      setOpen(false)
-      setName('')
-      setDescription('')
-    },
-  })
 
   if (!open) {
     if (
@@ -63,19 +56,24 @@ export function SaveQueryDialog() {
         autoFocus
       />
       <button
-        onClick={() => {
+        onClick={async () => {
           if (!activeConnectionId || !activeTab?.sql || !name.trim()) return
-          saveMutation.mutate({
+          setIsSaving(true)
+          await create({
             connectionId: activeConnectionId,
             name: name.trim(),
             query: activeTab.sql,
             description: description || undefined,
           })
+          setIsSaving(false)
+          setOpen(false)
+          setName('')
+          setDescription('')
         }}
-        disabled={!name.trim() || saveMutation.isPending}
+        disabled={!name.trim() || isSaving}
         className="rounded-md bg-accent px-2 py-1 text-xs text-accent-foreground hover:bg-accent/90 disabled:opacity-50"
       >
-        {saveMutation.isPending ? '...' : 'Save'}
+        {isSaving ? '...' : 'Save'}
       </button>
       <button
         onClick={() => setOpen(false)}

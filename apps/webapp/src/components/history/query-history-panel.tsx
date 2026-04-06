@@ -2,9 +2,9 @@
 
 import { useState } from 'react'
 import { Play, Trash2, CheckCircle, XCircle } from 'lucide-react'
-import { trpc } from '@/lib/trpc-client'
+import { useQueryHistory } from '@/hooks/use-query-history'
 import { useConnectionStore } from '@/stores/connection-store'
-import { useQueryStore } from '@/stores/query-store'
+import { useQueryTabs } from '@/hooks/use-query-tabs'
 
 function formatRelativeTime(date: Date | string): string {
   const now = Date.now()
@@ -23,17 +23,8 @@ function formatRelativeTime(date: Date | string): string {
 export function QueryHistoryPanel() {
   const [statusFilter, setStatusFilter] = useState<'success' | 'error' | undefined>()
   const { activeConnectionId } = useConnectionStore()
-  const { activeTabId, updateSql } = useQueryStore()
-  const utils = trpc.useUtils()
-
-  const { data: entries, isLoading } = trpc.history.list.useQuery(
-    { connectionId: activeConnectionId ?? undefined, status: statusFilter, limit: 100 },
-    { enabled: !!activeConnectionId }
-  )
-
-  const deleteMutation = trpc.history.delete.useMutation({
-    onSuccess: () => utils.history.list.invalidate(),
-  })
+  const { activeTabId, updateSql } = useQueryTabs()
+  const { history, remove } = useQueryHistory(activeConnectionId ?? undefined, statusFilter)
 
   if (!activeConnectionId) {
     return (
@@ -64,11 +55,10 @@ export function QueryHistoryPanel() {
         </button>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {isLoading && <div className="px-3 py-4 text-xs text-muted-foreground">Loading...</div>}
-        {entries?.length === 0 && (
+        {history.length === 0 && (
           <div className="px-3 py-4 text-xs text-muted-foreground text-center">No history yet</div>
         )}
-        {entries?.map((entry) => (
+        {history.map((entry) => (
           <div
             key={entry.id}
             className={`group px-3 py-2 border-b border-border/30 hover:bg-muted/30 ${
@@ -90,7 +80,7 @@ export function QueryHistoryPanel() {
                     · {entry.durationMs}ms
                   </span>
                 )}
-                {entry.rowCount !== null && entry.status === 'success' && (
+                {entry.rowCount !== null && entry.rowCount !== undefined && entry.status === 'success' && (
                   <span className="text-[10px] text-muted-foreground">
                     · {entry.rowCount} rows
                   </span>
@@ -105,7 +95,7 @@ export function QueryHistoryPanel() {
                   <Play className="h-3 w-3" />
                 </button>
                 <button
-                  onClick={() => deleteMutation.mutate({ id: entry.id })}
+                  onClick={() => remove(entry.id)}
                   className="p-1 rounded text-muted-foreground hover:text-destructive"
                   title="Delete"
                 >
