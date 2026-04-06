@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
+import { dark } from '@clerk/themes'
 import { NuqsAdapter } from 'nuqs/adapters/next/app'
+import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Providers } from '@/components/providers'
 import './globals.css'
@@ -18,11 +20,16 @@ export default function RootLayout({
   return (
     <ClerkProvider
       appearance={{
+        baseTheme: dark,
         variables: {
           colorPrimary: '#6b8cf5',
           colorBackground: '#111113',
           colorInputBackground: '#18181b',
           colorInputText: '#fafafa',
+          colorText: '#fafafa',
+          colorTextOnPrimaryBackground: '#fafafa',
+          colorTextSecondary: '#a1a1aa',
+          colorNeutral: '#fafafa',
         },
       }}
     >
@@ -31,6 +38,8 @@ export default function RootLayout({
           <Providers>
             <NuqsAdapter>{children}</NuqsAdapter>
           </Providers>
+          <Analytics />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>

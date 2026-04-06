@@ -101,7 +101,7 @@ function PokemonSelector({
             <img
               src={getPokemonSpriteUrl(pokemon.id)}
               alt={pokemon.name}
-              className="size-10 pixelated"
+              className="size-10"
               draggable={false}
             />
             <span className="text-[9px] text-muted-foreground leading-none">{pokemon.name}</span>
@@ -276,7 +276,7 @@ export function PokemonBuddy() {
         className="fixed bottom-3 right-3 z-50 rounded-full bg-card border border-border/50 p-1.5 shadow-md hover:bg-accent transition-colors"
         title="Show Pokemon Buddy"
       >
-        <img src={fallbackUrl} alt={pokemon.name} className="size-6 pixelated" draggable={false} />
+        <img src={fallbackUrl} alt={pokemon.name} className="size-6" draggable={false} />
       </button>
     )
   }
@@ -410,7 +410,10 @@ export function PokemonBuddy() {
           <img
             src={currentSprite}
             alt={pokemon.name}
-            className="size-16 pixelated drop-shadow-lg select-none"
+            className={cn(
+              'size-16 drop-shadow-lg select-none',
+              !spriteError && 'pixelated'
+            )}
             draggable={false}
             onError={handleSpriteError}
           />

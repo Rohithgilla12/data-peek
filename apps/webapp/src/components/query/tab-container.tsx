@@ -1,10 +1,10 @@
 'use client'
 
 import { X, Plus } from 'lucide-react'
-import { useQueryStore } from '@/stores/query-store'
+import { useQueryTabs } from '@/hooks/use-query-tabs'
 
 export function TabContainer() {
-  const { tabs, activeTabId, setActiveTab, addTab, removeTab } = useQueryStore()
+  const { tabs, activeTabId, setActiveTab, addTab, removeTab } = useQueryTabs()
 
   return (
     <div className="flex items-center border-b border-border bg-background/50">

@@ -2,26 +2,18 @@
 
 import { useState } from 'react'
 import { Play, Trash2, Search } from 'lucide-react'
-import { trpc } from '@/lib/trpc-client'
+import { useSavedQueries } from '@/hooks/use-saved-queries'
 import { useConnectionStore } from '@/stores/connection-store'
-import { useQueryStore } from '@/stores/query-store'
+import { useQueryTabs } from '@/hooks/use-query-tabs'
 
 export function SavedQueriesPanel() {
   const [search, setSearch] = useState('')
   const { activeConnectionId } = useConnectionStore()
-  const { activeTabId, updateSql } = useQueryStore()
-  const utils = trpc.useUtils()
-
-  const { data: queries, isLoading } = trpc.savedQueries.list.useQuery(
-    { connectionId: activeConnectionId ?? undefined, search: search || undefined },
-    { enabled: !!activeConnectionId }
+  const { activeTabId, updateSql } = useQueryTabs()
+  const { queries, remove, incrementUsage } = useSavedQueries(
+    activeConnectionId ?? undefined,
+    search || undefined
   )
-
-  const deleteMutation = trpc.savedQueries.delete.useMutation({
-    onSuccess: () => utils.savedQueries.list.invalidate(),
-  })
-
-  const incrementMutation = trpc.savedQueries.incrementUsage.useMutation()
 
   if (!activeConnectionId) {
     return (
@@ -44,15 +36,12 @@ export function SavedQueriesPanel() {
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        {isLoading && (
-          <div className="px-3 py-4 text-xs text-muted-foreground">Loading...</div>
-        )}
-        {queries?.length === 0 && (
+        {queries.length === 0 && (
           <div className="px-3 py-4 text-xs text-muted-foreground text-center">
             No saved queries
           </div>
         )}
-        {queries?.map((q) => (
+        {queries.map((q) => (
           <div key={q.id} className="group px-3 py-2 border-b border-border/30 hover:bg-muted/30">
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-foreground truncate">{q.name}</span>
@@ -60,7 +49,7 @@ export function SavedQueriesPanel() {
                 <button
                   onClick={() => {
                     updateSql(activeTabId, q.query)
-                    incrementMutation.mutate({ id: q.id })
+                    incrementUsage(q.id)
                   }}
                   className="p-1 rounded text-muted-foreground hover:text-accent"
                   title="Load into editor"
@@ -68,7 +57,7 @@ export function SavedQueriesPanel() {
                   <Play className="h-3 w-3" />
                 </button>
                 <button
-                  onClick={() => deleteMutation.mutate({ id: q.id })}
+                  onClick={() => remove(q.id)}
                   className="p-1 rounded text-muted-foreground hover:text-destructive"
                   title="Delete"
                 >

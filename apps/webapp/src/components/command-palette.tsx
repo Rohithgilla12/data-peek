@@ -15,14 +15,14 @@ import {
 } from 'lucide-react'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
-import { useQueryStore } from '@/stores/query-store'
+import { useQueryTabs } from '@/hooks/use-query-tabs'
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false)
   const router = useRouter()
   const { data: connections } = trpc.connections.list.useQuery()
   const { activeConnectionId, setActiveConnection } = useConnectionStore()
-  const { addTab } = useQueryStore()
+  const { addTab } = useQueryTabs()
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {

@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Play } from 'lucide-react'
 import type { editor } from 'monaco-editor'
+import type { QueryField } from '@shared/index'
 import { trpc } from '@/lib/trpc-client'
 import { useConnectionStore } from '@/stores/connection-store'
-import { useQueryStore } from '@/stores/query-store'
+import { useQueryTabs } from '@/hooks/use-query-tabs'
+import { useQueryHistory } from '@/hooks/use-query-history'
 import { useEditStore } from '@/stores/edit-store'
 import { formatSQL } from '@/lib/sql-formatter'
 import { SqlEditor } from '@/components/query/sql-editor'
@@ -15,13 +17,29 @@ import { ResultsStatus } from '@/components/query/results-status'
 import { TabContainer } from '@/components/query/tab-container'
 import { EditToolbar } from '@/components/query/edit-toolbar'
 
+type QueryResult = {
+  rows: Record<string, unknown>[]
+  fields: QueryField[]
+  rowCount: number
+  durationMs: number
+}
+
 export default function QueryPage() {
   const { activeConnectionId } = useConnectionStore()
-  const { tabs, activeTabId, updateSql, setResults, setError, setExecuting } = useQueryStore()
-  const activeTab = tabs.find((t) => t.id === activeTabId)
+  const { tabs, activeTabId, updateSql } = useQueryTabs()
+  const { addEntry: addHistoryEntry } = useQueryHistory()
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+
+  const [tabResults, setTabResults] = useState<Record<string, QueryResult | null>>({})
+  const [tabErrors, setTabErrors] = useState<Record<string, string | null>>({})
+  const [tabExecuting, setTabExecuting] = useState<Record<string, boolean>>({})
+
+  const activeTab = tabs.find((t) => t.id === activeTabId)
+  const activeResults = tabResults[activeTabId] ?? null
+  const activeError = tabErrors[activeTabId] ?? null
+  const activeIsExecuting = tabExecuting[activeTabId] ?? false
 
   const { isInEditMode, buildEditSql, clearPendingChanges, addNewRow, getEditContext } = useEditStore()
   const isEditing = isInEditMode(activeTabId)
@@ -33,34 +51,50 @@ export default function QueryPage() {
   const cancelMutation = trpc.queries.cancel.useMutation()
   const editMutation = trpc.queries.executeEdit.useMutation()
 
-  const executeQuery = useCallback((sql: string) => {
-    if (!activeConnectionId || !sql.trim()) return
+  const executeQuery = useCallback(
+    (sql: string) => {
+      if (!activeConnectionId || !sql.trim()) return
 
-    abortControllerRef.current?.abort()
-    const controller = new AbortController()
-    abortControllerRef.current = controller
+      abortControllerRef.current?.abort()
+      const controller = new AbortController()
+      abortControllerRef.current = controller
 
-    setExecuting(activeTabId, true)
-    setError(activeTabId, null)
+      setTabExecuting((prev) => ({ ...prev, [activeTabId]: true }))
+      setTabErrors((prev) => ({ ...prev, [activeTabId]: null }))
 
-    executeMutation.mutate(
-      { connectionId: activeConnectionId, sql },
-      {
-        onSuccess: (result) => {
-          if (!controller.signal.aborted) {
-            setResults(activeTabId, result)
-            setExecuting(activeTabId, false)
-          }
-        },
-        onError: (error) => {
-          if (!controller.signal.aborted) {
-            setError(activeTabId, error.message)
-            setExecuting(activeTabId, false)
-          }
-        },
-      }
-    )
-  }, [activeConnectionId, activeTabId, executeMutation, setResults, setError, setExecuting])
+      executeMutation.mutate(
+        { connectionId: activeConnectionId, sql },
+        {
+          onSuccess: (result) => {
+            if (!controller.signal.aborted) {
+              setTabResults((prev) => ({ ...prev, [activeTabId]: result }))
+              setTabExecuting((prev) => ({ ...prev, [activeTabId]: false }))
+              addHistoryEntry({
+                connectionId: activeConnectionId,
+                query: sql,
+                status: 'success',
+                durationMs: result.durationMs,
+                rowCount: result.rowCount,
+              })
+            }
+          },
+          onError: (error) => {
+            if (!controller.signal.aborted) {
+              setTabErrors((prev) => ({ ...prev, [activeTabId]: error.message }))
+              setTabExecuting((prev) => ({ ...prev, [activeTabId]: false }))
+              addHistoryEntry({
+                connectionId: activeConnectionId,
+                query: sql,
+                status: 'error',
+                errorMessage: error.message,
+              })
+            }
+          },
+        }
+      )
+    },
+    [activeConnectionId, activeTabId, executeMutation, addHistoryEntry]
+  )
 
   const handleExecute = useCallback(() => {
     if (!activeTab?.sql.trim()) return
@@ -74,26 +108,25 @@ export default function QueryPage() {
       { connectionId: activeConnectionId },
       {
         onSettled: () => {
-          setExecuting(activeTabId, false)
-          setError(activeTabId, 'Query cancelled')
+          setTabExecuting((prev) => ({ ...prev, [activeTabId]: false }))
+          setTabErrors((prev) => ({ ...prev, [activeTabId]: 'Query cancelled' }))
         },
       }
     )
-  }, [activeConnectionId, activeTabId, cancelMutation, setExecuting, setError])
+  }, [activeConnectionId, activeTabId, cancelMutation])
 
   const handleFormat = useCallback(() => {
-    const store = useQueryStore.getState()
-    const tab = store.tabs.find((t) => t.id === store.activeTabId)
+    const tab = tabs.find((t) => t.id === activeTabId)
     if (!tab?.sql.trim()) return
     const formatted = formatSQL(tab.sql)
-    updateSql(store.activeTabId, formatted)
-  }, [updateSql])
+    updateSql(activeTabId, formatted)
+  }, [tabs, activeTabId, updateSql])
 
   const handleSaveEdits = useCallback(async () => {
-    if (!activeConnectionId || !activeTab?.results) return
+    if (!activeConnectionId || !activeResults) return
 
     const dbType = activeConn?.dbType ?? 'postgresql'
-    const statements = buildEditSql(activeTabId, activeTab.results.rows, dbType)
+    const statements = buildEditSql(activeTabId, activeResults.rows, dbType)
     if (statements.length === 0) return
 
     setIsSaving(true)
@@ -104,16 +137,28 @@ export default function QueryPage() {
         sql: combinedSql,
       })
       clearPendingChanges(activeTabId)
-      // Re-execute the original query to refresh results
-      if (activeTab.sql.trim()) {
+      if (activeTab?.sql.trim()) {
         executeQuery(activeTab.sql)
       }
     } catch (error) {
-      setError(activeTabId, error instanceof Error ? error.message : 'Save failed')
+      setTabErrors((prev) => ({
+        ...prev,
+        [activeTabId]: error instanceof Error ? error.message : 'Save failed',
+      }))
     } finally {
       setIsSaving(false)
     }
-  }, [activeConnectionId, activeTabId, activeTab, activeConn, buildEditSql, clearPendingChanges, editMutation, executeQuery, setError])
+  }, [
+    activeConnectionId,
+    activeTabId,
+    activeTab,
+    activeConn,
+    activeResults,
+    buildEditSql,
+    clearPendingChanges,
+    editMutation,
+    executeQuery,
+  ])
 
   const handleAddRow = useCallback(() => {
     const context = getEditContext(activeTabId)
@@ -122,18 +167,17 @@ export default function QueryPage() {
       for (const col of context.columns) {
         defaultValues[col.name] = null
       }
-    } else if (activeTab?.results?.fields) {
-      for (const field of activeTab.results.fields) {
+    } else if (activeResults?.fields) {
+      for (const field of activeResults.fields) {
         defaultValues[field.name] = null
       }
     }
     addNewRow(activeTabId, defaultValues)
-  }, [activeTabId, getEditContext, addNewRow, activeTab])
+  }, [activeTabId, getEditContext, addNewRow, activeResults])
 
   useEffect(() => {
     function onExecuteEvent() {
-      const store = useQueryStore.getState()
-      const tab = store.tabs.find((t) => t.id === store.activeTabId)
+      const tab = tabs.find((t) => t.id === activeTabId)
       if (tab?.sql.trim()) executeQuery(tab.sql)
     }
     function onFormatEvent() {
@@ -145,33 +189,36 @@ export default function QueryPage() {
       window.removeEventListener('datapeek:execute', onExecuteEvent)
       window.removeEventListener('datapeek:format', onFormatEvent)
     }
-  }, [executeQuery, handleFormat])
+  }, [tabs, activeTabId, executeQuery, handleFormat])
 
   const handleExplain = useCallback(() => {
     if (!activeConnectionId || !activeTab?.sql.trim()) return
 
-    setExecuting(activeTabId, true)
-    setError(activeTabId, null)
+    setTabExecuting((prev) => ({ ...prev, [activeTabId]: true }))
+    setTabErrors((prev) => ({ ...prev, [activeTabId]: null }))
 
     explainMutation.mutate(
       { connectionId: activeConnectionId, sql: activeTab.sql, analyze: false },
       {
         onSuccess: (result) => {
-          setResults(activeTabId, {
-            rows: Array.isArray(result.plan) ? result.plan : [result.plan],
-            fields: [{ name: 'QUERY PLAN', dataType: 'json' }],
-            rowCount: 1,
-            durationMs: result.durationMs,
-          })
-          setExecuting(activeTabId, false)
+          setTabResults((prev) => ({
+            ...prev,
+            [activeTabId]: {
+              rows: Array.isArray(result.plan) ? result.plan : [result.plan],
+              fields: [{ name: 'QUERY PLAN', dataType: 'json' }],
+              rowCount: 1,
+              durationMs: result.durationMs,
+            },
+          }))
+          setTabExecuting((prev) => ({ ...prev, [activeTabId]: false }))
         },
         onError: (error) => {
-          setError(activeTabId, error.message)
-          setExecuting(activeTabId, false)
+          setTabErrors((prev) => ({ ...prev, [activeTabId]: error.message }))
+          setTabExecuting((prev) => ({ ...prev, [activeTabId]: false }))
         },
       }
     )
-  }, [activeConnectionId, activeTab, activeTabId, explainMutation, setResults, setError, setExecuting])
+  }, [activeConnectionId, activeTab, activeTabId, explainMutation])
 
   if (!activeConnectionId) {
     return (
@@ -184,10 +231,8 @@ export default function QueryPage() {
 
   return (
     <div className="flex h-full flex-col">
-      {/* Tab bar */}
       <TabContainer />
 
-      {/* Editor section */}
       <div className="flex flex-col border-b border-border" style={{ height: '45%' }}>
         <div className="flex-1 min-h-0">
           <SqlEditor
@@ -198,18 +243,16 @@ export default function QueryPage() {
             editorRef={editorRef}
           />
         </div>
-        {/* Toolbar BELOW editor — matches desktop layout */}
         <QueryToolbar
           onExecute={handleExecute}
           onExplain={handleExplain}
           onFormat={handleFormat}
           onCancel={handleCancel}
-          isExecuting={activeTab?.isExecuting ?? false}
+          isExecuting={activeIsExecuting}
         />
       </div>
 
-      {/* Edit toolbar */}
-      {activeTab?.results && (
+      {activeResults && (
         <EditToolbar
           tabId={activeTabId}
           onSave={handleSaveEdits}
@@ -218,11 +261,10 @@ export default function QueryPage() {
         />
       )}
 
-      {/* Results section */}
       <div className="flex flex-col flex-1 min-h-0">
-        {activeTab?.results ? (
-          <ResultsTable rows={activeTab.results.rows} fields={activeTab.results.fields} />
-        ) : activeTab?.error ? (
+        {activeResults ? (
+          <ResultsTable rows={activeResults.rows} fields={activeResults.fields} />
+        ) : activeError ? (
           <div className="flex-1" />
         ) : (
           <div className="flex-1 flex items-center justify-center">
@@ -242,7 +284,9 @@ export default function QueryPage() {
               </div>
               <div className="flex items-center justify-center gap-4 pt-1">
                 <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
-                  <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">\u2318/Ctrl+Enter</kbd>
+                  <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
+                    \u2318/Ctrl+Enter
+                  </kbd>
                   <span>Run</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
@@ -255,14 +299,13 @@ export default function QueryPage() {
         )}
       </div>
 
-      {/* Bottom status bar */}
       <ResultsStatus
-        rowCount={activeTab?.results?.rowCount ?? null}
-        durationMs={activeTab?.results?.durationMs ?? null}
-        error={activeTab?.error ?? null}
-        isExecuting={activeTab?.isExecuting ?? false}
-        rows={activeTab?.results?.rows}
-        fields={activeTab?.results?.fields}
+        rowCount={activeResults?.rowCount ?? null}
+        durationMs={activeResults?.durationMs ?? null}
+        error={activeError}
+        isExecuting={activeIsExecuting}
+        rows={activeResults?.rows}
+        fields={activeResults?.fields}
       />
     </div>
   )

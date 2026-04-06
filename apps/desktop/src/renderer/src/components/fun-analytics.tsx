@@ -149,7 +149,7 @@ export function FunAnalytics() {
                 <img
                   src={getPokemonSpriteUrl(activePokemonId)}
                   alt={pokemon.name}
-                  className="size-10 pixelated"
+                  className="size-10"
                   draggable={false}
                 />
                 <div className="min-w-0 flex-1">

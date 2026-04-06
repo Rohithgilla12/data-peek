@@ -4,7 +4,7 @@ import { Pencil, Save, X, Plus } from "lucide-react";
 import { Button, Badge } from "@data-peek/ui";
 import { useEditStore } from "@/stores/edit-store";
 import { useSchemaStore } from "@/stores/schema-store";
-import { useQueryStore } from "@/stores/query-store";
+import { useQueryTabs } from "@/hooks/use-query-tabs";
 
 interface EditToolbarProps {
   tabId: string;
@@ -80,7 +80,8 @@ export function EditToolbar({
     getPendingChangesCount,
   } = useEditStore();
   const { schemas } = useSchemaStore();
-  const activeTab = useQueryStore((s) => s.tabs.find((t) => t.id === tabId));
+  const { tabs } = useQueryTabs();
+  const activeTab = tabs.find((t) => t.id === tabId);
 
   const isEditing = isInEditMode(tabId);
   const hasChanges = hasPendingChanges(tabId);

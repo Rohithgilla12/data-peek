@@ -10,6 +10,7 @@ import {
   flexRender,
   type SortingState,
   type ColumnFiltersState,
+  type Column,
   type ColumnDef,
   type Row,
 } from '@tanstack/react-table'
@@ -41,7 +42,7 @@ import {
 } from '@data-peek/ui'
 import type { QueryField } from '@shared/index'
 import { useEditStore } from '@/stores/edit-store'
-import { useQueryStore } from '@/stores/query-store'
+import { useQueryTabs } from '@/hooks/use-query-tabs'
 
 const typeColors: Record<string, string> = {
   int4: 'text-blue-400', int8: 'text-blue-400', integer: 'text-blue-400', bigint: 'text-blue-400',
@@ -212,7 +213,7 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
   const headerRef = useRef<HTMLTableRowElement>(null)
   const [columnWidths, setColumnWidths] = useState<number[]>([])
 
-  const { activeTabId } = useQueryStore()
+  const { activeTabId } = useQueryTabs()
   const { isInEditMode, isRowMarkedForDeletion, markRowForDeletion, unmarkRowForDeletion } = useEditStore()
   const isEditing = isInEditMode(activeTabId)
 
@@ -261,7 +262,7 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
         return {
           id: columnId,
           accessorKey: field.name,
-          header: ({ column }: { column: any }) => {
+          header: ({ column }: { column: Column<Record<string, unknown>, unknown> }) => {
             const isSorted = column.getIsSorted()
             const typeColor = typeColors[field.dataType] ?? 'text-muted-foreground'
             return (

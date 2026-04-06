@@ -4,14 +4,14 @@ import { useEffect } from 'react'
 import { useQueryState } from 'nuqs'
 import { parseAsString } from 'nuqs'
 import { useConnectionStore } from '@/stores/connection-store'
-import { useQueryStore } from '@/stores/query-store'
+import { useQueryTabs } from '@/hooks/use-query-tabs'
 
 export function useSyncUrl() {
   const [connectionParam, setConnectionParam] = useQueryState('connection', parseAsString)
   const [sqlParam, setSqlParam] = useQueryState('sql', parseAsString)
 
   const { activeConnectionId, setActiveConnection } = useConnectionStore()
-  const { tabs, activeTabId, updateSql } = useQueryStore()
+  const { tabs, activeTabId, updateSql } = useQueryTabs()
   const activeTab = tabs.find((t) => t.id === activeTabId)
 
   // URL -> Store: on mount, restore from URL

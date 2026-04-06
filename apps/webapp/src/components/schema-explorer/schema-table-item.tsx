@@ -3,7 +3,7 @@
 import { Table, Eye, Layers, ChevronRight, Play } from 'lucide-react'
 import type { TableInfo } from '@shared/index'
 import { useSchemaStore } from '@/stores/schema-store'
-import { useQueryStore } from '@/stores/query-store'
+import { useQueryTabs } from '@/hooks/use-query-tabs'
 import { SchemaColumnItem } from './schema-column-item'
 
 const tableIcons: Record<string, typeof Table> = {
@@ -15,7 +15,7 @@ const tableIcons: Record<string, typeof Table> = {
 export function SchemaTableItem({ table, schemaName }: { table: TableInfo; schemaName: string }) {
   const key = `${schemaName}.${table.name}`
   const { expandedTables, toggleTable } = useSchemaStore()
-  const { activeTabId, updateSql } = useQueryStore()
+  const { activeTabId, updateSql } = useQueryTabs()
   const isExpanded = expandedTables.has(key)
   const Icon = tableIcons[table.type] ?? Table
 
