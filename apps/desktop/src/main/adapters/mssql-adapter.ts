@@ -140,7 +140,7 @@ function toMSSQLConfig(
   const defaultSsl = config.ssl ?? false
   const options: sql.config['options'] = {}
 
-  // Always set encrypt if specified
+  // Enforce encryption when SSL is enabled
   if (mssqlOptions.encrypt !== undefined) {
     options.encrypt = mssqlOptions.encrypt
   } else if (defaultSsl) {
@@ -152,7 +152,11 @@ function toMSSQLConfig(
   if (!isAzureAD) {
     if (mssqlOptions.trustServerCertificate !== undefined) {
       options.trustServerCertificate = mssqlOptions.trustServerCertificate
-    } else if (!defaultSsl) {
+    } else {
+      // Default to trusting the server certificate regardless of SSL setting.
+      // When SSL is enabled, this is equivalent to sslmode=require: encrypt the
+      // connection but don't verify the certificate, which works with cloud
+      // databases that use self-signed certificates.
       options.trustServerCertificate = true
     }
     options.enableArithAbort = mssqlOptions.enableArithAbort ?? true

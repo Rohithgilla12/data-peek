@@ -119,8 +119,11 @@ function toMySQLConfig(
         )
       }
     } else {
+      // Default: require SSL but don't verify the server certificate.
+      // This matches sslmode=require behavior and works with cloud databases
+      // that use self-signed certificates.
       mysqlConfig.ssl = {
-        rejectUnauthorized: true
+        rejectUnauthorized: false
       }
     }
   }

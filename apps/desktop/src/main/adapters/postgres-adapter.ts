@@ -99,7 +99,10 @@ export function buildClientConfig(
         )
       }
     } else {
-      clientConfig.ssl = true
+      // Default to sslmode=require: encrypt the connection but don't verify
+      // the server certificate. This matches psql's sslmode=require behavior
+      // and works with cloud databases that use self-signed certificates.
+      clientConfig.ssl = { rejectUnauthorized: false }
     }
   }
 
