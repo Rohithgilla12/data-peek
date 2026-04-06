@@ -67,7 +67,7 @@ export async function getAdapter(
     iv,
     authTag,
     userId
-  ) as ConnectionCredentials
+  ) as unknown as ConnectionCredentials
 
   const adapter = createAdapter(dbType)
 
