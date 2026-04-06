@@ -11,12 +11,18 @@ export const savedQueriesRouter = createRouter({
         .object({
           connectionId: z.string().uuid().optional(),
           search: z.string().optional(),
+          updatedSince: z.string().datetime().optional(),
         })
         .optional()
     )
     .query(async ({ ctx, input }) => {
       const conditions = [eq(savedQueries.customerId, ctx.customerId)]
       if (input?.connectionId) conditions.push(eq(savedQueries.connectionId, input.connectionId))
+      if (input?.updatedSince) {
+        conditions.push(
+          sql`${savedQueries.updatedAt} > ${new Date(input.updatedSince)}`
+        )
+      }
 
       const results = await ctx.db.query.savedQueries.findMany({
         where: and(...conditions),
@@ -103,5 +109,56 @@ export const savedQueriesRouter = createRouter({
       }
 
       return { success: true }
+    }),
+
+  bulkUpsert: protectedProcedure
+    .input(
+      z.object({
+        upserts: z.array(
+          z.object({
+            id: z.string().uuid(),
+            connectionId: z.string().uuid(),
+            name: z.string().min(1).max(200),
+            query: z.string().min(1),
+            description: z.string().optional(),
+            category: z.string().optional(),
+            tags: z.array(z.string()).optional(),
+            usageCount: z.number().int().default(0),
+          })
+        ),
+        deletes: z.array(z.string().uuid()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const results = []
+
+      for (const item of input.upserts) {
+        const existing = await ctx.db.query.savedQueries.findFirst({
+          where: and(eq(savedQueries.id, item.id), eq(savedQueries.customerId, ctx.customerId)),
+        })
+
+        if (existing) {
+          const [updated] = await ctx.db
+            .update(savedQueries)
+            .set({ ...item, updatedAt: new Date() })
+            .where(and(eq(savedQueries.id, item.id), eq(savedQueries.customerId, ctx.customerId)))
+            .returning()
+          results.push(updated)
+        } else {
+          const [created] = await ctx.db
+            .insert(savedQueries)
+            .values({ ...item, customerId: ctx.customerId })
+            .returning()
+          results.push(created)
+        }
+      }
+
+      for (const id of input.deletes) {
+        await ctx.db
+          .delete(savedQueries)
+          .where(and(eq(savedQueries.id, id), eq(savedQueries.customerId, ctx.customerId)))
+      }
+
+      return { upserted: results, deleted: input.deletes.length }
     }),
 })
