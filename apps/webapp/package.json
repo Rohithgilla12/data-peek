@@ -24,6 +24,7 @@
     "@trpc/next": "^11.1.2",
     "@trpc/react-query": "^11.1.2",
     "@trpc/server": "^11.1.2",
+    "@vercel/analytics": "^2.0.1",
     "cmdk": "^1.1.1",
     "drizzle-orm": "^0.44.7",
     "lucide-react": "^0.510.0",
