@@ -21,7 +21,6 @@ export async function GET(req: NextRequest) {
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
 
-    // Delete history older than 7 days for free users first
     const proCustomers = await db.query.licenses.findMany({
       where: eq(licenses.status, "active"),
       columns: { customerId: true },
@@ -39,20 +38,21 @@ export async function GET(req: NextRequest) {
 
     let freeDeleted = 0;
     if (freeHistoryIds.length > 0) {
-      const { rowCount } = await db
+      const deleted = await db
         .delete(queryHistory)
-        .where(inArray(queryHistory.id, freeHistoryIds));
-      freeDeleted = rowCount ?? 0;
+        .where(inArray(queryHistory.id, freeHistoryIds))
+        .returning({ id: queryHistory.id });
+      freeDeleted = deleted.length;
     }
 
-    // Delete history older than 90 days for all users (even Pro)
-    const { rowCount: proDeleted } = await db
+    const proExpiredDeleted = await db
       .delete(queryHistory)
-      .where(lt(queryHistory.executedAt, ninetyDaysAgo));
+      .where(lt(queryHistory.executedAt, ninetyDaysAgo))
+      .returning({ id: queryHistory.id });
 
     return NextResponse.json({
       success: true,
-      deleted: { proExpired: proDeleted ?? 0, freeExpired: freeDeleted },
+      deleted: { proExpired: proExpiredDeleted.length, freeExpired: freeDeleted },
       timestamp: now.toISOString(),
     });
   } catch (error) {
