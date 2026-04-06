@@ -12,8 +12,8 @@ interface ConnectionCardProps {
     dbType: string
     environment: string
     sslEnabled: boolean
-    lastConnectedAt: string | null
-    createdAt: string
+    lastConnectedAt: Date | string | null
+    createdAt: Date | string
   }
 }
 
