@@ -19,7 +19,6 @@ import {
   Bookmark,
   Gauge,
   Lock,
-  AppWindow,
   Activity,
   Bell,
   FlaskConical,
