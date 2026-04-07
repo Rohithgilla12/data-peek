@@ -29,6 +29,7 @@ import {
   buildFullyQualifiedTableRef,
   quoteIdentifier
 } from '@/lib/sql-helpers'
+import { useClickCopy } from '@/hooks'
 import { getTypeColor } from '@/lib/type-colors'
 import { useEditStore } from '@/stores/edit-store'
 import { useSettingsStore } from '@/stores/settings-store'
@@ -151,51 +152,23 @@ function CopyableCell({
   onDoubleClick?: () => void
   children: React.ReactNode
 }) {
-  const clickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [copyState, setCopyState] = React.useState<'idle' | 'copied'>('idle')
-
-  React.useEffect(() => {
-    return () => {
-      if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
-    }
-  }, [])
-
-  const handleClick = React.useCallback(() => {
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
-    clickTimerRef.current = setTimeout(() => {
-      navigator.clipboard.writeText(value)
-      setCopyState('copied')
-      setTimeout(() => setCopyState('idle'), 1400)
-    }, 250)
-  }, [value])
-
-  const handleDoubleClick = React.useCallback(() => {
-    if (clickTimerRef.current) {
-      clearTimeout(clickTimerRef.current)
-      clickTimerRef.current = null
-    }
-    onDoubleClick?.()
-  }, [onDoubleClick])
-
-  const isCopied = copyState === 'copied'
+  const { copied, handleClick, handleDoubleClick } = useClickCopy({ onDoubleClick })
 
   return (
     <span
       className={cn(
         'relative cursor-default inline-flex items-center',
         'transition-[background-color] duration-200',
-        isCopied && 'rounded bg-green-500/10'
+        copied && 'rounded bg-green-500/10'
       )}
-      onClick={handleClick}
+      onClick={() => handleClick(value)}
       onDoubleClick={onDoubleClick ? handleDoubleClick : undefined}
       title={onDoubleClick ? 'Click to copy \u00b7 Double-click to edit' : 'Click to copy'}
     >
-      <span
-        className={cn('transition-opacity duration-150', isCopied ? 'opacity-0' : 'opacity-100')}
-      >
+      <span className={cn('transition-opacity duration-150', copied ? 'opacity-0' : 'opacity-100')}>
         {children}
       </span>
-      {isCopied && (
+      {copied && (
         <span className="absolute inset-0 flex items-center px-1 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
           <svg
             className="size-3 text-green-400 mr-1"

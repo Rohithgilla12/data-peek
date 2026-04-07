@@ -2,6 +2,7 @@ import * as React from 'react'
 import { X, Search, DatabaseZap } from 'lucide-react'
 import { Button, cn } from '@data-peek/ui'
 import { getTypeColor } from '@/lib/type-colors'
+import { useClickCopy } from '@/hooks'
 
 export interface FilterColumn {
   name: string
@@ -55,9 +56,11 @@ const BOOL_OPERATORS: FilterOperator[] = [
   { label: 'is empty', value: 'is_empty', description: 'Is null' }
 ]
 
-function getOperatorsForType(dataType: string): FilterOperator[] {
+type TypeCategory = 'bool' | 'numeric' | 'date' | 'string'
+
+function getTypeCategory(dataType: string): TypeCategory {
   const lower = dataType.toLowerCase()
-  if (lower.includes('bool')) return BOOL_OPERATORS
+  if (lower.includes('bool')) return 'bool'
   if (
     lower.includes('int') ||
     lower.includes('numeric') ||
@@ -69,28 +72,23 @@ function getOperatorsForType(dataType: string): FilterOperator[] {
     lower.includes('serial') ||
     lower.includes('bigint')
   )
-    return NUMERIC_OPERATORS
-  if (lower.includes('timestamp') || lower.includes('date') || lower.includes('time'))
-    return DATE_OPERATORS
+    return 'numeric'
+  if (lower.includes('timestamp') || lower.includes('date') || lower.includes('time')) return 'date'
+  return 'string'
+}
+
+function getOperatorsForType(dataType: string): FilterOperator[] {
+  const category = getTypeCategory(dataType)
+  if (category === 'bool') return BOOL_OPERATORS
+  if (category === 'numeric') return NUMERIC_OPERATORS
+  if (category === 'date') return DATE_OPERATORS
   return STRING_OPERATORS
 }
 
 function getDefaultOperator(dataType: string): string {
-  const lower = dataType.toLowerCase()
-  if (lower.includes('bool')) return 'is_true'
-  if (
-    lower.includes('int') ||
-    lower.includes('numeric') ||
-    lower.includes('decimal') ||
-    lower.includes('float') ||
-    lower.includes('double') ||
-    lower.includes('real') ||
-    lower.includes('money') ||
-    lower.includes('serial') ||
-    lower.includes('bigint')
-  )
-    return 'eq'
-  if (lower.includes('timestamp') || lower.includes('date')) return 'eq'
+  const category = getTypeCategory(dataType)
+  if (category === 'bool') return 'is_true'
+  if (category === 'numeric' || category === 'date') return 'eq'
   return 'contains'
 }
 
@@ -140,27 +138,39 @@ function chipMatchesRow(chip: FilterChip, row: Record<string, unknown>): boolean
     case 'ends_with':
       return strValue.endsWith(filterValue)
     case 'gt':
-      return Number(cellValue) > Number(chip.value)
     case 'gte':
-      return Number(cellValue) >= Number(chip.value)
     case 'lt':
-      return Number(cellValue) < Number(chip.value)
-    case 'lte':
-      return Number(cellValue) <= Number(chip.value)
+    case 'lte': {
+      const a = Number(cellValue)
+      const b = Number(chip.value)
+      const [cmp, ref] =
+        Number.isNaN(a) || Number.isNaN(b)
+          ? [new Date(String(cellValue)).getTime(), new Date(chip.value).getTime()]
+          : [a, b]
+      if (Number.isNaN(cmp) || Number.isNaN(ref)) return false
+      if (op === 'gt') return cmp > ref
+      if (op === 'gte') return cmp >= ref
+      if (op === 'lt') return cmp < ref
+      return cmp <= ref
+    }
     case 'between': {
       const parts = chip.value.split(',').map((s) => s.trim())
-      if (parts.length !== 2) return true
+      if (parts.length !== 2) return false
       const num = Number(cellValue)
-      return num >= Number(parts[0]) && num <= Number(parts[1])
+      if (!Number.isNaN(num)) return num >= Number(parts[0]) && num <= Number(parts[1])
+      const ts = new Date(String(cellValue)).getTime()
+      const lo = new Date(parts[0]).getTime()
+      const hi = new Date(parts[1]).getTime()
+      if (Number.isNaN(ts) || Number.isNaN(lo) || Number.isNaN(hi)) return false
+      return ts >= lo && ts <= hi
     }
     default:
       return strValue.includes(filterValue)
   }
 }
 
-let chipIdCounter = 0
 function nextChipId(): string {
-  return `fc_${++chipIdCounter}`
+  return crypto.randomUUID()
 }
 
 type BuilderStep = 'column' | 'operator' | 'value'
@@ -180,41 +190,22 @@ function FilterChipButton({
   onRemove: (chipId: string) => void
   chipDisplayLabel: (chip: FilterChip) => React.ReactNode
 }) {
-  const [justCopied, setJustCopied] = React.useState(false)
   const [isNew, setIsNew] = React.useState(true)
-  const clickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onDoubleClick = React.useCallback(() => onEdit(chip), [chip, onEdit])
+  const { copied, handleClick, handleDoubleClick } = useClickCopy({ onDoubleClick })
 
   React.useEffect(() => {
     const raf = requestAnimationFrame(() => setIsNew(false))
     return () => cancelAnimationFrame(raf)
   }, [])
 
-  React.useEffect(() => {
-    return () => {
-      if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
-    }
-  }, [])
-
-  const handleClick = React.useCallback(() => {
-    if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
-    clickTimerRef.current = setTimeout(() => {
-      onCopy(chip)
-      setJustCopied(true)
-      setTimeout(() => setJustCopied(false), 1400)
-    }, 250)
-  }, [chip, onCopy])
-
-  const handleDoubleClick = React.useCallback(() => {
-    if (clickTimerRef.current) {
-      clearTimeout(clickTimerRef.current)
-      clickTimerRef.current = null
-    }
-    onEdit(chip)
-  }, [chip, onEdit])
+  const onClick = React.useCallback(() => {
+    handleClick(chipToText(chip))
+  }, [chip, handleClick])
 
   return (
     <button
-      onClick={handleClick}
+      onClick={onClick}
       onDoubleClick={handleDoubleClick}
       className={cn(
         'group/chip relative flex items-center gap-1 px-2 py-0.5 rounded-md text-xs',
@@ -226,17 +217,15 @@ function FilterChipButton({
         isNew && 'motion-safe:duration-200',
         isEditing
           ? 'border-primary/50 bg-primary/10 ring-1 ring-primary/20'
-          : justCopied
+          : copied
             ? 'border-green-500/50 bg-green-500/10'
             : 'border-border/60 bg-muted/50'
       )}
     >
-      <span
-        className={cn('transition-opacity duration-150', justCopied ? 'opacity-0' : 'opacity-100')}
-      >
+      <span className={cn('transition-opacity duration-150', copied ? 'opacity-0' : 'opacity-100')}>
         {chipDisplayLabel(chip)}
       </span>
-      {justCopied && (
+      {copied && (
         <span className="absolute inset-0 flex items-center justify-center gap-1 text-green-400 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
           <svg
             className="size-3"
@@ -260,7 +249,7 @@ function FilterChipButton({
         tabIndex={-1}
         className={cn(
           'ml-0.5 transition-opacity duration-100',
-          justCopied ? 'opacity-0' : 'opacity-0 group-hover/chip:opacity-100'
+          copied ? 'opacity-0' : 'opacity-0 group-hover/chip:opacity-100'
         )}
         onClick={(e) => {
           e.stopPropagation()
