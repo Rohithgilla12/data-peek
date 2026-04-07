@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronDown } from 'lucide-react'
-import { StructuredData } from '@/components/seo/structured-data'
-import { AnimateOnScroll } from '@/components/ui/animate-on-scroll'
+import { ChevronDown, HelpCircle, MessageCircle } from 'lucide-react'
+import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/motion-wrapper'
+import { motion, AnimatePresence } from 'framer-motion'
+import Link from 'next/link'
 
 const faqs = [
   {
@@ -51,97 +52,84 @@ const faqs = [
     answer:
       'Yes. data-peek runs entirely on your machine. All queries go directly to your database — we never see your data. Connection credentials and AI API keys are encrypted locally. No telemetry, no analytics, no tracking. For AI features, you can use local Ollama models if you don\'t want data leaving your machine.',
   },
-  {
-    question: 'How many devices can I use?',
-    answer:
-      'Each license includes 3 device activations. Use it on your work laptop, home computer, and one more device. Need more? Just reach out.',
-  },
-  {
-    question: 'Can I get a refund?',
-    answer:
-      'Yes, 30-day money-back guarantee, no questions asked. If data-peek isn\'t right for you, just email us.',
-  },
 ]
 
 export function FAQ() {
-  const [openIndexes, setOpenIndexes] = useState<Set<number>>(new Set([0]))
-
-  const toggleFaq = (index: number) => {
-    setOpenIndexes((prev) => {
-      const next = new Set(prev)
-      if (next.has(index)) {
-        next.delete(index)
-      } else {
-        next.add(index)
-      }
-      return next
-    })
-  }
+  const [openIndex, setOpenIndex] = useState<number | null>(0)
 
   return (
-    <section id="faq" className="relative py-20 sm:py-32 overflow-hidden">
-      <StructuredData type="faq" data={{ faq: faqs }} />
-      {/* Background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[--color-surface]/30 to-transparent" />
+    <section id="faq" className="relative py-32 sm:py-48 overflow-hidden">
+      <div className="absolute inset-0 grid-pattern opacity-5" />
 
-      <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6">
-        {/* Section Header */}
-        <AnimateOnScroll className="text-center mb-10 sm:mb-16">
-          <p
-            className="text-xs uppercase tracking-[0.2em] text-[--color-accent] mb-3 sm:mb-4"
-            style={{ fontFamily: 'var(--font-mono)' }}
-          >
-            FAQ
+      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6">
+        <FadeIn className="text-center mb-16 sm:mb-24">
+          <p className="text-[12px] uppercase tracking-[0.4em] text-[--color-accent] mb-6 font-bold font-mono">
+            // Knowledge Base
           </p>
-          <h2
-            className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mb-4 sm:mb-6"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            Questions? Answers.
+          <h2 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tighter leading-[0.9] mb-8">
+            Questions?
+            <br />
+            <span className="text-[--color-text-secondary]">
+              Answers.
+            </span>
           </h2>
-        </AnimateOnScroll>
+        </FadeIn>
 
-        {/* FAQ List */}
-        <div className="space-y-3 sm:space-y-4">
+        <StaggerContainer className="space-y-4">
           {faqs.map((faq, index) => {
-            const isOpen = openIndexes.has(index)
+            const isOpen = openIndex === index
             return (
-              <div
-                key={index}
-                className="rounded-lg sm:rounded-xl border border-[--color-border] overflow-hidden bg-[--color-surface]/50"
-              >
-                <button
-                  onClick={() => toggleFaq(index)}
-                  className="w-full flex items-center justify-between p-4 sm:p-5 text-left hover:bg-[--color-surface] transition-colors"
-                >
-                  <span
-                    className="text-sm sm:text-base font-medium pr-3 sm:pr-4"
-                    style={{ fontFamily: 'var(--font-display)' }}
-                  >
-                    {faq.question}
-                  </span>
-                  <ChevronDown
-                    className={`w-4 h-4 sm:w-5 sm:h-5 text-[--color-text-muted] flex-shrink-0 transition-transform duration-200 ${
-                      isOpen ? 'rotate-180' : ''
-                    }`}
-                  />
-                </button>
+              <StaggerItem key={index}>
                 <div
-                  className={`overflow-hidden transition-all duration-300 ease-out ${
-                    isOpen ? 'max-h-96' : 'max-h-0'
+                  className={`group rounded-[2rem] border transition-all duration-500 overflow-hidden ${
+                    isOpen
+                      ? 'bg-white/[0.04] border-white/10 shadow-2xl shadow-black/20'
+                      : 'bg-white/[0.01] border-white/5 hover:bg-white/[0.02] hover:border-white/10'
                   }`}
                 >
-                  <p
-                    className="px-4 sm:px-5 pb-4 sm:pb-5 text-xs sm:text-sm text-[--color-text-secondary] leading-relaxed"
-                    style={{ fontFamily: 'var(--font-body)' }}
+                  <button
+                    onClick={() => setOpenIndex(isOpen ? null : index)}
+                    className="w-full flex items-center justify-between p-6 sm:p-8 text-left transition-colors"
                   >
-                    {faq.answer}
-                  </p>
+                    <span className="text-base sm:text-lg font-bold font-mono uppercase tracking-widest text-[--color-text-primary] pr-6">
+                      {faq.question}
+                    </span>
+                    <div className={`p-2 rounded-xl transition-all duration-300 ${isOpen ? 'bg-[--color-accent] text-[--color-background] rotate-180' : 'bg-white/5 text-[--color-text-muted] rotate-0'}`}>
+                       <ChevronDown className="w-5 h-5" />
+                    </div>
+                  </button>
+                  <AnimatePresence>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                      >
+                        <div className="px-6 sm:px-8 pb-8">
+                          <p className="text-sm sm:text-base text-[--color-text-secondary] font-mono leading-relaxed opacity-80 border-t border-white/5 pt-6">
+                            {faq.answer}
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
+              </StaggerItem>
             )
           })}
-        </div>
+        </StaggerContainer>
+
+        <FadeIn className="mt-20 text-center">
+           <div className="inline-flex items-center gap-4 p-4 rounded-3xl bg-white/[0.02] border border-white/5 backdrop-blur-sm">
+              <div className="w-10 h-10 rounded-2xl bg-[--color-accent]/10 flex items-center justify-center border border-[--color-accent]/20">
+                 <MessageCircle className="w-5 h-5 text-[--color-accent]" />
+              </div>
+              <p className="text-sm font-mono text-[--color-text-muted] pr-4">
+                 Still have questions? <Link href="https://x.com/gillarohith" target="_blank" className="text-[--color-accent] hover:underline uppercase tracking-widest font-bold">Ask me on X</Link>
+              </p>
+           </div>
+        </FadeIn>
       </div>
     </section>
   )

@@ -1,0 +1,42 @@
+---
+title: Analytics Tracker Guide
+description: How to use the marketing tracker and decide what to scale
+---
+
+# Analytics Tracker Guide
+
+Tracker file: `/apps/docs/content/docs/marketing/analytics-tracker.csv`
+
+## How To Use It Weekly
+
+1. Add one row per content asset and channel combination.
+2. Fill 24-hour metrics first, then update 7-day lag metrics.
+3. Mark `removal_flag` and reason immediately if any moderation event occurs.
+4. Capture one `top_objection` and one `top_request` from comments.
+5. Set `next_action` to preserve learning momentum.
+
+## Minimum Fields To Keep Accurate
+
+- `publish_date`
+- `content_asset`
+- `subreddit_or_platform`
+- `upvotes_7d`
+- `comments_7d`
+- `clicks_7d`
+- `github_stars_7d`
+- `desktop_downloads_7d`
+- `pro_signups_7d`
+- `removal_flag`
+
+## Scaling Rules
+
+- Double down on channels where `clicks_7d` and `desktop_downloads_7d` both trend up for two consecutive weeks.
+- Improve post framing where engagement is high but conversion is low.
+- Pause channel reuse for one week if a post is removed, then retry with a different format.
+
+## Weekly Review Questions
+
+- Which message generated the highest intent traffic?
+- Which objection appears most often?
+- Which subreddit produced useful product feedback, not just vanity metrics?
+- What is one messaging change for next week?

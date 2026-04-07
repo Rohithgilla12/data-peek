@@ -1,0 +1,35 @@
+---
+title: dev.to Series Calendar
+description: Eight-week content plan with hooks, outlines, CTA, and subreddit repurpose angles
+---
+
+# 8-Week dev.to Series
+
+Publish one article per week. Repurpose each post for one primary and one secondary subreddit with different framing.
+
+## Content Calendar
+
+| Week | Article Title | Hook | Outline | CTA | Primary Reddit Angle | Secondary Reddit Angle |
+|---|---|---|---|---|---|---|
+| 1 | Why I Built data-peek Instead of Using Existing SQL Clients | "I was losing context in heavyweight tools during 5-minute debugging sessions." | Problem framing, design principles, speed-first decisions, what was cut | Ask for "What feature should never be added?" | `r/SideProject`: founder story + before/after pain | `r/indiehackers`: journey + tradeoffs |
+| 2 | Supporting Multiple Databases with One Adapter Pattern | "One codebase, three SQL engines, one stable contract." | Adapter interface, per-engine differences, edge cases, regression strategy | Ask for adapter design critiques | `r/programming`: architecture deep-dive | `r/opensource`: implementation lessons |
+| 3 | Query Telemetry: How We Broke SQL Latency into Real Bottlenecks | "Slow query is not one problem, it is seven phases." | Telemetry phases, waterfall/timeline UI, benchmark percentile interpretation | Invite readers to share weird latency patterns | `r/webdev` (Saturday): UI + diagnostics design | `r/SaaS`: productizing observability lessons |
+| 4 | Building an AI SQL Assistant Without Sending User Data | "We wanted AI help without shipping customer rows to an LLM." | BYOK model, schema-only context, safety guardrails, UX for trust | Ask for threat-model feedback | `r/opensource`: privacy-first AI workflow | `r/SaaS`: balancing AI utility vs risk |
+| 5 | SSH Tunnels for Private Databases: A Practical Developer Workflow | "Most production DBs are not publicly reachable, and that is good." | Bastion flow, key auth pitfalls, common failures, troubleshooting checklist | Ask for environment-specific gotchas | `r/SideProject`: practical workflow post | `r/programming`: secure connectivity deep-dive |
+| 6 | ER Diagrams that Actually Help During Debugging | "Schema diagrams are useful only if they speed up the next query." | ERD interaction model, FK navigation flow, search and hub tables, usage patterns | Ask for schema UX pain points | `r/opensource`: feature design rationale | `r/webdev` (Saturday): interaction-heavy UI demo |
+| 7 | The Honest Indie License Model: Free Personal, Paid Commercial | "How to monetize without punishing solo developers." | License boundary decisions, trust model, pricing rationale, what we will change | Ask for feedback on fairness and clarity | `r/indiehackers`: business model breakdown | `r/SaaS`: pricing and packaging discussion |
+| 8 | 8 Weeks of Shipping and Distribution: What Worked, What Flopped | "Good product updates are invisible if distribution is weak." | Weekly metrics, post-performance analysis, channel learnings, next sprint | Ask readers for channel ideas and collabs | `r/indiehackers`: build-in-public retrospective | `r/SaaS`: distribution and retention learnings |
+
+## Article Structure Template (Use Every Week)
+
+1. 2-3 sentence founder or user problem intro.
+2. Concrete implementation section with examples.
+3. 3 lessons learned (1 success, 1 failure, 1 open question).
+4. Short conclusion with one specific feedback request.
+
+## Repurposing Rules
+
+- Do not paste dev.to article directly to Reddit.
+- Keep Reddit body self-contained and useful without any link click.
+- Change title, opening paragraph, and final question per subreddit.
+- Include one visual (screenshot or short clip) where subreddit norms favor demos.

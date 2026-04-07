@@ -3,6 +3,10 @@ import path from 'path'
 import matter from 'gray-matter'
 import readingTime from 'reading-time'
 
+if (typeof window !== 'undefined') {
+  throw new Error('This module can only be used on the server.')
+}
+
 const BLOG_DIR = path.join(process.cwd(), '../../notes')
 
 export interface BlogPost {

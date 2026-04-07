@@ -4,26 +4,31 @@ import { Header } from '@/components/marketing/header'
 import { Footer } from '@/components/marketing/footer'
 import { Breadcrumbs } from '@/components/seo/breadcrumbs'
 import { generateMetadata as generateSeoMetadata } from '@/lib/seo'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, BarChart3 } from 'lucide-react'
+import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/motion-wrapper'
+import { DataSubstrate } from '@/components/marketing/data-substrate'
 
 const alternatives = [
   {
     slug: 'pgadmin',
     name: 'pgAdmin',
-    description: 'Compare with pgAdmin - faster startup and better UX.',
+    description: 'Stop waiting for pgAdmin to load. data-peek is lighter, faster, and built for modern engineering workflows.',
     href: '/compare/pgadmin',
+    color: '#336791',
   },
   {
     slug: 'dbeaver',
     name: 'DBeaver',
-    description: 'Compare with DBeaver - lighter and more focused.',
+    description: 'Ditch the enterprise Java bloat. data-peek offers a focused, clean, and AI-powered experience for modern developers.',
     href: '/compare/dbeaver',
+    color: '#fbbf24',
   },
   {
     slug: 'tableplus',
     name: 'TablePlus',
-    description: 'Compare with TablePlus - open source with AI features.',
+    description: 'Similar philosophy, but data-peek is open source and includes deeper AI-powered integrations.',
     href: '/compare/tableplus',
+    color: '#10b981',
   },
 ]
 
@@ -45,52 +50,79 @@ export default function ComparePage() {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="pt-24 sm:pt-32 pb-16 sm:pb-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <Breadcrumbs items={[{ label: 'Compare', href: '/compare' }]} />
+      <main className="relative pt-32 sm:pt-48 pb-24 overflow-hidden">
+        {/* Backgrounds */}
+        <div className="absolute inset-0 grid-pattern opacity-20" />
+        <DataSubstrate />
 
-          {/* Hero Section */}
-          <section className="text-center mb-12 sm:mb-16">
-            <h1
-              className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mb-4"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              Compare data-peek
-            </h1>
-            <p className="text-base sm:text-lg text-[--color-text-secondary] max-w-2xl mx-auto">
-              See how data-peek compares to other database clients. Faster, lighter, and more focused.
-            </p>
-          </section>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
+          <FadeIn>
+            <div className="mb-12 flex justify-center">
+              <Breadcrumbs items={[{ label: 'Compare', href: '/compare' }]} />
+            </div>
+
+            {/* Hero Section */}
+            <section className="text-center mb-24 sm:mb-32">
+              <div className="flex items-center justify-center gap-3 mb-8">
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 glass-card">
+                  <BarChart3 className="w-3.5 h-3.5 text-[--color-accent]" />
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[--color-text-secondary]">
+                    Benchmarked
+                  </span>
+                </div>
+              </div>
+
+              <h1
+                className="text-6xl sm:text-8xl md:text-9xl font-bold tracking-tighter leading-[0.8] mb-10 text-white font-mono uppercase"
+              >
+                The
+                <br />
+                <span className="text-[--color-text-secondary]">Standard.</span>
+              </h1>
+              
+              <p className="text-base sm:text-xl text-[--color-text-muted] max-w-2xl mx-auto font-mono leading-relaxed">
+                See how data-peek stacks up against the competition. 
+                Engineered to be faster, lighter, and more productive.
+              </p>
+            </section>
+          </FadeIn>
 
           {/* Alternatives Grid */}
-          <section>
-            <div className="grid sm:grid-cols-3 gap-6">
-              {alternatives.map((alt) => (
+          <StaggerContainer className="grid sm:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto">
+            {alternatives.map((alt) => (
+              <StaggerItem key={alt.slug}>
                 <Link
-                  key={alt.slug}
                   href={alt.href}
-                  className="group relative p-6 sm:p-8 rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] hover:border-[--color-accent]/40 transition-all duration-300 hover:-translate-y-1"
+                  className="group relative p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] transition-all duration-500 border-flow overflow-hidden block h-full"
+                  style={{ '--feature-color': alt.color } as React.CSSProperties}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <h2
-                      className="text-xl sm:text-2xl font-semibold"
-                      style={{ fontFamily: 'var(--font-display)' }}
-                    >
-                      vs {alt.name}
-                    </h2>
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono uppercase tracking-widest text-[--color-text-muted] group-hover:text-white transition-colors">
+                      VS {alt.name}
+                    </div>
                     <ArrowRight className="w-5 h-5 text-[--color-text-muted] group-hover:text-[--color-accent] group-hover:translate-x-1 transition-all" />
                   </div>
-                  <p className="text-sm sm:text-base text-[--color-text-secondary]">
+                  
+                  <h2
+                    className="text-2xl sm:text-3xl font-bold mb-4 font-mono uppercase tracking-widest text-white"
+                  >
+                    {alt.name}
+                  </h2>
+                  <p className="text-sm sm:text-base text-[--color-text-secondary] font-mono leading-relaxed group-hover:text-white/90 transition-colors">
                     {alt.description}
                   </p>
+
+                  <div className="mt-8 flex items-center gap-4 opacity-40 group-hover:opacity-100 transition-opacity duration-500">
+                    <div className="h-px flex-1 bg-white/10" />
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-[--color-accent]">Details</span>
+                  </div>
                 </Link>
-              ))}
-            </div>
-          </section>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
         </div>
       </main>
       <Footer />
     </div>
   )
 }
-

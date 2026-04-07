@@ -3,17 +3,20 @@ import { Header } from "@/components/marketing/header";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { generateMetadata as generateSeoMetadata } from "@/lib/seo";
-import { Check, Download } from "lucide-react";
+import { Check, Download, ArrowRight, BarChart3 } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FadeIn, StaggerContainer, StaggerItem, ScaleIn } from "@/components/ui/motion-wrapper";
+import { DataSubstrate } from "@/components/marketing/data-substrate";
+import React from "react";
 
 const ALTERNATIVES = {
   pgadmin: {
     name: "pgAdmin",
     title: "data-peek vs pgAdmin",
     description:
-      "Compare data-peek with pgAdmin. Faster startup, better UX, and modern features for PostgreSQL database management.",
+      "Stop waiting for pgAdmin to load. data-peek is lighter, faster, and built for modern engineering workflows.",
     comparison: [
       {
         feature: "Startup Time",
@@ -29,7 +32,7 @@ const ALTERNATIVES = {
       },
       {
         feature: "AI Assistant",
-        datapeek: "Yes",
+        datapeek: "Yes (Built-in)",
         alternative: "No",
         datapeekWins: true,
       },
@@ -51,25 +54,15 @@ const ALTERNATIVES = {
         alternative: "Free",
         datapeekWins: false,
       },
-      {
-        feature: "Web Interface",
-        datapeek: "Desktop app",
-        alternative: "Web-based",
-        datapeekWins: false,
-      },
     ],
-    keywords: [
-      "pgAdmin alternative",
-      "pgAdmin vs data-peek",
-      "PostgreSQL client alternative",
-      "better than pgAdmin",
-    ],
+    color: "#336791",
+    keywords: ["pgAdmin alternative", "pgAdmin vs data-peek"],
   },
   dbeaver: {
     name: "DBeaver",
     title: "data-peek vs DBeaver",
     description:
-      "Compare data-peek with DBeaver. Faster, lighter, and more focused on the essentials of database querying.",
+      "Ditch the enterprise Java bloat. data-peek offers a focused, clean, and AI-powered experience for modern developers.",
     comparison: [
       {
         feature: "Startup Time",
@@ -79,26 +72,26 @@ const ALTERNATIVES = {
       },
       {
         feature: "Resource Usage",
-        datapeek: "Lightweight",
+        datapeek: "Lightweight Native",
         alternative: "Heavy (Java-based)",
         datapeekWins: true,
       },
       {
         feature: "AI Assistant",
-        datapeek: "Yes",
+        datapeek: "Yes (Schema-aware)",
         alternative: "No",
         datapeekWins: true,
       },
       {
         feature: "User Interface",
         datapeek: "Modern, minimal",
-        alternative: "Complex, feature-rich",
+        alternative: "Complex, cluttered",
         datapeekWins: true,
       },
       {
-        feature: "Keyboard Shortcuts",
-        datapeek: "Comprehensive",
-        alternative: "Limited",
+        feature: "Keyboard Experience",
+        datapeek: "Command Palette first",
+        alternative: "Toolbar heavy",
         datapeekWins: true,
       },
       {
@@ -107,35 +100,25 @@ const ALTERNATIVES = {
         alternative: "Free (Community)",
         datapeekWins: false,
       },
-      {
-        feature: "Database Support",
-        datapeek: "4 databases",
-        alternative: "80+ databases",
-        datapeekWins: false,
-      },
     ],
-    keywords: [
-      "DBeaver alternative",
-      "DBeaver vs data-peek",
-      "database client alternative",
-      "better than DBeaver",
-    ],
+    color: "#fbbf24",
+    keywords: ["DBeaver alternative", "DBeaver vs data-peek"],
   },
   tableplus: {
     name: "TablePlus",
     title: "data-peek vs TablePlus",
     description:
-      "Compare data-peek with TablePlus. Similar philosophy, but data-peek is open source and includes AI-powered features.",
+      "Similar philosophy, but data-peek is open source and includes deeper AI-powered integrations.",
     comparison: [
       {
         feature: "Open Source",
-        datapeek: "Yes",
+        datapeek: "Yes (MIT)",
         alternative: "No",
         datapeekWins: true,
       },
       {
         feature: "AI Assistant",
-        datapeek: "Yes",
+        datapeek: "Yes (BYOK)",
         alternative: "No",
         datapeekWins: true,
       },
@@ -152,30 +135,20 @@ const ALTERNATIVES = {
         datapeekWins: true,
       },
       {
-        feature: "User Interface",
-        datapeek: "Modern, minimal",
-        alternative: "Modern, polished",
-        datapeekWins: false,
-      },
-      {
         feature: "Query Performance",
         datapeek: "Advanced telemetry",
-        alternative: "Good",
+        alternative: "Standard",
         datapeekWins: true,
       },
       {
-        feature: "Database Support",
-        datapeek: "4 databases",
-        alternative: "10+ databases",
+        feature: "Resource Usage",
+        datapeek: "Optimized native",
+        alternative: "High performance",
         datapeekWins: false,
       },
     ],
-    keywords: [
-      "TablePlus alternative",
-      "TablePlus vs data-peek",
-      "free TablePlus alternative",
-      "open source database client",
-    ],
+    color: "#10b981",
+    keywords: ["TablePlus alternative", "TablePlus vs data-peek"],
   },
 } as const;
 
@@ -211,7 +184,7 @@ export async function generateMetadata({
   });
 }
 
-export default async function ComparePage({ params }: ComparePageProps) {
+export default async function CompareDetailPage({ params }: ComparePageProps) {
   const { alternative } = await params;
   const altInfo = ALTERNATIVES[alternative as AlternativeSlug];
 
@@ -222,97 +195,136 @@ export default async function ComparePage({ params }: ComparePageProps) {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="pt-24 sm:pt-32 pb-16 sm:pb-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6">
-          <Breadcrumbs
-            items={[
-              { label: "Compare", href: "/compare" },
-              { label: altInfo.name, href: `/compare/${alternative}` },
-            ]}
-          />
+      <main className="relative pt-32 sm:pt-48 pb-24 overflow-hidden">
+        {/* Backgrounds */}
+        <div className="absolute inset-0 grid-pattern opacity-20" />
+        <DataSubstrate />
 
-          {/* Hero Section */}
-          <section className="text-center mb-12 sm:mb-16">
-            <h1
-              className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mb-4"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {altInfo.title}
-            </h1>
-            <p className="text-base sm:text-lg text-[--color-text-secondary] max-w-2xl mx-auto">
-              {altInfo.description}
-            </p>
-          </section>
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
+          <FadeIn>
+            <div className="mb-12 flex justify-center">
+              <Breadcrumbs
+                items={[
+                  { label: "Compare", href: "/compare" },
+                  { label: altInfo.name, href: `/compare/${alternative}` },
+                ]}
+              />
+            </div>
+
+            {/* Hero Section */}
+            <section className="text-center mb-20 sm:mb-32">
+              <div className="flex items-center justify-center gap-3 mb-8">
+                <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 glass-card">
+                  <BarChart3 className="w-3.5 h-3.5 text-[--color-accent]" />
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-[--color-text-secondary]">
+                    Comparison
+                  </span>
+                </div>
+              </div>
+
+              <h1
+                className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-10 text-white font-mono uppercase"
+              >
+                vs
+                <br />
+                <span className="text-[--color-text-secondary]">{altInfo.name}.</span>
+              </h1>
+              <p className="text-base sm:text-xl text-[--color-text-muted] max-w-2xl mx-auto mb-12 font-mono leading-relaxed">
+                {altInfo.description}
+              </p>
+              
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                <Button size="xl" className="group rounded-full px-10 shadow-2xl shadow-[--color-accent]/20 hover:shadow-[--color-accent]/40 transition-all duration-500" asChild>
+                  <Link href="/download">
+                    <Download className="w-5 h-5 group-hover:animate-bounce" />
+                    <span>Switch to data-peek</span>
+                  </Link>
+                </Button>
+              </div>
+            </section>
+          </FadeIn>
 
           {/* Comparison Table */}
-          <section className="mb-12 sm:mb-16">
-            <div className="rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-[--color-border]">
-                      <th className="text-left p-4 font-semibold text-sm">
-                        Feature
-                      </th>
-                      <th className="text-center p-4 font-semibold text-sm">
-                        data-peek
-                      </th>
-                      <th className="text-center p-4 font-semibold text-sm">
-                        {altInfo.name}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {altInfo.comparison.map((row, index) => (
-                      <tr
-                        key={row.feature}
-                        className={`border-b border-[--color-border-subtle] ${
-                          index % 2 === 0 ? "bg-[--color-background]" : ""
-                        }`}
-                      >
-                        <td className="p-4 text-sm font-medium">
-                          {row.feature}
-                        </td>
-                        <td className="p-4 text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <span className="text-sm">{row.datapeek}</span>
-                            {row.datapeekWins && (
-                              <Check className="w-4 h-4 text-[--color-success]" />
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-4 text-center">
-                          <span className="text-sm text-[--color-text-secondary]">
-                            {row.alternative}
-                          </span>
-                        </td>
+          <section className="mb-32">
+            <FadeIn>
+              <div className="rounded-[2.5rem] bg-white/[0.03] border border-white/10 overflow-hidden shadow-3xl glass">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left font-mono">
+                    <thead>
+                      <tr className="border-b border-white/10 bg-white/5">
+                        <th className="p-6 sm:p-8 text-[10px] uppercase tracking-[0.2em] font-bold text-[--color-text-muted]">
+                          Feature
+                        </th>
+                        <th className="p-6 sm:p-8 text-[10px] uppercase tracking-[0.2em] font-bold text-[--color-accent]">
+                          data-peek
+                        </th>
+                        <th className="p-6 sm:p-8 text-[10px] uppercase tracking-[0.2em] font-bold text-[--color-text-muted]">
+                          {altInfo.name}
+                        </th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {altInfo.comparison.map((row, index) => (
+                        <tr
+                          key={row.feature}
+                          className="group hover:bg-white/[0.02] transition-colors"
+                        >
+                          <td className="p-6 sm:p-8 text-sm font-bold text-white uppercase tracking-wider">
+                            {row.feature}
+                          </td>
+                          <td className="p-6 sm:p-8">
+                            <div className="flex items-center gap-3">
+                              <span className={`text-sm ${row.datapeekWins ? 'text-white' : 'text-[--color-text-secondary]'}`}>{row.datapeek}</span>
+                              {row.datapeekWins && (
+                                <div className="p-1 rounded-full bg-[--color-success]/10 border border-[--color-success]/20">
+                                  <Check className="w-3.5 h-3.5 text-[--color-success]" />
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-6 sm:p-8">
+                            <span className="text-sm text-[--color-text-muted]">
+                              {row.alternative}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-            </div>
+            </FadeIn>
           </section>
 
           {/* CTA Section */}
-          <section className="rounded-xl sm:rounded-2xl bg-linear-to-r from-[--color-accent]/10 to-transparent border border-[--color-accent]/20 p-6 sm:p-8 text-center">
-            <h2
-              className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Ready to try data-peek?
-            </h2>
-            <p className="text-sm sm:text-base text-[--color-text-secondary] mb-6 sm:mb-8">
-              Download free and see why developers are switching from{" "}
-              {altInfo.name}.
-            </p>
-            <Button size="lg" asChild>
-              <Link href="/download">
-                <Download className="w-4 h-4" />
-                Download Free
-              </Link>
-            </Button>
-          </section>
+          <FadeIn>
+            <section className="relative rounded-[3rem] bg-white/[0.02] border border-white/10 p-8 sm:p-16 text-center overflow-hidden">
+              <div className="absolute inset-0 grid-pattern opacity-10" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[--color-accent]/5 to-purple-600/5" />
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 rounded-2xl bg-[--color-accent]/10 flex items-center justify-center mx-auto mb-8 border border-[--color-accent]/20">
+                  <BarChart3 className="w-8 h-8 text-[--color-accent]" />
+                </div>
+                <h2
+                  className="text-3xl sm:text-5xl font-bold mb-6 font-mono uppercase tracking-widest text-white"
+                >
+                  See the difference.
+                </h2>
+                <p className="text-base sm:text-lg text-[--color-text-muted] mb-10 font-mono max-w-xl mx-auto leading-relaxed">
+                  Experience why thousands of developers are making the switch from {altInfo.name} to a modern, AI-powered workflow.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                  <Button size="xl" className="group rounded-2xl px-12 bg-[--color-accent] text-[--color-background] hover:bg-[--color-accent]/90 shadow-2xl shadow-[--color-accent]/20 font-mono uppercase tracking-widest font-bold" asChild>
+                    <Link href="/download">
+                      Download data-peek
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </section>
+          </FadeIn>
         </div>
       </main>
       <Footer />

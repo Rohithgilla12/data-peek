@@ -12,7 +12,10 @@ import { getBlogPost, getAllBlogSlugs } from '@/lib/blog'
 import { mdxComponents } from '@/components/blog/mdx-components'
 import { ReadingProgress } from '@/components/blog/reading-progress'
 import { generateMetadata as generateSeoMetadata, SITE_CONFIG } from '@/lib/seo'
-import { ArrowLeft, Calendar, Clock, User } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, User, Terminal, Sparkles, Database } from 'lucide-react'
+import { FadeIn, StaggerContainer, StaggerItem, ScaleIn } from '@/components/ui/motion-wrapper'
+import { DataSubstrate } from '@/components/marketing/data-substrate'
+import { Button } from '@/components/ui/button'
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>
@@ -80,143 +83,138 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           },
         }}
       />
-      <main className="pt-20 md:pt-24">
-        <div className="max-w-4xl mx-auto px-6 pt-8">
-          <Breadcrumbs
-            items={[
-              { label: 'Blog', href: '/blog' },
-              { label: post.title, href: `/blog/${slug}` },
-            ]}
-          />
-          <Link
-            href="/blog"
-            className="group inline-flex items-center gap-2 text-sm text-[--color-text-muted] hover:text-[--color-accent] transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Back to blog</span>
-          </Link>
-        </div>
+      <main className="relative pt-32 sm:pt-48 pb-24 overflow-hidden">
+        {/* Backgrounds */}
+        <div className="absolute inset-0 grid-pattern opacity-20" />
+        <DataSubstrate />
 
-        <header className="relative py-12 md:py-20 overflow-hidden">
-          <div className="absolute inset-0 grid-pattern opacity-30" />
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[--color-background]" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-[--color-accent]/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="relative z-10 max-w-4xl mx-auto px-6">
+          <FadeIn>
+            <div className="mb-12 flex items-center justify-between">
+              <Breadcrumbs
+                items={[
+                  { label: 'Blog', href: '/blog' },
+                  { label: post.title, href: `/blog/${slug}` },
+                ]}
+              />
+              <Link
+                href="/blog"
+                className="group inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[--color-text-muted] hover:text-[--color-accent] transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                <span>Back to Journal</span>
+              </Link>
+            </div>
 
-          <div className="relative max-w-4xl mx-auto px-6">
-            <div className="animate-fade-in-up">
-              {post.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {post.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="px-3 py-1 text-xs font-medium rounded-full bg-[--color-accent]/10 border border-[--color-accent]/20 text-[--color-accent]"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
+            <header className="mb-16 md:mb-24">
+              <div className="flex flex-wrap gap-2 mb-8">
+                {post.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest rounded-full bg-[--color-accent]/10 border border-[--color-accent]/20 text-[--color-accent]"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
 
               <h1
-                className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight"
-                style={{ fontFamily: 'var(--font-display)' }}
+                className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter mb-8 text-white font-mono uppercase leading-[0.9]"
               >
                 {post.title}
               </h1>
 
-              <p className="text-lg md:text-xl text-[--color-text-secondary] mb-10 max-w-3xl leading-relaxed">
+              <p className="text-lg md:text-2xl text-[--color-text-secondary] mb-12 leading-relaxed font-mono opacity-90">
                 {post.description}
               </p>
 
-              <div className="flex flex-wrap items-center gap-6 py-6 border-t border-b border-[--color-border-subtle]">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[--color-accent]/20 to-[--color-accent]/5 border border-[--color-accent]/30 flex items-center justify-center">
-                    <User className="w-4 h-4 text-[--color-accent]" />
+              <div className="flex flex-wrap items-center gap-8 py-8 border-t border-b border-white/5">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <User className="w-5 h-5 text-[--color-accent]" />
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-[--color-text-primary]">{post.author}</div>
-                    <div className="text-xs text-[--color-text-muted]">Author</div>
+                    <div className="text-sm font-bold text-white font-mono uppercase tracking-widest">{post.author}</div>
+                    <div className="text-[10px] text-[--color-text-muted] font-mono uppercase tracking-widest">Engineer</div>
                   </div>
                 </div>
 
-                <div className="w-px h-8 bg-[--color-border-subtle] hidden sm:block" />
+                <div className="h-10 w-px bg-white/5 hidden sm:block" />
 
-                <div className="flex items-center gap-2 text-[--color-text-muted]">
+                <div className="flex items-center gap-3 text-[--color-text-muted] font-mono text-[10px] uppercase tracking-widest">
                   <Calendar className="w-4 h-4" />
-                  <time dateTime={post.date} className="text-sm">{formatDate(post.date)}</time>
+                  <time dateTime={post.date}>{formatDate(post.date)}</time>
                 </div>
 
-                <div className="flex items-center gap-2 text-[--color-text-muted]">
+                <div className="flex items-center gap-3 text-[--color-text-muted] font-mono text-[10px] uppercase tracking-widest">
                   <Clock className="w-4 h-4" />
-                  <span className="text-sm">{post.readingTime}</span>
+                  <span>{post.readingTime} read</span>
                 </div>
               </div>
-            </div>
-          </div>
-        </header>
+            </header>
+          </FadeIn>
 
-        <article className="pb-16 md:pb-24">
-          <div className="max-w-4xl mx-auto px-6">
-            <div className="prose prose-invert max-w-none animate-fade-in-up delay-200">
-              <MDXRemote
-                source={post.content}
-                components={mdxComponents}
-                options={{
-                  mdxOptions: {
-                    remarkPlugins: [remarkGfm],
-                    rehypePlugins: [
-                      [
-                        rehypePrettyCode,
-                        {
-                          theme: 'tokyo-night',
-                          keepBackground: true,
-                          defaultLang: 'plaintext',
-                        },
+          <FadeIn>
+            <article className="pb-24">
+              <div className="prose prose-invert max-w-none font-mono text-sm sm:text-base leading-relaxed prose-headings:font-mono prose-headings:uppercase prose-headings:tracking-tighter prose-a:text-[--color-accent] prose-pre:bg-white/[0.02] prose-pre:border prose-pre:border-white/10 prose-pre:rounded-2xl">
+                <MDXRemote
+                  source={post.content}
+                  components={mdxComponents}
+                  options={{
+                    mdxOptions: {
+                      remarkPlugins: [remarkGfm],
+                      rehypePlugins: [
+                        [
+                          rehypePrettyCode,
+                          {
+                            theme: 'tokyo-night',
+                            keepBackground: true,
+                            defaultLang: 'plaintext',
+                          },
+                        ],
                       ],
-                    ],
-                  },
-                }}
-              />
-            </div>
-          </div>
-        </article>
+                    },
+                  }}
+                />
+              </div>
+            </article>
+          </FadeIn>
 
-        <section className="relative py-16 md:py-24 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[--color-surface]/50 to-[--color-surface]" />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[--color-border] to-transparent" />
-
-          <div className="relative max-w-4xl mx-auto px-6 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[--color-accent]/20 to-[--color-accent]/5 border border-[--color-accent]/30 mb-8">
-              <span className="text-2xl">🚀</span>
-            </div>
-
-            <h2
-              className="text-2xl md:text-3xl font-bold mb-4"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              Ready to try data-peek?
-            </h2>
-            <p className="text-[--color-text-secondary] mb-8 max-w-lg mx-auto">
-              A fast, minimal SQL client that gets out of your way.
-              Download free and see the difference.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link
-                href="/download"
-                className="group relative px-8 py-4 rounded-xl bg-[--color-accent] text-[--color-background] font-semibold hover:bg-[--color-accent-dim] transition-all duration-300 overflow-hidden"
-              >
-                <span className="relative z-10">Download Free</span>
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-              </Link>
-              <Link
-                href="/blog"
-                className="px-8 py-4 rounded-xl border border-[--color-border] text-[--color-text-secondary] hover:text-[--color-text-primary] hover:border-[--color-text-muted] hover:bg-[--color-surface] transition-all duration-300"
-              >
-                More Articles
-              </Link>
-            </div>
-          </div>
-        </section>
+          {/* CTA Section */}
+          <FadeIn>
+            <section className="relative rounded-[3rem] bg-white/[0.02] border border-white/10 p-8 sm:p-16 text-center overflow-hidden">
+              <div className="absolute inset-0 grid-pattern opacity-10" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[--color-accent]/5 to-purple-600/5" />
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 rounded-2xl bg-[--color-accent]/10 flex items-center justify-center mx-auto mb-8 border border-[--color-accent]/20">
+                  <Sparkles className="w-8 h-8 text-[--color-accent]" />
+                </div>
+                <h2
+                  className="text-3xl sm:text-5xl font-bold mb-6 font-mono uppercase tracking-widest text-white"
+                >
+                  Join the Future.
+                </h2>
+                <p className="text-base sm:text-lg text-[--color-text-muted] mb-10 font-mono max-w-xl mx-auto leading-relaxed">
+                  A database client built for professional developers. Experience the speed of native code and the power of AI.
+                </p>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                  <Button size="xl" className="group rounded-2xl px-12 bg-[--color-accent] text-[--color-background] hover:bg-[--color-accent]/90 shadow-2xl shadow-[--color-accent]/20 font-mono uppercase tracking-widest font-bold" asChild>
+                    <Link href="/download">
+                      Download Free
+                      <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />
+                    </Link>
+                  </Button>
+                  <Button variant="outline" size="xl" className="rounded-2xl px-10 border-white/10 hover:bg-white/5 font-mono uppercase tracking-widest font-bold group" asChild>
+                    <Link href="/blog">
+                      More Articles
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </section>
+          </FadeIn>
+        </div>
       </main>
       <Footer />
     </div>

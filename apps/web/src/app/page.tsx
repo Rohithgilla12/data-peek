@@ -1,12 +1,14 @@
 import { Metadata } from "next";
 import { Header } from "@/components/marketing/header";
-import { Hero } from "@/components/marketing/hero";
+import { HeroV2 as Hero } from "@/components/marketing/hero-v2";
+import { ScrollProgress } from "@/components/ui/scroll-progress";
 // Features layout variants:
 import { FeaturesTabbed as Features } from "@/components/marketing/features-tabbed";
 import { Pricing } from "@/components/marketing/pricing";
 import { FAQ } from "@/components/marketing/faq";
 import { CTA } from "@/components/marketing/cta";
 import { Footer } from "@/components/marketing/footer";
+import { PokemonBuddy } from "@/components/marketing/pokemon-buddy";
 import { generateMetadata as generateSeoMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = generateSeoMetadata({
@@ -35,6 +37,7 @@ export const metadata: Metadata = generateSeoMetadata({
 export default function Home() {
   return (
     <div className="min-h-screen">
+      <ScrollProgress />
       <Header />
       <main>
         <Hero />
@@ -44,6 +47,7 @@ export default function Home() {
         <CTA />
       </main>
       <Footer />
+      <PokemonBuddy />
     </div>
   );
 }
