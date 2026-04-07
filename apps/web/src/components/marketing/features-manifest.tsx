@@ -1,7 +1,6 @@
 'use client'
 
 import Image from 'next/image'
-import Link from 'next/link'
 import { useState } from 'react'
 import { AnimateOnScroll } from '@/components/ui/animate-on-scroll'
 import { DataSubstrate } from './data-substrate'

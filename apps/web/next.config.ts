@@ -42,6 +42,10 @@ export default withSentryConfig(nextConfig, {
   project: 'data-peek-app',
   silent: !process.env.CI,
   widenClientFileUpload: true,
-  disableLogger: true,
-  automaticVercelMonitors: true,
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+    automaticVercelMonitors: true,
+  },
 })
