@@ -31,7 +31,6 @@ function BentoCard({ feature }: { feature: Feature }) {
   const size = getBentoSize(feature)
   const isLarge = size === 'large'
   const isTall = size === 'tall'
-  const isWide = size === 'wide'
   const hasScreenshot = !!feature.screenshot
   const isLightning = feature.title === 'Lightning Fast'
 

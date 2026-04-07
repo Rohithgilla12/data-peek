@@ -31,6 +31,7 @@ const footerLinks = {
     },
     { label: "Blog", href: "/blog" },
     { label: "FAQ", href: "/#faq" },
+    { label: "Students & OSS", href: "/community" },
     { label: "Support", href: "mailto:gillarohith1@gmail.com", external: true },
   ],
   Legal: [

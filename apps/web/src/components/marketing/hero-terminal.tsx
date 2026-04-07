@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useTypewriter } from '@/hooks/use-typewriter'
 
 interface Scene {
@@ -118,31 +118,55 @@ function CellValue({ value, column }: { value: string; column: string }) {
   return <span>{value}</span>
 }
 
+const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
+
+function subscribeReducedMotion(callback: () => void) {
+  const mql = window.matchMedia(reducedMotionQuery)
+  mql.addEventListener('change', callback)
+  return () => mql.removeEventListener('change', callback)
+}
+
+function getReducedMotion() {
+  return window.matchMedia(reducedMotionQuery).matches
+}
+
+function getReducedMotionServer() {
+  return false
+}
+
+function subscribeResize(callback: () => void) {
+  window.addEventListener('resize', callback)
+  return () => window.removeEventListener('resize', callback)
+}
+
+function getIsMobile() {
+  return window.innerWidth < 640
+}
+
+function getIsMobileServer() {
+  return false
+}
+
 export function HeroTerminal() {
   const [sceneIndex, setSceneIndex] = useState(0)
   const [phase, setPhase] = useState<'typing' | 'executing' | 'results' | 'pause'>('typing')
   const [visibleRows, setVisibleRows] = useState(0)
-  const [isMobile, setIsMobile] = useState(false)
-  const prefersReducedMotion = useRef(false)
+  const isMobile = useSyncExternalStore(subscribeResize, getIsMobile, getIsMobileServer)
+  const prefersReducedMotion = useSyncExternalStore(
+    subscribeReducedMotion,
+    getReducedMotion,
+    getReducedMotionServer,
+  )
   const sceneTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const scene = scenes[sceneIndex]
-
-  useEffect(() => {
-    prefersReducedMotion.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    setIsMobile(window.innerWidth < 640)
-
-    const handleResize = () => setIsMobile(window.innerWidth < 640)
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
 
   const queryText = isMobile && scene.mobileQuery ? scene.mobileQuery : scene.query
   const columns = isMobile && scene.results.mobileColumns ? scene.results.mobileColumns : scene.results.columns
   const rows = isMobile && scene.results.mobileRows ? scene.results.mobileRows : scene.results.rows
 
   const handleTypingComplete = useCallback(() => {
-    if (prefersReducedMotion.current) {
+    if (prefersReducedMotion) {
       setPhase('results')
       setVisibleRows(rows.length)
       return
@@ -153,7 +177,7 @@ export function HeroTerminal() {
       setPhase('results')
       setVisibleRows(0)
     }, 400)
-  }, [rows.length])
+  }, [rows.length, prefersReducedMotion])
 
   const { text: typedQuery, isComplete: typingDone } = useTypewriter({
     text: queryText,
@@ -163,10 +187,7 @@ export function HeroTerminal() {
 
   useEffect(() => {
     if (phase !== 'results') return
-    if (prefersReducedMotion.current) {
-      setVisibleRows(rows.length)
-      return
-    }
+    if (prefersReducedMotion) return
 
     if (visibleRows < rows.length) {
       const timer = setTimeout(() => {
@@ -187,10 +208,10 @@ export function HeroTerminal() {
     return () => {
       if (sceneTimerRef.current) clearTimeout(sceneTimerRef.current)
     }
-  }, [phase, visibleRows, rows.length])
+  }, [phase, visibleRows, rows.length, prefersReducedMotion])
 
   const showCursor = phase === 'typing' && !typingDone
-  const showResults = phase === 'results' || (prefersReducedMotion.current && typingDone)
+  const showResults = phase === 'results' || (prefersReducedMotion && typingDone)
 
   const executingDots = useMemo(() => {
     if (phase !== 'executing') return ''
@@ -234,7 +255,7 @@ export function HeroTerminal() {
               <div
                 className="flex gap-2 sm:gap-4 pb-1.5 mb-1.5 border-b border-[--color-border-subtle] text-[--color-accent] font-medium"
                 style={{
-                  opacity: visibleRows > 0 || prefersReducedMotion.current ? 1 : 0,
+                  opacity: visibleRows > 0 || prefersReducedMotion ? 1 : 0,
                   transition: 'opacity 0.2s ease',
                 }}
               >
@@ -280,12 +301,12 @@ export function HeroTerminal() {
                   className="mt-3 pt-2 border-t border-[--color-border-subtle] text-[--color-text-muted] text-[10px] sm:text-xs"
                   style={{
                     opacity: 1,
-                    animation: prefersReducedMotion.current
+                    animation: prefersReducedMotion
                       ? 'none'
                       : 'fade-in-up 0.3s ease forwards',
                   }}
                 >
-                  {rows.length} row{rows.length !== 1 ? 's' : ''} returned · {(Math.random() * 3 + 0.5).toFixed(1)}ms
+                  {rows.length} row{rows.length !== 1 ? 's' : ''} returned · 1.7ms
                 </div>
               )}
             </div>
