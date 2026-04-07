@@ -1,5 +1,8 @@
-import Link from "next/link";
-import { Database, Github, Twitter } from "lucide-react";
+'use client'
+
+import Link from 'next/link'
+import { Github, Twitter, Linkedin, Database, Command, Heart } from 'lucide-react'
+import { FadeIn } from '@/components/ui/motion-wrapper'
 
 const footerLinks = {
   Product: [
@@ -43,48 +46,32 @@ const footerLinks = {
 };
 
 export function Footer() {
+  const currentYear = new Date().getFullYear()
+
   return (
-    <footer className="relative border-t border-[--color-border] bg-[--color-surface]/50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 sm:py-16">
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-6 gap-8 sm:gap-12">
+    <footer className="relative py-20 overflow-hidden border-t border-white/5 bg-white/[0.01]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-12 mb-16">
           {/* Brand */}
-          <div className="col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-3 sm:mb-4">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[--color-accent] flex items-center justify-center">
-                <Database className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[--color-background]" />
+          <div className="col-span-2 lg:col-span-2">
+            <Link href="/" className="flex items-center gap-2.5 mb-6 group">
+              <div className="w-8 h-8 rounded-lg bg-[--color-accent] flex items-center justify-center text-[--color-background] shadow-lg group-hover:scale-110 transition-transform">
+                <Database className="w-4 h-4" />
               </div>
-              <span
-                className="text-base sm:text-lg font-semibold tracking-tight"
-                style={{ fontFamily: "var(--font-display)" }}
-              >
+              <span className="text-lg font-bold tracking-tight font-mono text-[--color-text-primary]">
                 data-peek
               </span>
             </Link>
-            <p
-              className="text-xs sm:text-sm text-[--color-text-secondary] max-w-xs mb-4 sm:mb-6"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              A fast, AI-powered database client for developers who value
-              simplicity.
+            <p className="text-sm text-[--color-text-muted] font-mono leading-relaxed mb-8 opacity-80">
+              The database client built for developers who want to move fast.
+              AI-powered, keyboard-first, and insanely fast.
             </p>
-
-            {/* Social Links */}
-            <div className="flex items-center gap-3 sm:gap-4">
-              <Link
-                href="https://github.com/Rohithgilla12/data-peek"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[--color-surface] border border-[--color-border] flex items-center justify-center text-[--color-text-muted] hover:text-[--color-text-primary] hover:border-[--color-text-muted] transition-colors"
-              >
-                <Github className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <div className="flex gap-4">
+              <Link href="https://github.com/Rohithgilla12/data-peek" target="_blank" className="p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 text-[--color-text-muted] hover:text-[--color-text-primary] transition-all">
+                <Github className="w-5 h-5" />
               </Link>
-              <Link
-                href="https://x.com/gillarohith"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-[--color-surface] border border-[--color-border] flex items-center justify-center text-[--color-text-muted] hover:text-[--color-text-primary] hover:border-[--color-text-muted] transition-colors"
-              >
-                <Twitter className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <Link href="https://x.com/gillarohith" target="_blank" className="p-2 rounded-lg bg-white/5 border border-white/5 hover:bg-white/10 text-[--color-text-muted] hover:text-[--color-text-primary] transition-all">
+                <Twitter className="w-5 h-5" />
               </Link>
             </div>
           </div>
@@ -92,23 +79,16 @@ export function Footer() {
           {/* Links */}
           {Object.entries(footerLinks).map(([category, links]) => (
             <div key={category}>
-              <h4
-                className="text-[10px] sm:text-xs uppercase tracking-[0.15em] text-[--color-text-muted] mb-3 sm:mb-4"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
+              <h4 className="text-[10px] font-mono uppercase tracking-[0.25em] text-[--color-text-primary] mb-6 font-bold">
                 {category}
               </h4>
-              <ul className="space-y-2 sm:space-y-3">
+              <ul className="space-y-4">
                 {links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      {...(typeof link === "object" &&
-                      "external" in link &&
-                      link.external
-                        ? { target: "_blank", rel: "noopener noreferrer" }
-                        : {})}
-                      className="text-xs sm:text-sm text-[--color-text-secondary] hover:text-[--color-text-primary] transition-colors"
+                      {...('external' in link && link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                      className="text-[11px] font-mono text-[--color-text-muted] hover:text-[--color-accent] transition-colors uppercase tracking-widest"
                     >
                       {link.label}
                     </Link>
@@ -119,20 +99,18 @@ export function Footer() {
           ))}
         </div>
 
-        {/* Bottom Bar */}
-        <div className="mt-10 sm:mt-16 pt-6 sm:pt-8 border-t border-[--color-border] flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4">
-          <p
-            className="text-xs sm:text-sm text-[--color-text-muted]"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            © {new Date().getFullYear()} data-peek. All rights reserved.
+        <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
+          <p className="text-[10px] font-mono text-[--color-text-muted] uppercase tracking-widest">
+            © {currentYear} data-peek. All rights reserved.
           </p>
-          <p className="text-xs sm:text-sm text-[--color-text-muted]">
-            Made with <span className="text-[--color-error]">♥</span> for
-            developers
-          </p>
+          <div className="flex items-center gap-2 text-[10px] font-mono text-[--color-text-muted] uppercase tracking-widest">
+            <span>Built with</span>
+            <Heart className="w-3 h-3 text-pink-500 fill-pink-500" />
+            <span>by</span>
+            <Link href="https://x.com/gillarohith" target="_blank" className="text-[--color-text-primary] hover:text-[--color-accent]">@gillarohith</Link>
+          </div>
         </div>
       </div>
     </footer>
-  );
+  )
 }

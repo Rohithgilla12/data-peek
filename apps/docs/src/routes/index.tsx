@@ -9,7 +9,10 @@ import {
   Zap,
   Keyboard,
   Moon,
+  Globe,
+  Terminal,
 } from "lucide-static";
+import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -46,46 +49,89 @@ function Icon({
 function Home() {
   return (
     <HomeLayout {...baseOptions()}>
-      <main className="relative min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-6 py-20">
+      <main className="relative min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-6 py-20 overflow-hidden">
+        {/* Living Backgrounds */}
+        <div className="absolute inset-0 grid-pattern opacity-30 pointer-events-none" />
+        
+        <div
+          className="absolute top-1/4 -left-32 w-[500px] h-[500px] rounded-full opacity-20 pointer-events-none animate-float"
+          style={{
+            background: "radial-gradient(circle, #6b8cf5 0%, transparent 70%)",
+            filter: "blur(100px)",
+          }}
+        />
+        <div
+          className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] rounded-full opacity-10 pointer-events-none animate-float"
+          style={{
+            background: "radial-gradient(circle, #a855f7 0%, transparent 70%)",
+            filter: "blur(120px)",
+            animationDelay: "2s"
+          }}
+        />
+
         {/* Hero Section */}
         <div className="relative z-10 max-w-4xl mx-auto text-center">
-          {/* Logo */}
-          <div className="mb-8 flex justify-center">
+          {/* Animated Globe Icon (Matching Video Vibe) */}
+          <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ 
+              type: "spring", 
+              damping: 12, 
+              stiffness: 100,
+              delay: 0.2
+            }}
+            className="mb-12 flex justify-center"
+          >
             <div className="relative">
-              <div className="absolute inset-0 blur-2xl opacity-30 bg-[#6b8cf5] rounded-full scale-150" />
-              <img
-                src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/data-peek-icon.png"
-                alt="data-peek"
-                className="relative h-20 w-20 rounded-2xl shadow-lg shadow-[#6b8cf5]/20"
-              />
+              <div className="absolute -inset-12 rounded-full bg-[#6b8cf5] opacity-20 blur-3xl animate-pulse" />
+              <div className="relative w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-white/10 flex items-center justify-center text-[#6b8cf5] shadow-2xl glass-card">
+                <Icon svg={Book} className="w-10 h-10" />
+              </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Title */}
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight mb-4">
-            <span className="text-foreground">data-peek</span>{" "}
-            <span className="text-[#6b8cf5]">docs</span>
-          </h1>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ 
+              type: "spring",
+              damping: 15,
+              stiffness: 80,
+              delay: 0.4
+            }}
+          >
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-6 text-white uppercase font-mono">
+              data-peek <span className="text-[#6b8cf5]">docs</span>
+            </h1>
+          </motion.div>
 
           {/* Tagline */}
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto leading-relaxed">
-            Everything you need to know about the minimal, fast, and lightweight
-            SQL client for <span className="text-[#6b8cf5]">PostgreSQL</span>,{" "}
-            <span className="text-[#6b8cf5]">MySQL</span>,{" "}
-            <span className="text-[#6b8cf5]">SQL Server</span>, and{" "}
-            <span className="text-[#6b8cf5]">SQLite</span>.
-          </p>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="text-lg md:text-2xl text-[#a1a1aa] mb-12 max-w-2xl mx-auto leading-relaxed font-mono"
+          >
+            The technical guide to the minimal, fast, and lightweight
+            SQL client for professional developers.
+          </motion.p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col sm:flex-row gap-6 justify-center items-center"
+          >
             <Link
               to="/docs/$"
               params={{ _splat: "" }}
-              className="group relative inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#6b8cf5] font-semibold text-sm transition-all hover:bg-[#8da6f8] hover:shadow-lg hover:shadow-[#6b8cf5]/20"
-              style={{ color: "#0f172a" }}
+              className="group relative inline-flex items-center gap-3 px-10 py-4 rounded-2xl bg-[#6b8cf5] text-[#0a0a0b] font-bold text-sm uppercase tracking-widest transition-all hover:bg-white hover:shadow-2xl hover:shadow-[#6b8cf5]/40 font-mono"
             >
               <Icon svg={Book} className="w-4 h-4" />
-              Read the Docs
+              Start Reading
               <span className="transition-transform group-hover:translate-x-1">
                 <Icon svg={ChevronRight} className="w-4 h-4" />
               </span>
@@ -94,61 +140,50 @@ function Home() {
               href="https://github.com/Rohithgilla12/data-peek"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-lg border border-border text-foreground font-medium text-sm transition-all hover:border-[#6b8cf5] hover:text-[#6b8cf5]"
+              className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl border border-white/10 text-white font-bold text-sm uppercase tracking-widest transition-all hover:bg-white/5 hover:border-[#6b8cf5] font-mono"
             >
               <Icon svg={Github} className="w-4 h-4" />
-              View on GitHub
+              Source Code
             </a>
-          </div>
+          </motion.div>
         </div>
 
         {/* Feature highlights */}
-        <div className="relative z-10 mt-20 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
-          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#6b8cf5]/30 hover:bg-card">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#6b8cf5]/10 text-[#6b8cf5] mb-4">
-              <Icon svg={Zap} className="w-5 h-5" />
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 1, ease: [0.16, 1, 0.3, 1] }}
+          className="relative z-10 mt-32 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-5xl mx-auto"
+        >
+          {[
+            { icon: Zap, title: "Lightning Fast", desc: "Built for speed. No splash screens, no waiting. Opens in under 2 seconds.", color: "#6b8cf5" },
+            { icon: Keyboard, title: "Keyboard First", desc: "Designed for power users. Navigate and query everything with shortcuts.", color: "#fbbf24" },
+            { icon: Moon, title: "Modern Design", desc: "Clean terminal-inspired UI that stays out of your way during deep work.", color: "#a855f7" },
+          ].map((feature, idx) => (
+            <div key={idx} className="group p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-xl transition-all hover:bg-white/[0.04] border-flow overflow-hidden">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-[#6b8cf5] mb-6 border border-white/10 group-hover:scale-110 transition-transform duration-500">
+                <Icon svg={feature.icon} className="w-6 h-6" style={{ color: feature.color }} />
+              </div>
+              <h3 className="text-white font-bold mb-3 uppercase tracking-widest text-lg font-mono">
+                {feature.title}
+              </h3>
+              <p className="text-[#a1a1aa] text-sm leading-relaxed font-mono group-hover:text-white transition-colors">
+                {feature.desc}
+              </p>
             </div>
-            <h3 className="text-foreground font-semibold mb-2">
-              Lightning Fast
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              Optimized for speed. Opens instantly and executes queries in
-              milliseconds.
-            </p>
-          </div>
-
-          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#6b8cf5]/30 hover:bg-card">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#6b8cf5]/10 text-[#6b8cf5] mb-4">
-              <Icon svg={Keyboard} className="w-5 h-5" />
-            </div>
-            <h3 className="text-foreground font-semibold mb-2">
-              Keyboard First
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              Navigate and execute everything with keyboard shortcuts for
-              maximum productivity.
-            </p>
-          </div>
-
-          <div className="group p-6 rounded-xl border border-border bg-card/50 backdrop-blur transition-all hover:border-[#6b8cf5]/30 hover:bg-card">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#6b8cf5]/10 text-[#6b8cf5] mb-4">
-              <Icon svg={Moon} className="w-5 h-5" />
-            </div>
-            <h3 className="text-foreground font-semibold mb-2">
-              Beautiful Dark UI
-            </h3>
-            <p className="text-muted-foreground text-sm">
-              Terminal-inspired design that's easy on the eyes for long coding
-              sessions.
-            </p>
-          </div>
-        </div>
+          ))}
+        </motion.div>
 
         {/* Terminal decoration */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 text-muted-foreground text-sm font-mono opacity-50">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.5 }}
+          transition={{ delay: 1.5, duration: 1 }}
+          className="absolute bottom-12 left-1/2 -translate-x-1/2 text-[#71717a] text-xs font-mono uppercase tracking-[0.2em]"
+        >
           <span className="text-[#6b8cf5]">$</span> data-peek --help
-          <span className="inline-block w-2 h-4 bg-[#6b8cf5] ml-1 animate-pulse" />
-        </div>
+          <span className="inline-block w-2 h-4 bg-[#6b8cf5] ml-2 animate-pulse" />
+        </motion.div>
       </main>
     </HomeLayout>
   );

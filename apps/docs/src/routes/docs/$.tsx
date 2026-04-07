@@ -19,6 +19,7 @@ import {
   getTechArticleStructuredData,
   getBreadcrumbStructuredData,
 } from "@/lib/seo";
+import { motion } from "framer-motion";
 
 export const Route = createFileRoute("/docs/$")({
   component: Page,
@@ -127,15 +128,21 @@ const clientLoader = browserCollections.docs.createClientLoader({
   component({ toc, frontmatter, default: MDX }) {
     return (
       <DocsPage toc={toc}>
-        <DocsTitle>{frontmatter.title}</DocsTitle>
-        <DocsDescription>{frontmatter.description}</DocsDescription>
-        <DocsBody>
-          <MDX
-            components={{
-              ...defaultMdxComponents,
-            }}
-          />
-        </DocsBody>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+        >
+          <DocsTitle>{frontmatter.title}</DocsTitle>
+          <DocsDescription>{frontmatter.description}</DocsDescription>
+          <DocsBody>
+            <MDX
+              components={{
+                ...defaultMdxComponents,
+              }}
+            />
+          </DocsBody>
+        </motion.div>
       </DocsPage>
     );
   },

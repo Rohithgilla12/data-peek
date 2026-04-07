@@ -1,10 +1,10 @@
-import { Metadata } from 'next'
-import Link from 'next/link'
-import { Header } from '@/components/marketing/header'
-import { Footer } from '@/components/marketing/footer'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Breadcrumbs } from '@/components/seo/breadcrumbs'
+"use client";
+
+import Link from "next/link";
+import { Header } from "@/components/marketing/header";
+import { Footer } from "@/components/marketing/footer";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Download,
   Apple,
@@ -13,264 +13,234 @@ import {
   Check,
   ArrowRight,
   Cpu,
-} from 'lucide-react'
-import { generateMetadata as generateSeoMetadata } from '@/lib/seo'
-
-export const metadata: Metadata = generateSeoMetadata({
-  title: 'Download data-peek',
-  description:
-    'Download data-peek for macOS, Windows, or Linux. Free to download, no sign-up required. Start querying your databases in seconds.',
-  keywords: [
-    'download data-peek',
-    'PostgreSQL client download',
-    'database client macOS',
-    'database client Windows',
-    'database client Linux',
-    'SQL editor download',
-  ],
-  path: '/download',
-})
+  Sparkles,
+  Zap,
+} from "lucide-react";
+import {
+  FadeIn,
+  StaggerContainer,
+  StaggerItem,
+  ScaleIn,
+} from "@/components/ui/motion-wrapper";
+import { motion } from "framer-motion";
 
 const platforms = [
   {
-    name: 'macOS',
+    name: "macOS",
     icon: Apple,
-    description: 'Apple Silicon & Intel',
+    description: "Apple Silicon & Intel",
     variants: [
       {
-        label: 'Apple Silicon',
-        sublabel: 'M1, M2, M3, M4',
-        filename: 'data-peek-mac-arm64.dmg',
-        size: '~85 MB',
+        label: "Apple Silicon",
+        sublabel: "M1, M2, M3, M4",
+        filename: "data-peek-mac-arm64.dmg",
+        size: "~85 MB",
         recommended: true,
       },
       {
-        label: 'Intel',
-        sublabel: 'x86_64',
-        filename: 'data-peek-mac-x64.dmg',
-        size: '~90 MB',
+        label: "Intel",
+        sublabel: "x86_64",
+        filename: "data-peek-mac-x64.dmg",
+        size: "~90 MB",
         recommended: false,
       },
     ],
-    color: '#a1a1aa',
+    color: "var(--color-accent)",
   },
   {
-    name: 'Windows',
+    name: "Windows",
     icon: Monitor,
-    description: 'Windows 10/11',
+    description: "Windows 10/11",
     variants: [
       {
-        label: 'Installer',
-        sublabel: '.exe',
-        filename: 'data-peek-win-setup.exe',
-        size: '~75 MB',
+        label: "Installer",
+        sublabel: ".exe",
+        filename: "data-peek-win-setup.exe",
+        size: "~75 MB",
         recommended: true,
       },
       {
-        label: 'Portable',
-        sublabel: '.zip',
-        filename: 'data-peek-win-portable.zip',
-        size: '~80 MB',
+        label: "Portable",
+        sublabel: ".zip",
+        filename: "data-peek-win-portable.zip",
+        size: "~80 MB",
         recommended: false,
       },
     ],
-    color: '#60a5fa',
+    color: "#60a5fa",
   },
   {
-    name: 'Linux',
+    name: "Linux",
     icon: Terminal,
-    description: 'Ubuntu, Debian, Fedora',
+    description: "Ubuntu, Debian, Fedora",
     variants: [
       {
-        label: 'AppImage',
-        sublabel: 'Universal',
-        filename: 'data-peek-linux.AppImage',
-        size: '~95 MB',
+        label: "AppImage",
+        sublabel: "Universal",
+        filename: "data-peek-linux.AppImage",
+        size: "~95 MB",
         recommended: true,
       },
       {
-        label: '.deb',
-        sublabel: 'Debian/Ubuntu',
-        filename: 'data-peek-linux.deb',
-        size: '~85 MB',
+        label: ".deb",
+        sublabel: "Debian/Ubuntu",
+        filename: "data-peek-linux.deb",
+        size: "~85 MB",
         recommended: false,
       },
     ],
-    color: '#fbbf24',
+    color: "var(--color-success)",
   },
-]
+];
 
 const requirements = [
-  'macOS 11+ (Big Sur or later)',
-  'Windows 10/11 (64-bit)',
-  'Linux with glibc 2.31+',
-  '4 GB RAM minimum',
-  '200 MB disk space',
-]
+  "macOS 11+ (Big Sur or later)",
+  "Windows 10/11 (64-bit)",
+  "Linux with glibc 2.31+",
+  "4 GB RAM minimum",
+  "200 MB disk space",
+];
 
 export default function DownloadPage() {
   return (
     <div className="min-h-screen">
       <Header />
 
-      <main className="pt-24 sm:pt-32 pb-16 sm:pb-20">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 mb-6">
-          <Breadcrumbs items={[{ label: 'Download', href: '/download' }]} />
-        </div>
-        {/* Hero Section */}
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 text-center mb-12 sm:mb-20">
-          <Badge variant="default" size="lg" className="mb-4 sm:mb-6 text-xs sm:text-sm">
-            <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1.5" />
-            v1.0.0 — Latest Release
-          </Badge>
+      <main className="pt-32 sm:pt-48 pb-24 overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-[--color-accent]/5 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 grid-pattern opacity-10 pointer-events-none" />
 
-          <h1
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-semibold tracking-tight mb-4 sm:mb-6"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            Download data-peek
-          </h1>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
+          {/* Hero Section */}
+          <FadeIn className="text-center mb-20 sm:mb-32">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 glass-card">
+              <Zap className="w-3.5 h-3.5 text-[--color-warning]" />
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[--color-text-secondary]">
+                v0.19.0 — Latest Stable
+              </span>
+            </div>
 
-          <p
-            className="text-base sm:text-lg text-[--color-text-secondary] max-w-xl mx-auto mb-6 sm:mb-8 px-2"
-            style={{ fontFamily: 'var(--font-body)' }}
-          >
-            Free to download. No sign-up required.
-            <br className="hidden sm:block" />
-            <span className="sm:hidden"> </span>
-            Start querying in seconds.
-          </p>
-        </section>
+            <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-8 font-mono uppercase">
+              Get the client.
+              <br />
+              <span className="text-[--color-text-secondary]">
+                Start peek-ing.
+              </span>
+            </h1>
 
-        {/* Platform Cards */}
-        <section className="max-w-5xl mx-auto px-4 sm:px-6 mb-12 sm:mb-20">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            <p className="text-base sm:text-lg text-[--color-text-muted] max-w-xl mx-auto mb-12 font-mono leading-relaxed opacity-80">
+              Free to download. No sign-up required. Experience the future of
+              database management.
+            </p>
+          </FadeIn>
+
+          {/* Platform Cards */}
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-32">
             {platforms.map((platform) => (
-              <div
-                key={platform.name}
-                className="rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] p-4 sm:p-6 hover:border-[--color-border] hover:bg-[--color-surface-elevated] transition-all"
-              >
-                {/* Platform Header */}
-                <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
-                  <div
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center"
-                    style={{
-                      backgroundColor: `${platform.color}15`,
-                      border: `1px solid ${platform.color}30`,
-                    }}
-                  >
-                    <platform.icon
-                      className="w-5 h-5 sm:w-6 sm:h-6"
-                      style={{ color: platform.color }}
-                    />
-                  </div>
-                  <div>
-                    <h3
-                      className="text-base sm:text-lg font-medium"
-                      style={{ fontFamily: 'var(--font-display)' }}
+              <StaggerItem key={platform.name}>
+                <div className="group relative p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all duration-500 border-flow overflow-hidden h-full">
+                  <div className="flex items-center gap-4 mb-10">
+                    <div
+                      className="w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500"
+                      style={{
+                        backgroundColor: `${platform.color}15`,
+                        border: `1px solid ${platform.color}30`,
+                      }}
                     >
-                      {platform.name}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-[--color-text-muted]">
-                      {platform.description}
-                    </p>
+                      <platform.icon
+                        className="w-7 h-7"
+                        style={{ color: platform.color }}
+                      />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold font-mono uppercase tracking-widest">
+                        {platform.name}
+                      </h3>
+                      <p className="text-xs text-[--color-text-muted] font-mono uppercase tracking-widest opacity-60">
+                        {platform.description}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                {/* Download Variants */}
-                <div className="space-y-2 sm:space-y-3">
-                  {platform.variants.map((variant) => (
-                    <Link
-                      key={variant.filename}
-                      href="https://github.com/Rohithgilla12/data-peek/releases"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group flex items-center justify-between p-2.5 sm:p-3 rounded-lg sm:rounded-xl bg-[--color-background] border border-[--color-border] hover:border-[--color-accent]/50 hover:bg-[--color-accent]/5 transition-all"
-                    >
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md sm:rounded-lg bg-[--color-surface] flex items-center justify-center">
-                          <Cpu className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[--color-text-muted]" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                            <span
-                              className="text-xs sm:text-sm font-medium"
-                              style={{ fontFamily: 'var(--font-display)' }}
-                            >
-                              {variant.label}
-                            </span>
-                            {variant.recommended && (
-                              <Badge variant="default" size="sm" className="text-[10px] sm:text-xs">
-                                Recommended
-                              </Badge>
-                            )}
-                          </div>
-                          <span
-                            className="text-[10px] sm:text-xs text-[--color-text-muted]"
-                            style={{ fontFamily: 'var(--font-mono)' }}
-                          >
+                  <div className="space-y-4">
+                    {platform.variants.map((variant) => (
+                      <Link
+                        key={variant.filename}
+                        href="https://github.com/Rohithgilla12/data-peek/releases"
+                        target="_blank"
+                        className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-[--color-accent] hover:text-[--color-background] transition-all duration-300 group/item"
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold font-mono uppercase tracking-widest">
+                            {variant.label}
+                          </span>
+                          <span className="text-[10px] font-mono opacity-60 group-hover/item:opacity-80">
                             {variant.sublabel} • {variant.size}
                           </span>
                         </div>
+                        <Download className="w-5 h-5 opacity-40 group-hover/item:opacity-100 transition-opacity" />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+
+          {/* Requirements & Info */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+            <FadeIn className="h-full">
+              <div className="p-8 sm:p-12 rounded-[2.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-xl h-full">
+                <h2 className="text-2xl font-bold mb-8 font-mono uppercase tracking-widest">
+                  System Requirements
+                </h2>
+                <div className="grid grid-cols-1 gap-4">
+                  {requirements.map((req) => (
+                    <div key={req} className="flex items-center gap-4 group">
+                      <div className="w-6 h-6 rounded-full bg-[--color-success]/10 flex items-center justify-center border border-[--color-success]/20 group-hover:scale-110 transition-transform">
+                        <Check className="w-3.5 h-3.5 text-[--color-success]" />
                       </div>
-                      <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[--color-text-muted] group-hover:text-[--color-accent] transition-colors flex-shrink-0" />
-                    </Link>
+                      <span className="text-sm sm:text-base text-[--color-text-secondary] font-mono opacity-80">
+                        {req}
+                      </span>
+                    </div>
                   ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </section>
+            </FadeIn>
 
-        {/* System Requirements */}
-        <section className="max-w-3xl mx-auto px-4 sm:px-6 mb-12 sm:mb-20">
-          <div className="rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] p-5 sm:p-8">
-            <h2
-              className="text-lg sm:text-xl font-medium mb-4 sm:mb-6"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              System Requirements
-            </h2>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
-              {requirements.map((req) => (
-                <li key={req} className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[--color-success]/10 flex items-center justify-center flex-shrink-0">
-                    <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[--color-success]" />
+            <FadeIn className="h-full">
+              <div className="p-8 sm:p-12 rounded-[2.5rem] bg-gradient-to-br from-[--color-accent]/10 to-purple-600/10 border border-[--color-accent]/20 backdrop-blur-xl h-full flex flex-col justify-between">
+                <div>
+                  <div className="w-12 h-12 rounded-2xl bg-[--color-accent] text-[--color-background] flex items-center justify-center mb-8 shadow-xl shadow-[--color-accent]/20">
+                    <Sparkles className="w-6 h-6" />
                   </div>
-                  <span className="text-xs sm:text-sm text-[--color-text-secondary]">{req}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </section>
-
-        {/* Pro Upsell */}
-        <section className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="rounded-xl sm:rounded-2xl bg-gradient-to-r from-[--color-accent]/10 to-transparent border border-[--color-accent]/20 p-5 sm:p-8">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-6">
-              <div>
-                <h2
-                  className="text-lg sm:text-xl font-medium mb-1.5 sm:mb-2"
-                  style={{ fontFamily: 'var(--font-display)' }}
+                  <h2 className="text-2xl font-bold mb-4 font-mono uppercase tracking-widest">
+                    Go Pro
+                  </h2>
+                  <p className="text-sm sm:text-base text-[--color-text-secondary] font-mono leading-relaxed opacity-80 mb-8">
+                    Unlock advanced intelligence, performance telemetry, and
+                    professional data tools with a one-time payment.
+                  </p>
+                </div>
+                <Button
+                  size="xl"
+                  className="w-full rounded-2xl py-8 font-mono uppercase tracking-widest font-bold bg-[--color-accent] text-[--color-background] hover:bg-[--color-accent]/90 shadow-xl shadow-[--color-accent]/20"
+                  asChild
                 >
-                  Want unlimited everything?
-                </h2>
-                <p className="text-xs sm:text-sm text-[--color-text-secondary]">
-                  Get Pro for unlimited connections, tabs, and advanced features.
-                </p>
+                  <Link href="/#pricing">
+                    Get Pro License — $29
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Link>
+                </Button>
               </div>
-              <Button className="w-full sm:w-auto" asChild>
-                <Link href="/#pricing">
-                  Get Pro — $29
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </Button>
-            </div>
+            </FadeIn>
           </div>
-        </section>
+        </div>
       </main>
 
       <Footer />
     </div>
-  )
+  );
 }

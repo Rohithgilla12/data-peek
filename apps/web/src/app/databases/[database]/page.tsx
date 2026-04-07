@@ -3,16 +3,19 @@ import { Header } from "@/components/marketing/header";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { generateMetadata as generateSeoMetadata } from "@/lib/seo";
-import { ArrowRight, Check, Download } from "lucide-react";
+import { ArrowRight, Check, Download, Sparkles, Database } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { FadeIn, StaggerContainer, StaggerItem, ScaleIn } from "@/components/ui/motion-wrapper";
+import { DataSubstrate } from "@/components/marketing/data-substrate";
+import React from "react";
 
 const DATABASES = {
   postgresql: {
     name: "PostgreSQL",
     description:
-      "Connect to PostgreSQL databases with data-peek. Fast query execution, schema exploration, and AI-powered SQL generation for PostgreSQL.",
+      "Advanced features for the world's most advanced open-source database. native protocol support, schema exploration, and AI-powered SQL generation.",
     features: [
       "Native PostgreSQL protocol support",
       "Schema browser with table relationships",
@@ -21,20 +24,14 @@ const DATABASES = {
       "Connection pooling support",
       "Transaction management",
     ],
-    keywords: [
-      "PostgreSQL client",
-      "PostgreSQL GUI",
-      "PostgreSQL database tool",
-      "pgAdmin alternative",
-      "PostgreSQL query tool",
-      "PostgreSQL management",
-    ],
+    color: "#336791",
     icon: "🐘",
+    keywords: ["PostgreSQL client", "PostgreSQL GUI", "PostgreSQL tool"],
   },
   mysql: {
     name: "MySQL",
     description:
-      "Manage MySQL databases effortlessly with data-peek. Fast queries, schema visualization, and intuitive editing for MySQL and MariaDB.",
+      "Lightning-fast management for MySQL and MariaDB. Fast queries, schema visualization, and intuitive editing.",
     features: [
       "MySQL and MariaDB support",
       "Schema visualization",
@@ -43,20 +40,14 @@ const DATABASES = {
       "Connection management",
       "Data export capabilities",
     ],
-    keywords: [
-      "MySQL client",
-      "MySQL GUI",
-      "MySQL database tool",
-      "MySQL query tool",
-      "MariaDB client",
-      "MySQL management",
-    ],
+    color: "#00758f",
     icon: "🐬",
+    keywords: ["MySQL client", "MySQL GUI", "MySQL tool"],
   },
   "sql-server": {
     name: "SQL Server",
     description:
-      "Connect to Microsoft SQL Server databases with data-peek. Professional database management with support for SQL Server and Azure SQL.",
+      "Professional toolset for Microsoft SQL Server and Azure SQL. T-SQL support and deep schema insights.",
     features: [
       "SQL Server and Azure SQL support",
       "T-SQL syntax highlighting",
@@ -65,20 +56,14 @@ const DATABASES = {
       "Query performance analysis",
       "Schema exploration",
     ],
-    keywords: [
-      "SQL Server client",
-      "SQL Server GUI",
-      "Azure SQL client",
-      "SQL Server management",
-      "T-SQL editor",
-      "Microsoft SQL Server tool",
-    ],
+    color: "#cc2927",
     icon: "🗄️",
+    keywords: ["SQL Server client", "SQL Server GUI", "SQL Server tool"],
   },
   sqlite: {
     name: "SQLite",
     description:
-      "Work with SQLite databases locally using data-peek. Perfect for development, testing, and managing local SQLite databases.",
+      "The best local database experience. Ideal for development, testing, and managing local SQLite databases.",
     features: [
       "Local SQLite file support",
       "Fast query execution",
@@ -87,15 +72,9 @@ const DATABASES = {
       "Export to multiple formats",
       "Lightweight and fast",
     ],
-    keywords: [
-      "SQLite client",
-      "SQLite GUI",
-      "SQLite database tool",
-      "SQLite browser",
-      "SQLite management",
-      "local database tool",
-    ],
+    color: "#003b57",
     icon: "💾",
+    keywords: ["SQLite client", "SQLite GUI", "SQLite tool"],
   },
 } as const;
 
@@ -142,85 +121,107 @@ export default async function DatabasePage({ params }: DatabasePageProps) {
   return (
     <div className="min-h-screen">
       <Header />
-      <main className="pt-24 sm:pt-32 pb-16 sm:pb-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <Breadcrumbs
-            items={[
-              { label: "Databases", href: "/databases" },
-              { label: dbInfo.name, href: `/databases/${database}` },
-            ]}
-          />
+      <main className="relative pt-32 sm:pt-48 pb-24 overflow-hidden">
+        {/* Backgrounds */}
+        <div className="absolute inset-0 grid-pattern opacity-20" />
+        <DataSubstrate />
 
-          {/* Hero Section */}
-          <section className="text-center mb-12 sm:mb-16">
-            <div className="text-6xl mb-4">{dbInfo.icon}</div>
-            <h1
-              className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight mb-4"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {dbInfo.name} Client
-            </h1>
-            <p className="text-base sm:text-lg text-[--color-text-secondary] max-w-2xl mx-auto mb-8">
-              {dbInfo.description}
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" asChild>
-                <Link href="/download">
-                  <Download className="w-4 h-4" />
-                  Download Free
-                </Link>
-              </Button>
-              <Button variant="secondary" size="lg" asChild>
-                <Link href="/#features">
-                  View Features
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </Button>
+        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6">
+          <FadeIn>
+            <div className="mb-12 flex justify-center">
+              <Breadcrumbs
+                items={[
+                  { label: "Databases", href: "/databases" },
+                  { label: dbInfo.name, href: `/databases/${database}` },
+                ]}
+              />
             </div>
-          </section>
+
+            {/* Hero Section */}
+            <section className="text-center mb-20 sm:mb-32">
+              <ScaleIn>
+                <div className="text-8xl mb-8 drop-shadow-2xl">{dbInfo.icon}</div>
+              </ScaleIn>
+              <h1
+                className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-8 text-white font-mono uppercase"
+              >
+                {dbInfo.name}
+                <br />
+                <span className="text-[--color-text-secondary]">Client.</span>
+              </h1>
+              <p className="text-base sm:text-xl text-[--color-text-muted] max-w-2xl mx-auto mb-12 font-mono leading-relaxed">
+                {dbInfo.description}
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+                <Button size="xl" className="group rounded-full px-10 shadow-2xl shadow-[--color-accent]/20 font-mono uppercase tracking-widest font-bold" asChild>
+                  <Link href="/download">
+                    <Download className="w-5 h-5 group-hover:animate-bounce" />
+                    <span>Download Free</span>
+                  </Link>
+                </Button>
+                <Button variant="outline" size="xl" className="rounded-full px-10 border-white/10 hover:bg-white/5 font-mono uppercase tracking-widest font-bold group" asChild>
+                  <Link href="/#features">
+                    <span className="text-white">View Features</span>
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform text-white" />
+                  </Link>
+                </Button>
+              </div>
+            </section>
+          </FadeIn>
 
           {/* Features Section */}
-          <section className="mb-12 sm:mb-16">
-            <h2
-              className="text-2xl sm:text-3xl font-semibold mb-6 sm:mb-8"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Features for {dbInfo.name}
-            </h2>
-            <div className="grid sm:grid-cols-2 gap-4">
+          <section className="mb-32">
+            <FadeIn>
+              <h2
+                className="text-2xl sm:text-4xl font-bold mb-12 font-mono uppercase tracking-widest text-center text-white"
+              >
+                Engineered for {dbInfo.name}
+              </h2>
+            </FadeIn>
+            <StaggerContainer className="grid sm:grid-cols-2 gap-4 lg:gap-6">
               {dbInfo.features.map((feature) => (
-                <div
+                <StaggerItem
                   key={feature}
-                  className="flex items-start gap-3 p-4 rounded-lg bg-[--color-surface] border border-[--color-border]"
+                  className="flex items-center gap-4 p-6 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition-all group"
                 >
-                  <Check className="w-5 h-5 text-[--color-success] shrink-0 mt-0.5" />
-                  <span className="text-sm text-[--color-text-secondary]">
+                  <div className="p-2 rounded-xl bg-[--color-success]/10 border border-[--color-success]/20 group-hover:scale-110 transition-transform">
+                    <Check className="w-5 h-5 text-[--color-success]" />
+                  </div>
+                  <span className="text-sm sm:text-base text-white font-mono opacity-80 group-hover:opacity-100 transition-opacity">
                     {feature}
                   </span>
-                </div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </section>
 
           {/* CTA Section */}
-          <section className="rounded-xl sm:rounded-2xl bg-linear-to-r from-[--color-accent]/10 to-transparent border border-[--color-accent]/20 p-6 sm:p-8 text-center">
-            <h2
-              className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Ready to get started?
-            </h2>
-            <p className="text-sm sm:text-base text-[--color-text-secondary] mb-6 sm:mb-8">
-              Download data-peek and start managing your {dbInfo.name} databases
-              today.
-            </p>
-            <Button size="lg" asChild>
-              <Link href="/download">
-                Download Free
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-          </section>
+          <FadeIn>
+            <section className="relative rounded-[3rem] bg-white/[0.02] border border-white/10 p-8 sm:p-16 text-center overflow-hidden">
+              <div className="absolute inset-0 grid-pattern opacity-10" />
+              <div className="absolute inset-0 bg-gradient-to-br from-[--color-accent]/5 to-purple-600/5" />
+              
+              <div className="relative z-10">
+                <div className="w-16 h-16 rounded-2xl bg-[--color-accent]/10 flex items-center justify-center mx-auto mb-8 border border-[--color-accent]/20">
+                  <Database className="w-8 h-8 text-[--color-accent]" />
+                </div>
+                <h2
+                  className="text-3xl sm:text-5xl font-bold mb-6 font-mono uppercase tracking-widest text-white"
+                >
+                  Ready to Peek?
+                </h2>
+                <p className="text-base sm:text-lg text-[--color-text-muted] mb-10 font-mono max-w-xl mx-auto leading-relaxed">
+                  Join thousands of developers using data-peek to manage their {dbInfo.name} databases with speed and precision.
+                </p>
+                <Button size="xl" className="group rounded-2xl px-12 bg-[--color-accent] text-[--color-background] hover:bg-[--color-accent]/90 shadow-2xl shadow-[--color-accent]/20 font-mono uppercase tracking-widest font-bold" asChild>
+                  <Link href="/download">
+                    Download for Free
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                  </Link>
+                </Button>
+              </div>
+            </section>
+          </FadeIn>
         </div>
       </main>
       <Footer />

@@ -26,6 +26,23 @@
   --font-display: "Geist Mono", monospace;
   --font-body: "Geist Mono", monospace;
   --font-mono: "Geist Mono", monospace;
+
+  /* Glassmorphism constants */
+  --glass-bg: rgba(17, 17, 19, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+@property --gradient-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@property --card-glow-opacity {
+  syntax: "<number>";
+  initial-value: 0;
+  inherits: false;
 }
 
 @font-face {
@@ -215,6 +232,67 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-muted);
+}
+
+/* Glassmorphism */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Border Flow Animation */
+.border-flow {
+  position: relative;
+  background: var(--color-surface);
+  border-radius: inherit;
+}
+
+.border-flow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: conic-gradient(
+    from var(--gradient-angle),
+    transparent 0deg,
+    var(--color-accent) 90deg,
+    transparent 180deg
+  );
+  border-radius: inherit;
+  z-index: -1;
+  animation: rotate-gradient 4s linear infinite;
+  opacity: var(--card-glow-opacity);
+  transition: opacity 0.3s ease;
+}
+
+.border-flow:hover {
+  --card-glow-opacity: 1;
+}
+
+@keyframes rotate-gradient {
+  0% { --gradient-angle: 0deg; }
+  100% { --gradient-angle: 360deg; }
+}
+
+/* Scroll Progress Bar */
+.scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+  transform-origin: 0%;
+  z-index: 100;
 }
 
 /* Selection */

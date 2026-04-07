@@ -1,7 +1,8 @@
 'use client'
 
-import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState } from 'react'
 import {
   Sparkles,
@@ -10,7 +11,7 @@ import {
   Activity,
   Shield,
 } from 'lucide-react'
-import { AnimateOnScroll } from '@/components/ui/animate-on-scroll'
+import { FadeIn, ScaleIn, StaggerContainer, StaggerItem } from '@/components/ui/motion-wrapper'
 import { DataSubstrate } from './data-substrate'
 import { ScrambleText } from './scramble-text'
 import { type Feature, features } from './feature-data'
@@ -102,74 +103,77 @@ function FeatureCard({ feature }: { feature: Feature }) {
   const isLightning = feature.title === 'Lightning Fast'
 
   return (
-    <div
-      className="group relative p-4 sm:p-5 rounded-xl bg-[--color-surface] border border-[--color-border] hover:bg-[--color-surface-elevated] transition-all duration-300 hover:-translate-y-0.5 h-full"
-      style={{
-        '--feature-color': feature.color,
-      } as React.CSSProperties}
-    >
+    <StaggerItem className="h-full">
       <div
-        className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center mb-3 transition-transform group-hover:scale-110 ${feature.hoverEffect ? `effect-${feature.hoverEffect}` : ''}`}
+        className="group relative p-6 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:bg-white/[0.06] transition-all duration-500 h-full border-flow overflow-hidden"
         style={{
-          backgroundColor: `${feature.color}15`,
-          border: `1px solid ${feature.color}30`,
-        }}
+          '--feature-color': feature.color,
+        } as React.CSSProperties}
       >
-        <feature.icon
-          className={`w-4 h-4 sm:w-5 sm:h-5 effect-icon ${feature.hoverEffect === 'color-cycle' ? 'effect-color-cycle-icon' : ''}`}
-          style={{ color: feature.color }}
+        <div
+          className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-5 transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 ${feature.hoverEffect ? `effect-${feature.hoverEffect}` : ''}`}
+          style={{
+            backgroundColor: `${feature.color}20`,
+            border: `1px solid ${feature.color}40`,
+          }}
+        >
+          <feature.icon
+            className={`w-6 h-6 effect-icon ${feature.hoverEffect === 'color-cycle' ? 'effect-color-cycle-icon' : ''}`}
+            style={{ color: feature.color }}
+          />
+        </div>
+
+        {feature.hoverEffect === 'key-press' && (
+          <div className="absolute top-6 right-6 hidden sm:flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <kbd className="effect-key-cap text-[10px] px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white font-mono shadow-sm">
+              ⌘
+            </kbd>
+            <kbd className="effect-key-cap effect-key-cap-delayed text-[10px] px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white font-mono shadow-sm">
+              K
+            </kbd>
+          </div>
+        )}
+
+        <h3 className="text-base sm:text-lg font-bold tracking-tight mb-2 font-mono uppercase tracking-widest text-white">
+          {feature.title}
+        </h3>
+        <p className="text-sm text-[--color-text-secondary] leading-relaxed font-mono group-hover:text-white/90 transition-colors">
+          {feature.hoverEffect === 'scramble' ? (
+            <ScrambleText text={feature.description} />
+          ) : isMultiDB ? (
+            <>
+              <Link href="/databases/postgresql" className="text-[--color-accent] hover:underline">PostgreSQL</Link>,{' '}
+              <Link href="/databases/mysql" className="text-[--color-accent] hover:underline">MySQL</Link>,{' '}
+              <Link href="/databases/sql-server" className="text-[--color-accent] hover:underline">SQL Server</Link>, and{' '}
+              <Link href="/databases/sqlite" className="text-[--color-accent] hover:underline">SQLite</Link>.
+              One client for all your databases.
+            </>
+          ) : (
+            feature.description
+          )}
+        </p>
+
+        {isLightning && (
+          <div className="mt-4 flex items-baseline gap-2">
+            <span
+              className="text-3xl font-bold tracking-tighter"
+              style={{ color: feature.color }}
+            >
+              &lt; 2s
+            </span>
+            <span className="text-xs text-[--color-text-muted] font-mono uppercase tracking-widest group-hover:text-[--color-text-secondary]">startup</span>
+          </div>
+        )}
+
+        {/* Floating background glow */}
+        <div
+          className="absolute -inset-2 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10 blur-2xl"
+          style={{
+            background: `radial-gradient(circle at center, ${feature.color}15 0%, transparent 70%)`,
+          }}
         />
       </div>
-
-      {feature.hoverEffect === 'key-press' && (
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6 hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <kbd className="effect-key-cap text-[9px] px-1.5 py-0.5 rounded bg-[--color-surface-elevated] border border-[--color-border] text-[--color-text-muted] font-mono">
-            ⌘
-          </kbd>
-          <kbd className="effect-key-cap effect-key-cap-delayed text-[9px] px-1.5 py-0.5 rounded bg-[--color-surface-elevated] border border-[--color-border] text-[--color-text-muted] font-mono">
-            K
-          </kbd>
-        </div>
-      )}
-
-      <h3 className="text-sm sm:text-base font-semibold tracking-tight mb-1 sm:mb-1.5">
-        {feature.title}
-      </h3>
-      <p className="text-xs sm:text-[13px] text-[--color-text-muted] leading-[1.6]">
-        {feature.hoverEffect === 'scramble' ? (
-          <ScrambleText text={feature.description} />
-        ) : isMultiDB ? (
-          <>
-            <Link href="/databases/postgresql" className="text-[--color-accent] hover:underline">PostgreSQL</Link>,{' '}
-            <Link href="/databases/mysql" className="text-[--color-accent] hover:underline">MySQL</Link>,{' '}
-            <Link href="/databases/sql-server" className="text-[--color-accent] hover:underline">SQL Server</Link>, and{' '}
-            <Link href="/databases/sqlite" className="text-[--color-accent] hover:underline">SQLite</Link>.
-            One client for all your databases.
-          </>
-        ) : (
-          feature.description
-        )}
-      </p>
-
-      {isLightning && (
-        <div className="mt-3 flex items-baseline gap-2">
-          <span
-            className="text-2xl font-bold tracking-tighter"
-            style={{ color: feature.color }}
-          >
-            &lt; 2s
-          </span>
-          <span className="text-[10px] text-[--color-text-muted]">startup</span>
-        </div>
-      )}
-
-      <div
-        className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10"
-        style={{
-          background: `radial-gradient(circle at center, ${feature.color}08 0%, transparent 70%)`,
-        }}
-      />
-    </div>
+    </StaggerItem>
   )
 }
 
@@ -179,56 +183,58 @@ function TabContent({ category }: { category: Category }) {
 
   if (!hasScreenshots) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+      <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {category.features.map((feature) => (
           <FeatureCard key={feature.title} feature={feature} />
         ))}
-      </div>
+      </StaggerContainer>
     )
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
       {/* Screenshots panel */}
-      <div className="lg:col-span-3 space-y-4">
-        {screenshotFeatures.map((f) => (
-          <div
-            key={f.title}
-            className="rounded-xl overflow-hidden border border-[--color-border] screenshot-hover bg-[--color-surface]"
-          >
-            <div className="flex items-center gap-2.5 px-4 pt-4 pb-2">
-              <div
-                className="w-7 h-7 rounded-md flex items-center justify-center"
-                style={{
-                  backgroundColor: `${f.color}15`,
-                  border: `1px solid ${f.color}25`,
-                }}
-              >
-                <f.icon className="w-3.5 h-3.5" style={{ color: f.color }} />
+      <div className="lg:col-span-3 space-y-6">
+        <AnimatePresence mode="wait">
+          {screenshotFeatures.map((f) => (
+            <ScaleIn
+              key={f.title}
+              className="rounded-[2.5rem] overflow-hidden border border-white/10 screenshot-hover bg-[--color-surface] shadow-2xl shadow-black/50"
+            >
+              <div className="flex items-center gap-3 px-6 pt-6 pb-3">
+                <div
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{
+                    backgroundColor: `${f.color}15`,
+                    border: `1px solid ${f.color}25`,
+                  }}
+                >
+                  <f.icon className="w-4 h-4" style={{ color: f.color }} />
+                </div>
+                <span className="text-sm font-bold tracking-widest font-mono uppercase">
+                  {f.title}
+                </span>
               </div>
-              <span className="text-xs font-semibold tracking-tight">
-                {f.title}
-              </span>
-            </div>
-            <Image
-              src={f.screenshot!}
-              alt={f.screenshotAlt || f.title}
-              width={800}
-              height={533}
-              className="w-full h-auto"
-              loading="lazy"
-              quality={85}
-            />
-          </div>
-        ))}
+              <Image
+                src={f.screenshot!}
+                alt={f.screenshotAlt || f.title}
+                width={800}
+                height={533}
+                className="w-full h-auto opacity-90 hover:opacity-100 transition-opacity"
+                loading="lazy"
+                quality={90}
+              />
+            </ScaleIn>
+          ))}
+        </AnimatePresence>
       </div>
 
       {/* Feature cards panel */}
-      <div className="lg:col-span-2 grid grid-cols-1 gap-3 content-start">
+      <StaggerContainer className="lg:col-span-2 grid grid-cols-1 gap-4 content-start">
         {category.features.map((feature) => (
           <FeatureCard key={feature.title} feature={feature} />
         ))}
-      </div>
+      </StaggerContainer>
     </div>
   )
 }
@@ -238,31 +244,31 @@ export function FeaturesTabbed() {
   const activeCategory = categories.find((c) => c.id === activeTab)!
 
   return (
-    <section id="features" className="relative py-20 sm:py-32 overflow-hidden">
-      <div className="absolute inset-0 grid-pattern opacity-30" />
+    <section id="features" className="relative py-32 sm:py-48 overflow-hidden">
+      <div className="absolute inset-0 grid-pattern opacity-20" />
       <DataSubstrate />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
-        <AnimateOnScroll className="text-center mb-10 sm:mb-16">
-          <p className="text-[11px] uppercase tracking-[0.25em] text-[--color-accent] mb-4 sm:mb-5 font-medium">
-            Features
+        <FadeIn className="text-center mb-16 sm:mb-24">
+          <p className="text-[12px] uppercase tracking-[0.4em] text-[--color-accent] mb-6 font-bold font-mono">
+            // Core Engine
           </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter leading-[1.05] mb-5 sm:mb-7 px-2">
-            Everything you need.
+          <h2 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-[0.9] mb-8">
+            Query smarter.
             <br />
             <span className="text-[--color-text-secondary]">
-              Nothing you don&apos;t.
+              Move faster.
             </span>
           </h2>
-          <p className="text-sm sm:text-base text-[--color-text-muted] max-w-[48ch] mx-auto px-2 leading-relaxed">
-            Built for developers who want to query their database, not fight
-            their tools.
+          <p className="text-base sm:text-lg text-[--color-text-muted] max-w-[50ch] mx-auto px-2 leading-relaxed font-mono">
+            Engineered for developers who prioritize performance and productivity.
+            The only client you'll ever need.
           </p>
-        </AnimateOnScroll>
+        </FadeIn>
 
         {/* Tab Bar */}
-        <AnimateOnScroll className="mb-8 sm:mb-10">
-          <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 sm:justify-center">
+        <div className="mb-12 sm:mb-16">
+          <div className="flex items-center gap-2 overflow-x-auto pb-4 scrollbar-none -mx-4 px-4 sm:mx-0 sm:px-0 sm:justify-center">
             {categories.map((cat) => {
               const isActive = activeTab === cat.id
               return (
@@ -270,33 +276,32 @@ export function FeaturesTabbed() {
                   key={cat.id}
                   onClick={() => setActiveTab(cat.id)}
                   className={`
-                    flex items-center gap-2 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-lg text-xs sm:text-[13px] font-medium
-                    whitespace-nowrap transition-all duration-200 shrink-0
+                    flex items-center gap-3 px-5 py-3 rounded-2xl text-xs font-bold
+                    whitespace-nowrap transition-all duration-300 shrink-0 font-mono uppercase tracking-widest
                     ${
                       isActive
-                        ? 'bg-[--color-surface-elevated] text-[--color-text-primary] border border-[--color-border]'
-                        : 'text-[--color-text-muted] hover:text-[--color-text-secondary] hover:bg-[--color-surface]/50 border border-transparent'
+                        ? 'bg-white/10 text-white border border-white/20 shadow-xl'
+                        : 'text-[--color-text-secondary] hover:text-white hover:bg-white/[0.04] border border-transparent'
                     }
                   `}
                   style={
                     isActive
                       ? ({
                           '--feature-color': cat.color,
-                          boxShadow: `0 0 0 1px ${cat.color}20, 0 1px 3px ${cat.color}10`,
                         } as React.CSSProperties)
                       : undefined
                   }
                 >
                   <cat.icon
-                    className="w-3.5 h-3.5"
+                    className="w-4 h-4"
                     style={{ color: isActive ? cat.color : undefined }}
                   />
                   <span>{cat.label}</span>
                   <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                    className={`text-[9px] px-2 py-0.5 rounded-full ${
                       isActive
-                        ? 'bg-[--color-surface] text-[--color-text-secondary]'
-                        : 'bg-transparent text-[--color-text-muted]'
+                        ? 'bg-[--color-accent] text-[--color-background]'
+                        : 'bg-white/5 text-[--color-text-muted]'
                     }`}
                   >
                     {cat.features.length}
@@ -305,17 +310,16 @@ export function FeaturesTabbed() {
               )
             })}
           </div>
-        </AnimateOnScroll>
+        </div>
 
         {/* Active Tab Content */}
-        <div
-          key={activeTab}
-          style={{
-            animation: 'fade-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-          }}
-        >
-          <TabContent category={activeCategory} />
-        </div>
+        <AnimatePresence mode="wait">
+          <FadeIn
+            key={activeTab}
+          >
+            <TabContent category={activeCategory} />
+          </FadeIn>
+        </AnimatePresence>
       </div>
     </section>
   )

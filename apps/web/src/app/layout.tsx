@@ -7,6 +7,7 @@ import {
   generateMetadata as generateSeoMetadata,
   SITE_CONFIG,
 } from "@/lib/seo";
+import { ReactScan } from "@/components/marketing/react-scan";
 import { StructuredData } from "@/components/seo/structured-data";
 
 export const metadata: Metadata = generateSeoMetadata({
@@ -49,6 +50,7 @@ export default function RootLayout({
     >
       <html lang="en">
         <body className="antialiased">
+          <ReactScan />
           <StructuredData type="organization" />
           <StructuredData type="software" />
           {children}
