@@ -39,50 +39,18 @@ export function buildTrackingUrl(path: string, utm: UTMParams = {}): string {
 }
 
 /**
- * Supported AI providers
- */
-export type AIProvider = "openai" | "anthropic" | "google" | "groq" | "ollama";
-
-/**
- * Configuration for AI service
+ * AI configuration - simplified to Claude (Anthropic) only.
+ * Users provide their Anthropic API key for local access.
  */
 export interface AIConfig {
-  provider: AIProvider;
-  apiKey?: string;
+  apiKey: string;
   model: string;
-  baseUrl?: string;
 }
 
 /**
- * Configuration for a single AI provider (API key and optional base URL)
+ * Claude model information for UI display
  */
-export interface AIProviderConfig {
-  apiKey?: string;
-  baseUrl?: string;
-}
-
-/**
- * Map of provider ID to provider configuration
- */
-export type AIProviderConfigs = Partial<Record<AIProvider, AIProviderConfig>>;
-
-/**
- * Multi-provider AI configuration
- * Stores API keys for all providers and tracks active provider/model
- */
-export interface AIMultiProviderConfig {
-  /** API keys and base URLs for each provider */
-  providers: AIProviderConfigs;
-  /** Currently active provider */
-  activeProvider: AIProvider;
-  /** Currently selected model for each provider */
-  activeModels: Partial<Record<AIProvider, string>>;
-}
-
-/**
- * Provider model information for UI display
- */
-export interface ProviderModel {
+export interface ClaudeModel {
   id: string;
   name: string;
   recommended?: boolean;
@@ -90,171 +58,31 @@ export interface ProviderModel {
 }
 
 /**
- * Provider configuration for UI display
+ * Available Claude models - single source of truth
  */
-export interface ProviderInfo {
-  id: AIProvider;
-  name: string;
-  description: string;
-  keyPrefix: string | null;
-  keyUrl: string;
-  models: ProviderModel[];
-}
-
-/**
- * Available AI providers with their models
- * This is the single source of truth for provider and model information
- */
-export const AI_PROVIDERS: readonly ProviderInfo[] = [
+export const CLAUDE_MODELS: readonly ClaudeModel[] = [
   {
-    id: "openai",
-    name: "OpenAI",
-    description: "GPT-5.1 Codex, GPT-5.1 Mini/Nano, GPT-4o",
-    keyPrefix: "sk-",
-    keyUrl: "https://platform.openai.com/api-keys",
-    models: [
-      {
-        id: "gpt-5.1-codex",
-        name: "GPT-5.1 Codex",
-        recommended: true,
-        description: "Best for SQL & code",
-      },
-      { id: "gpt-5.1", name: "GPT-5.1", description: "Most capable" },
-      {
-        id: "gpt-5.1-codex-mini",
-        name: "GPT-5.1 Codex Mini",
-        description: "Balanced",
-      },
-      { id: "gpt-5-nano", name: "GPT-5 Nano", description: "Fast & efficient" },
-      { id: "gpt-4o", name: "GPT-4o", description: "Previous gen" },
-      {
-        id: "gpt-4o-mini",
-        name: "GPT-4o Mini",
-        description: "Faster & cheaper",
-      },
-    ],
+    id: "claude-sonnet-4-5-20250514",
+    name: "Claude Sonnet 4.5",
+    recommended: true,
+    description: "Best balance of speed and capability",
   },
   {
-    id: "anthropic",
-    name: "Anthropic",
-    description: "Claude Sonnet 4.5, Claude Opus 4.5",
-    keyPrefix: "sk-ant-",
-    keyUrl: "https://console.anthropic.com/settings/keys",
-    models: [
-      {
-        id: "claude-sonnet-4-5",
-        name: "Claude Sonnet 4.5",
-        recommended: true,
-        description: "Balanced",
-      },
-      {
-        id: "claude-opus-4-5",
-        name: "Claude Opus 4.5",
-        description: "Best for coding",
-      },
-      {
-        id: "claude-haiku-4-5",
-        name: "Claude 4.5 Haiku",
-        description: "Faster & cheaper",
-      },
-    ],
+    id: "claude-opus-4-5-20250414",
+    name: "Claude Opus 4.5",
+    description: "Most capable for complex tasks",
   },
   {
-    id: "google",
-    name: "Google",
-    description: "Gemini 3, Gemini 2.5",
-    keyPrefix: "AI",
-    keyUrl: "https://aistudio.google.com/app/apikey",
-    models: [
-      {
-        id: "gemini-3-pro-preview",
-        name: "Gemini 3 Pro",
-        recommended: true,
-        description: "Most capable",
-      },
-      { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", description: "Balanced" },
-      {
-        id: "gemini-2.5-flash",
-        name: "Gemini 2.5 Flash",
-        description: "Faster",
-      },
-      {
-        id: "gemini-2.0-flash",
-        name: "Gemini 2.0 Flash",
-        description: "Previous gen",
-      },
-    ],
-  },
-  {
-    id: "groq",
-    name: "Groq",
-    description: "Llama 3.3, Mixtral (Ultra Fast)",
-    keyPrefix: "gsk_",
-    keyUrl: "https://console.groq.com/keys",
-    models: [
-      {
-        id: "llama-3.3-70b-versatile",
-        name: "Llama 3.3 70B",
-        recommended: true,
-      },
-      {
-        id: "llama-3.1-8b-instant",
-        name: "Llama 3.1 8B",
-        description: "Fastest",
-      },
-      { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B" },
-      { id: "qwen-qwq-32b", name: "Qwen QwQ 32B", description: "Reasoning" },
-    ],
-  },
-  {
-    id: "ollama",
-    name: "Ollama",
-    description: "Local models (no API key)",
-    keyPrefix: null,
-    keyUrl: "https://ollama.ai",
-    models: [
-      { id: "llama3.2", name: "Llama 3.2", recommended: true },
-      {
-        id: "qwen2.5-coder:32b",
-        name: "Qwen 2.5 Coder 32B",
-        description: "Best for SQL",
-      },
-      { id: "codellama", name: "Code Llama" },
-      { id: "mistral", name: "Mistral" },
-      { id: "deepseek-coder-v2", name: "DeepSeek Coder V2" },
-    ],
+    id: "claude-haiku-4-5-20250414",
+    name: "Claude Haiku 4.5",
+    description: "Fastest and most affordable",
   },
 ] as const;
 
 /**
- * Helper function to get the recommended model ID for a provider
- * Falls back to the first model if no recommended model is found
+ * Default Claude model
  */
-function getRecommendedModel(providerId: AIProvider): string {
-  const provider = AI_PROVIDERS.find((p) => p.id === providerId);
-  if (!provider) {
-    throw new Error(`Provider ${providerId} not found in AI_PROVIDERS`);
-  }
-  // Prefer recommended model, fall back to first model
-  const recommendedModel =
-    provider.models.find((m) => m.recommended) || provider.models[0];
-  if (!recommendedModel) {
-    throw new Error(`No models found for provider ${providerId}`);
-  }
-  return recommendedModel.id;
-}
-
-/**
- * Default model for each AI provider
- * Derived from AI_PROVIDERS - uses the recommended model for each provider
- */
-export const DEFAULT_MODELS: Record<AIProvider, string> = {
-  openai: getRecommendedModel("openai"),
-  anthropic: getRecommendedModel("anthropic"),
-  google: getRecommendedModel("google"),
-  groq: getRecommendedModel("groq"),
-  ollama: getRecommendedModel("ollama"),
-};
+export const DEFAULT_CLAUDE_MODEL = "claude-sonnet-4-5-20250514";
 
 /**
  * AI message for chat conversations
@@ -302,9 +130,14 @@ export interface AIStructuredResponse {
 }
 
 /**
- * Alias for AIChatResponse (same as AIStructuredResponse)
+ * Result from a chat request - includes streamed text and optional structured data
  */
-export type AIChatResponse = AIStructuredResponse;
+export interface AIChatResult {
+  /** Text content streamed during response */
+  text: string;
+  /** Structured response from tool use, if any */
+  structured: AIStructuredResponse | null;
+}
 
 // Stored response data types (without message field since it's in content)
 
@@ -314,7 +147,7 @@ export type AIChatResponse = AIStructuredResponse;
 export interface StoredQueryData {
   type: "query";
   sql: string;
-  explanation: string;
+  explanation?: string;
   warning?: string;
 }
 

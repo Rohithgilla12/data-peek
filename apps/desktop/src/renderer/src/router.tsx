@@ -75,12 +75,10 @@ function LayoutContent() {
   const isAISettingsOpen = useAIStore((s) => s.isSettingsOpen)
   const openAISettings = useAIStore((s) => s.openSettings)
   const closeAISettings = useAIStore((s) => s.closeSettings)
-  const multiProviderConfig = useAIStore((s) => s.multiProviderConfig)
+  const aiConfig = useAIStore((s) => s.config)
   const isAIConfigured = useAIStore((s) => s.isConfigured)
-  const setProviderConfig = useAIStore((s) => s.setProviderConfig)
-  const removeProviderConfig = useAIStore((s) => s.removeProviderConfig)
-  const setActiveProvider = useAIStore((s) => s.setActiveProvider)
-  const setActiveModel = useAIStore((s) => s.setActiveModel)
+  const setConfig = useAIStore((s) => s.setConfig)
+  const clearConfig = useAIStore((s) => s.clearConfig)
   const loadConfigFromMain = useAIStore((s) => s.loadConfigFromMain)
 
   // Get schemas for AI context
@@ -287,30 +285,14 @@ function LayoutContent() {
       <AISettingsModal
         isOpen={isAISettingsOpen}
         onClose={closeAISettings}
-        multiProviderConfig={multiProviderConfig}
-        onSaveProviderConfig={async (provider, config) => {
-          // Save to local store
-          setProviderConfig(provider, config)
-          // Save to main process
-          await window.api.ai.setProviderConfig(provider, config)
+        config={aiConfig}
+        onSave={async (config) => {
+          setConfig(config)
+          await window.api.ai.setConfig(config)
         }}
-        onRemoveProviderConfig={async (provider) => {
-          // Remove from local store
-          removeProviderConfig(provider)
-          // Remove from main process
-          await window.api.ai.removeProviderConfig(provider)
-        }}
-        onSetActiveProvider={async (provider) => {
-          // Set active in local store
-          setActiveProvider(provider)
-          // Set active in main process
-          await window.api.ai.setActiveProvider(provider)
-        }}
-        onSetActiveModel={async (provider, model) => {
-          // Set model in local store
-          setActiveModel(provider, model)
-          // Set model in main process
-          await window.api.ai.setActiveModel(provider, model)
+        onClear={async () => {
+          clearConfig()
+          await window.api.ai.clearConfig()
         }}
       />
     </>

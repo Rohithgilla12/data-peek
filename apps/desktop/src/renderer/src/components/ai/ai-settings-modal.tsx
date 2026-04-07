@@ -7,168 +7,122 @@ import {
   Loader2,
   Sparkles,
   ExternalLink,
-  Trash2,
   Key,
-  CheckCircle2
+  Trash2
 } from 'lucide-react'
-import { Button, Input, Label, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@data-peek/ui'
 
-import type { AIProvider, AIMultiProviderConfig, AIProviderConfig } from '@shared/index'
-import { AI_PROVIDERS } from '@shared/index'
-
-type ProviderId = AIProvider
+import type { AIConfig } from '@shared/index'
+import { CLAUDE_MODELS, DEFAULT_CLAUDE_MODEL } from '@shared/index'
 
 interface AISettingsModalProps {
   isOpen: boolean
   onClose: () => void
-  multiProviderConfig: AIMultiProviderConfig | null
-  onSaveProviderConfig: (provider: AIProvider, config: AIProviderConfig) => Promise<void>
-  onRemoveProviderConfig: (provider: AIProvider) => Promise<void>
-  onSetActiveProvider: (provider: AIProvider) => Promise<void>
-  onSetActiveModel: (provider: AIProvider, model: string) => Promise<void>
+  config: AIConfig | null
+  onSave: (config: AIConfig) => Promise<void>
+  onClear: () => Promise<void>
 }
 
 export function AISettingsModal({
   isOpen,
   onClose,
-  multiProviderConfig,
-  onSaveProviderConfig,
-  onRemoveProviderConfig,
-  onSetActiveProvider,
-  onSetActiveModel
+  config,
+  onSave,
+  onClear
 }: AISettingsModalProps) {
-  const [selectedProvider, setSelectedProvider] = React.useState<ProviderId>('openai')
   const [apiKey, setApiKey] = React.useState('')
-  const [baseUrl, setBaseUrl] = React.useState('')
+  const [model, setModel] = React.useState(DEFAULT_CLAUDE_MODEL)
   const [showKey, setShowKey] = React.useState(false)
   const [isValidating, setIsValidating] = React.useState(false)
   const [validationResult, setValidationResult] = React.useState<'success' | 'error' | null>(null)
+  const [validationError, setValidationError] = React.useState<string | null>(null)
   const [isSaving, setIsSaving] = React.useState(false)
 
-  const providerConfig = AI_PROVIDERS.find((p) => p.id === selectedProvider)!
-
-  // Check if a provider has a saved config
-  const hasProviderConfig = (providerId: ProviderId): boolean => {
-    if (!multiProviderConfig?.providers) return false
-    const config = multiProviderConfig.providers[providerId]
-    if (providerId === 'ollama') {
-      return !!config?.baseUrl
-    }
-    return !!config?.apiKey
-  }
-
-  // Get the active provider
-  const activeProvider = multiProviderConfig?.activeProvider || 'openai'
-
-  // Get saved model for a provider
-  const getSavedModel = (providerId: ProviderId): string => {
-    const defaultModel =
-      AI_PROVIDERS.find((p) => p.id === providerId)?.models.find((m) => m.recommended)?.id ||
-      AI_PROVIDERS.find((p) => p.id === providerId)?.models[0]?.id ||
-      ''
-    return multiProviderConfig?.activeModels?.[providerId] || defaultModel
-  }
-
-  // Load config when provider changes
+  // Load config when modal opens
   React.useEffect(() => {
-    const config = multiProviderConfig?.providers?.[selectedProvider]
-    if (config) {
+    if (isOpen && config) {
       setApiKey(config.apiKey || '')
-      setBaseUrl(config.baseUrl || (selectedProvider === 'ollama' ? 'http://localhost:11434' : ''))
-    } else {
+      setModel(config.model || DEFAULT_CLAUDE_MODEL)
+    } else if (isOpen) {
       setApiKey('')
-      setBaseUrl(selectedProvider === 'ollama' ? 'http://localhost:11434' : '')
+      setModel(DEFAULT_CLAUDE_MODEL)
     }
     setValidationResult(null)
+    setValidationError(null)
     setShowKey(false)
-  }, [selectedProvider, multiProviderConfig])
-
-  // Initialize selected provider on open
-  React.useEffect(() => {
-    if (isOpen && multiProviderConfig?.activeProvider) {
-      setSelectedProvider(multiProviderConfig.activeProvider as ProviderId)
-    }
-  }, [isOpen, multiProviderConfig?.activeProvider])
+  }, [isOpen, config])
 
   const handleValidate = async () => {
-    if (!apiKey && selectedProvider !== 'ollama') return
+    if (!apiKey) return
 
     setIsValidating(true)
     setValidationResult(null)
+    setValidationError(null)
 
     try {
-      const result = await window.api.ai.validateKey({
-        provider: selectedProvider,
-        apiKey: selectedProvider === 'ollama' ? undefined : apiKey,
-        model: getSavedModel(selectedProvider),
-        baseUrl: baseUrl || undefined
-      })
+      const result = await window.api.ai.validateKey(apiKey)
 
       if (result.success && result.data?.valid) {
         setValidationResult('success')
       } else {
         setValidationResult('error')
+        setValidationError(result.data?.error || 'Invalid API key')
       }
     } catch {
       setValidationResult('error')
+      setValidationError('Failed to validate key')
     } finally {
       setIsValidating(false)
     }
   }
 
-  const handleSaveProviderConfig = async () => {
+  const handleSave = async () => {
     setIsSaving(true)
     try {
-      await onSaveProviderConfig(selectedProvider, {
-        apiKey: selectedProvider === 'ollama' ? undefined : apiKey,
-        baseUrl: baseUrl || undefined
-      })
+      await onSave({ apiKey, model })
       setValidationResult('success')
     } catch (error) {
-      console.error('Failed to save provider config:', error)
+      console.error('Failed to save config:', error)
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleRemoveProviderConfig = async () => {
+  const handleClear = async () => {
     setIsSaving(true)
     try {
-      await onRemoveProviderConfig(selectedProvider)
+      await onClear()
       setApiKey('')
-      setBaseUrl(selectedProvider === 'ollama' ? 'http://localhost:11434' : '')
+      setModel(DEFAULT_CLAUDE_MODEL)
       setValidationResult(null)
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleSetActive = async () => {
-    if (!hasProviderConfig(selectedProvider)) return
-    setIsSaving(true)
-    try {
-      await onSetActiveProvider(selectedProvider)
-    } finally {
-      setIsSaving(false)
-    }
-  }
-
-  const handleModelChange = async (model: string) => {
-    try {
-      await onSetActiveModel(selectedProvider, model)
-    } catch (error) {
-      console.error('Failed to set model:', error)
-    }
-  }
-
-  const canSaveConfig = (selectedProvider === 'ollama' || apiKey.length > 10) && !isSaving
-  const isActiveProvider = activeProvider === selectedProvider
+  const canSave = apiKey.length > 10 && !isSaving
+  const hasExistingConfig = !!config?.apiKey
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[520px] gap-0 p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[480px] gap-0 p-0 overflow-hidden">
         {/* Decorative header gradient */}
-        <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+        <div className="h-1 bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600" />
 
         <DialogHeader className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3">
@@ -179,159 +133,95 @@ export function AISettingsModal({
               </div>
             </div>
             <div>
-              <DialogTitle>AI Providers</DialogTitle>
+              <DialogTitle>Claude AI Assistant</DialogTitle>
               <DialogDescription>
-                Configure multiple AI providers and switch between them
+                Connect your Anthropic API key to use Claude locally
               </DialogDescription>
             </div>
           </div>
         </DialogHeader>
 
         <div className="px-6 pb-6 space-y-5">
-          {/* Provider Selection with status indicators */}
-          <div className="space-y-2">
-            <Label className="text-xs">Providers</Label>
-            <div className="grid grid-cols-5 gap-2">
-              {AI_PROVIDERS.map((p) => {
-                const hasConfig = hasProviderConfig(p.id)
-                const isActive = activeProvider === p.id
-                return (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedProvider(p.id)}
-                    className={cn(
-                      'relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all',
-                      selectedProvider === p.id
-                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
-                        : hasConfig
-                          ? 'border-green-500/30 hover:border-green-500/50 hover:bg-green-500/5 text-muted-foreground'
-                          : 'border-border/50 hover:border-border hover:bg-muted/50 text-muted-foreground'
-                    )}
-                  >
-                    {hasConfig && (
-                      <div className="absolute -top-1 -right-1">
-                        <CheckCircle2
-                          className={cn(
-                            'size-3.5',
-                            isActive ? 'text-green-500' : 'text-green-500/60'
-                          )}
-                        />
-                      </div>
-                    )}
-                    <span className="text-[10px] font-medium">{p.name}</span>
-                    {isActive && hasConfig && (
-                      <span className="text-[8px] px-1 py-0.5 rounded bg-green-500/20 text-green-400">
-                        Active
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-            <p className="text-[10px] text-muted-foreground">{providerConfig.description}</p>
-          </div>
-
           {/* API Key Input */}
-          {selectedProvider !== 'ollama' && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="api-key" className="text-xs">
-                  API Key
-                </Label>
-                <a
-                  href={providerConfig.keyUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
-                >
-                  Get API Key
-                  <ExternalLink className="size-3" />
-                </a>
-              </div>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    id="api-key"
-                    type={showKey ? 'text' : 'password'}
-                    value={apiKey}
-                    onChange={(e) => {
-                      setApiKey(e.target.value)
-                      setValidationResult(null)
-                    }}
-                    placeholder={`${providerConfig.keyPrefix || ''}...`}
-                    className="pl-9 pr-9 font-mono text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowKey(!showKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  >
-                    {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleValidate}
-                  disabled={!apiKey || isValidating}
-                  className="shrink-0"
-                >
-                  {isValidating ? (
-                    <Loader2 className="size-4 animate-spin" />
-                  ) : validationResult === 'success' ? (
-                    <Check className="size-4 text-green-500" />
-                  ) : validationResult === 'error' ? (
-                    <AlertCircle className="size-4 text-red-500" />
-                  ) : (
-                    'Test'
-                  )}
-                </Button>
-              </div>
-              {validationResult === 'success' && (
-                <p className="text-[10px] text-green-500 flex items-center gap-1">
-                  <Check className="size-3" />
-                  API key is valid
-                </p>
-              )}
-              {validationResult === 'error' && (
-                <p className="text-[10px] text-red-500 flex items-center gap-1">
-                  <AlertCircle className="size-3" />
-                  Invalid API key
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Base URL for Ollama */}
-          {selectedProvider === 'ollama' && (
-            <div className="space-y-2">
-              <Label htmlFor="base-url" className="text-xs">
-                Ollama URL
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="api-key" className="text-xs">
+                Anthropic API Key
               </Label>
-              <Input
-                id="base-url"
-                type="text"
-                value={baseUrl}
-                onChange={(e) => setBaseUrl(e.target.value)}
-                placeholder="http://localhost:11434"
-                className="font-mono text-xs"
-              />
-              <p className="text-[10px] text-muted-foreground">
-                Make sure Ollama is running locally
-              </p>
+              <a
+                href="https://console.anthropic.com/settings/keys"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
+              >
+                Get API Key
+                <ExternalLink className="size-3" />
+              </a>
             </div>
-          )}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Key className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  id="api-key"
+                  type={showKey ? 'text' : 'password'}
+                  value={apiKey}
+                  onChange={(e) => {
+                    setApiKey(e.target.value)
+                    setValidationResult(null)
+                    setValidationError(null)
+                  }}
+                  placeholder="sk-ant-..."
+                  className="pl-9 pr-9 font-mono text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleValidate}
+                disabled={!apiKey || isValidating}
+                className="shrink-0"
+              >
+                {isValidating ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : validationResult === 'success' ? (
+                  <Check className="size-4 text-green-500" />
+                ) : validationResult === 'error' ? (
+                  <AlertCircle className="size-4 text-red-500" />
+                ) : (
+                  'Test'
+                )}
+              </Button>
+            </div>
+            {validationResult === 'success' && (
+              <p className="text-[10px] text-green-500 flex items-center gap-1">
+                <Check className="size-3" />
+                API key is valid
+              </p>
+            )}
+            {validationResult === 'error' && (
+              <p className="text-[10px] text-red-500 flex items-center gap-1">
+                <AlertCircle className="size-3" />
+                {validationError || 'Invalid API key'}
+              </p>
+            )}
+          </div>
 
           {/* Model Selection */}
           <div className="space-y-2">
             <Label className="text-xs">Model</Label>
-            <Select value={getSavedModel(selectedProvider)} onValueChange={handleModelChange}>
+            <Select value={model} onValueChange={setModel}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select a model" />
               </SelectTrigger>
               <SelectContent>
-                {providerConfig.models.map((m) => (
+                {CLAUDE_MODELS.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     <div className="flex items-center gap-2">
                       <span>{m.name}</span>
@@ -350,27 +240,17 @@ export function AISettingsModal({
             </Select>
           </div>
 
-          {/* Save/Remove Provider Config */}
+          {/* Save / Clear */}
           <div className="flex gap-2">
-            <Button
-              size="sm"
-              onClick={handleSaveProviderConfig}
-              disabled={!canSaveConfig}
-              className="flex-1"
-            >
+            <Button size="sm" onClick={handleSave} disabled={!canSave} className="flex-1">
               {isSaving ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
-              {hasProviderConfig(selectedProvider) ? 'Update' : 'Save'} {providerConfig.name} Key
+              {hasExistingConfig ? 'Update' : 'Save'} Configuration
             </Button>
-            {hasProviderConfig(selectedProvider) && !isActiveProvider && (
-              <Button size="sm" variant="outline" onClick={handleSetActive} disabled={isSaving}>
-                Set Active
-              </Button>
-            )}
-            {hasProviderConfig(selectedProvider) && (
+            {hasExistingConfig && (
               <Button
                 size="sm"
                 variant="ghost"
-                onClick={handleRemoveProviderConfig}
+                onClick={handleClear}
                 disabled={isSaving}
                 className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
               >
@@ -382,9 +262,9 @@ export function AISettingsModal({
           {/* Info box */}
           <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Your API keys are stored locally and securely. They are never sent to our servers. All
-              AI requests are made directly from your machine to the provider. Configure multiple
-              providers and switch between them anytime.
+              Your API key is stored locally and securely. It is never sent to our servers. All AI
+              requests are made directly from your machine to Anthropic&apos;s API. Works with any
+              Anthropic API key, including Claude Pro subscriptions.
             </p>
           </div>
         </div>

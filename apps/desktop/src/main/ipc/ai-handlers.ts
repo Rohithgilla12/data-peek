@@ -1,41 +1,29 @@
 import { ipcMain } from 'electron'
-import type { SchemaInfo } from '@shared/index'
+import type { SchemaInfo, AIConfig, AIMessage, StoredChatMessage } from '@shared/index'
 import {
   getAIConfig,
   setAIConfig,
   clearAIConfig,
   validateAPIKey,
-  generateChatResponse,
-  getChatHistory,
-  saveChatHistory,
-  clearChatHistory,
+  streamChatResponse,
   getChatSessions,
   getChatSession,
   createChatSession,
   updateChatSession,
-  deleteChatSession,
-  // Multi-provider config functions
-  getMultiProviderConfig,
-  setMultiProviderConfig,
-  getProviderConfig,
-  setProviderConfig,
-  removeProviderConfig,
-  setActiveProvider,
-  setActiveModel,
-  type AIConfig,
-  type AIMessage,
-  type StoredChatMessage,
-  type AIMultiProviderConfig,
-  type AIProviderConfig
+  deleteChatSession
 } from '../ai-service'
 import { createLogger } from '../lib/logger'
 
 const log = createLogger('ai-handlers')
 
 /**
- * Register AI-related handlers
+ * Register AI-related IPC handlers
  */
 export function registerAIHandlers(): void {
+  // ============================================
+  // Configuration
+  // ============================================
+
   // Get AI configuration
   ipcMain.handle('ai:get-config', () => {
     try {
@@ -69,97 +57,10 @@ export function registerAIHandlers(): void {
     }
   })
 
-  // ============================================
-  // Multi-Provider AI Configuration
-  // ============================================
-
-  // Get multi-provider configuration
-  ipcMain.handle('ai:get-multi-provider-config', () => {
-    try {
-      const config = getMultiProviderConfig()
-      return { success: true, data: config }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
-    }
-  })
-
-  // Set multi-provider configuration
-  ipcMain.handle('ai:set-multi-provider-config', (_, config: AIMultiProviderConfig | null) => {
-    try {
-      setMultiProviderConfig(config)
-      return { success: true }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
-    }
-  })
-
-  // Get configuration for a specific provider
-  ipcMain.handle('ai:get-provider-config', (_, provider: string) => {
-    try {
-      const config = getProviderConfig(provider as AIConfig['provider'])
-      return { success: true, data: config }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
-    }
-  })
-
-  // Set configuration for a specific provider
-  ipcMain.handle(
-    'ai:set-provider-config',
-    (_, { provider, config }: { provider: string; config: AIProviderConfig }) => {
-      try {
-        setProviderConfig(provider as AIConfig['provider'], config)
-        return { success: true }
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        return { success: false, error: errorMessage }
-      }
-    }
-  )
-
-  // Remove configuration for a specific provider
-  ipcMain.handle('ai:remove-provider-config', (_, provider: string) => {
-    try {
-      removeProviderConfig(provider as AIConfig['provider'])
-      return { success: true }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
-    }
-  })
-
-  // Set the active provider
-  ipcMain.handle('ai:set-active-provider', (_, provider: string) => {
-    try {
-      setActiveProvider(provider as AIConfig['provider'])
-      return { success: true }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
-    }
-  })
-
-  // Set the active model for a provider
-  ipcMain.handle(
-    'ai:set-active-model',
-    (_, { provider, model }: { provider: string; model: string }) => {
-      try {
-        setActiveModel(provider as AIConfig['provider'], model)
-        return { success: true }
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        return { success: false, error: errorMessage }
-      }
-    }
-  )
-
   // Validate API key
-  ipcMain.handle('ai:validate-key', async (_, config: AIConfig) => {
+  ipcMain.handle('ai:validate-key', async (_, apiKey: string) => {
     try {
-      const result = await validateAPIKey(config)
+      const result = await validateAPIKey(apiKey)
       return { success: true, data: result }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -167,11 +68,14 @@ export function registerAIHandlers(): void {
     }
   })
 
-  // Chat with AI - returns structured JSON response
+  // ============================================
+  // Chat (with streaming)
+  // ============================================
+
   ipcMain.handle(
     'ai:chat',
     async (
-      _,
+      event,
       {
         messages,
         schemas,
@@ -187,21 +91,43 @@ export function registerAIHandlers(): void {
       try {
         const config = getAIConfig()
         if (!config) {
-          return { success: false, error: 'AI not configured. Please set up your API key.' }
+          return {
+            success: false,
+            error: 'AI not configured. Please add your Anthropic API key.'
+          }
         }
 
-        const result = await generateChatResponse(config, messages, schemas, dbType)
+        // Stream text deltas to the renderer
+        const onTextDelta = (text: string): void => {
+          try {
+            event.sender.send('ai:stream-delta', text)
+          } catch {
+            // Window may have been closed during streaming
+          }
+        }
 
-        if (result.success && result.data) {
+        // Signal stream start
+        event.sender.send('ai:stream-start')
+
+        const result = await streamChatResponse(config, messages, schemas, dbType, onTextDelta)
+
+        // Signal stream end
+        event.sender.send('ai:stream-end')
+
+        if (result.success) {
           return {
             success: true,
-            data: result.data // Returns AIStructuredResponse directly
+            data: {
+              text: result.text,
+              structured: result.structured
+            }
           }
         } else {
           return { success: false, error: result.error }
         }
       } catch (error: unknown) {
         log.error('Chat error:', error)
+        event.sender.send('ai:stream-end')
         const errorMessage = error instanceof Error ? error.message : String(error)
         return { success: false, error: errorMessage }
       }
@@ -209,44 +135,8 @@ export function registerAIHandlers(): void {
   )
 
   // ============================================
-  // Chat History and Sessions
+  // Chat Sessions
   // ============================================
-
-  // Get chat history for a connection
-  ipcMain.handle('ai:get-chat-history', (_, connectionId: string) => {
-    try {
-      const history = getChatHistory(connectionId)
-      return { success: true, data: history }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
-    }
-  })
-
-  // Save chat history for a connection
-  ipcMain.handle(
-    'ai:save-chat-history',
-    (_, { connectionId, messages }: { connectionId: string; messages: StoredChatMessage[] }) => {
-      try {
-        saveChatHistory(connectionId, messages)
-        return { success: true }
-      } catch (error: unknown) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        return { success: false, error: errorMessage }
-      }
-    }
-  )
-
-  // Clear chat history for a connection
-  ipcMain.handle('ai:clear-chat-history', (_, connectionId: string) => {
-    try {
-      clearChatHistory(connectionId)
-      return { success: true }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      return { success: false, error: errorMessage }
-    }
-  })
 
   // Get all chat sessions for a connection
   ipcMain.handle('ai:get-sessions', (_, connectionId: string) => {

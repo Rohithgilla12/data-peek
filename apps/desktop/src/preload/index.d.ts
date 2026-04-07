@@ -56,114 +56,14 @@ import type {
   PgImportResult
 } from '@shared/index'
 
-// AI Types
-type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama'
-
-interface AIConfig {
-  provider: AIProvider
-  apiKey?: string
-  model: string
-  baseUrl?: string
-}
-
-// Multi-provider config types
-interface AIProviderConfig {
-  apiKey?: string
-  baseUrl?: string
-}
-
-type AIProviderConfigs = Partial<Record<AIProvider, AIProviderConfig>>
-
-interface AIMultiProviderConfig {
-  providers: AIProviderConfigs
-  activeProvider: AIProvider
-  activeModels: Partial<Record<AIProvider, string>>
-}
-
-interface AIMessage {
-  role: 'user' | 'assistant' | 'system'
-  content: string
-}
-
-// Structured AI response types
-type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
-
-// Flat schema with nullable fields for AI provider compatibility
-interface AIChatResponse {
-  type: AIResponseType
-  message: string
-  // Query fields (null when type is not query)
-  sql: string | null
-  explanation: string | null
-  warning: string | null
-  requiresConfirmation: boolean | null
-  // Chart fields (null when type is not chart)
-  title: string | null
-  description: string | null
-  chartType: 'bar' | 'line' | 'pie' | 'area' | null
-  xKey: string | null
-  yKeys: string[] | null
-  // Metric fields (null when type is not metric)
-  label: string | null
-  format: 'number' | 'currency' | 'percent' | 'duration' | null
-  // Schema fields (null when type is not schema)
-  tables: string[] | null
-}
-
-// Stored response data types (without message field since it's in content)
-interface StoredQueryData {
-  type: 'query'
-  sql: string
-  explanation?: string
-  warning?: string
-}
-
-interface StoredChartData {
-  type: 'chart'
-  title: string
-  description?: string
-  chartType: 'bar' | 'line' | 'pie' | 'area'
-  sql: string
-  xKey: string
-  yKeys: string[]
-}
-
-interface StoredMetricData {
-  type: 'metric'
-  label: string
-  sql: string
-  format: 'number' | 'currency' | 'percent' | 'duration'
-}
-
-interface StoredSchemaData {
-  type: 'schema'
-  tables: string[]
-}
-
-type StoredResponseData =
-  | StoredQueryData
-  | StoredChartData
-  | StoredMetricData
-  | StoredSchemaData
-  | null
-
-// Stored chat message type (for persistence)
-interface StoredChatMessage {
-  id: string
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  responseData?: StoredResponseData
-  createdAt: string // ISO string for storage
-}
-
-// Chat session type - represents a single conversation thread
-interface ChatSession {
-  id: string
-  title: string
-  messages: StoredChatMessage[]
-  createdAt: string // ISO string
-  updatedAt: string // ISO string
-}
+// AI types - imported from shared
+import type {
+  AIConfig,
+  AIMessage,
+  AIChatResult,
+  StoredChatMessage,
+  ChatSession
+} from '@shared/index'
 
 interface DataPeekApi {
   connections: {
@@ -364,23 +264,22 @@ interface DataPeekApi {
     quitAndInstall: () => void
   }
   ai: {
+    // Configuration
     getConfig: () => Promise<IpcResponse<AIConfig | null>>
     setConfig: (config: AIConfig) => Promise<IpcResponse<void>>
     clearConfig: () => Promise<IpcResponse<void>>
-    validateKey: (config: AIConfig) => Promise<IpcResponse<{ valid: boolean; error?: string }>>
+    validateKey: (apiKey: string) => Promise<IpcResponse<{ valid: boolean; error?: string }>>
+    // Chat (with streaming)
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],
       dbType: string
-    ) => Promise<IpcResponse<AIChatResponse>>
-    // Chat history persistence (legacy API)
-    getChatHistory: (connectionId: string) => Promise<IpcResponse<StoredChatMessage[]>>
-    saveChatHistory: (
-      connectionId: string,
-      messages: StoredChatMessage[]
-    ) => Promise<IpcResponse<void>>
-    clearChatHistory: (connectionId: string) => Promise<IpcResponse<void>>
-    // Session-based API (new)
+    ) => Promise<IpcResponse<AIChatResult>>
+    // Streaming events
+    onStreamStart: (callback: () => void) => () => void
+    onStreamDelta: (callback: (text: string) => void) => () => void
+    onStreamEnd: (callback: () => void) => () => void
+    // Sessions
     getSessions: (connectionId: string) => Promise<IpcResponse<ChatSession[]>>
     getSession: (
       connectionId: string,
@@ -393,17 +292,6 @@ interface DataPeekApi {
       updates: { messages?: StoredChatMessage[]; title?: string }
     ) => Promise<IpcResponse<ChatSession | null>>
     deleteSession: (connectionId: string, sessionId: string) => Promise<IpcResponse<boolean>>
-    // Multi-provider configuration
-    getMultiProviderConfig: () => Promise<IpcResponse<AIMultiProviderConfig | null>>
-    setMultiProviderConfig: (config: AIMultiProviderConfig | null) => Promise<IpcResponse<void>>
-    getProviderConfig: (provider: AIProvider) => Promise<IpcResponse<AIProviderConfig | null>>
-    setProviderConfig: (
-      provider: AIProvider,
-      config: AIProviderConfig
-    ) => Promise<IpcResponse<void>>
-    removeProviderConfig: (provider: AIProvider) => Promise<IpcResponse<void>>
-    setActiveProvider: (provider: AIProvider) => Promise<IpcResponse<void>>
-    setActiveModel: (provider: AIProvider, model: string) => Promise<IpcResponse<void>>
   }
   pgNotify: {
     subscribe: (

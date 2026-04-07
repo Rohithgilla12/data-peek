@@ -24,10 +24,7 @@
     "build:linux": "pnpm run build && electron-builder --linux"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.17",
-    "@ai-sdk/google": "^2.0.12",
-    "@ai-sdk/groq": "^2.0.8",
-    "@ai-sdk/openai": "^2.0.24",
+    "@anthropic-ai/sdk": "^0.82.0",
     "@data-peek/ui": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -60,7 +57,6 @@
     "@tanstack/react-virtual": "^3.13.12",
     "@types/ssh2": "^1.15.5",
     "@xyflow/react": "^12.9.3",
-    "ai": "^5.0.0",
     "better-sqlite3": "^12.4.6",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

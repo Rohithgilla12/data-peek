@@ -17,14 +17,11 @@ import type {
   SavedQuery,
   Snippet,
   SchemaInfo,
-  AIProvider,
   AIConfig,
   AIMessage,
-  AIChatResponse,
+  AIChatResult,
   StoredChatMessage,
   ChatSession,
-  AIMultiProviderConfig,
-  AIProviderConfig,
   BenchmarkResult,
   MultiStatementResultWithTelemetry,
   PerformanceAnalysisResult,
@@ -66,16 +63,7 @@ import type {
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
-export type {
-  AIProvider,
-  AIConfig,
-  AIMessage,
-  AIChatResponse,
-  StoredChatMessage,
-  ChatSession,
-  AIMultiProviderConfig,
-  AIProviderConfig
-}
+export type { AIConfig, AIMessage, AIChatResult, StoredChatMessage, ChatSession }
 
 // Custom APIs for renderer
 const api = {
@@ -433,29 +421,37 @@ const api = {
     }
   },
   ai: {
+    // Configuration
     getConfig: (): Promise<IpcResponse<AIConfig | null>> => ipcRenderer.invoke('ai:get-config'),
     setConfig: (config: AIConfig): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('ai:set-config', config),
     clearConfig: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('ai:clear-config'),
-    validateKey: (config: AIConfig): Promise<IpcResponse<{ valid: boolean; error?: string }>> =>
-      ipcRenderer.invoke('ai:validate-key', config),
+    validateKey: (apiKey: string): Promise<IpcResponse<{ valid: boolean; error?: string }>> =>
+      ipcRenderer.invoke('ai:validate-key', apiKey),
+    // Chat (with streaming)
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],
       dbType: string
-    ): Promise<IpcResponse<AIChatResponse>> =>
+    ): Promise<IpcResponse<AIChatResult>> =>
       ipcRenderer.invoke('ai:chat', { messages, schemas, dbType }),
-    // Chat history persistence (legacy API)
-    getChatHistory: (connectionId: string): Promise<IpcResponse<StoredChatMessage[]>> =>
-      ipcRenderer.invoke('ai:get-chat-history', connectionId),
-    saveChatHistory: (
-      connectionId: string,
-      messages: StoredChatMessage[]
-    ): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('ai:save-chat-history', { connectionId, messages }),
-    clearChatHistory: (connectionId: string): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('ai:clear-chat-history', connectionId),
-    // Session-based API (new)
+    // Streaming events
+    onStreamStart: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('ai:stream-start', handler)
+      return () => ipcRenderer.removeListener('ai:stream-start', handler)
+    },
+    onStreamDelta: (callback: (text: string) => void): (() => void) => {
+      const handler = (_: unknown, text: string): void => callback(text)
+      ipcRenderer.on('ai:stream-delta', handler)
+      return () => ipcRenderer.removeListener('ai:stream-delta', handler)
+    },
+    onStreamEnd: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('ai:stream-end', handler)
+      return () => ipcRenderer.removeListener('ai:stream-end', handler)
+    },
+    // Sessions
     getSessions: (connectionId: string): Promise<IpcResponse<ChatSession[]>> =>
       ipcRenderer.invoke('ai:get-sessions', connectionId),
     getSession: (
@@ -472,25 +468,7 @@ const api = {
     ): Promise<IpcResponse<ChatSession | null>> =>
       ipcRenderer.invoke('ai:update-session', { connectionId, sessionId, updates }),
     deleteSession: (connectionId: string, sessionId: string): Promise<IpcResponse<boolean>> =>
-      ipcRenderer.invoke('ai:delete-session', { connectionId, sessionId }),
-    // Multi-provider configuration
-    getMultiProviderConfig: (): Promise<IpcResponse<AIMultiProviderConfig | null>> =>
-      ipcRenderer.invoke('ai:get-multi-provider-config'),
-    setMultiProviderConfig: (config: AIMultiProviderConfig | null): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('ai:set-multi-provider-config', config),
-    getProviderConfig: (provider: AIProvider): Promise<IpcResponse<AIProviderConfig | null>> =>
-      ipcRenderer.invoke('ai:get-provider-config', provider),
-    setProviderConfig: (
-      provider: AIProvider,
-      config: AIProviderConfig
-    ): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('ai:set-provider-config', { provider, config }),
-    removeProviderConfig: (provider: AIProvider): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('ai:remove-provider-config', provider),
-    setActiveProvider: (provider: AIProvider): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('ai:set-active-provider', provider),
-    setActiveModel: (provider: AIProvider, model: string): Promise<IpcResponse<void>> =>
-      ipcRenderer.invoke('ai:set-active-model', { provider, model })
+      ipcRenderer.invoke('ai:delete-session', { connectionId, sessionId })
   },
   files: {
     openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog')

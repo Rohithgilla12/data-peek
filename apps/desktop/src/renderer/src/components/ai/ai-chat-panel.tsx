@@ -114,10 +114,32 @@ export function AIChatPanel({
   const [currentSessionId, setCurrentSessionId] = React.useState<string | null>(null)
   const [editingSessionId, setEditingSessionId] = React.useState<string | null>(null)
   const [editingTitle, setEditingTitle] = React.useState('')
+  const [streamingText, setStreamingText] = React.useState('')
   const scrollRef = React.useRef<HTMLDivElement>(null)
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const previousConnectionId = React.useRef<string | null>(null)
   const isInitialLoad = React.useRef(true)
+
+  // Set up streaming event listeners
+  React.useEffect(() => {
+    const cleanupStart = window.api.ai.onStreamStart(() => {
+      setStreamingText('')
+    })
+
+    const cleanupDelta = window.api.ai.onStreamDelta((text: string) => {
+      setStreamingText((prev) => prev + text)
+    })
+
+    const cleanupEnd = window.api.ai.onStreamEnd(() => {
+      // Streaming complete - text will be replaced by the final response
+    })
+
+    return () => {
+      cleanupStart()
+      cleanupDelta()
+      cleanupEnd()
+    }
+  }, [])
 
   // Load sessions when connection changes
   React.useEffect(() => {
@@ -211,12 +233,12 @@ export function AIChatPanel({
     return () => clearTimeout(timeoutId)
   }, [messages, connection?.id, currentSessionId])
 
-  // Auto-scroll to bottom on new messages
+  // Auto-scroll to bottom on new messages or streaming text
   React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [messages])
+  }, [messages, streamingText])
 
   // Focus input when panel opens
   React.useEffect(() => {
@@ -238,6 +260,7 @@ export function AIChatPanel({
     setMessages((prev) => [...prev, userMessage])
     setInput('')
     setIsLoading(true)
+    setStreamingText('')
 
     try {
       // Build message history for AI context
@@ -249,58 +272,70 @@ export function AIChatPanel({
       // Determine database type from connection
       const dbType = connection.dbType || 'postgresql'
 
-      // Call actual AI service via IPC
+      // Call AI service via IPC (streaming events will update streamingText)
       const response = await window.api.ai.chat(aiMessages, schemas, dbType)
 
       if (response.success && response.data) {
-        const data = response.data
+        const { text, structured } = response.data
 
-        // Extract response data based on type
-        // Note: Backend uses flat schema with nullable fields for AI provider compatibility
+        // Build the assistant message
         let responseData: AIResponseData = null
-        if (data.type === 'query' && data.sql) {
-          responseData = {
-            type: 'query',
-            sql: data.sql,
-            explanation: data.explanation ?? undefined,
-            warning: data.warning ?? undefined,
-            requiresConfirmation: data.requiresConfirmation ?? undefined
-          }
-        } else if (
-          data.type === 'chart' &&
-          data.title &&
-          data.chartType &&
-          data.sql &&
-          data.xKey &&
-          data.yKeys
-        ) {
-          responseData = {
-            type: 'chart',
-            title: data.title,
-            description: data.description ?? undefined,
-            chartType: data.chartType,
-            sql: data.sql,
-            xKey: data.xKey,
-            yKeys: data.yKeys
-          }
-        } else if (data.type === 'metric' && data.label && data.sql && data.format) {
-          responseData = {
-            type: 'metric',
-            label: data.label,
-            sql: data.sql,
-            format: data.format
-          }
-        } else if (data.type === 'schema' && data.tables) {
-          responseData = {
-            type: 'schema',
-            tables: data.tables
+        let messageContent = text || ''
+
+        if (structured) {
+          // Use the structured response's message as content
+          messageContent = structured.message || text || ''
+
+          // Extract structured data based on type
+          if (structured.type === 'query' && structured.sql) {
+            responseData = {
+              type: 'query',
+              sql: structured.sql,
+              explanation: structured.explanation ?? undefined,
+              warning: structured.warning ?? undefined,
+              requiresConfirmation: structured.requiresConfirmation ?? undefined
+            }
+          } else if (
+            structured.type === 'chart' &&
+            structured.title &&
+            structured.chartType &&
+            structured.sql &&
+            structured.xKey &&
+            structured.yKeys
+          ) {
+            responseData = {
+              type: 'chart',
+              title: structured.title,
+              description: structured.description ?? undefined,
+              chartType: structured.chartType,
+              sql: structured.sql,
+              xKey: structured.xKey,
+              yKeys: structured.yKeys
+            }
+          } else if (
+            structured.type === 'metric' &&
+            structured.label &&
+            structured.sql &&
+            structured.format
+          ) {
+            responseData = {
+              type: 'metric',
+              label: structured.label,
+              sql: structured.sql,
+              format: structured.format
+            }
+          } else if (structured.type === 'schema' && structured.tables) {
+            responseData = {
+              type: 'schema',
+              tables: structured.tables
+            }
           }
         }
 
         const assistantMessage: AIChatMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: data.message,
+          content: messageContent,
           responseData,
           createdAt: new Date()
         }
@@ -327,6 +362,7 @@ export function AIChatPanel({
       setMessages((prev) => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
+      setStreamingText('')
     }
   }
 
@@ -463,7 +499,7 @@ export function AIChatPanel({
         style={{ width: `${panelWidth}px` }}
       >
         {/* Decorative top gradient line */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500/70 to-purple-500/0" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500/70 to-blue-600/0" />
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
@@ -480,8 +516,8 @@ export function AIChatPanel({
               </Button>
             ) : (
               <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-sm" />
-                <div className="relative flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-full blur-sm" />
+                <div className="relative flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20">
                   <Sparkles className="size-4 text-blue-400" />
                 </div>
               </div>
@@ -497,10 +533,12 @@ export function AIChatPanel({
                     disabled={!connection}
                   >
                     <MessageSquare className="size-3 shrink-0" />
-                    <span className="truncate">{currentSession?.title || 'AI Assistant'}</span>
+                    <span className="truncate">{currentSession?.title || 'Claude Assistant'}</span>
                   </button>
                   <p className="text-[10px] text-muted-foreground">
-                    {sessions.length} chat{sessions.length !== 1 ? 's' : ''} • Click to switch
+                    Powered by Claude
+                    {sessions.length > 0 &&
+                      ` \u2022 ${sessions.length} chat${sessions.length !== 1 ? 's' : ''}`}
                   </p>
                 </>
               )}
@@ -719,18 +757,18 @@ export function AIChatPanel({
         {!isConfigured && (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <div className="relative mb-4">
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full blur-xl" />
-              <div className="relative flex items-center justify-center size-16 rounded-full bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-border">
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-blue-600/10 rounded-full blur-xl" />
+              <div className="relative flex items-center justify-center size-16 rounded-full bg-gradient-to-br from-blue-500/5 to-blue-600/5 border border-border">
                 <Sparkles className="size-8 text-blue-400/50" />
               </div>
             </div>
-            <h3 className="font-semibold mb-2">Configure AI Assistant</h3>
+            <h3 className="font-semibold mb-2">Configure Claude AI</h3>
             <p className="text-sm text-muted-foreground mb-4 max-w-[280px]">
-              Add your API key to start asking questions about your database in natural language.
+              Add your Anthropic API key to start asking questions about your database using Claude.
             </p>
             <Button onClick={onOpenSettings} className="gap-2">
               <Settings className="size-4" />
-              Configure API Key
+              Add API Key
             </Button>
           </div>
         )}
@@ -749,7 +787,7 @@ export function AIChatPanel({
               Select a database connection to start asking questions about your data.
             </p>
             <p className="text-xs text-muted-foreground/60">
-              Use <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">⌘P</kbd> to
+              Use <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">{'\u2318'}P</kbd> to
               open the connection picker
             </p>
           </div>
@@ -760,10 +798,10 @@ export function AIChatPanel({
           <>
             <ScrollArea className="flex-1 px-4" ref={scrollRef}>
               <div className="py-4 space-y-4">
-                {messages.length === 0 ? (
+                {messages.length === 0 && !streamingText ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <div className="relative mb-6">
-                      <div className="absolute -inset-3 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-full blur-lg animate-pulse" />
+                      <div className="absolute -inset-3 bg-gradient-to-r from-blue-500/5 to-blue-600/5 rounded-full blur-lg animate-pulse" />
                       <Lightbulb className="relative size-10 text-muted-foreground/30" />
                     </div>
                     <p className="text-sm text-muted-foreground mb-6">
@@ -785,10 +823,25 @@ export function AIChatPanel({
                   ))
                 )}
 
-                {/* Loading indicator */}
-                {isLoading && (
+                {/* Streaming text indicator */}
+                {isLoading && streamingText && (
                   <div className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-                    <div className="flex items-center justify-center size-7 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 shrink-0">
+                    <div className="flex items-center justify-center size-7 rounded-full bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20 shrink-0">
+                      <Sparkles className="size-3.5 text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm leading-relaxed text-foreground/90">
+                        {streamingText}
+                        <span className="inline-block w-1.5 h-4 ml-0.5 bg-blue-400 animate-pulse" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Loading indicator (no streaming text yet) */}
+                {isLoading && !streamingText && (
+                  <div className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
+                    <div className="flex items-center justify-center size-7 rounded-full bg-gradient-to-br from-blue-500/10 to-blue-600/10 border border-blue-500/20 shrink-0">
                       <Sparkles className="size-3.5 text-blue-400" />
                     </div>
                     <div className="flex items-center gap-2 py-2">
