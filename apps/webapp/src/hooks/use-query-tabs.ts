@@ -2,7 +2,7 @@
 
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useAuth } from '@clerk/nextjs'
-import { useCallback, useRef, useSyncExternalStore } from 'react'
+import { useCallback, useEffect, useRef, useSyncExternalStore } from 'react'
 import { getDB } from '@/lib/dexie'
 
 let activeTabId: string | null = null
@@ -34,23 +34,23 @@ export function useQueryTabs() {
   const tabs = useLiveQuery(async () => {
     if (!userId) return []
     const db = getDB(userId)
-    const all = await db.queryTabs.orderBy('updatedAt').toArray()
+    return db.queryTabs.orderBy('updatedAt').toArray()
+  }, [userId])
 
-    if (all.length === 0 && !initializedRef.current) {
+  useEffect(() => {
+    if (!userId || initializedRef.current || !tabs) return
+    if (tabs.length === 0) {
       initializedRef.current = true
+      const db = getDB(userId)
       const id = crypto.randomUUID()
       const now = new Date().toISOString()
-      await db.queryTabs.add({ id, title: `Query ${tabCounter++}`, sql: '', updatedAt: now })
-      setActiveTabId(id)
-      return db.queryTabs.orderBy('updatedAt').toArray()
+      db.queryTabs.add({ id, title: `Query ${tabCounter++}`, sql: '', updatedAt: now }).then(() => {
+        setActiveTabId(id)
+      })
+    } else if (!currentActiveTabId) {
+      setActiveTabId(tabs[tabs.length - 1].id)
     }
-
-    if (!currentActiveTabId && all.length > 0) {
-      setActiveTabId(all[all.length - 1].id)
-    }
-
-    return all
-  }, [userId, currentActiveTabId])
+  }, [userId, tabs, currentActiveTabId])
 
   const addTab = useCallback(async () => {
     if (!userId) return
