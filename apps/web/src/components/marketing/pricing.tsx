@@ -204,16 +204,14 @@ export function Pricing() {
                 trust you.
               </p>
               <p className="text-sm text-[--color-text-secondary]">
-                <strong>Students & educators:</strong> Use it free!{" "}
+                <strong>Students, educators & OSS devs:</strong> Use it free!{" "}
                 <Link
-                  href="https://x.com/gillarohith"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href="/community"
                   className="text-[--color-accent] hover:underline"
                 >
-                  DM me
-                </Link>{" "}
-                for a free license.
+                  Get a free license
+                </Link>
+                {'.'}
               </p>
             </div>
           </div>
