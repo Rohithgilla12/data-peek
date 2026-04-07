@@ -1,10 +1,18 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { Download, Github, ArrowRight, Command, Sparkles, Database, Zap } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { FadeIn, ScaleIn } from '@/components/ui/motion-wrapper'
-import { motion } from 'framer-motion'
+import Link from "next/link";
+import {
+  Download,
+  Github,
+  ArrowRight,
+  Command,
+  Sparkles,
+  Database,
+  Zap,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FadeIn, ScaleIn } from "@/components/ui/motion-wrapper";
+import { motion } from "framer-motion";
 
 export function CTA() {
   return (
@@ -22,10 +30,16 @@ export function CTA() {
             <div className="absolute top-10 left-10 hidden lg:block opacity-20 animate-float">
               <Database className="w-12 h-12 text-[--color-accent]" />
             </div>
-            <div className="absolute bottom-10 right-10 hidden lg:block opacity-20 animate-float" style={{ animationDelay: "1s" }}>
+            <div
+              className="absolute bottom-10 right-10 hidden lg:block opacity-20 animate-float"
+              style={{ animationDelay: "1s" }}
+            >
               <Sparkles className="w-16 h-16 text-purple-500" />
             </div>
-            <div className="absolute top-1/2 right-20 hidden lg:block opacity-10 animate-float" style={{ animationDelay: "2s" }}>
+            <div
+              className="absolute top-1/2 right-20 hidden lg:block opacity-10 animate-float"
+              style={{ animationDelay: "2s" }}
+            >
               <Zap className="w-8 h-8 text-[--color-warning]" />
             </div>
 
@@ -36,21 +50,32 @@ export function CTA() {
               <h2 className="text-4xl sm:text-6xl md:text-7xl font-bold tracking-tighter leading-[0.9] mb-10 max-w-4xl mx-auto">
                 Take control of your data.
                 <br />
-                <span className="text-[--color-text-secondary]">Download data-peek today.</span>
+                <span className="text-[--color-text-secondary]">
+                  Download data-peek today.
+                </span>
               </h2>
               <p className="text-base sm:text-lg text-[--color-text-muted] max-w-xl mx-auto mb-12 font-mono leading-relaxed opacity-80">
                 Experience the fastest way to query and manage your databases.
-                Join 10,000+ developers who already peeked.
+                Developers are switching to data-peek.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                <Button size="xl" className="group rounded-2xl px-10 bg-[--color-accent] text-[--color-background] hover:bg-[--color-accent]/90 shadow-2xl shadow-[--color-accent]/20 font-mono uppercase tracking-widest font-bold" asChild>
+                <Button
+                  size="xl"
+                  className="group rounded-2xl px-10 bg-[--color-accent] text-[--color-background] hover:bg-[--color-accent]/90 shadow-2xl shadow-[--color-accent]/20 font-mono uppercase tracking-widest font-bold"
+                  asChild
+                >
                   <Link href="/download">
                     <Download className="w-5 h-5 group-hover:animate-bounce" />
                     <span>Download Free</span>
                   </Link>
                 </Button>
-                <Button variant="outline" size="xl" className="rounded-2xl px-10 border-white/10 hover:bg-white/5 font-mono uppercase tracking-widest font-bold group" asChild>
+                <Button
+                  variant="outline"
+                  size="xl"
+                  className="rounded-2xl px-10 border-white/10 hover:bg-white/5 font-mono uppercase tracking-widest font-bold group"
+                  asChild
+                >
                   <Link href="https://github.com/Rohithgilla12/data-peek">
                     <Github className="w-5 h-5" />
                     <span>Star on GitHub</span>
@@ -71,5 +96,5 @@ export function CTA() {
         </ScaleIn>
       </div>
     </section>
-  )
+  );
 }

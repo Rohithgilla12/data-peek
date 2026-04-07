@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Github, Menu, X, Command, Database, Star } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import Link from "next/link";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Github, Menu, X, Command, Database, Star } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const navLinks = [
   { href: "https://docs.datapeek.dev/docs", label: "Docs", external: true },
@@ -15,27 +15,28 @@ const navLinks = [
 ];
 
 export function Header() {
-  const [isScrolled, setIsScrolled] = useState(false)
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20)
-    }
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+      setIsScrolled(window.scrollY > 20);
+      if (isMobileMenuOpen) setIsMobileMenuOpen(false);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [isMobileMenuOpen]);
 
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled ? 'py-3' : 'py-6'
+        isScrolled ? "py-3" : "py-6"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         <nav
           className={`flex items-center justify-between px-6 py-2 rounded-2xl transition-all duration-500 ${
-            isScrolled ? 'glass' : 'bg-transparent border-transparent'
+            isScrolled ? "glass" : "bg-transparent border-transparent"
           }`}
         >
           {/* Logo */}
@@ -57,7 +58,9 @@ export function Header() {
               <Link
                 key={link.label}
                 href={link.href}
-                {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                {...(link.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
                 className="text-xs font-medium text-[--color-text-secondary] hover:text-white transition-colors font-mono uppercase tracking-widest"
               >
                 {link.label}
@@ -76,10 +79,19 @@ export function Header() {
               <Github className="w-5 h-5" />
               <Star className="w-4 h-4" />
             </Link>
-            <Button variant="ghost" size="sm" className="hidden sm:flex rounded-xl font-mono text-xs uppercase tracking-wider" asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="hidden sm:flex rounded-xl font-mono text-xs uppercase tracking-wider"
+              asChild
+            >
               <Link href="/download">Download</Link>
             </Button>
-            <Button size="sm" className="rounded-xl font-mono bg-[--color-accent] hover:bg-[--color-accent]/90 text-[--color-background] border-none text-xs uppercase tracking-wider font-bold" asChild>
+            <Button
+              size="sm"
+              className="rounded-xl font-mono bg-[--color-accent] hover:bg-[--color-accent]/90 text-[--color-background] border-none text-xs uppercase tracking-wider font-bold"
+              asChild
+            >
               <Link href="/#pricing">Get Pro</Link>
             </Button>
 
@@ -120,10 +132,17 @@ export function Header() {
               ))}
               <hr className="border-white/5" />
               <div className="flex flex-col gap-4">
-                <Button variant="secondary" className="w-full rounded-2xl py-6 font-mono uppercase tracking-widest" asChild>
+                <Button
+                  variant="secondary"
+                  className="w-full rounded-2xl py-6 font-mono uppercase tracking-widest"
+                  asChild
+                >
                   <Link href="/download">Download Free</Link>
                 </Button>
-                <Button className="w-full rounded-2xl py-6 bg-[--color-accent] text-[--color-background] font-mono uppercase tracking-widest font-bold" asChild>
+                <Button
+                  className="w-full rounded-2xl py-6 bg-[--color-accent] text-[--color-background] font-mono uppercase tracking-widest font-bold"
+                  asChild
+                >
                   <Link href="/#pricing">Get Pro — $29</Link>
                 </Button>
               </div>
@@ -132,5 +151,5 @@ export function Header() {
         )}
       </AnimatePresence>
     </header>
-  )
+  );
 }

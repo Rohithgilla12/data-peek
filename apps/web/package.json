@@ -35,7 +35,6 @@
     "postgres": "^3.4.7",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-scan": "^0.5.3",
     "reading-time": "^1.5.0",
     "rehype-pretty-code": "^0.14.1",
     "remark-gfm": "^4.0.1",
@@ -53,6 +52,7 @@
     "drizzle-kit": "^0.31.7",
     "eslint": "^9",
     "eslint-config-next": "16.0.5",
+    "react-scan": "^0.5.3",
     "tailwindcss": "^4",
     "tsx": "^4.19.4",
     "typescript": "^5"
