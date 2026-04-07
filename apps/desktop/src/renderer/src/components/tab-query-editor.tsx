@@ -13,7 +13,6 @@ import {
   PanelTop,
   PanelBottomClose,
   PanelBottom,
-  DatabaseZap,
   BarChart3,
   Bookmark,
   Maximize2,
@@ -22,7 +21,28 @@ import {
   ActivitySquare,
   Share2
 } from 'lucide-react'
-import { Button, cn, keys, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Badge, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@data-peek/ui'
+import {
+  Button,
+  cn,
+  keys,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  Badge,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@data-peek/ui'
 import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
 import { usePanelCollapse } from '@/hooks/use-panel-collapse'
 
@@ -1457,6 +1477,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       connection={tabConnection}
                       onFiltersChange={setTableFilters}
                       onSortingChange={setTableSorting}
+                      onApplyToQuery={hasActiveFiltersOrSorting ? handleApplyToQuery : undefined}
                       onForeignKeyClick={handleFKClick}
                       onForeignKeyOpenTab={handleFKOpenTab}
                       onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
@@ -1481,6 +1502,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       pageSize={tab.pageSize}
                       onFiltersChange={setTableFilters}
                       onSortingChange={setTableSorting}
+                      onApplyToQuery={hasActiveFiltersOrSorting ? handleApplyToQuery : undefined}
                       onForeignKeyClick={handleFKClick}
                       onForeignKeyOpenTab={handleFKOpenTab}
                       onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
@@ -1601,29 +1623,6 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                           </Tooltip>
                         </TooltipProvider>
                       )}
-                    {hasActiveFiltersOrSorting && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="gap-1.5 h-7 text-primary border-primary/50 hover:bg-primary/10"
-                              onClick={handleApplyToQuery}
-                            >
-                              <DatabaseZap className="size-3.5" />
-                              Apply to Query
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            <p className="text-xs">
-                              Convert your current filters and sorting to SQL WHERE/ORDER BY clauses
-                              and re-run the query against the database.
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
                     <MaskingToolbar tabId={tabId} />
                     <TooltipProvider>
                       <Tooltip>

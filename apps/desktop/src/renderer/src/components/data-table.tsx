@@ -7,27 +7,33 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type ColumnFiltersState,
   type SortingState
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import {
-  ArrowUpDown,
-  ArrowUp,
-  ArrowDown,
-  Filter,
-  X,
-  Link2,
-  Copy,
-  BarChart2,
-  Lock,
-  Unlock
-} from 'lucide-react'
+import { ArrowUpDown, ArrowUp, ArrowDown, Link2, Copy, BarChart2, Lock, Unlock } from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
-import { Input, Button, TableBody, TableCell, TableHead, TableHeader, TableRow, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Badge, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  Button,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  Badge,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 import { JsonCellValue } from '@/components/json-cell-value'
 import { FKCellValue } from '@/components/fk-cell-value'
+import { SmartFilterBar, chipMatchesRow, type FilterChip } from '@/components/smart-filter-bar'
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getTypeColor } from '@/lib/type-colors'
@@ -63,6 +69,7 @@ interface DataTableProps<TData> {
   onFiltersChange?: (filters: DataTableFilter[]) => void
   onSortingChange?: (sorting: DataTableSort[]) => void
   onPageSizeChange?: (size: number) => void
+  onApplyToQuery?: () => void
   /** Called when user clicks a FK cell (opens panel) */
   onForeignKeyClick?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   /** Called when user Cmd+clicks a FK cell (opens new tab) */
@@ -205,6 +212,7 @@ export function DataTable<TData extends Record<string, unknown>>({
   onFiltersChange,
   onSortingChange,
   onPageSizeChange,
+  onApplyToQuery,
   onForeignKeyClick,
   onForeignKeyOpenTab,
   onColumnStatsClick
@@ -231,21 +239,33 @@ export function DataTable<TData extends Record<string, unknown>>({
   )
   const pageSize = propPageSize ?? defaultPageSize
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [showFilters, setShowFilters] = React.useState(false)
+  const [filterChips, setFilterChips] = React.useState<FilterChip[]>([])
 
-  // Notify parent of filter changes
-  React.useEffect(() => {
-    if (onFiltersChange) {
-      const filters: DataTableFilter[] = columnFilters
-        .filter((f) => f.value !== '')
-        .map((f) => ({
-          column: f.id,
-          value: String(f.value)
-        }))
-      onFiltersChange(filters)
-    }
-  }, [columnFilters, onFiltersChange])
+  const globalFilterFn = React.useCallback(
+    (row: { original: unknown }): boolean => {
+      if (filterChips.length === 0) return true
+      return filterChips.every((chip) =>
+        chipMatchesRow(chip, row.original as Record<string, unknown>)
+      )
+    },
+    [filterChips]
+  )
+
+  const handleFilterChange = React.useCallback(
+    (chips: FilterChip[]) => {
+      setFilterChips(chips)
+      if (onFiltersChange) {
+        const filters: DataTableFilter[] = chips
+          .filter((c) => c.column !== null)
+          .map((c) => ({
+            column: c.column!,
+            value: c.value
+          }))
+        onFiltersChange(filters)
+      }
+    },
+    [onFiltersChange]
+  )
 
   // Notify parent of sorting changes
   React.useEffect(() => {
@@ -433,10 +453,10 @@ export function DataTable<TData extends Record<string, unknown>>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    globalFilterFn: (row) => globalFilterFn(row),
     state: {
       sorting,
-      columnFilters
+      globalFilter: filterChips
     },
     initialState: {
       pagination: {
@@ -444,12 +464,6 @@ export function DataTable<TData extends Record<string, unknown>>({
       }
     }
   })
-
-  const activeFilterCount = columnFilters.filter((f) => f.value !== '').length
-
-  const clearAllFilters = () => {
-    setColumnFilters([])
-  }
 
   const tableContainerRef = React.useRef<HTMLDivElement>(null)
   const headerRef = React.useRef<HTMLTableRowElement>(null)
@@ -497,39 +511,14 @@ export function DataTable<TData extends Record<string, unknown>>({
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      {/* Filter Toggle Bar */}
-      <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/30 shrink-0">
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showFilters ? 'secondary' : 'ghost'}
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
-            onClick={() => setShowFilters(!showFilters)}
-          >
-            <Filter className="size-3" />
-            Filter
-            {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">
-                {activeFilterCount}
-              </Badge>
-            )}
-          </Button>
-          {activeFilterCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1 text-xs text-muted-foreground"
-              onClick={clearAllFilters}
-            >
-              <X className="size-3" />
-              Clear all
-            </Button>
-          )}
-        </div>
-        <div className="text-xs text-muted-foreground">
-          {table.getFilteredRowModel().rows.length} of {data.length} rows
-        </div>
-      </div>
+      <SmartFilterBar
+        columns={columnDefs}
+        onFilterChange={handleFilterChange}
+        onApplyToQuery={onApplyToQuery}
+        totalRows={data.length}
+        filteredRows={table.getFilteredRowModel().rows.length}
+        className="shrink-0"
+      />
 
       {/* Table with single scroll container */}
       <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
@@ -550,26 +539,6 @@ export function DataTable<TData extends Record<string, unknown>>({
                       </TableHead>
                     ))}
                   </TableRow>
-                  {/* Filter Row */}
-                  {showFilters && (
-                    <TableRow className="hover:bg-transparent border-border/50 bg-muted/80">
-                      {headerGroup.headers.map((header) => (
-                        <TableHead
-                          key={`filter-${header.id}`}
-                          className="h-9 py-1 px-2 bg-muted/80"
-                        >
-                          {header.column.getCanFilter() ? (
-                            <Input
-                              placeholder={`Filter...`}
-                              value={(header.column.getFilterValue() as string) ?? ''}
-                              onChange={(e) => header.column.setFilterValue(e.target.value)}
-                              className="h-7 text-xs bg-background/80"
-                            />
-                          ) : null}
-                        </TableHead>
-                      ))}
-                    </TableRow>
-                  )}
                 </React.Fragment>
               ))}
             </TableHeader>
