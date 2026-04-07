@@ -3,9 +3,7 @@
   "pages": [
     "index",
     "positioning-spine",
-    "reddit-playbook",
     "devto-series-calendar",
-    "post-templates",
-    "analytics-tracker-guide"
+    "post-templates"
   ]
 }
