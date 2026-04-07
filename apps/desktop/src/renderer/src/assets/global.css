@@ -560,3 +560,87 @@ input[type='number'] {
 .animate-achievement-pop {
   animation: achievement-pop 0.5s ease-out;
 }
+
+/* Sidebar: smooth collapsible expand/collapse via Radix data-state */
+[data-slot='collapsible-content'] {
+  overflow: hidden;
+}
+
+[data-slot='collapsible-content'][data-state='open'] {
+  animation: collapsible-slide-down 250ms cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+[data-slot='collapsible-content'][data-state='closed'] {
+  animation: collapsible-slide-up 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes collapsible-slide-down {
+  from {
+    height: 0;
+    opacity: 0;
+  }
+  to {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+}
+
+@keyframes collapsible-slide-up {
+  from {
+    height: var(--radix-collapsible-content-height);
+    opacity: 1;
+  }
+  to {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+/* Sidebar: stagger animation for schema items appearing */
+@keyframes sidebar-item-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar-stagger-item {
+  animation: sidebar-item-in 200ms cubic-bezier(0.34, 1.3, 0.64, 1) both;
+}
+
+/* Stagger delay via custom property — set per item in JSX */
+.sidebar-stagger-item { animation-delay: var(--stagger-delay, 0ms); }
+
+/* Sidebar: schema loading shimmer */
+@keyframes sidebar-shimmer {
+  0% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+  100% { opacity: 0.4; }
+}
+
+.sidebar-loading-shimmer {
+  animation: sidebar-shimmer 1.2s ease-in-out infinite;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='collapsible-content'][data-state='open'],
+  [data-slot='collapsible-content'][data-state='closed'] {
+    animation: none;
+  }
+
+  .sidebar-stagger-item {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .sidebar-loading-shimmer {
+    animation: none;
+    opacity: 0.5;
+  }
+}

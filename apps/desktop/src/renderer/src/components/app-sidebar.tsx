@@ -7,6 +7,7 @@ import { QueryHistory } from '@/components/query-history'
 import { SavedQueries } from '@/components/saved-queries'
 import { ScheduledQueries } from '@/components/scheduled-queries'
 import { SchemaExplorer } from '@/components/schema-explorer'
+import { SidebarOmnibar } from '@/components/sidebar-omnibar'
 import { SidebarQuickQuery } from '@/components/sidebar-quick-query'
 import { Snippets } from '@/components/snippets'
 import { FunAnalytics } from '@/components/fun-analytics'
@@ -54,6 +55,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent className="gap-0">
+        {/* Omnibar - unified search across everything */}
+        <SidebarOmnibar />
+
         {/* Quick Query Panel */}
         <SidebarQuickQuery />
 
