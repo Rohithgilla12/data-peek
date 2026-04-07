@@ -28,7 +28,6 @@
     "@ai-sdk/google": "^2.0.12",
     "@ai-sdk/groq": "^2.0.8",
     "@ai-sdk/openai": "^2.0.24",
-    "@data-peek/ui": "workspace:*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -92,6 +91,7 @@
   },
   "devDependencies": {
     "@data-peek/shared": "workspace:*",
+    "@data-peek/ui": "workspace:*",
     "@electron-toolkit/eslint-config-prettier": "^3.0.0",
     "@electron-toolkit/eslint-config-ts": "^3.1.0",
     "@electron-toolkit/tsconfig": "^2.0.0",

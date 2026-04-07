@@ -178,14 +178,12 @@ type BuilderStep = 'column' | 'operator' | 'value'
 function FilterChipButton({
   chip,
   isEditing,
-  onCopy,
   onEdit,
   onRemove,
   chipDisplayLabel
 }: {
   chip: FilterChip
   isEditing: boolean
-  onCopy: (chip: FilterChip) => void
   onEdit: (chip: FilterChip) => void
   onRemove: (chipId: string) => void
   chipDisplayLabel: (chip: FilterChip) => React.ReactNode
@@ -452,10 +450,6 @@ export function SmartFilterBar({
     [chips, notifyChange]
   )
 
-  const copyChip = React.useCallback((chip: FilterChip) => {
-    navigator.clipboard.writeText(chipToText(chip))
-  }, [])
-
   const editChip = React.useCallback(
     (chip: FilterChip) => {
       setEditingChipId(chip.id)
@@ -684,7 +678,6 @@ export function SmartFilterBar({
               key={chip.id}
               chip={chip}
               isEditing={editingChipId === chip.id}
-              onCopy={copyChip}
               onEdit={editChip}
               onRemove={removeChip}
               chipDisplayLabel={chipDisplayLabel}
