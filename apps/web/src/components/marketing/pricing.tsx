@@ -211,7 +211,7 @@ export function Pricing() {
                 >
                   Get a free license
                 </Link>
-                .
+                {'.'}
               </p>
             </div>
           </div>
