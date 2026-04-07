@@ -62,9 +62,12 @@ const GROUP_ORDER = ['tables', 'columns', 'routines', 'saved', 'snippets', 'hist
 
 export function SidebarOmnibar() {
   const inputRef = React.useRef<HTMLInputElement>(null)
+  const blurTimerRef = React.useRef<ReturnType<typeof setTimeout>>(undefined)
   const [query, setQuery] = React.useState('')
   const [isFocused, setIsFocused] = React.useState(false)
   const isActive = query.length > 0 || isFocused
+
+  React.useEffect(() => () => clearTimeout(blurTimerRef.current), [])
 
   const schemas = useConnectionStore((s) => s.schemas)
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
@@ -128,6 +131,33 @@ export function SidebarOmnibar() {
     [getActiveTab, activeTabId, updateTabQuery, getActiveConnection, createQueryTab]
   )
 
+  const handleRoutineSelect = React.useCallback(
+    (
+      schemaName: string,
+      routine: {
+        name: string
+        type: string
+        parameters: { name: string; mode: string; dataType: string }[]
+      }
+    ) => {
+      const connection = getActiveConnection()
+      if (!connection) return
+      const qualifiedName = `"${schemaName}"."${routine.name}"`
+      const paramPlaceholders = routine.parameters
+        .filter((p) => p.mode === 'IN' || p.mode === 'INOUT')
+        .map((p) => `/* ${p.name}: ${p.dataType} */`)
+        .join(', ')
+      const sql =
+        routine.type === 'procedure'
+          ? `CALL ${qualifiedName}(${paramPlaceholders});`
+          : `SELECT * FROM ${qualifiedName}(${paramPlaceholders});`
+      createQueryTab(connection.id, sql)
+      setQuery('')
+      inputRef.current?.blur()
+    },
+    [getActiveConnection, createQueryTab]
+  )
+
   const items = React.useMemo<OmnibarItem[]>(() => {
     if (!activeConnectionId) return []
 
@@ -186,22 +216,7 @@ export function SidebarOmnibar() {
               <Workflow className="size-3.5 text-orange-500" />
             ),
           keywords: [schema.name, routine.type, ...(routine.parameters?.map((p) => p.name) ?? [])],
-          onSelect: () => {
-            const connection = getActiveConnection()
-            if (!connection) return
-            const qualifiedName = `"${schema.name}"."${routine.name}"`
-            const paramPlaceholders = routine.parameters
-              .filter((p) => p.mode === 'IN' || p.mode === 'INOUT')
-              .map((p) => `/* ${p.name}: ${p.dataType} */`)
-              .join(', ')
-            const sql =
-              routine.type === 'procedure'
-                ? `CALL ${qualifiedName}(${paramPlaceholders});`
-                : `SELECT * FROM ${qualifiedName}(${paramPlaceholders});`
-            createQueryTab(connection.id, sql)
-            setQuery('')
-            inputRef.current?.blur()
-          }
+          onSelect: () => handleRoutineSelect(schema.name, routine)
         })
       }
     }
@@ -256,8 +271,7 @@ export function SidebarOmnibar() {
     handleTableClick,
     handleQuerySelect,
     handleSnippetSelect,
-    getActiveConnection,
-    createQueryTab
+    handleRoutineSelect
   ])
 
   const groupedItems = React.useMemo(() => {
@@ -295,11 +309,11 @@ export function SidebarOmnibar() {
         filter={(value, search, keywords) => {
           if (!search) return 1
           const searchLower = search.toLowerCase()
-          const valueLower = value.toLowerCase()
-          const keywordsStr = keywords?.join(' ').toLowerCase() ?? ''
-          if (valueLower === searchLower) return 1
-          if (valueLower.startsWith(searchLower)) return 0.95
-          if (valueLower.includes(searchLower)) return 0.8
+          const label = (keywords?.[0] ?? '').toLowerCase()
+          const keywordsStr = keywords?.slice(1).join(' ').toLowerCase() ?? ''
+          if (label === searchLower) return 1
+          if (label.startsWith(searchLower)) return 0.95
+          if (label.includes(searchLower)) return 0.8
           if (keywordsStr.includes(searchLower)) return 0.6
           return 0
         }}
@@ -311,7 +325,9 @@ export function SidebarOmnibar() {
             value={query}
             onValueChange={setQuery}
             onFocus={() => setIsFocused(true)}
-            onBlur={() => setTimeout(() => setIsFocused(false), 150)}
+            onBlur={() => {
+              blurTimerRef.current = setTimeout(() => setIsFocused(false), 150)
+            }}
             placeholder="Search everything..."
             className="flex h-7 w-full bg-transparent py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
           />
@@ -348,8 +364,8 @@ export function SidebarOmnibar() {
                     {groupItems.map((item) => (
                       <CommandPrimitive.Item
                         key={item.id}
-                        value={item.label}
-                        keywords={item.keywords}
+                        value={item.id}
+                        keywords={[item.label, ...item.keywords]}
                         onSelect={item.onSelect}
                         className="flex items-center gap-2 rounded px-1.5 py-1 text-xs cursor-pointer select-none data-[selected=true]:bg-primary/10 data-[selected=true]:text-foreground text-muted-foreground transition-colors duration-150"
                       >

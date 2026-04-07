@@ -562,15 +562,15 @@ input[type='number'] {
 }
 
 /* Sidebar: smooth collapsible expand/collapse via Radix data-state */
-[data-slot='collapsible-content'] {
+[data-slot='sidebar'] [data-slot='collapsible-content'] {
   overflow: hidden;
 }
 
-[data-slot='collapsible-content'][data-state='open'] {
+[data-slot='sidebar'] [data-slot='collapsible-content'][data-state='open'] {
   animation: collapsible-slide-down 250ms cubic-bezier(0.34, 1.3, 0.64, 1);
 }
 
-[data-slot='collapsible-content'][data-state='closed'] {
+[data-slot='sidebar'] [data-slot='collapsible-content'][data-state='closed'] {
   animation: collapsible-slide-up 200ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -610,26 +610,13 @@ input[type='number'] {
 
 .sidebar-stagger-item {
   animation: sidebar-item-in 200ms cubic-bezier(0.34, 1.3, 0.64, 1) both;
-}
-
-/* Stagger delay via custom property — set per item in JSX */
-.sidebar-stagger-item { animation-delay: var(--stagger-delay, 0ms); }
-
-/* Sidebar: schema loading shimmer */
-@keyframes sidebar-shimmer {
-  0% { opacity: 0.4; }
-  50% { opacity: 0.7; }
-  100% { opacity: 0.4; }
-}
-
-.sidebar-loading-shimmer {
-  animation: sidebar-shimmer 1.2s ease-in-out infinite;
+  animation-delay: var(--stagger-delay, 0ms);
 }
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  [data-slot='collapsible-content'][data-state='open'],
-  [data-slot='collapsible-content'][data-state='closed'] {
+  [data-slot='sidebar'] [data-slot='collapsible-content'][data-state='open'],
+  [data-slot='sidebar'] [data-slot='collapsible-content'][data-state='closed'] {
     animation: none;
   }
 
@@ -637,10 +624,5 @@ input[type='number'] {
     animation: none;
     opacity: 1;
     transform: none;
-  }
-
-  .sidebar-loading-shimmer {
-    animation: none;
-    opacity: 0.5;
   }
 }

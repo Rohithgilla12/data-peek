@@ -531,6 +531,13 @@ export function SchemaExplorer() {
   const [expandedRoutines, setExpandedRoutines] = React.useState<Set<string>>(new Set())
   const [searchQuery, setSearchQuery] = React.useState('')
 
+  // Only animate stagger on schema data changes, not on every re-render
+  const animatedSchemasRef = React.useRef<typeof schemas>(null)
+  const shouldAnimateStagger = animatedSchemasRef.current !== schemas
+  React.useEffect(() => {
+    animatedSchemasRef.current = schemas
+  }, [schemas])
+
   // Schema focus - when set, only show this schema
   const [focusedSchema, setFocusedSchema] = React.useState<string | null>(null)
 
@@ -1178,11 +1185,15 @@ export function SchemaExplorer() {
                                 onOpenChange={() => toggleTable(tableKey)}
                               >
                                 <SidebarMenuSubItem
-                                  className="sidebar-stagger-item"
+                                  className={
+                                    shouldAnimateStagger ? 'sidebar-stagger-item' : undefined
+                                  }
                                   style={
-                                    {
-                                      '--stagger-delay': `${Math.min(tableIndex * 20, 300)}ms`
-                                    } as React.CSSProperties
+                                    shouldAnimateStagger
+                                      ? ({
+                                          '--stagger-delay': `${Math.min(tableIndex * 20, 300)}ms`
+                                        } as React.CSSProperties)
+                                      : undefined
                                   }
                                 >
                                   <div className="flex items-center group/table">
@@ -1397,11 +1408,15 @@ export function SchemaExplorer() {
                                 onOpenChange={() => toggleRoutine(routineKey)}
                               >
                                 <SidebarMenuSubItem
-                                  className="sidebar-stagger-item"
+                                  className={
+                                    shouldAnimateStagger ? 'sidebar-stagger-item' : undefined
+                                  }
                                   style={
-                                    {
-                                      '--stagger-delay': `${Math.min((staggerBase + routineIndex) * 20, 300)}ms`
-                                    } as React.CSSProperties
+                                    shouldAnimateStagger
+                                      ? ({
+                                          '--stagger-delay': `${Math.min((staggerBase + routineIndex) * 20, 300)}ms`
+                                        } as React.CSSProperties)
+                                      : undefined
                                   }
                                 >
                                   <div className="flex items-center group/routine">
