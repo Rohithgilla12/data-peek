@@ -4,7 +4,25 @@ import { EditableCell } from '@/components/editable-cell'
 import { FKCellValue } from '@/components/fk-cell-value'
 import { JsonCellValue } from '@/components/json-cell-value'
 import { SqlPreviewModal } from '@/components/sql-preview-modal'
-import { Badge, Button, Input, TableBody, TableCell, TableHead, TableHeader, TableRow, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  Badge,
+  Button,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 import {
   generateLimitClause,
@@ -16,6 +34,7 @@ import { useEditStore } from '@/stores/edit-store'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useMaskingStore } from '@/stores/masking-store'
 import { PaginationControls } from '@/components/pagination-controls'
+import { SmartFilterBar, chipMatchesRow, type FilterChip } from '@/components/smart-filter-bar'
 import type { ColumnInfo, ConnectionConfig, EditContext, ForeignKeyInfo } from '@data-peek/shared'
 import {
   flexRender,
@@ -25,7 +44,6 @@ import {
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type ColumnFiltersState,
   type SortingState
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
@@ -35,7 +53,6 @@ import {
   ArrowUpDown,
   BarChart2,
   Copy,
-  Filter,
   Link2,
   Lock,
   MoreHorizontal,
@@ -82,6 +99,7 @@ interface EditableDataTableProps<TData> {
   connection?: ConnectionConfig | null
   onFiltersChange?: (filters: DataTableFilter[]) => void
   onSortingChange?: (sorting: DataTableSort[]) => void
+  onApplyToQuery?: () => void
   onPageSizeChange?: (size: number) => void
   onForeignKeyClick?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
@@ -124,6 +142,82 @@ function MaskedEditCell({
   )
 }
 
+function CopyableCell({
+  value,
+  onDoubleClick,
+  children
+}: {
+  value: string
+  onDoubleClick?: () => void
+  children: React.ReactNode
+}) {
+  const clickTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [copyState, setCopyState] = React.useState<'idle' | 'copied'>('idle')
+
+  React.useEffect(() => {
+    return () => {
+      if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
+    }
+  }, [])
+
+  const handleClick = React.useCallback(() => {
+    if (clickTimerRef.current) clearTimeout(clickTimerRef.current)
+    clickTimerRef.current = setTimeout(() => {
+      navigator.clipboard.writeText(value)
+      setCopyState('copied')
+      setTimeout(() => setCopyState('idle'), 1400)
+    }, 250)
+  }, [value])
+
+  const handleDoubleClick = React.useCallback(() => {
+    if (clickTimerRef.current) {
+      clearTimeout(clickTimerRef.current)
+      clickTimerRef.current = null
+    }
+    onDoubleClick?.()
+  }, [onDoubleClick])
+
+  const isCopied = copyState === 'copied'
+
+  return (
+    <span
+      className={cn(
+        'relative cursor-default inline-flex items-center',
+        'transition-[background-color] duration-200',
+        isCopied && 'rounded bg-green-500/10'
+      )}
+      onClick={handleClick}
+      onDoubleClick={onDoubleClick ? handleDoubleClick : undefined}
+      title={onDoubleClick ? 'Click to copy \u00b7 Double-click to edit' : 'Click to copy'}
+    >
+      <span
+        className={cn('transition-opacity duration-150', isCopied ? 'opacity-0' : 'opacity-100')}
+      >
+        {children}
+      </span>
+      {isCopied && (
+        <span className="absolute inset-0 flex items-center px-1 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
+          <svg
+            className="size-3 text-green-400 mr-1"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path
+              d="M3 8.5 L6.5 12 L13 4"
+              className="motion-safe:[stroke-dasharray:20] motion-safe:[stroke-dashoffset:20] motion-safe:animate-[check-draw_300ms_ease-out_forwards]"
+            />
+          </svg>
+          <span className="text-[10px] text-green-400 font-medium">Copied</span>
+        </span>
+      )}
+    </span>
+  )
+}
+
 export function EditableDataTable<TData extends Record<string, unknown>>({
   tabId,
   columns: columnDefs,
@@ -135,6 +229,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   onFiltersChange,
   onSortingChange,
   onPageSizeChange,
+  onApplyToQuery,
   onForeignKeyClick,
   onForeignKeyOpenTab,
   onColumnStatsClick,
@@ -167,8 +262,33 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   )
 
   const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [showFilters, setShowFilters] = React.useState(false)
+  const [filterChips, setFilterChips] = React.useState<FilterChip[]>([])
+
+  const globalFilterFn = React.useCallback(
+    (row: { original: unknown }): boolean => {
+      if (filterChips.length === 0) return true
+      return filterChips.every((chip) =>
+        chipMatchesRow(chip, row.original as Record<string, unknown>)
+      )
+    },
+    [filterChips]
+  )
+
+  const handleFilterChange = React.useCallback(
+    (chips: FilterChip[]) => {
+      setFilterChips(chips)
+      if (onFiltersChange) {
+        const filters: DataTableFilter[] = chips
+          .filter((c) => c.column !== null)
+          .map((c) => ({
+            column: c.column!,
+            value: c.value
+          }))
+        onFiltersChange(filters)
+      }
+    },
+    [onFiltersChange]
+  )
   const [showSqlPreview, setShowSqlPreview] = React.useState(false)
   const [sqlStatements, setSqlStatements] = React.useState<
     Array<{ operationId: string; sql: string; type: 'insert' | 'update' | 'delete' }>
@@ -311,19 +431,6 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
       cleanupAddRow()
     }
   }, [isEditMode, hasChanges, canEdit, hasPrimaryKey, editContext, tabId, enterEditMode])
-
-  // Notify parent of filter changes
-  React.useEffect(() => {
-    if (onFiltersChange) {
-      const filters: DataTableFilter[] = columnFilters
-        .filter((f) => f.value !== '')
-        .map((f) => ({
-          column: f.id,
-          value: String(f.value)
-        }))
-      onFiltersChange(filters)
-    }
-  }, [columnFilters, onFiltersChange])
 
   // Notify parent of sorting changes
   React.useEffect(() => {
@@ -754,25 +861,31 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           }
 
           // Non-edit mode rendering
-          // Single-click to enter edit mode for simple cells
-          // Double-click for cells with special interactive elements (JSON viewer, FK navigation)
+          // Click to copy cell value, double-click to enter edit mode
           const handleActivate = () => {
             if (!canEdit || !editContext || isMasked) return
             enterEditMode(tabId, editContext)
             setTimeout(() => startCellEdit(tabId, rowIndex, col.name), 0)
           }
 
+          const copyText = value === null || value === undefined ? 'NULL' : String(value)
+          const canActivate = canEdit && !isMasked
+
           if (value === null || value === undefined) {
             const nullContent = (
-              <span
-                className={cn(
-                  'text-muted-foreground/50 italic px-1 py-0.5 rounded',
-                  canEdit && !isMasked && 'cursor-pointer hover:bg-accent/50'
-                )}
-                onClick={handleActivate}
+              <CopyableCell
+                value={copyText}
+                onDoubleClick={canActivate ? handleActivate : undefined}
               >
-                NULL
-              </span>
+                <span
+                  className={cn(
+                    'text-muted-foreground/50 italic px-1 py-0.5 rounded',
+                    canActivate && 'hover:bg-accent/50'
+                  )}
+                >
+                  NULL
+                </span>
+              </CopyableCell>
             )
             if (isMasked) {
               return <MaskedEditCell hoverToPeek={hoverToPeek}>{nullContent}</MaskedEditCell>
@@ -780,18 +893,17 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             return nullContent
           }
 
-          // Handle JSON/JSONB types specially
-          // Single-click opens viewer, double-click on cell background enters edit mode
           const lowerType = col.dataType.toLowerCase()
           if (lowerType.includes('json')) {
             const jsonContent = (
-              <div
-                onDoubleClick={handleActivate}
-                className={cn('flex items-center', canEdit && !isMasked && 'cursor-pointer')}
-                title={canEdit && !isMasked ? 'Double-click to edit' : undefined}
+              <CopyableCell
+                value={copyText}
+                onDoubleClick={canActivate ? handleActivate : undefined}
               >
-                <JsonCellValue value={value} columnName={col.name} />
-              </div>
+                <div className={cn('flex items-center', canActivate && 'cursor-default')}>
+                  <JsonCellValue value={value} columnName={col.name} />
+                </div>
+              </CopyableCell>
             )
             if (isMasked) {
               return <MaskedEditCell hoverToPeek={hoverToPeek}>{jsonContent}</MaskedEditCell>
@@ -799,22 +911,21 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             return jsonContent
           }
 
-          // Handle Foreign Key columns
-          // Single-click navigates, double-click on cell background enters edit mode
           if (col.foreignKey) {
             const fkContent = (
-              <div
-                onDoubleClick={handleActivate}
-                className={cn('flex items-center', canEdit && !isMasked && 'cursor-pointer')}
-                title={canEdit && !isMasked ? 'Double-click to edit' : undefined}
+              <CopyableCell
+                value={copyText}
+                onDoubleClick={canActivate ? handleActivate : undefined}
               >
-                <FKCellValue
-                  value={value}
-                  foreignKey={col.foreignKey}
-                  onForeignKeyClick={onForeignKeyClick}
-                  onForeignKeyOpenTab={onForeignKeyOpenTab}
-                />
-              </div>
+                <div className={cn('flex items-center', canActivate && 'cursor-default')}>
+                  <FKCellValue
+                    value={value}
+                    foreignKey={col.foreignKey}
+                    onForeignKeyClick={onForeignKeyClick}
+                    onForeignKeyOpenTab={onForeignKeyOpenTab}
+                  />
+                </div>
+              </CopyableCell>
             )
             if (isMasked) {
               return <MaskedEditCell hoverToPeek={hoverToPeek}>{fkContent}</MaskedEditCell>
@@ -822,20 +933,23 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             return fkContent
           }
 
-          // Handle boolean types with colored display
           if (lowerType.includes('bool')) {
             const boolVal = value === true || value === 'true' || value === 't' || value === 1
             const boolContent = (
-              <span
-                className={cn(
-                  'text-xs font-mono px-1.5 py-0.5 rounded',
-                  boolVal ? 'text-green-500' : 'text-red-400',
-                  canEdit && !isMasked && 'cursor-pointer hover:bg-accent/50'
-                )}
-                onClick={handleActivate}
+              <CopyableCell
+                value={copyText}
+                onDoubleClick={canActivate ? handleActivate : undefined}
               >
-                {String(value)}
-              </span>
+                <span
+                  className={cn(
+                    'text-xs font-mono px-1.5 py-0.5 rounded',
+                    boolVal ? 'text-green-500' : 'text-red-400',
+                    canActivate && 'hover:bg-accent/50'
+                  )}
+                >
+                  {String(value)}
+                </span>
+              </CopyableCell>
             )
             if (isMasked) {
               return <MaskedEditCell hoverToPeek={hoverToPeek}>{boolContent}</MaskedEditCell>
@@ -847,15 +961,19 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
           const isLong = stringValue.length > 50
 
           const textContent = (
-            <span
-              className={cn(
-                'truncate max-w-[300px] block px-1 py-0.5 rounded',
-                canEdit && !isMasked && 'cursor-pointer hover:bg-accent/50'
-              )}
-              onClick={handleActivate}
+            <CopyableCell
+              value={stringValue}
+              onDoubleClick={canActivate ? handleActivate : undefined}
             >
-              {isLong ? stringValue.substring(0, 50) + '...' : stringValue}
-            </span>
+              <span
+                className={cn(
+                  'truncate max-w-[300px] block px-1 py-0.5 rounded',
+                  canActivate && 'hover:bg-accent/50'
+                )}
+              >
+                {isLong ? stringValue.substring(0, 50) + '...' : stringValue}
+              </span>
+            </CopyableCell>
           )
           if (isMasked) {
             return <MaskedEditCell hoverToPeek={hoverToPeek}>{textContent}</MaskedEditCell>
@@ -901,10 +1019,10 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
+    globalFilterFn: (row) => globalFilterFn(row),
     state: {
       sorting,
-      columnFilters
+      globalFilter: filterChips
     },
     initialState: {
       pagination: {
@@ -912,12 +1030,6 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
       }
     }
   })
-
-  const activeFilterCount = columnFilters.filter((f) => f.value !== '').length
-
-  const clearAllFilters = () => {
-    setColumnFilters([])
-  }
 
   const tableContainerRef = React.useRef<HTMLDivElement>(null)
   const headerRef = React.useRef<HTMLTableRowElement>(null)
@@ -966,60 +1078,35 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full min-h-0">
-        {/* Toolbar Row */}
-        <div className="flex items-center justify-between px-2 py-1.5 border-b border-border/30 shrink-0">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={showFilters ? 'secondary' : 'ghost'}
-              size="sm"
-              className="h-7 gap-1.5 text-xs"
-              onClick={() => setShowFilters(!showFilters)}
-            >
-              <Filter className="size-3" />
-              Filter
-              {activeFilterCount > 0 && (
-                <Badge variant="secondary" className="ml-1 px-1.5 py-0 text-[10px]">
-                  {activeFilterCount}
-                </Badge>
+        {/* Filter Bar + Edit Toolbar */}
+        <div className="shrink-0">
+          <SmartFilterBar
+            columns={columnDefs}
+            onFilterChange={handleFilterChange}
+            onApplyToQuery={onApplyToQuery}
+            totalRows={data.length}
+            filteredRows={table.getFilteredRowModel().rows.length}
+          />
+          {canEdit && (
+            <div className="flex items-center px-2 py-1 border-b border-border/30">
+              <EditToolbar
+                isEditMode={isEditMode}
+                canEdit={canEdit}
+                noPrimaryKey={!hasPrimaryKey}
+                pendingChanges={pendingChanges}
+                isCommitting={isCommitting}
+                onToggleEditMode={handleToggleEditMode}
+                onAddRow={handleAddRow}
+                onAddRowWithSheet={handleAddRowWithSheet}
+                onSaveChanges={handleSaveChanges}
+                onDiscardChanges={handleDiscardChanges}
+                onPreviewSql={handlePreviewSql}
+              />
+              {newRows.length > 0 && (
+                <span className="text-xs text-green-500 ml-auto">+{newRows.length} new</span>
               )}
-            </Button>
-            {activeFilterCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 gap-1 text-xs text-muted-foreground"
-                onClick={clearAllFilters}
-              >
-                <X className="size-3" />
-                Clear all
-              </Button>
-            )}
-
-            {canEdit && (
-              <>
-                <div className="h-4 w-px bg-border mx-1" />
-                <EditToolbar
-                  isEditMode={isEditMode}
-                  canEdit={canEdit}
-                  noPrimaryKey={!hasPrimaryKey}
-                  pendingChanges={pendingChanges}
-                  isCommitting={isCommitting}
-                  onToggleEditMode={handleToggleEditMode}
-                  onAddRow={handleAddRow}
-                  onAddRowWithSheet={handleAddRowWithSheet}
-                  onSaveChanges={handleSaveChanges}
-                  onDiscardChanges={handleDiscardChanges}
-                  onPreviewSql={handlePreviewSql}
-                />
-              </>
-            )}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            {table.getFilteredRowModel().rows.length} of {data.length} rows
-            {newRows.length > 0 && (
-              <span className="text-green-500 ml-2">+{newRows.length} new</span>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Table */}
@@ -1042,25 +1129,6 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                         </TableHead>
                       ))}
                     </TableRow>
-                    {showFilters && (
-                      <TableRow className="hover:bg-transparent border-border/50 bg-muted/80">
-                        {headerGroup.headers.map((header) => (
-                          <TableHead
-                            key={`filter-${header.id}`}
-                            className="h-9 py-1 px-2 bg-muted/80"
-                          >
-                            {header.column.getCanFilter() && header.id !== '_select' ? (
-                              <Input
-                                placeholder="Filter..."
-                                value={(header.column.getFilterValue() as string) ?? ''}
-                                onChange={(e) => header.column.setFilterValue(e.target.value)}
-                                className="h-7 text-xs bg-background/80"
-                              />
-                            ) : null}
-                          </TableHead>
-                        ))}
-                      </TableRow>
-                    )}
                   </React.Fragment>
                 ))}
               </TableHeader>
