@@ -73,36 +73,36 @@ export const POKEMON_ROSTER: PokemonData[] = [
     ]
   },
   {
-    id: 133,
-    name: 'Eevee',
-    types: ['normal'],
+    id: 6,
+    name: 'Charizard',
+    types: ['fire', 'flying'],
     moves: [
-      { name: 'Swift', type: 'normal', description: 'Star-shaped rays that never miss!' },
-      { name: 'Bite', type: 'dark', description: 'Bites with sharp fangs!' },
-      { name: 'Shadow Ball', type: 'ghost', description: 'A shadowy blob attack!' },
-      { name: 'Last Resort', type: 'normal', description: 'An all-out attack!' }
+      { name: 'Flamethrower', type: 'fire', description: 'A scorching blast of fire!' },
+      { name: 'Dragon Claw', type: 'dragon', description: 'Slashes with huge sharp claws!' },
+      { name: 'Air Slash', type: 'flying', description: 'Attacks with a blade of air!' },
+      { name: 'Blast Burn', type: 'fire', description: 'The ultimate fire attack!' }
     ]
   },
   {
-    id: 39,
-    name: 'Jigglypuff',
-    types: ['normal', 'fairy'],
+    id: 448,
+    name: 'Lucario',
+    types: ['fighting', 'steel'],
     moves: [
-      { name: 'Sing', type: 'normal', description: 'Lulls the foe to sleep!' },
-      { name: 'Pound', type: 'normal', description: 'Pounds with stubby arms!' },
-      { name: 'Rollout', type: 'rock', description: 'Rolls into the foe!' },
-      { name: 'Hyper Voice', type: 'normal', description: 'An earsplitting shout!' }
+      { name: 'Aura Sphere', type: 'fighting', description: 'A blast of aura power!' },
+      { name: 'Flash Cannon', type: 'steel', description: 'A beam of focused light!' },
+      { name: 'Extreme Speed', type: 'normal', description: 'An extremely fast charge!' },
+      { name: 'Bone Rush', type: 'ground', description: 'Strikes with a bone club!' }
     ]
   },
   {
-    id: 143,
-    name: 'Snorlax',
-    types: ['normal'],
+    id: 658,
+    name: 'Greninja',
+    types: ['water', 'dark'],
     moves: [
-      { name: 'Body Slam', type: 'normal', description: 'A full-body slam!' },
-      { name: 'Rest', type: 'psychic', description: 'Sleeps to restore HP!' },
-      { name: 'Hyper Beam', type: 'normal', description: 'A destructive beam attack!' },
-      { name: 'Crunch', type: 'dark', description: 'Crunches with sharp fangs!' }
+      { name: 'Water Shuriken', type: 'water', description: 'Throws stars of water!' },
+      { name: 'Night Slash', type: 'dark', description: 'Slashes in the dark!' },
+      { name: 'Aerial Ace', type: 'flying', description: 'An unavoidable swift strike!' },
+      { name: 'Hydro Pump', type: 'water', description: 'A huge volume of water!' }
     ]
   },
   {
