@@ -498,9 +498,6 @@ importers:
       react-dom:
         specifier: 19.2.0
         version: 19.2.0(react@19.2.0)
-      react-scan:
-        specifier: ^0.5.3
-        version: 0.5.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.53.3)
       reading-time:
         specifier: ^1.5.0
         version: 1.5.0
@@ -547,6 +544,9 @@ importers:
       eslint-config-next:
         specifier: 16.0.5
         version: 16.0.5(@typescript-eslint/parser@8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3))(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      react-scan:
+        specifier: ^0.5.3
+        version: 0.5.3(react-dom@19.2.0(react@19.2.0))(react@19.2.0)(rollup@4.53.3)
       tailwindcss:
         specifier: ^4
         version: 4.1.17
