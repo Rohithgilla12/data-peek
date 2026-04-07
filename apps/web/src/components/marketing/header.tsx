@@ -8,9 +8,9 @@ import { useEffect, useState } from "react";
 const navLinks = [
   { href: "https://docs.datapeek.dev/docs", label: "Docs", external: true },
   { href: "/blog", label: "Blog" },
+  { href: "/playground", label: "SQL Playground" },
   { href: "/#features", label: "Features" },
   { href: "/#pricing", label: "Pricing" },
-  { href: "/#faq", label: "FAQ" },
 ];
 
 export function Header() {

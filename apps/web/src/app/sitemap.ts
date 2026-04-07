@@ -65,6 +65,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     ...compareUrls,
     {
+      url: `${BASE_URL}/playground`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.8,
+    },
+    {
       url: `${BASE_URL}/privacy`,
       lastModified: new Date(),
       changeFrequency: "yearly" as const,

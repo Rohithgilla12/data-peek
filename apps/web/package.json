@@ -16,9 +16,12 @@
     "admin:grant-educator": "tsx scripts/grant-educator-license.ts"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.74",
+    "@ai-sdk/react": "^3.0.151",
     "@clerk/nextjs": "^6.35.5",
     "@radix-ui/react-slot": "^1.2.4",
     "@vercel/analytics": "^2.0.1",
+    "ai": "^6.0.149",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dodopayments": "^2.6.1",
