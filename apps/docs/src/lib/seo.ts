@@ -72,22 +72,6 @@ export function generateMetaTags({
   return meta
 }
 
-export function getOrganizationStructuredData() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: DOCS_CONFIG.name,
-    url: DOCS_CONFIG.url,
-    logo: `${DOCS_CONFIG.url}/favicon.svg`,
-    description: DOCS_CONFIG.description,
-    sameAs: [
-      'https://datapeek.dev',
-      'https://github.com/Rohithgilla12/data-peek',
-      'https://x.com/gillarohith',
-    ],
-  }
-}
-
 export function getTechArticleStructuredData({
   title,
   description,
