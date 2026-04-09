@@ -21,37 +21,26 @@ import {
 } from "@/lib/seo";
 import { motion } from "framer-motion";
 
-export const Route = createFileRoute("/docs/$")({
-  component: Page,
-  loader: async ({ params }) => {
-    const slugs = params._splat?.split("/") ?? [];
-    const data = await loader({ data: slugs });
-    await clientLoader.preload(data.path);
-    return data;
-  },
-  head: ({ loaderData }) => {
-    if (!loaderData?.path) return {};
+const loader = createServerFn({
+  method: "GET",
+})
+  .inputValidator((slugs: string[]) => slugs)
+  .handler(async ({ data: slugs }) => {
+    const page = source.getPage(slugs);
+    if (!page) throw notFound();
 
-    const page = source.getPage(loaderData.path.split("/").filter(Boolean));
-    if (!page) return {};
-
-    // Access frontmatter - fumadocs page structure
     const pageData = (page as any).data || {};
     const frontmatter = pageData.frontmatter || {
       title: "Documentation",
       description: DOCS_CONFIG.description,
     };
 
-    const pagePath = `/docs/${loaderData.path}`;
-    const url = `${DOCS_CONFIG.url}${pagePath}`;
-
-    // Build breadcrumbs
     const breadcrumbs = [
       { name: "Home", url: DOCS_CONFIG.url },
       { name: "Documentation", url: `${DOCS_CONFIG.url}/docs` },
     ];
 
-    const pathParts = loaderData.path.split("/").filter(Boolean);
+    const pathParts = page.path.split("/").filter(Boolean);
     let currentPath = "";
     pathParts.forEach((part, index) => {
       currentPath += `/${part}`;
@@ -65,8 +54,30 @@ export const Route = createFileRoute("/docs/$")({
       }
     });
 
-    const title = frontmatter.title || "Documentation";
-    const description = frontmatter.description || DOCS_CONFIG.description;
+    return {
+      tree: source.pageTree as object,
+      path: page.path,
+      title: frontmatter.title || "Documentation",
+      description: frontmatter.description || DOCS_CONFIG.description,
+      breadcrumbs,
+    };
+  });
+
+export const Route = createFileRoute("/docs/$")({
+  component: Page,
+  loader: async ({ params }) => {
+    const slugs = params._splat?.split("/") ?? [];
+    const data = await loader({ data: slugs });
+    await clientLoader.preload(data.path);
+    return data;
+  },
+  head: ({ loaderData }) => {
+    if (!loaderData?.path) return {};
+
+    const pagePath = `/docs/${loaderData.path}`;
+    const url = `${DOCS_CONFIG.url}${pagePath}`;
+    const title = loaderData.title;
+    const description = loaderData.description;
 
     const meta = generateMetaTags({
       title,
@@ -84,45 +95,11 @@ export const Route = createFileRoute("/docs/$")({
       type: "article",
     });
 
-    const structuredData = [
-      getTechArticleStructuredData({
-        title,
-        description,
-        url,
-      }),
-      getBreadcrumbStructuredData(breadcrumbs),
-    ];
-
-    // Add structured data as script tags
-    const structuredDataScripts = structuredData.map((data) => ({
-      children: `(function() {
-        const script = document.createElement('script');
-        script.type = 'application/ld+json';
-        script.textContent = ${JSON.stringify(JSON.stringify(data))};
-        document.head.appendChild(script);
-      })();`,
-    }));
-
     return {
       meta,
-      scripts: structuredDataScripts,
     };
   },
 });
-
-const loader = createServerFn({
-  method: "GET",
-})
-  .inputValidator((slugs: string[]) => slugs)
-  .handler(async ({ data: slugs }) => {
-    const page = source.getPage(slugs);
-    if (!page) throw notFound();
-
-    return {
-      tree: source.pageTree as object,
-      path: page.path,
-    };
-  });
 
 const clientLoader = browserCollections.docs.createClientLoader({
   component({ toc, frontmatter, default: MDX }) {
@@ -156,10 +133,30 @@ function Page() {
     [data.tree]
   );
 
+  const url = `${DOCS_CONFIG.url}/docs${data.path}`;
+  const structuredData = [
+    getTechArticleStructuredData({
+      title: data.title,
+      description: data.description,
+      url,
+    }),
+    getBreadcrumbStructuredData(data.breadcrumbs),
+  ];
+
   return (
-    <DocsLayout {...baseOptions()} tree={tree}>
-      <Content />
-    </DocsLayout>
+    <>
+      {structuredData.map((sd, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          suppressHydrationWarning
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(sd) }}
+        />
+      ))}
+      <DocsLayout {...baseOptions()} tree={tree}>
+        <Content />
+      </DocsLayout>
+    </>
   );
 }
 
