@@ -11,9 +11,9 @@
     "postinstall": "fumadocs-mdx"
   },
   "dependencies": {
-    "@tanstack/react-router": "^1.134.12",
-    "@tanstack/react-router-devtools": "^1.134.12",
-    "@tanstack/react-start": "^1.134.12",
+    "@tanstack/react-router": "^1.168.10",
+    "@tanstack/react-router-devtools": "^1.166.11",
+    "@tanstack/react-start": "^1.167.16",
     "@vercel/analytics": "^2.0.1",
     "framer-motion": "12.38.0",
     "fumadocs-core": "^16.7.11",
