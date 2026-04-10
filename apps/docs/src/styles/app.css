@@ -606,17 +606,6 @@ tr:hover td {
    ANIMATIONS
    ============================================================================= */
 
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 @keyframes glow-pulse {
   0%, 100% {
     box-shadow: 0 0 20px var(--dp-accent-glow);
@@ -624,11 +613,6 @@ tr:hover td {
   50% {
     box-shadow: 0 0 30px var(--dp-accent-glow), 0 0 60px var(--dp-accent-glow);
   }
-}
-
-/* Page content animation */
-main {
-  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* =============================================================================
