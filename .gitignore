@@ -6,6 +6,9 @@ out/
 /docs/
 apps/docs/content/docs/marketing/
 
+# Plans (local only)
+/plans/
+
 # OS files
 .DS_Store
 Thumbs.db
