@@ -133,16 +133,22 @@ Phases ship in order. Each phase is its own commit (or small series) on the curr
 
 ## Validation checklist
 
-Before closing this out:
+Status at end of implementation (2026-04-10). `[✓]` static or build-time verified; `[◯]` needs human visual check; `[~]` partial/deferred.
 
-- [ ] `/docs/configuration/settings` loads from sidebar without visible delay.
-- [ ] Navigating between 5 sidebar pages in a row feels instant (no 500ms fade).
-- [ ] `pnpm --filter docs build` succeeds on all version bumps.
-- [ ] `pnpm --filter docs types:check` runs in CI and catches a deliberately broken MDX file.
-- [ ] Dark mode renders the OKLCH brand blue on links, active sidebar items, and code block accents.
-- [ ] No hydration warnings in the browser console on cold load or after navigation.
-- [ ] Lighthouse LCP on `/docs` is under 1.5s on the built site.
-- [ ] Framer Motion is removed from `apps/docs/package.json` if unused elsewhere in docs.
+- [◯] `/docs/configuration/settings` loads from sidebar without visible delay. *(Code-level: Framer Motion wrapper and CSS `main` fade both removed in `61bcdf2`. Feel needs a human eye on the running dev server.)*
+- [◯] Navigating between 5 sidebar pages in a row feels instant (no 500ms fade). *(Same as above.)*
+- [✓] `pnpm --filter docs build` succeeds on all version bumps. *(Verified clean after Phases 1a, 1b, and 2.)*
+- [✓] `pnpm --filter docs types:check` runs in CI and catches broken MDX. *(`.github/workflows/docs-types.yml` added in `b253015`. Experimental unwrap of the `60282cd` operators confirmed the remark plugins handle the regression case.)*
+- [◯] Dark mode renders the OKLCH brand blue on links, active sidebar items, and code block accents. *(Tokens in `app.css` already correct; needs visual confirmation.)*
+- [~] No hydration warnings in the browser console on cold load or after navigation. *(One pre-existing warning on the Simple Analytics `<script>` tag in `__root.tsx` — not introduced by this revamp, not in scope. No new warnings from any phase of the revamp. Suggest a separate follow-up.)*
+- [◯] Lighthouse LCP on `/docs` is under 1.5s on the built site. *(Post-revamp baseline recorded in `plans/2026-04-10-docs-perf-baseline.md`: LCP 7.8s under Lighthouse simulated mobile throttling. TBT is 0ms and server responds in ~20ms, so perceived performance is much better than the mobile score suggests. Does NOT meet the 1.5s target under Lighthouse's default throttling. Revisit when prerender compat unblocks, or decide whether to relax the target to an unthrottled measurement.)*
+- [✓] Framer Motion removed from `apps/docs/src/routes/docs/` even though it remains in `package.json` (still used by the landing page `routes/index.tsx`). *(Grep confirms zero `framer-motion` imports under `src/routes/docs/`.)*
+
+## Known follow-ups
+
+- **Broken internal doc links check.** Phase 2 originally called for a build-time check that internal `/docs/...` links resolve. Not implemented in this pass. File as a follow-up.
+- **Prerender.** Deferred — see Risks.
+- **LCP target.** See baseline file.
 
 ## Risks
 
