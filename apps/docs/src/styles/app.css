@@ -281,13 +281,17 @@ code {
    LINKS
    ============================================================================= */
 
-a {
+/* Scoped to docs prose content. A bare `a` selector used to live here, but it
+   leaked into the landing page and turned the hero CTA's text invisible (the
+   CTA background and the `a` color were both --dp-accent). Docs pages wrap in
+   <article> via DocsPage; landing uses <main> via HomeLayout. */
+article a {
   color: var(--dp-accent);
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
-a:hover {
+article a:hover {
   color: var(--dp-text-primary);
   text-shadow: 0 0 12px var(--dp-accent-glow);
 }
