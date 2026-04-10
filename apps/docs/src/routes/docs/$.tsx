@@ -118,7 +118,7 @@ const clientLoader = browserCollections.docs.createClientLoader({
 
 function Page() {
   const data = Route.useLoaderData()
-  const Content = clientLoader.getComponent(data.path)
+  const content = clientLoader.useContent(data.path)
 
   const url = `${DOCS_CONFIG.url}/docs${data.path}`
   const structuredData = [
@@ -140,7 +140,7 @@ function Page() {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(sd) }}
         />
       ))}
-      <Content />
+      {content}
     </>
   )
 }
