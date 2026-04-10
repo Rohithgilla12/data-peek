@@ -35,6 +35,8 @@
     "@types/react-dom": "^19.2.2",
     "@vitejs/plugin-react": "^5.1.0",
     "nitro": "3.0.1-alpha.1",
+    "remark-gfm": "^4.0.1",
+    "remark-smartypants": "^3.0.2",
     "tailwindcss": "^4.1.16",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^5.1.4"
