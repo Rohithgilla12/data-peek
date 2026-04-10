@@ -149,6 +149,12 @@ Before closing this out:
 - **TanStack Start bump is the highest-risk change** — 34 minor versions includes plenty of room for breaking changes. Mitigation: bump it in its own commit, read the changelog before, be willing to revert and do a smaller bump (e.g., to 1.150) if 1.168 breaks.
 - **Prerender may surface runtime assumptions** — if any doc route depends on request-time data, prerender will fail for it. Mitigation: start with prerender on a single route, expand.
 - **Remark plugin changes could reflow existing MDX** — a lenient parser might interpret something differently. Mitigation: diff the built HTML of all doc pages before/after to catch unintended changes.
+- **Prerender deferred:** Attempted in Phase 3 but blocked by an upstream
+  compatibility issue between `@tanstack/start-plugin-core` and
+  `nitro@3.0.1-alpha.1`. The runtime works; only the prerender crawl fails
+  because of a race in the preview-server handoff. See
+  `plans/2026-04-10-docs-perf-baseline.md` for the full note and options for
+  revisiting.
 
 ## Open questions (none blocking)
 
