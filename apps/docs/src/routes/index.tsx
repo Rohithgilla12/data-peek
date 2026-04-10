@@ -35,15 +35,17 @@ export const Route = createFileRoute("/")({
 function Icon({
   svg,
   className,
+  style,
 }: {
   svg: string;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const styledSvg = svg.replace(
     /class="[^"]*"/,
     `class="${className ?? ""}"`
   );
-  return <span dangerouslySetInnerHTML={{ __html: styledSvg }} />;
+  return <span dangerouslySetInnerHTML={{ __html: styledSvg }} style={style} />;
 }
 
 function Home() {
