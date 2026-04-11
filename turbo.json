@@ -24,6 +24,11 @@
         ".output/**"
       ]
     },
+    "@data-peek/web#build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "../../notes/**"],
+      "outputs": [".next/**", "!.next/cache/**"]
+    },
     "build:mac": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "out/**"],
