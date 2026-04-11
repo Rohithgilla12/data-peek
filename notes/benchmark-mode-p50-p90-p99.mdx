@@ -37,6 +37,8 @@ the wrong percentile, you mutter, and you give up.
 data-peek has a Benchmark button. Click it, pick how many runs, wait, read
 the percentiles. That is the whole interaction.
 
+![Benchmark results showing p50, p90, p95, p99 latencies alongside average, min, max, and standard deviation](/blog/benchmark-mode/hero.png)
+
 ## What you get
 
 The button (`src/renderer/src/components/benchmark-button.tsx`) is a dropdown
@@ -66,7 +68,11 @@ That last one is the difference between "the query is slow" and "the query
 is fast but the planner is slow." I would not have guessed how often the
 answer is the second one until I could actually see it.
 
+![The p95 per-phase breakdown showing connect, plan, execute, and fetch percentiles side by side](/blog/benchmark-mode/p95-breakdown.png)
+
 ## How the runs happen
+
+![A benchmark mid-run with a progress indicator showing which iteration is currently executing](/blog/benchmark-mode/running.png)
 
 The renderer calls `db:benchmark` over IPC with a run count, and the main
 process loops through the query that many times, collecting telemetry on

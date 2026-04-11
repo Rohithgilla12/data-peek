@@ -30,6 +30,8 @@ productivity tax I got tired of paying.
 
 So I built the Connection Health Monitor into data-peek.
 
+![The Connection Health Monitor tab showing active queries, locks, cache-hit ratios, and table sizes refreshing on a 2-second interval](/blog/connection-health-monitor/hero.png)
+
 ## What it does
 
 The Health Monitor is a dedicated tab — not a modal, not a sidebar — that
@@ -49,11 +51,15 @@ The kill button calls `pg_cancel_backend(pid)`. No confirmation dialog. If
 you hit it by accident, the worst that happens is a query fails and you run
 it again. That is the right tradeoff at midnight.
 
+![A red kill button next to a long-running query in the Active Queries panel](/blog/connection-health-monitor/kill-query-button.png)
+
 Every panel has a "Share" button that generates a clean screenshot suitable
 for pasting into an incident Slack channel. That last bit came from a real
 incident where I wanted to show the on-call DBA what I was seeing and ended
 up cropping and masking a terminal screenshot for ten minutes. Now it is a
 single click.
+
+![An incident-ready screenshot exported from the Share button, clean and Slack-paste friendly](/blog/connection-health-monitor/share-image.png)
 
 ## How it's wired
 
@@ -178,6 +184,8 @@ WHERE NOT blocked.granted AND blocking.granted
 which matters because most of these columns are NULL for any given lock type.
 If you use plain `=` here, the join silently returns zero rows and you
 conclude that nothing is blocking anything. Ask me how I know.
+
+![The Locks panel showing a blocked UPDATE waiting on a SELECT FOR UPDATE holder, with both queries side by side](/blog/connection-health-monitor/lock-detection.png)
 
 ## The kill button
 

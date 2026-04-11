@@ -31,6 +31,8 @@ stop.
 The Postgres LISTEN/NOTIFY panel in data-peek is the version I wish I had had
 the first time.
 
+![The LISTEN/NOTIFY panel with multiple channels subscribed and live events streaming in with timestamps and JSON payloads](/blog/listen-notify/hero.png)
+
 ## What it does
 
 - Subscribe to one or many channels on a connection with a single input.
@@ -47,6 +49,8 @@ the first time.
 The whole thing is one `pg.Client` per connection held open in the Electron
 main process. The renderer just sends subscribe/unsubscribe IPC messages and
 receives events through a webContents channel.
+
+![The channel subscribe and filter UI showing multiple active subscriptions](/blog/listen-notify/channel-filter.png)
 
 ## The reconnect loop
 
@@ -155,6 +159,8 @@ Three reasons this matters:
    10,000. That keeps the JS side completely stateless.
 3. **It survives app restarts.** A SQLite file in `app.getPath('userData')`
    is the simplest possible durable store.
+
+![Aggregated event stats per channel — counts and recent activity from the SQLite-backed history](/blog/listen-notify/event-stats.png)
 
 The trim query is worth sharing because it is the one where I almost used a
 `LIMIT` on a DELETE (which SQLite supports but is a footgun):

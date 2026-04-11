@@ -23,6 +23,8 @@ camera at your laptop. That is not a sensible default in 2026.
 
 So I added a data masking layer to data-peek.
 
+![A users table query with email, password_hash, and token columns auto-blurred — the shape of the data is visible but the contents are not](/blog/blurring-pii/hero.png)
+
 ## What it does
 
 Two things, really.
@@ -49,7 +51,11 @@ That hover-to-peek mode is the best part. It keeps you *in* the flow:
 "checking a single email address to verify an account" no longer means
 revealing twenty of them.
 
+![Alt-hover revealing a single email cell while the rest of the column stays blurred](/blog/blurring-pii/alt-peek.png)
+
 ## The rules
+
+![The masking toolbar with auto-mask rules listed, each with an enable toggle and editable regex pattern](/blog/blurring-pii/masking-toolbar.png)
 
 These are the defaults, straight from `src/renderer/src/stores/masking-store.ts`:
 
