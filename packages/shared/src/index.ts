@@ -2018,6 +2018,24 @@ export interface PgNotificationStats {
   connectedSince?: number;
 }
 
+export type PgNotificationConnectionState =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "disconnected"
+  | "error";
+
+export interface PgNotificationConnectionStatus {
+  connectionId: string;
+  state: PgNotificationConnectionState;
+  connectedSince?: number;
+  lastError?: string;
+  retryAttempt: number;
+  nextRetryAt?: number;
+  backoffMs?: number;
+}
+
 export interface ActiveQuery {
   pid: number;
   user: string;

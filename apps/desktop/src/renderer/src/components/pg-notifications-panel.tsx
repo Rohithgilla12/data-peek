@@ -8,7 +8,6 @@ import {
   ChevronDown,
   ChevronUp,
   X,
-  Activity,
   Loader2,
   AlertCircle
 } from 'lucide-react'
@@ -22,6 +21,7 @@ import {
 } from '@/stores'
 import type { PgNotificationsTab } from '@/stores/tab-store'
 import type { PgNotificationEvent } from '@data-peek/shared'
+import { PgNotificationStatusStrip } from './pg-notification-status-strip'
 
 interface Props {
   tabId: string
@@ -45,7 +45,7 @@ function tryPrettyJson(payload: string): string | null {
   }
 }
 
-function EventRow({ event }: { event: PgNotificationEvent }) {
+function EventRow({ event, isFresh }: { event: PgNotificationEvent; isFresh: boolean }) {
   const [expanded, setExpanded] = useState(false)
   const [copied, setCopied] = useState(false)
 
@@ -60,9 +60,18 @@ function EventRow({ event }: { event: PgNotificationEvent }) {
 
   return (
     <div
-      className="border-b border-border/50 last:border-0 px-3 py-2 hover:bg-muted/30 cursor-pointer transition-colors"
+      className={cn(
+        'relative border-b border-border/50 last:border-0 px-3 py-2 hover:bg-muted/30 cursor-pointer transition-colors',
+        isFresh && 'motion-safe:animate-[pgnotify-flash_600ms_ease-out]'
+      )}
       onClick={() => setExpanded((v) => !v)}
     >
+      {isFresh && (
+        <span
+          aria-hidden
+          className="absolute left-0 top-0 bottom-0 w-[2px] bg-emerald-500/80 motion-safe:animate-[pgnotify-bar_700ms_ease-out_forwards]"
+        />
+      )}
       <div className="flex items-center gap-2 min-w-0">
         <span className="text-xs text-muted-foreground shrink-0 font-mono">
           {formatTimestamp(event.receivedAt)}
@@ -114,7 +123,6 @@ export function PgNotificationsPanel({ tabId }: Props) {
 
   const channels = usePgNotificationStore((s) => s.channels)
   const events = usePgNotificationStore((s) => s.events)
-  const stats = usePgNotificationStore((s) => s.stats)
   const filter = usePgNotificationStore((s) => s.filter)
   const subscribe = usePgNotificationStore((s) => s.subscribe)
   const unsubscribe = usePgNotificationStore((s) => s.unsubscribe)
@@ -128,11 +136,11 @@ export function PgNotificationsPanel({ tabId }: Props) {
   const [sendChannel, setSendChannel] = useState('')
   const [sendPayload, setSendPayload] = useState('')
   const [isSendOpen, setIsSendOpen] = useState(false)
-  const [isStatsOpen, setIsStatsOpen] = useState(false)
   const [isSubscribing, setIsSubscribing] = useState(false)
   const [isSending, setIsSending] = useState(false)
   const [subscribeError, setSubscribeError] = useState<string | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
+  const mountedAtRef = useRef<number>(Date.now())
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const autoScrollRef = useRef(true)
@@ -229,8 +237,17 @@ export function PgNotificationsPanel({ tabId }: Props) {
     )
   }
 
+  const hostLabel = `${activeConnection.host}${activeConnection.database ? '/' + activeConnection.database : ''}`
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden h-full">
+      {tab?.connectionId && (
+        <PgNotificationStatusStrip
+          connectionId={tab.connectionId}
+          hostLabel={hostLabel}
+          channelCount={activeChannels.length}
+        />
+      )}
       <div className="flex flex-col gap-3 p-3 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <div className="flex-1 flex gap-2">
@@ -340,45 +357,21 @@ export function PgNotificationsPanel({ tabId }: Props) {
               </p>
             </div>
           ) : (
-            filteredEvents.map((event) => <EventRow key={event.id} event={event} />)
+            filteredEvents.map((event) => (
+              <EventRow
+                key={event.id}
+                event={event}
+                isFresh={event.receivedAt > mountedAtRef.current && Date.now() - event.receivedAt < 1500}
+              />
+            ))
           )}
         </div>
       </ScrollArea>
 
       <div className="border-t border-border shrink-0">
-        <Collapsible open={isStatsOpen} onOpenChange={setIsStatsOpen}>
-          <CollapsibleTrigger asChild>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
-              <Activity className="size-3" />
-              <span>Stats</span>
-              {isStatsOpen ? (
-                <ChevronDown className="size-3 ml-auto" />
-              ) : (
-                <ChevronUp className="size-3 ml-auto" />
-              )}
-            </button>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <div className="px-3 pb-2 flex gap-6 text-xs">
-              <div>
-                <span className="text-muted-foreground">Events/sec: </span>
-                <span className="font-mono">{stats.eventsPerSecond.toFixed(2)}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Total: </span>
-                <span className="font-mono">{stats.totalEvents}</span>
-              </div>
-              <div>
-                <span className="text-muted-foreground">Avg payload: </span>
-                <span className="font-mono">{stats.avgPayloadSize}B</span>
-              </div>
-            </div>
-          </CollapsibleContent>
-        </Collapsible>
-
         <Collapsible open={isSendOpen} onOpenChange={setIsSendOpen}>
           <CollapsibleTrigger asChild>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full border-t border-border">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
               <Send className="size-3" />
               <span>Send notification</span>
               {isSendOpen ? (

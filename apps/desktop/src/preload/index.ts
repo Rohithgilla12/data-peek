@@ -52,6 +52,7 @@ import type {
   DataGenProgress,
   PgNotificationEvent,
   PgNotificationChannel,
+  PgNotificationConnectionStatus,
   ActiveQuery,
   TableSizeInfo,
   CacheStats,
@@ -540,7 +541,23 @@ const api = {
       const handler = (_: unknown, event: PgNotificationEvent): void => callback(event)
       ipcRenderer.on('pg-notify:event', handler)
       return () => ipcRenderer.removeListener('pg-notify:event', handler)
-    }
+    },
+    onStatus: (
+      callback: (status: PgNotificationConnectionStatus) => void
+    ): (() => void) => {
+      const handler = (_: unknown, status: PgNotificationConnectionStatus): void =>
+        callback(status)
+      ipcRenderer.on('pg-notify:status', handler)
+      return () => ipcRenderer.removeListener('pg-notify:status', handler)
+    },
+    reconnect: (connectionId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('pg-notify:reconnect', connectionId),
+    getStatus: (
+      connectionId: string
+    ): Promise<IpcResponse<PgNotificationConnectionStatus | null>> =>
+      ipcRenderer.invoke('pg-notify:get-status', connectionId),
+    getAllStatuses: (): Promise<IpcResponse<PgNotificationConnectionStatus[]>> =>
+      ipcRenderer.invoke('pg-notify:get-all-statuses')
   },
   pgDump: {
     export: (

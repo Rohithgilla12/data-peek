@@ -393,6 +393,26 @@ input[type='number'] {
   animation: cell-save-flash 500ms ease-out forwards;
 }
 
+@keyframes pgnotify-flash {
+  0% {
+    background-color: oklch(0.7 0.18 155 / 0.18);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+@keyframes pgnotify-bar {
+  0% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scaleY(1);
+  }
+}
+
 /* ========================================
    Pokemon Buddy Animations
    ======================================== */

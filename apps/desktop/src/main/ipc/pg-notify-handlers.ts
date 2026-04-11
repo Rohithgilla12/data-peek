@@ -6,7 +6,10 @@ import {
   send,
   getChannels,
   getHistory,
-  clearHistory
+  clearHistory,
+  forceReconnect,
+  getStatus,
+  getAllStatuses
 } from '../pg-notification-listener'
 import { createLogger } from '../lib/logger'
 
@@ -75,6 +78,34 @@ export function registerPgNotifyHandlers(): void {
       return { success: true }
     } catch (error) {
       log.error('pg-notify:clear-history error:', error)
+      return { success: false, error: error instanceof Error ? error.message : String(error) }
+    }
+  })
+
+  ipcMain.handle('pg-notify:reconnect', async (_event, connectionId: string) => {
+    try {
+      await forceReconnect(connectionId)
+      return { success: true }
+    } catch (error) {
+      log.error('pg-notify:reconnect error:', error)
+      return { success: false, error: error instanceof Error ? error.message : String(error) }
+    }
+  })
+
+  ipcMain.handle('pg-notify:get-status', async (_event, connectionId: string) => {
+    try {
+      return { success: true, data: getStatus(connectionId) }
+    } catch (error) {
+      log.error('pg-notify:get-status error:', error)
+      return { success: false, error: error instanceof Error ? error.message : String(error) }
+    }
+  })
+
+  ipcMain.handle('pg-notify:get-all-statuses', async () => {
+    try {
+      return { success: true, data: getAllStatuses() }
+    } catch (error) {
+      log.error('pg-notify:get-all-statuses error:', error)
       return { success: false, error: error instanceof Error ? error.message : String(error) }
     }
   })

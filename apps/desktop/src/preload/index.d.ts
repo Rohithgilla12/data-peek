@@ -43,6 +43,7 @@ import type {
   DataGenProgress,
   PgNotificationEvent,
   PgNotificationChannel,
+  PgNotificationConnectionStatus,
   ActiveQuery,
   TableSizeInfo,
   CacheStats,
@@ -420,6 +421,12 @@ interface DataPeekApi {
     ) => Promise<IpcResponse<PgNotificationEvent[]>>
     clearHistory: (connectionId: string) => Promise<IpcResponse<void>>
     onEvent: (callback: (event: PgNotificationEvent) => void) => () => void
+    onStatus: (callback: (status: PgNotificationConnectionStatus) => void) => () => void
+    reconnect: (connectionId: string) => Promise<IpcResponse<void>>
+    getStatus: (
+      connectionId: string
+    ) => Promise<IpcResponse<PgNotificationConnectionStatus | null>>
+    getAllStatuses: () => Promise<IpcResponse<PgNotificationConnectionStatus[]>>
   }
   health: {
     activeQueries: (config: ConnectionConfig) => Promise<IpcResponse<ActiveQuery[]>>

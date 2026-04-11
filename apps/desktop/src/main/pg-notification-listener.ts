@@ -4,7 +4,13 @@ import { BrowserWindow, app } from 'electron'
 import { join } from 'path'
 import { readFileSync } from 'fs'
 import Database from 'better-sqlite3'
-import type { ConnectionConfig, PgNotificationEvent, PgNotificationChannel } from '@shared/index'
+import type {
+  ConnectionConfig,
+  PgNotificationEvent,
+  PgNotificationChannel,
+  PgNotificationConnectionStatus,
+  PgNotificationConnectionState
+} from '@shared/index'
 import { createTunnel, closeTunnel, TunnelSession } from './ssh-tunnel-service'
 import { createLogger } from './lib/logger'
 
@@ -53,6 +59,43 @@ interface ListenerEntry {
   connectedSince: number
   reconnectTimer?: ReturnType<typeof setTimeout>
   destroyed: boolean
+  config: ConnectionConfig
+  status: PgNotificationConnectionStatus
+}
+
+const statuses = new Map<string, PgNotificationConnectionStatus>()
+
+function setStatus(
+  connectionId: string,
+  patch: Partial<PgNotificationConnectionStatus> & { state: PgNotificationConnectionState }
+): PgNotificationConnectionStatus {
+  const existing = statuses.get(connectionId) ?? {
+    connectionId,
+    state: 'idle' as PgNotificationConnectionState,
+    retryAttempt: 0
+  }
+  const next: PgNotificationConnectionStatus = { ...existing, ...patch, connectionId }
+  statuses.set(connectionId, next)
+  const entry = listeners.get(connectionId)
+  if (entry) entry.status = next
+  broadcastStatus(next)
+  return next
+}
+
+function broadcastStatus(status: PgNotificationConnectionStatus): void {
+  BrowserWindow.getAllWindows().forEach((w) => {
+    if (!w.isDestroyed()) {
+      w.webContents.send('pg-notify:status', status)
+    }
+  })
+}
+
+export function getStatus(connectionId: string): PgNotificationConnectionStatus | null {
+  return statuses.get(connectionId) ?? null
+}
+
+export function getAllStatuses(): PgNotificationConnectionStatus[] {
+  return Array.from(statuses.values())
 }
 
 let sqliteDb: Database.Database | null = null
@@ -101,6 +144,13 @@ async function connectListener(
     closeTunnel(existing.tunnelSession)
   }
 
+  const prior = statuses.get(connectionId)
+  setStatus(connectionId, {
+    state: prior && prior.state !== 'idle' ? 'reconnecting' : 'connecting',
+    nextRetryAt: undefined,
+    backoffMs: undefined
+  })
+
   let tunnelSession: TunnelSession | null = null
   try {
     if (config.ssh) {
@@ -118,7 +168,9 @@ async function connectListener(
       tunnelSession,
       channels: new Set(channels),
       connectedSince: Date.now(),
-      destroyed: false
+      destroyed: false,
+      config,
+      status: statuses.get(connectionId)!
     }
     listeners.set(connectionId, entry)
 
@@ -138,12 +190,17 @@ async function connectListener(
     client.on('error', (err) => {
       if (entry.destroyed) return
       log.error(`pg notification client error for ${connectionId}:`, err)
+      setStatus(connectionId, {
+        state: 'error',
+        lastError: err instanceof Error ? err.message : String(err)
+      })
       scheduleReconnect(connectionId, config, entry.channels, backoffMs)
     })
 
     client.on('end', () => {
       if (entry.destroyed) return
       log.warn(`pg notification client disconnected for ${connectionId}, reconnecting...`)
+      setStatus(connectionId, { state: 'disconnected' })
       scheduleReconnect(connectionId, config, entry.channels, backoffMs)
     })
 
@@ -153,9 +210,22 @@ async function connectListener(
       await client.query(`LISTEN ${quoteIdent(channel)}`)
       log.debug(`Listening on channel "${channel}" for connection ${connectionId}`)
     }
+
+    setStatus(connectionId, {
+      state: 'connected',
+      connectedSince: Date.now(),
+      retryAttempt: 0,
+      lastError: undefined,
+      nextRetryAt: undefined,
+      backoffMs: undefined
+    })
   } catch (err) {
     log.error(`Failed to connect listener for ${connectionId}:`, err)
     closeTunnel(tunnelSession)
+    setStatus(connectionId, {
+      state: 'error',
+      lastError: err instanceof Error ? err.message : String(err)
+    })
     scheduleReconnect(connectionId, config, channels, backoffMs)
   }
 }
@@ -170,7 +240,18 @@ function scheduleReconnect(
   if (entry?.destroyed) return
 
   const nextBackoff = Math.min(backoffMs * 2, MAX_BACKOFF_MS)
+  const nextRetryAt = Date.now() + backoffMs
   log.debug(`Reconnecting ${connectionId} in ${backoffMs}ms`)
+
+  const prior = statuses.get(connectionId)
+  setStatus(connectionId, {
+    state: 'reconnecting',
+    retryAttempt: (prior?.retryAttempt ?? 0) + 1,
+    nextRetryAt,
+    backoffMs
+  })
+
+  if (entry && entry.reconnectTimer) clearTimeout(entry.reconnectTimer)
 
   const timer = setTimeout(() => {
     const current = listeners.get(connectionId)
@@ -181,6 +262,19 @@ function scheduleReconnect(
   if (entry) {
     entry.reconnectTimer = timer
   }
+}
+
+export async function forceReconnect(connectionId: string): Promise<void> {
+  const entry = listeners.get(connectionId)
+  if (!entry) {
+    throw new Error('No listener registered for this connection')
+  }
+  if (entry.reconnectTimer) {
+    clearTimeout(entry.reconnectTimer)
+    entry.reconnectTimer = undefined
+  }
+  log.debug(`Force-reconnecting ${connectionId}`)
+  await connectListener(connectionId, entry.config, new Set(entry.channels), 1000)
 }
 
 function quoteIdent(name: string): string {
@@ -352,6 +446,7 @@ export async function cleanup(): Promise<void> {
     }
     closeTunnel(entry.tunnelSession)
     listeners.delete(connectionId)
+    statuses.delete(connectionId)
   }
 
   if (sqliteDb) {

@@ -3,6 +3,7 @@ import type {
   PgNotificationEvent,
   PgNotificationChannel,
   PgNotificationStats,
+  PgNotificationConnectionStatus,
   ConnectionConfig
 } from '@shared/index'
 
@@ -23,7 +24,7 @@ interface PgNotificationState {
   channels: Map<string, PgNotificationChannel>
   events: PgNotificationEvent[]
   stats: PgNotificationStats
-  isConnected: boolean
+  statuses: Record<string, PgNotificationConnectionStatus>
   filter: PgNotificationFilter
 
   recentTimestamps: EventTimestamp[]
@@ -37,6 +38,9 @@ interface PgNotificationState {
   clearEvents: () => void
   pushEvent: (event: PgNotificationEvent) => void
   refreshChannels: (connectionId: string) => Promise<void>
+  setStatus: (status: PgNotificationConnectionStatus) => void
+  hydrateStatuses: () => Promise<void>
+  reconnect: (connectionId: string) => Promise<void>
 }
 
 function computeStats(
@@ -62,11 +66,11 @@ function computeStats(
   }
 }
 
-export const usePgNotificationStore = create<PgNotificationState>((set) => ({
+export const usePgNotificationStore = create<PgNotificationState>((set, get) => ({
   channels: new Map(),
   events: [],
   stats: { eventsPerSecond: 0, totalEvents: 0, avgPayloadSize: 0 },
-  isConnected: false,
+  statuses: {},
   filter: { channel: '', search: '' },
   recentTimestamps: [],
 
@@ -88,7 +92,7 @@ export const usePgNotificationStore = create<PgNotificationState>((set) => ({
         const existing = channels.get(channel)!
         channels.set(channel, { ...existing, isListening: true })
       }
-      return { channels, isConnected: true }
+      return { channels }
     })
   },
 
@@ -183,24 +187,74 @@ export const usePgNotificationStore = create<PgNotificationState>((set) => ({
         return { channels }
       })
     }
+  },
+
+  setStatus: (status) => {
+    set((state) => ({
+      statuses: { ...state.statuses, [status.connectionId]: status }
+    }))
+  },
+
+  hydrateStatuses: async () => {
+    const response = await window.api.pgNotify.getAllStatuses()
+    if (response.success && response.data) {
+      const next: Record<string, PgNotificationConnectionStatus> = {}
+      for (const s of response.data) next[s.connectionId] = s
+      set({ statuses: next })
+    }
+  },
+
+  reconnect: async (connectionId) => {
+    const current = get().statuses[connectionId]
+    set({
+      statuses: {
+        ...get().statuses,
+        [connectionId]: {
+          connectionId,
+          state: 'reconnecting',
+          retryAttempt: (current?.retryAttempt ?? 0) + 1,
+          connectedSince: current?.connectedSince,
+          lastError: current?.lastError,
+          nextRetryAt: undefined,
+          backoffMs: undefined
+        }
+      }
+    })
+    const response = await window.api.pgNotify.reconnect(connectionId)
+    if (!response.success) {
+      throw new Error(response.error ?? 'Failed to reconnect')
+    }
   }
 }))
 
 let unsubscribeEventListener: (() => void) | null = null
+let unsubscribeStatusListener: (() => void) | null = null
 
 export function initPgNotificationListener(): () => void {
-  if (unsubscribeEventListener) {
-    unsubscribeEventListener()
-  }
+  if (unsubscribeEventListener) unsubscribeEventListener()
+  if (unsubscribeStatusListener) unsubscribeStatusListener()
 
   unsubscribeEventListener = window.api.pgNotify.onEvent((event) => {
     usePgNotificationStore.getState().pushEvent(event)
   })
 
+  unsubscribeStatusListener = window.api.pgNotify.onStatus((status) => {
+    usePgNotificationStore.getState().setStatus(status)
+  })
+
+  usePgNotificationStore
+    .getState()
+    .hydrateStatuses()
+    .catch(() => {})
+
   return () => {
     if (unsubscribeEventListener) {
       unsubscribeEventListener()
       unsubscribeEventListener = null
+    }
+    if (unsubscribeStatusListener) {
+      unsubscribeStatusListener()
+      unsubscribeStatusListener = null
     }
   }
 }
