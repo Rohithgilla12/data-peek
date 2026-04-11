@@ -1,0 +1,228 @@
+---
+title: "Debugging Postgres LISTEN/NOTIFY Is Finally Pleasant"
+description: "A dedicated pub/sub panel for Postgres LISTEN/NOTIFY: SQLite-backed event history, exponential backoff reconnects, multi-channel subscriptions, and a send button that replaces the throwaway Node script you keep rewriting."
+date: "2026-04-11"
+author: "Rohith Gilla"
+tags: ["postgres", "realtime", "node", "tutorial"]
+published: true
+---
+
+I have written the same 40-line Node script to debug a Postgres `LISTEN`
+channel at least six times. You know the one:
+
+```js
+const { Client } = require('pg')
+const c = new Client({ connectionString: process.env.DB })
+await c.connect()
+await c.query('LISTEN order_events')
+c.on('notification', (m) => console.log(new Date(), m.channel, m.payload))
+console.log('listening...')
+```
+
+Save it as `listen.js`, `node listen.js`, stare at the terminal, trigger the
+thing you are debugging, and pray the connection does not drop before the
+event arrives — because if it does, you scroll back up, Ctrl+C, re-run, and
+now the event has already happened and nobody is listening.
+
+I rewrote this script on at least four different laptops. On two of them, I
+rewrote it twice because I forgot where I put it. At some point you have to
+stop.
+
+The Postgres LISTEN/NOTIFY panel in data-peek is the version I wish I had had
+the first time.
+
+## What it does
+
+- Subscribe to one or many channels on a connection with a single input.
+- See every event that arrives, live, with timestamp, channel, and payload.
+- Keep the last 10,000 events *per connection* in a local SQLite database,
+  so if you walk away and come back an hour later, the history is still
+  there.
+- Survive a dropped connection. If the Postgres server restarts, or your
+  laptop's WiFi blips, the listener reconnects with exponential backoff and
+  re-subscribes to everything you had open.
+- `NOTIFY` back with a "Send" button, so you can smoke-test your own channel
+  without leaving the app.
+
+The whole thing is one `pg.Client` per connection held open in the Electron
+main process. The renderer just sends subscribe/unsubscribe IPC messages and
+receives events through a webContents channel.
+
+## The reconnect loop
+
+If you have written a long-lived pg listener before, you know the three
+things that go wrong: the client drops, the tunnel dies, or your backoff is
+too aggressive and you hammer a recovering server. Here is the relevant slice
+from `src/main/pg-notification-listener.ts`:
+
+```ts
+const MAX_BACKOFF_MS = 30_000
+const MAX_EVENTS_PER_CONNECTION = 10000
+
+function scheduleReconnect(connectionId, config, channels, backoffMs) {
+  const entry = listeners.get(connectionId)
+  if (entry?.destroyed) return
+
+  const nextBackoff = Math.min(backoffMs * 2, MAX_BACKOFF_MS)
+
+  const timer = setTimeout(() => {
+    const current = listeners.get(connectionId)
+    if (current?.destroyed) return
+    connectListener(connectionId, config, channels, nextBackoff)
+  }, backoffMs)
+
+  if (entry) entry.reconnectTimer = timer
+}
+```
+
+The base delay is 1000ms, we double on every failure, and we cap at 30
+seconds. That cap matters more than you think — without it, after enough
+failures you end up with a listener that tries once an hour and you swear
+the panel "doesn't work anymore" when actually it just happens to be in
+a two-hour retry gap.
+
+The `destroyed` flag is the quiet hero. Every `ListenerEntry` has one:
+
+```ts
+interface ListenerEntry {
+  client: Client
+  tunnelSession: TunnelSession | null
+  channels: Set<string>
+  connectedSince: number
+  reconnectTimer?: ReturnType<typeof setTimeout>
+  destroyed: boolean
+}
+```
+
+When the user closes the panel or switches connections, I set `destroyed =
+true` before calling `client.end()`. That matters because `client.end()`
+triggers the `'end'` event, which would otherwise kick off a reconnect
+attempt three seconds later — a stubborn zombie listener that refuses to die.
+The check `if (entry.destroyed) return` at the top of the reconnect branch
+is what makes the cleanup actually clean up.
+
+Both the `'error'` and `'end'` handlers route through the same reconnect
+path:
+
+```ts
+client.on('error', (err) => {
+  if (entry.destroyed) return
+  log.error(`pg notification client error for ${connectionId}:`, err)
+  scheduleReconnect(connectionId, config, entry.channels, backoffMs)
+})
+
+client.on('end', () => {
+  if (entry.destroyed) return
+  log.warn(`pg notification client disconnected for ${connectionId}, reconnecting...`)
+  scheduleReconnect(connectionId, config, entry.channels, backoffMs)
+})
+```
+
+Note that I re-subscribe to `entry.channels`, not to the original `channels`
+parameter. If the user added a channel since the initial connect, this makes
+sure the reconnect picks up the new set. I did not have this right the first
+time; I lost a channel on every reconnect until I noticed.
+
+## Event history, in SQLite
+
+Events are not just forwarded to the renderer — they also go into a local
+SQLite database in the user's Electron data dir:
+
+```ts
+sqliteDb.exec(`
+  CREATE TABLE IF NOT EXISTS pg_notification_events (
+    id TEXT PRIMARY KEY,
+    connection_id TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    payload TEXT NOT NULL,
+    received_at INTEGER NOT NULL
+  )
+`)
+
+sqliteDb.exec(`
+  CREATE INDEX IF NOT EXISTS idx_pne_connection_received
+  ON pg_notification_events (connection_id, received_at DESC)
+`)
+```
+
+Three reasons this matters:
+
+1. **Close the panel, come back later.** Your events are still there. This
+   alone is worth the whole feature — I used to screenshot my terminal
+   before closing the throwaway script.
+2. **The ring-buffer cap is enforced in SQL, not in JS.** On every insert I
+   count the rows for that connection and DELETE the oldest if we exceed
+   10,000. That keeps the JS side completely stateless.
+3. **It survives app restarts.** A SQLite file in `app.getPath('userData')`
+   is the simplest possible durable store.
+
+The trim query is worth sharing because it is the one where I almost used a
+`LIMIT` on a DELETE (which SQLite supports but is a footgun):
+
+```ts
+if (count > MAX_EVENTS_PER_CONNECTION) {
+  const excess = count - MAX_EVENTS_PER_CONNECTION
+  db.prepare(`
+    DELETE FROM pg_notification_events
+    WHERE id IN (
+      SELECT id FROM pg_notification_events
+      WHERE connection_id = ?
+      ORDER BY received_at ASC
+      LIMIT ?
+    )
+  `).run(event.connectionId, excess)
+}
+```
+
+The subquery guarantees we delete the oldest `excess` rows for *this
+connection*, not the oldest rows overall. On a laptop with two databases
+open, the global ordering would let one chatty channel evict events from
+the quiet one.
+
+## Identifier quoting for channel names
+
+This one is easy to miss. `LISTEN` takes an identifier, not a string literal,
+so you cannot parameterize it with a `$1` placeholder. You have to interpolate
+— carefully:
+
+```ts
+function quoteIdent(name: string): string {
+  return `"${name.replace(/"/g, '""')}"`
+}
+
+await client.query(`LISTEN ${quoteIdent(channel)}`)
+```
+
+Postgres identifier quoting uses `""` to escape a literal double-quote inside
+a quoted identifier. If your channel name is `"foo"bar"`, that becomes
+`"""foo""bar"""` after quoting, which Postgres parses back to `"foo"bar"`.
+It is ugly but it is the only correct way. A channel named `order; DROP TABLE
+users;` would otherwise be a live SQL injection.
+
+## What I'd do differently
+
+**The per-connection ring buffer should be per-channel.** Right now one
+chatty channel on a shared connection can push a quiet channel's history out
+the back of the buffer. Partitioning the cap by `(connection_id, channel)`
+would fix it. I did not because it would complicate the trim query and
+nobody has hit the limit in practice yet.
+
+**I should persist subscriptions across app restarts.** Today, if you close
+data-peek and re-open it, your subscribed channels are gone. The SQLite DB
+has the *events* but not the *subscriptions*. A small `pg_subscriptions`
+table keyed by connection_id would let the app restore on startup. It is
+on the list.
+
+**Reconnect should jitter.** 1s, 2s, 4s, 8s is a textbook exponential
+backoff, but if two clients lose their connection at the same instant they
+reconnect in lockstep. Adding a random 0–500ms jitter would be three lines
+and would be the right thing to do.
+
+## If you want to try it
+
+It lives in `src/main/pg-notification-listener.ts` if you want to read the
+full 300 lines. The panel UI is `src/renderer/src/components/pg-notifications-panel.tsx`.
+
+data-peek is at [data-peek.app](https://data-peek.app). Free for personal
+use, MIT source. If you have ever rewritten the listen.js script, you will
+know exactly why this exists.
