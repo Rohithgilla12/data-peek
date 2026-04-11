@@ -1,0 +1,258 @@
+---
+title: "Generating Realistic Seed Data That Respects Foreign Keys, in 20 Seconds"
+description: "How data-peek's built-in data generator uses column-name heuristics, Faker.js, and a live FK sampler to produce 10,000 rows of believable test data across related tables — without writing a seed script."
+date: "2026-04-11"
+author: "Rohith Gilla"
+tags: ["database", "postgres", "testing", "webdev"]
+published: true
+---
+
+Someone asks for a demo. You need 10,000 users, 30,000 orders, a handful of
+products, and enough variety that the UI does not look fake. You have
+twenty minutes.
+
+If you have been here before, you know the options:
+
+1. **Write a seed script.** Open your editor, import Faker, write the
+   loops, get the foreign keys wrong twice, rerun, get them right, run
+   into a `FOREIGN KEY constraint violation` on line 847, swear.
+2. **Use a CLI tool.** Install something, read its YAML schema format,
+   configure it, discover that it does not handle your vendor-specific
+   column type, give up.
+3. **Copy a SQL file from Stack Overflow.** Hope it does not have
+   `DROP DATABASE` in it somewhere.
+
+I went through option 1 enough times that I built option 4 into data-peek:
+a Data Generator tab that reads your table's schema, guesses how each
+column should be filled, samples existing foreign key values from the real
+database, and batch-inserts. No configuration required for the common case.
+
+## What it does from the outside
+
+Open a table. Click "Generate Data." A new tab opens with a row per
+column. Each column is pre-filled with a sensible generator based on its
+name and type:
+
+- `email` → `faker.internet.email`
+- `first_name` → `faker.person.firstName`
+- `created_at` → `faker.date.recent`
+- `uuid`, `guid` → `faker.string.uuid`
+- `user_id` with a foreign key → `fk-reference` to `users.id`
+- A `status` enum column → `random-enum` with the discovered values
+- Anything unrecognized → `lorem.word` (clearly useless, easy to spot and
+  replace)
+
+You can override any of these, add a null percentage (for "15% of rows
+should have NULL in this column"), set a seed for reproducibility, and
+preview the first five rows before committing. Then you set the row count
+and hit Generate.
+
+## The heuristic table
+
+The whole "it just works" impression comes from one lookup table in
+`src/main/data-generator.ts`:
+
+```ts
+const HEURISTICS: Heuristic[] = [
+  { pattern: /^email$/i,                    generator: { generatorType: 'faker', fakerMethod: 'internet.email' } },
+  { pattern: /^(first_?name|fname)$/i,      generator: { generatorType: 'faker', fakerMethod: 'person.firstName' } },
+  { pattern: /^(last_?name|lname|surname)$/i, generator: { generatorType: 'faker', fakerMethod: 'person.lastName' } },
+  { pattern: /^(name|full_?name)$/i,        generator: { generatorType: 'faker', fakerMethod: 'person.fullName' } },
+  { pattern: /^(phone|mobile|cell)$/i,      generator: { generatorType: 'faker', fakerMethod: 'phone.number' } },
+  { pattern: /^(city)$/i,                   generator: { generatorType: 'faker', fakerMethod: 'location.city' } },
+  { pattern: /^(country)$/i,                generator: { generatorType: 'faker', fakerMethod: 'location.country' } },
+  { pattern: /^(url|website)$/i,            generator: { generatorType: 'faker', fakerMethod: 'internet.url' } },
+  { pattern: /^(bio|description|about)$/i,  generator: { generatorType: 'faker', fakerMethod: 'lorem.paragraph' } },
+  { pattern: /^(title|subject)$/i,          generator: { generatorType: 'faker', fakerMethod: 'lorem.sentence' } },
+  { pattern: /^(company|organization)$/i,   generator: { generatorType: 'faker', fakerMethod: 'company.name' } },
+  { pattern: /^(created|updated|deleted)_?(at|on|date)?$/i,
+                                            generator: { generatorType: 'faker', fakerMethod: 'date.recent' } },
+  { pattern: /^(uuid|guid)$/i,              generator: { generatorType: 'uuid' } }
+]
+```
+
+This is boring and I am proud of it. Every single entry was added the
+first time I opened a new table and saw a generator make a wrong guess.
+"Oh, it filled `bio` with lorem.word, that should be lorem.paragraph" —
+and then I added the rule. The heuristic is 40 lines and handles the
+column names I have seen on every CRUD schema I have built in the last
+decade.
+
+Anything not in the table falls through a data-type-based fallback
+(integers get `random-int`, booleans get `random-boolean`, dates get
+`random-date`), and everything else defaults to `faker.lorem.word` — a
+deliberate "this is clearly wrong, go fix it" placeholder.
+
+## The FK sampler
+
+This is the part that turns it from a toy into something you would
+actually use.
+
+When you mark a column as `fk-reference`, you point it at the parent table
+and column. Before any rows are generated, the main process samples up to
+1000 real values from that referenced column:
+
+```ts
+export async function resolveFK(
+  adapter, connectionConfig, schema, fkTable, fkColumn
+): Promise<unknown[]> {
+  const dbType = connectionConfig.dbType
+  const quotedTable = quoteId(fkTable, dbType)
+  const tableRef =
+    schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo'
+      ? `${quoteId(schema, dbType)}.${quotedTable}`
+      : quotedTable
+  const sql =
+    dbType === 'mssql'
+      ? `SELECT TOP 1000 ${quoteId(fkColumn, dbType)} FROM ${tableRef}`
+      : `SELECT ${quoteId(fkColumn, dbType)} FROM ${tableRef} LIMIT 1000`
+
+  try {
+    const result = await adapter.query(connectionConfig, sql)
+    return result.rows.map((row) => {
+      const r = row as Record<string, unknown>
+      return r[fkColumn]
+    })
+  } catch {
+    return []
+  }
+}
+```
+
+Then row generation just picks randomly from that sampled pool:
+
+```ts
+case 'fk-reference': {
+  const fkKey = `${col.fkTable}.${col.fkColumn}`
+  const ids = fkData.get(fkKey) ?? []
+  if (ids.length === 0) return null
+  return ids[Math.floor(Math.random() * ids.length)]
+}
+```
+
+Two design calls worth defending.
+
+**It samples 1000, not all.** On a 5-million-row `users` table, reading
+every ID to pick from takes minutes. Sampling a thousand gives you enough
+variety that your 10,000 generated `orders` rows will reference a
+reasonable spread of users without being a perfect distribution. Perfect
+distributions are for statisticians; believable demos are for everyone
+else.
+
+**It returns an empty array on error, silently.** If the parent table
+does not exist, or the column has been renamed, or you do not have
+SELECT on it, we fall back to NULL in the generated column. I go back and
+forth on whether this should be a hard error instead. In practice it is
+the right default for demos — you can still generate the rest of the
+columns and fix the FK column after — but I plan to add a visible warning
+indicator for it.
+
+**The generator is one table at a time, not the whole database.** A "seed
+the whole DB in dependency order" mode would require a topological sort
+of the foreign-key graph, and the right UX for it is not obvious. Right
+now the workflow is: generate the parent tables first (users, products),
+then the child tables (orders, line_items) with FK-references pointing
+back. It is an extra step but it keeps the mental model tiny.
+
+## Guarding against prototype pollution
+
+Here is a thing I did not expect to care about when I started. The
+`fakerMethod` string looks like `internet.email` and I call it
+dynamically:
+
+```ts
+function callFakerMethod(method: string): unknown {
+  const parts = method.split('.')
+  if (parts.length !== 2) return faker.lorem.word()
+
+  const [ns, fn] = parts
+  if (ns === '__proto__' || ns === 'constructor' || ns === 'prototype') return faker.lorem.word()
+  if (fn === '__proto__' || fn === 'constructor' || fn === 'prototype') return faker.lorem.word()
+
+  const fakerAny = faker as unknown as Record<string, unknown>
+  const namespace = fakerAny[ns]
+  if (!namespace || typeof namespace !== 'object') return faker.lorem.word()
+
+  const func = (namespace as Record<string, unknown>)[fn]
+  if (typeof func !== 'function') return faker.lorem.word()
+
+  const result = (func as () => unknown).call(namespace)
+  // ...
+}
+```
+
+The `__proto__` / `constructor` / `prototype` checks are there because the
+`fakerMethod` value comes from the renderer, which means it ultimately
+comes from user input in the generator UI. Without the guards, someone
+could enter `__proto__.valueOf` as their method name and get, at best, a
+crash and, at worst, prototype pollution across the whole main process.
+Is it exploitable in a single-user desktop app? Probably not. Did I add
+it anyway? Yes — because the code looked dangerous in review and "probably
+not exploitable" is not a principle I want the codebase to live by.
+
+## Batching and cancellation
+
+Ten thousand rows is nothing. A hundred thousand starts to hurt. The
+batch inserter (`src/main/batch-insert.ts`) chunks the rows into
+batches the user configures, sends progress back over IPC after each
+batch, and honors a cancel flag:
+
+```ts
+ipcMain.handle('db:generate-cancel', async () => {
+  cancelDataGen = true
+  requestCancelBatchInsert()
+  return { success: true }
+})
+```
+
+The progress callback (`sendProgress`) updates a progress bar in the
+renderer between batches. "Cancel" sets the flag, the current batch
+finishes, and then the loop bails out before starting the next one.
+Nothing magical, but it means you can start a 500,000-row generation,
+realize you picked the wrong column mapping, and stop without waiting.
+
+## Preview mode
+
+Before committing, the same pipeline runs with `rowCount: 5` and returns
+the preview rows instead of inserting:
+
+```ts
+const previewConfig = { ...genConfig, rowCount: 5 }
+const rows = generateRows(previewConfig, fkData)
+return { success: true, data: { rows } }
+```
+
+This alone has saved me from maybe twenty bad seed runs. "Oh, the email
+column is getting lorem.word because I forgot to override it" — caught in
+the preview, fixed, re-previewed, then committed.
+
+## What I'd do differently
+
+**A topological-sort mode for seeding a whole schema.** The current
+table-at-a-time model is fine for small datasets; for end-to-end test
+fixtures it is annoying. A mode that takes a schema, orders the tables
+by FK dependency, and seeds them all with sensible defaults is the
+obvious next step.
+
+**Better heuristic for numeric foreign keys.** If a column is named
+`owner_id` and there is no declared FK but there is a `users.id` column
+in the same schema, we could offer a suggestion. Right now we only use
+declared foreign keys, so schemas without formal FK constraints (hello,
+legacy MySQL) miss out.
+
+**Locales.** Faker supports locales; data-peek just uses the default.
+Generating data for a Japanese demo app and getting all-American
+addresses is a dead giveaway. Adding a locale picker is a small change I
+keep forgetting to do.
+
+## Try it
+
+Open a table in data-peek, click Generate Data, hit Preview, then
+Generate. The whole thing is at [data-peek.app](https://data-peek.app).
+The generator code is in `src/main/data-generator.ts` and
+`src/main/batch-insert.ts`, and the UI is
+`src/renderer/src/components/data-generator.tsx`. MIT source, free for
+personal use.
+
+The pitch: the next time someone asks you for a demo dataset in twenty
+minutes, you do not have to open a fresh `seed.ts` file.
