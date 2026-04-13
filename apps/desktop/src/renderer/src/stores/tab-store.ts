@@ -32,6 +32,7 @@ export type TabType =
   | 'data-generator'
   | 'pg-notifications'
   | 'health-monitor'
+  | 'notebook'
 
 // Base tab interface
 interface BaseTab {
@@ -109,6 +110,12 @@ export interface HealthMonitorTab extends BaseTab {
   type: 'health-monitor'
 }
 
+// Notebook tab
+export interface NotebookTab extends BaseTab {
+  type: 'notebook'
+  notebookId: string
+}
+
 export type Tab =
   | QueryTab
   | TablePreviewTab
@@ -117,6 +124,7 @@ export type Tab =
   | DataGeneratorTab
   | PgNotificationsTab
   | HealthMonitorTab
+  | NotebookTab
 
 // Persisted tab data (minimal for storage)
 interface PersistedTab {
@@ -130,6 +138,7 @@ interface PersistedTab {
   schemaName?: string
   tableName?: string
   mode?: 'create' | 'edit'
+  notebookId?: string
 }
 
 interface TabState {
@@ -152,6 +161,7 @@ interface TabState {
   createDataGeneratorTab: (connectionId: string, schemaName: string, tableName?: string) => string
   createPgNotificationsTab: (connectionId: string) => string
   createHealthMonitorTab: (connectionId: string) => string
+  createNotebookTab: (connectionId: string, notebookId: string, title: string) => string
   closeTab: (tabId: string) => void
   closeAllTabs: () => void
   closeOtherTabs: (tabId: string) => void
@@ -535,6 +545,33 @@ export const useTabStore = create<TabState>()(
         return id
       },
 
+      createNotebookTab: (connectionId, notebookId, title) => {
+        const existingTab = get().tabs.find(
+          (t) => t.type === 'notebook' && (t as NotebookTab).notebookId === notebookId
+        )
+        if (existingTab) {
+          set({ activeTabId: existingTab.id })
+          return existingTab.id
+        }
+
+        const id = crypto.randomUUID()
+        const tab: NotebookTab = {
+          id,
+          type: 'notebook',
+          title,
+          isPinned: false,
+          connectionId,
+          createdAt: Date.now(),
+          order: get().tabs.length,
+          notebookId
+        }
+        set((state) => ({
+          tabs: [...state.tabs, tab],
+          activeTabId: id
+        }))
+        return id
+      },
+
       closeTab: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
         if (!tab || tab.isPinned) return
@@ -662,7 +699,8 @@ export const useTabStore = create<TabState>()(
               t.type === 'table-designer' ||
               t.type === 'data-generator' ||
               t.type === 'pg-notifications' ||
-              t.type === 'health-monitor'
+              t.type === 'health-monitor' ||
+              t.type === 'notebook'
             )
               return t
             // Only update executionId if provided, otherwise clear it when not executing
@@ -682,7 +720,8 @@ export const useTabStore = create<TabState>()(
             t.type !== 'table-designer' &&
             t.type !== 'data-generator' &&
             t.type !== 'pg-notifications' &&
-            t.type !== 'health-monitor'
+            t.type !== 'health-monitor' &&
+            t.type !== 'notebook'
               ? { ...t, savedQuery: t.query }
               : t
           )
@@ -814,7 +853,8 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'notebook'
         )
           return false
         return tab.query !== tab.savedQuery
@@ -828,7 +868,8 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'notebook'
         )
           return []
         if (!tab.result) return []
@@ -844,7 +885,8 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'notebook'
         )
           return 0
         if (!tab.result) return 0
@@ -859,7 +901,8 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'notebook'
         )
           return undefined
         if (!tab.multiResult?.statements) return undefined
@@ -874,7 +917,8 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'notebook'
         )
           return []
         return tab.multiResult?.statements ?? []
@@ -888,7 +932,8 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'notebook'
         )
           return []
         const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
@@ -905,7 +950,8 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'notebook'
         )
           return 0
         const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
@@ -1009,6 +1055,13 @@ export const useTabStore = create<TabState>()(
               return base
             }
 
+            if (t.type === 'notebook') {
+              return {
+                ...base,
+                notebookId: t.notebookId
+              }
+            }
+
             // query or table-preview tabs
             return {
               ...base,
@@ -1073,6 +1126,17 @@ export const useTabStore = create<TabState>()(
                 type: 'health-monitor' as const,
                 createdAt: Date.now()
               } as HealthMonitorTab
+            }
+
+            // Notebook tabs
+            if (t.type === 'notebook') {
+              const persisted = t as unknown as PersistedTab
+              return {
+                ...t,
+                type: 'notebook' as const,
+                createdAt: Date.now(),
+                notebookId: persisted.notebookId || ''
+              } as NotebookTab
             }
 
             const base = {

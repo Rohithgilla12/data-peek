@@ -294,6 +294,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       currentTab.type === 'data-generator' ||
       currentTab.type === 'pg-notifications' ||
       currentTab.type === 'health-monitor' ||
+      currentTab.type === 'notebook' ||
       !tabConnection ||
       currentTab.isExecuting ||
       !currentTab.query.trim()
@@ -443,7 +444,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'table-designer' ||
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
-      tab.type === 'health-monitor'
+      tab.type === 'health-monitor' ||
+      tab.type === 'notebook'
     )
       return
     if (!tab.isExecuting || !tab.executionId) return
@@ -489,6 +491,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'notebook' ||
       !tab.query.trim()
     )
       return
@@ -506,6 +509,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         tab.type === 'data-generator' ||
         tab.type === 'pg-notifications' ||
         tab.type === 'health-monitor' ||
+        tab.type === 'notebook' ||
         !tabConnection ||
         tab.isExecuting ||
         isRunningBenchmark ||
@@ -561,6 +565,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'notebook' ||
       !tabConnection ||
       isExplaining ||
       !tab.query.trim()
@@ -602,6 +607,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'notebook' ||
       !tabConnection ||
       isPerfAnalyzing ||
       !tab.query.trim()
@@ -672,6 +678,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'notebook' ||
       !tab.result?.columns
     )
       return []
@@ -722,6 +729,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'notebook' ||
       !tab.result?.columns ||
       tab.type !== 'table-preview'
     )
@@ -901,7 +909,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         tab.type === 'table-designer' ||
         tab.type === 'data-generator' ||
         tab.type === 'pg-notifications' ||
-        tab.type === 'health-monitor'
+        tab.type === 'health-monitor' ||
+        tab.type === 'notebook'
       )
         return
 
@@ -999,7 +1008,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'table-designer' ||
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
-      tab.type === 'health-monitor'
+      tab.type === 'health-monitor' ||
+      tab.type === 'notebook'
     )
       return ''
 
@@ -1144,6 +1154,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Render Health Monitor dashboard
   if (tab.type === 'health-monitor') {
     return <HealthMonitor tabId={tabId} />
+  }
+
+  // Notebook tabs are rendered by their own component (placeholder until NotebookEditor exists)
+  if (tab.type === 'notebook') {
+    return (
+      <div className="flex flex-1 items-center justify-center text-muted-foreground">
+        <span className="text-sm">Notebook: {tab.notebookId}</span>
+      </div>
+    )
   }
 
   // Get statement results for multi-statement queries
