@@ -1,3 +1,14 @@
+export type {
+  Notebook,
+  NotebookCell,
+  PinnedResult,
+  NotebookWithCells,
+  CreateNotebookInput,
+  UpdateNotebookInput,
+  AddCellInput,
+  UpdateCellInput
+} from './notebook-types'
+export { MAX_PINNED_ROWS } from './notebook-types'
 export { PG_TYPE_MAP, resolvePostgresType } from "./type-maps";
 export {
   escapeSQLValue,
