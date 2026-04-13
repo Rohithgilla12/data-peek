@@ -11,6 +11,7 @@ import { initLicenseStore } from './license-service'
 import { initAIStore } from './ai-service'
 import { initAutoUpdater, stopPeriodicChecks } from './updater'
 import { DpStorage } from './storage'
+import { NotebookStorage } from './notebook-storage'
 import { initSchemaCache } from './schema-cache'
 import { registerAllHandlers } from './ipc'
 import { setForceQuit } from './app-state'
@@ -102,11 +103,12 @@ app.whenReady().then(async () => {
   })
 
   // Register all IPC handlers
+  const notebookStorage = new NotebookStorage(app.getPath('userData'))
   registerAllHandlers({
     connections: store,
     savedQueries: savedQueriesStore,
     snippets: snippetsStore
-  })
+  }, notebookStorage)
 
   // Create initial window
   await windowManager.createWindow()
