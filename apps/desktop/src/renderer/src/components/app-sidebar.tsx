@@ -10,6 +10,7 @@ import { SchemaExplorer } from '@/components/schema-explorer'
 import { SidebarOmnibar } from '@/components/sidebar-omnibar'
 import { SidebarQuickQuery } from '@/components/sidebar-quick-query'
 import { Snippets } from '@/components/snippets'
+import { NotebookSidebar } from '@/components/notebook-sidebar'
 import { FunAnalytics } from '@/components/fun-analytics'
 
 import { useConnectionStore, useTabStore } from '@/stores'
@@ -74,6 +75,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <QueryHistory />
             <SavedQueries />
             <Snippets />
+            <NotebookSidebar />
 
             <SidebarSeparator className="mx-3" />
 
