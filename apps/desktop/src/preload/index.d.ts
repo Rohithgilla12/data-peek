@@ -54,7 +54,14 @@ import type {
   PgExportResult,
   PgImportOptions,
   PgImportProgress,
-  PgImportResult
+  PgImportResult,
+  Notebook,
+  NotebookWithCells,
+  NotebookCell,
+  CreateNotebookInput,
+  UpdateNotebookInput,
+  AddCellInput,
+  UpdateCellInput
 } from '@shared/index'
 
 // AI Types
@@ -454,6 +461,18 @@ interface DataPeekApi {
     ) => Promise<IpcResponse<PgImportResult>>
     cancelImport: () => Promise<IpcResponse<void>>
     onImportProgress: (callback: (progress: PgImportProgress) => void) => () => void
+  }
+  notebooks: {
+    list: () => Promise<IpcResponse<Notebook[]>>
+    get: (id: string) => Promise<IpcResponse<NotebookWithCells>>
+    create: (input: CreateNotebookInput) => Promise<IpcResponse<Notebook>>
+    update: (id: string, updates: UpdateNotebookInput) => Promise<IpcResponse<void>>
+    delete: (id: string) => Promise<IpcResponse<void>>
+    duplicate: (id: string, connectionId: string) => Promise<IpcResponse<NotebookWithCells>>
+    addCell: (notebookId: string, input: AddCellInput) => Promise<IpcResponse<NotebookCell>>
+    updateCell: (cellId: string, updates: UpdateCellInput) => Promise<IpcResponse<void>>
+    deleteCell: (cellId: string) => Promise<IpcResponse<void>>
+    reorderCells: (notebookId: string, cellIds: string[]) => Promise<IpcResponse<void>>
   }
   files: {
     openFilePicker: () => Promise<string | null>
