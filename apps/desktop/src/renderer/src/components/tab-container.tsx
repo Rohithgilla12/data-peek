@@ -3,8 +3,10 @@ import { Plus } from 'lucide-react'
 import { Button } from '@data-peek/ui'
 import { TabBar } from '@/components/tab-bar'
 import { TabQueryEditor } from '@/components/tab-query-editor'
+import { NotebookEditor } from '@/components/notebook-editor'
 import { useTabStore, useConnectionStore } from '@/stores'
 import { useHotkeys, type UseHotkeyDefinition, type Hotkey } from '@tanstack/react-hotkeys'
+import type { NotebookTab } from '@/stores/tab-store'
 
 export function TabContainer() {
   const tabs = useTabStore((s) => s.tabs)
@@ -86,7 +88,11 @@ export function TabContainer() {
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       <TabBar />
-      {activeTab && <TabQueryEditor key={activeTab.id} tabId={activeTab.id} />}
+      {activeTab && activeTab.type === 'notebook' ? (
+        <NotebookEditor key={activeTab.id} tab={activeTab as NotebookTab} />
+      ) : (
+        activeTab && <TabQueryEditor key={activeTab.id} tabId={activeTab.id} />
+      )}
     </div>
   )
 }
