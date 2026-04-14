@@ -54,8 +54,6 @@
     ]
   },
   "dependencies": {
-    "papaparse": "^5.5.3",
-    "react-markdown": "^10.1.0",
-    "remark-gfm": "^4.0.1"
+    "papaparse": "^5.5.3"
   }
 }

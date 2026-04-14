@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Plus, Play } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Button, cn } from '@data-peek/ui'
 import { useNotebookStore } from '@/stores/notebook-store'
 import { useConnectionStore } from '@/stores/connection-store'
@@ -58,9 +58,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
           ? cells[insertAfterIndex].order + 0.5
           : cells.length
       addCell(activeNotebook.id, { type, content: '', order })
-      setFocusedCellIndex(
-        insertAfterIndex !== undefined ? insertAfterIndex + 1 : cells.length
-      )
+      setFocusedCellIndex(insertAfterIndex !== undefined ? insertAfterIndex + 1 : cells.length)
     },
     [activeNotebook, cells, addCell]
   )
@@ -202,24 +200,12 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
           <Plus className="size-3" />
           Note
         </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 gap-1.5 text-xs"
-          onClick={() => setFocusedCellIndex(0)}
-        >
-          <Play className="size-3" />
-          Run All
-        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-16">
         {cells.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <p className="text-sm text-muted-foreground">
-              Empty notebook. Add your first cell.
-            </p>
+            <p className="text-sm text-muted-foreground">Empty notebook. Add your first cell.</p>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -251,9 +237,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
                   connectionId={connectionId ?? ''}
                   isFocused={focusedCellIndex === index}
                   onFocus={() => setFocusedCellIndex(index)}
-                  onRunAndAdvance={() =>
-                    setFocusedCellIndex(Math.min(index + 1, cells.length - 1))
-                  }
+                  onRunAndAdvance={() => setFocusedCellIndex(Math.min(index + 1, cells.length - 1))}
                   onDelete={() => handleDeleteCell(cell.id, index)}
                 />
                 <InsertPoint onInsert={(type) => handleAddCell(type, index)} />

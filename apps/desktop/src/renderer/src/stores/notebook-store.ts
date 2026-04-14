@@ -128,8 +128,7 @@ export const useNotebookStore = create<NotebookState>((set, get) => ({
     try {
       const result = await window.api.notebooks.duplicate(id, connectionId)
       if (result.success && result.data) {
-        const { cells: _cells, ...notebookMeta } = result.data
-        set((state) => ({ notebooks: [notebookMeta, ...state.notebooks] }))
+        set((state) => ({ notebooks: [result.data!, ...state.notebooks] }))
       } else {
         console.error('Failed to duplicate notebook:', result.error)
       }
@@ -160,9 +159,7 @@ export const useNotebookStore = create<NotebookState>((set, get) => ({
   updateCellContent: (cellId, content) => {
     set((state) => {
       if (!state.activeNotebook) return state
-      const cells = state.activeNotebook.cells.map((c) =>
-        c.id === cellId ? { ...c, content } : c
-      )
+      const cells = state.activeNotebook.cells.map((c) => (c.id === cellId ? { ...c, content } : c))
       return { activeNotebook: { ...state.activeNotebook, cells } }
     })
   },
@@ -204,7 +201,9 @@ export const useNotebookStore = create<NotebookState>((set, get) => ({
         set((state) => {
           if (!state.activeNotebook || state.activeNotebook.id !== notebookId) return state
           const cellMap = new Map(state.activeNotebook.cells.map((c) => [c.id, c]))
-          const cells = cellIds.map((id) => cellMap.get(id)).filter(Boolean) as typeof state.activeNotebook.cells
+          const cells = cellIds
+            .map((id) => cellMap.get(id))
+            .filter(Boolean) as typeof state.activeNotebook.cells
           return { activeNotebook: { ...state.activeNotebook, cells } }
         })
       } else {

@@ -22,7 +22,7 @@ import {
 } from '@data-peek/ui'
 
 import { useNotebookStore } from '@/stores/notebook-store'
-import { useConnectionStore, useTabStore } from '@/stores'
+import { useConnectionStore, useTabStore, notify } from '@/stores'
 import type { Notebook } from '@shared/index'
 
 export function NotebookSidebar() {
@@ -47,7 +47,10 @@ export function NotebookSidebar() {
 
   const handleCreate = async () => {
     if (!activeConnectionId) return
-    const nb = await createNotebook({ title: 'Untitled Notebook', connectionId: activeConnectionId })
+    const nb = await createNotebook({
+      title: 'Untitled Notebook',
+      connectionId: activeConnectionId
+    })
     if (nb) {
       createNotebookTab(nb.connectionId, nb.id, nb.title)
     }
@@ -57,10 +60,9 @@ export function NotebookSidebar() {
     createNotebookTab(nb.connectionId, nb.id, nb.title)
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this notebook?')) {
-      await deleteNotebook(id)
-    }
+  const handleDelete = async (nb: Notebook) => {
+    await deleteNotebook(nb.id)
+    notify.success('Notebook deleted', `"${nb.title}" was removed.`)
   }
 
   const toggleFolder = (folder: string) => {
@@ -109,7 +111,7 @@ export function NotebookSidebar() {
             <span>Open notebook</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-400" onClick={() => handleDelete(nb.id)}>
+          <DropdownMenuItem className="text-red-400" onClick={() => handleDelete(nb)}>
             <Trash2 className="text-red-400" />
             <span>Delete</span>
           </DropdownMenuItem>

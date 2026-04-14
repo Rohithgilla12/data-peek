@@ -1156,15 +1156,6 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     return <HealthMonitor tabId={tabId} />
   }
 
-  // Notebook tabs are rendered by their own component (placeholder until NotebookEditor exists)
-  if (tab.type === 'notebook') {
-    return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground">
-        <span className="text-sm">Notebook: {tab.notebookId}</span>
-      </div>
-    )
-  }
-
   // Get statement results for multi-statement queries
   const statementResults = getAllStatementResults(tabId)
   const activeStatementResult = getActiveStatementResult(tabId)

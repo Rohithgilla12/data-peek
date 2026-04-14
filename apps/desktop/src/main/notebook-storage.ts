@@ -46,13 +46,22 @@ function rowToNotebook(row: NotebookRow): Notebook {
   }
 }
 
+function parsePinnedResult(raw: string): PinnedResult | null {
+  try {
+    return JSON.parse(raw) as PinnedResult
+  } catch {
+    log.warn('Corrupt pinned_result JSON, falling back to null')
+    return null
+  }
+}
+
 function rowToCell(row: CellRow): NotebookCell {
   return {
     id: row.id,
     notebookId: row.notebook_id,
     type: row.type,
     content: row.content,
-    pinnedResult: row.pinned_result ? (JSON.parse(row.pinned_result) as PinnedResult) : null,
+    pinnedResult: row.pinned_result ? parsePinnedResult(row.pinned_result) : null,
     order: row.order_index,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -111,16 +120,14 @@ export class NotebookStorage {
   }
 
   getNotebook(id: string): NotebookWithCells | null {
-    const notebookRow = this.db
-      .prepare('SELECT * FROM notebooks WHERE id = ?')
-      .get(id) as NotebookRow | undefined
+    const notebookRow = this.db.prepare('SELECT * FROM notebooks WHERE id = ?').get(id) as
+      | NotebookRow
+      | undefined
 
     if (!notebookRow) return null
 
     const cellRows = this.db
-      .prepare(
-        'SELECT * FROM notebook_cells WHERE notebook_id = ? ORDER BY order_index ASC'
-      )
+      .prepare('SELECT * FROM notebook_cells WHERE notebook_id = ? ORDER BY order_index ASC')
       .all(id) as CellRow[]
 
     return {
@@ -144,9 +151,9 @@ export class NotebookStorage {
   }
 
   updateNotebook(id: string, input: UpdateNotebookInput): Notebook | null {
-    const existing = this.db
-      .prepare('SELECT * FROM notebooks WHERE id = ?')
-      .get(id) as NotebookRow | undefined
+    const existing = this.db.prepare('SELECT * FROM notebooks WHERE id = ?').get(id) as
+      | NotebookRow
+      | undefined
     if (!existing) return null
 
     const now = Date.now()
@@ -154,9 +161,7 @@ export class NotebookStorage {
     const folder = input.folder !== undefined ? input.folder : existing.folder
 
     this.db
-      .prepare(
-        'UPDATE notebooks SET title = ?, folder = ?, updated_at = ? WHERE id = ?'
-      )
+      .prepare('UPDATE notebooks SET title = ?, folder = ?, updated_at = ? WHERE id = ?')
       .run(title, folder, now, id)
 
     return rowToNotebook(
@@ -227,9 +232,9 @@ export class NotebookStorage {
   }
 
   updateCell(id: string, input: UpdateCellInput): NotebookCell | null {
-    const existing = this.db
-      .prepare('SELECT * FROM notebook_cells WHERE id = ?')
-      .get(id) as CellRow | undefined
+    const existing = this.db.prepare('SELECT * FROM notebook_cells WHERE id = ?').get(id) as
+      | CellRow
+      | undefined
     if (!existing) return null
 
     const now = Date.now()
@@ -254,9 +259,9 @@ export class NotebookStorage {
   }
 
   deleteCell(id: string): void {
-    const cell = this.db
-      .prepare('SELECT * FROM notebook_cells WHERE id = ?')
-      .get(id) as CellRow | undefined
+    const cell = this.db.prepare('SELECT * FROM notebook_cells WHERE id = ?').get(id) as
+      | CellRow
+      | undefined
     if (!cell) return
     this.db.prepare('DELETE FROM notebook_cells WHERE id = ?').run(id)
     this.touchNotebook(cell.notebook_id)
