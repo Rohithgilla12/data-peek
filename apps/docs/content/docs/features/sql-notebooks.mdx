@@ -1,0 +1,90 @@
+---
+title: SQL Notebooks
+description: Create Jupyter-style notebooks mixing executable SQL cells with Markdown documentation
+---
+
+# SQL Notebooks
+
+SQL Notebooks let you mix executable SQL cells with Markdown documentation in a single document. The primary use case is team runbooks — documented, repeatable workflows that anyone on the team can open and run.
+
+## Creating a Notebook
+
+1. Click **Notebooks** in the sidebar
+2. Click **New Notebook**
+3. Give it a name and optionally assign a folder
+4. Start adding cells
+
+## Cell Types
+
+### SQL Cells
+
+Each SQL cell is an independent query editor. Run the cell to see results inline, directly beneath it. Results stay attached to the cell — no separate results panel.
+
+### Markdown Cells
+
+Markdown cells accept standard Markdown syntax. Use them to add context, explain steps, document expected output, or leave notes for teammates. They render in place when not being edited.
+
+## Running Queries
+
+| Action | Shortcut |
+|--------|----------|
+| Run cell and advance to next | `Shift+Enter` |
+| Run cell (stay in cell) | `Cmd+Enter` |
+| Run all cells top to bottom | **Run All** button in the toolbar |
+
+## Pinning Results
+
+Click the **pin icon** on a cell's result set to persist those results across sessions. Pinned results reload as-is the next time you open the notebook — useful for preserving a known baseline or sharing a snapshot alongside the query.
+
+Unpin at any time to clear the stored result and run fresh.
+
+## Keyboard Shortcuts
+
+| Shortcut | Action |
+|----------|--------|
+| `Shift+Enter` | Run cell and move to next |
+| `Cmd+Enter` | Run cell |
+| `Cmd+J` | Move to next cell |
+| `Cmd+K` | Move to previous cell |
+| `Enter` | Enter edit mode |
+| `Escape` | Exit edit mode |
+| `Cmd+Shift+D` | Delete current cell |
+
+## Organizing with Folders
+
+Notebooks support one level of folder organization. Assign a notebook to a folder when creating it, or rename/move it later via right-click in the sidebar.
+
+Folders let you group notebooks by project, team, or workflow — for example: `Releases`, `Incident Response`, `Weekly Reports`.
+
+## Exporting and Sharing
+
+### .dpnb Format
+
+Export a notebook as a `.dpnb` file — a JSON-based format that preserves all cells, markdown, and pinned results. Share the file with a teammate and they can import it directly into data-peek.
+
+To export: open the notebook, click the **Export** button, and choose **Export as .dpnb**.
+
+To import: drag a `.dpnb` file onto the sidebar, or use **File → Import Notebook**.
+
+### Markdown Export
+
+Export as Markdown to produce a readable document that works anywhere — GitHub, Notion, Confluence, or any text editor. SQL cells export as fenced code blocks; results export as Markdown tables.
+
+To export: click **Export** and choose **Export as Markdown**.
+
+## Duplicating to Another Connection
+
+Reuse a runbook against a different environment without modifying the original:
+
+1. Right-click the notebook in the sidebar
+2. Select **Duplicate to Connection**
+3. Choose the target connection (e.g. staging, production)
+
+A copy of the notebook opens, connected to the target. Pinned results are not carried over — run the cells fresh against the new connection.
+
+## Tips
+
+- **Auto-save** runs 500ms after your last edit — no manual save needed.
+- **Between-cell insertion**: hover between any two cells to reveal an **+** button that inserts a new cell at that position.
+- Keep Markdown cells short and actionable — one paragraph per cell is easier to scan than a wall of text.
+- Pin results before sharing a `.dpnb` so recipients see your last run alongside the queries.
