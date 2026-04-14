@@ -165,6 +165,7 @@ const ProblemScene: React.FC = () => {
                 <div>SELECT id, amount, status</div>
                 <div>FROM payments</div>
                 <div>WHERE status = 'processing'</div>
+                <div>AND updated_at {'<'} NOW() - interval '30 mins'</div>
               </div>
               <div
                 style={{
@@ -276,6 +277,14 @@ const ProblemScene: React.FC = () => {
                 <span style={{ color: '#a855f7' }}>WHERE</span>
                 {" status = "}
                 <span style={{ color: '#fbbf24' }}>'processing'</span>
+                {'\n'}
+                <span style={{ color: '#a855f7' }}>AND</span>
+                {' updated_at < '}
+                <span style={{ color: '#22d3ee' }}>NOW()</span>
+                {' - '}
+                <span style={{ color: '#a855f7' }}>interval</span>
+                {" "}
+                <span style={{ color: '#fbbf24' }}>'30 mins'</span>
               </div>
               <div
                 style={{

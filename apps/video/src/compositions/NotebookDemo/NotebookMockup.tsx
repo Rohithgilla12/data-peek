@@ -11,7 +11,8 @@ import { Play, Pin, ChevronDown } from 'lucide-react'
 
 const SQL_TEXT = `SELECT id, amount, status
 FROM payments
-WHERE status = 'processing'`
+WHERE status = 'processing'
+AND updated_at < NOW() - interval '30 mins'`
 
 const GATEWAY_SQL = `SELECT id, gateway, error_code
 FROM gateway_logs
@@ -272,7 +273,7 @@ export const NotebookMockup: React.FC = () => {
   const cell3Opacity = interpolate(cell3Entrance, [0, 1], [0, 1])
   const cell3Y = interpolate(cell3Entrance, [0, 1], [20, 0])
 
-  const localGatewaySqlFrame = Math.max(0, frame - 330)
+  const localGatewaySqlFrame = Math.max(0, frame - 300)
   const gatewayCharsVisible = Math.min(
     GATEWAY_SQL.length,
     Math.floor(localGatewaySqlFrame / framesPerChar)

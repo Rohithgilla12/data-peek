@@ -5,6 +5,7 @@ import { TransitionSeries, linearTiming } from '@remotion/transitions'
 import { fade } from '@remotion/transitions/fade'
 import { slide } from '@remotion/transitions/slide'
 import { BookOpen, Pin, Keyboard, Share2 } from 'lucide-react'
+import { Fragment } from 'react'
 import { Background } from '../../components/Background'
 import { FixScene } from '../ReleaseVideo/FixScene'
 import { Intro } from './Intro'
@@ -87,14 +88,12 @@ export const ReleaseVideo020: React.FC<ReleaseVideoProps> = ({ version }) => {
         </TransitionSeries.Sequence>
 
         {features.map((feat, i) => (
-          <>
+          <Fragment key={feat.title}>
             <TransitionSeries.Transition
-              key={`t-${feat.title}`}
               presentation={i === 0 ? fadePresentation : slidePresentation}
               timing={fadeTiming}
             />
             <TransitionSeries.Sequence
-              key={feat.title}
               durationInFrames={120}
             >
               <FixScene
@@ -105,7 +104,7 @@ export const ReleaseVideo020: React.FC<ReleaseVideoProps> = ({ version }) => {
                 illustration={feat.illustration}
               />
             </TransitionSeries.Sequence>
-          </>
+          </Fragment>
         ))}
 
         <TransitionSeries.Transition

@@ -92,9 +92,10 @@ const ShortcutKey: React.FC<ShortcutKeyProps> = ({ keys, description, delay, hig
 type FocusedCellProps = {
   focusOffset: number
   label: string
+  isFocused: boolean
 }
 
-const FocusedCell: React.FC<FocusedCellProps> = ({ focusOffset, label }) => {
+const FocusedCell: React.FC<FocusedCellProps> = ({ focusOffset, label, isFocused }) => {
   const frame = useCurrentFrame()
   const { fps } = useVideoConfig()
 
@@ -117,17 +118,19 @@ const FocusedCell: React.FC<FocusedCellProps> = ({ focusOffset, label }) => {
         width: 600,
       }}
     >
-      <div
-        style={{
-          position: 'absolute',
-          inset: -2,
-          borderRadius: 10,
-          border: `2px solid ${brand.accent}`,
-          opacity: ringPulse,
-          pointerEvents: 'none',
-          boxShadow: `0 0 20px ${brand.accent}40`,
-        }}
-      />
+      {isFocused && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: -2,
+            borderRadius: 10,
+            border: `2px solid ${brand.accent}`,
+            opacity: ringPulse,
+            pointerEvents: 'none',
+            boxShadow: `0 0 20px ${brand.accent}40`,
+          }}
+        />
+      )}
       <div
         style={{
           backgroundColor: brand.surface,
@@ -206,6 +209,12 @@ export const KeyboardScene: React.FC = () => {
       const t = spring({ frame: frame - 120, fps, config: { damping: 200 } })
       return interpolate(t, [0, 1], [80, 0])
     }
+    return 0
+  })()
+
+  const focusedCellIndex = (() => {
+    if (frame < 40) return 0
+    if (frame < 120) return 1
     return 0
   })()
 
@@ -290,8 +299,8 @@ export const KeyboardScene: React.FC = () => {
         >
           <Sequence from={5} layout="none">
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <FocusedCell focusOffset={-focusOffset} label="Cell 1" />
-              <FocusedCell focusOffset={-focusOffset + 80} label="Cell 2" />
+              <FocusedCell focusOffset={-focusOffset} label="Cell 1" isFocused={focusedCellIndex === 0} />
+              <FocusedCell focusOffset={-focusOffset + 80} label="Cell 2" isFocused={focusedCellIndex === 1} />
             </div>
           </Sequence>
 

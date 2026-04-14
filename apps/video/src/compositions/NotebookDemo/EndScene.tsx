@@ -12,11 +12,11 @@ import { BookOpen } from 'lucide-react'
 
 export const EndScene: React.FC = () => {
   const frame = useCurrentFrame()
-  const { fps, durationInFrames } = useVideoConfig()
+  const { fps } = useVideoConfig()
 
   const fadeOut = interpolate(
     frame,
-    [durationInFrames - 20, durationInFrames],
+    [100, 120],
     [1, 0],
     { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
   )
