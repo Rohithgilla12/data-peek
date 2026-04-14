@@ -71,7 +71,7 @@ export const ReleaseVideo020: React.FC<ReleaseVideoProps> = ({ version }) => {
     <AbsoluteFill>
       <Background />
       <Audio
-        src={staticFile('audio/bg-music.mp3')}
+        src={staticFile('audio/bg-music-notebooks.mp3')}
         volume={(f) =>
           interpolate(
             f,
