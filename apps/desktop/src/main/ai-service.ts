@@ -325,6 +325,42 @@ function getModel(config: AIConfig) {
       return groq(config.model)
     }
 
+    case 'deepseek': {
+      // DeepSeek uses OpenAI-compatible API
+      const deepseek = createOpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.baseUrl || 'https://api.deepseek.com'
+      })
+      return deepseek(config.model)
+    }
+
+    case 'mistral': {
+      // Mistral uses OpenAI-compatible API
+      const mistral = createOpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.baseUrl || 'https://api.mistral.ai/v1'
+      })
+      return mistral(config.model)
+    }
+
+    case 'xai': {
+      // xAI (Grok) uses OpenAI-compatible API
+      const xai = createOpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.baseUrl || 'https://api.x.ai/v1'
+      })
+      return xai(config.model)
+    }
+
+    case 'glm': {
+      // GLM (Zhipu AI) uses OpenAI-compatible API
+      const glm = createOpenAI({
+        apiKey: config.apiKey,
+        baseURL: config.baseUrl || 'https://open.bigmodel.cn/api/paas/v4'
+      })
+      return glm(config.model)
+    }
+
     case 'ollama': {
       // Ollama uses OpenAI-compatible API
       const ollama = createOpenAI({

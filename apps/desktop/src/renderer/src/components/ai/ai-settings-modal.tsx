@@ -191,7 +191,7 @@ export function AISettingsModal({
           {/* Provider Selection with status indicators */}
           <div className="space-y-2">
             <Label className="text-xs">Providers</Label>
-            <div className="grid grid-cols-5 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {AI_PROVIDERS.map((p) => {
                 const hasConfig = hasProviderConfig(p.id)
                 const isActive = activeProvider === p.id

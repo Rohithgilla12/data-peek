@@ -41,7 +41,16 @@ export function buildTrackingUrl(path: string, utm: UTMParams = {}): string {
 /**
  * Supported AI providers
  */
-export type AIProvider = "openai" | "anthropic" | "google" | "groq" | "ollama";
+export type AIProvider =
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "groq"
+  | "deepseek"
+  | "mistral"
+  | "xai"
+  | "glm"
+  | "ollama";
 
 /**
  * Configuration for AI service
@@ -207,6 +216,97 @@ export const AI_PROVIDERS: readonly ProviderInfo[] = [
     ],
   },
   {
+    id: "deepseek",
+    name: "DeepSeek",
+    description: "DeepSeek V3, DeepSeek R1 (Reasoning)",
+    keyPrefix: "sk-",
+    keyUrl: "https://platform.deepseek.com/api_keys",
+    models: [
+      {
+        id: "deepseek-chat",
+        name: "DeepSeek V3",
+        recommended: true,
+        description: "Best for SQL & code",
+      },
+      {
+        id: "deepseek-reasoner",
+        name: "DeepSeek R1",
+        description: "Reasoning model",
+      },
+    ],
+  },
+  {
+    id: "mistral",
+    name: "Mistral",
+    description: "Mistral Large, Codestral",
+    keyPrefix: null,
+    keyUrl: "https://console.mistral.ai/api-keys",
+    models: [
+      {
+        id: "mistral-large-latest",
+        name: "Mistral Large",
+        recommended: true,
+        description: "Most capable",
+      },
+      {
+        id: "codestral-latest",
+        name: "Codestral",
+        description: "Best for code",
+      },
+      {
+        id: "mistral-small-latest",
+        name: "Mistral Small",
+        description: "Fast & efficient",
+      },
+    ],
+  },
+  {
+    id: "xai",
+    name: "xAI",
+    description: "Grok-3, Grok-3 Mini",
+    keyPrefix: "xai-",
+    keyUrl: "https://console.x.ai",
+    models: [
+      {
+        id: "grok-3",
+        name: "Grok-3",
+        recommended: true,
+        description: "Most capable",
+      },
+      {
+        id: "grok-3-mini",
+        name: "Grok-3 Mini",
+        description: "Fast & efficient",
+      },
+      { id: "grok-2", name: "Grok-2", description: "Previous gen" },
+    ],
+  },
+  {
+    id: "glm",
+    name: "GLM",
+    description: "ChatGLM-4 Plus, Flash (Zhipu AI)",
+    keyPrefix: null,
+    keyUrl: "https://open.bigmodel.cn/usercenter/apikeys",
+    models: [
+      {
+        id: "glm-4-plus",
+        name: "GLM-4 Plus",
+        recommended: true,
+        description: "Most capable",
+      },
+      {
+        id: "glm-4-flash",
+        name: "GLM-4 Flash",
+        description: "Fast & efficient",
+      },
+      {
+        id: "glm-4-long",
+        name: "GLM-4 Long",
+        description: "Long context",
+      },
+    ],
+  },
+  {
     id: "ollama",
     name: "Ollama",
     description: "Local models (no API key)",
@@ -253,6 +353,10 @@ export const DEFAULT_MODELS: Record<AIProvider, string> = {
   anthropic: getRecommendedModel("anthropic"),
   google: getRecommendedModel("google"),
   groq: getRecommendedModel("groq"),
+  deepseek: getRecommendedModel("deepseek"),
+  mistral: getRecommendedModel("mistral"),
+  xai: getRecommendedModel("xai"),
+  glm: getRecommendedModel("glm"),
   ollama: getRecommendedModel("ollama"),
 };
 

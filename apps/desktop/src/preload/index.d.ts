@@ -58,7 +58,16 @@ import type {
 } from '@shared/index'
 
 // AI Types
-type AIProvider = 'openai' | 'anthropic' | 'google' | 'groq' | 'ollama'
+type AIProvider =
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'groq'
+  | 'deepseek'
+  | 'mistral'
+  | 'xai'
+  | 'glm'
+  | 'ollama'
 
 interface AIConfig {
   provider: AIProvider
