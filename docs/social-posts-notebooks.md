@@ -174,10 +174,135 @@ datapeek.dev
 
 ---
 
+## Threads
+
+### Post 1 — Launch (carousel-style thread)
+
+```
+SQL Notebooks in data-peek.
+
+Mix SQL and Markdown in one document. Run queries inline. Pin results.
+
+Your debugging runbooks become executable.
+```
+
+Reply 1:
+```
+The use case that made me build this:
+
+Every time I debug a production issue, I write a Notion doc with the steps. The doc has SQL in code blocks that you copy-paste into a query tool.
+
+Why are those two things separate?
+
+Now they're not. The documentation IS the query tool.
+```
+
+Reply 2:
+```
+What "pinning" actually does:
+
+Run a query. See results. Click "Pin."
+
+Close the notebook. Reopen it next week. The pinned result is still there — showing what the data looked like last time.
+
+Your runbook now has a baseline built in.
+```
+
+Reply 3:
+```
+Same runbook, different database:
+
+Right-click → Duplicate to connection.
+
+One notebook for "debug stuck payments." Use it on dev. Use it on staging. Use it on prod.
+
+No copy-paste. No maintaining three versions.
+```
+
+Reply 4:
+```
+Keyboard shortcuts (Jupyter conventions):
+
+Shift+Enter → run cell, move to next
+Cmd+Enter → run cell, stay
+Cmd+J/K → navigate between cells
+Cmd+Shift+Enter → run all (stops on first error)
+
+It feels like a terminal, not a form.
+
+datapeek.dev
+```
+
+### Post 2 — Behind the scenes (technical)
+
+```
+Building SQL Notebooks taught me a few things about Electron performance:
+
+20 Monaco editors on one page = bad time.
+
+Solution: only the focused cell gets a live Monaco instance. Everything else is a static <pre> with syntax highlighting. Click to activate.
+
+Result: notebooks with 30+ cells scroll smoothly.
+```
+
+Reply 1:
+```
+Storage decision: SQLite over JSON files.
+
+Notebooks have cells. Cells have pinned results (could be 500 rows of data). Updating one cell shouldn't rewrite the entire notebook.
+
+better-sqlite3 with WAL mode. Two tables. Foreign key cascades. Individual cell updates.
+```
+
+Reply 2:
+```
+The export format is a JSON file called .dpnb
+
+It strips the connection ID (that's machine-local). When your teammate imports it, they pick which database to connect.
+
+Or export as Markdown — readable on GitHub, Notion, anywhere. SQL in fenced code blocks, pinned results as tables.
+```
+
+### Post 3 — Runbook showcase
+
+```
+Here's an actual runbook I use:
+
+"ACME SaaS Health Check"
+
+Step 1: Platform overview (orgs by plan)
+Step 2: Revenue health (subscription status + MRR)
+Step 3: Unpaid invoices
+Step 4: Recent activity (event log)
+Step 5: Top orgs by usage
+Step 6: Stale API keys
+Step 7: Enterprise deep dive
+
+7 SQL cells, 7 Markdown cells explaining what to look for. Pin results as you go. Takes 30 seconds to run through.
+
+This used to be a Notion doc + 7 browser tabs.
+```
+
+### Post 4 — Hot take / conversation starter
+
+```
+Hot take: most SQL clients are designed for DBAs, not developers.
+
+Developers don't need server management panels. They need to quickly check data, run a query, and get back to their code.
+
+That's why data-peek exists. And SQL Notebooks are the latest example — runbooks for developers, not database reports for managers.
+
+datapeek.dev
+```
+
+---
+
 ## General Notes
 
 1. Post Reddit threads on weekday mornings (9–11am US Eastern). r/sql and r/database are lower-traffic; the technical angle in r/programming tends to do better there.
-2. Screenshots and a short screen recording of notebook execution will significantly improve engagement on Twitter/X.
+2. Screenshots and a short screen recording of notebook execution will significantly improve engagement on Twitter/X and Threads.
 3. The r/programming post is technical by design — that audience responds better to implementation details than feature lists.
 4. Don't cross-post identical content across subreddits simultaneously.
 5. Engage with every reply in the first hour.
+6. **Threads strategy:** Post the carousel-style thread (Post 1) as the launch post. The technical post (Post 2) can go out 2-3 days later to stay in feeds without flooding. The runbook showcase (Post 3) works well as a weekend post. Post 4 is a standalone conversation starter — save it for a slow day.
+7. **Threads format:** Each reply in a thread is its own mini-post. Keep each one self-contained — people scroll past the first one and should still understand the reply they land on.
