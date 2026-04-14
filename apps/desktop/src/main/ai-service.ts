@@ -9,6 +9,9 @@ import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createGroq } from '@ai-sdk/groq'
+import { createDeepSeek } from '@ai-sdk/deepseek'
+import { createMistral } from '@ai-sdk/mistral'
+import { createXai } from '@ai-sdk/xai'
 import { generateObject, generateText } from 'ai'
 import { z } from 'zod'
 import type {
@@ -326,28 +329,25 @@ function getModel(config: AIConfig) {
     }
 
     case 'deepseek': {
-      // DeepSeek uses OpenAI-compatible API
-      const deepseek = createOpenAI({
+      const deepseek = createDeepSeek({
         apiKey: config.apiKey,
-        baseURL: config.baseUrl || 'https://api.deepseek.com'
+        baseURL: config.baseUrl
       })
       return deepseek(config.model)
     }
 
     case 'mistral': {
-      // Mistral uses OpenAI-compatible API
-      const mistral = createOpenAI({
+      const mistral = createMistral({
         apiKey: config.apiKey,
-        baseURL: config.baseUrl || 'https://api.mistral.ai/v1'
+        baseURL: config.baseUrl
       })
       return mistral(config.model)
     }
 
     case 'xai': {
-      // xAI (Grok) uses OpenAI-compatible API
-      const xai = createOpenAI({
+      const xai = createXai({
         apiKey: config.apiKey,
-        baseURL: config.baseUrl || 'https://api.x.ai/v1'
+        baseURL: config.baseUrl
       })
       return xai(config.model)
     }
