@@ -646,3 +646,30 @@ input[type='number'] {
     transform: none;
   }
 }
+
+/* Step-through Monaco decorations */
+.step-active-line {
+  background: oklch(0.65 0.15 250 / 0.1);
+  box-shadow: inset 2px 0 0 oklch(0.65 0.15 250);
+}
+
+.step-active-marker {
+  background: oklch(0.65 0.15 250);
+  width: 2px !important;
+  margin-left: 3px;
+}
+
+.step-breakpoint {
+  background: oklch(0.6 0.18 25);
+  border-radius: 50%;
+  width: 10px !important;
+  height: 10px !important;
+  margin-left: 4px;
+  margin-top: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .step-active-line {
+    transition: none;
+  }
+}

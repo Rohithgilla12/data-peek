@@ -19,7 +19,8 @@ import {
   Square,
   Timer,
   ActivitySquare,
-  Share2
+  Share2,
+  StepForward
 } from 'lucide-react'
 import {
   Button,
@@ -100,6 +101,11 @@ import type { DataTableColumn as DtColumn } from '@/components/data-table'
 import { MaskingToolbar } from '@/components/masking-toolbar'
 import { useMaskingStore } from '@/stores/masking-store'
 import type { ExportData } from '@/lib/export'
+import { StepRibbon } from './step-ribbon'
+import { StepResultsTabs } from './step-results-tabs'
+import { useStepStore } from '@/stores/step-store'
+import { DDL_KEYWORD_REGEX } from '@shared/index'
+import type { editor as monacoEditor } from 'monaco-editor'
 
 /** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
 function ensureArray(value: unknown): string[] | undefined {
@@ -140,6 +146,20 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const getAllSnippets = useSnippetStore((s) => s.getAllSnippets)
   const initializeSnippets = useSnippetStore((s) => s.initializeSnippets)
   const allSnippets = getAllSnippets()
+
+  const stepSession = useStepStore((s) => s.sessions.get(tabId))
+  const startStep = useStepStore((s) => s.startStep)
+  const toggleBreakpoint = useStepStore((s) => s.toggleBreakpoint)
+  const [inTransactionMode, setInTransactionMode] = useState(false)
+
+  const tabQuery = tab && 'query' in tab ? tab.query : ''
+  const tabType = tab?.type
+
+  useEffect(() => {
+    if (tabType !== 'query') return
+    const hasDDL = DDL_KEYWORD_REGEX.test(tabQuery)
+    setInTransactionMode(!hasDDL)
+  }, [tabQuery, tabType])
 
   // Initialize snippets on mount
   useEffect(() => {
@@ -185,6 +205,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Track if we've already attempted auto-run for this tab
   const hasAutoRun = useRef(false)
+
+  // Monaco editor ref for step-through decorations
+  const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
+  const activeLineDecoIds = useRef<string[]>([])
+  const breakpointDecoIds = useRef<string[]>([])
 
   // Panel collapse state (extracted to hook)
   const { isEditorCollapsed, setIsEditorCollapsed, isResultsCollapsed, setIsResultsCollapsed } =
@@ -675,6 +700,114 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const handleQueryChange = (value: string) => {
     updateTabQuery(tabId, value)
   }
+
+  const handleStartStep = useCallback(async () => {
+    if (!tab || tab.type !== 'query' || !tab.query.trim() || stepSession) return
+    await startStep(tabId, tab.query, inTransactionMode)
+  }, [tab, stepSession, startStep, tabId, inTransactionMode])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const isMod = e.metaKey || e.ctrlKey
+      if (isMod && e.shiftKey && e.key === 'Enter') {
+        e.preventDefault()
+        handleStartStep()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [handleStartStep])
+
+  // Active statement highlight
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor) return
+
+    if (stepSession && stepSession.state !== 'done') {
+      const current = stepSession.statements[stepSession.cursorIndex]
+      if (current) {
+        const updateDecorations = () => {
+          activeLineDecoIds.current = editor.deltaDecorations(activeLineDecoIds.current, [
+            {
+              range: {
+                startLineNumber: current.startLine,
+                startColumn: 1,
+                endLineNumber: current.endLine,
+                endColumn: 1
+              },
+              options: {
+                isWholeLine: true,
+                className: 'step-active-line',
+                linesDecorationsClassName: 'step-active-marker'
+              }
+            }
+          ])
+        }
+
+        const globalDoc =
+          typeof document !== 'undefined'
+            ? (document as Document & { startViewTransition?: (cb: () => void) => void })
+            : null
+        if (globalDoc?.startViewTransition) {
+          globalDoc.startViewTransition(() => {
+            updateDecorations()
+          })
+        } else {
+          updateDecorations()
+        }
+      }
+    } else {
+      activeLineDecoIds.current = editor.deltaDecorations(activeLineDecoIds.current, [])
+    }
+  }, [stepSession?.cursorIndex, stepSession?.state, stepSession?.statements])
+
+  // Breakpoint decorations
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor) return
+
+    if (!stepSession) {
+      breakpointDecoIds.current = editor.deltaDecorations(breakpointDecoIds.current, [])
+      return
+    }
+
+    const decorations = [...stepSession.breakpoints]
+      .map((stmtIdx) => {
+        const stmt = stepSession.statements[stmtIdx]
+        if (!stmt) return null
+        return {
+          range: {
+            startLineNumber: stmt.startLine,
+            startColumn: 1,
+            endLineNumber: stmt.startLine,
+            endColumn: 1
+          },
+          options: { glyphMarginClassName: 'step-breakpoint' }
+        }
+      })
+      .filter(Boolean) as Parameters<typeof editor.deltaDecorations>[1]
+
+    breakpointDecoIds.current = editor.deltaDecorations(breakpointDecoIds.current, decorations)
+  }, [stepSession?.breakpoints, stepSession?.statements, stepSession])
+
+  // Breakpoint gutter click handler
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor || !stepSession) return
+
+    const disposable = editor.onMouseDown((e) => {
+      if (e.target.type !== 2) return
+      const line = e.target.position?.lineNumber
+      if (!line) return
+
+      const stmt = stepSession.statements.find((s) => s.startLine === line)
+      if (!stmt) return
+
+      toggleBreakpoint(tabId, stmt.index)
+    })
+
+    return () => disposable.dispose()
+  }, [stepSession, tabId, toggleBreakpoint])
 
   // Helper: Look up column info from schema (for FK details)
   const getColumnsWithFKInfo = useCallback((): DataTableColumn[] => {
@@ -1227,6 +1360,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               placeholder="SELECT * FROM your_table LIMIT 100;"
               schemas={schemas}
               snippets={allSnippets}
+              readOnly={!!stepSession}
+              glyphMargin={!!stepSession}
+              onMount={(editor) => {
+                editorRef.current = editor
+              }}
             />
           </div>
         )}
@@ -1271,6 +1409,31 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                   {keys.enter}
                 </kbd>
               </Button>
+            )}
+            {tab.type === 'query' && (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleStartStep}
+                  disabled={!tab.query.trim() || !!stepSession || tab.isExecuting}
+                  className="h-7 text-xs"
+                >
+                  <StepForward className="size-3 mr-1" />
+                  Step
+                  <kbd className="ml-2 opacity-60 text-[10px]">⇧⌘↵</kbd>
+                </Button>
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={inTransactionMode}
+                    onChange={(e) => setInTransactionMode(e.target.checked)}
+                    disabled={!!stepSession}
+                    className="size-3"
+                  />
+                  <span>Run in transaction</span>
+                </label>
+              </>
             )}
             <TooltipProvider>
               <Tooltip>
@@ -1787,6 +1950,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           </>
         )}
       </div>
+
+      {/* Step-through results (shown when a step session is active) */}
+      {stepSession && <StepResultsTabs tabId={tabId} />}
+
+      {/* Step-through ribbon controls (bottom of layout) */}
+      {stepSession && <StepRibbon tabId={tabId} />}
 
       {/* FK Panel Stack */}
       <FKPanelStack
