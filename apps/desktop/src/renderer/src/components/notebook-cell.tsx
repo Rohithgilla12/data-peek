@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect, memo } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react'
 import { Play, MoreHorizontal, GripVertical, Check, X, Pin, PinOff } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -14,6 +14,7 @@ import {
 import type { NotebookCell as CellType, PinnedResult } from '@shared/index'
 import { useNotebookStore } from '@/stores/notebook-store'
 import { useConnectionStore } from '@/stores/connection-store'
+import { SQLEditor } from '@/components/sql-editor'
 
 interface NotebookCellProps {
   cell: CellType
@@ -117,8 +118,14 @@ export const NotebookCell = memo(function NotebookCell({
   const pinResult = useNotebookStore((s) => s.pinResult)
   const unpinResult = useNotebookStore((s) => s.unpinResult)
   const connections = useConnectionStore((s) => s.connections)
+  const schemas = useConnectionStore((s) => s.schemas)
 
   const activeConnection = connections.find((c) => c.id === connectionId) ?? null
+
+  const sqlEditorHeight = useMemo(() => {
+    const lines = Math.max(3, cell.content.split('\n').length)
+    return Math.min(400, lines * 20 + 24)
+  }, [cell.content])
 
   useEffect(() => {
     if (isEditing && isFocused && textareaRef.current) {
@@ -170,34 +177,12 @@ export const NotebookCell = memo(function NotebookCell({
     }
   }, [activeConnection, cell.content, cell.type])
 
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        setIsEditing(false)
-        return
-      }
-
-      if (e.key === 'Enter' && e.shiftKey) {
-        e.preventDefault()
-        runQuery().then(() => onRunAndAdvance())
-        return
-      }
-
-      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        runQuery()
-        return
-      }
-    },
-    [runQuery, onRunAndAdvance]
-  )
-
   const handlePinResult = useCallback(() => {
     if (!liveResult) return
+    const columns = liveResult.fields.map((f) => f.name)
     const pinned: PinnedResult = {
-      columns: liveResult.fields.map((f) => f.name),
-      rows: liveResult.rows,
+      columns,
+      rows: liveResult.rows.map((row) => columns.map((col) => row[col])),
       rowCount: liveResult.rows.length,
       executedAt: Date.now(),
       durationMs: durationMs ?? 0,
@@ -327,36 +312,19 @@ export const NotebookCell = memo(function NotebookCell({
         </DropdownMenu>
       </div>
 
-      <div className="p-3">
+      <div className={cn(cell.type === 'sql' ? 'p-2' : 'p-3')}>
         {cell.type === 'sql' ? (
-          isEditing && isFocused ? (
-            <textarea
-              ref={textareaRef}
-              value={cell.content}
-              onChange={(e) => handleContentChange(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="SELECT * FROM ..."
-              className={cn(
-                'w-full min-h-[80px] resize-y font-mono text-sm bg-transparent outline-none',
-                'placeholder:text-muted-foreground/40 text-foreground'
-              )}
-              rows={Math.max(3, cell.content.split('\n').length)}
-            />
-          ) : (
-            <pre
-              className={cn(
-                'font-mono text-sm text-foreground whitespace-pre-wrap break-all cursor-text min-h-[1.5rem]',
-                !cell.content && 'text-muted-foreground/40 italic'
-              )}
-              onClick={(e) => {
-                e.stopPropagation()
-                onFocus()
-                setIsEditing(true)
-              }}
-            >
-              {cell.content || 'Click to edit SQL…'}
-            </pre>
-          )
+          <SQLEditor
+            value={cell.content}
+            onChange={handleContentChange}
+            onRun={() => {
+              runQuery().then(() => onRunAndAdvance())
+            }}
+            schemas={schemas}
+            compact
+            height={sqlEditorHeight}
+            placeholder="SELECT * FROM ..."
+          />
         ) : isEditing && isFocused ? (
           <textarea
             ref={textareaRef}
@@ -425,7 +393,13 @@ export const NotebookCell = memo(function NotebookCell({
                 <ResultTable
                   result={{
                     fields: pinnedResult.columns.map((c) => ({ name: c })),
-                    rows: pinnedResult.rows as unknown[][]
+                    rows: pinnedResult.rows.map((row) => {
+                      const record: Record<string, unknown> = {}
+                      pinnedResult.columns.forEach((col, i) => {
+                        record[col] = row[i]
+                      })
+                      return record
+                    })
                   }}
                 />
               </div>
