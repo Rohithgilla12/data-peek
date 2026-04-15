@@ -26,7 +26,7 @@ interface NotebookCellProps {
 
 interface QueryResult {
   fields: { name: string }[]
-  rows: unknown[][]
+  rows: Record<string, unknown>[]
 }
 
 const MAX_DISPLAY_ROWS = 100
@@ -58,15 +58,21 @@ function ResultTable({ result }: { result: QueryResult }) {
         <tbody>
           {rows.map((row, ri) => (
             <tr key={ri} className="border-b border-border/30 hover:bg-muted/20">
-              {(row as unknown[]).map((cell, ci) => (
-                <td key={ci} className="px-2 py-1 font-mono whitespace-nowrap max-w-[300px] truncate">
-                  {cell === null || cell === undefined ? (
-                    <span className="italic text-muted-foreground/50">null</span>
-                  ) : (
-                    String(cell)
-                  )}
-                </td>
-              ))}
+              {columns.map((col, ci) => {
+                const cell = row[col]
+                return (
+                  <td
+                    key={ci}
+                    className="px-2 py-1 font-mono whitespace-nowrap max-w-[300px] truncate"
+                  >
+                    {cell === null || cell === undefined ? (
+                      <span className="italic text-muted-foreground/50">null</span>
+                    ) : (
+                      String(cell)
+                    )}
+                  </td>
+                )
+              })}
             </tr>
           ))}
         </tbody>
