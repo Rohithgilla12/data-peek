@@ -2,6 +2,8 @@ import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react'
 import { Play, MoreHorizontal, GripVertical, Check, X, Pin, PinOff } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
   Button,
   DropdownMenu,
@@ -104,6 +106,15 @@ export const NotebookCell = memo(function NotebookCell({
   onRunAndAdvance,
   onDelete
 }: NotebookCellProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: cell.id
+  })
+
+  const sortableStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  }
+
   const [isEditing, setIsEditing] = useState(false)
   const [status, setStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle')
   const [liveResult, setLiveResult] = useState<QueryResult | null>(null)
@@ -200,10 +211,13 @@ export const NotebookCell = memo(function NotebookCell({
 
   return (
     <div
+      ref={setNodeRef}
+      style={sortableStyle}
       className={cn(
         'group relative rounded-lg border transition-all duration-150',
         'border-border/50 bg-card',
-        isFocused && 'border-primary/30 shadow-[0_0_0_1px_oklch(0.55_0.15_250/0.3)]'
+        isFocused && 'border-primary/30 shadow-[0_0_0_1px_oklch(0.55_0.15_250/0.3)]',
+        isDragging && 'opacity-50 shadow-lg z-10'
       )}
       onClick={onFocus}
     >
@@ -214,12 +228,20 @@ export const NotebookCell = memo(function NotebookCell({
       )}
 
       <div className="flex items-center gap-1.5 px-2 py-1 border-b border-border/30">
-        <GripVertical
+        <button
+          type="button"
+          {...attributes}
+          {...listeners}
+          aria-label="Drag to reorder cell"
           className={cn(
-            'size-3.5 text-muted-foreground/40 shrink-0 cursor-grab',
-            'opacity-0 group-hover:opacity-100 transition-opacity'
+            'shrink-0 cursor-grab active:cursor-grabbing touch-none',
+            'opacity-0 group-hover:opacity-100 transition-opacity',
+            'text-muted-foreground/40 hover:text-muted-foreground/70'
           )}
-        />
+          onClick={(e) => e.stopPropagation()}
+        >
+          <GripVertical className="size-3.5" />
+        </button>
 
         <span
           className={cn(
