@@ -13,7 +13,9 @@ import type {
   TableSizeInfo,
   CacheStats,
   LockInfo,
-  DatabaseSizeInfo
+  DatabaseSizeInfo,
+  SchemaIntelCheckId,
+  SchemaIntelReport
 } from '@shared/index'
 
 /**
@@ -129,6 +131,15 @@ export interface DatabaseAdapter {
 
   /** Cancel/kill a running query by PID */
   killQuery(config: ConnectionConfig, pid: number): Promise<{ success: boolean; error?: string }>
+
+  /**
+   * Run a set of schema diagnostic checks against the database. If `checks`
+   * is omitted, the adapter runs every check it supports.
+   */
+  runSchemaIntel(
+    config: ConnectionConfig,
+    checks?: SchemaIntelCheckId[]
+  ): Promise<SchemaIntelReport>
 }
 
 // Import adapters

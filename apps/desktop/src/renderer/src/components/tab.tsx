@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { FileCode, Table2, Pin, X, Network } from 'lucide-react'
+import { FileCode, Table2, Pin, X, Network, SearchCode } from 'lucide-react'
 import { cn, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from '@data-peek/ui'
 import type { Tab as TabType } from '@/stores/tab-store'
 
@@ -38,7 +38,14 @@ export function Tab({
     transition
   }
 
-  const Icon = tab.type === 'query' ? FileCode : tab.type === 'erd' ? Network : Table2
+  const Icon =
+    tab.type === 'query'
+      ? FileCode
+      : tab.type === 'erd'
+        ? Network
+        : tab.type === 'schema-intel'
+          ? SearchCode
+          : Table2
 
   return (
     <ContextMenu>

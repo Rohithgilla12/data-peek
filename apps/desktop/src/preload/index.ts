@@ -58,6 +58,8 @@ import type {
   CacheStats,
   LockInfo,
   DatabaseSizeInfo,
+  SchemaIntelCheckId,
+  SchemaIntelReport,
   PgExportOptions,
   PgExportProgress,
   PgExportResult,
@@ -523,6 +525,13 @@ const api = {
   },
   files: {
     openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog')
+  },
+  intel: {
+    run: (
+      config: ConnectionConfig,
+      checks?: SchemaIntelCheckId[]
+    ): Promise<IpcResponse<SchemaIntelReport>> =>
+      ipcRenderer.invoke('intel:run', { config, checks })
   },
   health: {
     activeQueries: (config: ConnectionConfig): Promise<IpcResponse<ActiveQuery[]>> =>

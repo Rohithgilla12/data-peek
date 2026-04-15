@@ -20,6 +20,7 @@ import { registerPgNotifyHandlers } from './pg-notify-handlers'
 import { registerHealthHandlers } from './health-handlers'
 import { registerPgExportImportHandlers } from './pg-export-import-handlers'
 import { registerNotebookHandlers } from './notebook-handlers'
+import { registerIntelHandlers } from './intel-handlers'
 
 const log = createLogger('ipc')
 
@@ -89,6 +90,9 @@ export function registerAllHandlers(stores: IpcStores, notebookStorage: Notebook
   // SQL Notebooks
   registerNotebookHandlers(notebookStorage)
 
+  // Schema Intel / diagnostics
+  registerIntelHandlers()
+
   log.debug('All handlers registered')
 }
 
@@ -108,3 +112,4 @@ export { registerPgNotifyHandlers } from './pg-notify-handlers'
 export { registerHealthHandlers } from './health-handlers'
 export { registerPgExportImportHandlers } from './pg-export-import-handlers'
 export { registerNotebookHandlers } from './notebook-handlers'
+export { registerIntelHandlers } from './intel-handlers'

@@ -24,8 +24,11 @@ import type {
   TableSizeInfo,
   CacheStats,
   LockInfo,
-  DatabaseSizeInfo
+  DatabaseSizeInfo,
+  SchemaIntelCheckId,
+  SchemaIntelReport
 } from '@shared/index'
+import { runMysqlSchemaIntel } from '../schema-intel/mysql'
 import type {
   DatabaseAdapter,
   AdapterQueryResult,
@@ -1527,6 +1530,28 @@ export class MySQLAdapter implements DatabaseAdapter {
       return { success: true }
     } catch (err) {
       return { success: false, error: String(err) }
+    } finally {
+      if (connection) await connection.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async runSchemaIntel(
+    config: ConnectionConfig,
+    checks?: SchemaIntelCheckId[]
+  ): Promise<SchemaIntelReport> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    let connection: mysql.Connection | null = null
+
+    try {
+      connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
+      return await runMysqlSchemaIntel(connection, config.database, checks)
     } finally {
       if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)

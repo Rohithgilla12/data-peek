@@ -26,8 +26,11 @@ import {
   type TableSizeInfo,
   type CacheStats,
   type LockInfo,
-  type DatabaseSizeInfo
+  type DatabaseSizeInfo,
+  type SchemaIntelCheckId,
+  type SchemaIntelReport
 } from '@shared/index'
+import { runPostgresSchemaIntel } from '../schema-intel/postgres'
 import type {
   DatabaseAdapter,
   AdapterQueryResult,
@@ -1629,6 +1632,28 @@ export class PostgresAdapter implements DatabaseAdapter {
       return cancelled
         ? { success: true }
         : { success: false, error: 'Failed to cancel query - process may have already completed' }
+    } finally {
+      await client.end().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async runSchemaIntel(
+    config: ConnectionConfig,
+    checks?: SchemaIntelCheckId[]
+  ): Promise<SchemaIntelReport> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const client = new Client(buildClientConfig(config, tunnelOverrides))
+
+    try {
+      await client.connect()
+      return await runPostgresSchemaIntel(client, checks)
     } finally {
       await client.end().catch(() => {})
       closeTunnel(tunnelSession)

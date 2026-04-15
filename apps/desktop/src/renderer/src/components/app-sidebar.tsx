@@ -1,4 +1,4 @@
-import { Activity, Bell, MessageCircleQuestion, Settings2 } from 'lucide-react'
+import { Activity, Bell, MessageCircleQuestion, SearchCode, Settings2 } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 import { ConnectionSwitcher } from '@/components/connection-switcher'
@@ -33,6 +33,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   )
   const createPgNotificationsTab = useTabStore((s) => s.createPgNotificationsTab)
   const createHealthMonitorTab = useTabStore((s) => s.createHealthMonitorTab)
+  const createSchemaIntelTab = useTabStore((s) => s.createSchemaIntelTab)
   const isPostgres = activeConnection?.dbType === 'postgresql'
   const pokemonBuddyEnabled = useSettingsStore((s) => s.pokemonBuddyEnabled)
 
@@ -45,6 +46,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const handleOpenHealthMonitor = () => {
     if (activeConnectionId) {
       createHealthMonitorTab(activeConnectionId)
+    }
+  }
+
+  const handleOpenSchemaIntel = () => {
+    if (activeConnectionId) {
+      createSchemaIntelTab(activeConnectionId)
     }
   }
 
@@ -99,6 +106,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                       <SidebarMenuButton onClick={handleOpenHealthMonitor}>
                         <Activity className="size-4" />
                         <span>Health Monitor</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton onClick={handleOpenSchemaIntel}>
+                        <SearchCode className="size-4" />
+                        <span>Schema Intel</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   </SidebarMenu>

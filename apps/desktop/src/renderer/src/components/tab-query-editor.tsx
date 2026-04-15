@@ -87,6 +87,7 @@ import { TableDesigner } from '@/components/table-designer'
 import { DataGenerator } from '@/components/data-generator'
 import { PgNotificationsPanel } from '@/components/pg-notifications-panel'
 import { HealthMonitor } from '@/components/health-monitor'
+import { SchemaIntelPanel } from '@/components/schema-intel'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
 import { ShareQueryDialog } from '@/components/share-query-dialog'
 import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image-dialog'
@@ -294,6 +295,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       currentTab.type === 'data-generator' ||
       currentTab.type === 'pg-notifications' ||
       currentTab.type === 'health-monitor' ||
+      currentTab.type === 'schema-intel' ||
       currentTab.type === 'notebook' ||
       !tabConnection ||
       currentTab.isExecuting ||
@@ -445,6 +447,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'schema-intel' ||
       tab.type === 'notebook'
     )
       return
@@ -491,6 +494,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'schema-intel' ||
       tab.type === 'notebook' ||
       !tab.query.trim()
     )
@@ -509,6 +513,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         tab.type === 'data-generator' ||
         tab.type === 'pg-notifications' ||
         tab.type === 'health-monitor' ||
+        tab.type === 'schema-intel' ||
         tab.type === 'notebook' ||
         !tabConnection ||
         tab.isExecuting ||
@@ -565,6 +570,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'schema-intel' ||
       tab.type === 'notebook' ||
       !tabConnection ||
       isExplaining ||
@@ -607,6 +613,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'schema-intel' ||
       tab.type === 'notebook' ||
       !tabConnection ||
       isPerfAnalyzing ||
@@ -678,6 +685,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'schema-intel' ||
       tab.type === 'notebook' ||
       !tab.result?.columns
     )
@@ -729,6 +737,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'schema-intel' ||
       tab.type === 'notebook' ||
       !tab.result?.columns ||
       tab.type !== 'table-preview'
@@ -910,6 +919,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         tab.type === 'data-generator' ||
         tab.type === 'pg-notifications' ||
         tab.type === 'health-monitor' ||
+        tab.type === 'schema-intel' ||
         tab.type === 'notebook'
       )
         return
@@ -1009,6 +1019,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'data-generator' ||
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
+      tab.type === 'schema-intel' ||
       tab.type === 'notebook'
     )
       return ''
@@ -1154,6 +1165,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Render Health Monitor dashboard
   if (tab.type === 'health-monitor') {
     return <HealthMonitor tabId={tabId} />
+  }
+
+  // Render Schema Intel / diagnostics panel
+  if (tab.type === 'schema-intel') {
+    return <SchemaIntelPanel tabId={tabId} />
   }
 
   // Get statement results for multi-statement queries

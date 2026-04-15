@@ -49,6 +49,8 @@ import type {
   CacheStats,
   LockInfo,
   DatabaseSizeInfo,
+  SchemaIntelCheckId,
+  SchemaIntelReport,
   PgExportOptions,
   PgExportProgress,
   PgExportResult,
@@ -432,6 +434,12 @@ interface DataPeekApi {
     reconnect: (connectionId: string) => Promise<IpcResponse<void>>
     getStatus: (connectionId: string) => Promise<IpcResponse<PgNotificationConnectionStatus | null>>
     getAllStatuses: () => Promise<IpcResponse<PgNotificationConnectionStatus[]>>
+  }
+  intel: {
+    run: (
+      config: ConnectionConfig,
+      checks?: SchemaIntelCheckId[]
+    ) => Promise<IpcResponse<SchemaIntelReport>>
   }
   health: {
     activeQueries: (config: ConnectionConfig) => Promise<IpcResponse<ActiveQuery[]>>
