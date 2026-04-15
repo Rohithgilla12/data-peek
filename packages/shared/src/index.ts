@@ -2313,3 +2313,21 @@ export interface PgImportResult {
   errors: Array<{ statementIndex: number; statement: string; error: string }>;
   durationMs: number;
 }
+
+export type {
+  SessionState,
+  ParsedStatement,
+  StepSessionError,
+  StartStepRequest,
+  StartStepResponse,
+  NextStepResponse,
+  SkipStepResponse,
+  ContinueStepResponse,
+  RetryStepResponse,
+  StopStepResponse
+} from './step-types'
+export {
+  STEP_SESSION_IDLE_TIMEOUT_MS,
+  STEP_SESSION_CLEANUP_INTERVAL_MS,
+  DDL_KEYWORD_REGEX
+} from './step-types'
