@@ -72,7 +72,14 @@ import type {
   CreateNotebookInput,
   UpdateNotebookInput,
   AddCellInput,
-  UpdateCellInput
+  UpdateCellInput,
+  StartStepRequest,
+  StartStepResponse,
+  NextStepResponse,
+  SkipStepResponse,
+  ContinueStepResponse,
+  RetryStepResponse,
+  StopStepResponse
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -339,6 +346,25 @@ const api = {
       ipcRenderer.invoke('notebooks:delete-cell', cellId),
     reorderCells: (notebookId: string, cellIds: string[]): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('notebooks:reorder-cells', { notebookId, cellIds })
+  },
+  step: {
+    start: (
+      config: ConnectionConfig,
+      request: StartStepRequest
+    ): Promise<IpcResponse<StartStepResponse>> =>
+      ipcRenderer.invoke('step:start', { config, request }),
+    next: (sessionId: string): Promise<IpcResponse<NextStepResponse>> =>
+      ipcRenderer.invoke('step:next', sessionId),
+    skip: (sessionId: string): Promise<IpcResponse<SkipStepResponse>> =>
+      ipcRenderer.invoke('step:skip', sessionId),
+    continue: (sessionId: string): Promise<IpcResponse<ContinueStepResponse>> =>
+      ipcRenderer.invoke('step:continue', sessionId),
+    retry: (sessionId: string): Promise<IpcResponse<RetryStepResponse>> =>
+      ipcRenderer.invoke('step:retry', sessionId),
+    setBreakpoints: (sessionId: string, breakpoints: number[]): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('step:set-breakpoints', { sessionId, breakpoints }),
+    stop: (sessionId: string): Promise<IpcResponse<StopStepResponse>> =>
+      ipcRenderer.invoke('step:stop', sessionId)
   },
   // Scheduled queries management
   scheduledQueries: {
