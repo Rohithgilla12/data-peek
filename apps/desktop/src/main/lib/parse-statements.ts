@@ -2,6 +2,9 @@ import type { DatabaseType } from '@shared/index'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
 import type { ParsedStatement } from '@shared/index'
 import { splitStatements } from './sql-parser'
+import { createLogger } from './logger'
+
+const log = createLogger('parse-statements')
 
 /**
  * Strip leading single-line (--) and block (/* *\/) comments from a SQL statement,
@@ -48,14 +51,21 @@ export function parseStatementsWithLines(
 
     const startInSql = sql.indexOf(sqlOnly, searchFrom)
     if (startInSql === -1) {
+      const internalNewlines = (sqlOnly.match(/\n/g) ?? []).length
+      const fallbackStartLine = countLines(sql, searchFrom) + 1
+      log.warn(
+        `parseStatementsWithLines: could not locate statement #${result.length} in source SQL; ` +
+        `using approximate line range ${fallbackStartLine}-${fallbackStartLine + internalNewlines}`
+      )
       result.push({
         index: result.length,
         sql: sqlOnly,
-        startLine: countLines(sql, searchFrom) + 1,
-        endLine: countLines(sql, searchFrom + sqlOnly.length) + 1,
+        startLine: fallbackStartLine,
+        endLine: fallbackStartLine + internalNewlines,
         isDDL: DDL_KEYWORD_REGEX.test(sqlOnly)
       })
-      searchFrom += sqlOnly.length
+      // Don't advance searchFrom — further statements can't be reliably located either
+      // Just continue, accepting approximate line numbers for remaining statements
       continue
     }
 

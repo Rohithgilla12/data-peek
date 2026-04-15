@@ -1,4 +1,27 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+
+vi.mock('electron-log/main', () => ({
+  default: {
+    initialize: vi.fn(),
+    transports: {
+      console: { level: 'debug' },
+      file: { level: 'debug', maxSize: 0, format: '' }
+    },
+    scope: () => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn()
+    })
+  }
+}))
+
+vi.mock('electron', () => ({
+  app: {
+    isPackaged: false
+  }
+}))
+
 import { parseStatementsWithLines } from '../lib/parse-statements'
 
 describe('parseStatementsWithLines', () => {

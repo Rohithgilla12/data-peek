@@ -20,6 +20,9 @@ import { initSchedulerService, stopAllSchedules } from './scheduler-service'
 import { initDashboardService } from './dashboard-service'
 import { cleanup as cleanupPgNotify } from './pg-notification-listener'
 import { StepSessionRegistry } from './step-session'
+import { createLogger } from './lib/logger'
+
+const log = createLogger('app')
 
 // Store instances
 let store: DpStorage<{ connections: ConnectionConfig[] }>
@@ -139,13 +142,26 @@ app.whenReady().then(async () => {
 })
 
 // macOS: set forceQuit flag before quitting
-app.on('before-quit', async () => {
+let isCleaningUp = false
+app.on('before-quit', (event) => {
+  if (isCleaningUp) return
+  event.preventDefault()
+  isCleaningUp = true
+
   setForceQuit(true)
   stopPeriodicChecks()
   stopAllSchedules()
   cleanupPgNotify()
-  await stepSessionRegistry.cleanupAll()
-  stepSessionRegistry.stopCleanupTimer()
+
+  Promise.race([
+    stepSessionRegistry.cleanupAll(),
+    new Promise((resolve) => setTimeout(resolve, 3000))
+  ])
+    .catch((err) => log.error('cleanupAll failed during quit:', err))
+    .finally(() => {
+      stepSessionRegistry.stopCleanupTimer()
+      app.quit()
+    })
 })
 
 // Quit when all windows are closed (except macOS)

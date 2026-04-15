@@ -94,10 +94,7 @@ export const useStepStore = create<StepState>((set, get) => ({
         cursorIndex,
         state,
         lastResult: stmtResult,
-        lastError:
-          state === 'errored'
-            ? { statementIndex: stmtResult.statementIndex, message: 'Query failed' }
-            : null
+        lastError: result.data!.error ?? null
       }))
     )
   },
@@ -129,7 +126,8 @@ export const useStepStore = create<StepState>((set, get) => ({
         ...sess,
         cursorIndex,
         state,
-        lastResult: results[results.length - 1] ?? sess.lastResult
+        lastResult: results[results.length - 1] ?? sess.lastResult,
+        lastError: result.data!.error ?? null
       }))
     )
   },
@@ -150,7 +148,8 @@ export const useStepStore = create<StepState>((set, get) => ({
         ...sess,
         cursorIndex,
         state,
-        lastResult: stmtResult
+        lastResult: stmtResult,
+        lastError: result.data!.error ?? null
       }))
     )
   },

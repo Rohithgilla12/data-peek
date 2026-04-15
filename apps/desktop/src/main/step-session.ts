@@ -85,10 +85,16 @@ export class StepSessionRegistry {
     }
 
     const client = this.createClient(input.config)
-    await client.connect()
-
-    if (input.inTransaction) {
-      await client.query('BEGIN')
+    try {
+      await client.connect()
+      if (input.inTransaction) {
+        await client.query('BEGIN')
+      }
+    } catch (err) {
+      await client.end().catch((endErr) => {
+        log.warn(`Cleanup after failed start: client.end() also failed:`, endErr)
+      })
+      throw err
     }
 
     const sessionId = randomUUID()
@@ -142,7 +148,7 @@ export class StepSessionRegistry {
     }
     const executedIndices: number[] = []
     const results: StatementResult[] = []
-    let stoppedAt = -1
+    let stoppedAt: number | null = null
 
     while (session.cursorIndex < session.statements.length) {
       if (executedIndices.length > 0 && session.breakpoints.has(session.cursorIndex)) {
@@ -153,13 +159,20 @@ export class StepSessionRegistry {
       try {
         const response = await this.executeCurrent(session, { advance: true })
 
+        executedIndices.push(response.statementIndex)
+        results.push(response.result)
+
         if ((session.state as SessionState) === 'errored') {
           break
         }
-
-        executedIndices.push(response.statementIndex)
-        results.push(response.result)
-      } catch {
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        log.error(`continue() loop aborted unexpectedly at index ${session.cursorIndex}:`, err)
+        session.state = 'errored'
+        session.lastError = {
+          statementIndex: session.cursorIndex,
+          message
+        }
         break
       }
     }
@@ -171,7 +184,14 @@ export class StepSessionRegistry {
       session.state = 'done'
     }
 
-    return { executedIndices, results, stoppedAt, state: session.state, cursorIndex: session.cursorIndex }
+    return {
+      executedIndices,
+      results,
+      stoppedAt,
+      state: session.state,
+      cursorIndex: session.cursorIndex,
+      error: session.lastError ?? undefined
+    }
   }
 
   async retry(sessionId: string): Promise<RetryStepResponse> {
@@ -186,7 +206,12 @@ export class StepSessionRegistry {
     }
 
     const response = await this.executeCurrent(session, { advance: true })
-    return { result: response.result, state: response.state, cursorIndex: response.cursorIndex }
+    return {
+      result: response.result,
+      state: response.state,
+      cursorIndex: response.cursorIndex,
+      error: response.error
+    }
   }
 
   async setBreakpoints(sessionId: string, breakpoints: number[]): Promise<void> {
@@ -200,11 +225,14 @@ export class StepSessionRegistry {
     if (!session) return { rolledBack: false }
 
     let rolledBack = false
+    let rollbackError: string | undefined
+
     if (session.inTransaction && (session.state === 'paused' || session.state === 'errored')) {
       try {
         await session.client.query('ROLLBACK')
         rolledBack = true
       } catch (err) {
+        rollbackError = err instanceof Error ? err.message : String(err)
         log.warn(`ROLLBACK failed for session ${sessionId}:`, err)
       }
     }
@@ -215,7 +243,7 @@ export class StepSessionRegistry {
 
     this.sessions.delete(sessionId)
     log.debug(`Stopped session ${sessionId} (rolledBack=${rolledBack})`)
-    return { rolledBack }
+    return { rolledBack, rollbackError }
   }
 
   async cleanupWindow(windowId: number): Promise<void> {
@@ -294,6 +322,7 @@ export class StepSessionRegistry {
       return { statementIndex, result, state: session.state, cursorIndex: session.cursorIndex }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
+      log.warn(`Statement ${statementIndex} failed:`, err)
       session.state = 'errored'
       session.lastError = { statementIndex, message }
       session.lastActivity = Date.now()
@@ -307,7 +336,13 @@ export class StepSessionRegistry {
         durationMs: Date.now() - stmtStart,
         isDataReturning: false
       }
-      return { statementIndex, result, state: session.state, cursorIndex: session.cursorIndex }
+      return {
+        statementIndex,
+        result,
+        state: session.state,
+        cursorIndex: session.cursorIndex,
+        error: session.lastError
+      }
     }
   }
 }

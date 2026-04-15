@@ -181,7 +181,7 @@ describe('StepSessionRegistry', () => {
 
       const response = await registry.continue(sessionId)
       expect(response.executedIndices).toEqual([0, 1, 2])
-      expect(response.stoppedAt).toBe(-1)
+      expect(response.stoppedAt).toBe(null)
       expect(response.state).toBe('done')
     })
 
@@ -216,8 +216,9 @@ describe('StepSessionRegistry', () => {
       )
 
       const response = await registry.continue(sessionId)
-      expect(response.executedIndices).toEqual([0])
+      expect(response.executedIndices).toEqual([0, 1])
       expect(response.state).toBe('errored')
+      expect(response.error).toEqual({ statementIndex: 1, message: 'boom' })
     })
   })
 

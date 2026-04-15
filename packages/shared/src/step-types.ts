@@ -15,6 +15,11 @@ export interface StepSessionError {
   message: string
 }
 
+export interface SessionSnapshot {
+  state: SessionState
+  cursorIndex: number
+}
+
 export interface StartStepRequest {
   tabId: string
   sql: string
@@ -26,11 +31,10 @@ export interface StartStepResponse {
   statements: ParsedStatement[]
 }
 
-export interface NextStepResponse {
+export interface NextStepResponse extends SessionSnapshot {
   statementIndex: number
   result: StatementResult
-  state: SessionState
-  cursorIndex: number
+  error?: StepSessionError
 }
 
 export interface SkipStepResponse {
@@ -39,22 +43,21 @@ export interface SkipStepResponse {
   cursorIndex: number
 }
 
-export interface ContinueStepResponse {
+export interface ContinueStepResponse extends SessionSnapshot {
   executedIndices: number[]
   results: StatementResult[]
-  stoppedAt: number
-  state: SessionState
-  cursorIndex: number
+  stoppedAt: number | null
+  error?: StepSessionError
 }
 
-export interface RetryStepResponse {
+export interface RetryStepResponse extends SessionSnapshot {
   result: StatementResult
-  state: SessionState
-  cursorIndex: number
+  error?: StepSessionError
 }
 
 export interface StopStepResponse {
   rolledBack: boolean
+  rollbackError?: string
 }
 
 export const STEP_SESSION_IDLE_TIMEOUT_MS = 10 * 60 * 1000
