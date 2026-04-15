@@ -153,7 +153,7 @@ export class StepSessionRegistry {
       try {
         const response = await this.executeCurrent(session, { advance: true })
 
-        if (session.state === 'errored') {
+        if ((session.state as SessionState) === 'errored') {
           break
         }
 
@@ -164,7 +164,10 @@ export class StepSessionRegistry {
       }
     }
 
-    if (session.cursorIndex >= session.statements.length && session.state !== 'errored') {
+    if (
+      session.cursorIndex >= session.statements.length &&
+      (session.state as SessionState) !== 'errored'
+    ) {
       session.state = 'done'
     }
 
