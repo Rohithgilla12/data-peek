@@ -118,6 +118,7 @@ describe('StepSessionRegistry', () => {
       expect(response.statementIndex).toBe(0)
       expect(response.result.rowCount).toBe(1)
       expect(response.state).toBe('paused')
+      expect(response.cursorIndex).toBe(1)
     })
 
     it('transitions to done after last statement', async () => {

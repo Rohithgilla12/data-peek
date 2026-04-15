@@ -105,6 +105,7 @@ import { StepRibbon } from './step-ribbon'
 import { StepResultsTabs } from './step-results-tabs'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
+import * as monacoNs from 'monaco-editor'
 import type { editor as monacoEditor } from 'monaco-editor'
 
 /** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
@@ -208,6 +209,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Monaco editor ref for step-through decorations
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
+  const [editorMounted, setEditorMounted] = useState(false)
   const activeLineDecoIds = useRef<string[]>([])
   const breakpointDecoIds = useRef<string[]>([])
 
@@ -707,16 +709,49 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   }, [tab, stepSession, startStep, tabId, inTransactionMode])
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const isMod = e.metaKey || e.ctrlKey
-      if (isMod && e.shiftKey && e.key === 'Enter') {
-        e.preventDefault()
+    const editor = editorRef.current
+    if (!editor || !editorMounted) return
+
+    const disposable = editor.addAction({
+      id: 'datapeek.start-step',
+      label: 'Start Step-Through',
+      keybindings: [monacoNs.KeyMod.CtrlCmd | monacoNs.KeyMod.Shift | monacoNs.KeyCode.Enter],
+      run: () => {
         handleStartStep()
       }
+    })
+
+    return () => disposable.dispose()
+  }, [handleStartStep, editorMounted])
+
+  useEffect(() => {
+    const editor = editorRef.current
+    if (!editor || !editorMounted || !stepSession) return
+
+    const nextAction = editor.addAction({
+      id: 'datapeek.step-next',
+      label: 'Step: Next',
+      keybindings: [monacoNs.KeyMod.Shift | monacoNs.KeyCode.Enter],
+      run: () => {
+        const current = useStepStore.getState().sessions.get(tabId)
+        if (current?.state === 'paused') useStepStore.getState().nextStep(tabId)
+      }
+    })
+
+    const stopAction = editor.addAction({
+      id: 'datapeek.step-stop',
+      label: 'Step: Stop',
+      keybindings: [monacoNs.KeyCode.Escape],
+      run: () => {
+        useStepStore.getState().stopStep(tabId)
+      }
+    })
+
+    return () => {
+      nextAction.dispose()
+      stopAction.dispose()
     }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [handleStartStep])
+  }, [stepSession, tabId, editorMounted])
 
   // Active statement highlight
   useEffect(() => {
@@ -1364,6 +1399,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               glyphMargin={!!stepSession}
               onMount={(editor) => {
                 editorRef.current = editor
+                setEditorMounted(true)
               }}
             />
           </div>

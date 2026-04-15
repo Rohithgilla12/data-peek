@@ -132,7 +132,7 @@ export class StepSessionRegistry {
     if (session.cursorIndex >= session.statements.length) {
       session.state = 'done'
     }
-    return { statementIndex: skippedIndex, state: session.state }
+    return { statementIndex: skippedIndex, state: session.state, cursorIndex: session.cursorIndex }
   }
 
   async continue(sessionId: string): Promise<ContinueStepResponse> {
@@ -171,7 +171,7 @@ export class StepSessionRegistry {
       session.state = 'done'
     }
 
-    return { executedIndices, results, stoppedAt, state: session.state }
+    return { executedIndices, results, stoppedAt, state: session.state, cursorIndex: session.cursorIndex }
   }
 
   async retry(sessionId: string): Promise<RetryStepResponse> {
@@ -186,7 +186,7 @@ export class StepSessionRegistry {
     }
 
     const response = await this.executeCurrent(session, { advance: true })
-    return { result: response.result, state: response.state }
+    return { result: response.result, state: response.state, cursorIndex: response.cursorIndex }
   }
 
   async setBreakpoints(sessionId: string, breakpoints: number[]): Promise<void> {
@@ -291,7 +291,7 @@ export class StepSessionRegistry {
       session.lastActivity = Date.now()
       session.lastError = null
 
-      return { statementIndex, result, state: session.state }
+      return { statementIndex, result, state: session.state, cursorIndex: session.cursorIndex }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
       session.state = 'errored'
@@ -307,7 +307,7 @@ export class StepSessionRegistry {
         durationMs: Date.now() - stmtStart,
         isDataReturning: false
       }
-      return { statementIndex, result, state: session.state }
+      return { statementIndex, result, state: session.state, cursorIndex: session.cursorIndex }
     }
   }
 }

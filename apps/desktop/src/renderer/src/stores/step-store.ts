@@ -87,11 +87,11 @@ export const useStepStore = create<StepState>((set, get) => ({
       return
     }
 
-    const { result: stmtResult, state } = result.data
+    const { result: stmtResult, state, cursorIndex } = result.data
     set((s) =>
       updateSession(s, tabId, (sess) => ({
         ...sess,
-        cursorIndex: sess.cursorIndex + 1,
+        cursorIndex,
         state,
         lastResult: stmtResult,
         lastError:
@@ -110,7 +110,7 @@ export const useStepStore = create<StepState>((set, get) => ({
     set((s) =>
       updateSession(s, tabId, (sess) => ({
         ...sess,
-        cursorIndex: sess.cursorIndex + 1,
+        cursorIndex: result.data!.cursorIndex,
         state: result.data!.state
       }))
     )
@@ -123,11 +123,11 @@ export const useStepStore = create<StepState>((set, get) => ({
 
     const result = await window.api.step.continue(session.sessionId)
     if (!result.success || !result.data) return
-    const { executedIndices, results, state } = result.data
+    const { results, state, cursorIndex } = result.data
     set((s) =>
       updateSession(s, tabId, (sess) => ({
         ...sess,
-        cursorIndex: sess.cursorIndex + executedIndices.length,
+        cursorIndex,
         state,
         lastResult: results[results.length - 1] ?? sess.lastResult
       }))
@@ -144,11 +144,11 @@ export const useStepStore = create<StepState>((set, get) => ({
       set((s) => updateSession(s, tabId, (sess) => ({ ...sess, state: 'errored' })))
       return
     }
-    const { result: stmtResult, state } = result.data
+    const { result: stmtResult, state, cursorIndex } = result.data
     set((s) =>
       updateSession(s, tabId, (sess) => ({
         ...sess,
-        cursorIndex: sess.cursorIndex + 1,
+        cursorIndex,
         state,
         lastResult: stmtResult
       }))

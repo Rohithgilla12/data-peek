@@ -30,11 +30,13 @@ export interface NextStepResponse {
   statementIndex: number
   result: StatementResult
   state: SessionState
+  cursorIndex: number
 }
 
 export interface SkipStepResponse {
   statementIndex: number
   state: SessionState
+  cursorIndex: number
 }
 
 export interface ContinueStepResponse {
@@ -42,11 +44,13 @@ export interface ContinueStepResponse {
   results: StatementResult[]
   stoppedAt: number
   state: SessionState
+  cursorIndex: number
 }
 
 export interface RetryStepResponse {
   result: StatementResult
   state: SessionState
+  cursorIndex: number
 }
 
 export interface StopStepResponse {
