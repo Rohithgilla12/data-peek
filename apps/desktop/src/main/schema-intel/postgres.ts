@@ -45,7 +45,7 @@ async function checkTablesWithoutPk(client: Client): Promise<SchemaIntelFinding[
     LEFT JOIN pg_catalog.pg_stat_user_tables s
       ON s.schemaname = n.nspname AND s.relname = c.relname
     WHERE c.relkind = 'r'
-      AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+      AND n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema'
       AND NOT EXISTS (
         SELECT 1 FROM pg_catalog.pg_constraint con
         WHERE con.conrelid = c.oid AND con.contype = 'p'
@@ -89,12 +89,13 @@ async function checkMissingFkIndexes(client: Client): Promise<SchemaIntelFinding
       JOIN pg_catalog.pg_class cl ON cl.oid = con.conrelid
       JOIN pg_catalog.pg_namespace n ON n.oid = cl.relnamespace
       WHERE con.contype = 'f'
-        AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+        AND n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema'
     ),
     idx AS (
       SELECT
         i.indrelid,
-        i.indkey
+        i.indkey,
+        i.indpred
       FROM pg_catalog.pg_index i
       WHERE i.indisvalid
     )
@@ -113,6 +114,7 @@ async function checkMissingFkIndexes(client: Client): Promise<SchemaIntelFinding
       SELECT 1
       FROM idx
       WHERE idx.indrelid = fk.table_oid
+        AND idx.indpred IS NULL
         AND (
           -- index leading columns equal fk columns (in fk order)
           (SELECT array_agg(idx.indkey[n-1] ORDER BY n)
@@ -159,7 +161,7 @@ async function checkDuplicateIndexes(client: Client): Promise<SchemaIntelFinding
     JOIN pg_catalog.pg_class i ON i.oid = idx.indexrelid
     JOIN pg_catalog.pg_class c ON c.oid = idx.indrelid
     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-    WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+    WHERE n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema'
       AND idx.indisvalid
     GROUP BY n.nspname, c.relname, idx.indkey, pg_get_indexdef(idx.indexrelid)
     HAVING count(*) > 1
@@ -244,7 +246,7 @@ async function checkInvalidIndexes(client: Client): Promise<SchemaIntelFinding[]
     JOIN pg_catalog.pg_class c ON c.oid = ix.indrelid
     JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
     WHERE NOT ix.indisvalid
-      AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+      AND n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema'
     `
   )
   return rows.map((row) => {
@@ -366,7 +368,7 @@ async function checkNullableFks(client: Client): Promise<SchemaIntelFinding[]> {
     JOIN pg_catalog.pg_class cl ON cl.oid = con.conrelid
     JOIN pg_catalog.pg_namespace n ON n.oid = cl.relnamespace
     WHERE con.contype = 'f'
-      AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+      AND n.nspname NOT LIKE 'pg_%' AND n.nspname <> 'information_schema'
     `
   )
   return rows

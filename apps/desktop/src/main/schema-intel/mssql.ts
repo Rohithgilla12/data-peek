@@ -17,7 +17,7 @@ async function checkTablesWithoutPk(pool: sql.ConnectionPool): Promise<SchemaInt
     SELECT
       s.name AS schema_name,
       t.name AS table_name,
-      p.rows AS estimated_rows
+      SUM(p.rows) AS estimated_rows
     FROM sys.tables t
     JOIN sys.schemas s ON s.schema_id = t.schema_id
     LEFT JOIN sys.partitions p ON p.object_id = t.object_id AND p.index_id IN (0, 1)
@@ -25,6 +25,7 @@ async function checkTablesWithoutPk(pool: sql.ConnectionPool): Promise<SchemaInt
       SELECT 1 FROM sys.indexes i
       WHERE i.object_id = t.object_id AND i.is_primary_key = 1
     )
+    GROUP BY s.name, t.name
     `
   )
   return rows.map((row) => {
