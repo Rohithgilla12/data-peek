@@ -1,9 +1,5 @@
 import type mysql from 'mysql2/promise'
-import type {
-  SchemaIntelCheckId,
-  SchemaIntelFinding,
-  SchemaIntelReport
-} from '@shared/index'
+import type { SchemaIntelCheckId, SchemaIntelFinding, SchemaIntelReport } from '@shared/index'
 
 const DEFAULT_MYSQL_CHECKS: SchemaIntelCheckId[] = [
   'tables_without_pk',
@@ -22,24 +18,20 @@ function qualified(schema: string, name: string): string {
   return `${qid(schema)}.${qid(name)}`
 }
 
-async function safeRun(
+async function runQuery(
   conn: mysql.Connection,
   sql: string,
   params: unknown[] = []
-): Promise<{ rows: Row[]; error?: string }> {
-  try {
-    const [result] = await conn.query(sql, params)
-    return { rows: result as Row[] }
-  } catch (err) {
-    return { rows: [], error: err instanceof Error ? err.message : String(err) }
-  }
+): Promise<Row[]> {
+  const [result] = await conn.query(sql, params)
+  return result as Row[]
 }
 
 async function checkTablesWithoutPk(
   conn: mysql.Connection,
   schema: string
 ): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     conn,
     `
     SELECT
@@ -68,7 +60,7 @@ async function checkTablesWithoutPk(
       severity: 'warning',
       title: `${s}.${t} has no primary key`,
       detail:
-        "InnoDB uses a hidden 6-byte rowid when no primary key is declared — deletes, replication and clustering all suffer. Pick a unique column and declare it PRIMARY KEY.",
+        'InnoDB uses a hidden 6-byte rowid when no primary key is declared — deletes, replication and clustering all suffer. Pick a unique column and declare it PRIMARY KEY.',
       entity: { schema: s, name: t, kind: 'table' },
       metadata: {
         estimatedRows: Number(row.estimated_rows ?? 0),
@@ -86,7 +78,7 @@ async function checkMissingFkIndexes(
   // For each single-column FK, verify there is an index starting with that
   // column. Composite FKs are skipped (rare in practice on MySQL since they
   // usually get a supporting composite index automatically).
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     conn,
     `
     SELECT
@@ -138,7 +130,7 @@ async function checkDuplicateIndexes(
   conn: mysql.Connection,
   schema: string
 ): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     conn,
     `
     SELECT
@@ -163,14 +155,15 @@ async function checkDuplicateIndexes(
   return rows.map((row) => {
     const s = String(row.schema_name)
     const t = String(row.table_name)
-    const names = String(row.index_names ?? '').split(',').filter(Boolean)
+    const names = String(row.index_names ?? '')
+      .split(',')
+      .filter(Boolean)
     const [kept, ...duplicates] = names
     return {
       checkId: 'duplicate_indexes',
       severity: 'warning',
       title: `${s}.${t} has duplicate index${duplicates.length > 1 ? 'es' : ''}: ${duplicates.join(', ')}`,
-      detail:
-        'Keeping one index is usually enough. Duplicates inflate disk usage and slow writes.',
+      detail: 'Keeping one index is usually enough. Duplicates inflate disk usage and slow writes.',
       entity: { schema: s, name: t, kind: 'table' },
       metadata: { keptIndex: kept, duplicates, columns: row.cols },
       suggestedSql: duplicates
@@ -184,7 +177,7 @@ async function checkNullableFks(
   conn: mysql.Connection,
   schema: string
 ): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     conn,
     `
     SELECT
@@ -207,7 +200,9 @@ async function checkNullableFks(
   return rows.map((row) => {
     const s = String(row.schema_name)
     const t = String(row.table_name)
-    const cols = String(row.columns ?? '').split(',').filter(Boolean)
+    const cols = String(row.columns ?? '')
+      .split(',')
+      .filter(Boolean)
     return {
       checkId: 'nullable_fks',
       severity: 'info',
@@ -221,7 +216,10 @@ async function checkNullableFks(
 }
 
 const CHECK_RUNNERS: Partial<
-  Record<SchemaIntelCheckId, (conn: mysql.Connection, schema: string) => Promise<SchemaIntelFinding[]>>
+  Record<
+    SchemaIntelCheckId,
+    (conn: mysql.Connection, schema: string) => Promise<SchemaIntelFinding[]>
+  >
 > = {
   tables_without_pk: checkTablesWithoutPk,
   missing_fk_indexes: checkMissingFkIndexes,

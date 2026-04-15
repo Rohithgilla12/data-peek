@@ -1,28 +1,17 @@
 import type sql from 'mssql'
-import type {
-  SchemaIntelCheckId,
-  SchemaIntelFinding,
-  SchemaIntelReport
-} from '@shared/index'
+import type { SchemaIntelCheckId, SchemaIntelFinding, SchemaIntelReport } from '@shared/index'
 
 const DEFAULT_MSSQL_CHECKS: SchemaIntelCheckId[] = ['tables_without_pk']
 
 type Row = Record<string, unknown>
 
-async function safeRun(
-  pool: sql.ConnectionPool,
-  query: string
-): Promise<{ rows: Row[]; error?: string }> {
-  try {
-    const result = await pool.request().query(query)
-    return { rows: result.recordset as unknown as Row[] }
-  } catch (err) {
-    return { rows: [], error: err instanceof Error ? err.message : String(err) }
-  }
+async function runQuery(pool: sql.ConnectionPool, query: string): Promise<Row[]> {
+  const result = await pool.request().query(query)
+  return result.recordset as unknown as Row[]
 }
 
 async function checkTablesWithoutPk(pool: sql.ConnectionPool): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     pool,
     `
     SELECT

@@ -77,9 +77,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
   const setActiveTab = useTabStore((s) => s.setActiveTab)
 
   const report = useIntelStore((s) => (connection ? s.reports[connection.id] : undefined))
-  const isRunning = useIntelStore((s) =>
-    connection ? Boolean(s.running[connection.id]) : false
-  )
+  const isRunning = useIntelStore((s) => (connection ? Boolean(s.running[connection.id]) : false))
   const error = useIntelStore((s) => (connection ? s.errors[connection.id] : null))
   const selectedChecks = useIntelStore((s) =>
     connection ? s.selectedChecks[connection.id] : undefined
@@ -89,16 +87,12 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
 
   const availableChecks = useMemo<SchemaIntelCheckDefinition[]>(() => {
     if (!connection) return []
-    return SCHEMA_INTEL_CHECKS.filter((c) =>
-      c.supportedDbTypes.includes(connection.dbType)
-    )
+    return SCHEMA_INTEL_CHECKS.filter((c) => c.supportedDbTypes.includes(connection.dbType))
   }, [connection])
 
   const effectiveSelected: SchemaIntelCheckId[] = useMemo(() => {
     if (!selectedChecks) return availableChecks.map((c) => c.id)
-    return selectedChecks.filter((id) =>
-      availableChecks.some((c) => c.id === id)
-    )
+    return selectedChecks.filter((id) => availableChecks.some((c) => c.id === id))
   }, [selectedChecks, availableChecks])
 
   const [expandedChecks, setExpandedChecks] = useState<Record<SchemaIntelCheckId, boolean>>(
@@ -184,9 +178,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
           </div>
           <div className="flex items-center gap-2">
             {report && (
-              <span className="text-xs text-muted-foreground">
-                Ran in {report.durationMs}ms
-              </span>
+              <span className="text-xs text-muted-foreground">Ran in {report.durationMs}ms</span>
             )}
             <Button size="sm" onClick={handleRun} disabled={isRunning} className="gap-2">
               {isRunning ? (
@@ -206,9 +198,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
               <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                 Checks
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Toggle which diagnostics to run.
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">Toggle which diagnostics to run.</p>
             </div>
             <div className="flex flex-col px-2 pb-4">
               {availableChecks.length === 0 ? (
@@ -235,9 +225,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                       />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-medium leading-tight">
-                            {check.title}
-                          </span>
+                          <span className="text-xs font-medium leading-tight">{check.title}</span>
                           {report &&
                             (findings.length > 0 ? (
                               <Badge
@@ -252,9 +240,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                             ) : wasSkipped ? (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="text-[10px] text-muted-foreground">
-                                    skipped
-                                  </span>
+                                  <span className="text-[10px] text-muted-foreground">skipped</span>
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs text-xs">
                                   {wasSkipped.reason}
@@ -484,29 +470,6 @@ function FindingRow({
         )}
       </div>
     </div>
-  )
-}
-
-interface SchemaIntelHeaderButtonProps {
-  findingsCount: number
-  severity: SchemaIntelSeverity
-}
-
-/** Small inline component used elsewhere to show a summary pill (optional). */
-export function SchemaIntelBadge({
-  findingsCount,
-  severity
-}: SchemaIntelHeaderButtonProps) {
-  return (
-    <Badge
-      variant="outline"
-      className={cn(
-        'h-5 px-1.5 text-[10px] font-semibold',
-        severityBadgeClass(severity)
-      )}
-    >
-      {findingsCount}
-    </Badge>
   )
 }
 

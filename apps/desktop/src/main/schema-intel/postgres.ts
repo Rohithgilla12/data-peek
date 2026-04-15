@@ -1,9 +1,5 @@
 import type { Client } from 'pg'
-import type {
-  SchemaIntelCheckId,
-  SchemaIntelFinding,
-  SchemaIntelReport
-} from '@shared/index'
+import type { SchemaIntelCheckId, SchemaIntelFinding, SchemaIntelReport } from '@shared/index'
 
 /**
  * Default set of checks run when the caller doesn't pass an explicit list.
@@ -22,16 +18,9 @@ const DEFAULT_PG_CHECKS: SchemaIntelCheckId[] = [
 
 type Row = Record<string, unknown>
 
-async function safeRun(
-  client: Client,
-  sql: string
-): Promise<{ rows: Row[]; error?: string }> {
-  try {
-    const result = await client.query(sql)
-    return { rows: result.rows as Row[] }
-  } catch (err) {
-    return { rows: [], error: err instanceof Error ? err.message : String(err) }
-  }
+async function runQuery(client: Client, sql: string): Promise<Row[]> {
+  const result = await client.query(sql)
+  return result.rows as Row[]
 }
 
 function qid(identifier: string): string {
@@ -43,7 +32,7 @@ function qualified(schema: string, name: string): string {
 }
 
 async function checkTablesWithoutPk(client: Client): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     client,
     `
     SELECT
@@ -85,7 +74,7 @@ async function checkTablesWithoutPk(client: Client): Promise<SchemaIntelFinding[
 
 async function checkMissingFkIndexes(client: Client): Promise<SchemaIntelFinding[]> {
   // Find FK constraints whose column list is not a prefix of any index
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     client,
     `
     WITH fk AS (
@@ -137,9 +126,7 @@ async function checkMissingFkIndexes(client: Client): Promise<SchemaIntelFinding
   return rows.map((row) => {
     const schema = String(row.schema)
     const table = String(row.table)
-    const cols = Array.isArray(row.fk_columns)
-      ? (row.fk_columns as string[])
-      : []
+    const cols = Array.isArray(row.fk_columns) ? (row.fk_columns as string[]) : []
     const colsList = cols.map(qid).join(', ')
     const idxName = `idx_${table}_${cols.join('_')}`.slice(0, 60)
     return {
@@ -147,7 +134,7 @@ async function checkMissingFkIndexes(client: Client): Promise<SchemaIntelFinding
       severity: 'warning',
       title: `${schema}.${table}(${cols.join(', ')}) is a FK without a supporting index`,
       detail:
-        "Deletes on the parent table and joins over this foreign key scan the whole child table. Add a matching index.",
+        'Deletes on the parent table and joins over this foreign key scan the whole child table. Add a matching index.',
       entity: { schema, name: table, kind: 'foreign_key' },
       metadata: { constraint: row.constraint_name, columns: cols },
       suggestedSql: cols.length
@@ -158,7 +145,7 @@ async function checkMissingFkIndexes(client: Client): Promise<SchemaIntelFinding
 }
 
 async function checkDuplicateIndexes(client: Client): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     client,
     `
     SELECT
@@ -204,7 +191,7 @@ async function checkDuplicateIndexes(client: Client): Promise<SchemaIntelFinding
 }
 
 async function checkUnusedIndexes(client: Client): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     client,
     `
     SELECT
@@ -232,7 +219,7 @@ async function checkUnusedIndexes(client: Client): Promise<SchemaIntelFinding[]>
       severity: 'info',
       title: `${schema}.${indexName} (${row.size_pretty}) has never been used`,
       detail:
-        "No reads have hit this index since the stats were reset. If uptime is long this is a safe candidate to drop.",
+        'No reads have hit this index since the stats were reset. If uptime is long this is a safe candidate to drop.',
       entity: { schema, name: indexName, kind: 'index' },
       metadata: {
         table,
@@ -245,7 +232,7 @@ async function checkUnusedIndexes(client: Client): Promise<SchemaIntelFinding[]>
 }
 
 async function checkInvalidIndexes(client: Client): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     client,
     `
     SELECT
@@ -278,7 +265,7 @@ async function checkInvalidIndexes(client: Client): Promise<SchemaIntelFinding[]
 }
 
 async function checkBloatedTables(client: Client): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     client,
     `
     SELECT
@@ -323,7 +310,7 @@ async function checkBloatedTables(client: Client): Promise<SchemaIntelFinding[]>
 }
 
 async function checkNeverVacuumed(client: Client): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     client,
     `
     SELECT
@@ -361,7 +348,7 @@ async function checkNeverVacuumed(client: Client): Promise<SchemaIntelFinding[]>
 }
 
 async function checkNullableFks(client: Client): Promise<SchemaIntelFinding[]> {
-  const { rows } = await safeRun(
+  const rows = await runQuery(
     client,
     `
     SELECT
@@ -403,19 +390,17 @@ async function checkNullableFks(client: Client): Promise<SchemaIntelFinding[]> {
     })
 }
 
-const CHECK_RUNNERS: Record<
-  SchemaIntelCheckId,
-  (client: Client) => Promise<SchemaIntelFinding[]>
-> = {
-  tables_without_pk: checkTablesWithoutPk,
-  missing_fk_indexes: checkMissingFkIndexes,
-  duplicate_indexes: checkDuplicateIndexes,
-  unused_indexes: checkUnusedIndexes,
-  invalid_indexes: checkInvalidIndexes,
-  bloated_tables: checkBloatedTables,
-  never_vacuumed: checkNeverVacuumed,
-  nullable_fks: checkNullableFks
-}
+const CHECK_RUNNERS: Record<SchemaIntelCheckId, (client: Client) => Promise<SchemaIntelFinding[]>> =
+  {
+    tables_without_pk: checkTablesWithoutPk,
+    missing_fk_indexes: checkMissingFkIndexes,
+    duplicate_indexes: checkDuplicateIndexes,
+    unused_indexes: checkUnusedIndexes,
+    invalid_indexes: checkInvalidIndexes,
+    bloated_tables: checkBloatedTables,
+    never_vacuumed: checkNeverVacuumed,
+    nullable_fks: checkNullableFks
+  }
 
 /**
  * Run the requested schema-intel checks against an already-connected pg
