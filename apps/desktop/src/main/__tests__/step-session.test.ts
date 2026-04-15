@@ -58,12 +58,16 @@ const mockConfig: ConnectionConfig = {
 
 describe('StepSessionRegistry', () => {
   let registry: StepSessionRegistry
-  let mockClient: MockClient
+  let mockClients: MockClient[]
 
   beforeEach(() => {
-    mockClient = new MockClient()
+    mockClients = []
     registry = new StepSessionRegistry({
-      createClient: (() => mockClient) as never
+      createClient: (() => {
+        const client = new MockClient()
+        mockClients.push(client)
+        return client
+      }) as never
     })
   })
 
@@ -88,7 +92,7 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1;',
         inTransaction: true
       })
-      expect(mockClient.calls).toContain('BEGIN')
+      expect(mockClients[0].calls).toContain('BEGIN')
     })
 
     it('does not run BEGIN when inTransaction is false', async () => {
@@ -99,7 +103,93 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1;',
         inTransaction: false
       })
-      expect(mockClient.calls).not.toContain('BEGIN')
+      expect(mockClients[0].calls).not.toContain('BEGIN')
+    })
+  })
+
+  describe('start error handling', () => {
+    it('rejects and cleans up client when connect fails', async () => {
+      const failingRegistry = new StepSessionRegistry({
+        createClient: (() => {
+          const c = new MockClient()
+          c.connect = async () => { throw new Error('connection refused') }
+          mockClients.push(c)
+          return c
+        }) as never
+      })
+      await expect(
+        failingRegistry.start({
+          config: mockConfig,
+          tabId: 'tab-1',
+          windowId: 1,
+          sql: 'SELECT 1',
+          inTransaction: false
+        })
+      ).rejects.toThrow('connection refused')
+      expect(mockClients[0].ended).toBe(true)
+    })
+
+    it('rejects and cleans up client when BEGIN fails in transaction mode', async () => {
+      const failingRegistry = new StepSessionRegistry({
+        createClient: (() => {
+          const c = new MockClient()
+          c.responses.push({ error: new Error('permission denied for BEGIN') })
+          mockClients.push(c)
+          return c
+        }) as never
+      })
+      await expect(
+        failingRegistry.start({
+          config: mockConfig,
+          tabId: 'tab-1',
+          windowId: 1,
+          sql: 'SELECT 1',
+          inTransaction: true
+        })
+      ).rejects.toThrow('permission denied')
+      expect(mockClients[0].ended).toBe(true)
+    })
+
+    it('rejects on empty SQL without creating a client', async () => {
+      const capturedClients: MockClient[] = []
+      const emptyRegistry = new StepSessionRegistry({
+        createClient: (() => {
+          const c = new MockClient()
+          capturedClients.push(c)
+          return c
+        }) as never
+      })
+      await expect(
+        emptyRegistry.start({
+          config: mockConfig,
+          tabId: 'tab-1',
+          windowId: 1,
+          sql: '',
+          inTransaction: false
+        })
+      ).rejects.toThrow(/no statements/i)
+      expect(capturedClients).toHaveLength(0)
+    })
+
+    it('rejects on whitespace-only SQL without creating a client', async () => {
+      const capturedClients: MockClient[] = []
+      const wsRegistry = new StepSessionRegistry({
+        createClient: (() => {
+          const c = new MockClient()
+          capturedClients.push(c)
+          return c
+        }) as never
+      })
+      await expect(
+        wsRegistry.start({
+          config: mockConfig,
+          tabId: 'tab-1',
+          windowId: 1,
+          sql: '   \n\n-- only comment\n',
+          inTransaction: false
+        })
+      ).rejects.toThrow(/no statements/i)
+      expect(capturedClients).toHaveLength(0)
     })
   })
 
@@ -112,7 +202,7 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1; SELECT 2;',
         inTransaction: false
       })
-      mockClient.responses.push({ rows: [{ a: 1 }], rowCount: 1 })
+      mockClients[0].responses.push({ rows: [{ a: 1 }], rowCount: 1 })
 
       const response = await registry.next(sessionId)
       expect(response.statementIndex).toBe(0)
@@ -129,7 +219,7 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1;',
         inTransaction: false
       })
-      mockClient.responses.push({ rows: [], rowCount: 0 })
+      mockClients[0].responses.push({ rows: [], rowCount: 0 })
 
       const response = await registry.next(sessionId)
       expect(response.state).toBe('done')
@@ -143,10 +233,48 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1;',
         inTransaction: false
       })
-      mockClient.responses.push({ error: new Error('syntax error') })
+      mockClients[0].responses.push({ error: new Error('syntax error') })
 
       const response = await registry.next(sessionId)
       expect(response.state).toBe('errored')
+    })
+  })
+
+  describe('concurrent operations', () => {
+    it('double-click on Next does not double-execute', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1; SELECT 2;',
+        inTransaction: false
+      })
+
+      // Push only ONE response — if both Next calls execute, the second
+      // will get an empty response (fallback in MockClient) and we'll see
+      // TWO queries run against mockClients[0]
+      mockClients[0].responses.push({ rowCount: 1 })
+
+      const callsBefore = mockClients[0].calls.length
+
+      // Fire two next() concurrently without awaiting the first
+      const [r1, r2] = await Promise.allSettled([
+        registry.next(sessionId),
+        registry.next(sessionId)
+      ])
+
+      // Exactly one should succeed; the other should reject because
+      // state !== 'paused' once the first is running
+      const succeeded = [r1, r2].filter((r) => r.status === 'fulfilled')
+      const rejected = [r1, r2].filter((r) => r.status === 'rejected')
+
+      // If this test fails because both succeed, that's a real bug.
+      // Expected behavior: one succeeds, one rejects.
+      expect(succeeded).toHaveLength(1)
+      expect(rejected).toHaveLength(1)
+      // Only one statement actually executed:
+      const newCalls = mockClients[0].calls.length - callsBefore
+      expect(newCalls).toBe(1)
     })
   })
 
@@ -159,12 +287,24 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1; SELECT 2;',
         inTransaction: false
       })
-      const callsBefore = mockClient.calls.length
+      const callsBefore = mockClients[0].calls.length
 
       const response = await registry.skip(sessionId)
       expect(response.statementIndex).toBe(0)
       expect(response.state).toBe('paused')
-      expect(mockClient.calls.length).toBe(callsBefore)
+      expect(mockClients[0].calls.length).toBe(callsBefore)
+    })
+
+    it('skip on the last statement transitions to done', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1',
+        inTransaction: false
+      })
+      const response = await registry.skip(sessionId)
+      expect(response.state).toBe('done')
     })
   })
 
@@ -177,7 +317,7 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1; SELECT 2; SELECT 3;',
         inTransaction: false
       })
-      mockClient.responses.push({ rowCount: 1 }, { rowCount: 2 }, { rowCount: 3 })
+      mockClients[0].responses.push({ rowCount: 1 }, { rowCount: 2 }, { rowCount: 3 })
 
       const response = await registry.continue(sessionId)
       expect(response.executedIndices).toEqual([0, 1, 2])
@@ -194,7 +334,7 @@ describe('StepSessionRegistry', () => {
         inTransaction: false
       })
       await registry.setBreakpoints(sessionId, [2])
-      mockClient.responses.push({ rowCount: 1 }, { rowCount: 2 }, { rowCount: 3 })
+      mockClients[0].responses.push({ rowCount: 1 }, { rowCount: 2 }, { rowCount: 3 })
 
       const response = await registry.continue(sessionId)
       expect(response.executedIndices).toEqual([0, 1])
@@ -210,7 +350,7 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1; SELECT 2; SELECT 3;',
         inTransaction: false
       })
-      mockClient.responses.push(
+      mockClients[0].responses.push(
         { rowCount: 1 },
         { error: new Error('boom') }
       )
@@ -219,6 +359,44 @@ describe('StepSessionRegistry', () => {
       expect(response.executedIndices).toEqual([0, 1])
       expect(response.state).toBe('errored')
       expect(response.error).toEqual({ statementIndex: 1, message: 'boom' })
+    })
+  })
+
+  describe('continue with breakpoint at cursor', () => {
+    it('does not stop on breakpoint at current cursor position (first iteration)', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1; SELECT 2; SELECT 3;',
+        inTransaction: false
+      })
+      // Breakpoint at cursor 0 — continue() should still run statement 0
+      await registry.setBreakpoints(sessionId, [0])
+      mockClients[0].responses.push({ rowCount: 1 }, { rowCount: 2 }, { rowCount: 3 })
+
+      const response = await registry.continue(sessionId)
+
+      // First statement runs even though cursor started on a breakpoint
+      expect(response.executedIndices).toContain(0)
+    })
+
+    it('stops at breakpoint after advancing past current cursor', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1; SELECT 2; SELECT 3;',
+        inTransaction: false
+      })
+      await registry.setBreakpoints(sessionId, [1])
+      mockClients[0].responses.push({ rowCount: 1 }, { rowCount: 2 })
+
+      const response = await registry.continue(sessionId)
+
+      expect(response.executedIndices).toEqual([0])
+      expect(response.stoppedAt).toBe(1)
+      expect(response.state).toBe('paused')
     })
   })
 
@@ -231,10 +409,10 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1;',
         inTransaction: false
       })
-      mockClient.responses.push({ error: new Error('boom') })
+      mockClients[0].responses.push({ error: new Error('boom') })
       await registry.next(sessionId)
 
-      mockClient.responses.push({ rowCount: 1 })
+      mockClients[0].responses.push({ rowCount: 1 })
       const response = await registry.retry(sessionId)
       expect(response.result.rowCount).toBe(1)
       expect(response.state).toBe('done')
@@ -248,10 +426,37 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1;',
         inTransaction: true
       })
-      mockClient.responses.push({ error: new Error('boom') })
+      mockClients[0].responses.push({ error: new Error('boom') })
       await registry.next(sessionId)
 
       await expect(registry.retry(sessionId)).rejects.toThrow(/transaction mode/i)
+    })
+  })
+
+  describe('retry state guard', () => {
+    it('throws when state is paused', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1',
+        inTransaction: false
+      })
+      await expect(registry.retry(sessionId)).rejects.toThrow(/errored state/i)
+    })
+
+    it('throws when state is done', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1',
+        inTransaction: false
+      })
+      mockClients[0].responses.push({ rowCount: 1 })
+      await registry.next(sessionId)
+      // Now state is 'done'
+      await expect(registry.retry(sessionId)).rejects.toThrow(/errored state/i)
     })
   })
 
@@ -266,8 +471,8 @@ describe('StepSessionRegistry', () => {
       })
       const response = await registry.stop(sessionId)
       expect(response.rolledBack).toBe(true)
-      expect(mockClient.calls).toContain('ROLLBACK')
-      expect(mockClient.ended).toBe(true)
+      expect(mockClients[0].calls).toContain('ROLLBACK')
+      expect(mockClients[0].ended).toBe(true)
     })
 
     it('just closes client in auto-commit mode', async () => {
@@ -280,8 +485,8 @@ describe('StepSessionRegistry', () => {
       })
       const response = await registry.stop(sessionId)
       expect(response.rolledBack).toBe(false)
-      expect(mockClient.calls).not.toContain('ROLLBACK')
-      expect(mockClient.ended).toBe(true)
+      expect(mockClients[0].calls).not.toContain('ROLLBACK')
+      expect(mockClients[0].ended).toBe(true)
     })
 
     it('removes session from registry', async () => {
@@ -297,6 +502,21 @@ describe('StepSessionRegistry', () => {
     })
   })
 
+  describe('stop idempotency', () => {
+    it('second stop() returns rolledBack: false without throwing', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1',
+        inTransaction: false
+      })
+      await registry.stop(sessionId)
+      const result = await registry.stop(sessionId)
+      expect(result.rolledBack).toBe(false)
+    })
+  })
+
   describe('cleanupWindow', () => {
     it('stops all sessions for a given window', async () => {
       const a = await registry.start({
@@ -306,9 +526,8 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1;',
         inTransaction: false
       })
-      // NOTE: each call to `start` creates a new session but all share the same
-      // mockClient instance because our factory returns the same mock. That's
-      // fine for this test — we just verify session existence, not client state.
+      // NOTE: each call to `start` creates a new session with its own MockClient
+      // because our factory creates a fresh one each time.
 
       const b = await registry.start({
         config: mockConfig,
@@ -329,7 +548,7 @@ describe('StepSessionRegistry', () => {
 
       await expect(registry.next(a.sessionId)).rejects.toThrow(/not found/i)
       await expect(registry.next(b.sessionId)).rejects.toThrow(/not found/i)
-      mockClient.responses.push({ rowCount: 1 })
+      mockClients[2].responses.push({ rowCount: 1 })
       const result = await registry.next(c.sessionId)
       expect(result.state).toBe('done')
     })

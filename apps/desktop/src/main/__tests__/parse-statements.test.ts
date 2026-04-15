@@ -87,4 +87,39 @@ describe('parseStatementsWithLines', () => {
     expect(parseStatementsWithLines('', 'postgresql')).toEqual([])
     expect(parseStatementsWithLines('   \n\n  ', 'postgresql')).toEqual([])
   })
+
+  it('parses DO block with internal semicolons as one statement', () => {
+    const sql = `DO $$
+BEGIN
+  PERFORM 1;
+  PERFORM 2;
+END $$;`
+    const result = parseStatementsWithLines(sql, 'postgresql')
+    expect(result).toHaveLength(1)
+    expect(result[0].startLine).toBe(1)
+    expect(result[0].endLine).toBe(5)
+  })
+
+  it('assigns distinct line ranges to duplicate statements', () => {
+    const sql = 'SELECT 1;\nSELECT 1;\nSELECT 1;'
+    const result = parseStatementsWithLines(sql, 'postgresql')
+    expect(result).toHaveLength(3)
+    expect(result[0].startLine).toBe(1)
+    expect(result[1].startLine).toBe(2)
+    expect(result[2].startLine).toBe(3)
+  })
+
+  it('handles CRLF line endings', () => {
+    const sql = 'SELECT 1;\r\nSELECT 2;'
+    const result = parseStatementsWithLines(sql, 'postgresql')
+    expect(result).toHaveLength(2)
+    expect(result[1].startLine).toBe(2)
+  })
+
+  it('parses last statement without trailing semicolon', () => {
+    const sql = 'SELECT 1; SELECT 2'
+    const result = parseStatementsWithLines(sql, 'postgresql')
+    expect(result).toHaveLength(2)
+    expect(result[1].sql.trim()).toBe('SELECT 2')
+  })
 })
