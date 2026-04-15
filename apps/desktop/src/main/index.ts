@@ -19,11 +19,17 @@ import { windowManager } from './window-manager'
 import { initSchedulerService, stopAllSchedules } from './scheduler-service'
 import { initDashboardService } from './dashboard-service'
 import { cleanup as cleanupPgNotify } from './pg-notification-listener'
+import { StepSessionRegistry } from './step-session'
+import { createLogger } from './lib/logger'
+
+const log = createLogger('app')
 
 // Store instances
 let store: DpStorage<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 let snippetsStore: DpStorage<{ snippets: Snippet[] }>
+
+const stepSessionRegistry = new StepSessionRegistry()
 
 /**
  * Initialize all persistent stores
@@ -104,11 +110,12 @@ app.whenReady().then(async () => {
 
   // Register all IPC handlers
   const notebookStorage = new NotebookStorage(app.getPath('userData'))
+  stepSessionRegistry.startCleanupTimer()
   registerAllHandlers({
     connections: store,
     savedQueries: savedQueriesStore,
     snippets: snippetsStore
-  }, notebookStorage)
+  }, notebookStorage, stepSessionRegistry)
 
   // Create initial window
   await windowManager.createWindow()
@@ -124,14 +131,37 @@ app.whenReady().then(async () => {
       windowManager.showPrimaryWindow()
     }
   })
+
+  app.on('browser-window-created', (_event, window) => {
+    window.on('closed', () => {
+      stepSessionRegistry.cleanupWindow(window.id).catch((err) => {
+        console.warn('Step session cleanup failed:', err)
+      })
+    })
+  })
 })
 
 // macOS: set forceQuit flag before quitting
-app.on('before-quit', () => {
+let isCleaningUp = false
+app.on('before-quit', (event) => {
+  if (isCleaningUp) return
+  event.preventDefault()
+  isCleaningUp = true
+
   setForceQuit(true)
   stopPeriodicChecks()
   stopAllSchedules()
   cleanupPgNotify()
+
+  Promise.race([
+    stepSessionRegistry.cleanupAll(),
+    new Promise((resolve) => setTimeout(resolve, 3000))
+  ])
+    .catch((err) => log.error('cleanupAll failed during quit:', err))
+    .finally(() => {
+      stepSessionRegistry.stopCleanupTimer()
+      app.quit()
+    })
 })
 
 // Quit when all windows are closed (except macOS)

@@ -1,6 +1,20 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Plus } from 'lucide-react'
 import { Button, cn } from '@data-peek/ui'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable'
 import { useNotebookStore } from '@/stores/notebook-store'
 import { useConnectionStore } from '@/stores/connection-store'
 import { NotebookCell } from './notebook-cell'
@@ -32,7 +46,13 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
   const loadNotebook = useNotebookStore((s) => s.loadNotebook)
   const addCell = useNotebookStore((s) => s.addCell)
   const deleteCell = useNotebookStore((s) => s.deleteCell)
+  const reorderCells = useNotebookStore((s) => s.reorderCells)
   const updateNotebook = useNotebookStore((s) => s.updateNotebook)
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   const connections = useConnectionStore((s) => s.connections)
   const connectionId = tab.connectionId
@@ -69,6 +89,27 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
       setFocusedCellIndex((prev) => Math.max(0, prev > index ? prev - 1 : prev))
     },
     [deleteCell]
+  )
+
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { active, over } = event
+      if (!activeNotebook || !over || active.id === over.id) return
+
+      const oldIndex = cells.findIndex((c) => c.id === active.id)
+      const newIndex = cells.findIndex((c) => c.id === over.id)
+      if (oldIndex === -1 || newIndex === -1) return
+
+      const reordered = [...cells]
+      const [moved] = reordered.splice(oldIndex, 1)
+      reordered.splice(newIndex, 0, moved)
+      reorderCells(
+        activeNotebook.id,
+        reordered.map((c) => c.id)
+      )
+      setFocusedCellIndex(newIndex)
+    },
+    [activeNotebook, cells, reorderCells]
   )
 
   const handleTitleEdit = useCallback(() => {
@@ -230,19 +271,32 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
         ) : (
           <div className="flex flex-col gap-1 max-w-4xl mx-auto">
             <InsertPoint onInsert={(type) => handleAddCell(type, -1)} />
-            {cells.map((cell, index) => (
-              <div key={cell.id} className="flex flex-col">
-                <NotebookCell
-                  cell={cell}
-                  connectionId={connectionId ?? ''}
-                  isFocused={focusedCellIndex === index}
-                  onFocus={() => setFocusedCellIndex(index)}
-                  onRunAndAdvance={() => setFocusedCellIndex(Math.min(index + 1, cells.length - 1))}
-                  onDelete={() => handleDeleteCell(cell.id, index)}
-                />
-                <InsertPoint onInsert={(type) => handleAddCell(type, index)} />
-              </div>
-            ))}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={cells.map((c) => c.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {cells.map((cell, index) => (
+                  <div key={cell.id} className="flex flex-col">
+                    <NotebookCell
+                      cell={cell}
+                      connectionId={connectionId ?? ''}
+                      isFocused={focusedCellIndex === index}
+                      onFocus={() => setFocusedCellIndex(index)}
+                      onRunAndAdvance={() =>
+                        setFocusedCellIndex(Math.min(index + 1, cells.length - 1))
+                      }
+                      onDelete={() => handleDeleteCell(cell.id, index)}
+                    />
+                    <InsertPoint onInsert={(type) => handleAddCell(type, index)} />
+                  </div>
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         )}
       </div>

@@ -63,7 +63,14 @@ import type {
   CreateNotebookInput,
   UpdateNotebookInput,
   AddCellInput,
-  UpdateCellInput
+  UpdateCellInput,
+  StartStepRequest,
+  StartStepResponse,
+  NextStepResponse,
+  SkipStepResponse,
+  ContinueStepResponse,
+  RetryStepResponse,
+  StopStepResponse
 } from '@shared/index'
 
 // AI Types
@@ -479,6 +486,18 @@ interface DataPeekApi {
     updateCell: (cellId: string, updates: UpdateCellInput) => Promise<IpcResponse<NotebookCell>>
     deleteCell: (cellId: string) => Promise<IpcResponse<void>>
     reorderCells: (notebookId: string, cellIds: string[]) => Promise<IpcResponse<void>>
+  }
+  step: {
+    start: (
+      config: ConnectionConfig,
+      request: StartStepRequest
+    ) => Promise<IpcResponse<StartStepResponse>>
+    next: (sessionId: string) => Promise<IpcResponse<NextStepResponse>>
+    skip: (sessionId: string) => Promise<IpcResponse<SkipStepResponse>>
+    continue: (sessionId: string) => Promise<IpcResponse<ContinueStepResponse>>
+    retry: (sessionId: string) => Promise<IpcResponse<RetryStepResponse>>
+    setBreakpoints: (sessionId: string, breakpoints: number[]) => Promise<IpcResponse<void>>
+    stop: (sessionId: string) => Promise<IpcResponse<StopStepResponse>>
   }
   files: {
     openFilePicker: () => Promise<string | null>

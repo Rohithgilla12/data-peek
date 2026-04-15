@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "pnpm --filter @data-peek/desktop exec vitest run",
     "dev": "turbo run dev --filter=@data-peek/desktop",
     "dev:web": "turbo run dev --filter=@data-peek/web",
     "dev:webapp": "turbo run dev --filter=@data-peek/webapp",
