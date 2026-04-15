@@ -21,6 +21,8 @@ import { registerHealthHandlers } from './health-handlers'
 import { registerPgExportImportHandlers } from './pg-export-import-handlers'
 import { registerNotebookHandlers } from './notebook-handlers'
 import { registerIntelHandlers } from './intel-handlers'
+import { registerStepHandlers } from './step-handlers'
+import type { StepSessionRegistry } from '../step-session'
 
 const log = createLogger('ipc')
 
@@ -35,7 +37,11 @@ export interface IpcStores {
  *
  * @param stores - Persistent stores required by handler categories; includes `connections` (connection configs) and `savedQueries` (saved query entries)
  */
-export function registerAllHandlers(stores: IpcStores, notebookStorage: NotebookStorage): void {
+export function registerAllHandlers(
+  stores: IpcStores,
+  notebookStorage: NotebookStorage,
+  stepSessionRegistry: StepSessionRegistry
+): void {
   // Connection CRUD operations
   registerConnectionHandlers(stores.connections)
 
@@ -93,6 +99,9 @@ export function registerAllHandlers(stores: IpcStores, notebookStorage: Notebook
   // Schema Intel / diagnostics
   registerIntelHandlers()
 
+  // Step-through sessions
+  registerStepHandlers(stepSessionRegistry)
+
   log.debug('All handlers registered')
 }
 
@@ -113,3 +122,4 @@ export { registerHealthHandlers } from './health-handlers'
 export { registerPgExportImportHandlers } from './pg-export-import-handlers'
 export { registerNotebookHandlers } from './notebook-handlers'
 export { registerIntelHandlers } from './intel-handlers'
+export { registerStepHandlers } from './step-handlers'
