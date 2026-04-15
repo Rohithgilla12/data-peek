@@ -466,7 +466,7 @@ export interface SQLEditorProps {
   /** SQL snippets for autocomplete */
   snippets?: Snippet[]
   /** Called when the Monaco editor instance is mounted */
-  onMount?: (editor: EditorType) => void
+  onMount?: (editor: EditorType, monaco: Monaco) => void
   /** Enable glyph margin (for breakpoint decorations) */
   glyphMargin?: boolean
 }
@@ -592,7 +592,7 @@ export function SQLEditor({
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
     monacoRef.current = monaco
-    onMount?.(editor)
+    onMount?.(editor, monaco)
 
     // Define custom themes
     defineCustomTheme(monaco)

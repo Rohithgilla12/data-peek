@@ -6,6 +6,7 @@ import type {
   StepSessionError
 } from '@shared/index'
 import { useConnectionStore } from './connection-store'
+import { notify } from './notification-store'
 
 export interface StepSessionState {
   sessionId: string
@@ -44,7 +45,10 @@ export const useStepStore = create<StepState>((set, get) => ({
     const activeConnection = connectionStore.connections.find(
       (c) => c.id === connectionStore.activeConnectionId
     )
-    if (!activeConnection) return false
+    if (!activeConnection) {
+      notify.error('No connection', 'Connect to a database first.')
+      return false
+    }
 
     const result = await window.api.step.start(activeConnection, {
       tabId,
@@ -52,7 +56,7 @@ export const useStepStore = create<StepState>((set, get) => ({
       inTransaction
     })
     if (!result.success || !result.data) {
-      console.error('Failed to start step session:', result.error)
+      notify.error('Could not start step session', result.error ?? 'Unknown error')
       return false
     }
 
@@ -82,8 +86,17 @@ export const useStepStore = create<StepState>((set, get) => ({
 
     const result = await window.api.step.next(session.sessionId)
     if (!result.success || !result.data) {
-      console.error('step.next failed:', result.error)
-      set((s) => updateSession(s, tabId, (sess) => ({ ...sess, state: 'errored' })))
+      notify.error('Step failed', result.error ?? 'Unknown error')
+      set((s) =>
+        updateSession(s, tabId, (sess) => ({
+          ...sess,
+          state: 'errored',
+          lastError: {
+            statementIndex: sess.cursorIndex,
+            message: result.error ?? 'Unknown error'
+          }
+        }))
+      )
       return
     }
 
@@ -103,7 +116,10 @@ export const useStepStore = create<StepState>((set, get) => ({
     const session = get().sessions.get(tabId)
     if (!session) return
     const result = await window.api.step.skip(session.sessionId)
-    if (!result.success || !result.data) return
+    if (!result.success || !result.data) {
+      notify.error('Step failed', result.error ?? 'Unknown error')
+      return
+    }
     set((s) =>
       updateSession(s, tabId, (sess) => ({
         ...sess,
@@ -119,7 +135,10 @@ export const useStepStore = create<StepState>((set, get) => ({
     set((s) => updateSession(s, tabId, (sess) => ({ ...sess, state: 'running' })))
 
     const result = await window.api.step.continue(session.sessionId)
-    if (!result.success || !result.data) return
+    if (!result.success || !result.data) {
+      notify.error('Step failed', result.error ?? 'Unknown error')
+      return
+    }
     const { results, state, cursorIndex } = result.data
     set((s) =>
       updateSession(s, tabId, (sess) => ({
@@ -139,6 +158,7 @@ export const useStepStore = create<StepState>((set, get) => ({
 
     const result = await window.api.step.retry(session.sessionId)
     if (!result.success || !result.data) {
+      notify.error('Step failed', result.error ?? 'Unknown error')
       set((s) => updateSession(s, tabId, (sess) => ({ ...sess, state: 'errored' })))
       return
     }
@@ -157,7 +177,13 @@ export const useStepStore = create<StepState>((set, get) => ({
   stopStep: async (tabId) => {
     const session = get().sessions.get(tabId)
     if (!session) return
-    await window.api.step.stop(session.sessionId)
+    const result = await window.api.step.stop(session.sessionId)
+    if (result.success && result.data?.rollbackError) {
+      notify.error(
+        'Stop completed but ROLLBACK failed',
+        `${result.data.rollbackError}. Verify your database state — uncommitted changes may not be reverted.`
+      )
+    }
     set((s) => {
       const next = new Map(s.sessions)
       next.delete(tabId)
@@ -168,6 +194,7 @@ export const useStepStore = create<StepState>((set, get) => ({
   toggleBreakpoint: async (tabId, statementIndex) => {
     const session = get().sessions.get(tabId)
     if (!session) return
+    const originalBreakpoints = session.breakpoints
     const breakpoints = new Set(session.breakpoints)
     if (breakpoints.has(statementIndex)) {
       breakpoints.delete(statementIndex)
@@ -175,7 +202,12 @@ export const useStepStore = create<StepState>((set, get) => ({
       breakpoints.add(statementIndex)
     }
     set((s) => updateSession(s, tabId, (sess) => ({ ...sess, breakpoints })))
-    await window.api.step.setBreakpoints(session.sessionId, [...breakpoints])
+
+    const result = await window.api.step.setBreakpoints(session.sessionId, [...breakpoints])
+    if (!result.success) {
+      set((s) => updateSession(s, tabId, (sess) => ({ ...sess, breakpoints: originalBreakpoints })))
+      notify.error('Breakpoint update failed', result.error ?? 'Unknown error')
+    }
   },
 
   pinResult: (tabId, statementIndex) => {

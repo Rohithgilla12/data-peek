@@ -105,7 +105,6 @@ import { StepRibbon } from './step-ribbon'
 import { StepResultsTabs } from './step-results-tabs'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
-import * as monacoNs from 'monaco-editor'
 import type { editor as monacoEditor } from 'monaco-editor'
 
 /** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
@@ -209,6 +208,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Monaco editor ref for step-through decorations
   const editorRef = useRef<monacoEditor.IStandaloneCodeEditor | null>(null)
+  const monacoRef = useRef<typeof import('monaco-editor') | null>(null)
   const [editorMounted, setEditorMounted] = useState(false)
   const activeLineDecoIds = useRef<string[]>([])
   const breakpointDecoIds = useRef<string[]>([])
@@ -710,28 +710,31 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   useEffect(() => {
     const editor = editorRef.current
-    if (!editor || !editorMounted) return
+    const monaco = monacoRef.current
+    if (!editor || !monaco || !editorMounted) return
+    if (tabConnection?.dbType !== 'postgresql') return
 
     const disposable = editor.addAction({
       id: 'datapeek.start-step',
       label: 'Start Step-Through',
-      keybindings: [monacoNs.KeyMod.CtrlCmd | monacoNs.KeyMod.Shift | monacoNs.KeyCode.Enter],
+      keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.Enter],
       run: () => {
         handleStartStep()
       }
     })
 
     return () => disposable.dispose()
-  }, [handleStartStep, editorMounted])
+  }, [handleStartStep, editorMounted, tabConnection?.dbType])
 
   useEffect(() => {
     const editor = editorRef.current
-    if (!editor || !editorMounted || !stepSession) return
+    const monaco = monacoRef.current
+    if (!editor || !monaco || !editorMounted || !stepSession) return
 
     const nextAction = editor.addAction({
       id: 'datapeek.step-next',
       label: 'Step: Next',
-      keybindings: [monacoNs.KeyMod.Shift | monacoNs.KeyCode.Enter],
+      keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
       run: () => {
         const current = useStepStore.getState().sessions.get(tabId)
         if (current?.state === 'paused') useStepStore.getState().nextStep(tabId)
@@ -741,7 +744,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     const stopAction = editor.addAction({
       id: 'datapeek.step-stop',
       label: 'Step: Stop',
-      keybindings: [monacoNs.KeyCode.Escape],
+      keybindings: [monaco.KeyCode.Escape],
       run: () => {
         useStepStore.getState().stopStep(tabId)
       }
@@ -1397,8 +1400,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               snippets={allSnippets}
               readOnly={!!stepSession}
               glyphMargin={!!stepSession}
-              onMount={(editor) => {
+              onMount={(editor, monaco) => {
                 editorRef.current = editor
+                monacoRef.current = monaco
                 setEditorMounted(true)
               }}
             />
@@ -1446,7 +1450,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 </kbd>
               </Button>
             )}
-            {tab.type === 'query' && (
+            {tab.type === 'query' && tabConnection?.dbType === 'postgresql' && (
               <>
                 <Button
                   size="sm"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { Play, SkipForward, FastForward, Square, RefreshCw } from 'lucide-react'
 import { Button, cn } from '@data-peek/ui'
 import type { SessionState } from '@shared/index'
@@ -26,29 +26,6 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
     if (!session) return null
     return session.statements[session.cursorIndex] ?? null
   }, [session])
-
-  // Keyboard shortcuts while ribbon is active
-  useEffect(() => {
-    if (!session) return
-    const handler = (e: KeyboardEvent) => {
-      const inInput =
-        e.target instanceof HTMLElement &&
-        (e.target.tagName === 'INPUT' ||
-          e.target.tagName === 'TEXTAREA' ||
-          e.target.isContentEditable)
-      if (inInput) return
-
-      if (e.key === 'Enter' && e.shiftKey && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault()
-        if (session.state === 'paused') nextStep(tabId)
-      } else if (e.key === 'Escape') {
-        e.preventDefault()
-        stopStep(tabId)
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [session, nextStep, stopStep, tabId])
 
   if (!session) return null
 
