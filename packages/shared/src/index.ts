@@ -1,3 +1,14 @@
+export type {
+  Notebook,
+  NotebookCell,
+  PinnedResult,
+  NotebookWithCells,
+  CreateNotebookInput,
+  UpdateNotebookInput,
+  AddCellInput,
+  UpdateCellInput
+} from './notebook-types'
+export { MAX_PINNED_ROWS } from './notebook-types'
 export { PG_TYPE_MAP, resolvePostgresType } from "./type-maps";
 export {
   escapeSQLValue,
@@ -2193,6 +2204,142 @@ export interface DatabaseSizeInfo {
   totalSizeBytes: number;
 }
 
+// ── Schema Intel / Diagnostics ──────────────────────────────────────────────
+
+/**
+ * Identifier for a schema diagnostic check.
+ */
+export type SchemaIntelCheckId =
+  | "tables_without_pk"
+  | "unused_indexes"
+  | "duplicate_indexes"
+  | "missing_fk_indexes"
+  | "invalid_indexes"
+  | "bloated_tables"
+  | "never_vacuumed"
+  | "nullable_fks";
+
+export type SchemaIntelSeverity = "info" | "warning" | "critical";
+
+/**
+ * Static metadata about a diagnostic check (id, title, description, supported
+ * database types). Returned by {@link SchemaIntelRunResponse} so the UI can
+ * render all checks — even those that yielded zero findings — with a friendly
+ * label.
+ */
+export interface SchemaIntelCheckDefinition {
+  id: SchemaIntelCheckId;
+  title: string;
+  description: string;
+  severity: SchemaIntelSeverity;
+  /** Database types this check is supported on. */
+  supportedDbTypes: DatabaseType[];
+}
+
+/**
+ * A single actionable finding surfaced by a check.
+ */
+export interface SchemaIntelFinding {
+  checkId: SchemaIntelCheckId;
+  severity: SchemaIntelSeverity;
+  /** Short human-readable headline (e.g. "public.users has no primary key"). */
+  title: string;
+  /** Longer explanation / impact. */
+  detail?: string;
+  /** Primary database entity this finding refers to. */
+  entity?: {
+    schema?: string;
+    name: string;
+    kind: "table" | "index" | "column" | "foreign_key";
+  };
+  /** Auxiliary structured data (e.g. row counts, column lists). */
+  metadata?: Record<string, unknown>;
+  /** SQL the user can copy/run to resolve the finding. */
+  suggestedSql?: string;
+}
+
+/**
+ * Report returned by a single intel run.
+ */
+export interface SchemaIntelReport {
+  findings: SchemaIntelFinding[];
+  /**
+   * Checks that were requested but could not be run (unsupported DB,
+   * permission error, missing extension, etc.).
+   */
+  skipped: Array<{ checkId: SchemaIntelCheckId; reason: string }>;
+  durationMs: number;
+  ranAt: number;
+}
+
+/** List of all check definitions surfaced to the renderer. */
+export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
+  {
+    id: "tables_without_pk",
+    title: "Tables without a primary key",
+    description:
+      "Tables without a primary key make replication, de-duplication, and row-level edits more difficult.",
+    severity: "warning",
+    supportedDbTypes: ["postgresql", "mysql", "mssql"]
+  },
+  {
+    id: "missing_fk_indexes",
+    title: "Foreign keys missing an index",
+    description:
+      "Foreign key columns without a supporting index force sequential scans during joins and deletes on the parent table.",
+    severity: "warning",
+    supportedDbTypes: ["postgresql", "mysql"]
+  },
+  {
+    id: "duplicate_indexes",
+    title: "Duplicate or redundant indexes",
+    description:
+      "Multiple indexes that cover the same leading columns waste disk space and slow writes.",
+    severity: "warning",
+    supportedDbTypes: ["postgresql", "mysql"]
+  },
+  {
+    id: "unused_indexes",
+    title: "Unused indexes",
+    description:
+      "Indexes that have never served a scan since stats were reset. They add maintenance overhead without speeding up reads.",
+    severity: "info",
+    supportedDbTypes: ["postgresql"]
+  },
+  {
+    id: "invalid_indexes",
+    title: "Invalid indexes",
+    description:
+      "Indexes that failed to build (e.g. from a cancelled CREATE INDEX CONCURRENTLY). They are not used by the planner and should be dropped or rebuilt.",
+    severity: "critical",
+    supportedDbTypes: ["postgresql"]
+  },
+  {
+    id: "bloated_tables",
+    title: "Bloated tables",
+    description:
+      "Tables where dead tuples make up a large share of storage. Consider VACUUM (FULL) or pg_repack.",
+    severity: "info",
+    supportedDbTypes: ["postgresql"]
+  },
+  {
+    id: "never_vacuumed",
+    title: "Never vacuumed or analyzed",
+    description:
+      "Tables that autovacuum has never touched typically have stale statistics, leading to poor plans.",
+    severity: "info",
+    supportedDbTypes: ["postgresql"]
+  },
+  {
+    id: "nullable_fks",
+    title: "Nullable foreign keys",
+    description:
+      "Foreign key columns that allow NULL can silently orphan rows. Decide whether NULL is really allowed.",
+    severity: "info",
+    supportedDbTypes: ["postgresql", "mysql"]
+  }
+];
+
 // ── PostgreSQL Export/Import (pg_dump / pg_restore) ──────────────────────────
 
 export type PgExportMode = "full" | "schema-only" | "data-only";
@@ -2270,3 +2417,21 @@ export interface PgImportResult {
   errors: Array<{ statementIndex: number; statement: string; error: string }>;
   durationMs: number;
 }
+
+export type {
+  SessionState,
+  ParsedStatement,
+  StepSessionError,
+  StartStepRequest,
+  StartStepResponse,
+  NextStepResponse,
+  SkipStepResponse,
+  ContinueStepResponse,
+  RetryStepResponse,
+  StopStepResponse
+} from './step-types'
+export {
+  STEP_SESSION_IDLE_TIMEOUT_MS,
+  STEP_SESSION_CLEANUP_INTERVAL_MS,
+  DDL_KEYWORD_REGEX
+} from './step-types'

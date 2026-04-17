@@ -22,8 +22,11 @@ import type {
   TableSizeInfo,
   CacheStats,
   LockInfo,
-  DatabaseSizeInfo
+  DatabaseSizeInfo,
+  SchemaIntelCheckId,
+  SchemaIntelReport
 } from '@shared/index'
+import { runMssqlSchemaIntel } from '../schema-intel/mssql'
 import type {
   DatabaseAdapter,
   AdapterQueryResult,
@@ -1635,6 +1638,28 @@ export class MSSQLAdapter implements DatabaseAdapter {
       return { success: true }
     } catch (err) {
       return { success: false, error: String(err) }
+    } finally {
+      await pool.close().catch(() => {})
+      closeTunnel(tunnelSession)
+    }
+  }
+
+  async runSchemaIntel(
+    config: ConnectionConfig,
+    checks?: SchemaIntelCheckId[]
+  ): Promise<SchemaIntelReport> {
+    let tunnelSession: TunnelSession | null = null
+    if (config.ssh) {
+      tunnelSession = await createTunnel(config)
+    }
+    const tunnelOverrides = tunnelSession
+      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
+      : undefined
+    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
+
+    try {
+      await pool.connect()
+      return await runMssqlSchemaIntel(pool, checks)
     } finally {
       await pool.close().catch(() => {})
       closeTunnel(tunnelSession)

@@ -1,6 +1,6 @@
 {
   "name": "@data-peek/desktop",
-  "version": "0.19.1",
+  "version": "0.20.1",
   "description": "A minimal, fast database client",
   "main": "./out/main/index.js",
   "author": "Rohith Gilla",
@@ -82,7 +82,9 @@
     "papaparse": "^5.5.3",
     "pg": "^8.16.3",
     "react-grid-layout": "^2.1.0",
+    "react-markdown": "^10.1.0",
     "recharts": "^3.5.1",
+    "remark-gfm": "^4.0.1",
     "sql-formatter": "^15.6.10",
     "ssh2": "^1.17.0",
     "tailwind-merge": "^3.4.0",

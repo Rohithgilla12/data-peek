@@ -1,5 +1,6 @@
 import type { ConnectionConfig, SavedQuery, Snippet } from '@shared/index'
 import type { DpStorage } from '../storage'
+import type { NotebookStorage } from '../notebook-storage'
 import { registerConnectionHandlers } from './connection-handlers'
 import { registerQueryHandlers } from './query-handlers'
 import { registerDDLHandlers } from './ddl-handlers'
@@ -18,6 +19,10 @@ import { registerDataGenHandlers } from './data-gen-handlers'
 import { registerPgNotifyHandlers } from './pg-notify-handlers'
 import { registerHealthHandlers } from './health-handlers'
 import { registerPgExportImportHandlers } from './pg-export-import-handlers'
+import { registerNotebookHandlers } from './notebook-handlers'
+import { registerIntelHandlers } from './intel-handlers'
+import { registerStepHandlers } from './step-handlers'
+import type { StepSessionRegistry } from '../step-session'
 
 const log = createLogger('ipc')
 
@@ -32,7 +37,11 @@ export interface IpcStores {
  *
  * @param stores - Persistent stores required by handler categories; includes `connections` (connection configs) and `savedQueries` (saved query entries)
  */
-export function registerAllHandlers(stores: IpcStores): void {
+export function registerAllHandlers(
+  stores: IpcStores,
+  notebookStorage: NotebookStorage,
+  stepSessionRegistry: StepSessionRegistry
+): void {
   // Connection CRUD operations
   registerConnectionHandlers(stores.connections)
 
@@ -84,6 +93,15 @@ export function registerAllHandlers(stores: IpcStores): void {
   // PostgreSQL export/import (pg_dump/pg_restore)
   registerPgExportImportHandlers()
 
+  // SQL Notebooks
+  registerNotebookHandlers(notebookStorage)
+
+  // Schema Intel / diagnostics
+  registerIntelHandlers()
+
+  // Step-through sessions
+  registerStepHandlers(stepSessionRegistry)
+
   log.debug('All handlers registered')
 }
 
@@ -102,3 +120,6 @@ export { registerDataGenHandlers } from './data-gen-handlers'
 export { registerPgNotifyHandlers } from './pg-notify-handlers'
 export { registerHealthHandlers } from './health-handlers'
 export { registerPgExportImportHandlers } from './pg-export-import-handlers'
+export { registerNotebookHandlers } from './notebook-handlers'
+export { registerIntelHandlers } from './intel-handlers'
+export { registerStepHandlers } from './step-handlers'

@@ -49,12 +49,28 @@ import type {
   CacheStats,
   LockInfo,
   DatabaseSizeInfo,
+  SchemaIntelCheckId,
+  SchemaIntelReport,
   PgExportOptions,
   PgExportProgress,
   PgExportResult,
   PgImportOptions,
   PgImportProgress,
-  PgImportResult
+  PgImportResult,
+  Notebook,
+  NotebookWithCells,
+  NotebookCell,
+  CreateNotebookInput,
+  UpdateNotebookInput,
+  AddCellInput,
+  UpdateCellInput,
+  StartStepRequest,
+  StartStepResponse,
+  NextStepResponse,
+  SkipStepResponse,
+  ContinueStepResponse,
+  RetryStepResponse,
+  StopStepResponse
 } from '@shared/index'
 
 // AI Types
@@ -432,10 +448,14 @@ interface DataPeekApi {
     onEvent: (callback: (event: PgNotificationEvent) => void) => () => void
     onStatus: (callback: (status: PgNotificationConnectionStatus) => void) => () => void
     reconnect: (connectionId: string) => Promise<IpcResponse<void>>
-    getStatus: (
-      connectionId: string
-    ) => Promise<IpcResponse<PgNotificationConnectionStatus | null>>
+    getStatus: (connectionId: string) => Promise<IpcResponse<PgNotificationConnectionStatus | null>>
     getAllStatuses: () => Promise<IpcResponse<PgNotificationConnectionStatus[]>>
+  }
+  intel: {
+    run: (
+      config: ConnectionConfig,
+      checks?: SchemaIntelCheckId[]
+    ) => Promise<IpcResponse<SchemaIntelReport>>
   }
   health: {
     activeQueries: (config: ConnectionConfig) => Promise<IpcResponse<ActiveQuery[]>>
@@ -463,6 +483,30 @@ interface DataPeekApi {
     ) => Promise<IpcResponse<PgImportResult>>
     cancelImport: () => Promise<IpcResponse<void>>
     onImportProgress: (callback: (progress: PgImportProgress) => void) => () => void
+  }
+  notebooks: {
+    list: () => Promise<IpcResponse<Notebook[]>>
+    get: (id: string) => Promise<IpcResponse<NotebookWithCells>>
+    create: (input: CreateNotebookInput) => Promise<IpcResponse<Notebook>>
+    update: (id: string, updates: UpdateNotebookInput) => Promise<IpcResponse<Notebook>>
+    delete: (id: string) => Promise<IpcResponse<void>>
+    duplicate: (id: string, connectionId: string) => Promise<IpcResponse<Notebook>>
+    addCell: (notebookId: string, input: AddCellInput) => Promise<IpcResponse<NotebookCell>>
+    updateCell: (cellId: string, updates: UpdateCellInput) => Promise<IpcResponse<NotebookCell>>
+    deleteCell: (cellId: string) => Promise<IpcResponse<void>>
+    reorderCells: (notebookId: string, cellIds: string[]) => Promise<IpcResponse<void>>
+  }
+  step: {
+    start: (
+      config: ConnectionConfig,
+      request: StartStepRequest
+    ) => Promise<IpcResponse<StartStepResponse>>
+    next: (sessionId: string) => Promise<IpcResponse<NextStepResponse>>
+    skip: (sessionId: string) => Promise<IpcResponse<SkipStepResponse>>
+    continue: (sessionId: string) => Promise<IpcResponse<ContinueStepResponse>>
+    retry: (sessionId: string) => Promise<IpcResponse<RetryStepResponse>>
+    setBreakpoints: (sessionId: string, breakpoints: number[]) => Promise<IpcResponse<void>>
+    stop: (sessionId: string) => Promise<IpcResponse<StopStepResponse>>
   }
   files: {
     openFilePicker: () => Promise<string | null>

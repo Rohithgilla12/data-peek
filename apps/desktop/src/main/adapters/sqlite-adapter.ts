@@ -18,7 +18,9 @@ import type {
   TableSizeInfo,
   CacheStats,
   LockInfo,
-  DatabaseSizeInfo
+  DatabaseSizeInfo,
+  SchemaIntelCheckId,
+  SchemaIntelReport
 } from '@shared/index'
 import type {
   DatabaseAdapter,
@@ -589,5 +591,22 @@ export class SQLiteAdapter implements DatabaseAdapter {
     _pid: number
   ): Promise<{ success: boolean; error?: string }> {
     throw new Error('killQuery not implemented for SQLite')
+  }
+
+  async runSchemaIntel(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _config: ConnectionConfig,
+    requested?: SchemaIntelCheckId[]
+  ): Promise<SchemaIntelReport> {
+    const checks = requested ?? []
+    return {
+      findings: [],
+      skipped: checks.map((checkId) => ({
+        checkId,
+        reason: 'Schema Intel is not yet implemented for SQLite'
+      })),
+      durationMs: 0,
+      ranAt: Date.now()
+    }
   }
 }

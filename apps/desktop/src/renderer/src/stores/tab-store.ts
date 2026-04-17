@@ -32,6 +32,8 @@ export type TabType =
   | 'data-generator'
   | 'pg-notifications'
   | 'health-monitor'
+  | 'schema-intel'
+  | 'notebook'
 
 // Base tab interface
 interface BaseTab {
@@ -109,6 +111,17 @@ export interface HealthMonitorTab extends BaseTab {
   type: 'health-monitor'
 }
 
+// Schema Intel / diagnostics tab
+export interface SchemaIntelTab extends BaseTab {
+  type: 'schema-intel'
+}
+
+// Notebook tab
+export interface NotebookTab extends BaseTab {
+  type: 'notebook'
+  notebookId: string
+}
+
 export type Tab =
   | QueryTab
   | TablePreviewTab
@@ -117,6 +130,8 @@ export type Tab =
   | DataGeneratorTab
   | PgNotificationsTab
   | HealthMonitorTab
+  | SchemaIntelTab
+  | NotebookTab
 
 // Persisted tab data (minimal for storage)
 interface PersistedTab {
@@ -130,6 +145,7 @@ interface PersistedTab {
   schemaName?: string
   tableName?: string
   mode?: 'create' | 'edit'
+  notebookId?: string
 }
 
 interface TabState {
@@ -152,6 +168,8 @@ interface TabState {
   createDataGeneratorTab: (connectionId: string, schemaName: string, tableName?: string) => string
   createPgNotificationsTab: (connectionId: string) => string
   createHealthMonitorTab: (connectionId: string) => string
+  createSchemaIntelTab: (connectionId: string) => string
+  createNotebookTab: (connectionId: string, notebookId: string, title: string) => string
   closeTab: (tabId: string) => void
   closeAllTabs: () => void
   closeOtherTabs: (tabId: string) => void
@@ -224,6 +242,7 @@ interface TabState {
   ) => Tab | undefined
   findPgNotificationsTab: (connectionId: string) => Tab | undefined
   findHealthMonitorTab: (connectionId: string) => Tab | undefined
+  findSchemaIntelTab: (connectionId: string) => Tab | undefined
 }
 
 export const useTabStore = create<TabState>()(
@@ -535,6 +554,64 @@ export const useTabStore = create<TabState>()(
         return id
       },
 
+      createSchemaIntelTab: (connectionId) => {
+        const existing = get().tabs.find(
+          (t) => t.type === 'schema-intel' && t.connectionId === connectionId
+        )
+        if (existing) {
+          set({ activeTabId: existing.id })
+          return existing.id
+        }
+
+        const id = crypto.randomUUID()
+        const tabs = get().tabs
+        const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.order)) : -1
+
+        const newTab: SchemaIntelTab = {
+          id,
+          type: 'schema-intel',
+          title: 'Schema Intel',
+          isPinned: false,
+          connectionId,
+          createdAt: Date.now(),
+          order: maxOrder + 1
+        }
+
+        set((state) => ({
+          tabs: [...state.tabs, newTab],
+          activeTabId: id
+        }))
+
+        return id
+      },
+
+      createNotebookTab: (connectionId, notebookId, title) => {
+        const existingTab = get().tabs.find(
+          (t) => t.type === 'notebook' && (t as NotebookTab).notebookId === notebookId
+        )
+        if (existingTab) {
+          set({ activeTabId: existingTab.id })
+          return existingTab.id
+        }
+
+        const id = crypto.randomUUID()
+        const tab: NotebookTab = {
+          id,
+          type: 'notebook',
+          title,
+          isPinned: false,
+          connectionId,
+          createdAt: Date.now(),
+          order: get().tabs.length,
+          notebookId
+        }
+        set((state) => ({
+          tabs: [...state.tabs, tab],
+          activeTabId: id
+        }))
+        return id
+      },
+
       closeTab: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
         if (!tab || tab.isPinned) return
@@ -662,7 +739,9 @@ export const useTabStore = create<TabState>()(
               t.type === 'table-designer' ||
               t.type === 'data-generator' ||
               t.type === 'pg-notifications' ||
-              t.type === 'health-monitor'
+              t.type === 'health-monitor' ||
+              t.type === 'schema-intel' ||
+              t.type === 'notebook'
             )
               return t
             // Only update executionId if provided, otherwise clear it when not executing
@@ -682,7 +761,9 @@ export const useTabStore = create<TabState>()(
             t.type !== 'table-designer' &&
             t.type !== 'data-generator' &&
             t.type !== 'pg-notifications' &&
-            t.type !== 'health-monitor'
+            t.type !== 'health-monitor' &&
+            t.type !== 'schema-intel' &&
+            t.type !== 'notebook'
               ? { ...t, savedQuery: t.query }
               : t
           )
@@ -814,7 +895,9 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'schema-intel' ||
+          tab.type === 'notebook'
         )
           return false
         return tab.query !== tab.savedQuery
@@ -828,7 +911,9 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'schema-intel' ||
+          tab.type === 'notebook'
         )
           return []
         if (!tab.result) return []
@@ -844,7 +929,9 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'schema-intel' ||
+          tab.type === 'notebook'
         )
           return 0
         if (!tab.result) return 0
@@ -859,7 +946,9 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'schema-intel' ||
+          tab.type === 'notebook'
         )
           return undefined
         if (!tab.multiResult?.statements) return undefined
@@ -874,7 +963,9 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'schema-intel' ||
+          tab.type === 'notebook'
         )
           return []
         return tab.multiResult?.statements ?? []
@@ -888,7 +979,9 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'schema-intel' ||
+          tab.type === 'notebook'
         )
           return []
         const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
@@ -905,7 +998,9 @@ export const useTabStore = create<TabState>()(
           tab.type === 'table-designer' ||
           tab.type === 'data-generator' ||
           tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor'
+          tab.type === 'health-monitor' ||
+          tab.type === 'schema-intel' ||
+          tab.type === 'notebook'
         )
           return 0
         const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
@@ -961,6 +1056,12 @@ export const useTabStore = create<TabState>()(
         return get().tabs.find(
           (t) => t.type === 'health-monitor' && t.connectionId === connectionId
         )
+      },
+
+      findSchemaIntelTab: (connectionId) => {
+        return get().tabs.find(
+          (t) => t.type === 'schema-intel' && t.connectionId === connectionId
+        )
       }
     }),
     {
@@ -1007,6 +1108,17 @@ export const useTabStore = create<TabState>()(
 
             if (t.type === 'health-monitor') {
               return base
+            }
+
+            if (t.type === 'schema-intel') {
+              return base
+            }
+
+            if (t.type === 'notebook') {
+              return {
+                ...base,
+                notebookId: t.notebookId
+              }
             }
 
             // query or table-preview tabs
@@ -1073,6 +1185,26 @@ export const useTabStore = create<TabState>()(
                 type: 'health-monitor' as const,
                 createdAt: Date.now()
               } as HealthMonitorTab
+            }
+
+            // Schema Intel tabs
+            if (t.type === 'schema-intel') {
+              return {
+                ...t,
+                type: 'schema-intel' as const,
+                createdAt: Date.now()
+              } as SchemaIntelTab
+            }
+
+            // Notebook tabs
+            if (t.type === 'notebook') {
+              const persisted = t as unknown as PersistedTab
+              return {
+                ...t,
+                type: 'notebook' as const,
+                createdAt: Date.now(),
+                notebookId: persisted.notebookId || ''
+              } as NotebookTab
             }
 
             const base = {

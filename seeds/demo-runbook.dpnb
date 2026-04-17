@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "title": "ACME SaaS Health Check Runbook",
+  "folder": "runbooks",
+  "cells": [
+    {
+      "type": "markdown",
+      "content": "# ACME SaaS Health Check Runbook\n\nUse this notebook to diagnose issues with the ACME SaaS platform.\nRun each step in order — if something looks off, the markdown cells explain what to look for."
+    },
+    {
+      "type": "markdown",
+      "content": "## Step 1: Platform Overview\n\nGet a quick snapshot of the platform — how many orgs, users, and projects we have, broken down by plan."
+    },
+    {
+      "type": "sql",
+      "content": "SELECT\n  o.plan,\n  COUNT(DISTINCT o.id) AS orgs,\n  COUNT(DISTINCT m.user_id) AS users,\n  COUNT(DISTINCT p.id) AS projects\nFROM organizations o\nLEFT JOIN memberships m ON m.organization_id = o.id\nLEFT JOIN projects p ON p.organization_id = o.id\nGROUP BY o.plan\nORDER BY orgs DESC"
+    },
+    {
+      "type": "markdown",
+      "content": "## Step 2: Revenue Health\n\nCheck subscription status and MRR. Look for:\n- High `past_due` count = payment processing issues\n- Spike in `canceled` = churn problem\n- Low `trialing` = acquisition slowdown"
+    },
+    {
+      "type": "sql",
+      "content": "SELECT\n  s.status,\n  COUNT(*) AS count,\n  SUM(i.amount_cents) / 100.0 AS total_revenue_usd\nFROM subscriptions s\nLEFT JOIN invoices i ON i.subscription_id = s.id AND i.status = 'paid'\nGROUP BY s.status\nORDER BY count DESC"
+    },
+    {
+      "type": "markdown",
+      "content": "## Step 3: Unpaid Invoices\n\nFind invoices that are past due or failed. These need immediate attention from the billing team."
+    },
+    {
+      "type": "sql",
+      "content": "SELECT\n  i.id,\n  o.name AS organization,\n  o.plan,\n  i.amount_cents / 100.0 AS amount_usd,\n  i.status,\n  i.due_date,\n  i.created_at\nFROM invoices i\nJOIN organizations o ON o.id = i.organization_id\nWHERE i.status IN ('pending', 'failed')\nORDER BY i.amount_cents DESC\nLIMIT 20"
+    },
+    {
+      "type": "markdown",
+      "content": "## Step 4: Recent Activity\n\nCheck the event log for the last 24 hours. Look for unusual patterns:\n- Burst of `api_key.created` = possible security concern\n- No `user.created` events = signup flow might be broken\n- Lots of `subscription.canceled` = churn event"
+    },
+    {
+      "type": "sql",
+      "content": "SELECT\n  type,\n  COUNT(*) AS count,\n  MIN(created_at) AS earliest,\n  MAX(created_at) AS latest\nFROM events\nWHERE created_at > NOW() - INTERVAL '24 hours'\nGROUP BY type\nORDER BY count DESC"
+    },
+    {
+      "type": "markdown",
+      "content": "## Step 5: Top Organizations by Usage\n\nIdentify the heaviest users — these are the accounts most likely to upgrade (or most at risk if something breaks)."
+    },
+    {
+      "type": "sql",
+      "content": "SELECT\n  o.name,\n  o.plan,\n  COUNT(DISTINCT m.user_id) AS members,\n  COUNT(DISTINCT p.id) AS projects,\n  COUNT(DISTINCT ak.id) AS api_keys\nFROM organizations o\nLEFT JOIN memberships m ON m.organization_id = o.id\nLEFT JOIN projects p ON p.organization_id = o.id\nLEFT JOIN api_keys ak ON ak.organization_id = o.id AND ak.revoked_at IS NULL\nGROUP BY o.id, o.name, o.plan\nORDER BY members DESC, projects DESC\nLIMIT 10"
+    },
+    {
+      "type": "markdown",
+      "content": "## Step 6: Stale API Keys\n\nFind API keys that haven't been used in 90+ days or have expired. These should be flagged for rotation or revocation."
+    },
+    {
+      "type": "sql",
+      "content": "SELECT\n  ak.name AS key_name,\n  ak.key_prefix,\n  o.name AS organization,\n  ak.scopes,\n  ak.last_used_at,\n  ak.expires_at,\n  CASE\n    WHEN ak.revoked_at IS NOT NULL THEN 'revoked'\n    WHEN ak.expires_at < NOW() THEN 'expired'\n    WHEN ak.last_used_at < NOW() - INTERVAL '90 days' THEN 'stale'\n    WHEN ak.last_used_at IS NULL THEN 'never used'\n    ELSE 'active'\n  END AS status\nFROM api_keys ak\nJOIN organizations o ON o.id = ak.organization_id\nWHERE ak.revoked_at IS NULL\n  AND (ak.last_used_at IS NULL\n    OR ak.last_used_at < NOW() - INTERVAL '90 days'\n    OR ak.expires_at < NOW())\nORDER BY ak.last_used_at ASC NULLS FIRST"
+    },
+    {
+      "type": "markdown",
+      "content": "## Step 7: Enterprise Org Deep Dive\n\nCheck the health of enterprise accounts specifically — these are the highest-value customers."
+    },
+    {
+      "type": "sql",
+      "content": "SELECT\n  o.name,\n  o.slug,\n  o.billing_email,\n  s.status AS sub_status,\n  s.current_period_end,\n  COUNT(DISTINCT m.user_id) AS team_size,\n  o.metadata->>'industry' AS industry\nFROM organizations o\nJOIN subscriptions s ON s.organization_id = o.id\nLEFT JOIN memberships m ON m.organization_id = o.id\nWHERE o.plan = 'enterprise'\nGROUP BY o.id, o.name, o.slug, o.billing_email, s.status, s.current_period_end, o.metadata\nORDER BY team_size DESC"
+    },
+    {
+      "type": "markdown",
+      "content": "---\n\n**All clear?** If no red flags above, the platform is healthy. If anything looks off, escalate to the relevant team:\n- Billing issues → #billing-ops\n- Security concerns → #security-oncall\n- Usage anomalies → #product-eng"
+    }
+  ]
+}

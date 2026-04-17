@@ -58,12 +58,28 @@ import type {
   CacheStats,
   LockInfo,
   DatabaseSizeInfo,
+  SchemaIntelCheckId,
+  SchemaIntelReport,
   PgExportOptions,
   PgExportProgress,
   PgExportResult,
   PgImportOptions,
   PgImportProgress,
-  PgImportResult
+  PgImportResult,
+  Notebook,
+  NotebookWithCells,
+  NotebookCell,
+  CreateNotebookInput,
+  UpdateNotebookInput,
+  AddCellInput,
+  UpdateCellInput,
+  StartStepRequest,
+  StartStepResponse,
+  NextStepResponse,
+  SkipStepResponse,
+  ContinueStepResponse,
+  RetryStepResponse,
+  StopStepResponse
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -310,6 +326,46 @@ const api = {
       ipcRenderer.invoke('snippets:update', { id, updates }),
     delete: (id: string): Promise<IpcResponse<void>> => ipcRenderer.invoke('snippets:delete', id)
   },
+  // Notebooks management
+  notebooks: {
+    list: (): Promise<IpcResponse<Notebook[]>> => ipcRenderer.invoke('notebooks:list'),
+    get: (id: string): Promise<IpcResponse<NotebookWithCells>> =>
+      ipcRenderer.invoke('notebooks:get', id),
+    create: (input: CreateNotebookInput): Promise<IpcResponse<Notebook>> =>
+      ipcRenderer.invoke('notebooks:create', input),
+    update: (id: string, updates: UpdateNotebookInput): Promise<IpcResponse<Notebook>> =>
+      ipcRenderer.invoke('notebooks:update', { id, updates }),
+    delete: (id: string): Promise<IpcResponse<void>> => ipcRenderer.invoke('notebooks:delete', id),
+    duplicate: (id: string, connectionId: string): Promise<IpcResponse<Notebook>> =>
+      ipcRenderer.invoke('notebooks:duplicate', { id, connectionId }),
+    addCell: (notebookId: string, input: AddCellInput): Promise<IpcResponse<NotebookCell>> =>
+      ipcRenderer.invoke('notebooks:add-cell', { notebookId, input }),
+    updateCell: (cellId: string, updates: UpdateCellInput): Promise<IpcResponse<NotebookCell>> =>
+      ipcRenderer.invoke('notebooks:update-cell', { cellId, updates }),
+    deleteCell: (cellId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('notebooks:delete-cell', cellId),
+    reorderCells: (notebookId: string, cellIds: string[]): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('notebooks:reorder-cells', { notebookId, cellIds })
+  },
+  step: {
+    start: (
+      config: ConnectionConfig,
+      request: StartStepRequest
+    ): Promise<IpcResponse<StartStepResponse>> =>
+      ipcRenderer.invoke('step:start', { config, request }),
+    next: (sessionId: string): Promise<IpcResponse<NextStepResponse>> =>
+      ipcRenderer.invoke('step:next', sessionId),
+    skip: (sessionId: string): Promise<IpcResponse<SkipStepResponse>> =>
+      ipcRenderer.invoke('step:skip', sessionId),
+    continue: (sessionId: string): Promise<IpcResponse<ContinueStepResponse>> =>
+      ipcRenderer.invoke('step:continue', sessionId),
+    retry: (sessionId: string): Promise<IpcResponse<RetryStepResponse>> =>
+      ipcRenderer.invoke('step:retry', sessionId),
+    setBreakpoints: (sessionId: string, breakpoints: number[]): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('step:set-breakpoints', { sessionId, breakpoints }),
+    stop: (sessionId: string): Promise<IpcResponse<StopStepResponse>> =>
+      ipcRenderer.invoke('step:stop', sessionId)
+  },
   // Scheduled queries management
   scheduledQueries: {
     list: (): Promise<IpcResponse<ScheduledQuery[]>> =>
@@ -496,6 +552,13 @@ const api = {
   files: {
     openFilePicker: (): Promise<string | null> => ipcRenderer.invoke('open-file-dialog')
   },
+  intel: {
+    run: (
+      config: ConnectionConfig,
+      checks?: SchemaIntelCheckId[]
+    ): Promise<IpcResponse<SchemaIntelReport>> =>
+      ipcRenderer.invoke('intel:run', { config, checks })
+  },
   health: {
     activeQueries: (config: ConnectionConfig): Promise<IpcResponse<ActiveQuery[]>> =>
       ipcRenderer.invoke('db:active-queries', config),
@@ -542,11 +605,8 @@ const api = {
       ipcRenderer.on('pg-notify:event', handler)
       return () => ipcRenderer.removeListener('pg-notify:event', handler)
     },
-    onStatus: (
-      callback: (status: PgNotificationConnectionStatus) => void
-    ): (() => void) => {
-      const handler = (_: unknown, status: PgNotificationConnectionStatus): void =>
-        callback(status)
+    onStatus: (callback: (status: PgNotificationConnectionStatus) => void): (() => void) => {
+      const handler = (_: unknown, status: PgNotificationConnectionStatus): void => callback(status)
       ipcRenderer.on('pg-notify:status', handler)
       return () => ipcRenderer.removeListener('pg-notify:status', handler)
     },

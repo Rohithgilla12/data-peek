@@ -465,6 +465,10 @@ export interface SQLEditorProps {
   schemas?: SchemaInfo[]
   /** SQL snippets for autocomplete */
   snippets?: Snippet[]
+  /** Called when the Monaco editor instance is mounted */
+  onMount?: (editor: EditorType, monaco: Monaco) => void
+  /** Enable glyph margin (for breakpoint decorations) */
+  glyphMargin?: boolean
 }
 
 // Custom dark theme inspired by the app's aesthetic
@@ -556,7 +560,9 @@ export function SQLEditor({
   placeholder = 'SELECT * FROM your_table LIMIT 100;',
   compact = false,
   schemas = [],
-  snippets = []
+  snippets = [],
+  onMount,
+  glyphMargin = false
 }: SQLEditorProps) {
   const { theme } = useTheme()
   const editorRef = React.useRef<EditorType | null>(null)
@@ -586,6 +592,7 @@ export function SQLEditor({
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
     monacoRef.current = monaco
+    onMount?.(editor, monaco)
 
     // Define custom themes
     defineCustomTheme(monaco)
@@ -627,7 +634,7 @@ export function SQLEditor({
       scrollBeyondLastLine: false,
       wordWrap: 'on',
       lineNumbers: compact ? 'off' : 'on',
-      glyphMargin: false,
+      glyphMargin,
       folding: !compact,
       lineDecorationsWidth: compact ? 0 : 10,
       lineNumbersMinChars: compact ? 0 : 3,

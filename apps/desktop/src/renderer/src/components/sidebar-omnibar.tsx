@@ -306,7 +306,7 @@ export function SidebarOmnibar() {
           'rounded-md border border-border/50 bg-sidebar-accent/30 transition-all duration-300',
           isActive && 'bg-sidebar-accent/60 border-border shadow-sm'
         )}
-        filter={(value, search, keywords) => {
+        filter={(_value, search, keywords) => {
           if (!search) return 1
           const searchLower = search.toLowerCase()
           const label = (keywords?.[0] ?? '').toLowerCase()
