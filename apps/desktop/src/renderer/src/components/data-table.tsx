@@ -4,10 +4,8 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
-  type ColumnDef,
-  type SortingState
+  type ColumnDef
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowUpDown, ArrowUp, ArrowDown, Link2, Copy, BarChart2, Lock, Unlock } from 'lucide-react'
@@ -34,6 +32,12 @@ import {
 import { JsonCellValue } from '@/components/json-cell-value'
 import { FKCellValue } from '@/components/fk-cell-value'
 import { SmartFilterBar, chipMatchesRow, type FilterChip } from '@/components/smart-filter-bar'
+import {
+  SmartSortBar,
+  applySorts,
+  toggleColumnSort,
+  type SortChip
+} from '@/components/smart-sort-bar'
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getTypeColor } from '@/lib/type-colors'
@@ -244,8 +248,20 @@ export function DataTable<TData extends Record<string, unknown>>({
     ]
   )
   const pageSize = propPageSize ?? defaultPageSize
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sortChips, setSortChips] = React.useState<SortChip[]>([])
   const [filterChips, setFilterChips] = React.useState<FilterChip[]>([])
+
+  const sortedData = React.useMemo(() => {
+    if (sortChips.length === 0) return data
+    return applySorts(data, sortChips, columnDefs)
+  }, [data, sortChips, columnDefs])
+
+  const toggleHeaderSort = React.useCallback(
+    (col: { name: string; dataType: string }, multi: boolean) => {
+      setSortChips((prev) => toggleColumnSort(prev, col, { multi }))
+    },
+    []
+  )
 
   const globalFilterFn = React.useCallback(
     (row: { original: unknown }): boolean => {
@@ -276,13 +292,13 @@ export function DataTable<TData extends Record<string, unknown>>({
   // Notify parent of sorting changes
   React.useEffect(() => {
     if (onSortingChange) {
-      const sorts: DataTableSort[] = sorting.map((s) => ({
-        column: s.id,
-        direction: s.desc ? 'desc' : 'asc'
+      const sorts: DataTableSort[] = sortChips.map((c) => ({
+        column: c.column,
+        direction: c.direction
       }))
       onSortingChange(sorts)
     }
-  }, [sorting, onSortingChange])
+  }, [sortChips, onSortingChange])
 
   // Generate TanStack Table columns from column definitions
   const columns = React.useMemo<ColumnDef<TData>[]>(
@@ -305,8 +321,12 @@ export function DataTable<TData extends Record<string, unknown>>({
         return {
           id: columnId,
           accessorKey: col.name,
-          header: ({ column }) => {
-            const isSorted = column.getIsSorted()
+          enableSorting: false,
+          header: () => {
+            const activeChip = sortChips.find((c) => c.column === col.name)
+            const activeRank = activeChip
+              ? sortChips.findIndex((c) => c.column === col.name) + 1
+              : 0
             const isMasked = effectiveMasked.has(col.name)
             return (
               <div className="flex flex-col gap-0.5">
@@ -314,7 +334,8 @@ export function DataTable<TData extends Record<string, unknown>>({
                   <Button
                     variant="ghost"
                     className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50 flex-1"
-                    onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                    onClick={(e) => toggleHeaderSort(col, e.shiftKey || e.metaKey || e.ctrlKey)}
+                    title="Click to sort, Shift+click for multi-sort"
                   >
                     <span>{displayName}</span>
                     {isMasked && <Lock className="ml-1 size-3 text-amber-500" />}
@@ -325,10 +346,19 @@ export function DataTable<TData extends Record<string, unknown>>({
                     >
                       {col.dataType}
                     </Badge>
-                    {isSorted === 'asc' ? (
-                      <ArrowUp className="ml-1 size-3 text-primary" />
-                    ) : isSorted === 'desc' ? (
-                      <ArrowDown className="ml-1 size-3 text-primary" />
+                    {activeChip ? (
+                      <span className="ml-1 inline-flex items-center gap-0.5">
+                        {activeChip.direction === 'asc' ? (
+                          <ArrowUp className="size-3 text-primary" />
+                        ) : (
+                          <ArrowDown className="size-3 text-primary" />
+                        )}
+                        {sortChips.length > 1 && (
+                          <span className="text-[9px] font-mono font-semibold text-primary/80 tabular-nums">
+                            {activeRank}
+                          </span>
+                        )}
+                      </span>
                     ) : (
                       <ArrowUpDown className="ml-1 size-3 opacity-50" />
                     )}
@@ -447,21 +477,20 @@ export function DataTable<TData extends Record<string, unknown>>({
       effectiveMasked,
       tabId,
       toggleColumnMask,
-      hoverToPeek
+      hoverToPeek,
+      sortChips,
+      toggleHeaderSort
     ]
   )
 
   const table = useReactTable({
-    data,
+    data: sortedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
     globalFilterFn: (row) => globalFilterFn(row),
     state: {
-      sorting,
       globalFilter: filterChips
     },
     initialState: {
@@ -470,6 +499,10 @@ export function DataTable<TData extends Record<string, unknown>>({
       }
     }
   })
+
+  React.useEffect(() => {
+    table.setPageIndex(0)
+  }, [sortChips, filterChips, table])
 
   const tableContainerRef = React.useRef<HTMLDivElement>(null)
   const headerRef = React.useRef<HTMLTableRowElement>(null)
@@ -523,6 +556,13 @@ export function DataTable<TData extends Record<string, unknown>>({
         onApplyToQuery={onApplyToQuery}
         totalRows={data.length}
         filteredRows={table.getFilteredRowModel().rows.length}
+        className="shrink-0"
+      />
+      <SmartSortBar
+        columns={columnDefs}
+        chips={sortChips}
+        onChipsChange={setSortChips}
+        onApplyToQuery={onApplyToQuery}
         className="shrink-0"
       />
 

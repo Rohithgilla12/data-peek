@@ -36,16 +36,20 @@ import { useSettingsStore } from '@/stores/settings-store'
 import { useMaskingStore } from '@/stores/masking-store'
 import { PaginationControls } from '@/components/pagination-controls'
 import { SmartFilterBar, chipMatchesRow, type FilterChip } from '@/components/smart-filter-bar'
+import {
+  SmartSortBar,
+  applySorts,
+  toggleColumnSort,
+  type SortChip
+} from '@/components/smart-sort-bar'
 import type { ColumnInfo, ConnectionConfig, EditContext, ForeignKeyInfo } from '@data-peek/shared'
 import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
-  type ColumnDef,
-  type SortingState
+  type ColumnDef
 } from '@tanstack/react-table'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
@@ -240,8 +244,20 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     ]
   )
 
-  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [sortChips, setSortChips] = React.useState<SortChip[]>([])
   const [filterChips, setFilterChips] = React.useState<FilterChip[]>([])
+
+  const sortedData = React.useMemo(() => {
+    if (sortChips.length === 0) return data
+    return applySorts(data, sortChips, columnDefs)
+  }, [data, sortChips, columnDefs])
+
+  const toggleHeaderSort = React.useCallback(
+    (col: { name: string; dataType: string }, multi: boolean) => {
+      setSortChips((prev) => toggleColumnSort(prev, col, { multi }))
+    },
+    []
+  )
 
   const globalFilterFn = React.useCallback(
     (row: { original: unknown }): boolean => {
@@ -414,13 +430,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   // Notify parent of sorting changes
   React.useEffect(() => {
     if (onSortingChange) {
-      const sorts: DataTableSort[] = sorting.map((s) => ({
-        column: s.id,
-        direction: s.desc ? 'desc' : 'asc'
+      const sorts: DataTableSort[] = sortChips.map((c) => ({
+        column: c.column,
+        direction: c.direction
       }))
       onSortingChange(sorts)
     }
-  }, [sorting, onSortingChange])
+  }, [sortChips, onSortingChange])
 
   // Handle toggle edit mode
   const handleToggleEditMode = () => {
@@ -708,8 +724,10 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         id: columnId,
         // Keep accessorKey as col.name since that's how row data is keyed (even if empty)
         accessorKey: col.name,
-        header: ({ column }) => {
-          const isSorted = column.getIsSorted()
+        enableSorting: false,
+        header: () => {
+          const activeChip = sortChips.find((c) => c.column === col.name)
+          const activeRank = activeChip ? sortChips.findIndex((c) => c.column === col.name) + 1 : 0
           const isMasked = effectiveMasked.has(col.name)
           return (
             <div className="flex flex-col gap-0.5">
@@ -717,7 +735,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 <Button
                   variant="ghost"
                   className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50 flex-1"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                  onClick={(e) => toggleHeaderSort(col, e.shiftKey || e.metaKey || e.ctrlKey)}
+                  title="Click to sort, Shift+click for multi-sort"
                 >
                   <span>{displayName}</span>
                   {col.isPrimaryKey && (
@@ -733,10 +752,19 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   >
                     {col.dataType}
                   </Badge>
-                  {isSorted === 'asc' ? (
-                    <ArrowUp className="ml-1 size-3 text-primary" />
-                  ) : isSorted === 'desc' ? (
-                    <ArrowDown className="ml-1 size-3 text-primary" />
+                  {activeChip ? (
+                    <span className="ml-1 inline-flex items-center gap-0.5">
+                      {activeChip.direction === 'asc' ? (
+                        <ArrowUp className="size-3 text-primary" />
+                      ) : (
+                        <ArrowDown className="size-3 text-primary" />
+                      )}
+                      {sortChips.length > 1 && (
+                        <span className="text-[9px] font-mono font-semibold text-primary/80 tabular-nums">
+                          {activeRank}
+                        </span>
+                      )}
+                    </span>
                   ) : (
                     <ArrowUpDown className="ml-1 size-3 opacity-50" />
                   )}
@@ -987,20 +1015,19 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     onColumnStatsClick,
     effectiveMasked,
     toggleColumnMask,
-    hoverToPeek
+    hoverToPeek,
+    sortChips,
+    toggleHeaderSort
   ])
 
   const table = useReactTable({
-    data,
+    data: sortedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting,
     globalFilterFn: (row) => globalFilterFn(row),
     state: {
-      sorting,
       globalFilter: filterChips
     },
     initialState: {
@@ -1009,6 +1036,10 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
       }
     }
   })
+
+  React.useEffect(() => {
+    table.setPageIndex(0)
+  }, [sortChips, filterChips, table])
 
   const tableContainerRef = React.useRef<HTMLDivElement>(null)
   const headerRef = React.useRef<HTMLTableRowElement>(null)
@@ -1065,6 +1096,12 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             onApplyToQuery={onApplyToQuery}
             totalRows={data.length}
             filteredRows={table.getFilteredRowModel().rows.length}
+          />
+          <SmartSortBar
+            columns={columnDefs}
+            chips={sortChips}
+            onChipsChange={setSortChips}
+            onApplyToQuery={onApplyToQuery}
           />
           {canEdit && (
             <div className="flex items-center px-2 py-1 border-b border-border/30">
