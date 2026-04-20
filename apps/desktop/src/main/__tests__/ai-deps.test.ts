@@ -14,13 +14,17 @@
  * provider-utils@3). This test fails fast in CI if the same split
  * recurs — before anyone packages a release.
  *
- * The check runs against the real on-disk node_modules rather than a
- * parsed lockfile so it keeps working regardless of pnpm's hoisting
- * strategy.
+ * The check uses Node's module resolution from apps/desktop (which is
+ * where the real runtime imports happen), not a fixed filesystem path.
+ * That keeps it honest regardless of pnpm's hoisting strategy —
+ * `shamefully-hoist=true` on CI puts @ai-sdk under apps/desktop/
+ * node_modules, while a hoisted local workspace lifts them to the
+ * monorepo root.
  */
 
 import fs from 'fs'
 import path from 'path'
+import { createRequire } from 'module'
 import { describe, expect, it } from 'vitest'
 
 interface PackageJson {
@@ -40,50 +44,99 @@ function readPackageJson(pkgDir: string): PackageJson | null {
   }
 }
 
-// node_modules is hoisted at the monorepo root.
-const REPO_ROOT = path.resolve(__dirname, '../../../../../')
-const AI_SDK_DIR = path.join(REPO_ROOT, 'node_modules/@ai-sdk')
+// Resolve packages from apps/desktop (where the real imports happen).
+// __dirname is .../apps/desktop/src/main/__tests__
+const DESKTOP_DIR = path.resolve(__dirname, '../../../')
+const desktopRequire = createRequire(path.join(DESKTOP_DIR, 'package.json'))
 
-function collectProviderUtilsRequirements(): Array<{
+/**
+ * Find every @ai-sdk/* directory reachable from apps/desktop. Walks
+ * the node_modules parents of the resolved `@ai-sdk/openai` (a
+ * package we know is a direct dep) to discover every sibling
+ * package, across both hoisted and isolated layouts.
+ */
+function findAiSdkDirectories(): string[] {
+  let openaiPkgPath: string
+  try {
+    openaiPkgPath = desktopRequire.resolve('@ai-sdk/openai/package.json')
+  } catch {
+    return []
+  }
+
+  const dirs = new Set<string>()
+  // openaiPkgPath = .../node_modules/@ai-sdk/openai/package.json
+  // Add the @ai-sdk parent.
+  dirs.add(path.dirname(path.dirname(openaiPkgPath)))
+
+  // Also walk up every node_modules/@ai-sdk we can see from apps/desktop,
+  // so nested copies (e.g. via ai-v5 aliases) don't hide a bad version.
+  let current = DESKTOP_DIR
+  while (true) {
+    const candidate = path.join(current, 'node_modules/@ai-sdk')
+    if (fs.existsSync(candidate)) dirs.add(candidate)
+    const parent = path.dirname(current)
+    if (parent === current) break
+    current = parent
+  }
+
+  return [...dirs]
+}
+
+interface Requirement {
   package: string
   version: string
   requires: string
-}> {
-  if (!fs.existsSync(AI_SDK_DIR)) return []
+  from: string
+}
 
-  const entries = fs.readdirSync(AI_SDK_DIR, { withFileTypes: true })
-  const results: Array<{ package: string; version: string; requires: string }> = []
+function collectProviderUtilsRequirements(): Requirement[] {
+  const aiSdkDirs = findAiSdkDirectories()
+  const results: Requirement[] = []
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue
-    if (entry.name === 'provider-utils' || entry.name === 'provider') continue
+  for (const dir of aiSdkDirs) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true })
+    for (const entry of entries) {
+      if (!entry.isDirectory()) continue
+      if (entry.name === 'provider-utils' || entry.name === 'provider') continue
 
-    const pkg = readPackageJson(path.join(AI_SDK_DIR, entry.name))
-    if (!pkg) continue
-    const requires = pkg.dependencies?.['@ai-sdk/provider-utils']
-    if (!requires) continue
-    results.push({
-      package: `@ai-sdk/${entry.name}`,
-      version: pkg.version ?? 'unknown',
-      requires
-    })
+      const pkgDir = path.join(dir, entry.name)
+      const pkg = readPackageJson(pkgDir)
+      if (!pkg) continue
+      const requires = pkg.dependencies?.['@ai-sdk/provider-utils']
+      if (!requires) continue
+      results.push({
+        package: pkg.name ?? `@ai-sdk/${entry.name}`,
+        version: pkg.version ?? 'unknown',
+        requires,
+        from: pkgDir
+      })
+    }
   }
 
   return results
 }
 
 function majorOf(range: string): string {
-  // Strip leading ^ ~ >= <= =, take everything up to the first dot.
   const cleaned = range.replace(/^[^\d]*/, '')
   return cleaned.split('.')[0] ?? range
 }
 
 describe('@ai-sdk dependency consistency', () => {
+  it('discovers installed @ai-sdk packages', () => {
+    // Sanity: if this fails, the discovery walk itself is broken —
+    // fix the walker before trusting the major-version assertions.
+    const requirements = collectProviderUtilsRequirements()
+    expect(
+      requirements.length,
+      `No @ai-sdk packages found via apps/desktop resolver. Searched:\n  ${findAiSdkDirectories().join('\n  ')}`
+    ).toBeGreaterThan(0)
+  })
+
   it('all @ai-sdk/* packages agree on the major version of provider-utils', () => {
     const requirements = collectProviderUtilsRequirements()
-    expect(requirements.length).toBeGreaterThan(0)
+    if (requirements.length === 0) return // handled by the discovery test
 
-    const majors = new Map<string, Array<{ package: string; version: string; requires: string }>>()
+    const majors = new Map<string, Requirement[]>()
     for (const r of requirements) {
       const major = majorOf(r.requires)
       if (!majors.has(major)) majors.set(major, [])
@@ -109,11 +162,17 @@ describe('@ai-sdk dependency consistency', () => {
     expect(majors.size).toBe(1)
   })
 
-  it('the resolved ai package pins a provider-utils version and matches', () => {
-    const aiPkg = readPackageJson(path.join(REPO_ROOT, 'node_modules/ai'))
+  it('the resolved `ai` package agrees on provider-utils major', () => {
+    let aiPkgPath: string
+    try {
+      aiPkgPath = desktopRequire.resolve('ai/package.json')
+    } catch {
+      throw new Error('Could not resolve `ai` from apps/desktop')
+    }
+    const aiPkg = readPackageJson(path.dirname(aiPkgPath))
     expect(aiPkg).toBeTruthy()
     const aiRequires = aiPkg!.dependencies?.['@ai-sdk/provider-utils']
-    expect(aiRequires).toBeTruthy()
+    expect(aiRequires, '`ai` is expected to depend on @ai-sdk/provider-utils').toBeTruthy()
 
     const requirements = collectProviderUtilsRequirements()
     for (const r of requirements) {
