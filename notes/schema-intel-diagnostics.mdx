@@ -1,0 +1,176 @@
+---
+title: "One-Click Diagnostics for the Schema Problems You Already Have"
+description: "Every Postgres database accumulates schema debt — tables without primary keys, foreign keys without indexes, duplicate indexes, bloat. data-peek's Schema Intel runs the diagnostic queries you keep meaning to write, surfaces the findings, and gives you copyable SQL fixes."
+date: "2026-04-20"
+author: "Rohith Gilla"
+tags: ["postgres", "database", "performance", "devops"]
+published: true
+---
+
+Every Postgres database older than six months has some version of the
+same problems:
+
+- A table someone created without a primary key
+- A foreign key column nobody indexed
+- Two indexes that do the same thing because a migration forgot to drop
+  the old one
+- A table that has not been vacuumed since the bicentennial
+- A FK that is nullable when nobody remembers why
+
+You know the diagnostic queries exist. They live in a Notion page
+somewhere. You copy them once a quarter when the database is slow. You
+mean to automate this. You do not automate this.
+
+v0.21 ships **Schema Intel** — a one-click surface that runs the
+queries, groups the findings, and hands you the fix.
+
+## What it checks
+
+Click **Schema Intel** in the sidebar's Automation & Monitoring group.
+It runs a configurable set of read-only diagnostics against the active
+connection and returns a findings list. Each finding has:
+
+- A **title** (`Table has no primary key`)
+- A **detail** (`public.audit_log`)
+- A **severity** (info, warn, critical)
+- Where possible, a **suggested SQL fix** you can copy or open in a new
+  query tab
+
+The check set on Postgres covers:
+
+1. **Tables without a primary key** — anything in `pg_class` where
+   `relkind = 'r'` and no `indisprimary` row exists in `pg_index`
+2. **Missing foreign key indexes** — FK columns with no index that
+   starts with that column, which turns every parent DELETE into a
+   sequential scan
+3. **Duplicate indexes** — indexes with identical column lists and
+   expressions
+4. **Unused indexes** — `pg_stat_user_indexes.idx_scan = 0` over a
+   threshold period (skip if the stats were recently reset)
+5. **Invalid indexes** — `indisvalid = false`, usually a failed
+   `CREATE INDEX CONCURRENTLY`
+6. **Bloated tables** — estimated bloat ratio above a threshold, using
+   the [pgstattuple][bloat] heuristic
+7. **Never-vacuumed tables** — `pg_stat_user_tables.last_vacuum` is
+   null and `last_autovacuum` is older than 30 days
+8. **Nullable foreign keys** — FK column with `NOT NULL` missing,
+   often unintentional
+
+On MySQL the checks run over `information_schema` (core set). On MSSQL
+it is currently just tables-without-PK. SQLite returns skipped entries.
+
+[bloat]: https://www.postgresql.org/docs/current/pgstattuple.html
+
+## Why "read-only" is load-bearing
+
+Every query in Schema Intel is a pure `SELECT` against system catalogs
+or `information_schema`. It never touches user data. It never runs
+`ANALYZE`. It never acquires a lock stronger than `AccessShareLock`.
+
+This matters because the natural audience for this feature is "person
+who is nervous about their database right now." If running the
+diagnostic has any chance of making things worse, nobody will click
+the button. So the button is safe by construction.
+
+## Permission failures do not hide
+
+If your role cannot read `pg_stat_user_indexes`, the "unused indexes"
+check cannot run. The question is what to do about that.
+
+Early versions wrapped each check in `try/catch`, logged the error,
+and showed a green checkmark. This was terrible — you would look at
+the Schema Intel tab, see everything passing, and conclude your
+database was healthy when in fact half the checks had silently
+skipped.
+
+The current behaviour: each check reports a status of `ok`,
+`findings`, `skipped`, or `error`. Skipped and errored checks show up
+in the results list with a grey badge and the reason:
+
+```
+Unused indexes — skipped
+  Permission denied on pg_stat_user_indexes.
+  Grant pg_read_all_stats to this role, or run as superuser.
+```
+
+Absence of evidence is not evidence of absence. The UI is now explicit
+about that.
+
+## Copyable fixes
+
+When a finding has a mechanical fix, Schema Intel ships the SQL with
+it. "Table has no primary key" on a table with a clear candidate
+column suggests:
+
+```sql
+ALTER TABLE public.audit_log
+  ADD CONSTRAINT audit_log_pkey PRIMARY KEY (id);
+```
+
+"Missing foreign key index" suggests:
+
+```sql
+CREATE INDEX CONCURRENTLY idx_orders_customer_id
+  ON public.orders (customer_id);
+```
+
+Note the `CONCURRENTLY` — any suggestion that creates an index in a
+table scan does it concurrently by default, because the user hitting
+this button on production should not pay an AccessExclusiveLock for
+the privilege.
+
+You can copy the SQL to the clipboard, or click **Open in new tab** to
+drop it into a query editor where you can edit the name, add `IF NOT
+EXISTS`, and run it when you are ready.
+
+## Why not `pgtune` / `pgbadger` / insert-tool-here
+
+Those tools exist and they are good. `pgtune` tunes configuration.
+`pgbadger` analyses logs. `pganalyze` is a whole commercial product.
+
+Schema Intel is explicitly not that. It is the lightweight version
+that lives inside a SQL client you already have open, runs in under a
+second against the connection you already have, and tells you the
+thing you already suspected. "Yes, `audit_log` has no primary key."
+"Yes, that FK is unindexed." "Yes, that index has not been used in
+six weeks."
+
+No agent to install. No log shipping. No separate dashboard. No
+monthly subscription. One button, a list, and copyable SQL.
+
+## The checks are pluggable
+
+Internally, each check is an object:
+
+```ts
+interface SchemaIntelCheck {
+  id: string
+  title: string
+  description: string
+  severity: 'info' | 'warn' | 'critical'
+  dialects: Array<'postgres' | 'mysql' | 'mssql' | 'sqlite'>
+  run(adapter: DatabaseAdapter): Promise<SchemaIntelResult>
+}
+```
+
+Adding a new check is a file in `src/main/schema-intel/checks/`. It
+registers itself, declares which dialects it supports, and returns
+findings. The orchestrator runs the checks in parallel, collects the
+results, and ships them over IPC.
+
+This is the bit I am most excited about — the set of things people
+want to know about their database is open-ended, and most of the
+useful checks are 20 lines of SQL plus a couple of lines of
+scaffolding. If you have a check you run often, a PR adds it for
+everyone.
+
+## What I use it for
+
+Every new connection, first thing: click Schema Intel. See what the
+database thinks of itself. Usually there are a few findings — a
+missing index on an FK that nobody noticed, a duplicate index from a
+migration, an `audit_log` table that never got a PK.
+
+Twenty minutes with Schema Intel is the cheapest database
+performance audit you will ever do. Most of the findings were already
+true yesterday. You just did not know them.

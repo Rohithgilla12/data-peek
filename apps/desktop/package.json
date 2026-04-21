@@ -1,6 +1,6 @@
 {
   "name": "@data-peek/desktop",
-  "version": "0.21.0",
+  "version": "0.21.2",
   "description": "A minimal, fast database client",
   "main": "./out/main/index.js",
   "author": "Rohith Gilla",
@@ -25,12 +25,9 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.17",
-    "@ai-sdk/deepseek": "^2.0.29",
     "@ai-sdk/google": "^2.0.12",
     "@ai-sdk/groq": "^2.0.8",
-    "@ai-sdk/mistral": "^3.0.30",
     "@ai-sdk/openai": "^2.0.24",
-    "@ai-sdk/xai": "^3.0.82",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",

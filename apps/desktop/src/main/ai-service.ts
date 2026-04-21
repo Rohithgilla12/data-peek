@@ -5,14 +5,8 @@
  * Uses AI SDK's generateObject for typed JSON output.
  */
 
-import { createOpenAI } from '@ai-sdk/openai'
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { createGroq } from '@ai-sdk/groq'
-import { createDeepSeek } from '@ai-sdk/deepseek'
-import { createMistral } from '@ai-sdk/mistral'
-import { createXai } from '@ai-sdk/xai'
 import { generateObject, generateText } from 'ai'
+import { createProviderClient } from './ai-providers'
 import { z } from 'zod'
 import type {
   SchemaInfo,
@@ -292,87 +286,12 @@ export function clearAIConfig(): void {
 }
 
 /**
- * Get the AI model instance based on provider
+ * Get the AI model instance based on provider.
+ * Thin wrapper around the pure factory in ai-providers.ts (kept as a
+ * separate module so it can be unit-tested without Electron).
  */
 function getModel(config: AIConfig) {
-  switch (config.provider) {
-    case 'openai': {
-      const openai = createOpenAI({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl
-      })
-      return openai(config.model)
-    }
-
-    case 'anthropic': {
-      const anthropic = createAnthropic({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl
-      })
-      return anthropic(config.model)
-    }
-
-    case 'google': {
-      const google = createGoogleGenerativeAI({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl
-      })
-      return google(config.model)
-    }
-
-    case 'groq': {
-      const groq = createGroq({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl
-      })
-      return groq(config.model)
-    }
-
-    case 'deepseek': {
-      const deepseek = createDeepSeek({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl
-      })
-      return deepseek(config.model)
-    }
-
-    case 'mistral': {
-      const mistral = createMistral({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl
-      })
-      return mistral(config.model)
-    }
-
-    case 'xai': {
-      const xai = createXai({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl
-      })
-      return xai(config.model)
-    }
-
-    case 'glm': {
-      // GLM (Zhipu AI) uses OpenAI-compatible API
-      const glm = createOpenAI({
-        apiKey: config.apiKey,
-        baseURL: config.baseUrl || 'https://open.bigmodel.cn/api/paas/v4'
-      })
-      return glm(config.model)
-    }
-
-    case 'ollama': {
-      // Ollama uses OpenAI-compatible API
-      const ollama = createOpenAI({
-        baseURL: config.baseUrl || 'http://localhost:11434/v1',
-        apiKey: 'ollama' // Ollama doesn't need a real key
-      })
-      return ollama(config.model)
-    }
-
-    default:
-      throw new Error(`Unknown provider: ${config.provider}`)
-  }
+  return createProviderClient(config)
 }
 
 /**

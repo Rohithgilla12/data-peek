@@ -15,7 +15,24 @@ on:
           - linux
 
 jobs:
+  # Gate every manual artifact build behind tests + typecheck. No more
+  # shipping a bad dep split into an artifact that ends up on someone's
+  # machine.
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @data-peek/desktop test
+      - run: pnpm --filter @data-peek/desktop typecheck
+
   build-mac:
+    needs: verify
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'mac' }}
     runs-on: macos-latest
     steps:
@@ -31,7 +48,7 @@ jobs:
         uses: pnpm/action-setup@v6
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build for macOS
         working-directory: apps/desktop
@@ -49,6 +66,7 @@ jobs:
           if-no-files-found: error
 
   build-windows:
+    needs: verify
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'windows' }}
     runs-on: windows-latest
     steps:
@@ -64,7 +82,7 @@ jobs:
         uses: pnpm/action-setup@v6
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build for Windows
         working-directory: apps/desktop
@@ -81,6 +99,7 @@ jobs:
           if-no-files-found: error
 
   build-linux:
+    needs: verify
     if: ${{ github.event.inputs.platform == 'all' || github.event.inputs.platform == 'linux' }}
     runs-on: ubuntu-latest
     steps:
@@ -96,7 +115,7 @@ jobs:
         uses: pnpm/action-setup@v6
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build for Linux
         working-directory: apps/desktop

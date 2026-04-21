@@ -10,7 +10,48 @@ permissions:
   contents: write
 
 jobs:
+  # Fast verification gate. Platform builds don't start until this passes,
+  # so we don't burn 30min on three macOS/Windows/Linux runners just to
+  # ship a broken release. This is what would have caught v0.21.0.
+  verify:
+    name: verify (typecheck · test)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run desktop tests
+        run: pnpm --filter @data-peek/desktop test
+
+      - name: Typecheck desktop
+        run: pnpm --filter @data-peek/desktop typecheck
+
   build-mac:
+    needs: verify
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -86,6 +127,7 @@ jobs:
           if-no-files-found: error
 
   build-windows:
+    needs: verify
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -132,6 +174,7 @@ jobs:
           if-no-files-found: error
 
   build-linux:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

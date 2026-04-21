@@ -14,6 +14,9 @@ This folder is the single source of truth for technical notes and blog posts. Fi
 | [listen-notify-without-tears.mdx](./listen-notify-without-tears.mdx) | Postgres LISTEN/NOTIFY debugger with SQLite history |
 | [benchmark-mode-p50-p90-p99.mdx](./benchmark-mode-p50-p90-p99.mdx) | Benchmark mode with p90/p95/p99 percentiles |
 | [fk-aware-fake-data-generator.mdx](./fk-aware-fake-data-generator.mdx) | FK-aware fake data generator with Faker.js |
+| [smart-sort-bar.mdx](./smart-sort-bar.mdx) | Multi-column chip-based sorting with type-aware modes |
+| [multi-statement-step-through.mdx](./multi-statement-step-through.mdx) | Step-through debugging for multi-statement SQL scripts |
+| [schema-intel-diagnostics.mdx](./schema-intel-diagnostics.mdx) | One-click schema diagnostics for Postgres / MySQL / MSSQL |
 
 ## Creating a New Post
 

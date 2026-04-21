@@ -1,6 +1,6 @@
 {
   "name": "@data-peek/ui",
-  "version": "0.21.0",
+  "version": "0.21.2",
   "private": true,
   "type": "module",
   "exports": {

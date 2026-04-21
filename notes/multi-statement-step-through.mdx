@@ -1,0 +1,184 @@
+---
+title: "Step-Through Debugging for SQL, Because `BEGIN; -- nope` Is Not a Workflow"
+description: "Running a multi-statement SQL script is an all-or-nothing gamble. data-peek's step-through executor pauses between statements, keeps the connection open across pauses, and lets you inspect, skip, or abort — without manually pasting statements one by one."
+date: "2026-04-20"
+author: "Rohith Gilla"
+tags: ["sql", "postgres", "database", "productivity"]
+published: true
+---
+
+Here is how I used to run a migration script in a SQL client:
+
+1. Paste the whole thing
+2. Wrap it in `BEGIN;` … `ROLLBACK;`
+3. Run it
+4. It errors on statement 7
+5. Panic briefly
+6. Delete statements 8 through 20
+7. Re-run to see statement 7's error in context
+8. Fix statement 7
+9. Restore statements 8 through 20
+10. Hope nothing depended on statement 7 actually completing
+
+This is not a workflow. It is a sequence of regrets. And it is what every
+SQL client forces you into, because the only two modes on offer are
+"run everything" and "highlight the one line I want."
+
+v0.21 adds a third mode: **step-through**.
+
+## What it does
+
+Highlight a script. Hit `Cmd+Shift+Enter` (or click the **Step** button).
+data-peek parses it into individual statements, opens a database
+connection, and runs the first one. Then it stops.
+
+A **ribbon** appears above the editor:
+
+- Current statement index, e.g. `3/12`
+- Elapsed time
+- Controls: **Next** · **Skip** · **Continue to end** · **Stop**
+- Breakpoint gutter in the editor margin
+
+You inspect the result. You look at a side table to confirm the row
+count is what you expected. You check a temp table you created in
+statement 2. Then you hit `Shift+Enter` to advance. Or `Escape` to stop
+and roll back the whole thing.
+
+The connection stays open across pauses. That is the important detail —
+everything you did in statement 2 (temp tables, session variables, an
+open transaction) is still there when statement 3 runs.
+
+## The state machine that makes it work
+
+Every step-through session is an instance of `StepSessionRegistry`,
+which holds an open DB client and a state:
+
+```ts
+type StepState =
+  | { kind: 'paused';  cursorIndex: number; lastResult: ... }
+  | { kind: 'running'; cursorIndex: number }
+  | { kind: 'errored'; cursorIndex: number; error: ... }
+  | { kind: 'done';    cursorIndex: number }
+```
+
+User actions (`next`, `skip`, `continue`, `retry`, `stop`) are
+transitions between these states. The registry lives in the Electron
+main process, so the React side is just sending IPC messages and
+rendering whatever state the server reports.
+
+This matters because the alternative — parsing statements in the
+renderer, sending each one as a separate `query()` call — would open a
+new connection for every statement. Temp tables would evaporate.
+`SET LOCAL` would not persist. The whole point of step-through would
+collapse.
+
+### Why a state machine and not a loop
+
+I started with a loop. Something like:
+
+```ts
+for (const stmt of statements) {
+  const result = await runOne(stmt)
+  await waitForUserToHitNext()
+}
+```
+
+This is clean until you realise that "wait for user to hit Next" means
+the loop is blocked for possibly hours while the user goes to lunch.
+During that time the client is holding a connection, the event loop is
+fine but the React side cannot introspect what is happening, and if the
+user crashes the renderer the main process has no idea.
+
+Explicit state on the main side, IPC events for transitions, and a
+Zustand store in the renderer that mirrors the server's state. The
+renderer never holds the canonical state. If the renderer crashes and
+reopens, it asks the main process what the state is and resumes.
+
+## Breakpoints
+
+The editor margin has a gutter for breakpoints, same as any IDE. Click
+a line to set one. **Continue** runs until the next breakpoint or the
+end of the script.
+
+Breakpoints are how you scale this from "I want to inspect every step"
+to "I want to inspect step 7 and step 12, the rest is fine." Which is
+most of what I actually want when running a 30-statement migration.
+
+## Monaco keybindings that don't fight you
+
+There is a subtle bug you run into when you try to give `Shift+Enter`
+meaning in Monaco: Monaco already has a `Shift+Enter` handler (insert
+a newline without autocomplete), and a window-level keydown listener
+will not win.
+
+The fix is registering the shortcut as a Monaco action:
+
+```ts
+editor.addAction({
+  id: 'data-peek.step.next',
+  label: 'Step: Next statement',
+  keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+  precondition: 'data-peek.step.active',
+  run: () => stepNext(),
+})
+```
+
+The `precondition` context is set only while a step session is running,
+so Monaco's built-in `Shift+Enter` behaves normally the rest of the
+time. Same pattern for `Escape` (stop) and `Cmd+Shift+Enter` (start).
+
+## The counter drift bug
+
+Early versions had a fun bug where the ribbon would show `0/3` after
+running the first statement, then `2/3`, then `3/3`. Off-by-one on
+the first step only.
+
+The cause was the renderer computing `cursorIndex = response.index + 1`
+to display "1-indexed" position — and getting confused about whether
+the response represented "the statement I just ran" or "the statement
+I am about to run." Different code paths disagreed.
+
+The fix was making the server authoritative. Every step response
+(`NextStepResponse`, `SkipStepResponse`, `ContinueStepResponse`,
+`RetryStepResponse`) now includes a `cursorIndex` field, and the
+renderer displays whatever the server sent. No client-side math. No
+drift.
+
+## Pinned results
+
+If statement 3 returns 12 rows you want to remember while you inspect
+statement 7's output, click **Pin** on that result tab. It sticks
+around in the tab strip for the rest of the session.
+
+This is the step-through equivalent of having five terminal tabs open
+while debugging — one for the diagnostic query, one for the current
+state, one for the rollback-safety check. All in the same window, all
+tied to one open connection.
+
+## Why not just use `psql` in single-step mode
+
+`psql` has `\set ON_ERROR_STOP on` and you can paste a script and it
+will halt on the first error. That is fine for scripted use. It is not
+fine for iterative debugging because you cannot *continue past* the
+error without rerunning everything, and you cannot inspect between
+statements that succeed — `psql` races to the next prompt.
+
+The step-through model is closer to a debugger than to a script
+runner. The unit of execution is one statement; the default action
+between statements is "stop and wait."
+
+## What you use this for
+
+The obvious use: running a migration by hand on staging before you
+commit it. Catch the one statement that assumes a column exists that
+you dropped in step 2.
+
+Less obvious: walking a junior engineer through a data repair. You
+highlight a block, hit Step, they watch each query run and see the
+intermediate state before the next one modifies it. It is the SQL
+equivalent of screen-sharing a debugger session.
+
+Least obvious but most useful: **dry-running stored procedures** that
+got written as "just a script" and never wrapped in a function. These
+are the queries nobody trusts to run unattended. Now you do not have
+to.

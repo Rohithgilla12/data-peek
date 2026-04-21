@@ -1,0 +1,164 @@
+---
+title: "Sorting by Three Columns Shouldn't Require a CASE Statement"
+description: "Every SQL client lets you click a column header to sort. Almost none let you sort by three columns at once without dropping into SQL. Here's how data-peek's Smart Sort Bar adds type-aware, chip-based multi-sort on top of any result set — without touching the query."
+date: "2026-04-20"
+author: "Rohith Gilla"
+tags: ["sql", "database", "webdev", "ux"]
+published: true
+---
+
+I have a results grid open. 40,000 rows. I want to see the most recent
+orders per customer, grouped by region, with the largest amounts on top.
+
+In almost every SQL client I have used, the path to that view is:
+
+1. Click the column header — sorts by that one column
+2. Realise I actually need three columns in the sort
+3. Rewrite the query with a multi-column `ORDER BY`
+4. Re-run it
+5. Discover one of the columns needs `NULLS LAST`
+6. Rewrite again
+
+The client had the data the whole time. It just did not give me a way to
+reshape the view without round-tripping through the database.
+
+## The Smart Sort Bar
+
+data-peek v0.21 ships a **Smart Sort Bar** above every result set. It is
+parallel to the Smart Filter Bar and works the same way: each active sort
+is a chip, chips have settings, and the bar is the truth.
+
+Click a column header: sort by that column. Shift-click another: append
+it. Shift-click a third: append that too. The chips render in the bar in
+priority order. Drag to reorder, or use `Option/Cmd + ←/→` from the
+keyboard.
+
+`Cmd+Shift+S` focuses the bar.
+
+That is the entire interaction. No SQL rewrite, no round-trip, no
+`ORDER BY customer_id, region, amount DESC` typed out by hand.
+
+## Every chip is a little state machine
+
+Clicking a header once gives you ascending. Click again for descending.
+Click again to remove. This is the standard TanStack cycle and it works
+fine — but the chip also has a gear that opens a few more knobs:
+
+- **Mode** — how the values should be compared
+- **Nulls** — first or last
+- **Direction** — ascending or descending
+- **Drag handle** — move the chip in the priority order
+
+The modes are where it gets interesting.
+
+### Type-aware modes
+
+Most grids sort by coercing everything to a string, which is why you end
+up with `10` appearing between `1` and `2`. We fixed that, then went
+further: each chip's **mode** decides how its column gets compared.
+
+```ts
+type SortMode =
+  | 'natural'    // default, dispatches on declared column type
+  | 'length'     // sort strings by character length
+  | 'absolute'   // sort numbers by magnitude, ignoring sign
+  | 'byMonth'    // pull the month out of a date and sort 1..12
+  | 'byDayOfWeek'// pull the weekday out of a date
+  | 'byTime'     // pull the time-of-day out of a timestamp
+  | 'random'     // seeded shuffle
+```
+
+`natural` is the important one. It dispatches **strictly by declared
+column type** — a `TEXT` column is compared as a string, a `NUMERIC`
+column as a number, a `TIMESTAMP` as a date. No cross-type sniffing that
+silently reorders string columns as numbers because the first few
+happened to look numeric. That class of "why is `email` sorted weird"
+bug is gone.
+
+The other modes are for when `ORDER BY` is not expressive enough without
+a `CASE` statement. Sorting logs by time-of-day across different dates.
+Finding the biggest absolute variances in a balance column. Grouping
+birthday records by month. Things I used to do with ad-hoc SQL, now a
+dropdown on the chip.
+
+### Random, done properly
+
+There is also a `random` mode. It uses a seeded [mulberry32][mulberry]
+stream per chip, so the shuffle is **reproducible** — you see the same
+order when you come back. A dice icon rerolls the seed.
+
+`SortChip` is a discriminated union in TypeScript, so random chips
+require a seed at compile time:
+
+```ts
+type SortChip =
+  | { id: string; mode: 'random'; seed: number; columnId: string; ... }
+  | { id: string; mode: Exclude<SortMode, 'random'>; columnId: string; ... }
+```
+
+If the seed is missing, the code does not compile. A small thing, but it
+is the difference between "why did my random order change on reload" and
+"this just works."
+
+[mulberry]: https://github.com/bryc/code/blob/master/jshash/PRNGs.md
+
+## Null handling that actually asks
+
+Every chip has a `nulls: 'first' | 'last'` toggle. Postgres lets you
+specify this in `ORDER BY`; most grid libraries silently pick one. We
+expose it on the chip because the right answer depends on what you are
+looking for — nulls-first if you are hunting down records that are
+missing a value, nulls-last if you are looking at the real data.
+
+Invalid dates in `byMonth`, `byDayOfWeek`, and `byTime` route through
+the same nulls-position path. No phantom bucket `-1` quietly appearing
+at the top.
+
+## Pagination resets on chip changes
+
+Small thing, but: if you are on page 40 of a 200-row-per-page table and
+you add a sort that shrinks the visible set to 12 rows, you used to
+stare at an empty page and wonder what broke. Sort-chip and
+filter-chip changes now reset pagination to page 1.
+
+Same for filter chips. It is a two-line fix in
+`data-table.tsx` that removes about ten "is this a bug" support
+questions.
+
+## Why a bar and not a menu
+
+The obvious alternative is a "Sort by..." menu that opens a panel, you
+pick columns, hit apply. Every SQL client has one. Nobody uses it,
+because the first click already gave them what they wanted and the
+menu is the thing you open when you need the second sort — by which
+time you have forgotten the first was even there.
+
+Keeping every active sort visible as a chip means the state is never
+hidden. You can see what is active, you can tweak it in place, and
+`Escape` (or clicking the X on a chip) removes it. It is the same
+reason the filter bar works the way it does.
+
+## Testing the invariants
+
+The sort layer has 35 unit tests covering:
+
+- Each comparator path (natural per type, length, absolute, byMonth,
+  byDayOfWeek, byTime)
+- Null handling in both directions
+- Stable-sort invariant when two rows compare equal
+- `toggleColumnSort` cycle semantics (asc → desc → removed)
+
+Sort is one of those "obvious" features that breaks in subtle ways on
+real data. An empty string sorting before or after `null`. A `BIGINT`
+column with a value that loses precision as a JS number. Dates stored
+as strings. The tests are the only reason I trust this code.
+
+## What's next
+
+The chip model is going to be the thing data-peek uses for any "filter
+or shape the displayed rows" action. Filters already use it. Sort now
+uses it. Grouping is the next candidate. Eventually the bar above a
+result set should be a single row of chips that fully describes the
+view — copyable, shareable, persistable to a saved query.
+
+For now: `Cmd+Shift+S`, add three chips, done.

@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-progress CI runs on the same branch when a new commit lands —
+# the most recent commit is the only one whose result matters.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: typecheck · test · lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      # --frozen-lockfile ensures package.json and pnpm-lock.yaml agree —
+      # this alone catches half of the "works on my machine" class of bug.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # The dependency-consistency test (src/main/__tests__/ai-deps.test.ts)
+      # runs here. If two @ai-sdk/* packages resolve conflicting
+      # provider-utils majors, the suite fails before any build happens.
+      - name: Run desktop tests
+        run: pnpm --filter @data-peek/desktop test
+
+      - name: Typecheck desktop
+        run: pnpm --filter @data-peek/desktop typecheck
