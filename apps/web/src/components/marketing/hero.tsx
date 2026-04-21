@@ -1,147 +1,144 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Github, Zap, Download, Sparkles } from "lucide-react";
-import { HeroTerminal } from "./hero-terminal";
+import Link from "next/link"
+import { AppSurface } from "./app-surface"
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Effects */}
-      <div className="absolute inset-0 grid-pattern" />
-      <div className="absolute inset-0 noise-overlay" />
+    <section className="relative overflow-hidden">
+      <div aria-hidden className="absolute inset-x-0 top-0 h-[560px] neat-grid-bg" />
 
-      {/* Gradient Orbs */}
-      <div
-        className="absolute top-1/4 -left-32 w-96 h-96 rounded-full opacity-20"
-        style={{
-          background:
-            "radial-gradient(circle, var(--color-accent) 0%, transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
-      <div
-        className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full opacity-10"
-        style={{
-          background: "radial-gradient(circle, #a855f7 0%, transparent 70%)",
-          filter: "blur(80px)",
-        }}
-      />
-
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-24 sm:pt-32 pb-16 sm:pb-20">
-        <div className="flex flex-col items-center text-center">
-          {/* Early Bird + Open Source Badge */}
-          <div className="animate-fade-in-up flex flex-wrap items-center justify-center gap-3 mb-8">
-            <Badge variant="default" size="lg">
-              <Sparkles className="w-3.5 h-3.5 mr-1.5" />
-              Early Bird — 70% off
-            </Badge>
-            <Badge variant="secondary" size="lg">
-              <Github className="w-3.5 h-3.5 mr-1.5" />
-              Open Source
-            </Badge>
-          </div>
-
-          {/* Main Headline */}
-          <h1
-            className="animate-fade-in-up delay-100 text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-semibold tracking-tight leading-[0.9] mb-4 sm:mb-6"
-            style={{ fontFamily: "var(--font-display)" }}
-          >
-            Peek at your data.
-            <br />
-            <span className="gradient-text">Fast. With AI.</span>
-          </h1>
-
-          {/* Subheadline */}
-          <p
-            className="animate-fade-in-up delay-200 text-base sm:text-lg md:text-xl text-[--color-text-secondary] max-w-2xl mb-8 sm:mb-10 leading-relaxed px-2"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            A lightning-fast database client with AI-powered querying.{' '}
-            <Link href="/databases/postgresql" className="text-[--color-accent] hover:underline">PostgreSQL</Link>,{' '}
-            <Link href="/databases/mysql" className="text-[--color-accent] hover:underline">MySQL</Link>,{' '}
-            <Link href="/databases/sql-server" className="text-[--color-accent] hover:underline">SQL Server</Link>, and{' '}
-            <Link href="/databases/sqlite" className="text-[--color-accent] hover:underline">SQLite</Link>. Open source, free for
-            personal use.
-          </p>
-
-          {/* Terminal-style feature highlight */}
-          <div
-            className="animate-fade-in-up delay-300 mb-10 px-4 sm:px-6 py-3 rounded-2xl sm:rounded-full bg-[--color-surface] border border-[--color-border] inline-flex flex-wrap sm:flex-nowrap items-center justify-center gap-3 sm:gap-4"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            <span className="flex items-center gap-2 text-xs sm:text-sm">
-              <Sparkles className="w-4 h-4 text-[#a855f7]" />
-              <span className="text-[--color-text-muted]">AI-powered</span>
-            </span>
-            <span className="hidden sm:block w-px h-4 bg-[--color-border]" />
-            <span className="flex items-center gap-2 text-xs sm:text-sm">
-              <Zap className="w-4 h-4 text-[--color-warning]" />
-              <span className="text-[--color-text-muted]">&lt; 2s startup</span>
-            </span>
-            <span className="hidden sm:block w-px h-4 bg-[--color-border]" />
-            <span className="flex items-center gap-2 text-xs sm:text-sm">
-              <span className="text-[--color-text-muted]">keyboard-first</span>
-            </span>
-          </div>
-
-          {/* CTA Buttons */}
-          <div className="animate-fade-in-up delay-400 flex flex-col sm:flex-row items-center gap-4">
-            <Button size="lg" asChild>
-              <Link href="/download">
-                <Download className="w-4 h-4" />
-                Download Free
-              </Link>
-            </Button>
-            <Button variant="secondary" size="lg" asChild>
-              <Link href="/#pricing">
-                Get Pro — $29
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </Button>
-          </div>
-
-          {/* Platform Support */}
-          <p
-            className="animate-fade-in-up delay-500 mt-6 text-sm text-[--color-text-muted]"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            macOS · Windows · Linux
-          </p>
-
-          {/* Hero Screenshot */}
-          <div className="animate-scale-in delay-600 mt-10 sm:mt-16 w-full max-w-5xl">
-            <div className="relative">
-              {/* Window Chrome */}
-              <div className="absolute -top-px -left-px -right-px h-8 sm:h-10 rounded-t-xl sm:rounded-t-2xl bg-[--color-surface-elevated] border border-[--color-border] border-b-0 flex items-center px-3 sm:px-4 gap-1.5 sm:gap-2">
-                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#ff5f57]" />
-                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#febc2e]" />
-                <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-[#28c840]" />
-                <span
-                  className="ml-2 sm:ml-4 text-[10px] sm:text-xs text-[--color-text-muted]"
-                  style={{ fontFamily: "var(--font-mono)" }}
-                >
-                  data-peek
-                </span>
-              </div>
-
-              {/* Live Terminal Demo */}
-              <div className="mt-8 sm:mt-10 rounded-xl sm:rounded-2xl rounded-t-none border border-[--color-border] border-t-0 overflow-hidden shadow-2xl shadow-black/50">
-                <HeroTerminal />
-              </div>
-
-              {/* Glow Effect */}
-              <div
-                className="absolute -inset-2 sm:-inset-4 -z-10 rounded-2xl sm:rounded-3xl opacity-30"
-                style={{
-                  background:
-                    "radial-gradient(ellipse at center top, var(--color-accent-glow) 0%, transparent 60%)",
-                }}
+      <div className="relative mx-auto max-w-[1240px] px-5 sm:px-8 pt-16 pb-10 sm:pt-24 sm:pb-14">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
+          <div className="lg:col-span-7">
+            <div
+              className="inline-flex items-center gap-2 text-[11px] text-[var(--n-fg-muted)] h-7 px-2.5"
+              style={{ border: "1px solid var(--n-line-soft)" }}
+            >
+              <span
+                aria-hidden
+                className="inline-block h-1.5 w-1.5 rounded-full"
+                style={{ background: "var(--n-accent)" }}
               />
+              v0.21 — AI deps, SSH tunnel reliability
+              <span aria-hidden className="text-[var(--n-fg-faint)]">→</span>
+              <Link
+                href="/blog"
+                className="text-[var(--n-fg-muted)] hover:text-[var(--n-fg)]"
+              >
+                changelog
+              </Link>
             </div>
+
+            <h1
+              className="mt-6 text-[40px] sm:text-[54px] lg:text-[62px] leading-[0.98] tracking-[-0.02em] font-medium text-[var(--n-fg)]"
+              style={{ textWrap: "balance" } as React.CSSProperties}
+            >
+              A fast, keyboard-first
+              <br />
+              SQL client.{" "}
+              <span className="text-[var(--n-fg-muted)]">
+                Opens before
+                <br className="hidden sm:inline" /> you finish thinking.
+              </span>
+            </h1>
+
+            <p
+              className="mt-6 max-w-[56ch] text-[15px] leading-[1.65] text-[var(--n-fg-muted)]"
+            >
+              Connect, query, and edit data across Postgres, MySQL, SQL Server,
+              and SQLite. Inline edits, AI assist with your own key, and a
+              command palette that knows every action.
+            </p>
+
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                href="/download"
+                className="inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium"
+                style={{ background: "var(--n-accent)", color: "var(--n-accent-ink)" }}
+              >
+                Download — free
+                <span aria-hidden className="text-[var(--n-accent-ink)]/70">↓</span>
+              </Link>
+              <Link
+                href="/#pricing"
+                className="inline-flex h-10 items-center px-4 text-[13px] text-[var(--n-fg)]"
+                style={{ border: "1px solid var(--n-line)" }}
+              >
+                Pro — $29/yr
+              </Link>
+              <Link
+                href="https://github.com/Rohithgilla12/data-peek"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-10 items-center gap-2 px-4 text-[13px] text-[var(--n-fg-muted)] hover:text-[var(--n-fg)]"
+              >
+                <span aria-hidden>★</span> GitHub
+              </Link>
+            </div>
+
+            <dl className="mt-10 grid grid-cols-3 gap-6 max-w-[520px]">
+              <div>
+                <dt className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--n-fg-faint)]">
+                  Cold start
+                </dt>
+                <dd className="mt-1 text-[20px] text-[var(--n-fg)] tabular-nums">
+                  &lt; 2.0s
+                </dd>
+              </div>
+              <div>
+                <dt className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--n-fg-faint)]">
+                  Databases
+                </dt>
+                <dd className="mt-1 text-[20px] text-[var(--n-fg)] tabular-nums">4</dd>
+              </div>
+              <div>
+                <dt className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--n-fg-faint)]">
+                  License
+                </dt>
+                <dd className="mt-1 text-[20px] text-[var(--n-fg)]">MIT</dd>
+              </div>
+            </dl>
           </div>
+
+          <div className="lg:col-span-5 hidden lg:block">
+            <ol className="space-y-3">
+              {[
+                { k: "⌘K", v: "Command palette" },
+                { k: "⌘↵", v: "Run query" },
+                { k: "⌘E", v: "Export results" },
+                { k: "⌘/", v: "Ask AI (BYOK)" },
+                { k: "⌘⇧F", v: "Format SQL" },
+              ].map((s) => (
+                <li
+                  key={s.k}
+                  className="flex items-center justify-between py-2 text-[12.5px]"
+                  style={{ borderBottom: "1px solid var(--n-line-soft)" }}
+                >
+                  <span className="text-[var(--n-fg-muted)]">{s.v}</span>
+                  <kbd
+                    className="text-[11px] text-[var(--n-fg)] px-1.5 h-6 inline-flex items-center tabular-nums"
+                    style={{ border: "1px solid var(--n-line)", background: "var(--n-bg-raised)" }}
+                  >
+                    {s.k}
+                  </kbd>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </div>
+
+        <div className="mt-14 sm:mt-20">
+          <AppSurface />
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-[11px] text-[var(--n-fg-faint)]">
+          <span>Available for</span>
+          <span className="text-[var(--n-fg-muted)]">macOS (Apple Silicon, Intel)</span>
+          <span aria-hidden>·</span>
+          <span className="text-[var(--n-fg-muted)]">Windows 10/11</span>
+          <span aria-hidden>·</span>
+          <span className="text-[var(--n-fg-muted)]">Linux (.deb, .rpm, .AppImage)</span>
         </div>
       </div>
     </section>
-  );
+  )
 }

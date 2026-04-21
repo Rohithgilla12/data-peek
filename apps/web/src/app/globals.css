@@ -17,6 +17,24 @@
   --color-accent-dim: #3b52c4;
   --color-accent-glow: rgba(107, 140, 245, 0.15);
 
+  /* ------------------------------------------------------------------
+   * Neat layer — aligned with the desktop app's OKLCH blue (hue 250°).
+   * Used by *-neat components on the landing page. Coexists with the
+   * legacy tokens above so other routes (blog, compare, download) keep
+   * rendering unchanged.
+   * ----------------------------------------------------------------*/
+  --n-bg: oklch(0.16 0.005 260);
+  --n-bg-raised: oklch(0.19 0.006 260);
+  --n-bg-sunken: oklch(0.13 0.005 260);
+  --n-line: oklch(0.26 0.006 260);
+  --n-line-soft: oklch(0.22 0.006 260);
+  --n-fg: oklch(0.96 0.003 260);
+  --n-fg-muted: oklch(0.70 0.008 260);
+  --n-fg-faint: oklch(0.50 0.008 260);
+  --n-accent: oklch(0.72 0.13 250);
+  --n-accent-ink: oklch(0.16 0.02 250);
+  --n-accent-soft: oklch(0.72 0.13 250 / 0.12);
+
   /* Success/Warning/Error */
   --color-success: #4ade80;
   --color-warning: #fbbf24;
@@ -427,4 +445,74 @@ a[role="button"]:active {
   #features .group:hover {
     border-color: color-mix(in srgb, var(--feature-color, var(--color-border)) 30%, var(--color-border));
   }
+}
+
+/* ------------------------------------------------------------------
+ * Neat landing page — scoped utilities.
+ * ----------------------------------------------------------------*/
+.neat {
+  background: var(--n-bg);
+  color: var(--n-fg);
+  font-family: var(--font-mono);
+  font-feature-settings: "ss01", "ss02", "zero", "cv11";
+  line-height: 1.5;
+  letter-spacing: -0.005em;
+}
+
+.neat a,
+.neat button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.neat ::selection {
+  background: var(--n-accent);
+  color: var(--n-accent-ink);
+}
+
+.neat-rule {
+  border-top: 1px solid var(--n-line-soft);
+}
+
+.neat-grid-bg {
+  background-image:
+    linear-gradient(to right, oklch(0.26 0.006 260 / 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(0.26 0.006 260 / 0.35) 1px, transparent 1px);
+  background-size: 88px 88px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 85%);
+}
+
+.neat-sql .k { color: var(--n-accent); font-weight: 500; }
+.neat-sql .s { color: oklch(0.80 0.09 120); }
+.neat-sql .n { color: oklch(0.78 0.09 35); }
+.neat-sql .c { color: var(--n-fg-faint); font-style: italic; }
+.neat-sql .p { color: var(--n-fg-muted); }
+
+@keyframes neat-caret {
+  0%, 55% { opacity: 1; }
+  56%, 100% { opacity: 0; }
+}
+.neat-caret::after {
+  content: "";
+  display: inline-block;
+  width: 0.55ch;
+  height: 1em;
+  margin-left: 2px;
+  background: var(--n-accent);
+  vertical-align: -0.12em;
+  animation: neat-caret 1.1s steps(1) infinite;
+}
+
+/* Row hover for dense tables */
+.neat-row {
+  transition: background-color 120ms ease;
+}
+.neat-row:hover {
+  background: oklch(0.22 0.006 260 / 0.6);
+}
+
+/* Dotted decorative divider */
+.neat-dots {
+  background-image: radial-gradient(circle, var(--n-line) 1px, transparent 1px);
+  background-size: 8px 8px;
 }
