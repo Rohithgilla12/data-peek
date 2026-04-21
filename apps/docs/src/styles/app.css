@@ -3,44 +3,29 @@
 @import 'fumadocs-ui/css/preset.css';
 
 /* =============================================================================
-   DATA-PEEK TERMINAL THEME
-   A terminal-inspired documentation theme with blue accents
+   DATA-PEEK DOCS — neat theme
+   Matches the landing page aesthetic: mono-first, OKLCH blue hue 250°, no glass,
+   no gradient text, no side-stripe callouts, no glow animations.
    ============================================================================= */
 
-@property --gradient-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@property --card-glow-opacity {
-  syntax: "<number>";
-  initial-value: 0;
-  inherits: false;
-}
-
-/* Geist Mono Font */
 @font-face {
   font-family: 'Geist Mono';
   src: url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-mono/GeistMono-Regular.woff2') format('woff2');
   font-weight: 400;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Geist Mono';
   src: url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-mono/GeistMono-Medium.woff2') format('woff2');
   font-weight: 500;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Geist Mono';
   src: url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-mono/GeistMono-SemiBold.woff2') format('woff2');
   font-weight: 600;
   font-display: swap;
 }
-
 @font-face {
   font-family: 'Geist Mono';
   src: url('https://cdn.jsdelivr.net/npm/geist@1.3.1/dist/fonts/geist-mono/GeistMono-Bold.woff2') format('woff2');
@@ -49,23 +34,16 @@
 }
 
 /* =============================================================================
-   CSS VARIABLES - Override Fumadocs defaults
+   TOKENS
    ============================================================================= */
 
-/* Light theme (default) */
 :root {
-  /* Status colors (same for both themes) */
-  --dp-success: #4ade80;
-  --dp-warning: #fbbf24;
-  --dp-error: #f87171;
-
-  /* Typography */
   --dp-font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
 
-  /* Background colors */
+  /* Fumadocs tokens — light */
   --background: 255 255 255;
   --foreground: 10 10 11;
-  --muted: 244 244 245;
+  --muted: 248 248 249;
   --muted-foreground: 113 113 122;
   --popover: 255 255 255;
   --popover-foreground: 10 10 11;
@@ -73,46 +51,37 @@
   --card-foreground: 10 10 11;
   --border: 228 228 231;
   --input: 228 228 231;
-
-  /* Primary = Blue */
   --primary: 59 82 196;
   --primary-foreground: 255 255 255;
-
-  /* Secondary */
   --secondary: 244 244 245;
   --secondary-foreground: 10 10 11;
-
-  /* Accent */
   --accent: 244 244 245;
   --accent-foreground: 10 10 11;
-
-  /* States */
   --destructive: 239 68 68;
   --destructive-foreground: 255 255 255;
-
   --ring: 59 82 196;
+  --radius: 0.375rem;
 
-  /* Radius */
-  --radius: 0.5rem;
+  /* Neat palette (OKLCH) — source of truth */
+  --n-bg: oklch(1 0 0);
+  --n-bg-raised: oklch(0.98 0.002 260);
+  --n-bg-sunken: oklch(0.96 0.003 260);
+  --n-line: oklch(0.88 0.004 260);
+  --n-line-soft: oklch(0.92 0.003 260);
+  --n-fg: oklch(0.20 0.008 260);
+  --n-fg-muted: oklch(0.42 0.006 260);
+  --n-fg-faint: oklch(0.60 0.006 260);
+  --n-accent: oklch(0.52 0.17 250);
+  --n-accent-ink: oklch(1 0 0);
+  --n-accent-soft: oklch(0.52 0.17 250 / 0.10);
 
-  /* Light mode custom props */
-  --dp-background: #ffffff;
-  --dp-surface: #fafafa;
-  --dp-surface-elevated: #f4f4f5;
-  --dp-border: #e4e4e7;
-  --dp-border-subtle: #f4f4f5;
-  --dp-text-primary: #0a0a0b;
-  --dp-text-secondary: #52525b;
-  --dp-text-muted: #71717a;
-  --dp-accent: #3b52c4;
-  --dp-accent-dim: #6b8cf5;
-  --dp-accent-glow: rgba(59, 82, 196, 0.15);
-  --dp-accent-subtle: rgba(59, 82, 196, 0.08);
+  --n-ok: oklch(0.65 0.14 150);
+  --n-warn: oklch(0.75 0.14 75);
+  --n-err: oklch(0.62 0.20 25);
 }
 
-/* Dark theme overrides for Fumadocs */
 .dark {
-  /* Background colors */
+  /* Fumadocs tokens — dark */
   --background: 6 6 7;
   --foreground: 250 250 250;
   --muted: 17 17 19;
@@ -123,57 +92,51 @@
   --card-foreground: 250 250 250;
   --border: 39 39 42;
   --input: 39 39 42;
-
-  /* Primary = Blue */
   --primary: 107 140 245;
   --primary-foreground: 6 6 7;
-
-  /* Secondary */
   --secondary: 24 24 27;
   --secondary-foreground: 250 250 250;
-
-  /* Accent */
   --accent: 24 24 27;
   --accent-foreground: 250 250 250;
-
-  /* States */
   --destructive: 248 113 113;
   --destructive-foreground: 6 6 7;
-
   --ring: 107 140 245;
 
-  /* Dark mode custom props */
-  --dp-background: #0a0a0b;
-  --dp-surface: #111113;
-  --dp-surface-elevated: #18181b;
-  --dp-border: #27272a;
-  --dp-border-subtle: #1f1f23;
-  --dp-text-primary: #fafafa;
-  --dp-text-secondary: #a1a1aa;
-  --dp-text-muted: #71717a;
-  --dp-accent: #6b8cf5;
-  --dp-accent-dim: #3b52c4;
-  --dp-accent-glow: rgba(107, 140, 245, 0.15);
-  --dp-accent-subtle: rgba(107, 140, 245, 0.08);
+  /* Neat palette — dark */
+  --n-bg: oklch(0.16 0.005 260);
+  --n-bg-raised: oklch(0.19 0.006 260);
+  --n-bg-sunken: oklch(0.13 0.005 260);
+  --n-line: oklch(0.26 0.006 260);
+  --n-line-soft: oklch(0.22 0.006 260);
+  --n-fg: oklch(0.96 0.003 260);
+  --n-fg-muted: oklch(0.70 0.008 260);
+  --n-fg-faint: oklch(0.50 0.008 260);
+  --n-accent: oklch(0.72 0.13 250);
+  --n-accent-ink: oklch(0.16 0.02 250);
+  --n-accent-soft: oklch(0.72 0.13 250 / 0.12);
 
-  /* Fumadocs specific overrides */
-  --fd-background: var(--dp-background);
-  --fd-foreground: var(--dp-text-primary);
-  --fd-muted: var(--dp-surface);
-  --fd-muted-foreground: var(--dp-text-muted);
-  --fd-card: var(--dp-surface);
-  --fd-card-foreground: var(--dp-text-primary);
-  --fd-border: var(--dp-border);
-  --fd-primary: var(--dp-accent);
-  --fd-primary-foreground: var(--dp-background);
-  --fd-secondary: var(--dp-surface-elevated);
-  --fd-secondary-foreground: var(--dp-text-primary);
-  --fd-accent: var(--dp-surface-elevated);
-  --fd-accent-foreground: var(--dp-text-primary);
+  --n-ok: oklch(0.80 0.14 150);
+  --n-warn: oklch(0.82 0.14 75);
+  --n-err: oklch(0.72 0.18 25);
+
+  /* Map Fumadocs-internal tokens onto the neat palette */
+  --fd-background: var(--n-bg);
+  --fd-foreground: var(--n-fg);
+  --fd-muted: var(--n-bg-raised);
+  --fd-muted-foreground: var(--n-fg-muted);
+  --fd-card: var(--n-bg-raised);
+  --fd-card-foreground: var(--n-fg);
+  --fd-border: var(--n-line);
+  --fd-primary: var(--n-accent);
+  --fd-primary-foreground: var(--n-accent-ink);
+  --fd-secondary: var(--n-bg-sunken);
+  --fd-secondary-foreground: var(--n-fg);
+  --fd-accent: var(--n-bg-sunken);
+  --fd-accent-foreground: var(--n-fg);
 }
 
 /* =============================================================================
-   BASE STYLES
+   BASE
    ============================================================================= */
 
 * {
@@ -183,83 +146,52 @@
 html {
   scroll-behavior: smooth;
 }
-
-html.dark {
-  color-scheme: dark;
-}
-
-html:not(.dark) {
-  color-scheme: light;
-}
+html.dark { color-scheme: dark; }
+html:not(.dark) { color-scheme: light; }
 
 body {
   font-family: var(--dp-font-mono);
-  background: var(--dp-background);
-  color: var(--dp-text-primary);
-  line-height: 1.6;
+  font-feature-settings: "ss01", "zero", "cv11";
+  background: var(--n-bg);
+  color: var(--n-fg);
+  line-height: 1.55;
+  letter-spacing: -0.003em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  position: relative;
-}
-
-/* Grid pattern background */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image:
-    linear-gradient(var(--dp-border) 1px, transparent 1px),
-    linear-gradient(90deg, var(--dp-border) 1px, transparent 1px);
-  background-size: 64px 64px;
-  pointer-events: none;
-  z-index: -2;
-  opacity: 0.25;
-}
-
-/* Noise texture overlay */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  opacity: 0.025;
-  pointer-events: none;
-  z-index: -1;
 }
 
 /* =============================================================================
-   TYPOGRAPHY
+   TYPOGRAPHY — article/prose
    ============================================================================= */
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--dp-font-mono);
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  color: var(--dp-text-primary);
+  letter-spacing: -0.015em;
+  color: var(--n-fg);
 }
 
-h1 {
+article h1 {
   font-size: 1.875rem;
   line-height: 1.15;
   letter-spacing: -0.025em;
+  font-weight: 600;
 }
-
-h2 {
+article h2 {
   font-size: 1.25rem;
-  line-height: 1.25;
-  margin-top: 2rem;
+  line-height: 1.3;
+  margin-top: 2.25rem;
   padding-bottom: 0.375rem;
-  border-bottom: 1px solid var(--dp-border-subtle);
+  border-bottom: 1px solid var(--n-line-soft);
+  font-weight: 600;
 }
-
-h3 {
+article h3 {
   font-size: 1.0625rem;
-  line-height: 1.35;
+  line-height: 1.4;
   margin-top: 1.5rem;
+  font-weight: 600;
 }
-
-p, li {
-  color: var(--dp-text-secondary);
+article p, article li {
+  color: var(--n-fg-muted);
 }
 
 code {
@@ -269,31 +201,27 @@ code {
 
 /* Inline code */
 :not(pre) > code {
-  background: var(--dp-surface-elevated);
-  border: 1px solid var(--dp-border-subtle);
-  border-radius: 4px;
-  padding: 0.125rem 0.375rem;
-  color: var(--dp-accent);
+  background: var(--n-bg-raised);
+  border: 1px solid var(--n-line-soft);
+  padding: 0.08rem 0.35rem;
+  color: var(--n-accent);
   font-weight: 500;
+  border-radius: 2px;
 }
 
 /* =============================================================================
-   LINKS
+   LINKS — scoped to prose so landing/chrome CTAs are unaffected
    ============================================================================= */
 
-/* Scoped to docs prose content. A bare `a` selector used to live here, but it
-   leaked into the landing page and turned the hero CTA's text invisible (the
-   CTA background and the `a` color were both --dp-accent). Docs pages wrap in
-   <article> via DocsPage; landing uses <main> via HomeLayout. */
 article a {
-  color: var(--dp-accent);
-  text-decoration: none;
-  transition: all 0.2s ease;
+  color: var(--n-accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--n-accent) 40%, transparent);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 120ms ease, color 120ms ease;
 }
-
 article a:hover {
-  color: var(--dp-text-primary);
-  text-shadow: 0 0 12px var(--dp-accent-glow);
+  text-decoration-color: var(--n-accent);
 }
 
 /* =============================================================================
@@ -302,456 +230,224 @@ article a:hover {
 
 pre {
   font-family: var(--dp-font-mono) !important;
-  background: var(--dp-surface) !important;
-  border: 1px solid var(--dp-border) !important;
-  border-radius: 8px !important;
-  padding: 1rem !important;
+  background: var(--n-bg-sunken) !important;
+  border: 1px solid var(--n-line) !important;
+  border-radius: 4px !important;
+  padding: 0.875rem 1rem !important;
   overflow-x: auto;
-  position: relative;
 }
-
-pre::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--dp-accent-glow), transparent);
-}
-
 pre code {
   font-family: var(--dp-font-mono) !important;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   line-height: 1.6;
   background: transparent !important;
   border: none !important;
   padding: 0 !important;
-  color: var(--dp-text-secondary);
+  color: var(--n-fg);
 }
 
-/* Syntax highlighting adjustments */
+/* Prism-style tokens, kept minimal */
 .token.comment,
 .token.prolog,
 .token.doctype,
-.token.cdata {
-  color: var(--dp-text-muted);
-}
-
-.token.punctuation {
-  color: var(--dp-text-muted);
-}
-
+.token.cdata,
+.token.punctuation { color: var(--n-fg-faint); }
 .token.property,
 .token.tag,
 .token.boolean,
 .token.number,
 .token.constant,
-.token.symbol {
-  color: var(--dp-accent);
-}
-
+.token.symbol { color: var(--n-accent); }
 .token.selector,
 .token.attr-name,
 .token.string,
 .token.char,
-.token.builtin {
-  color: var(--dp-success);
-}
-
+.token.builtin { color: var(--n-ok); }
 .token.operator,
 .token.entity,
 .token.url,
-.token.variable {
-  color: var(--dp-text-primary);
-}
-
+.token.variable { color: var(--n-fg); }
 .token.atrule,
 .token.attr-value,
-.token.keyword {
-  color: #c084fc;
-}
-
+.token.keyword { color: var(--n-accent); font-weight: 500; }
 .token.function,
-.token.class-name {
-  color: var(--dp-warning);
-}
-
+.token.class-name { color: var(--n-warn); }
 .token.regex,
-.token.important {
-  color: var(--dp-error);
-}
+.token.important { color: var(--n-err); }
 
 /* =============================================================================
-   FUMADOCS LAYOUT OVERRIDES
+   FUMADOCS CHROME
    ============================================================================= */
+
+/* Navbar — flat bordered, no blur halo */
+nav[data-navbar] {
+  background: color-mix(in oklch, var(--n-bg) 92%, transparent) !important;
+  backdrop-filter: saturate(140%) blur(8px);
+  border-bottom: 1px solid var(--n-line-soft) !important;
+}
 
 /* Sidebar */
 [data-sidebar] {
-  background: var(--dp-surface) !important;
-  border-right: 1px solid var(--dp-border) !important;
+  background: var(--n-bg-sunken) !important;
+  border-right: 1px solid var(--n-line-soft) !important;
 }
-
 [data-sidebar] nav a {
-  color: var(--dp-text-secondary);
-  font-family: var(--dp-font-mono);
-  font-size: 0.875rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  transition: all 0.15s ease;
-}
-
-[data-sidebar] nav a:hover {
-  color: var(--dp-text-primary);
-  background: var(--dp-surface-elevated);
-}
-
-[data-sidebar] nav a[data-active='true'] {
-  color: var(--dp-accent);
-  background: var(--dp-accent-subtle);
-  border-left: 2px solid var(--dp-accent);
-}
-
-/* Navbar */
-nav[data-navbar] {
-  background: rgb(from var(--dp-background) r g b / 0.8) !important;
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--dp-border) !important;
-}
-
-.dark nav[data-navbar] {
-  background: rgba(10, 10, 11, 0.8) !important;
-}
-
-:root:not(.dark) nav[data-navbar] {
-  background: rgba(255, 255, 255, 0.8) !important;
-}
-
-/* TOC (Table of Contents) */
-[data-toc] {
-  border-left: 1px solid var(--dp-border);
-}
-
-[data-toc] a {
-  color: var(--dp-text-muted);
+  color: var(--n-fg-muted);
   font-family: var(--dp-font-mono);
   font-size: 0.8125rem;
-  transition: all 0.15s ease;
+  padding: 0.375rem 0.75rem;
+  border-radius: 2px;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+[data-sidebar] nav a:hover {
+  color: var(--n-fg);
+  background: var(--n-bg-raised);
+}
+/* Active item: background tint + left-padded accent tick (NOT a thick side
+   stripe) so the active row is obvious without the admin-UI look. */
+[data-sidebar] nav a[data-active='true'] {
+  color: var(--n-accent);
+  background: var(--n-accent-soft);
 }
 
-[data-toc] a:hover {
-  color: var(--dp-text-secondary);
+/* TOC */
+[data-toc] {
+  border-left: 1px solid var(--n-line-soft);
 }
-
-[data-toc] a[data-active='true'] {
-  color: var(--dp-accent);
+[data-toc] a {
+  color: var(--n-fg-faint);
+  font-family: var(--dp-font-mono);
+  font-size: 0.75rem;
+  padding: 0.15rem 0 0.15rem 0.75rem;
+  transition: color 120ms ease;
 }
+[data-toc] a:hover { color: var(--n-fg-muted); }
+[data-toc] a[data-active='true'] { color: var(--n-accent); }
 
-/* Search */
+/* Search dialog */
 [data-search-dialog] {
-  background: var(--dp-surface) !important;
-  border: 1px solid var(--dp-border) !important;
-  border-radius: 12px !important;
+  background: var(--n-bg-sunken) !important;
+  border: 1px solid var(--n-line) !important;
+  border-radius: 4px !important;
 }
-
 [data-search-dialog] input {
   font-family: var(--dp-font-mono);
-  background: var(--dp-background) !important;
-  border: 1px solid var(--dp-border) !important;
+  background: var(--n-bg) !important;
+  border: 1px solid var(--n-line) !important;
+}
+
+/* Page title block */
+[data-docs-title] {
+  color: var(--n-fg);
+  font-family: var(--dp-font-mono);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+[data-docs-description] {
+  color: var(--n-fg-muted);
+  font-family: var(--dp-font-mono);
 }
 
 /* =============================================================================
-   DOCS PAGE STYLES
+   CALLOUTS — bordered, tinted background, tinted icon. NO side stripes.
    ============================================================================= */
 
-/* Title area */
-[data-docs-title] {
-  color: var(--dp-text-primary);
-  font-family: var(--dp-font-mono);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-}
-
-[data-docs-description] {
-  color: var(--dp-text-secondary);
-  font-family: var(--dp-font-mono);
-}
-
-/* Callouts / Admonitions */
 [data-callout] {
-  background: var(--dp-surface) !important;
-  border: 1px solid var(--dp-border) !important;
-  border-radius: 8px;
-  padding: 1rem;
-  margin: 1.5rem 0;
+  background: var(--n-bg-raised) !important;
+  border: 1px solid var(--n-line) !important;
+  border-radius: 4px;
+  padding: 0.875rem 1rem;
+  margin: 1.25rem 0;
 }
-
 [data-callout='note'] {
-  border-left: 3px solid var(--dp-accent) !important;
+  border-color: color-mix(in oklch, var(--n-accent) 35%, var(--n-line)) !important;
+  background: var(--n-accent-soft) !important;
 }
-
 [data-callout='warning'] {
-  border-left: 3px solid var(--dp-warning) !important;
+  border-color: color-mix(in oklch, var(--n-warn) 35%, var(--n-line)) !important;
+  background: color-mix(in oklch, var(--n-warn) 10%, var(--n-bg-raised)) !important;
 }
-
 [data-callout='error'],
 [data-callout='danger'] {
-  border-left: 3px solid var(--dp-error) !important;
+  border-color: color-mix(in oklch, var(--n-err) 35%, var(--n-line)) !important;
+  background: color-mix(in oklch, var(--n-err) 10%, var(--n-bg-raised)) !important;
 }
-
 [data-callout='tip'],
 [data-callout='success'] {
-  border-left: 3px solid var(--dp-success) !important;
-}
-
-/* =============================================================================
-   INTERACTIVE ELEMENTS
-   ============================================================================= */
-
-button, [role='button'] {
-  font-family: var(--dp-font-mono);
-}
-
-/* Primary buttons */
-button[data-primary],
-.fd-button-primary {
-  background: var(--dp-accent) !important;
-  color: var(--dp-background) !important;
-  border: none !important;
-  font-weight: 500;
-  transition: all 0.2s ease;
-}
-
-button[data-primary]:hover,
-.fd-button-primary:hover {
-  background: var(--dp-text-primary) !important;
-  box-shadow: 0 0 20px var(--dp-accent-glow), 0 0 40px var(--dp-accent-glow);
-}
-
-/* Secondary buttons */
-button[data-secondary],
-.fd-button-secondary {
-  background: var(--dp-surface-elevated) !important;
-  color: var(--dp-text-primary) !important;
-  border: 1px solid var(--dp-border) !important;
-}
-
-button[data-secondary]:hover,
-.fd-button-secondary:hover {
-  border-color: var(--dp-accent) !important;
-  color: var(--dp-accent) !important;
+  border-color: color-mix(in oklch, var(--n-ok) 35%, var(--n-line)) !important;
+  background: color-mix(in oklch, var(--n-ok) 10%, var(--n-bg-raised)) !important;
 }
 
 /* =============================================================================
    TABLES
    ============================================================================= */
 
-table {
+article table {
   width: 100%;
   border-collapse: collapse;
   font-family: var(--dp-font-mono);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   margin: 1.5rem 0;
+  border: 1px solid var(--n-line-soft);
 }
-
-thead {
-  background: var(--dp-surface);
-  border-bottom: 1px solid var(--dp-border);
+article thead {
+  background: var(--n-bg-raised);
+  border-bottom: 1px solid var(--n-line);
 }
-
-th {
-  color: var(--dp-text-primary);
+article th {
+  color: var(--n-fg);
   font-weight: 600;
   text-align: left;
-  padding: 0.75rem 1rem;
+  padding: 0.625rem 0.875rem;
 }
-
-td {
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--dp-border-subtle);
-  color: var(--dp-text-secondary);
+article td {
+  padding: 0.625rem 0.875rem;
+  border-bottom: 1px solid var(--n-line-soft);
+  color: var(--n-fg-muted);
 }
-
-tr:hover td {
-  background: var(--dp-surface);
-}
+article tr:last-child td { border-bottom: none; }
+article tr:hover td { background: var(--n-bg-raised); }
 
 /* =============================================================================
-   SCROLLBAR
+   MISC
    ============================================================================= */
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--dp-surface);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--dp-border);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--dp-text-muted);
-}
-
-/* =============================================================================
-   SELECTION
-   ============================================================================= */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: var(--n-bg-sunken); }
+::-webkit-scrollbar-thumb { background: var(--n-line); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--n-fg-faint); }
 
 ::selection {
-  background: var(--dp-accent);
-  color: var(--dp-background);
+  background: var(--n-accent);
+  color: var(--n-accent-ink);
+}
+
+/* Neat landing helpers (used by docs index and 404) */
+.neat-grid-bg {
+  background-image:
+    linear-gradient(to right, var(--n-line-soft) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--n-line-soft) 1px, transparent 1px);
+  background-size: 88px 88px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 0%, transparent 85%);
 }
 
 /* =============================================================================
-   ANIMATIONS
-   ============================================================================= */
-
-@keyframes glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 20px var(--dp-accent-glow);
-  }
-  50% {
-    box-shadow: 0 0 30px var(--dp-accent-glow), 0 0 60px var(--dp-accent-glow);
-  }
-}
-
-/* =============================================================================
-   UTILITY CLASSES
-   ============================================================================= */
-
-/* Glassmorphism */
-.glass {
-  background: rgba(17, 17, 19, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
-}
-
-.glass-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-/* Border Flow Animation */
-.border-flow {
-  position: relative;
-  background: var(--dp-surface);
-  border-radius: inherit;
-}
-
-.border-flow::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  background: conic-gradient(
-    from var(--gradient-angle),
-    transparent 0deg,
-    var(--dp-accent) 90deg,
-    transparent 180deg
-  );
-  border-radius: inherit;
-  z-index: -1;
-  animation: rotate-gradient 4s linear infinite;
-  opacity: var(--card-glow-opacity);
-  transition: opacity 0.3s ease;
-}
-
-.border-flow:hover {
-  --card-glow-opacity: 1;
-}
-
-@keyframes rotate-gradient {
-  0% { --gradient-angle: 0deg; }
-  100% { --gradient-angle: 360deg; }
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0) scale(1); }
-  50% { transform: translateY(-20px) scale(1.05); }
-}
-
-.animate-float {
-  animation: float 10s ease-in-out infinite;
-}
-
-.accent-glow {
-  box-shadow:
-    0 0 20px var(--dp-accent-glow),
-    0 0 60px var(--dp-accent-glow);
-}
-
-.terminal-cursor::after {
-  content: '_';
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0; }
-}
-
-/* Gradient text utility */
-.gradient-text {
-  background: linear-gradient(135deg, var(--dp-text-primary) 0%, var(--dp-accent) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* =============================================================================
-   RESPONSIVE ADJUSTMENTS
+   RESPONSIVE
    ============================================================================= */
 
 @media (max-width: 768px) {
-  h1 {
-    font-size: 1.75rem;
-  }
-
-  h2 {
-    font-size: 1.25rem;
-  }
-
-  pre {
-    font-size: 0.8125rem;
-    padding: 0.75rem !important;
-  }
-
-  /* Hide grid on mobile for performance */
-  body::before {
-    background-size: 32px 32px;
-    opacity: 0.5;
-  }
+  article h1 { font-size: 1.625rem; }
+  article h2 { font-size: 1.125rem; }
+  pre { font-size: 0.75rem; padding: 0.625rem 0.75rem !important; }
 }
 
 /* =============================================================================
-   PRINT STYLES
+   PRINT
    ============================================================================= */
 
 @media print {
-  body::before,
-  body::after {
-    display: none;
-  }
-
-  body {
-    background: white;
-    color: black;
-  }
-
-  a {
-    color: black;
-    text-decoration: underline;
-  }
-
-  pre {
-    border: 1px solid #ccc;
-  }
+  body { background: white; color: black; }
+  article a { color: black; text-decoration: underline; }
+  pre { border: 1px solid #ccc; background: #fafafa !important; }
 }

@@ -1,18 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { HomeLayout } from "fumadocs-ui/layouts/home";
-import { baseOptions } from "@/lib/layout.shared";
-import { generateMetaTags, DOCS_CONFIG } from "@/lib/seo";
-import {
-  Book,
-  ChevronRight,
-  Github,
-  Zap,
-  Keyboard,
-  Moon,
-  Globe,
-  Terminal,
-} from "lucide-static";
-import { motion } from "framer-motion";
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { HomeLayout } from "fumadocs-ui/layouts/home"
+import { baseOptions } from "@/lib/layout.shared"
+import { generateMetaTags, DOCS_CONFIG } from "@/lib/seo"
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -21,172 +10,210 @@ export const Route = createFileRoute("/")({
       title: DOCS_CONFIG.title,
       description: DOCS_CONFIG.description,
       keywords: [
-        'data-peek documentation',
-        'PostgreSQL client docs',
-        'MySQL client docs',
-        'SQL client documentation',
-        'database client guide',
-        'SQL editor documentation',
+        "data-peek documentation",
+        "PostgreSQL client docs",
+        "MySQL client docs",
+        "SQL client documentation",
+        "database client guide",
+        "SQL editor documentation",
       ],
     }),
   }),
-});
+})
 
-function Icon({
-  svg,
-  className,
-  style,
-}: {
-  svg: string;
-  className?: string;
-  style?: React.CSSProperties;
-}) {
-  const styledSvg = svg.replace(
-    /class="[^"]*"/,
-    `class="${className ?? ""}"`
-  );
-  return <span dangerouslySetInnerHTML={{ __html: styledSvg }} style={style} />;
+type Section = {
+  number: string
+  title: string
+  blurb: string
+  href: string
+  leaves: string[]
 }
+
+const sections: Section[] = [
+  {
+    number: "01",
+    title: "Getting started",
+    blurb: "Install data-peek, connect your first database, and run a query.",
+    href: "/docs/getting-started",
+    leaves: ["Installation", "First connection", "Your first query", "Keyboard basics"],
+  },
+  {
+    number: "02",
+    title: "Features",
+    blurb: "Command palette, AI assist, inline editing, telemetry, ER diagrams, and more.",
+    href: "/docs/features",
+    leaves: ["Command palette", "AI assistant", "Inline editing", "Query telemetry", "ER diagrams"],
+  },
+  {
+    number: "03",
+    title: "Database support",
+    blurb: "Feature matrix and connection specifics for every supported engine.",
+    href: "/docs/database-support",
+    leaves: ["PostgreSQL", "MySQL", "SQL Server", "SQLite"],
+  },
+  {
+    number: "04",
+    title: "Configuration",
+    blurb: "Themes, shortcuts, AI providers, SSH tunnels, and everything you can tune.",
+    href: "/docs/configuration",
+    leaves: ["Settings", "AI providers", "SSH tunnels", "Themes", "Shortcuts"],
+  },
+  {
+    number: "05",
+    title: "Reference",
+    blurb: "Quick-lookup guides. Keyboard shortcuts, CLI flags, file formats.",
+    href: "/docs/reference",
+    leaves: ["Keyboard shortcuts"],
+  },
+]
 
 function Home() {
   return (
     <HomeLayout {...baseOptions()}>
-      <main className="relative min-h-[calc(100vh-4rem)] flex flex-col items-center justify-center px-6 py-20 overflow-hidden">
-        {/* Living Backgrounds */}
-        <div className="absolute inset-0 grid-pattern opacity-30 pointer-events-none" />
-        
+      <main className="relative min-h-[calc(100vh-4rem)]">
         <div
-          className="absolute top-1/4 -left-32 w-[500px] h-[500px] rounded-full opacity-20 pointer-events-none animate-float"
-          style={{
-            background: "radial-gradient(circle, #6b8cf5 0%, transparent 70%)",
-            filter: "blur(100px)",
-          }}
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[420px] neat-grid-bg"
         />
-        <div
-          className="absolute bottom-1/4 -right-32 w-[600px] h-[600px] rounded-full opacity-10 pointer-events-none animate-float"
-          style={{
-            background: "radial-gradient(circle, #a855f7 0%, transparent 70%)",
-            filter: "blur(120px)",
-            animationDelay: "2s"
-          }}
-        />
-
-        {/* Hero Section */}
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          {/* Animated Globe Icon (Matching Video Vibe) */}
-          <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ 
-              type: "spring", 
-              damping: 12, 
-              stiffness: 100,
-              delay: 0.2
-            }}
-            className="mb-12 flex justify-center"
+        <div className="relative mx-auto max-w-[1040px] px-5 sm:px-8 pt-16 pb-24 sm:pt-24">
+          {/* Heading block */}
+          <div
+            className="inline-flex items-center gap-2 h-7 px-2.5 text-[11px] text-[var(--n-fg-muted)]"
+            style={{ border: "1px solid var(--n-line-soft)" }}
           >
-            <div className="relative">
-              <div className="absolute -inset-12 rounded-full bg-[#6b8cf5] opacity-20 blur-3xl animate-pulse" />
-              <div className="relative w-24 h-24 rounded-[2rem] bg-white/[0.03] border border-white/10 flex items-center justify-center text-[#6b8cf5] shadow-2xl glass-card">
-                <Icon svg={Book} className="w-10 h-10" />
-              </div>
-            </div>
-          </motion.div>
+            <span
+              aria-hidden
+              className="inline-block h-1.5 w-1.5 rounded-full"
+              style={{ background: "var(--n-accent)" }}
+            />
+            Docs · v0.21 · last updated today
+          </div>
 
-          {/* Title */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ 
-              type: "spring",
-              damping: 15,
-              stiffness: 80,
-              delay: 0.4
-            }}
-          >
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-6 text-white uppercase font-mono">
-              data-peek <span className="text-[#6b8cf5]">docs</span>
-            </h1>
-          </motion.div>
+          <h1 className="mt-6 text-[36px] sm:text-[48px] leading-[1.02] tracking-[-0.02em] font-medium text-[var(--n-fg)]">
+            The manual for data-peek.
+            <br />
+            <span className="text-[var(--n-fg-muted)]">
+              Short sections. Real examples. No fluff.
+            </span>
+          </h1>
 
-          {/* Tagline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="text-lg md:text-2xl text-[#a1a1aa] mb-12 max-w-2xl mx-auto leading-relaxed font-mono"
-          >
-            The technical guide to the minimal, fast, and lightweight
-            SQL client for professional developers.
-          </motion.p>
+          <p className="mt-5 max-w-[58ch] text-[14px] leading-[1.65] text-[var(--n-fg-muted)]">
+            Everything you need to install, connect, query, and configure
+            data-peek across Postgres, MySQL, SQL Server, and SQLite. If a page
+            is wrong or missing, the edit link goes straight to GitHub.
+          </p>
 
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-col sm:flex-row gap-6 justify-center items-center"
-          >
+          <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link
               to="/docs/$"
-              params={{ _splat: "" }}
-              className="group relative inline-flex items-center gap-3 px-10 py-4 rounded-2xl bg-[#6b8cf5] text-[#0a0a0b] font-bold text-sm uppercase tracking-widest transition-all hover:bg-white hover:shadow-2xl hover:shadow-[#6b8cf5]/40 font-mono"
+              params={{ _splat: "getting-started" }}
+              className="inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium"
+              style={{ background: "var(--n-accent)", color: "var(--n-accent-ink)" }}
             >
-              <Icon svg={Book} className="w-4 h-4" />
-              Start Reading
-              <span className="transition-transform group-hover:translate-x-1">
-                <Icon svg={ChevronRight} className="w-4 h-4" />
-              </span>
+              Start with the intro
+              <span aria-hidden>→</span>
             </Link>
             <a
               href="https://github.com/Rohithgilla12/data-peek"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl border border-white/10 text-white font-bold text-sm uppercase tracking-widest transition-all hover:bg-white/5 hover:border-[#6b8cf5] font-mono"
+              className="inline-flex h-10 items-center gap-2 px-4 text-[13px] text-[var(--n-fg)]"
+              style={{ border: "1px solid var(--n-line)" }}
             >
-              <Icon svg={Github} className="w-4 h-4" />
-              Source Code
+              <span aria-hidden>★</span> GitHub
             </a>
-          </motion.div>
-        </div>
+          </div>
 
-        {/* Feature highlights */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, delay: 1, ease: [0.16, 1, 0.3, 1] }}
-          className="relative z-10 mt-32 grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-5xl mx-auto"
-        >
-          {[
-            { icon: Zap, title: "Lightning Fast", desc: "Built for speed. No splash screens, no waiting. Opens in under 2 seconds.", color: "#6b8cf5" },
-            { icon: Keyboard, title: "Keyboard First", desc: "Designed for power users. Navigate and query everything with shortcuts.", color: "#fbbf24" },
-            { icon: Moon, title: "Modern Design", desc: "Clean terminal-inspired UI that stays out of your way during deep work.", color: "#a855f7" },
-          ].map((feature, idx) => (
-            <div key={idx} className="group p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 backdrop-blur-xl transition-all hover:bg-white/[0.04] border-flow overflow-hidden">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/5 text-[#6b8cf5] mb-6 border border-white/10 group-hover:scale-110 transition-transform duration-500">
-                <Icon svg={feature.icon} className="w-6 h-6" style={{ color: feature.color }} />
+          {/* Section index */}
+          <div
+            className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-3"
+          >
+            {sections.map((s) => (
+              <Link
+                key={s.number}
+                to="/docs/$"
+                params={{ _splat: s.href.replace(/^\/docs\//, "") }}
+                className="group p-5 flex flex-col gap-3 transition-colors"
+                style={{
+                  border: "1px solid var(--n-line-soft)",
+                  background: "var(--n-bg-sunken)",
+                }}
+              >
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="text-[10.5px] uppercase tracking-[0.16em] text-[var(--n-fg-faint)] tabular-nums">
+                    {s.number}
+                  </span>
+                  <span
+                    aria-hidden
+                    className="text-[13px] text-[var(--n-fg-faint)] group-hover:text-[var(--n-accent)] transition-colors"
+                  >
+                    →
+                  </span>
+                </div>
+                <h2
+                  className="text-[18px] leading-[1.2] tracking-[-0.01em] text-[var(--n-fg)] group-hover:text-[var(--n-accent)] transition-colors"
+                  style={{ margin: 0, padding: 0, border: 0 }}
+                >
+                  {s.title}
+                </h2>
+                <p className="text-[12.5px] leading-[1.6] text-[var(--n-fg-muted)] max-w-[44ch]">
+                  {s.blurb}
+                </p>
+                <ul className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-[var(--n-fg-faint)]">
+                  {s.leaves.map((leaf) => (
+                    <li key={leaf}>{leaf}</li>
+                  ))}
+                </ul>
+              </Link>
+            ))}
+          </div>
+
+          {/* Help row */}
+          <div
+            className="mt-12 grid grid-cols-1 md:grid-cols-[1fr_auto] items-center gap-6 p-5"
+            style={{ border: "1px solid var(--n-line-soft)" }}
+          >
+            <div>
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[var(--n-fg-faint)]">
+                Something off?
               </div>
-              <h3 className="text-white font-bold mb-3 uppercase tracking-widest text-lg font-mono">
-                {feature.title}
-              </h3>
-              <p className="text-[#a1a1aa] text-sm leading-relaxed font-mono group-hover:text-white transition-colors">
-                {feature.desc}
+              <p className="mt-2 text-[13px] leading-[1.6] text-[var(--n-fg-muted)] max-w-[72ch]">
+                Docs live alongside the source. Open an issue, send a PR, or DM{" "}
+                <a
+                  href="https://x.com/gillarohith"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--n-fg)] underline underline-offset-4"
+                  style={{ textDecorationColor: "var(--n-line)" }}
+                >
+                  @gillarohith
+                </a>
+                . Replies come from the person who wrote the code.
               </p>
             </div>
-          ))}
-        </motion.div>
-
-        {/* Terminal decoration */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 0.5 }}
-          transition={{ delay: 1.5, duration: 1 }}
-          className="absolute bottom-12 left-1/2 -translate-x-1/2 text-[#71717a] text-xs font-mono uppercase tracking-[0.2em]"
-        >
-          <span className="text-[#6b8cf5]">$</span> data-peek --help
-          <span className="inline-block w-2 h-4 bg-[#6b8cf5] ml-2 animate-pulse" />
-        </motion.div>
+            <div className="flex gap-2 text-[11px]">
+              <a
+                href="https://github.com/Rohithgilla12/data-peek/issues/new"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-8 px-3 inline-flex items-center text-[var(--n-fg-muted)] hover:text-[var(--n-fg)]"
+                style={{ border: "1px solid var(--n-line-soft)" }}
+              >
+                Open issue
+              </a>
+              <a
+                href="https://github.com/Rohithgilla12/data-peek"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-8 px-3 inline-flex items-center text-[var(--n-fg-muted)] hover:text-[var(--n-fg)]"
+                style={{ border: "1px solid var(--n-line-soft)" }}
+              >
+                Source
+              </a>
+            </div>
+          </div>
+        </div>
       </main>
     </HomeLayout>
-  );
+  )
 }

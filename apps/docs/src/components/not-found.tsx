@@ -1,58 +1,60 @@
-import { Link } from '@tanstack/react-router';
-import { HomeLayout } from 'fumadocs-ui/layouts/home';
-import { baseOptions } from '@/lib/layout.shared';
+import { Link } from "@tanstack/react-router"
+import { HomeLayout } from "fumadocs-ui/layouts/home"
+import { baseOptions } from "@/lib/layout.shared"
 
 export function NotFound() {
   return (
     <HomeLayout {...baseOptions()}>
-      <div className="min-h-[calc(100vh-8rem)] flex flex-col items-center justify-center text-center px-6">
-        {/* Glitchy 404 */}
-        <div className="relative mb-6">
-          <h1 className="text-[8rem] md:text-[12rem] font-bold text-[#6b8cf5]/10 leading-none select-none">
-            404
-          </h1>
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="text-6xl md:text-8xl font-bold text-[#6b8cf5]">404</span>
-          </div>
+      <div className="mx-auto max-w-[640px] px-5 sm:px-8 py-24 sm:py-32">
+        <div className="text-[10.5px] uppercase tracking-[0.16em] text-[var(--n-fg-faint)]">
+          404 · page not found
         </div>
 
-        {/* Message */}
-        <h2 className="text-2xl md:text-3xl font-semibold text-[#fafafa] mb-4">
-          Page Not Found
-        </h2>
-        <p className="text-[#71717a] max-w-md mb-8 leading-relaxed">
-          The page you're looking for doesn't exist or has been moved. Check the URL or head back
-          to the docs.
+        <h1 className="mt-5 text-[30px] sm:text-[36px] leading-[1.05] tracking-[-0.02em] text-[var(--n-fg)] font-medium">
+          We can&apos;t find that page.
+        </h1>
+
+        <p className="mt-4 text-[14px] leading-[1.65] text-[var(--n-fg-muted)] max-w-[56ch]">
+          Either the URL is wrong, the page was renamed, or it never existed.
+          Jump back to the docs index or head to the landing page.
         </p>
 
-        {/* Terminal-style hint */}
-        <div className="mb-8 p-4 rounded-lg border border-[#27272a] bg-[#111113]/50 font-mono text-sm">
-          <span className="text-[#71717a]">Error:</span>{' '}
-          <span className="text-[#f87171]">ENOENT</span>{' '}
-          <span className="text-[#a1a1aa]">- no such page or directory</span>
-        </div>
-
-        {/* CTA */}
-        <Link
-          to="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-[#6b8cf5] text-[#0a0a0b] font-semibold text-sm transition-all hover:bg-[#fafafa] hover:shadow-lg hover:shadow-[#6b8cf5]/20"
+        <pre
+          className="mt-8 p-4 text-[12.5px] leading-[1.55] tabular-nums"
+          style={{
+            border: "1px solid var(--n-line)",
+            background: "var(--n-bg-sunken)",
+            color: "var(--n-fg-muted)",
+            borderRadius: 4,
+            margin: 0,
+          }}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="w-4 h-4"
+          <span style={{ color: "var(--n-fg-faint)" }}>$ </span>
+          <span style={{ color: "var(--n-fg)" }}>data-peek docs</span>
+          <span>{" open "}</span>
+          <span style={{ color: "var(--n-accent)" }}>{"<that-url>"}</span>
+          {"\n"}
+          <span style={{ color: "var(--n-err)" }}>ENOENT</span>
+          <span>{" "}no such page or directory</span>
+        </pre>
+
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <Link
+            to="/"
+            className="inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium"
+            style={{ background: "var(--n-accent)", color: "var(--n-accent-ink)" }}
           >
-            <path d="m12 19-7-7 7-7" />
-            <path d="M19 12H5" />
-          </svg>
-          Back to Home
-        </Link>
+            <span aria-hidden>←</span> Back to docs
+          </Link>
+          <a
+            href="https://datapeek.dev"
+            className="inline-flex h-10 items-center px-4 text-[13px] text-[var(--n-fg)]"
+            style={{ border: "1px solid var(--n-line)" }}
+          >
+            datapeek.dev
+          </a>
+        </div>
       </div>
     </HomeLayout>
-  );
+  )
 }
