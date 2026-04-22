@@ -1,0 +1,109 @@
+---
+title: "v0.21.3 — SSL Just Works for Cloud Postgres and MySQL"
+description: "A 0.21.3 patch fixes the self-signed certificate error that made 'Use SSL' unusable against AWS RDS, Supabase, Neon, and DigitalOcean Managed Databases. Strict CA verification is now opt-in, and unhelpful TLS errors get an actionable hint pointing to the right checkbox."
+date: "2026-04-22"
+author: "Rohith Gilla"
+tags: ["postgres", "mysql", "tls", "ssl", "release-notes"]
+published: true
+---
+
+Every SQL client that hits a cloud database for the first time runs
+into the same wall:
+
+```
+Error: self signed certificate in certificate chain
+```
+
+You checked "Use SSL" the way any reasonable person would. The
+connection still fails. You are five minutes in and already reading
+provider docs about certificate bundles.
+
+This is a dev tool. That is the wrong default.
+
+## What changed in 0.21.3
+
+**Strict certificate verification is now opt-in.** When you tick
+"Use SSL" and do nothing else, data-peek connects with TLS but does
+not reject self-signed or private-CA certs. That matches what AWS
+RDS, Supabase, Neon, and DigitalOcean Managed Databases ship out of
+the box, and what every other SQL GUI on the market does.
+
+The checkbox in the connection dialog is now labeled
+**"Verify server certificate (strict)"** and is unchecked by
+default. Tick it when you:
+
+- Have a CA certificate path to pin against (the field right below
+  it accepts one)
+- Are on an internal Postgres/MySQL with a cert you control
+- Specifically want strict verification for compliance reasons
+
+The old default (strict verification with no CA pinning option from
+the UI) protected approximately zero users and blocked approximately
+all of them.
+
+## Under the hood
+
+Three places needed the same change:
+
+- `postgres-adapter.ts` — pg `Client` config
+- `mysql-adapter.ts` — mysql2 connection options
+- `pg-notification-listener.ts` — LISTEN/NOTIFY client used by the
+  notifications feature
+
+All of them used to do:
+
+```ts
+if (sslOptions.rejectUnauthorized === false) {
+  ssl = { rejectUnauthorized: false }
+} else if (sslOptions.ca) {
+  ssl = { rejectUnauthorized: true, ca: read(ca) }
+} else {
+  ssl = true   // <-- this branch defaulted to strict
+}
+```
+
+And now do:
+
+```ts
+if (sslOptions.ca) {
+  ssl = {
+    rejectUnauthorized: sslOptions.rejectUnauthorized !== false,
+    ca: read(ca),
+  }
+} else {
+  // no CA pinned — verification is opt-in
+  ssl = { rejectUnauthorized: sslOptions.rejectUnauthorized === true }
+}
+```
+
+CA-pinned connections still verify. Nothing you explicitly configured
+as strict got quietly downgraded.
+
+## Better errors when it does fail
+
+Even with the new default, strict-verified connections can still trip
+on expired certs, hostname mismatches, or wrong CA files. The IPC
+layer now catches the Node TLS error codes
+(`DEPTH_ZERO_SELF_SIGNED_CERT`, `SELF_SIGNED_CERT_IN_CHAIN`,
+`UNABLE_TO_GET_ISSUER_CERT_LOCALLY`, `UNABLE_TO_VERIFY_LEAF_SIGNATURE`,
+`CERT_HAS_EXPIRED`, `ERR_TLS_CERT_ALTNAME_INVALID`) and appends the
+actionable bit users actually need:
+
+> The server uses a self-signed or private-CA certificate. Uncheck
+> "Verify server certificate (strict)" in the connection dialog, or
+> provide the CA certificate path. This is common for AWS RDS,
+> Supabase, Neon, and DigitalOcean Managed Databases.
+
+The original TLS message still comes through. We just stop leaving
+users to Google a Node error code at 11pm.
+
+## Migration notes
+
+Existing connections you created with strict verification keep their
+setting — we did not touch stored configs. Only the **default** for
+newly created connections and the UI checkbox changed. If you have a
+saved connection that was failing because `rejectUnauthorized` was
+implicitly `true`, just open it, uncheck the box, and save.
+
+Update via `data-peek` → **Check for Updates**, or grab the build
+from the downloads page.
