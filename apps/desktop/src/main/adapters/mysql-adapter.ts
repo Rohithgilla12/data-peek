@@ -105,14 +105,10 @@ function toMySQLConfig(
   if (config.ssl) {
     const sslOptions = config.sslOptions || {}
 
-    if (sslOptions.rejectUnauthorized === false) {
-      mysqlConfig.ssl = {
-        rejectUnauthorized: false
-      }
-    } else if (sslOptions.ca) {
+    if (sslOptions.ca) {
       try {
         mysqlConfig.ssl = {
-          rejectUnauthorized: true,
+          rejectUnauthorized: sslOptions.rejectUnauthorized !== false,
           ca: readFileSync(sslOptions.ca, 'utf-8')
         }
       } catch (err) {
@@ -122,8 +118,11 @@ function toMySQLConfig(
         )
       }
     } else {
+      // Default to rejectUnauthorized: false so cloud MySQL (RDS, PlanetScale,
+      // Aiven) with self-signed / private-CA certs works out of the box.
+      // Strict verification is opt-in via the UI.
       mysqlConfig.ssl = {
-        rejectUnauthorized: true
+        rejectUnauthorized: sslOptions.rejectUnauthorized === true
       }
     }
   }

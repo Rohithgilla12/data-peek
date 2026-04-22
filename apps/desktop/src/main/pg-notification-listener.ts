@@ -34,18 +34,23 @@ function buildClientConfig(
   if (config.ssl) {
     const sslOptions = config.sslOptions || {}
 
-    if (sslOptions.rejectUnauthorized === false) {
-      clientConfig.ssl = { rejectUnauthorized: false }
-    } else if (sslOptions.ca) {
+    if (sslOptions.ca) {
       try {
-        clientConfig.ssl = { rejectUnauthorized: true, ca: readFileSync(sslOptions.ca, 'utf-8') }
+        clientConfig.ssl = {
+          rejectUnauthorized: sslOptions.rejectUnauthorized !== false,
+          ca: readFileSync(sslOptions.ca, 'utf-8')
+        }
       } catch (err) {
         throw new Error(
           `Failed to read CA certificate file: ${sslOptions.ca}. ${(err as Error).message}`
         )
       }
     } else {
-      clientConfig.ssl = true
+      // Default to rejectUnauthorized: false (matches adapters) so cloud DBs
+      // with self-signed certs work. Opt-in strict verification via UI.
+      clientConfig.ssl = {
+        rejectUnauthorized: sslOptions.rejectUnauthorized === true
+      }
     }
   }
 

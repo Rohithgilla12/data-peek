@@ -85,14 +85,10 @@ export function buildClientConfig(
   if (config.ssl) {
     const sslOptions = config.sslOptions || {}
 
-    if (sslOptions.rejectUnauthorized === false) {
-      clientConfig.ssl = {
-        rejectUnauthorized: false
-      }
-    } else if (sslOptions.ca) {
+    if (sslOptions.ca) {
       try {
         clientConfig.ssl = {
-          rejectUnauthorized: true,
+          rejectUnauthorized: sslOptions.rejectUnauthorized !== false,
           ca: readFileSync(sslOptions.ca, 'utf-8')
         }
       } catch (err) {
@@ -102,7 +98,12 @@ export function buildClientConfig(
         )
       }
     } else {
-      clientConfig.ssl = true
+      // Default to rejectUnauthorized: false so cloud DBs (AWS RDS, Supabase,
+      // Neon, DigitalOcean) with self-signed / private-CA certs work out of
+      // the box. Users who need strict verification opt in via the UI.
+      clientConfig.ssl = {
+        rejectUnauthorized: sslOptions.rejectUnauthorized === true
+      }
     }
   }
 

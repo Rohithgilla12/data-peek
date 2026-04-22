@@ -11,7 +11,19 @@ import {
   Eye,
   EyeOff
 } from 'lucide-react'
-import { Button, Input, Collapsible, CollapsibleContent, CollapsibleTrigger, Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle
+} from '@data-peek/ui'
 
 import { useConnectionStore, type Connection } from '@/stores'
 import { DB_DEFAULTS, parseConnectionString } from '@/lib/connection-string-parser'
@@ -75,7 +87,7 @@ export function AddConnectionDialog({
   })
 
   const [sslOptions, setSslOptions] = useState<SSLConnectionOptions>({
-    rejectUnauthorized: true
+    rejectUnauthorized: false
   })
 
   const [mssqlOptions, setMssqlOptions] = useState<
@@ -100,7 +112,7 @@ export function AddConnectionDialog({
       setUser(editConnection.user || '')
       setPassword(editConnection.password || '')
       setSsl(editConnection.ssl || false)
-      setSslOptions(editConnection.sslOptions || { rejectUnauthorized: true })
+      setSslOptions(editConnection.sslOptions || { rejectUnauthorized: false })
       setSsh(editConnection.ssh || false)
       setMssqlOptions(editConnection.mssqlOptions)
 
@@ -859,7 +871,7 @@ export function AddConnectionDialog({
                         <input
                           id="sslRejectUnauthorized"
                           type="checkbox"
-                          checked={sslOptions.rejectUnauthorized !== false}
+                          checked={sslOptions.rejectUnauthorized === true}
                           onChange={(e) =>
                             setSslOptions((prev) => ({
                               ...prev,
@@ -869,12 +881,13 @@ export function AddConnectionDialog({
                           className="size-4 rounded border-input"
                         />
                         <label htmlFor="sslRejectUnauthorized" className="text-sm font-medium">
-                          Verify server certificate
+                          Verify server certificate (strict)
                         </label>
                       </div>
                       <p className="mt-1 text-xs text-muted-foreground">
-                        Disable this for AWS RDS, Azure, or other cloud databases where certificate
-                        verification fails.
+                        Off by default — most cloud DBs (AWS RDS, Supabase, Neon, DigitalOcean) use
+                        self-signed or private-CA certs that fail strict verification. Enable only
+                        if you have the CA certificate below or a public CA cert.
                       </p>
                     </div>
 

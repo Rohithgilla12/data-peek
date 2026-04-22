@@ -19,6 +19,7 @@ import {
   type CachedSchema
 } from '../schema-cache'
 import { createLogger } from '../lib/logger'
+import { annotateSslError } from '../lib/ssl-error'
 import { telemetryCollector } from '../telemetry-collector'
 import { analyzeQueryPerformance } from '../performance-analyzer'
 
@@ -35,7 +36,7 @@ export function registerQueryHandlers(): void {
       await adapter.connect(config)
       return { success: true }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorMessage = annotateSslError(error).message
       return { success: false, error: errorMessage }
     }
   })
