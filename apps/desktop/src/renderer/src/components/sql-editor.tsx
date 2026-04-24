@@ -453,7 +453,12 @@ const ensureCompletionProvider = (monacoInstance: Monaco): void => {
 export interface SQLEditorProps {
   value: string
   onChange?: (value: string) => void
-  onRun?: () => void
+  /**
+   * Called when the user triggers Run (Cmd/Ctrl+Enter). When the editor has a
+   * non-empty selection, the selected SQL is passed; otherwise undefined and
+   * the caller should run the full buffer.
+   */
+  onRun?: (selectedSql?: string) => void
   onFormat?: () => void
   readOnly?: boolean
   height?: string | number
@@ -609,7 +614,12 @@ export function SQLEditor({
     // Add keyboard shortcuts
     // Use refs to avoid stale closures - callbacks may change but Monaco commands are registered once
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      onRunRef.current?.()
+      const selection = editor.getSelection()
+      const selected =
+        selection && !selection.isEmpty()
+          ? editor.getModel()?.getValueInRange(selection)?.trim()
+          : undefined
+      onRunRef.current?.(selected || undefined)
     })
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
