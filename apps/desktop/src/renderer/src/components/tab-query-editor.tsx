@@ -962,9 +962,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       ? schemas.filter((s) => lower(s.name) === lower(info.schema as string))
       : schemas
 
+    // Match tables and updatable relations by name. We deliberately do NOT filter
+    // by `t.type === 'table'` here so that behavior stays symmetric with the
+    // table-preview path (which also allows views). Materialized views aren't
+    // updatable, but we let downstream (EditToolbar/no-PK warning) surface that
+    // instead of silently hiding the edit UI.
     let match: { schemaName: string; tableInfo: TableInfo } | null = null
     for (const s of schemaCandidates) {
-      const t = s.tables.find((t) => lower(t.name) === lower(info.table) && t.type === 'table')
+      const t = s.tables.find((t) => lower(t.name) === lower(info.table))
       if (!t) continue
       if (match) return null // ambiguous — bail rather than guess wrong
       match = { schemaName: s.name, tableInfo: t }
@@ -972,9 +977,13 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     if (!match) return null
 
     const pkCols = match.tableInfo.columns.filter((c) => c.isPrimaryKey)
-    if (pkCols.length === 0) return null
+    // Tables without a primary key still render the edit UI (with a disabled
+    // Edit button + "No PK" warning), matching the table-preview path. This
+    // avoids the confusing inconsistency where inline edit appears when the
+    // table is opened from the sidebar but silently disappears when the same
+    // table is queried via `SELECT * FROM foo LIMIT 1` in the editor.
 
-    if (info.projection.type === 'columns') {
+    if (info.projection.type === 'columns' && pkCols.length > 0) {
       const projLower = new Set(info.projection.names.map(lower))
       for (const pk of pkCols) {
         if (!projLower.has(lower(pk.name))) return null
