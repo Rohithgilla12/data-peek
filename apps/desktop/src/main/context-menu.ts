@@ -18,10 +18,10 @@ export function setupContextMenu(window: BrowserWindow): void {
     } else if (params.selectionText.length > 0) {
       // Text selection in non-editable area
       menuItems.push({ role: 'copy' }, { type: 'separator' }, { role: 'selectAll' })
-    } else {
-      // Default context (no selection, not editable)
-      menuItems.push({ role: 'selectAll' })
     }
+    // Default context (no selection, not editable) is intentionally left empty
+    // so renderer-side context menus can take over. A lone "Select All" is not
+    // useful here and collides with the Radix row context menu.
 
     // Link handling
     if (params.linkURL) {
@@ -51,6 +51,7 @@ export function setupContextMenu(window: BrowserWindow): void {
       menuItems.push({ type: 'separator' }, { role: 'toggleDevTools' })
     }
 
+    if (menuItems.length === 0) return
     const menu = Menu.buildFromTemplate(menuItems)
     menu.popup({ window })
   })

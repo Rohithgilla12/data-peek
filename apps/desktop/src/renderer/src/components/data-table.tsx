@@ -10,6 +10,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowUpDown, ArrowUp, ArrowDown, Link2, Copy, BarChart2, Lock, Unlock } from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
+import { RowContextMenu } from '@/components/row-context-menu'
 import {
   Button,
   TableBody,
@@ -639,16 +640,19 @@ export function DataTable<TData extends Record<string, unknown>>({
                   </tr>
                 ) : (
                   rows.map((row) => (
-                    <TableRow
+                    <RowContextMenu
                       key={row.id}
-                      className="hover:bg-accent/30 border-border/30 transition-colors"
+                      row={row.original as Record<string, unknown>}
+                      columns={columnDefs.map((c) => ({ name: c.name, dataType: c.dataType }))}
                     >
-                      {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </TableCell>
-                      ))}
-                    </TableRow>
+                      <TableRow className="hover:bg-accent/30 border-border/30 transition-colors">
+                        {row.getVisibleCells().map((cell) => (
+                          <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    </RowContextMenu>
                   ))
                 )
               ) : (
