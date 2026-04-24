@@ -69,7 +69,8 @@ import {
   EditableDataTable,
   type DataTableColumn as EditableDataTableColumn
 } from '@/components/editable-data-table'
-import type { EditContext } from '@data-peek/shared'
+import type { EditContext, TableInfo } from '@data-peek/shared'
+import { analyzeEditableSelect } from '@/lib/editable-select'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
@@ -899,8 +900,13 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     })
   }, [tab, schemas])
 
-  // Helper: Get columns with full info including isPrimaryKey (for editable table)
-  const getColumnsForEditing = useCallback((): EditableDataTableColumn[] => {
+  // Resolve the source table for editing — works for table-preview tabs (direct metadata)
+  // and query tabs when the active statement is a simple single-table SELECT that includes all PK columns.
+  const resolveEditSourceTable = useCallback((): {
+    schemaName: string
+    tableName: string
+    tableInfo: TableInfo
+  } | null => {
     if (
       !tab ||
       tab.type === 'erd' ||
@@ -909,19 +915,72 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab.type === 'pg-notifications' ||
       tab.type === 'health-monitor' ||
       tab.type === 'schema-intel' ||
-      tab.type === 'notebook' ||
-      !tab.result?.columns ||
-      tab.type !== 'table-preview'
-    )
-      return []
+      tab.type === 'notebook'
+    ) {
+      return null
+    }
 
-    const schema = schemas.find((s) => s.name === tab.schemaName)
-    const tableInfo = schema?.tables.find((t) => t.name === tab.tableName)
+    if (tab.type === 'table-preview') {
+      const schema = schemas.find((s) => s.name === tab.schemaName)
+      const tableInfo = schema?.tables.find((t) => t.name === tab.tableName)
+      if (!tableInfo) return null
+      return { schemaName: tab.schemaName, tableName: tab.tableName, tableInfo }
+    }
 
-    if (!tableInfo) return []
+    if (tab.type !== 'query' || !tabConnection) return null
 
-    return tab.result.columns.map((col) => {
-      const schemaCol = tableInfo.columns.find((c) => c.name === col.name)
+    const idx = tab.activeResultIndex ?? 0
+    const stmts = tab.multiResult?.statements
+    const sql = stmts?.[idx]?.statement ?? tab.savedQuery ?? tab.query
+    if (!sql) return null
+
+    const info = analyzeEditableSelect(sql, tabConnection.dbType)
+    if (!info) return null
+
+    const lower = (s: string) => s.toLowerCase()
+    const schemaCandidates = info.schema
+      ? schemas.filter((s) => lower(s.name) === lower(info.schema as string))
+      : schemas
+
+    let match: { schemaName: string; tableInfo: TableInfo } | null = null
+    for (const s of schemaCandidates) {
+      const t = s.tables.find((t) => lower(t.name) === lower(info.table) && t.type === 'table')
+      if (!t) continue
+      if (match) return null // ambiguous — bail rather than guess wrong
+      match = { schemaName: s.name, tableInfo: t }
+    }
+    if (!match) return null
+
+    const pkCols = match.tableInfo.columns.filter((c) => c.isPrimaryKey)
+    if (pkCols.length === 0) return null
+
+    if (info.projection.type === 'columns') {
+      const projLower = new Set(info.projection.names.map(lower))
+      for (const pk of pkCols) {
+        if (!projLower.has(lower(pk.name))) return null
+      }
+    }
+
+    return {
+      schemaName: match.schemaName,
+      tableName: match.tableInfo.name,
+      tableInfo: match.tableInfo
+    }
+  }, [tab, schemas, tabConnection])
+
+  // Helper: Get columns with full info including isPrimaryKey (for editable table)
+  const getColumnsForEditing = useCallback((): EditableDataTableColumn[] => {
+    const source = resolveEditSourceTable()
+    if (!source || !tab || !('result' in tab)) return []
+
+    const idx = tab.activeResultIndex ?? 0
+    const stmtFields = tab.multiResult?.statements?.[idx]?.fields
+    const resultCols = stmtFields
+      ? stmtFields.map((f) => ({ name: f.name, dataType: f.dataType }))
+      : (tab.result?.columns ?? [])
+
+    return resultCols.map((col) => {
+      const schemaCol = source.tableInfo.columns.find((c) => c.name === col.name)
       return {
         name: col.name,
         dataType: col.dataType,
@@ -931,26 +990,24 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         enumValues: ensureArray(schemaCol?.enumValues) ?? ensureArray(getEnumValues(col.dataType))
       }
     })
-  }, [tab, schemas, getEnumValues])
+  }, [resolveEditSourceTable, tab, getEnumValues])
 
-  // Helper: Build EditContext for table-preview tabs
+  // Helper: Build EditContext for the currently active result
   const getEditContext = useCallback((): EditContext | null => {
-    if (!tab || tab.type !== 'table-preview') return null
+    const source = resolveEditSourceTable()
+    if (!source) return null
 
-    const schema = schemas.find((s) => s.name === tab.schemaName)
-    const tableInfo = schema?.tables.find((t) => t.name === tab.tableName)
-
-    if (!tableInfo) return null
-
-    const primaryKeyColumns = tableInfo.columns.filter((c) => c.isPrimaryKey).map((c) => c.name)
+    const primaryKeyColumns = source.tableInfo.columns
+      .filter((c) => c.isPrimaryKey)
+      .map((c) => c.name)
 
     return {
-      schema: tab.schemaName,
-      table: tab.tableName,
+      schema: source.schemaName,
+      table: source.tableName,
       primaryKeyColumns,
-      columns: tableInfo.columns
+      columns: source.tableInfo.columns
     }
-  }, [tab, schemas])
+  }, [resolveEditSourceTable])
 
   // FK Panel: Fetch data for a referenced row
   const fetchFKData = useCallback(
@@ -1690,32 +1747,45 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
                 {/* Results Table */}
                 <div className="flex-1 overflow-hidden p-3">
-                  {tab.type === 'table-preview' && !hasMultipleResults ? (
-                    <EditableDataTable
-                      key={`result-${activeResultIndex}`}
-                      tabId={tabId}
-                      columns={getColumnsForEditing()}
-                      data={
-                        tab.totalRowCount != null
-                          ? ((tab.result?.rows ?? []) as Record<string, unknown>[])
-                          : (paginatedRows as Record<string, unknown>[])
-                      }
-                      pageSize={tab.pageSize}
-                      canEdit={true}
-                      editContext={getEditContext()}
-                      connection={tabConnection}
-                      onFiltersChange={setTableFilters}
-                      onSortingChange={setTableSorting}
-                      onApplyToQuery={hasActiveFiltersOrSorting ? handleApplyToQuery : undefined}
-                      onForeignKeyClick={handleFKClick}
-                      onForeignKeyOpenTab={handleFKOpenTab}
-                      onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
-                      onChangesCommitted={handleRunQuery}
-                      serverCurrentPage={tab.currentPage}
-                      serverTotalRowCount={tab.totalRowCount}
-                      onServerPaginationChange={handleTablePreviewPaginationChange}
-                    />
-                  ) : (
+                  {(() => {
+                    const editContext = getEditContext()
+                    const isTablePreview = tab.type === 'table-preview'
+                    // Edit UI for table-preview (existing behavior) or for query tabs whose active
+                    // statement is a simple single-table SELECT with PK columns visible.
+                    if (editContext && (isTablePreview ? !hasMultipleResults : true)) {
+                      return (
+                        <EditableDataTable
+                          key={`result-${activeResultIndex}`}
+                          tabId={tabId}
+                          columns={getColumnsForEditing()}
+                          data={
+                            isTablePreview && tab.totalRowCount != null
+                              ? ((tab.result?.rows ?? []) as Record<string, unknown>[])
+                              : (paginatedRows as Record<string, unknown>[])
+                          }
+                          pageSize={tab.pageSize}
+                          canEdit={true}
+                          editContext={editContext}
+                          connection={tabConnection}
+                          onFiltersChange={setTableFilters}
+                          onSortingChange={setTableSorting}
+                          onApplyToQuery={
+                            hasActiveFiltersOrSorting ? handleApplyToQuery : undefined
+                          }
+                          onForeignKeyClick={handleFKClick}
+                          onForeignKeyOpenTab={handleFKOpenTab}
+                          onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
+                          onChangesCommitted={handleRunQuery}
+                          serverCurrentPage={isTablePreview ? tab.currentPage : undefined}
+                          serverTotalRowCount={isTablePreview ? tab.totalRowCount : undefined}
+                          onServerPaginationChange={
+                            isTablePreview ? handleTablePreviewPaginationChange : undefined
+                          }
+                        />
+                      )
+                    }
+                    return null
+                  })() || (
                     <DataTable
                       key={`result-${activeResultIndex}`}
                       tabId={tabId}
