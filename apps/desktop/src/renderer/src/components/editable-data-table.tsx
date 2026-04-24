@@ -3,6 +3,7 @@ import { EditToolbar } from '@/components/edit-toolbar'
 import { EditableCell } from '@/components/editable-cell'
 import { FKCellValue } from '@/components/fk-cell-value'
 import { JsonCellValue } from '@/components/json-cell-value'
+import { RowContextMenu } from '@/components/row-context-menu'
 import { SqlPreviewModal } from '@/components/sql-preview-modal'
 import {
   Badge,
@@ -289,6 +290,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     Array<{ operationId: string; sql: string; type: 'insert' | 'update' | 'delete' }>
   >([])
   const [isCommitting, setIsCommitting] = React.useState(false)
+  const [commitError, setCommitError] = React.useState<string | null>(null)
 
   // Add Row Sheet state
   const [showAddRowSheet, setShowAddRowSheet] = React.useState(false)
@@ -606,25 +608,22 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     if (!batch) return
 
     setIsCommitting(true)
+    setCommitError(null)
 
     try {
       const response = await window.api.db.execute(connection, batch)
 
       if (response.success && response.data?.success) {
-        // Clear pending changes
         clearPendingChanges(tabId)
         setShowSqlPreview(false)
-        // Notify parent to refresh data
         onChangesCommitted?.()
       } else {
-        // Handle errors
         const errorMsg =
           response.data?.errors?.[0]?.message || response.error || 'Failed to save changes'
-        console.error('Commit failed:', errorMsg)
-        // Could show a toast notification here
+        setCommitError(errorMsg)
       }
     } catch (error) {
-      console.error('Commit error:', error)
+      setCommitError(error instanceof Error ? error.message : String(error))
     } finally {
       setIsCommitting(false)
     }
@@ -1206,21 +1205,37 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                     rows.map((row) => {
                       const rowIndex = row.index
                       const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
+                      const originalRow = row.original as Record<string, unknown>
 
                       return (
-                        <TableRow
+                        <RowContextMenu
                           key={row.id}
-                          className={cn(
-                            'hover:bg-accent/30 border-border/30 transition-colors',
-                            isDeleted && 'bg-red-500/5'
-                          )}
+                          row={originalRow}
+                          columns={columnDefs.map((c) => ({ name: c.name, dataType: c.dataType }))}
+                          onDuplicate={
+                            canEdit && editContext
+                              ? () => handleDuplicateRow(originalRow)
+                              : undefined
+                          }
+                          onDelete={
+                            canEdit && editContext && !isDeleted
+                              ? () => markRowForDeletion(tabId, rowIndex, originalRow)
+                              : undefined
+                          }
                         >
-                          {row.getVisibleCells().map((cell) => (
-                            <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                            </TableCell>
-                          ))}
-                        </TableRow>
+                          <TableRow
+                            className={cn(
+                              'hover:bg-accent/30 border-border/30 transition-colors',
+                              isDeleted && 'bg-red-500/5'
+                            )}
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        </RowContextMenu>
                       )
                     })
                   )
@@ -1306,10 +1321,14 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         {/* SQL Preview Modal */}
         <SqlPreviewModal
           open={showSqlPreview}
-          onOpenChange={setShowSqlPreview}
+          onOpenChange={(open) => {
+            setShowSqlPreview(open)
+            if (!open) setCommitError(null)
+          }}
           sqlStatements={sqlStatements}
           onConfirm={handleConfirmCommit}
           isLoading={isCommitting}
+          error={commitError}
         />
 
         {/* Add Row Sheet */}
