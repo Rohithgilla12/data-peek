@@ -286,6 +286,21 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     }
   }
 
+  // Export data for the currently visible result set. For multi-statement queries this
+  // follows the active statement tab instead of always exporting the first result.
+  const getCurrentExportData = (): ExportData | null => {
+    if (!tab || !('result' in tab)) return null
+    const idx = tab.activeResultIndex ?? 0
+    const stmt = tab.multiResult?.statements?.[idx]
+    if (stmt) {
+      return {
+        columns: stmt.fields.map((f) => ({ name: f.name, dataType: f.dataType })),
+        rows: stmt.rows as Record<string, unknown>[]
+      }
+    }
+    return tab.result ?? null
+  }
+
   const handleExport = (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
     const masked = getEffectiveMaskedColumns(
       tabId,
@@ -311,161 +326,166 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     }
   }
 
-  const handleRunQuery = useCallback(async () => {
-    // Read fresh tab state from store to avoid stale closure issues
-    // (important for server-side pagination where query is updated before this runs)
-    const currentTab = useTabStore.getState().getTab(tabId)
+  const handleRunQuery = useCallback(
+    async (selectedSql?: string) => {
+      // Read fresh tab state from store to avoid stale closure issues
+      // (important for server-side pagination where query is updated before this runs)
+      const currentTab = useTabStore.getState().getTab(tabId)
 
-    if (
-      !currentTab ||
-      currentTab.type === 'erd' ||
-      currentTab.type === 'table-designer' ||
-      currentTab.type === 'data-generator' ||
-      currentTab.type === 'pg-notifications' ||
-      currentTab.type === 'health-monitor' ||
-      currentTab.type === 'schema-intel' ||
-      currentTab.type === 'notebook' ||
-      !tabConnection ||
-      currentTab.isExecuting ||
-      !currentTab.query.trim()
-    ) {
-      return
-    }
+      if (
+        !currentTab ||
+        currentTab.type === 'erd' ||
+        currentTab.type === 'table-designer' ||
+        currentTab.type === 'data-generator' ||
+        currentTab.type === 'pg-notifications' ||
+        currentTab.type === 'health-monitor' ||
+        currentTab.type === 'schema-intel' ||
+        currentTab.type === 'notebook' ||
+        !tabConnection ||
+        currentTab.isExecuting
+      ) {
+        return
+      }
 
-    // Generate unique execution ID for cancellation support
-    const executionId = crypto.randomUUID()
-    updateTabExecuting(tabId, true, executionId)
+      const queryToRun = (selectedSql ?? currentTab.query).trim()
+      if (!queryToRun) return
 
-    // Clear previous benchmark when running a new query
-    setBenchmark(null)
+      // Generate unique execution ID for cancellation support
+      const executionId = crypto.randomUUID()
+      updateTabExecuting(tabId, true, executionId)
 
-    try {
-      // Use telemetry-enabled query API with timeout from settings
-      const response = await window.api.db.queryWithTelemetry(
-        tabConnection,
-        currentTab.query,
-        executionId,
-        queryTimeoutMs
-      )
+      // Clear previous benchmark when running a new query
+      setBenchmark(null)
 
-      if (response.success && response.data) {
-        const data = response.data as {
-          results: StatementResult[]
-          totalDurationMs: number
-          statementCount: number
-          telemetry?: import('@data-peek/shared').QueryTelemetry
-        } & IpcQueryResult
+      try {
+        // Use telemetry-enabled query API with timeout from settings
+        const response = await window.api.db.queryWithTelemetry(
+          tabConnection,
+          queryToRun,
+          executionId,
+          queryTimeoutMs
+        )
 
-        // Store telemetry data if available
-        if (data.telemetry) {
-          setTelemetry(data.telemetry)
-        } else {
-          setTelemetry(null)
-        }
+        if (response.success && response.data) {
+          const data = response.data as {
+            results: StatementResult[]
+            totalDurationMs: number
+            statementCount: number
+            telemetry?: import('@data-peek/shared').QueryTelemetry
+          } & IpcQueryResult
 
-        // Check if we have multi-statement results
-        if ('results' in data && Array.isArray(data.results)) {
-          // Multi-statement result
-          const multiResult: MultiQueryResult = {
-            statements: data.results as StatementResult[],
-            totalDurationMs: data.totalDurationMs,
-            statementCount: data.statementCount
+          // Store telemetry data if available
+          if (data.telemetry) {
+            setTelemetry(data.telemetry)
+          } else {
+            setTelemetry(null)
           }
 
-          updateTabMultiResult(tabId, multiResult, null)
-          markTabSaved(tabId)
+          // Check if we have multi-statement results
+          if ('results' in data && Array.isArray(data.results)) {
+            // Multi-statement result
+            const multiResult: MultiQueryResult = {
+              statements: data.results as StatementResult[],
+              totalDurationMs: data.totalDurationMs,
+              statementCount: data.statementCount
+            }
 
-          // For table preview tabs, fetch total count for server-side pagination
-          if (currentTab.type === 'table-preview') {
-            try {
-              const countTableRef = buildQualifiedTableRef(
-                currentTab.schemaName,
-                currentTab.tableName,
-                tabConnection.dbType
-              )
-              const countQuery = buildCountQuery(countTableRef)
-              const countResponse = await window.api.db.query(tabConnection, countQuery)
-              if (countResponse.success && countResponse.data) {
-                const countData = countResponse.data as IpcQueryResult
-                if (countData.rows?.[0]) {
-                  const totalCount = Number((countData.rows[0] as Record<string, unknown>).total)
-                  if (!isNaN(totalCount)) {
-                    setTablePreviewTotalCount(tabId, totalCount)
+            updateTabMultiResult(tabId, multiResult, null)
+            markTabSaved(tabId)
+
+            // For table preview tabs, fetch total count for server-side pagination
+            if (currentTab.type === 'table-preview') {
+              try {
+                const countTableRef = buildQualifiedTableRef(
+                  currentTab.schemaName,
+                  currentTab.tableName,
+                  tabConnection.dbType
+                )
+                const countQuery = buildCountQuery(countTableRef)
+                const countResponse = await window.api.db.query(tabConnection, countQuery)
+                if (countResponse.success && countResponse.data) {
+                  const countData = countResponse.data as IpcQueryResult
+                  if (countData.rows?.[0]) {
+                    const totalCount = Number((countData.rows[0] as Record<string, unknown>).total)
+                    if (!isNaN(totalCount)) {
+                      setTablePreviewTotalCount(tabId, totalCount)
+                    }
                   }
                 }
+              } catch {
+                // Silently fail count query - pagination will fall back to client-side
               }
-            } catch {
-              // Silently fail count query - pagination will fall back to client-side
             }
-          }
 
-          // Add to global history with total row count
-          const totalRows = multiResult.statements.reduce((sum, s) => sum + s.rowCount, 0)
-          addToHistory({
-            query: currentTab.query,
-            durationMs: multiResult.totalDurationMs,
-            rowCount: totalRows,
-            status: 'success',
-            connectionId: tabConnection.id
-          })
+            // Add to global history with total row count
+            const totalRows = multiResult.statements.reduce((sum, s) => sum + s.rowCount, 0)
+            addToHistory({
+              query: queryToRun,
+              durationMs: multiResult.totalDurationMs,
+              rowCount: totalRows,
+              status: 'success',
+              connectionId: tabConnection.id
+            })
+          } else {
+            // Legacy single result (fallback)
+            const singleResult = data as IpcQueryResult
+            const result = {
+              columns: singleResult.fields.map((f: { name: string; dataType: string }) => ({
+                name: f.name,
+                dataType: f.dataType
+              })),
+              rows: singleResult.rows,
+              rowCount: singleResult.rowCount ?? singleResult.rows.length,
+              durationMs: singleResult.durationMs
+            }
+
+            updateTabResult(tabId, result, null)
+            markTabSaved(tabId)
+
+            addToHistory({
+              query: queryToRun,
+              durationMs: singleResult.durationMs,
+              rowCount: result.rowCount,
+              status: 'success',
+              connectionId: tabConnection.id
+            })
+          }
         } else {
-          // Legacy single result (fallback)
-          const singleResult = data as IpcQueryResult
-          const result = {
-            columns: singleResult.fields.map((f: { name: string; dataType: string }) => ({
-              name: f.name,
-              dataType: f.dataType
-            })),
-            rows: singleResult.rows,
-            rowCount: singleResult.rowCount ?? singleResult.rows.length,
-            durationMs: singleResult.durationMs
-          }
-
-          updateTabResult(tabId, result, null)
-          markTabSaved(tabId)
+          const errorMessage = response.error ?? 'Query execution failed'
+          updateTabMultiResult(tabId, null, errorMessage)
+          setTelemetry(null)
 
           addToHistory({
-            query: currentTab.query,
-            durationMs: singleResult.durationMs,
-            rowCount: result.rowCount,
-            status: 'success',
-            connectionId: tabConnection.id
+            query: queryToRun,
+            durationMs: 0,
+            rowCount: 0,
+            status: 'error',
+            connectionId: tabConnection.id,
+            errorMessage
           })
         }
-      } else {
-        const errorMessage = response.error ?? 'Query execution failed'
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
         updateTabMultiResult(tabId, null, errorMessage)
         setTelemetry(null)
-
-        addToHistory({
-          query: currentTab.query,
-          durationMs: 0,
-          rowCount: 0,
-          status: 'error',
-          connectionId: tabConnection.id,
-          errorMessage
-        })
+      } finally {
+        updateTabExecuting(tabId, false)
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      updateTabMultiResult(tabId, null, errorMessage)
-      setTelemetry(null)
-    } finally {
-      updateTabExecuting(tabId, false)
-    }
-  }, [
-    tabConnection,
-    tabId,
-    updateTabExecuting,
-    updateTabResult,
-    updateTabMultiResult,
-    markTabSaved,
-    addToHistory,
-    setTelemetry,
-    setBenchmark,
-    queryTimeoutMs,
-    setTablePreviewTotalCount
-  ])
+    },
+    [
+      tabConnection,
+      tabId,
+      updateTabExecuting,
+      updateTabResult,
+      updateTabMultiResult,
+      markTabSaved,
+      addToHistory,
+      setTelemetry,
+      setBenchmark,
+      queryTimeoutMs,
+      setTablePreviewTotalCount
+    ]
+  )
 
   const handleCancelQuery = useCallback(async () => {
     if (
@@ -1497,7 +1517,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 size="sm"
                 className="gap-1.5 h-7"
                 disabled={!tab.query.trim()}
-                onClick={handleRunQuery}
+                onClick={() => handleRunQuery()}
               >
                 <Play className="size-3.5" />
                 Run
@@ -1951,11 +1971,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
                           onClick={() => {
-                            if (!tab.result) return
+                            const data = getCurrentExportData()
+                            if (!data) return
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            handleExport('csv', tab.result, filename)
+                            handleExport('csv', data, filename)
                           }}
                         >
                           <FileSpreadsheet className="size-4 text-muted-foreground" />
@@ -1963,11 +1984,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            if (!tab.result) return
+                            const data = getCurrentExportData()
+                            if (!data) return
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            handleExport('json', tab.result, filename)
+                            handleExport('json', data, filename)
                           }}
                         >
                           <FileJson className="size-4 text-muted-foreground" />
@@ -1975,11 +1997,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => {
-                            if (!tab.result) return
+                            const data = getCurrentExportData()
+                            if (!data) return
                             const filename = generateExportFilename(
                               tab.type === 'table-preview' ? tab.tableName : undefined
                             )
-                            handleExport('sql', tab.result, filename)
+                            handleExport('sql', data, filename)
                           }}
                         >
                           <FileCode2 className="size-4 text-muted-foreground" />
