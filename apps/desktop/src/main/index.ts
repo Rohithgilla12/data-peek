@@ -19,6 +19,7 @@ import { windowManager } from './window-manager'
 import { initSchedulerService, stopAllSchedules } from './scheduler-service'
 import { initDashboardService } from './dashboard-service'
 import { cleanup as cleanupPgNotify } from './pg-notification-listener'
+import { closeAllPgPools } from './adapters/pg-pool-manager'
 import { StepSessionRegistry } from './step-session'
 import { createLogger } from './lib/logger'
 
@@ -154,7 +155,7 @@ app.on('before-quit', (event) => {
   cleanupPgNotify()
 
   Promise.race([
-    stepSessionRegistry.cleanupAll(),
+    Promise.all([stepSessionRegistry.cleanupAll(), closeAllPgPools()]),
     new Promise((resolve) => setTimeout(resolve, 3000))
   ])
     .catch((err) => log.error('cleanupAll failed during quit:', err))

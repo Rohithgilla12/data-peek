@@ -8,7 +8,7 @@ import type {
   PgExportPhase
 } from '@shared/index'
 import { resolvePostgresType } from '@shared/index'
-import { buildClientConfig } from './adapters/postgres-adapter'
+import { buildClientConfig } from './adapters/pg-client-config'
 import { createTunnel, closeTunnel, TunnelSession } from './ssh-tunnel-service'
 import { escapeSQLValue, escapeSQLIdentifier } from '@shared/sql-escape'
 import { createLogger } from './lib/logger'

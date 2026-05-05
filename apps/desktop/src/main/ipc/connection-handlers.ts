@@ -2,6 +2,8 @@ import { ipcMain } from 'electron'
 import type { ConnectionConfig } from '@shared/index'
 import type { DpStorage } from '../storage'
 import { windowManager } from '../window-manager'
+import { closePgPool } from '../adapters/pg-pool-manager'
+import { invalidateSchemaCache } from '../schema-cache'
 
 /**
  * Register connection CRUD handlers
@@ -36,16 +38,21 @@ export function registerConnectionHandlers(
   })
 
   // Update an existing connection
-  ipcMain.handle('connections:update', (_, connection: ConnectionConfig) => {
+  ipcMain.handle('connections:update', async (_, connection: ConnectionConfig) => {
     try {
       const connections = store.get('connections', [])
       const index = connections.findIndex((c) => c.id === connection.id)
       if (index === -1) {
         return { success: false, error: 'Connection not found' }
       }
+      const previous = connections[index]
       connections[index] = connection
       store.set('connections', connections)
-      // Broadcast to all windows that connections have changed
+      // Drop pooled clients/cache that may now be pointing at stale host/port/credentials.
+      if (previous.dbType === 'postgresql') {
+        await closePgPool(previous)
+      }
+      invalidateSchemaCache(previous)
       windowManager.broadcastToAll('connections:updated')
       return { success: true, data: connection }
     } catch (error: unknown) {
@@ -55,12 +62,18 @@ export function registerConnectionHandlers(
   })
 
   // Delete a connection
-  ipcMain.handle('connections:delete', (_, id: string) => {
+  ipcMain.handle('connections:delete', async (_, id: string) => {
     try {
       const connections = store.get('connections', [])
+      const removed = connections.find((c) => c.id === id)
       const filtered = connections.filter((c) => c.id !== id)
       store.set('connections', filtered)
-      // Broadcast to all windows that connections have changed
+      if (removed) {
+        if (removed.dbType === 'postgresql') {
+          await closePgPool(removed)
+        }
+        invalidateSchemaCache(removed)
+      }
       windowManager.broadcastToAll('connections:updated')
       return { success: true }
     } catch (error: unknown) {

@@ -6,7 +6,7 @@ import type {
   PgImportProgress,
   PgImportResult
 } from '@shared/index'
-import { buildClientConfig } from './adapters/postgres-adapter'
+import { buildClientConfig } from './adapters/pg-client-config'
 import { createTunnel, closeTunnel, TunnelSession } from './ssh-tunnel-service'
 import { splitStatementsStream } from './lib/sql-parser'
 import { createLogger } from './lib/logger'

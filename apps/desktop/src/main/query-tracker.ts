@@ -2,7 +2,7 @@
  * Query Tracker - tracks active queries and provides cancellation support
  */
 
-import { Client } from 'pg'
+import type { Client, PoolClient } from 'pg'
 import type { Connection } from 'mysql2/promise'
 import type { Request as MSSQLRequest } from 'mssql'
 import { createLogger } from './lib/logger'
@@ -11,7 +11,7 @@ const log = createLogger('query-tracker')
 
 /** Supported cancellable handle types */
 export type CancellableHandle =
-  | { type: 'postgresql'; client: Client }
+  | { type: 'postgresql'; client: Client | PoolClient }
   | { type: 'mysql'; connection: Connection }
   | { type: 'mssql'; request: MSSQLRequest }
   | { type: 'sqlite' } // SQLite is synchronous and cannot be cancelled mid-query
@@ -63,8 +63,15 @@ export async function cancelQuery(
   try {
     switch (query.handle.type) {
       case 'postgresql': {
-        // PostgreSQL: end the client connection to abort the query
-        await query.handle.client.end()
+        // PoolClient: release(true) destroys the underlying connection and removes it
+        // from the pool, which aborts the in-flight query. Bare Client: end() closes
+        // the socket. Both effects abort the running statement.
+        const c = query.handle.client as PoolClient & Partial<Client>
+        if (typeof c.release === 'function') {
+          c.release(true)
+        } else if (typeof c.end === 'function') {
+          await c.end()
+        }
         break
       }
       case 'mysql': {
