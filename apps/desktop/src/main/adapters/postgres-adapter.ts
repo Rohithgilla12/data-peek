@@ -93,8 +93,12 @@ export class PostgresAdapter implements DatabaseAdapter {
   readonly dbType = 'postgresql' as const
 
   async connect(config: ConnectionConfig): Promise<void> {
-    // Warm the pool so the first user-issued query doesn't pay TCP/TLS/auth handshake.
-    await withPgClient(config, async () => {})
+    // Warm the pool AND verify the socket end-to-end. An empty callback would only
+    // exercise pool.connect(), which can hand back a cached idle client without a
+    // round-trip; SELECT 1 guarantees the connection is live.
+    await withPgClient(config, async (client) => {
+      await client.query('SELECT 1')
+    })
   }
 
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
@@ -222,12 +226,18 @@ export class PostgresAdapter implements DatabaseAdapter {
         }
 
         // Pooled clients persist session state across checkouts; reset what we set.
+        // If RESET fails, the client's state is unknown — drop it via release(true)
+        // so the next checkout doesn't inherit our statement_timeout.
         if (
           typeof queryTimeoutMs === 'number' &&
           Number.isFinite(queryTimeoutMs) &&
           queryTimeoutMs > 0
         ) {
-          await client.query('RESET statement_timeout').catch(() => {})
+          try {
+            await client.query('RESET statement_timeout')
+          } catch {
+            client.release(true)
+          }
         }
 
         const result: AdapterMultiQueryResult = {

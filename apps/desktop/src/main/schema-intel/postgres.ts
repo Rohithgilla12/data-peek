@@ -407,8 +407,8 @@ const CHECK_RUNNERS: Record<
 }
 
 /**
- * Run the requested schema-intel checks against an already-connected pg
- * Client. Checks never throw — failures surface as entries in `skipped`.
+ * Run the requested schema-intel checks against an already-connected client.
+ * Checks never throw — failures surface as entries in `skipped`.
  */
 export async function runPostgresSchemaIntel(
   client: ClientBase,

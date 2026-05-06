@@ -4,6 +4,21 @@ import type { DpStorage } from '../storage'
 import { windowManager } from '../window-manager'
 import { closePgPool } from '../adapters/pg-pool-manager'
 import { invalidateSchemaCache } from '../schema-cache'
+import { createLogger } from '../lib/logger'
+
+const log = createLogger('connection-handlers')
+
+// Pool teardown happens after the IPC has already returned success — the connection is
+// already persisted, the renderer has been notified, and a stale pool failing to close
+// shouldn't poison the response with a misleading error.
+function teardownConnection(connection: ConnectionConfig): void {
+  invalidateSchemaCache(connection)
+  if (connection.dbType === 'postgresql') {
+    closePgPool(connection).catch((err) => {
+      log.warn('closePgPool failed:', (err as Error).message)
+    })
+  }
+}
 
 /**
  * Register connection CRUD handlers
@@ -38,7 +53,7 @@ export function registerConnectionHandlers(
   })
 
   // Update an existing connection
-  ipcMain.handle('connections:update', async (_, connection: ConnectionConfig) => {
+  ipcMain.handle('connections:update', (_, connection: ConnectionConfig) => {
     try {
       const connections = store.get('connections', [])
       const index = connections.findIndex((c) => c.id === connection.id)
@@ -48,12 +63,8 @@ export function registerConnectionHandlers(
       const previous = connections[index]
       connections[index] = connection
       store.set('connections', connections)
-      // Drop pooled clients/cache that may now be pointing at stale host/port/credentials.
-      if (previous.dbType === 'postgresql') {
-        await closePgPool(previous)
-      }
-      invalidateSchemaCache(previous)
       windowManager.broadcastToAll('connections:updated')
+      teardownConnection(previous)
       return { success: true, data: connection }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
@@ -62,19 +73,14 @@ export function registerConnectionHandlers(
   })
 
   // Delete a connection
-  ipcMain.handle('connections:delete', async (_, id: string) => {
+  ipcMain.handle('connections:delete', (_, id: string) => {
     try {
       const connections = store.get('connections', [])
       const removed = connections.find((c) => c.id === id)
       const filtered = connections.filter((c) => c.id !== id)
       store.set('connections', filtered)
-      if (removed) {
-        if (removed.dbType === 'postgresql') {
-          await closePgPool(removed)
-        }
-        invalidateSchemaCache(removed)
-      }
       windowManager.broadcastToAll('connections:updated')
+      if (removed) teardownConnection(removed)
       return { success: true }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)

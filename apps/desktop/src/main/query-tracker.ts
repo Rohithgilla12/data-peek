@@ -71,6 +71,8 @@ export async function cancelQuery(
           c.release(true)
         } else if (typeof c.end === 'function') {
           await c.end()
+        } else {
+          throw new Error('Postgres client handle has neither release nor end; cannot cancel')
         }
         break
       }
