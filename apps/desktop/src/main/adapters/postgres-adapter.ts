@@ -1,5 +1,3 @@
-import { Client, type ClientConfig } from 'pg'
-import { readFileSync } from 'fs'
 import { randomUUID } from 'crypto'
 import {
   resolvePostgresType,
@@ -39,9 +37,11 @@ import type {
   QueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
-import { closeTunnel, createTunnel, TunnelSession } from '../ssh-tunnel-service'
 import { splitStatements } from '../lib/sql-parser'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
+import { withPgClient, withPgTransaction } from './pg-pool-manager'
+
+export { buildClientConfig } from './pg-client-config'
 
 /** Split SQL into statements for PostgreSQL */
 const splitPgStatements = (sql: string) => splitStatements(sql, 'postgresql')
@@ -62,52 +62,6 @@ function parsePostgresArray(value: unknown): string[] {
     }
   }
   return []
-}
-
-/**
- * Build pg Client configuration from ConnectionConfig
- * Properly handles SSL options for cloud databases like AWS RDS
- *
- * @param overrides - Optional host/port overrides (e.g., from SSH tunnel)
- */
-export function buildClientConfig(
-  config: ConnectionConfig,
-  overrides?: { host: string; port: number }
-): ClientConfig {
-  const clientConfig: ClientConfig = {
-    host: overrides?.host ?? config.host,
-    port: overrides?.port ?? config.port,
-    database: config.database,
-    user: config.user,
-    password: config.password
-  }
-
-  if (config.ssl) {
-    const sslOptions = config.sslOptions || {}
-
-    if (sslOptions.ca) {
-      try {
-        clientConfig.ssl = {
-          rejectUnauthorized: sslOptions.rejectUnauthorized !== false,
-          ca: readFileSync(sslOptions.ca, 'utf-8')
-        }
-      } catch (err) {
-        console.error(`Failed to read CA certificate from ${sslOptions.ca}:`, err)
-        throw new Error(
-          `Failed to read CA certificate file: ${sslOptions.ca}. Please verify the file exists and is readable.`
-        )
-      }
-    } else {
-      // Default to rejectUnauthorized: false so cloud DBs (AWS RDS, Supabase,
-      // Neon, DigitalOcean) with self-signed / private-CA certs work out of
-      // the box. Users who need strict verification opt in via the UI.
-      clientConfig.ssl = {
-        rejectUnauthorized: sslOptions.rejectUnauthorized === true
-      }
-    }
-  }
-
-  return clientConfig
 }
 
 /**
@@ -139,55 +93,28 @@ export class PostgresAdapter implements DatabaseAdapter {
   readonly dbType = 'postgresql' as const
 
   async connect(config: ConnectionConfig): Promise<void> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-    try {
-      await client.connect()
-      await client.end()
-    } catch (error) {
-      await client.end().catch(() => {})
-      throw error
-    } finally {
-      closeTunnel(tunnelSession)
-    }
+    // Warm the pool AND verify the socket end-to-end. An empty callback would only
+    // exercise pool.connect(), which can hand back a cached idle client without a
+    // round-trip; SELECT 1 guarantees the connection is live.
+    await withPgClient(config, async (client) => {
+      await client.query('SELECT 1')
+    })
   }
 
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-    try {
-      await client.connect()
+    return withPgClient(config, async (client) => {
       const res = await client.query(sql)
-
       const fields: QueryField[] = res.fields.map((f) => ({
         name: f.name,
         dataType: resolvePostgresType(f.dataTypeID),
         dataTypeID: f.dataTypeID
       }))
-
       return {
         rows: res.rows,
         fields,
         rowCount: res.rowCount
       }
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async queryMultiple(
@@ -198,35 +125,18 @@ export class PostgresAdapter implements DatabaseAdapter {
     const collectTelemetry = options?.collectTelemetry ?? false
     const executionId = options?.executionId ?? randomUUID()
 
-    // Start telemetry collection if requested
     if (collectTelemetry) {
       telemetryCollector.startQuery(executionId, false)
       telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
     }
 
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-    try {
+    return withPgClient(config, async (client) => {
       if (collectTelemetry) {
         telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
         telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-      }
-
-      await client.connect()
-
-      if (collectTelemetry) {
         telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
       }
 
-      // Set query timeout if specified (0 = no timeout)
       const queryTimeoutMs = options?.queryTimeoutMs
       if (
         typeof queryTimeoutMs === 'number' &&
@@ -239,7 +149,6 @@ export class PostgresAdapter implements DatabaseAdapter {
         ])
       }
 
-      // Register for cancellation support
       if (options?.executionId) {
         registerQuery(options.executionId, { type: 'postgresql', client })
       }
@@ -250,94 +159,103 @@ export class PostgresAdapter implements DatabaseAdapter {
 
       const statements = splitPgStatements(sql)
 
-      for (let i = 0; i < statements.length; i++) {
-        const statement = statements[i]
-        const stmtStart = Date.now()
+      try {
+        for (let i = 0; i < statements.length; i++) {
+          const statement = statements[i]
+          const stmtStart = Date.now()
 
-        try {
-          // Start execution phase timing
-          if (collectTelemetry) {
-            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+          try {
+            if (collectTelemetry) {
+              telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+            }
+
+            const res = await client.query(statement)
+
+            if (collectTelemetry) {
+              telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+              telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.PARSE)
+            }
+
+            const stmtDuration = Date.now() - stmtStart
+
+            const fields: QueryField[] = (res.fields || []).map((f) => ({
+              name: f.name,
+              dataType: resolvePostgresType(f.dataTypeID),
+              dataTypeID: f.dataTypeID
+            }))
+
+            const isDataReturning = isDataReturningStatement(statement)
+            const rowCount = res.rowCount ?? res.rows?.length ?? 0
+            totalRowCount += rowCount
+
+            results.push({
+              statement,
+              statementIndex: i,
+              rows: res.rows || [],
+              fields,
+              rowCount,
+              durationMs: stmtDuration,
+              isDataReturning
+            })
+
+            if (collectTelemetry) {
+              telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.PARSE)
+            }
+          } catch (error) {
+            const stmtDuration = Date.now() - stmtStart
+            const errorMessage = error instanceof Error ? error.message : String(error)
+
+            results.push({
+              statement,
+              statementIndex: i,
+              rows: [],
+              fields: [{ name: 'error', dataType: 'text' }],
+              rowCount: 0,
+              durationMs: stmtDuration,
+              isDataReturning: false
+            })
+
+            if (collectTelemetry) {
+              telemetryCollector.cancel(executionId)
+            }
+
+            throw new Error(
+              `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
+            )
           }
+        }
 
-          const res = await client.query(statement)
-
-          if (collectTelemetry) {
-            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.EXECUTION)
-            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.PARSE)
+        // Pooled clients persist session state across checkouts; reset what we set.
+        // If RESET fails, the client's state is unknown — drop it via release(true)
+        // so the next checkout doesn't inherit our statement_timeout.
+        if (
+          typeof queryTimeoutMs === 'number' &&
+          Number.isFinite(queryTimeoutMs) &&
+          queryTimeoutMs > 0
+        ) {
+          try {
+            await client.query('RESET statement_timeout')
+          } catch {
+            client.release(true)
           }
+        }
 
-          const stmtDuration = Date.now() - stmtStart
+        const result: AdapterMultiQueryResult = {
+          results,
+          totalDurationMs: Date.now() - totalStart
+        }
 
-          const fields: QueryField[] = (res.fields || []).map((f) => ({
-            name: f.name,
-            dataType: resolvePostgresType(f.dataTypeID),
-            dataTypeID: f.dataTypeID
-          }))
+        if (collectTelemetry) {
+          result.telemetry = telemetryCollector.finalize(executionId, totalRowCount)
+        }
 
-          const isDataReturning = isDataReturningStatement(statement)
-          const rowCount = res.rowCount ?? res.rows?.length ?? 0
-          totalRowCount += rowCount
-
-          results.push({
-            statement,
-            statementIndex: i,
-            rows: res.rows || [],
-            fields,
-            rowCount,
-            durationMs: stmtDuration,
-            isDataReturning
-          })
-
-          if (collectTelemetry) {
-            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.PARSE)
-          }
-        } catch (error) {
-          // If a statement fails, add an error result and stop execution
-          const stmtDuration = Date.now() - stmtStart
-          const errorMessage = error instanceof Error ? error.message : String(error)
-
-          results.push({
-            statement,
-            statementIndex: i,
-            rows: [],
-            fields: [{ name: 'error', dataType: 'text' }],
-            rowCount: 0,
-            durationMs: stmtDuration,
-            isDataReturning: false
-          })
-
-          // Cancel telemetry on error
-          if (collectTelemetry) {
-            telemetryCollector.cancel(executionId)
-          }
-
-          // Re-throw to stop execution of remaining statements
-          throw new Error(
-            `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
-          )
+        return result
+      } finally {
+        if (options?.executionId) {
+          unregisterQuery(options.executionId)
         }
       }
-
-      const result: AdapterMultiQueryResult = {
-        results,
-        totalDurationMs: Date.now() - totalStart
-      }
-
-      // Finalize telemetry
-      if (collectTelemetry) {
-        result.telemetry = telemetryCollector.finalize(executionId, totalRowCount)
-      }
-
-      return result
-    } finally {
-      // Unregister from tracker
-      if (options?.executionId) {
-        unregisterQuery(options.executionId)
-      }
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async execute(
@@ -345,71 +263,30 @@ export class PostgresAdapter implements DatabaseAdapter {
     sql: string,
     params: unknown[]
   ): Promise<{ rowCount: number | null }> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-    try {
-      await client.connect()
+    return withPgClient(config, async (client) => {
       const res = await client.query(sql, params)
       return { rowCount: res.rowCount }
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async executeTransaction(
     config: ConnectionConfig,
     statements: Array<{ sql: string; params: unknown[] }>
   ): Promise<{ rowsAffected: number; results: Array<{ rowCount: number | null }> }> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-    try {
-      await client.connect()
-      await client.query('BEGIN')
-
+    return withPgTransaction(config, async (client) => {
       const results: Array<{ rowCount: number | null }> = []
       let rowsAffected = 0
-
       for (const stmt of statements) {
         const res = await client.query(stmt.sql, stmt.params)
         results.push({ rowCount: res.rowCount })
         rowsAffected += res.rowCount ?? 0
       }
-
-      await client.query('COMMIT')
       return { rowsAffected, results }
-    } catch (error) {
-      await client.query('ROLLBACK').catch(() => {})
-      throw error
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-    try {
-      await client.connect()
+    return withPgClient(config, async (client) => {
       // Query 1: Get all schemas (excluding system schemas)
       const schemasResult = await client.query(`
         SELECT schema_name
@@ -757,23 +634,11 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
 
       return Array.from(schemaMap.values())
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async explain(config: ConnectionConfig, sql: string, analyze: boolean): Promise<ExplainResult> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-    try {
-      await client.connect()
+    return withPgClient(config, async (client) => {
       const explainOptions = analyze
         ? 'ANALYZE, COSTS, VERBOSE, BUFFERS, FORMAT JSON'
         : 'COSTS, VERBOSE, FORMAT JSON'
@@ -789,10 +654,7 @@ export class PostgresAdapter implements DatabaseAdapter {
         plan: planJson,
         durationMs: duration
       }
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getTableDDL(
@@ -800,16 +662,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     schema: string,
     table: string
   ): Promise<TableDefinition> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-    try {
-      await client.connect()
+    return withPgClient(config, async (client) => {
       // Query columns with full metadata
       const columnsResult = await client.query(
         `
@@ -1040,23 +893,11 @@ export class PostgresAdapter implements DatabaseAdapter {
         indexes,
         comment: tableCommentResult.rows[0]?.comment || undefined
       }
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getSequences(config: ConnectionConfig): Promise<SequenceInfo[]> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-    try {
-      await client.connect()
+    return withPgClient(config, async (client) => {
       const result = await client.query(`
         SELECT
           schemaname as schema,
@@ -1076,23 +917,11 @@ export class PostgresAdapter implements DatabaseAdapter {
         startValue: row.start_value,
         increment: row.increment
       }))
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-    try {
-      await client.connect()
+    return withPgClient(config, async (client) => {
       // Get enum types with their values
       const enumsResult = await client.query(`
         SELECT
@@ -1134,10 +963,7 @@ export class PostgresAdapter implements DatabaseAdapter {
           type: 'domain' as const
         }))
       ]
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   private classifyColumnType(dataType: string): ColumnStatsType {
@@ -1187,18 +1013,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     column: string,
     dataType: string
   ): Promise<ColumnStats> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-    try {
-      await client.connect()
-
+    return withPgClient(config, async (client) => {
       const statsType = this.classifyColumnType(dataType)
       const quoteIdent = (name: string) => '"' + name.replace(/"/g, '""') + '"'
       const quotedTable = `${quoteIdent(schema)}.${quoteIdent(table)}`
@@ -1351,25 +1166,11 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
 
       return stats
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getActiveQueries(config: ConnectionConfig): Promise<ActiveQuery[]> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-    try {
-      await client.connect()
-
+    return withPgClient(config, async (client) => {
       const result = await client.query(`
         SELECT
           pid,
@@ -1402,28 +1203,14 @@ export class PostgresAdapter implements DatabaseAdapter {
         waitEvent: row.wait_event ? String(row.wait_event) : undefined,
         applicationName: row.application_name ? String(row.application_name) : undefined
       }))
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getTableSizes(
     config: ConnectionConfig,
     schema?: string
   ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-    try {
-      await client.connect()
-
+    return withPgClient(config, async (client) => {
       const dbSizeResult = await client.query(`
         SELECT
           pg_size_pretty(pg_database_size(current_database())) AS total_size,
@@ -1482,25 +1269,11 @@ export class PostgresAdapter implements DatabaseAdapter {
       }))
 
       return { dbSize, tables }
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getCacheStats(config: ConnectionConfig): Promise<CacheStats> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-    try {
-      await client.connect()
-
+    return withPgClient(config, async (client) => {
       const cacheResult = await client.query(`
         SELECT
           CASE WHEN SUM(heap_blks_hit) + SUM(heap_blks_read) = 0 THEN 0
@@ -1537,25 +1310,11 @@ export class PostgresAdapter implements DatabaseAdapter {
           indexScans: Number(row.index_scans)
         }))
       }
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getLocks(config: ConnectionConfig): Promise<LockInfo[]> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-    try {
-      await client.connect()
-
+    return withPgClient(config, async (client) => {
       const result = await client.query(`
         SELECT
           blocked.pid AS blocked_pid,
@@ -1607,57 +1366,26 @@ export class PostgresAdapter implements DatabaseAdapter {
         waitDuration: String(row.wait_duration ?? '0s'),
         waitDurationMs: Number(row.wait_duration_ms ?? 0)
       }))
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async killQuery(
     config: ConnectionConfig,
     pid: number
   ): Promise<{ success: boolean; error?: string }> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-    try {
-      await client.connect()
+    return withPgClient(config, async (client) => {
       const result = await client.query('SELECT pg_cancel_backend($1) AS cancelled', [pid])
       const cancelled = result.rows[0]?.cancelled === true
       return cancelled
         ? { success: true }
         : { success: false, error: 'Failed to cancel query - process may have already completed' }
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async runSchemaIntel(
     config: ConnectionConfig,
     checks?: SchemaIntelCheckId[]
   ): Promise<SchemaIntelReport> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const client = new Client(buildClientConfig(config, tunnelOverrides))
-
-    try {
-      await client.connect()
-      return await runPostgresSchemaIntel(client, checks)
-    } finally {
-      await client.end().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    return withPgClient(config, (client) => runPostgresSchemaIntel(client, checks))
   }
 }

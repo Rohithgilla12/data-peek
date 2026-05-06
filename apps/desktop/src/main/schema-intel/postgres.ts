@@ -1,4 +1,4 @@
-import type { Client } from 'pg'
+import type { ClientBase } from 'pg'
 import type { SchemaIntelCheckId, SchemaIntelFinding, SchemaIntelReport } from '@shared/index'
 
 /**
@@ -18,7 +18,7 @@ const DEFAULT_PG_CHECKS: SchemaIntelCheckId[] = [
 
 type Row = Record<string, unknown>
 
-async function runQuery(client: Client, sql: string): Promise<Row[]> {
+async function runQuery(client: ClientBase, sql: string): Promise<Row[]> {
   const result = await client.query(sql)
   return result.rows as Row[]
 }
@@ -31,7 +31,7 @@ function qualified(schema: string, name: string): string {
   return `${qid(schema)}.${qid(name)}`
 }
 
-async function checkTablesWithoutPk(client: Client): Promise<SchemaIntelFinding[]> {
+async function checkTablesWithoutPk(client: ClientBase): Promise<SchemaIntelFinding[]> {
   const rows = await runQuery(
     client,
     `
@@ -72,7 +72,7 @@ async function checkTablesWithoutPk(client: Client): Promise<SchemaIntelFinding[
   })
 }
 
-async function checkMissingFkIndexes(client: Client): Promise<SchemaIntelFinding[]> {
+async function checkMissingFkIndexes(client: ClientBase): Promise<SchemaIntelFinding[]> {
   // Find FK constraints whose column list is not a prefix of any index
   const rows = await runQuery(
     client,
@@ -146,7 +146,7 @@ async function checkMissingFkIndexes(client: Client): Promise<SchemaIntelFinding
   })
 }
 
-async function checkDuplicateIndexes(client: Client): Promise<SchemaIntelFinding[]> {
+async function checkDuplicateIndexes(client: ClientBase): Promise<SchemaIntelFinding[]> {
   const rows = await runQuery(
     client,
     `
@@ -192,7 +192,7 @@ async function checkDuplicateIndexes(client: Client): Promise<SchemaIntelFinding
   })
 }
 
-async function checkUnusedIndexes(client: Client): Promise<SchemaIntelFinding[]> {
+async function checkUnusedIndexes(client: ClientBase): Promise<SchemaIntelFinding[]> {
   const rows = await runQuery(
     client,
     `
@@ -233,7 +233,7 @@ async function checkUnusedIndexes(client: Client): Promise<SchemaIntelFinding[]>
   })
 }
 
-async function checkInvalidIndexes(client: Client): Promise<SchemaIntelFinding[]> {
+async function checkInvalidIndexes(client: ClientBase): Promise<SchemaIntelFinding[]> {
   const rows = await runQuery(
     client,
     `
@@ -266,7 +266,7 @@ async function checkInvalidIndexes(client: Client): Promise<SchemaIntelFinding[]
   })
 }
 
-async function checkBloatedTables(client: Client): Promise<SchemaIntelFinding[]> {
+async function checkBloatedTables(client: ClientBase): Promise<SchemaIntelFinding[]> {
   const rows = await runQuery(
     client,
     `
@@ -311,7 +311,7 @@ async function checkBloatedTables(client: Client): Promise<SchemaIntelFinding[]>
   })
 }
 
-async function checkNeverVacuumed(client: Client): Promise<SchemaIntelFinding[]> {
+async function checkNeverVacuumed(client: ClientBase): Promise<SchemaIntelFinding[]> {
   const rows = await runQuery(
     client,
     `
@@ -349,7 +349,7 @@ async function checkNeverVacuumed(client: Client): Promise<SchemaIntelFinding[]>
   })
 }
 
-async function checkNullableFks(client: Client): Promise<SchemaIntelFinding[]> {
+async function checkNullableFks(client: ClientBase): Promise<SchemaIntelFinding[]> {
   const rows = await runQuery(
     client,
     `
@@ -392,24 +392,26 @@ async function checkNullableFks(client: Client): Promise<SchemaIntelFinding[]> {
     })
 }
 
-const CHECK_RUNNERS: Record<SchemaIntelCheckId, (client: Client) => Promise<SchemaIntelFinding[]>> =
-  {
-    tables_without_pk: checkTablesWithoutPk,
-    missing_fk_indexes: checkMissingFkIndexes,
-    duplicate_indexes: checkDuplicateIndexes,
-    unused_indexes: checkUnusedIndexes,
-    invalid_indexes: checkInvalidIndexes,
-    bloated_tables: checkBloatedTables,
-    never_vacuumed: checkNeverVacuumed,
-    nullable_fks: checkNullableFks
-  }
+const CHECK_RUNNERS: Record<
+  SchemaIntelCheckId,
+  (client: ClientBase) => Promise<SchemaIntelFinding[]>
+> = {
+  tables_without_pk: checkTablesWithoutPk,
+  missing_fk_indexes: checkMissingFkIndexes,
+  duplicate_indexes: checkDuplicateIndexes,
+  unused_indexes: checkUnusedIndexes,
+  invalid_indexes: checkInvalidIndexes,
+  bloated_tables: checkBloatedTables,
+  never_vacuumed: checkNeverVacuumed,
+  nullable_fks: checkNullableFks
+}
 
 /**
- * Run the requested schema-intel checks against an already-connected pg
- * Client. Checks never throw — failures surface as entries in `skipped`.
+ * Run the requested schema-intel checks against an already-connected client.
+ * Checks never throw — failures surface as entries in `skipped`.
  */
 export async function runPostgresSchemaIntel(
-  client: Client,
+  client: ClientBase,
   requested?: SchemaIntelCheckId[]
 ): Promise<SchemaIntelReport> {
   const started = Date.now()
