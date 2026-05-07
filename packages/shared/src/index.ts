@@ -1601,10 +1601,6 @@ export interface QueryHistoryItemForAnalysis {
   connectionId: string;
 }
 
-// ============================================================================
-// SCHEDULED QUERIES
-// ============================================================================
-
 /**
  * Cron schedule expression or preset
  */

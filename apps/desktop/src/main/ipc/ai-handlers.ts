@@ -69,11 +69,6 @@ export function registerAIHandlers(): void {
     }
   })
 
-  // ============================================
-  // Multi-Provider AI Configuration
-  // ============================================
-
-  // Get multi-provider configuration
   ipcMain.handle('ai:get-multi-provider-config', () => {
     try {
       const config = getMultiProviderConfig()
@@ -208,11 +203,6 @@ export function registerAIHandlers(): void {
     }
   )
 
-  // ============================================
-  // Chat History and Sessions
-  // ============================================
-
-  // Get chat history for a connection
   ipcMain.handle('ai:get-chat-history', (_, connectionId: string) => {
     try {
       const history = getChatHistory(connectionId)
