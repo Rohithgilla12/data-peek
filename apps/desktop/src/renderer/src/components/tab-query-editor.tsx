@@ -57,7 +57,7 @@ import {
   useSnippetStore,
   notify
 } from '@/stores'
-import type { Tab, MultiQueryResult } from '@/stores/tab-store'
+import { isExecutableTab, type Tab, type MultiQueryResult } from '@/stores/tab-store'
 import type { StatementResult } from '@data-peek/shared'
 import {
   DataTable,
@@ -332,18 +332,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       // (important for server-side pagination where query is updated before this runs)
       const currentTab = useTabStore.getState().getTab(tabId)
 
-      if (
-        !currentTab ||
-        currentTab.type === 'erd' ||
-        currentTab.type === 'table-designer' ||
-        currentTab.type === 'data-generator' ||
-        currentTab.type === 'pg-notifications' ||
-        currentTab.type === 'health-monitor' ||
-        currentTab.type === 'schema-intel' ||
-        currentTab.type === 'notebook' ||
-        !tabConnection ||
-        currentTab.isExecuting
-      ) {
+      if (!currentTab || !isExecutableTab(currentTab) || !tabConnection || currentTab.isExecuting) {
         return
       }
 
@@ -488,17 +477,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   )
 
   const handleCancelQuery = useCallback(async () => {
-    if (
-      !tab ||
-      tab.type === 'erd' ||
-      tab.type === 'table-designer' ||
-      tab.type === 'data-generator' ||
-      tab.type === 'pg-notifications' ||
-      tab.type === 'health-monitor' ||
-      tab.type === 'schema-intel' ||
-      tab.type === 'notebook'
-    )
-      return
+    if (!tab || !isExecutableTab(tab)) return
     if (!tab.isExecuting || !tab.executionId) return
 
     try {
@@ -535,18 +514,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   )
 
   const handleFormatQuery = () => {
-    if (
-      !tab ||
-      tab.type === 'erd' ||
-      tab.type === 'table-designer' ||
-      tab.type === 'data-generator' ||
-      tab.type === 'pg-notifications' ||
-      tab.type === 'health-monitor' ||
-      tab.type === 'schema-intel' ||
-      tab.type === 'notebook' ||
-      !tab.query.trim()
-    )
-      return
+    if (!tab || !isExecutableTab(tab) || !tab.query.trim()) return
     const formatted = formatSQL(tab.query)
     updateTabQuery(tabId, formatted)
   }
@@ -556,13 +524,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     async (runCount: number) => {
       if (
         !tab ||
-        tab.type === 'erd' ||
-        tab.type === 'table-designer' ||
-        tab.type === 'data-generator' ||
-        tab.type === 'pg-notifications' ||
-        tab.type === 'health-monitor' ||
-        tab.type === 'schema-intel' ||
-        tab.type === 'notebook' ||
+        !isExecutableTab(tab) ||
         !tabConnection ||
         tab.isExecuting ||
         isRunningBenchmark ||
@@ -611,19 +573,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   )
 
   const handleExplainQuery = useCallback(async () => {
-    if (
-      !tab ||
-      tab.type === 'erd' ||
-      tab.type === 'table-designer' ||
-      tab.type === 'data-generator' ||
-      tab.type === 'pg-notifications' ||
-      tab.type === 'health-monitor' ||
-      tab.type === 'schema-intel' ||
-      tab.type === 'notebook' ||
-      !tabConnection ||
-      isExplaining ||
-      !tab.query.trim()
-    ) {
+    if (!tab || !isExecutableTab(tab) || !tabConnection || isExplaining || !tab.query.trim()) {
       return
     }
 
@@ -654,19 +604,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const queryHistory = useQueryStore((s) => s.history)
 
   const handleAnalyzePerformance = useCallback(async () => {
-    if (
-      !tab ||
-      tab.type === 'erd' ||
-      tab.type === 'table-designer' ||
-      tab.type === 'data-generator' ||
-      tab.type === 'pg-notifications' ||
-      tab.type === 'health-monitor' ||
-      tab.type === 'schema-intel' ||
-      tab.type === 'notebook' ||
-      !tabConnection ||
-      isPerfAnalyzing ||
-      !tab.query.trim()
-    ) {
+    if (!tab || !isExecutableTab(tab) || !tabConnection || isPerfAnalyzing || !tab.query.trim()) {
       return
     }
 
@@ -870,18 +808,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Helper: Look up column info from schema (for FK details)
   const getColumnsWithFKInfo = useCallback((): DataTableColumn[] => {
-    if (
-      !tab ||
-      tab.type === 'erd' ||
-      tab.type === 'table-designer' ||
-      tab.type === 'data-generator' ||
-      tab.type === 'pg-notifications' ||
-      tab.type === 'health-monitor' ||
-      tab.type === 'schema-intel' ||
-      tab.type === 'notebook' ||
-      !tab.result?.columns
-    )
-      return []
+    if (!tab || !isExecutableTab(tab) || !tab.result?.columns) return []
 
     // For table-preview tabs, we can directly look up the columns from schema
     if (tab.type === 'table-preview') {
@@ -920,34 +847,17 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     })
   }, [tab, schemas])
 
-  // Resolve the source table for editing — works for table-preview tabs (direct metadata)
-  // and query tabs when the active statement is a simple single-table SELECT that includes all PK columns.
+  // Resolve the source table for editing by parsing the actually-executed SQL.
+  // Applies to both query and table-preview tabs: the tab's stored schemaName/tableName is
+  // only an initial hint — once the user changes the SQL, the executed query is the source of
+  // truth. This prevents UPDATEs from targeting the wrong table when a table-preview tab's
+  // query has been rewritten to query a different table.
   const resolveEditSourceTable = useCallback((): {
     schemaName: string
     tableName: string
     tableInfo: TableInfo
   } | null => {
-    if (
-      !tab ||
-      tab.type === 'erd' ||
-      tab.type === 'table-designer' ||
-      tab.type === 'data-generator' ||
-      tab.type === 'pg-notifications' ||
-      tab.type === 'health-monitor' ||
-      tab.type === 'schema-intel' ||
-      tab.type === 'notebook'
-    ) {
-      return null
-    }
-
-    if (tab.type === 'table-preview') {
-      const schema = schemas.find((s) => s.name === tab.schemaName)
-      const tableInfo = schema?.tables.find((t) => t.name === tab.tableName)
-      if (!tableInfo) return null
-      return { schemaName: tab.schemaName, tableName: tab.tableName, tableInfo }
-    }
-
-    if (tab.type !== 'query' || !tabConnection) return null
+    if (!tab || !isExecutableTab(tab) || !tabConnection) return null
 
     const idx = tab.activeResultIndex ?? 0
     const stmts = tab.multiResult?.statements
@@ -1133,14 +1043,6 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     [tabConnection, createForeignKeyTab]
   )
 
-  // FK Panel: Handle drill-down (click FK in panel)
-  const handleFKDrillDown = useCallback(
-    async (fk: ForeignKeyInfo, value: unknown) => {
-      await handleFKClick(fk, value)
-    },
-    [handleFKClick]
-  )
-
   // FK Panel: Close a specific panel
   const handleCloseFKPanel = useCallback((panelId: string) => {
     setFkPanels((prev) => {
@@ -1159,18 +1061,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Column Stats: Handle column header stats click
   const handleColumnStatsClick = useCallback(
     (col: DtColumn) => {
-      if (
-        !tabConnection ||
-        !tab ||
-        tab.type === 'erd' ||
-        tab.type === 'table-designer' ||
-        tab.type === 'data-generator' ||
-        tab.type === 'pg-notifications' ||
-        tab.type === 'health-monitor' ||
-        tab.type === 'schema-intel' ||
-        tab.type === 'notebook'
-      )
-        return
+      if (!tabConnection || !tab || !isExecutableTab(tab)) return
 
       const connectionId = tabConnection.id
       const config = tabConnection as Parameters<typeof fetchColumnStats>[1]
@@ -1260,17 +1151,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Build a new query with filters/sorting applied
   const buildQueryWithFilters = (): string => {
-    if (
-      !tab ||
-      tab.type === 'erd' ||
-      tab.type === 'table-designer' ||
-      tab.type === 'data-generator' ||
-      tab.type === 'pg-notifications' ||
-      tab.type === 'health-monitor' ||
-      tab.type === 'schema-intel' ||
-      tab.type === 'notebook'
-    )
-      return ''
+    if (!tab || !isExecutableTab(tab)) return ''
 
     // For table preview tabs, rebuild from scratch
     if (tab.type === 'table-preview') {
@@ -2096,7 +1977,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         connection={tabConnection}
         onClose={handleCloseFKPanel}
         onCloseAll={handleCloseAllFKPanels}
-        onDrillDown={handleFKDrillDown}
+        onDrillDown={handleFKClick}
         onOpenInTab={handleFKOpenTab}
       />
 
