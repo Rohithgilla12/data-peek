@@ -133,6 +133,22 @@ export type Tab =
   | SchemaIntelTab
   | NotebookTab
 
+export type ExecutableTab = QueryTab | TablePreviewTab
+
+export function isExecutableTab(tab: Tab): tab is ExecutableTab {
+  return tab.type === 'query' || tab.type === 'table-preview'
+}
+
+function mapTab(tabs: Tab[], id: string, updater: (t: Tab) => Tab): Tab[] {
+  const idx = tabs.findIndex((t) => t.id === id)
+  if (idx === -1) return tabs
+  const updated = updater(tabs[idx])
+  if (updated === tabs[idx]) return tabs
+  const next = tabs.slice()
+  next[idx] = updated
+  return next
+}
+
 // Persisted tab data (minimal for storage)
 interface PersistedTab {
   id: string
@@ -730,66 +746,57 @@ export const useTabStore = create<TabState>()(
       },
 
       updateTabExecuting: (tabId, isExecuting, executionId?: string | null) => {
-        set((state) => ({
-          tabs: state.tabs.map((t) => {
-            if (t.id !== tabId) return t
-            // ERD, TableDesigner, and DataGenerator tabs don't have executionId
-            if (
-              t.type === 'erd' ||
-              t.type === 'table-designer' ||
-              t.type === 'data-generator' ||
-              t.type === 'pg-notifications' ||
-              t.type === 'health-monitor' ||
-              t.type === 'schema-intel' ||
-              t.type === 'notebook'
-            )
-              return t
-            // Only update executionId if provided, otherwise clear it when not executing
-            const currentExecutionId = t.executionId
+        set((state) => {
+          const tabs = mapTab(state.tabs, tabId, (t) => {
+            if (!isExecutableTab(t)) return t
             const newExecutionId =
-              executionId !== undefined ? executionId : isExecuting ? currentExecutionId : null
+              executionId !== undefined ? executionId : isExecuting ? t.executionId : null
+            if (t.isExecuting === isExecuting && t.executionId === newExecutionId) return t
             return { ...t, isExecuting, executionId: newExecutionId }
           })
-        }))
+          return tabs === state.tabs ? {} : { tabs }
+        })
       },
 
       markTabSaved: (tabId) => {
-        set((state) => ({
-          tabs: state.tabs.map((t) =>
-            t.id === tabId &&
-            t.type !== 'erd' &&
-            t.type !== 'table-designer' &&
-            t.type !== 'data-generator' &&
-            t.type !== 'pg-notifications' &&
-            t.type !== 'health-monitor' &&
-            t.type !== 'schema-intel' &&
-            t.type !== 'notebook'
-              ? { ...t, savedQuery: t.query }
-              : t
-          )
-        }))
+        set((state) => {
+          const tabs = mapTab(state.tabs, tabId, (t) => {
+            if (!isExecutableTab(t)) return t
+            if (t.savedQuery === t.query) return t
+            return { ...t, savedQuery: t.query }
+          })
+          return tabs === state.tabs ? {} : { tabs }
+        })
       },
 
       setTabPage: (tabId, page) => {
-        set((state) => ({
-          tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, currentPage: page } : t))
-        }))
+        set((state) => {
+          const tabs = mapTab(state.tabs, tabId, (t) => {
+            if (!isExecutableTab(t) || t.currentPage === page) return t
+            return { ...t, currentPage: page }
+          })
+          return tabs === state.tabs ? {} : { tabs }
+        })
       },
 
       setTabPageSize: (tabId, size) => {
-        set((state) => ({
-          tabs: state.tabs.map((t) =>
-            t.id === tabId ? { ...t, pageSize: size, currentPage: 1 } : t
-          )
-        }))
+        set((state) => {
+          const tabs = mapTab(state.tabs, tabId, (t) => {
+            if (!isExecutableTab(t) || (t.pageSize === size && t.currentPage === 1)) return t
+            return { ...t, pageSize: size, currentPage: 1 }
+          })
+          return tabs === state.tabs ? {} : { tabs }
+        })
       },
 
       setTablePreviewTotalCount: (tabId, count) => {
-        set((state) => ({
-          tabs: state.tabs.map((t) =>
-            t.id === tabId && t.type === 'table-preview' ? { ...t, totalRowCount: count } : t
-          )
-        }))
+        set((state) => {
+          const tabs = mapTab(state.tabs, tabId, (t) => {
+            if (t.type !== 'table-preview' || t.totalRowCount === count) return t
+            return { ...t, totalRowCount: count }
+          })
+          return tabs === state.tabs ? {} : { tabs }
+        })
       },
 
       updateTablePreviewPagination: (tabId, page, pageSize) => {
@@ -888,102 +895,38 @@ export const useTabStore = create<TabState>()(
 
       isTabDirty: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (!tab) return false
-        // ERD and table-designer tabs are never dirty (table-designer uses its own store)
-        if (
-          tab.type === 'erd' ||
-          tab.type === 'table-designer' ||
-          tab.type === 'data-generator' ||
-          tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor' ||
-          tab.type === 'schema-intel' ||
-          tab.type === 'notebook'
-        )
-          return false
+        if (!tab || !isExecutableTab(tab)) return false
         return tab.query !== tab.savedQuery
       },
 
       getTabPaginatedRows: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (
-          !tab ||
-          tab.type === 'erd' ||
-          tab.type === 'table-designer' ||
-          tab.type === 'data-generator' ||
-          tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor' ||
-          tab.type === 'schema-intel' ||
-          tab.type === 'notebook'
-        )
-          return []
-        if (!tab.result) return []
+        if (!tab || !isExecutableTab(tab) || !tab.result) return []
         const start = (tab.currentPage - 1) * tab.pageSize
         return tab.result.rows.slice(start, start + tab.pageSize)
       },
 
       getTabTotalPages: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (
-          !tab ||
-          tab.type === 'erd' ||
-          tab.type === 'table-designer' ||
-          tab.type === 'data-generator' ||
-          tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor' ||
-          tab.type === 'schema-intel' ||
-          tab.type === 'notebook'
-        )
-          return 0
-        if (!tab.result) return 0
+        if (!tab || !isExecutableTab(tab) || !tab.result) return 0
         return Math.ceil(tab.result.rowCount / tab.pageSize)
       },
 
       getActiveStatementResult: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (
-          !tab ||
-          tab.type === 'erd' ||
-          tab.type === 'table-designer' ||
-          tab.type === 'data-generator' ||
-          tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor' ||
-          tab.type === 'schema-intel' ||
-          tab.type === 'notebook'
-        )
-          return undefined
-        if (!tab.multiResult?.statements) return undefined
+        if (!tab || !isExecutableTab(tab) || !tab.multiResult?.statements) return undefined
         return tab.multiResult.statements[tab.activeResultIndex]
       },
 
       getAllStatementResults: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (
-          !tab ||
-          tab.type === 'erd' ||
-          tab.type === 'table-designer' ||
-          tab.type === 'data-generator' ||
-          tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor' ||
-          tab.type === 'schema-intel' ||
-          tab.type === 'notebook'
-        )
-          return []
+        if (!tab || !isExecutableTab(tab)) return []
         return tab.multiResult?.statements ?? []
       },
 
       getActiveResultPaginatedRows: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (
-          !tab ||
-          tab.type === 'erd' ||
-          tab.type === 'table-designer' ||
-          tab.type === 'data-generator' ||
-          tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor' ||
-          tab.type === 'schema-intel' ||
-          tab.type === 'notebook'
-        )
-          return []
+        if (!tab || !isExecutableTab(tab)) return []
         const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
         if (!statement) return []
         const start = (tab.currentPage - 1) * tab.pageSize
@@ -992,17 +935,7 @@ export const useTabStore = create<TabState>()(
 
       getActiveResultTotalPages: (tabId) => {
         const tab = get().tabs.find((t) => t.id === tabId)
-        if (
-          !tab ||
-          tab.type === 'erd' ||
-          tab.type === 'table-designer' ||
-          tab.type === 'data-generator' ||
-          tab.type === 'pg-notifications' ||
-          tab.type === 'health-monitor' ||
-          tab.type === 'schema-intel' ||
-          tab.type === 'notebook'
-        )
-          return 0
+        if (!tab || !isExecutableTab(tab)) return 0
         const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
         if (!statement) return 0
         return Math.ceil(statement.rowCount / tab.pageSize)

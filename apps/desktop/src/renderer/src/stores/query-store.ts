@@ -93,26 +93,15 @@ export const useQueryStore = create<QueryState>()(
 
       executeQuery: async (connection, queryOverride) => {
         const query = queryOverride ?? get().currentQuery
-        console.log('[executeQuery] Starting with query:', query)
-        console.log('[executeQuery] Connection:', connection)
-
-        if (!query.trim()) {
-          console.log('[executeQuery] Empty query, returning')
-          return
-        }
+        if (!query.trim()) return
 
         set({ isExecuting: true, error: null })
 
         try {
-          console.log('[executeQuery] Calling window.api.db.query...')
           const response = await window.api.db.query(connection, query)
-          console.log('[executeQuery] Response:', response)
 
           if (response.success && response.data) {
             const data = response.data as IpcQueryResult
-            console.log('[executeQuery] Success! Data:', data)
-
-            // Map the IPC result to our QueryResult format
             const result: QueryResult = {
               columns: data.fields.map((f) => ({
                 name: f.name,
@@ -122,9 +111,7 @@ export const useQueryStore = create<QueryState>()(
               rowCount: data.rowCount ?? data.rows.length,
               durationMs: data.durationMs
             }
-            console.log('[executeQuery] Mapped result:', result)
 
-            // Add to history
             const history = get().history
             const newHistoryItem: QueryHistoryItem = {
               id: crypto.randomUUID(),
@@ -143,11 +130,7 @@ export const useQueryStore = create<QueryState>()(
               history: [newHistoryItem, ...history].slice(0, 100)
             })
           } else {
-            // Query failed
             const errorMessage = response.error ?? 'Query execution failed'
-            console.log('[executeQuery] Query failed:', errorMessage)
-
-            // Add to history as error
             const history = get().history
             const newHistoryItem: QueryHistoryItem = {
               id: crypto.randomUUID(),
@@ -168,7 +151,6 @@ export const useQueryStore = create<QueryState>()(
             })
           }
         } catch (error) {
-          console.error('[executeQuery] Exception caught:', error)
           const errorMessage = error instanceof Error ? error.message : String(error)
 
           set({
