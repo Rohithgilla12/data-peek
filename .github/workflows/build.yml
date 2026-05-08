@@ -9,12 +9,6 @@ on:
 permissions:
   contents: write
 
-# Opt every javascript-action runtime in this workflow into Node 24. pnpm/action-setup
-# (still on Node 20 in v4) would otherwise emit a deprecation warning and break entirely
-# after September 2026.
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 jobs:
   # Fast verification gate. Platform builds don't start until this passes,
   # so we don't burn 30min on three macOS/Windows/Linux runners just to
@@ -33,7 +27,7 @@ jobs:
           node-version: 24
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Get pnpm store directory
         shell: bash
@@ -244,7 +238,7 @@ jobs:
         run: ls -la dist/
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/*
           draft: true

@@ -7,12 +7,6 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# Opt every javascript-action runtime in this workflow into Node 24. pnpm/action-setup
-# (and any third-party action that still ships its action.yml with `using: node20`)
-# would otherwise emit a deprecation warning and break entirely after September 2026.
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
-
 # A new commit on the same branch supersedes any in-flight e2e run.
 concurrency:
   group: e2e-${{ github.workflow }}-${{ github.ref }}
@@ -28,15 +22,15 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: 24
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
 
       - name: Get pnpm store directory
         shell: bash
@@ -77,7 +71,7 @@ jobs:
 
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: apps/desktop/playwright-report
@@ -85,7 +79,7 @@ jobs:
 
       - name: Upload test artefacts on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-results
           path: apps/desktop/test-results
