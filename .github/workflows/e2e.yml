@@ -1,0 +1,86 @@
+name: E2E
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# A new commit on the same branch supersedes any in-flight e2e run.
+concurrency:
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e:
+    name: playwright (electron)
+    # Ubuntu has Docker preinstalled, which the testcontainers Postgres fixture needs,
+    # and `xvfb-run` provides the headless display Electron requires on Linux.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Pull the postgres image up front so the per-spec startup time isn't dominated
+      # by the image pull on a cold runner.
+      - name: Prefetch postgres image
+        run: docker pull postgres:16-alpine
+
+      # Electron on Linux needs system libs the runner doesn't ship with. The Playwright
+      # CLI knows the exact set, including xvfb.
+      - name: Install Playwright system deps
+        run: pnpm --filter @data-peek/desktop exec playwright install-deps
+
+      - name: Build desktop bundle
+        run: pnpm --filter @data-peek/desktop build
+
+      - name: Run e2e tests
+        # xvfb-run wraps Playwright so the Electron BrowserWindow has a virtual display.
+        run: xvfb-run --auto-servernum pnpm --filter @data-peek/desktop exec playwright test
+        env:
+          # Skip the Ryuk reaper sidecar that testcontainers normally launches —
+          # GitHub-hosted runners can't always reach Docker Hub for the image, and the
+          # runner is torn down per job anyway so leaked containers aren't an issue.
+          TESTCONTAINERS_RYUK_DISABLED: 'true'
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: apps/desktop/playwright-report
+          retention-days: 7
+
+      - name: Upload test artefacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-results
+          path: apps/desktop/test-results
+          retention-days: 7

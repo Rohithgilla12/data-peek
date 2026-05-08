@@ -12,7 +12,12 @@ import type {
 } from '@data-peek/shared'
 
 /**
- * Edit mode state per tab
+ * Edit mode state per tab.
+ *
+ * Pending edits are keyed by the row's primary-key value(s), not by display position.
+ * This is the difference between an UPDATE landing on the row the user actually edited
+ * and an UPDATE landing on whatever happens to sit at that display index after the user
+ * sorts, paginates, or filters the table.
  */
 interface TabEditState {
   /** Whether edit mode is active for this tab */
@@ -21,16 +26,16 @@ interface TabEditState {
   context: EditContext | null
   /** Pending operations */
   operations: EditOperation[]
-  /** Currently editing cell */
+  /** Currently editing cell — display position, transient UI focus state */
   editingCell: { rowIndex: number; columnName: string } | null
-  /** Rows marked for deletion (by their index in the result set) */
-  deletedRowIndices: Set<number>
+  /** Rows marked for deletion, keyed by stable PK identity */
+  deletedRowKeys: Set<string>
   /** New rows being added (not yet in database) */
   newRows: Array<{ id: string; values: Record<string, unknown> }>
-  /** Original row data for modified rows (key: row index) */
-  originalRows: Map<number, Record<string, unknown>>
-  /** Modified cell values (key: `${rowIndex}:${columnName}`) */
-  modifiedCells: Map<string, unknown>
+  /** Original row snapshot per modified row, keyed by PK identity */
+  originalRows: Map<string, Record<string, unknown>>
+  /** Modified cell values, keyed by PK identity → column → new value */
+  modifiedCells: Map<string, Map<string, unknown>>
 }
 
 interface EditStoreState {
@@ -44,35 +49,42 @@ interface EditStoreState {
   isInEditMode: (tabId: string) => boolean
   getEditContext: (tabId: string) => EditContext | null
 
-  // Cell editing
+  // Cell editing — identified by the row's PK value(s) carried in originalRow
   startCellEdit: (tabId: string, rowIndex: number, columnName: string) => void
   cancelCellEdit: (tabId: string) => void
   updateCellValue: (
     tabId: string,
-    rowIndex: number,
+    originalRow: Record<string, unknown>,
     columnName: string,
-    value: unknown,
-    originalRow: Record<string, unknown>
+    value: unknown
   ) => void
-  getModifiedCellValue: (tabId: string, rowIndex: number, columnName: string) => unknown | undefined
-  isCellModified: (tabId: string, rowIndex: number, columnName: string) => boolean
+  getModifiedCellValue: (
+    tabId: string,
+    originalRow: Record<string, unknown>,
+    columnName: string
+  ) => unknown | undefined
+  isCellModified: (
+    tabId: string,
+    originalRow: Record<string, unknown>,
+    columnName: string
+  ) => boolean
 
   // Row operations
-  markRowForDeletion: (
-    tabId: string,
-    rowIndex: number,
-    originalRow: Record<string, unknown>
-  ) => void
-  unmarkRowForDeletion: (tabId: string, rowIndex: number) => void
-  isRowMarkedForDeletion: (tabId: string, rowIndex: number) => boolean
+  markRowForDeletion: (tabId: string, originalRow: Record<string, unknown>) => void
+  unmarkRowForDeletion: (tabId: string, originalRow: Record<string, unknown>) => void
+  isRowMarkedForDeletion: (tabId: string, originalRow: Record<string, unknown>) => boolean
   addNewRow: (tabId: string, defaultValues: Record<string, unknown>) => string
   updateNewRowValue: (tabId: string, rowId: string, columnName: string, value: unknown) => void
   removeNewRow: (tabId: string, rowId: string) => void
   getNewRows: (tabId: string) => Array<{ id: string; values: Record<string, unknown> }>
 
   // Revert operations
-  revertCellChange: (tabId: string, rowIndex: number, columnName: string) => void
-  revertRowChanges: (tabId: string, rowIndex: number) => void
+  revertCellChange: (
+    tabId: string,
+    originalRow: Record<string, unknown>,
+    columnName: string
+  ) => void
+  revertRowChanges: (tabId: string, originalRow: Record<string, unknown>) => void
   revertAllChanges: (tabId: string) => void
 
   // Build operations for commit
@@ -90,11 +102,62 @@ function getInitialTabEditState(): TabEditState {
     context: null,
     operations: [],
     editingCell: null,
-    deletedRowIndices: new Set(),
+    deletedRowKeys: new Set(),
     newRows: [],
     originalRows: new Map(),
     modifiedCells: new Map()
   }
+}
+
+/**
+ * Build a stable identity string from a row's primary key values.
+ *
+ * Returns `null` when the row cannot be identified — missing PK columns or null PK
+ * values. Callers must treat null as "edit not allowed for this row" rather than
+ * silently inventing a key, otherwise UPDATE/DELETE could land on the wrong row.
+ */
+function makeRowKey(
+  originalRow: Record<string, unknown>,
+  pkColumns: readonly string[]
+): string | null {
+  if (pkColumns.length === 0) return null
+  // Encode each PK value to a string explicitly. JSON.stringify throws on bigint
+  // (PostgreSQL returns bigint as string by default but pg-types overrides or
+  // mysql2 in BigInt mode can produce one); throwing here would happen inside a
+  // Zustand updater and leave the store mid-mutation.
+  const parts: string[] = []
+  for (const col of pkColumns) {
+    if (!(col in originalRow)) return null
+    const value = originalRow[col]
+    if (value === null || value === undefined) return null
+    if (typeof value === 'bigint') {
+      parts.push(`b${value.toString()}`)
+    } else if (value instanceof Date) {
+      parts.push(`d${value.toISOString()}`)
+    } else if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+      parts.push(`p${JSON.stringify(value)}`)
+    } else {
+      // Fallback for buffers, objects, etc — stringify defensively.
+      try {
+        parts.push(`p${JSON.stringify(value)}`)
+      } catch {
+        return null
+      }
+    }
+  }
+  // \x1f (Unit Separator) cannot appear inside JSON-encoded strings, so it's a safe
+  // delimiter that won't collide with PK values that contain quotes or other punctuation.
+  return parts.join('\x1f')
+}
+
+function getRowKey(
+  state: EditStoreState,
+  tabId: string,
+  originalRow: Record<string, unknown>
+): string | null {
+  const ctx = state.tabEdits.get(tabId)?.context
+  if (!ctx) return null
+  return makeRowKey(originalRow, ctx.primaryKeyColumns)
 }
 
 export const useEditStore = create<EditStoreState>()((set, get) => ({
@@ -162,35 +225,49 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
     })
   },
 
-  updateCellValue: (tabId, rowIndex, columnName, value, originalRow) => {
+  updateCellValue: (tabId, originalRow, columnName, value) => {
     set((state) => {
-      const newTabEdits = new Map(state.tabEdits)
-      const existing = newTabEdits.get(tabId) ?? getInitialTabEditState()
+      const existing = state.tabEdits.get(tabId)
+      if (!existing?.context) return state
+
+      const rowKey = makeRowKey(originalRow, existing.context.primaryKeyColumns)
+      // Reject edits we can't safely identify — better to drop the keystroke than
+      // build an UPDATE with no usable WHERE clause.
+      if (rowKey === null) {
+        // Still clear any active cell-edit focus so the UI doesn't get stuck.
+        if (existing.editingCell === null) return state
+        const newTabEdits = new Map(state.tabEdits)
+        newTabEdits.set(tabId, { ...existing, editingCell: null })
+        return { tabEdits: newTabEdits }
+      }
 
       const newModifiedCells = new Map(existing.modifiedCells)
       const newOriginalRows = new Map(existing.originalRows)
+      const rowCells = new Map(newModifiedCells.get(rowKey) ?? [])
 
-      const cellKey = `${rowIndex}:${columnName}`
       const originalValue = originalRow[columnName]
+      const isReverted = value === originalValue || (value === '' && originalValue === null)
 
-      // If value is same as original, remove the modification
-      if (value === originalValue || (value === '' && originalValue === null)) {
-        newModifiedCells.delete(cellKey)
-        // Clean up originalRows if no more modified cells for this row
-        const hasOtherModifications = Array.from(newModifiedCells.keys()).some((key) =>
-          key.startsWith(`${rowIndex}:`)
-        )
-        if (!hasOtherModifications) {
-          newOriginalRows.delete(rowIndex)
+      if (isReverted) {
+        rowCells.delete(columnName)
+        if (rowCells.size === 0) {
+          newModifiedCells.delete(rowKey)
+          // Drop the snapshot too if there's no other reason to hold it.
+          if (!existing.deletedRowKeys.has(rowKey)) {
+            newOriginalRows.delete(rowKey)
+          }
+        } else {
+          newModifiedCells.set(rowKey, rowCells)
         }
       } else {
-        newModifiedCells.set(cellKey, value)
-        // Store original row if not already stored
-        if (!newOriginalRows.has(rowIndex)) {
-          newOriginalRows.set(rowIndex, originalRow)
+        rowCells.set(columnName, value)
+        newModifiedCells.set(rowKey, rowCells)
+        if (!newOriginalRows.has(rowKey)) {
+          newOriginalRows.set(rowKey, originalRow)
         }
       }
 
+      const newTabEdits = new Map(state.tabEdits)
       newTabEdits.set(tabId, {
         ...existing,
         modifiedCells: newModifiedCells,
@@ -201,59 +278,84 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
     })
   },
 
-  getModifiedCellValue: (tabId, rowIndex, columnName) => {
-    const tabEdit = get().tabEdits.get(tabId)
+  getModifiedCellValue: (tabId, originalRow, columnName) => {
+    const state = get()
+    const tabEdit = state.tabEdits.get(tabId)
     if (!tabEdit) return undefined
-    return tabEdit.modifiedCells.get(`${rowIndex}:${columnName}`)
+    const rowKey = getRowKey(state, tabId, originalRow)
+    if (rowKey === null) return undefined
+    return tabEdit.modifiedCells.get(rowKey)?.get(columnName)
   },
 
-  isCellModified: (tabId, rowIndex, columnName) => {
-    const tabEdit = get().tabEdits.get(tabId)
+  isCellModified: (tabId, originalRow, columnName) => {
+    const state = get()
+    const tabEdit = state.tabEdits.get(tabId)
     if (!tabEdit) return false
-    return tabEdit.modifiedCells.has(`${rowIndex}:${columnName}`)
+    const rowKey = getRowKey(state, tabId, originalRow)
+    if (rowKey === null) return false
+    return tabEdit.modifiedCells.get(rowKey)?.has(columnName) ?? false
   },
 
-  markRowForDeletion: (tabId, rowIndex, originalRow) => {
+  markRowForDeletion: (tabId, originalRow) => {
     set((state) => {
-      const newTabEdits = new Map(state.tabEdits)
-      const existing = newTabEdits.get(tabId) ?? getInitialTabEditState()
+      const existing = state.tabEdits.get(tabId)
+      if (!existing?.context) return state
 
-      const newDeletedIndices = new Set(existing.deletedRowIndices)
-      newDeletedIndices.add(rowIndex)
+      const rowKey = makeRowKey(originalRow, existing.context.primaryKeyColumns)
+      if (rowKey === null) return state
+
+      const newDeletedKeys = new Set(existing.deletedRowKeys)
+      newDeletedKeys.add(rowKey)
 
       const newOriginalRows = new Map(existing.originalRows)
-      if (!newOriginalRows.has(rowIndex)) {
-        newOriginalRows.set(rowIndex, originalRow)
+      if (!newOriginalRows.has(rowKey)) {
+        newOriginalRows.set(rowKey, originalRow)
       }
 
+      const newTabEdits = new Map(state.tabEdits)
       newTabEdits.set(tabId, {
         ...existing,
-        deletedRowIndices: newDeletedIndices,
+        deletedRowKeys: newDeletedKeys,
         originalRows: newOriginalRows
       })
       return { tabEdits: newTabEdits }
     })
   },
 
-  unmarkRowForDeletion: (tabId, rowIndex) => {
+  unmarkRowForDeletion: (tabId, originalRow) => {
     set((state) => {
+      const existing = state.tabEdits.get(tabId)
+      if (!existing?.context) return state
+
+      const rowKey = makeRowKey(originalRow, existing.context.primaryKeyColumns)
+      if (rowKey === null || !existing.deletedRowKeys.has(rowKey)) return state
+
+      const newDeletedKeys = new Set(existing.deletedRowKeys)
+      newDeletedKeys.delete(rowKey)
+
+      // If there are no edits on this row either, drop the snapshot.
+      const newOriginalRows = new Map(existing.originalRows)
+      if (!existing.modifiedCells.has(rowKey)) {
+        newOriginalRows.delete(rowKey)
+      }
+
       const newTabEdits = new Map(state.tabEdits)
-      const existing = newTabEdits.get(tabId)
-      if (!existing) return state
-
-      const newDeletedIndices = new Set(existing.deletedRowIndices)
-      newDeletedIndices.delete(rowIndex)
-
       newTabEdits.set(tabId, {
         ...existing,
-        deletedRowIndices: newDeletedIndices
+        deletedRowKeys: newDeletedKeys,
+        originalRows: newOriginalRows
       })
       return { tabEdits: newTabEdits }
     })
   },
 
-  isRowMarkedForDeletion: (tabId, rowIndex) => {
-    return get().tabEdits.get(tabId)?.deletedRowIndices.has(rowIndex) ?? false
+  isRowMarkedForDeletion: (tabId, originalRow) => {
+    const state = get()
+    const tabEdit = state.tabEdits.get(tabId)
+    if (!tabEdit) return false
+    const rowKey = getRowKey(state, tabId, originalRow)
+    if (rowKey === null) return false
+    return tabEdit.deletedRowKeys.has(rowKey)
   },
 
   addNewRow: (tabId, defaultValues) => {
@@ -304,24 +406,33 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
     return get().tabEdits.get(tabId)?.newRows ?? []
   },
 
-  revertCellChange: (tabId, rowIndex, columnName) => {
+  revertCellChange: (tabId, originalRow, columnName) => {
     set((state) => {
-      const newTabEdits = new Map(state.tabEdits)
-      const existing = newTabEdits.get(tabId)
-      if (!existing) return state
+      const existing = state.tabEdits.get(tabId)
+      if (!existing?.context) return state
+
+      const rowKey = makeRowKey(originalRow, existing.context.primaryKeyColumns)
+      if (rowKey === null) return state
+
+      const rowCells = existing.modifiedCells.get(rowKey)
+      if (!rowCells || !rowCells.has(columnName)) return state
+
+      const newRowCells = new Map(rowCells)
+      newRowCells.delete(columnName)
 
       const newModifiedCells = new Map(existing.modifiedCells)
-      newModifiedCells.delete(`${rowIndex}:${columnName}`)
-
-      // Clean up originalRows if no more modifications for this row
-      const hasOtherModifications = Array.from(newModifiedCells.keys()).some((key) =>
-        key.startsWith(`${rowIndex}:`)
-      )
       const newOriginalRows = new Map(existing.originalRows)
-      if (!hasOtherModifications && !existing.deletedRowIndices.has(rowIndex)) {
-        newOriginalRows.delete(rowIndex)
+
+      if (newRowCells.size === 0) {
+        newModifiedCells.delete(rowKey)
+        if (!existing.deletedRowKeys.has(rowKey)) {
+          newOriginalRows.delete(rowKey)
+        }
+      } else {
+        newModifiedCells.set(rowKey, newRowCells)
       }
 
+      const newTabEdits = new Map(state.tabEdits)
       newTabEdits.set(tabId, {
         ...existing,
         modifiedCells: newModifiedCells,
@@ -331,32 +442,28 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
     })
   },
 
-  revertRowChanges: (tabId, rowIndex) => {
+  revertRowChanges: (tabId, originalRow) => {
     set((state) => {
-      const newTabEdits = new Map(state.tabEdits)
-      const existing = newTabEdits.get(tabId)
-      if (!existing) return state
+      const existing = state.tabEdits.get(tabId)
+      if (!existing?.context) return state
 
-      // Remove all cell modifications for this row
+      const rowKey = makeRowKey(originalRow, existing.context.primaryKeyColumns)
+      if (rowKey === null) return state
+
       const newModifiedCells = new Map(existing.modifiedCells)
-      for (const key of newModifiedCells.keys()) {
-        if (key.startsWith(`${rowIndex}:`)) {
-          newModifiedCells.delete(key)
-        }
-      }
+      newModifiedCells.delete(rowKey)
 
-      // Unmark from deletion
-      const newDeletedIndices = new Set(existing.deletedRowIndices)
-      newDeletedIndices.delete(rowIndex)
+      const newDeletedKeys = new Set(existing.deletedRowKeys)
+      newDeletedKeys.delete(rowKey)
 
-      // Remove from originalRows
       const newOriginalRows = new Map(existing.originalRows)
-      newOriginalRows.delete(rowIndex)
+      newOriginalRows.delete(rowKey)
 
+      const newTabEdits = new Map(state.tabEdits)
       newTabEdits.set(tabId, {
         ...existing,
         modifiedCells: newModifiedCells,
-        deletedRowIndices: newDeletedIndices,
+        deletedRowKeys: newDeletedKeys,
         originalRows: newOriginalRows
       })
       return { tabEdits: newTabEdits }
@@ -365,14 +472,17 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
 
   revertAllChanges: (tabId) => {
     set((state) => {
-      const newTabEdits = new Map(state.tabEdits)
-      const existing = newTabEdits.get(tabId)
+      const existing = state.tabEdits.get(tabId)
       if (!existing) return state
 
+      const newTabEdits = new Map(state.tabEdits)
       newTabEdits.set(tabId, {
         ...existing,
+        // Drop the editing-cell focus too — leaving it set would make a cell at the
+        // same display position re-render as "in edit mode" against fresh data.
+        editingCell: null,
         modifiedCells: new Map(),
-        deletedRowIndices: new Set(),
+        deletedRowKeys: new Set(),
         originalRows: new Map(),
         newRows: [],
         operations: []
@@ -383,29 +493,19 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
 
   buildEditBatch: (tabId, columns) => {
     const tabEdit = get().tabEdits.get(tabId)
-    if (!tabEdit || !tabEdit.context) return null
+    if (!tabEdit?.context) return null
 
     const operations: EditOperation[] = []
-    const { context, modifiedCells, originalRows, deletedRowIndices, newRows } = tabEdit
+    const { context, modifiedCells, originalRows, deletedRowKeys, newRows } = tabEdit
 
-    // Build UPDATE operations from modified cells
-    const modifiedRowIndices = new Set<number>()
-    for (const key of modifiedCells.keys()) {
-      const [rowIndexStr] = key.split(':')
-      modifiedRowIndices.add(parseInt(rowIndexStr))
-    }
-
-    for (const rowIndex of modifiedRowIndices) {
-      // Skip if row is marked for deletion
-      if (deletedRowIndices.has(rowIndex)) continue
-
-      const originalRow = originalRows.get(rowIndex)
+    // UPDATEs
+    for (const [rowKey, cells] of modifiedCells.entries()) {
+      if (deletedRowKeys.has(rowKey)) continue
+      const originalRow = originalRows.get(rowKey)
       if (!originalRow) continue
 
       const changes: CellChange[] = []
-      for (const [key, newValue] of modifiedCells.entries()) {
-        if (!key.startsWith(`${rowIndex}:`)) continue
-        const columnName = key.split(':')[1]
+      for (const [columnName, newValue] of cells.entries()) {
         const colInfo = columns.find((c) => c.name === columnName)
         changes.push({
           column: columnName,
@@ -414,32 +514,30 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
           dataType: colInfo?.dataType ?? 'text'
         })
       }
+      if (changes.length === 0) continue
 
-      if (changes.length > 0) {
-        // Build primary key values
-        const primaryKeys: PrimaryKeyValue[] = context.primaryKeyColumns.map((pkCol) => {
-          const colInfo = columns.find((c) => c.name === pkCol)
-          return {
-            column: pkCol,
-            value: originalRow[pkCol],
-            dataType: colInfo?.dataType ?? 'text'
-          }
-        })
-
-        const update: RowUpdate = {
-          type: 'update',
-          id: crypto.randomUUID(),
-          primaryKeys,
-          changes,
-          originalRow
+      const primaryKeys: PrimaryKeyValue[] = context.primaryKeyColumns.map((pkCol) => {
+        const colInfo = columns.find((c) => c.name === pkCol)
+        return {
+          column: pkCol,
+          value: originalRow[pkCol],
+          dataType: colInfo?.dataType ?? 'text'
         }
-        operations.push(update)
+      })
+
+      const update: RowUpdate = {
+        type: 'update',
+        id: crypto.randomUUID(),
+        primaryKeys,
+        changes,
+        originalRow
       }
+      operations.push(update)
     }
 
-    // Build DELETE operations
-    for (const rowIndex of deletedRowIndices) {
-      const originalRow = originalRows.get(rowIndex)
+    // DELETEs
+    for (const rowKey of deletedRowKeys) {
+      const originalRow = originalRows.get(rowKey)
       if (!originalRow) continue
 
       const primaryKeys: PrimaryKeyValue[] = context.primaryKeyColumns.map((pkCol) => {
@@ -451,52 +549,42 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
         }
       })
 
-      const deleteOp: RowDelete = {
+      operations.push({
         type: 'delete',
         id: crypto.randomUUID(),
         primaryKeys,
         originalRow
-      }
-      operations.push(deleteOp)
+      } satisfies RowDelete)
     }
 
-    // Build INSERT operations
+    // INSERTs
     for (const newRow of newRows) {
-      const insert: RowInsert = {
+      operations.push({
         type: 'insert',
         id: newRow.id,
         values: newRow.values,
         columns: columns.map((c) => ({ name: c.name, dataType: c.dataType }))
-      }
-      operations.push(insert)
+      } satisfies RowInsert)
     }
 
     if (operations.length === 0) return null
 
-    return {
-      context,
-      operations
-    }
+    return { context, operations }
   },
 
   getPendingChangesCount: (tabId) => {
     const tabEdit = get().tabEdits.get(tabId)
     if (!tabEdit) return { updates: 0, inserts: 0, deletes: 0 }
 
-    // Count unique modified rows (excluding deleted ones)
-    const modifiedRowIndices = new Set<number>()
-    for (const key of tabEdit.modifiedCells.keys()) {
-      const [rowIndexStr] = key.split(':')
-      const rowIndex = parseInt(rowIndexStr)
-      if (!tabEdit.deletedRowIndices.has(rowIndex)) {
-        modifiedRowIndices.add(rowIndex)
-      }
+    let updates = 0
+    for (const rowKey of tabEdit.modifiedCells.keys()) {
+      if (!tabEdit.deletedRowKeys.has(rowKey)) updates++
     }
 
     return {
-      updates: modifiedRowIndices.size,
+      updates,
       inserts: tabEdit.newRows.length,
-      deletes: tabEdit.deletedRowIndices.size
+      deletes: tabEdit.deletedRowKeys.size
     }
   },
 
@@ -507,14 +595,17 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
 
   clearPendingChanges: (tabId) => {
     set((state) => {
-      const newTabEdits = new Map(state.tabEdits)
-      const existing = newTabEdits.get(tabId)
+      const existing = state.tabEdits.get(tabId)
       if (!existing) return state
 
+      const newTabEdits = new Map(state.tabEdits)
       newTabEdits.set(tabId, {
         ...existing,
+        // Drop the editing-cell focus too — leaving it set would make a cell at the
+        // same display position re-render as "in edit mode" against fresh data.
+        editingCell: null,
         modifiedCells: new Map(),
-        deletedRowIndices: new Set(),
+        deletedRowKeys: new Set(),
         originalRows: new Map(),
         newRows: [],
         operations: []

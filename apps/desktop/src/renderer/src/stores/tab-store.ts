@@ -10,6 +10,7 @@ import {
 } from '@/lib/sql-helpers'
 import { useConnectionStore } from './connection-store'
 import { useSettingsStore } from './settings-store'
+import { useEditStore } from './edit-store'
 
 /**
  * Extended QueryResult with multi-statement support
@@ -139,6 +140,20 @@ export function isExecutableTab(tab: Tab): tab is ExecutableTab {
   return tab.type === 'query' || tab.type === 'table-preview'
 }
 
+// Fire best-effort cancel for any executable tab that's currently running a query.
+// Used by every tab-close path so the bulk-close variants (close all / close others /
+// close right) don't orphan pg pool clients — POOL_MAX is 5, a handful of abandoned
+// long-running tabs is enough to starve new connections.
+function cancelInFlightQueries(tabs: Tab[]): void {
+  for (const tab of tabs) {
+    if (isExecutableTab(tab) && tab.isExecuting && tab.executionId) {
+      void window.api.db.cancelQuery(tab.executionId).catch(() => {
+        // Cancellation is best-effort — main will time out the orphan eventually.
+      })
+    }
+  }
+}
+
 function mapTab(tabs: Tab[], id: string, updater: (t: Tab) => Tab): Tab[] {
   const idx = tabs.findIndex((t) => t.id === id)
   if (idx === -1) return tabs
@@ -200,7 +215,12 @@ interface TabState {
     error: string | null
   ) => void
   setActiveResultIndex: (tabId: string, index: number) => void
-  updateTabExecuting: (tabId: string, isExecuting: boolean, executionId?: string | null) => void
+  updateTabExecuting: (
+    tabId: string,
+    isExecuting: boolean,
+    executionId?: string | null,
+    expectedExecutionId?: string | null
+  ) => void
   markTabSaved: (tabId: string) => void
 
   // Pagination per tab
@@ -208,8 +228,13 @@ interface TabState {
   setTabPageSize: (tabId: string, size: number) => void
 
   // Server-side pagination for table previews
-  setTablePreviewTotalCount: (tabId: string, count: number) => void
-  updateTablePreviewPagination: (tabId: string, page: number, pageSize: number) => void
+  setTablePreviewTotalCount: (tabId: string, count: number | null) => void
+  updateTablePreviewPagination: (
+    tabId: string,
+    page: number,
+    pageSize: number,
+    rebuiltQuery: string | null
+  ) => void
 
   // Pinning
   pinTab: (tabId: string) => void
@@ -632,6 +657,8 @@ export const useTabStore = create<TabState>()(
         const tab = get().tabs.find((t) => t.id === tabId)
         if (!tab || tab.isPinned) return
 
+        cancelInFlightQueries([tab])
+
         set((state) => {
           const newTabs = state.tabs.filter((t) => t.id !== tabId)
           let newActiveId = state.activeTabId
@@ -647,8 +674,11 @@ export const useTabStore = create<TabState>()(
       },
 
       closeAllTabs: () => {
-        set((state) => {
-          // Keep pinned tabs
+        const state = get()
+        const removed = state.tabs.filter((t) => !t.isPinned)
+        cancelInFlightQueries(removed)
+
+        set(() => {
           const pinnedTabs = state.tabs.filter((t) => t.isPinned)
           return {
             tabs: pinnedTabs,
@@ -658,8 +688,11 @@ export const useTabStore = create<TabState>()(
       },
 
       closeOtherTabs: (tabId) => {
-        set((state) => {
-          // Keep the specified tab and all pinned tabs
+        const state = get()
+        const removed = state.tabs.filter((t) => t.id !== tabId && !t.isPinned)
+        cancelInFlightQueries(removed)
+
+        set(() => {
           const keptTabs = state.tabs.filter((t) => t.id === tabId || t.isPinned)
           return {
             tabs: keptTabs,
@@ -669,10 +702,14 @@ export const useTabStore = create<TabState>()(
       },
 
       closeTabsToRight: (tabId) => {
-        set((state) => {
-          const tabIndex = state.tabs.findIndex((t) => t.id === tabId)
-          if (tabIndex === -1) return state
+        const state = get()
+        const tabIndex = state.tabs.findIndex((t) => t.id === tabId)
+        if (tabIndex === -1) return
 
+        const removed = state.tabs.filter((t, i) => i > tabIndex && !t.isPinned)
+        cancelInFlightQueries(removed)
+
+        set(() => {
           const keptTabs = state.tabs.filter((t, i) => i <= tabIndex || t.isPinned)
           return {
             tabs: keptTabs,
@@ -692,6 +729,14 @@ export const useTabStore = create<TabState>()(
       },
 
       updateTabResult: (tabId, result, error) => {
+        // Pending inline edits are captured against the *previous* result rows. Once the
+        // result changes, those snapshots no longer correspond to anything onscreen and
+        // committing them would target rows the user never saw — drop them defensively.
+        // Skip when the result is being blanked by a cancellation (`null` result + error
+        // text): the user's edits are still valid against what's currently displayed.
+        if (result !== null) {
+          useEditStore.getState().clearPendingChanges(tabId)
+        }
         set((state) => ({
           tabs: state.tabs.map((t) => {
             if (t.id !== tabId) return t
@@ -703,6 +748,11 @@ export const useTabStore = create<TabState>()(
       },
 
       updateTabMultiResult: (tabId, multiResult, error) => {
+        // Same rule as updateTabResult: a null result is a cancel/error blank, not a
+        // new result set, so don't wipe the user's pending edits.
+        if (multiResult !== null) {
+          useEditStore.getState().clearPendingChanges(tabId)
+        }
         set((state) => ({
           tabs: state.tabs.map((t) => {
             if (t.id !== tabId) return t
@@ -732,6 +782,10 @@ export const useTabStore = create<TabState>()(
       },
 
       setActiveResultIndex: (tabId, index) => {
+        // Pending edits are captured against the previously active statement; switching to
+        // a different statement (potentially a different table) would otherwise let those
+        // edits commit with the wrong context.
+        useEditStore.getState().clearPendingChanges(tabId)
         set((state) => ({
           tabs: state.tabs.map((t) =>
             t.id === tabId
@@ -745,10 +799,15 @@ export const useTabStore = create<TabState>()(
         }))
       },
 
-      updateTabExecuting: (tabId, isExecuting, executionId?: string | null) => {
+      updateTabExecuting: (tabId, isExecuting, executionId?, expectedExecutionId?) => {
         set((state) => {
           const tabs = mapTab(state.tabs, tabId, (t) => {
             if (!isExecutableTab(t)) return t
+            // Compare-and-swap: a stale "finally" from execution A must not flip the
+            // flag on execution B that started after A was cancelled or thrown.
+            if (expectedExecutionId !== undefined && t.executionId !== expectedExecutionId) {
+              return t
+            }
             const newExecutionId =
               executionId !== undefined ? executionId : isExecuting ? t.executionId : null
             if (t.isExecuting === isExecuting && t.executionId === newExecutionId) return t
@@ -799,27 +858,25 @@ export const useTabStore = create<TabState>()(
         })
       },
 
-      updateTablePreviewPagination: (tabId, page, pageSize) => {
-        const tab = get().tabs.find((t) => t.id === tabId)
-        if (!tab || tab.type !== 'table-preview') return
-
-        // Get connection to determine database type
-        const connection = useConnectionStore
-          .getState()
-          .connections.find((c) => c.id === tab.connectionId)
-        const dbType = connection?.dbType
-
-        // Build new query with updated pagination
-        const offset = (page - 1) * pageSize
-        const sqlTableRef = buildQualifiedTableRef(tab.schemaName, tab.tableName, dbType)
-        const query = buildSelectQuery(sqlTableRef, dbType, { limit: pageSize, offset })
-
+      updateTablePreviewPagination: (tabId, page, pageSize, rebuiltQuery) => {
+        // The renderer decides whether the executed SQL still maps to the stored
+        // table and supplies a rebuiltQuery only when it's safe to overwrite. If
+        // null, we update pagination state without touching the user's typed SQL —
+        // pagination falls back to client-side over the existing result set.
         set((state) => ({
-          tabs: state.tabs.map((t) =>
-            t.id === tabId && t.type === 'table-preview'
-              ? { ...t, currentPage: page, pageSize, query, savedQuery: query }
-              : t
-          )
+          tabs: state.tabs.map((t) => {
+            if (t.id !== tabId || t.type !== 'table-preview') return t
+            if (rebuiltQuery !== null) {
+              return {
+                ...t,
+                currentPage: page,
+                pageSize,
+                query: rebuiltQuery,
+                savedQuery: rebuiltQuery
+              }
+            }
+            return { ...t, currentPage: page, pageSize }
+          })
         }))
       },
 

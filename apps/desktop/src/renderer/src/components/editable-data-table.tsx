@@ -655,9 +655,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         id: '_select',
         header: () => null,
         cell: ({ row }) => {
-          const rowIndex = row.index
-          const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
           const originalRow = row.original as Record<string, unknown>
+          const isDeleted = isRowMarkedForDeletion(tabId, originalRow)
 
           return (
             <div className="flex items-center gap-1">
@@ -668,7 +667,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       variant="ghost"
                       size="icon"
                       className="size-6 text-muted-foreground hover:text-foreground"
-                      onClick={() => unmarkRowForDeletion(tabId, rowIndex)}
+                      onClick={() => unmarkRowForDeletion(tabId, originalRow)}
                     >
                       <RotateCcw className="size-3" />
                     </Button>
@@ -696,7 +695,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
-                      onClick={() => markRowForDeletion(tabId, rowIndex, originalRow)}
+                      onClick={() => markRowForDeletion(tabId, originalRow)}
                       className="gap-2 text-red-500 focus:text-red-500"
                     >
                       <Trash2 className="size-4" />
@@ -814,11 +813,11 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         cell: ({ row, getValue }) => {
           const rowIndex = row.index
           const value = getValue()
-          const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
-          const isModified = isCellModified(tabId, rowIndex, col.name)
-          const modifiedValue = getModifiedCellValue(tabId, rowIndex, col.name)
-          const displayValue = isModified ? modifiedValue : value
           const originalRow = row.original as Record<string, unknown>
+          const isDeleted = isRowMarkedForDeletion(tabId, originalRow)
+          const isModified = isCellModified(tabId, originalRow, col.name)
+          const modifiedValue = getModifiedCellValue(tabId, originalRow, col.name)
+          const displayValue = isModified ? modifiedValue : value
           const isEditing =
             tabEdit?.editingCell?.rowIndex === rowIndex &&
             tabEdit?.editingCell?.columnName === col.name
@@ -855,12 +854,10 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 enumValues={col.enumValues}
                 columnName={col.name}
                 onStartEdit={() => startCellEdit(tabId, rowIndex, col.name)}
-                onSave={(newValue) =>
-                  updateCellValue(tabId, rowIndex, col.name, newValue, originalRow)
-                }
+                onSave={(newValue) => updateCellValue(tabId, originalRow, col.name, newValue)}
                 onCancel={() => cancelCellEdit(tabId)}
                 onRevert={
-                  isModified ? () => revertCellChange(tabId, rowIndex, col.name) : undefined
+                  isModified ? () => revertCellChange(tabId, originalRow, col.name) : undefined
                 }
               />
             )
@@ -1163,7 +1160,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                           {virtualizer.getVirtualItems().map((virtualRow) => {
                             const row = rows[virtualRow.index]
                             const rowIndex = row.index
-                            const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
+                            const originalRow = row.original as Record<string, unknown>
+                            const isDeleted = isRowMarkedForDeletion(tabId, originalRow)
                             return (
                               <div
                                 key={row.id}
@@ -1203,9 +1201,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                     </tr>
                   ) : (
                     rows.map((row) => {
-                      const rowIndex = row.index
-                      const isDeleted = isRowMarkedForDeletion(tabId, rowIndex)
                       const originalRow = row.original as Record<string, unknown>
+                      const isDeleted = isRowMarkedForDeletion(tabId, originalRow)
 
                       return (
                         <RowContextMenu
@@ -1219,7 +1216,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                           }
                           onDelete={
                             canEdit && editContext && !isDeleted
-                              ? () => markRowForDeletion(tabId, rowIndex, originalRow)
+                              ? () => markRowForDeletion(tabId, originalRow)
                               : undefined
                           }
                         >

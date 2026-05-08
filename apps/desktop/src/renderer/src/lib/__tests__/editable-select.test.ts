@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { analyzeEditableSelect } from '../editable-select'
+import { analyzeEditableSelect, sqlMatchesStoredTable } from '../editable-select'
 
 describe('analyzeEditableSelect', () => {
   describe('simple single-table selects', () => {
@@ -8,7 +8,8 @@ describe('analyzeEditableSelect', () => {
         schema: null,
         table: 'users',
         alias: null,
-        projection: { type: 'star' }
+        projection: { type: 'star' },
+        hasFilters: false
       })
     })
 
@@ -17,7 +18,8 @@ describe('analyzeEditableSelect', () => {
         schema: null,
         table: 'users',
         alias: null,
-        projection: { type: 'star' }
+        projection: { type: 'star' },
+        hasFilters: false
       })
     })
 
@@ -211,5 +213,71 @@ describe('analyzeEditableSelect', () => {
     it('MSSQL TOP', () => {
       expect(analyzeEditableSelect('SELECT TOP 10 * FROM users', 'mssql')).toBeNull()
     })
+  })
+
+  describe('hasFilters', () => {
+    it('is false for a bare SELECT *', () => {
+      expect(analyzeEditableSelect('SELECT * FROM users', 'postgresql')?.hasFilters).toBe(false)
+    })
+
+    it('is false when only LIMIT/OFFSET/ORDER BY is present', () => {
+      expect(
+        analyzeEditableSelect('SELECT * FROM users ORDER BY name LIMIT 10 OFFSET 5', 'postgresql')
+          ?.hasFilters
+      ).toBe(false)
+    })
+
+    it('is true for WHERE', () => {
+      expect(
+        analyzeEditableSelect('SELECT * FROM users WHERE id = 1', 'postgresql')?.hasFilters
+      ).toBe(true)
+    })
+
+    it('is true for FOR UPDATE / FOR SHARE', () => {
+      expect(
+        analyzeEditableSelect('SELECT * FROM users FOR UPDATE', 'postgresql')?.hasFilters
+      ).toBe(true)
+    })
+  })
+})
+
+describe('sqlMatchesStoredTable', () => {
+  const stored = { schema: 'public', table: 'users' }
+
+  it('returns true for the auto-built original', () => {
+    expect(sqlMatchesStoredTable('SELECT * FROM users LIMIT 100', stored, 'postgresql')).toBe(true)
+  })
+
+  it('returns true for ORDER BY + LIMIT (count is unaffected)', () => {
+    expect(
+      sqlMatchesStoredTable(
+        'SELECT * FROM users ORDER BY name LIMIT 100',
+        stored,
+        'postgresql'
+      )
+    ).toBe(true)
+  })
+
+  it('returns false when SQL has a WHERE — count of stored table no longer matches', () => {
+    // Repro for the silent footer bug: if this returned true, the COUNT(*) over
+    // public.users would tell the user "1 — 50 of 10000" while the actual filtered
+    // result has far fewer rows.
+    expect(
+      sqlMatchesStoredTable(
+        'SELECT * FROM users WHERE deleted = false',
+        stored,
+        'postgresql'
+      )
+    ).toBe(false)
+  })
+
+  it('returns false when SQL queries a different table', () => {
+    expect(sqlMatchesStoredTable('SELECT * FROM orders', stored, 'postgresql')).toBe(false)
+  })
+
+  it('returns true for empty/whitespace SQL (assumed initial auto-built)', () => {
+    expect(sqlMatchesStoredTable('', stored, 'postgresql')).toBe(true)
+    expect(sqlMatchesStoredTable('   ', stored, 'postgresql')).toBe(true)
+    expect(sqlMatchesStoredTable(null, stored, 'postgresql')).toBe(true)
   })
 })
