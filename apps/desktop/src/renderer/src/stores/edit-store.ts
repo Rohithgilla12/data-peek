@@ -121,14 +121,33 @@ function makeRowKey(
   pkColumns: readonly string[]
 ): string | null {
   if (pkColumns.length === 0) return null
-  const values: unknown[] = []
+  // Encode each PK value to a string explicitly. JSON.stringify throws on bigint
+  // (PostgreSQL returns bigint as string by default but pg-types overrides or
+  // mysql2 in BigInt mode can produce one); throwing here would happen inside a
+  // Zustand updater and leave the store mid-mutation.
+  const parts: string[] = []
   for (const col of pkColumns) {
     if (!(col in originalRow)) return null
     const value = originalRow[col]
     if (value === null || value === undefined) return null
-    values.push(value)
+    if (typeof value === 'bigint') {
+      parts.push(`b${value.toString()}`)
+    } else if (value instanceof Date) {
+      parts.push(`d${value.toISOString()}`)
+    } else if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+      parts.push(`p${JSON.stringify(value)}`)
+    } else {
+      // Fallback for buffers, objects, etc — stringify defensively.
+      try {
+        parts.push(`p${JSON.stringify(value)}`)
+      } catch {
+        return null
+      }
+    }
   }
-  return JSON.stringify(values)
+  // \x1f (Unit Separator) cannot appear inside JSON-encoded strings, so it's a safe
+  // delimiter that won't collide with PK values that contain quotes or other punctuation.
+  return parts.join('\x1f')
 }
 
 function getRowKey(
@@ -459,6 +478,9 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
       const newTabEdits = new Map(state.tabEdits)
       newTabEdits.set(tabId, {
         ...existing,
+        // Drop the editing-cell focus too — leaving it set would make a cell at the
+        // same display position re-render as "in edit mode" against fresh data.
+        editingCell: null,
         modifiedCells: new Map(),
         deletedRowKeys: new Set(),
         originalRows: new Map(),
@@ -579,6 +601,9 @@ export const useEditStore = create<EditStoreState>()((set, get) => ({
       const newTabEdits = new Map(state.tabEdits)
       newTabEdits.set(tabId, {
         ...existing,
+        // Drop the editing-cell focus too — leaving it set would make a cell at the
+        // same display position re-render as "in edit mode" against fresh data.
+        editingCell: null,
         modifiedCells: new Map(),
         deletedRowKeys: new Set(),
         originalRows: new Map(),

@@ -7,7 +7,28 @@ export interface EditableSelectInfo {
   table: string
   alias: string | null
   projection: ProjectionShape
+  /**
+   * Whether the SELECT carries a row-set-modifying clause (WHERE, GROUP BY, HAVING,
+   * UNION/INTERSECT/EXCEPT, FOR UPDATE/SHARE) at depth 0. ORDER BY / LIMIT / OFFSET
+   * don't count — they don't change the rows that come out, only their order/window,
+   * so a COUNT(*) over the bare table still answers the right question.
+   *
+   * Used by `sqlMatchesStoredTable` to decide whether the auto-built COUNT and the
+   * pagination/filter rebuild paths can still be trusted.
+   */
+  hasFilters: boolean
 }
+
+const FILTER_KEYWORDS = new Set([
+  'WHERE',
+  'GROUP',
+  'HAVING',
+  'UNION',
+  'INTERSECT',
+  'EXCEPT',
+  'FOR',
+  'WINDOW'
+])
 
 interface DialectConfig {
   dollarQuotes: boolean
@@ -327,21 +348,24 @@ const BLOCKING_KEYWORDS = new Set([
 ])
 
 /**
- * Returns true iff `sql` is a simple SELECT against the named table.
+ * Returns true iff `sql` is a simple, unfiltered SELECT against the named table —
+ * i.e. the count of rows the SQL returns equals the count of rows in the table.
  *
- * Use to gate features that assume the executed SQL still corresponds to a known
- * (schema, table) — e.g. table-preview's COUNT-for-pagination, server-side pagination
- * SQL rebuild, "Apply to Query" filter injection. When the user rewrites a table-preview
- * tab's SQL to something else, those features must NOT trust the tab's stored table name.
+ * Used by features that rebuild SQL or run a side-channel COUNT against the stored
+ * table: table-preview's COUNT-for-pagination, server-side pagination rebuild,
+ * "Apply to Query" filter injection. If the executed SQL has a WHERE/GROUP BY/HAVING
+ * etc., the row count of the stored table no longer equals what's onscreen and the
+ * COUNT(*)/rebuild would silently report or replace the wrong number of rows.
  */
 export function sqlMatchesStoredTable(
   sql: string | null | undefined,
   stored: { schema: string; table: string },
   dbType: DatabaseType
 ): boolean {
-  if (!sql) return true // Empty/missing SQL: assume the auto-built original.
+  if (!sql || !sql.trim()) return true // Empty/whitespace SQL: assume auto-built original.
   const info = analyzeEditableSelect(sql, dbType)
   if (!info) return false
+  if (info.hasFilters) return false // Predicates change the row set; can't trust stored counts.
   const lower = (s: string) => s.toLowerCase()
   if (lower(info.table) !== lower(stored.table)) return false
   if (info.schema && lower(info.schema) !== lower(stored.schema)) return false
@@ -409,11 +433,26 @@ export function analyzeEditableSelect(
   const table = parseFromTable(fromToks)
   if (!table) return null
 
+  // Walk the post-FROM tail at depth 0 looking for any row-set-modifying keyword.
+  // ORDER BY / LIMIT / OFFSET / FETCH are intentionally NOT in FILTER_KEYWORDS — they
+  // affect ordering and windowing but not the underlying row set.
+  let hasFilters = false
+  depth = 0
+  for (const t of afterFrom.slice(fromEnd)) {
+    if (t.type === 'LPAREN') depth++
+    else if (t.type === 'RPAREN') depth--
+    else if (depth === 0 && t.type === 'KEYWORD' && FILTER_KEYWORDS.has(t.value)) {
+      hasFilters = true
+      break
+    }
+  }
+
   return {
     schema: table.schema,
     table: table.table,
     alias: table.alias,
-    projection
+    projection,
+    hasFilters
   }
 }
 

@@ -17,11 +17,18 @@ interface ElectronFixtures {
   window: Page
   /** Temp directory used as `--user-data-dir`; cleaned up after the test. */
   userDataDir: string
+  /**
+   * Returns the renderer console errors observed since the test started — including
+   * errors emitted during the initial mount, before `window` resolves. Use this
+   * instead of attaching `window.on('console', …)` inside a test, which races the
+   * mount and can miss white-screen regressions.
+   */
+  consoleErrors: () => string[]
 }
 
 /**
  * Boots the real Electron app per test with isolated `userData`, so persisted state
- * (saved connections, pinned tabs, licence activation, query history, schema cache)
+ * (saved connections, pinned tabs, license activation, query history, schema cache)
  * does not bleed between specs.
  *
  * Customise behaviour via env on the launched main process by extending `env` below —
@@ -60,11 +67,41 @@ export const test = base.extend<ElectronFixtures>({
     await app.close()
   },
 
-  window: async ({ electronApp }, use) => {
+  window: async ({ electronApp, consoleErrors: _consoleErrors }, use) => {
+    // Force the consoleErrors fixture to set up first so the listener is attached
+    // BEFORE we await firstWindow / domcontentloaded — otherwise any console.error
+    // emitted during the initial mount would be missed.
+    void _consoleErrors
     const win = await electronApp.firstWindow()
     // Wait for renderer DOM to settle — Vite's loading splash is otherwise interactive.
     await win.waitForLoadState('domcontentloaded')
     await use(win)
+  },
+
+  consoleErrors: async ({ electronApp }, use) => {
+    const errors: string[] = []
+    // window-creation event fires as soon as a BrowserWindow is created, before its
+    // renderer has had a chance to print anything. Attach the console listener at
+    // creation time so we observe boot-time errors.
+    electronApp.on('window', (page: Page) => {
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') errors.push(msg.text())
+      })
+      page.on('pageerror', (err) => {
+        errors.push(err.message)
+      })
+    })
+    // The first window may already exist by the time this fixture sets up (Playwright
+    // resolves fixtures concurrently). Attach to it explicitly too.
+    void electronApp.firstWindow().then((page) => {
+      page.on('console', (msg) => {
+        if (msg.type() === 'error') errors.push(msg.text())
+      })
+      page.on('pageerror', (err) => {
+        errors.push(err.message)
+      })
+    })
+    await use(() => [...errors])
   }
 })
 

@@ -30,6 +30,12 @@ const schemaMemoryCache = new Map<string, CachedSchema>()
 // pg_catalog scan against the same connection.
 const pendingFetches = new Map<string, Promise<CachedSchema>>()
 
+// Per-key generation counter. invalidateSchemaCache bumps it; in-flight fetchers
+// capture the value at start, and refuse to write their result if the generation has
+// moved on. This is the lock that prevents an old, slow `getSchemas` from undoing a
+// post-DDL invalidation by repopulating the cache with pre-DDL data.
+const cacheGenerations = new Map<string, number>()
+
 let schemaCacheStore: DpStorage<SchemaCacheStore> | null = null
 
 /**
@@ -118,6 +124,12 @@ export function setCachedSchema(config: ConnectionConfig, cacheEntry: CachedSche
  * Coalesce concurrent fetches for the same connection. Returns an existing in-flight
  * promise if one is already running for this key; otherwise runs `fetcher`, stores the
  * result via setCachedSchema, and resolves all callers with the same value.
+ *
+ * The fetcher captures the cache generation at start. If `invalidateSchemaCache` runs
+ * during the fetch (e.g. a DDL handler fires while we're mid-pg_catalog-scan), the
+ * generation moves on and the fetcher's write is suppressed — otherwise the fetcher's
+ * pre-DDL result would silently undo the invalidation. The same ownership check guards
+ * the `pendingFetches` cleanup so a stale finally can't delete a newer fetcher's slot.
  */
 export function getOrFetchCachedSchema(
   config: ConnectionConfig,
@@ -127,16 +139,32 @@ export function getOrFetchCachedSchema(
   const existing = pendingFetches.get(key)
   if (existing) return existing
 
+  const startGeneration = cacheGenerations.get(key) ?? 0
+  // Use a box so the run closure can refer to its own promise without TDZ issues.
+  const handle: { promise: Promise<CachedSchema> | null } = { promise: null }
+
   const run = async (): Promise<CachedSchema> => {
     try {
       const result = await fetcher()
-      setCachedSchema(config, result)
+      // Only persist if no invalidation has run since we started AND we still own
+      // the slot. Either condition failing means our result is stale.
+      if (
+        (cacheGenerations.get(key) ?? 0) === startGeneration &&
+        pendingFetches.get(key) === handle.promise
+      ) {
+        setCachedSchema(config, result)
+      }
       return result
     } finally {
-      pendingFetches.delete(key)
+      // Only clear our own slot — a newer fetch may have taken over after invalidation.
+      if (pendingFetches.get(key) === handle.promise) {
+        pendingFetches.delete(key)
+      }
     }
   }
+
   const promise = run()
+  handle.promise = promise
   pendingFetches.set(key, promise)
   return promise
 }
@@ -145,21 +173,25 @@ export function getOrFetchCachedSchema(
  * Invalidate cache for a connection
  */
 export function invalidateSchemaCache(config: ConnectionConfig): void {
+  const cacheKey = getSchemaCacheKey(config)
+
+  // Bump the generation BEFORE clearing pendingFetches so any in-flight fetcher
+  // that's already past its `await fetcher()` and about to call setCachedSchema
+  // still sees the new generation and aborts the write.
+  cacheGenerations.set(cacheKey, (cacheGenerations.get(cacheKey) ?? 0) + 1)
+
+  // Pure in-memory ops happen unconditionally — they don't depend on the disk store
+  // being initialised. Skipping these because the store hasn't booted would silently
+  // leave a stale entry in memory and let an in-flight fetch repopulate the disk
+  // cache once the store is ready.
+  schemaMemoryCache.delete(cacheKey)
+  pendingFetches.delete(cacheKey)
+
   if (!schemaCacheStore) {
-    log.warn('Cache store not initialized')
+    log.warn('Cache store not initialized; in-memory invalidation only')
     return
   }
 
-  const cacheKey = getSchemaCacheKey(config)
-
-  // Remove from memory cache
-  schemaMemoryCache.delete(cacheKey)
-
-  // Drop any in-flight fetch so the next caller refetches against the new state of
-  // the database (e.g. after a CREATE/ALTER/DROP TABLE).
-  pendingFetches.delete(cacheKey)
-
-  // Remove from disk cache
   const allCache = schemaCacheStore.get('cache', {})
   delete allCache[cacheKey]
   schemaCacheStore.set('cache', allCache)

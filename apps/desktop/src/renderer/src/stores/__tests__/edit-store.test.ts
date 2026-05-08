@@ -630,5 +630,66 @@ describe('useEditStore', () => {
       expect(store.isRowMarkedForDeletion(tabId, rowB)).toBe(false)
       expect(store.getNewRows(tabId)).toHaveLength(0)
     })
+
+    it('clears the editing cell focus too', () => {
+      // Otherwise a cell that was mid-edit when results were replaced reappears as
+      // "in edit mode" at the same display index over fresh rows, and Enter commits
+      // an UPDATE the user never meant to make.
+      const store = useEditStore.getState()
+
+      store.startCellEdit(tabId, 0, 'name')
+      store.clearPendingChanges(tabId)
+
+      const tabEdit = useEditStore.getState().tabEdits.get(tabId)
+      expect(tabEdit?.editingCell).toBeNull()
+    })
+  })
+
+  describe('revertAllChanges', () => {
+    beforeEach(() => {
+      const store = useEditStore.getState()
+      store.enterEditMode(tabId, createContext())
+    })
+
+    it('clears the editing cell focus too', () => {
+      const store = useEditStore.getState()
+
+      store.startCellEdit(tabId, 0, 'name')
+      store.revertAllChanges(tabId)
+
+      const tabEdit = useEditStore.getState().tabEdits.get(tabId)
+      expect(tabEdit?.editingCell).toBeNull()
+    })
+  })
+
+  describe('bigint primary keys (no JSON.stringify throw)', () => {
+    beforeEach(() => {
+      const store = useEditStore.getState()
+      store.enterEditMode(tabId, createContext({ primaryKeyColumns: ['id'] }))
+    })
+
+    it('records an edit for a row whose PK value is a bigint without throwing', () => {
+      // pg returns bigint as string by default but pg-types can be configured to
+      // produce native BigInt. JSON.stringify throws on BigInt, and the throw used
+      // to happen inside a Zustand updater — leaving the store mid-mutation and
+      // killing every subsequent edit on the tab.
+      const store = useEditStore.getState()
+      const row = { id: 9007199254740993n, name: 'Big' }
+
+      expect(() => store.updateCellValue(tabId, row, 'name', 'Bigger')).not.toThrow()
+      expect(store.getModifiedCellValue(tabId, row, 'name')).toBe('Bigger')
+    })
+
+    it('treats two rows with different bigint PKs as independent', () => {
+      const store = useEditStore.getState()
+      const a = { id: 1n, name: 'A' }
+      const b = { id: 2n, name: 'B' }
+
+      store.updateCellValue(tabId, a, 'name', 'A-edit')
+      store.updateCellValue(tabId, b, 'name', 'B-edit')
+
+      expect(store.getModifiedCellValue(tabId, a, 'name')).toBe('A-edit')
+      expect(store.getModifiedCellValue(tabId, b, 'name')).toBe('B-edit')
+    })
   })
 })

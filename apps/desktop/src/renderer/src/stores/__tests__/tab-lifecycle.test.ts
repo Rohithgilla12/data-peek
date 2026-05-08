@@ -88,7 +88,51 @@ describe('closeTab cancels in-flight queries', () => {
     useTabStore.getState().closeTab(tabId)
 
     expect(cancelSpy).not.toHaveBeenCalled()
-    // Tab still present
     expect(useTabStore.getState().getTab(tabId)).toBeDefined()
+  })
+
+  it('closeAllTabs cancels every executing non-pinned tab', () => {
+    const a = useTabStore.getState().createQueryTab(null, 'SELECT 1')
+    const b = useTabStore.getState().createQueryTab(null, 'SELECT 2')
+    const idle = useTabStore.getState().createQueryTab(null, 'SELECT 3')
+    useTabStore.getState().updateTabExecuting(a, true, 'exec-a')
+    useTabStore.getState().updateTabExecuting(b, true, 'exec-b')
+
+    useTabStore.getState().closeAllTabs()
+
+    expect(cancelSpy).toHaveBeenCalledTimes(2)
+    expect(cancelSpy).toHaveBeenCalledWith('exec-a')
+    expect(cancelSpy).toHaveBeenCalledWith('exec-b')
+    expect(useTabStore.getState().getTab(idle)).toBeUndefined()
+  })
+
+  it('closeOtherTabs cancels other executing tabs but leaves the kept tab alone', () => {
+    const keep = useTabStore.getState().createQueryTab(null, 'SELECT keep')
+    const other = useTabStore.getState().createQueryTab(null, 'SELECT other')
+    useTabStore.getState().updateTabExecuting(keep, true, 'exec-keep')
+    useTabStore.getState().updateTabExecuting(other, true, 'exec-other')
+
+    useTabStore.getState().closeOtherTabs(keep)
+
+    expect(cancelSpy).toHaveBeenCalledTimes(1)
+    expect(cancelSpy).toHaveBeenCalledWith('exec-other')
+    expect(useTabStore.getState().getTab(keep)).toBeDefined()
+  })
+
+  it('closeTabsToRight cancels only the tabs to the right that are executing', () => {
+    const left = useTabStore.getState().createQueryTab(null, 'SELECT left')
+    const middle = useTabStore.getState().createQueryTab(null, 'SELECT middle')
+    const right = useTabStore.getState().createQueryTab(null, 'SELECT right')
+    useTabStore.getState().updateTabExecuting(left, true, 'exec-left')
+    useTabStore.getState().updateTabExecuting(middle, true, 'exec-middle')
+    useTabStore.getState().updateTabExecuting(right, true, 'exec-right')
+
+    useTabStore.getState().closeTabsToRight(middle)
+
+    expect(cancelSpy).toHaveBeenCalledTimes(1)
+    expect(cancelSpy).toHaveBeenCalledWith('exec-right')
+    expect(useTabStore.getState().getTab(left)).toBeDefined()
+    expect(useTabStore.getState().getTab(middle)).toBeDefined()
+    expect(useTabStore.getState().getTab(right)).toBeUndefined()
   })
 })

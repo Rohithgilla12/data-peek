@@ -404,26 +404,39 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 { schema: currentTab.schemaName, table: currentTab.tableName },
                 tabConnection.dbType
               )
-            if (currentTab.type === 'table-preview' && previewSqlMatches) {
-              try {
-                const countTableRef = buildQualifiedTableRef(
-                  currentTab.schemaName,
-                  currentTab.tableName,
-                  tabConnection.dbType
-                )
-                const countQuery = buildCountQuery(countTableRef)
-                const countResponse = await window.api.db.query(tabConnection, countQuery)
-                if (isStillCurrent() && countResponse.success && countResponse.data) {
-                  const countData = countResponse.data as IpcQueryResult
-                  if (countData.rows?.[0]) {
-                    const totalCount = Number((countData.rows[0] as Record<string, unknown>).total)
-                    if (!isNaN(totalCount)) {
-                      setTablePreviewTotalCount(tabId, totalCount)
+            if (currentTab.type === 'table-preview') {
+              if (previewSqlMatches) {
+                try {
+                  const countTableRef = buildQualifiedTableRef(
+                    currentTab.schemaName,
+                    currentTab.tableName,
+                    tabConnection.dbType
+                  )
+                  const countQuery = buildCountQuery(countTableRef)
+                  const countResponse = await window.api.db.query(tabConnection, countQuery)
+                  if (isStillCurrent() && countResponse.success && countResponse.data) {
+                    const countData = countResponse.data as IpcQueryResult
+                    if (countData.rows?.[0]) {
+                      const totalCount = Number(
+                        (countData.rows[0] as Record<string, unknown>).total
+                      )
+                      if (!isNaN(totalCount)) {
+                        setTablePreviewTotalCount(tabId, totalCount)
+                      }
                     }
+                  } else if (isStillCurrent()) {
+                    // Count query failed — drop any stale total so the footer falls back
+                    // to client-side pagination over the result we did get.
+                    setTablePreviewTotalCount(tabId, null)
                   }
+                } catch {
+                  if (isStillCurrent()) setTablePreviewTotalCount(tabId, null)
                 }
-              } catch {
-                // Silently fail count query - pagination will fall back to client-side
+              } else if (isStillCurrent()) {
+                // SQL diverged from the stored table — the previous totalRowCount was for
+                // a different row set; clear it so the UI exits server-side pagination
+                // mode rather than showing the wrong total.
+                setTablePreviewTotalCount(tabId, null)
               }
             }
 
