@@ -31,48 +31,71 @@ test.beforeEach(async ({ window }) => {
 // invalidates the cache at the end of each successful DDL handler.
 // ─────────────────────────────────────────────────────────────────────────────
 
-test('alter-table invalidates the schema cache so the new column shows up immediately', async ({
+test('db.alter-table handler invalidates the schema cache (no forceRefresh needed)', async ({
   window
 }) => {
-  // Prime the cache with the original schema.
-  const beforeAlter = await window.evaluate(
-    (cfg) => window.api.db.schemas(cfg, true),
-    pg.config
-  )
-  expect(beforeAlter.success).toBe(true)
-  const usersBefore = beforeAlter.data!.schemas
-    .find((s) => s.name === 'public')!
-    .tables.find((t) => t.name === 'users')!
-  expect(usersBefore.columns.map((c) => c.name)).not.toContain('audit_marker')
+  // Prime the cache and confirm the next non-force read hits it. If we don't see
+  // fromCache:true here, the rest of this test wouldn't actually prove invalidation.
+  await window.evaluate((cfg) => window.api.db.schemas(cfg, true), pg.config)
+  const cached = await window.evaluate((cfg) => window.api.db.schemas(cfg, false), pg.config)
+  expect(cached.data?.fromCache).toBe(true)
 
-  // Issue an ALTER TABLE that adds a new column. Going through the same `db.execute`
-  // path real edits would use (rather than db.alter-table) so we exercise the more
-  // common case where invalidation must also happen for ad-hoc DDL inside a query.
-  // Note: the audit fix wires invalidation into the dedicated DDL handlers; for raw
-  // SQL DDL via db:query we do a forceRefresh below to keep this test robust.
-  const ddl = await window.evaluate(
-    (cfg) => window.api.db.query(cfg, 'ALTER TABLE users ADD COLUMN audit_marker text'),
-    pg.config
-  )
-  expect(ddl.success).toBe(true)
+  // Drive the SAME IPC path the Table Designer uses. The audit fix added an
+  // invalidateSchemaCache(config) call at the end of this handler's success
+  // branch; if that call is removed by a future refactor, the post-DDL read
+  // below will see fromCache:true and miss the new column — failing this test.
+  // (The previous version of this test went via raw db.query + forceRefresh,
+  // which doesn't exercise the wire-up at all.)
+  try {
+    const altered = await window.evaluate(
+      (cfg) =>
+        window.api.ddl.alterTable(cfg, {
+          schema: 'public',
+          table: 'users',
+          columnOperations: [
+            {
+              type: 'add',
+              column: {
+                id: 'col-marker',
+                name: 'audit_marker',
+                dataType: 'text',
+                isNullable: true,
+                isPrimaryKey: false,
+                isUnique: false
+              }
+            }
+          ],
+          constraintOperations: [],
+          indexOperations: []
+        }),
+      pg.config
+    )
+    expect(altered, JSON.stringify(altered)).toMatchObject({
+      success: true,
+      data: { success: true }
+    })
 
-  // Force a refresh — the dedicated ALTER TABLE IPC handler invalidates the cache,
-  // raw db:query DDL does not. This call proves the `forceRefresh: true` path works.
-  const afterAlter = await window.evaluate(
-    (cfg) => window.api.db.schemas(cfg, true),
-    pg.config
-  )
-  expect(afterAlter.success).toBe(true)
-  const usersAfter = afterAlter.data!.schemas
-    .find((s) => s.name === 'public')!
-    .tables.find((t) => t.name === 'users')!
-  expect(usersAfter.columns.map((c) => c.name)).toContain('audit_marker')
-
-  // Clean up so other tests in this file see the original schema.
-  await window.evaluate(
-    (cfg) => window.api.db.query(cfg, 'ALTER TABLE users DROP COLUMN audit_marker'),
-    pg.config
-  )
+    // Non-force read MUST refetch (fromCache: false) — this is the regression
+    // signal. If the handler stops invalidating, this returns the cached pre-DDL
+    // schema and we never see audit_marker.
+    const afterAlter = await window.evaluate(
+      (cfg) => window.api.db.schemas(cfg, false),
+      pg.config
+    )
+    expect(afterAlter.data?.fromCache).toBe(false)
+    const usersAfter = afterAlter.data!.schemas
+      .find((s) => s.name === 'public')!
+      .tables.find((t) => t.name === 'users')!
+    expect(usersAfter.columns.map((c) => c.name)).toContain('audit_marker')
+  } finally {
+    // Always restore the schema, even if assertions above failed — otherwise CI
+    // retries and later tests in this file see a polluted column set.
+    await window.evaluate(
+      (cfg) =>
+        window.api.db.query(cfg, 'ALTER TABLE users DROP COLUMN IF EXISTS audit_marker'),
+      pg.config
+    )
+  }
 })
 
 test('db:invalidate-schema-cache IPC drops the cache so the next read refetches', async ({
@@ -127,7 +150,6 @@ test('db:invalidate-schema-cache IPC drops the cache so the next read refetches'
 test('db.execute applies an UPDATE against the row identified by primary key', async ({
   window
 }) => {
-  // Pick a row to update. uuid_generate_v4 means we can't hardcode the id; query first.
   const beforeRow = await window.evaluate(
     (cfg) => window.api.db.query(cfg, 'SELECT id, name FROM users ORDER BY email LIMIT 1'),
     pg.config
@@ -136,88 +158,86 @@ test('db.execute applies an UPDATE against the row identified by primary key', a
   const target = (beforeRow.data as { rows: Array<{ id: string; name: string }> }).rows[0]
   expect(target.id).toBeTruthy()
 
-  // Build an EditBatch with one UPDATE op — the same shape the renderer's
-  // buildEditBatch produces.
-  const updateResult = await window.evaluate(
-    ({ cfg, target: row }) =>
-      window.api.db.execute(cfg, {
-        context: {
-          schema: 'public',
-          table: 'users',
-          primaryKeyColumns: ['id'],
-          columns: [
+  // try/finally so the cleanup UPDATE runs even when an assertion fails — otherwise
+  // a flaky run leaves the test container with a polluted name on a real row, and
+  // the spec's CI retry (workers:1, retries:2) inherits that pollution.
+  try {
+    const updateResult = await window.evaluate(
+      ({ cfg, target: row }) =>
+        window.api.db.execute(cfg, {
+          context: {
+            schema: 'public',
+            table: 'users',
+            primaryKeyColumns: ['id'],
+            columns: [
+              {
+                name: 'id',
+                dataType: 'uuid',
+                isNullable: false,
+                isPrimaryKey: true,
+                ordinalPosition: 1
+              },
+              {
+                name: 'name',
+                dataType: 'varchar',
+                isNullable: true,
+                isPrimaryKey: false,
+                ordinalPosition: 2
+              }
+            ]
+          },
+          operations: [
             {
-              name: 'id',
-              dataType: 'uuid',
-              isNullable: false,
-              isPrimaryKey: true,
-              ordinalPosition: 1
-            },
-            {
-              name: 'name',
-              dataType: 'varchar',
-              isNullable: true,
-              isPrimaryKey: false,
-              ordinalPosition: 2
+              type: 'update',
+              id: 'op-1',
+              primaryKeys: [{ column: 'id', value: row.id, dataType: 'uuid' }],
+              changes: [
+                {
+                  column: 'name',
+                  oldValue: row.name,
+                  newValue: 'Audit Regression Marker',
+                  dataType: 'varchar'
+                }
+              ],
+              originalRow: { id: row.id, name: row.name }
             }
           ]
-        },
-        operations: [
-          {
-            type: 'update',
-            id: 'op-1',
-            primaryKeys: [{ column: 'id', value: row.id, dataType: 'uuid' }],
-            changes: [
-              {
-                column: 'name',
-                oldValue: row.name,
-                newValue: 'Audit Regression Marker',
-                dataType: 'varchar'
-              }
-            ],
-            originalRow: { id: row.id, name: row.name }
-          }
-        ]
-      }),
-    { cfg: pg.config, target }
-  )
-  expect(updateResult.success).toBe(true)
+        }),
+      { cfg: pg.config, target }
+    )
+    expect(updateResult.success).toBe(true)
 
-  // Verify exactly one row was updated, and it was the right one.
-  const verify = await window.evaluate(
-    ({ cfg, id }) =>
-      window.api.db.query(
-        cfg,
-        `SELECT id, name FROM users WHERE id = '${id}'`
-      ),
-    { cfg: pg.config, id: target.id }
-  )
-  expect(verify.success).toBe(true)
-  const verified = (verify.data as { rows: Array<{ id: string; name: string }> }).rows[0]
-  expect(verified.id).toBe(target.id)
-  expect(verified.name).toBe('Audit Regression Marker')
+    const verify = await window.evaluate(
+      ({ cfg, id }) =>
+        window.api.db.query(cfg, `SELECT id, name FROM users WHERE id = '${id}'`),
+      { cfg: pg.config, id: target.id }
+    )
+    expect(verify.success).toBe(true)
+    const verified = (verify.data as { rows: Array<{ id: string; name: string }> }).rows[0]
+    expect(verified.id).toBe(target.id)
+    expect(verified.name).toBe('Audit Regression Marker')
 
-  // Make sure no OTHER rows were touched.
-  const collateral = await window.evaluate(
-    (cfg) =>
-      window.api.db.query(
-        cfg,
-        "SELECT count(*)::int AS n FROM users WHERE name = 'Audit Regression Marker'"
-      ),
-    pg.config
-  )
-  const n = (collateral.data as { rows: Array<{ n: number }> }).rows[0].n
-  expect(n).toBe(1)
-
-  // Restore so this test doesn't leak into others.
-  await window.evaluate(
-    ({ cfg, id, original }) =>
-      window.api.db.query(
-        cfg,
-        `UPDATE users SET name = '${original.replace(/'/g, "''")}' WHERE id = '${id}'`
-      ),
-    { cfg: pg.config, id: target.id, original: target.name }
-  )
+    // No collateral — only the targeted row got the marker name.
+    const collateral = await window.evaluate(
+      (cfg) =>
+        window.api.db.query(
+          cfg,
+          "SELECT count(*)::int AS n FROM users WHERE name = 'Audit Regression Marker'"
+        ),
+      pg.config
+    )
+    const n = (collateral.data as { rows: Array<{ n: number }> }).rows[0].n
+    expect(n).toBe(1)
+  } finally {
+    await window.evaluate(
+      ({ cfg, id, original }) =>
+        window.api.db.query(
+          cfg,
+          `UPDATE users SET name = '${original.replace(/'/g, "''")}' WHERE id = '${id}'`
+        ),
+      { cfg: pg.config, id: target.id, original: target.name }
+    )
+  }
 })
 
 test('db.execute rolls back the whole batch when one operation fails', async ({ window }) => {
