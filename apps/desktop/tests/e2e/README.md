@@ -40,25 +40,62 @@ test('my new behaviour', async ({ window }) => {
 })
 ```
 
-## Database-touching tests (not yet wired)
+## Database-touching tests
 
-Smoke tests deliberately don't touch a real DB. To add Postgres-dependent specs:
+`fixtures/postgres.ts` spins up a Postgres container via
+[testcontainers-node](https://node.testcontainers.org/) and loads
+`seeds/acme_saas_seed.sql` via the postgres image's `/docker-entrypoint-initdb.d/`
+hook. Use it in a spec via `test.beforeAll` so the container is shared across the
+file's tests:
 
-- Bring up a local Postgres (the `seeds/` directory at the repo root has SQL fixtures
-  ready to load), or use [testcontainers-node](https://node.testcontainers.org/) so CI
-  can spin one up per test run.
-- Drive the connection dialog through the UI, OR call `window.api.connections.add({...})`
-  via `window.evaluate` to seed a saved connection without going through the modal.
+```ts
+import { test, expect } from './fixtures/electron-app'
+import { startSeededPostgres, type SeededPostgres } from './fixtures/postgres'
 
-Each test starts with a clean `userData` so saved connections must be re-added per spec
-(or in a `test.beforeAll` for a suite that shares one).
+let pg: SeededPostgres
+
+test.beforeAll(async () => {
+  pg = await startSeededPostgres()
+})
+
+test.afterAll(async () => {
+  await pg?.stop()
+})
+
+test.beforeEach(async ({ window }) => {
+  // Each test gets a fresh userData (fixture default), so re-seed the connection.
+  await window.evaluate((cfg) => window.api.connections.add(cfg), pg.config)
+})
+
+test('selects against the seed', async ({ window }) => {
+  const result = await window.evaluate(
+    (cfg) => window.api.db.query(cfg, 'SELECT count(*) FROM users'),
+    pg.config
+  )
+  expect(result.success).toBe(true)
+})
+```
+
+The container image is pinned to `postgres:16-alpine` so behaviour doesn't drift
+on a Postgres minor bump. Container lifetime is bounded by the testcontainers Ryuk
+reaper, so even if a test crashes mid-run the container is reaped within seconds.
+
+Requirements:
+- Docker available locally (Docker Desktop or OrbStack on macOS, Docker Engine on Linux).
+- Existing tests assume the seed file at `seeds/acme_saas_seed.sql` is unchanged. If
+  the seed grows or shrinks, update the assertions in `queries.spec.ts`.
 
 ## CI
 
-Not wired into CI yet. When ready:
+`.github/workflows/e2e.yml` runs the suite on every PR and on `main`. The runner
+is `ubuntu-latest` (Docker preinstalled) with `xvfb-run` for the virtual display.
+On failure, the Playwright HTML report and `test-results/` artefacts are uploaded
+for 7 days.
 
-- The smoke tests need a virtual display on Linux runners (`xvfb-run`).
-- macOS runners work without extra setup but Notarization isn't needed for e2e — the
-  bundle from `out/` is unsigned and that's fine for the harness.
-- Add a workflow step that runs `pnpm --filter @data-peek/desktop test:e2e` after the
-  existing typecheck/test gates.
+`TESTCONTAINERS_RYUK_DISABLED=true` is set in CI because the runner is torn down
+per job anyway; this avoids the Ryuk image pull and a small startup cost.
+
+To add macOS to the matrix later, no extra setup is needed (Docker is available
+via runner-installed orbstack/docker desktop, and macOS Electron doesn't need
+xvfb) — but macOS runner minutes are 10x Linux's, so the current single-OS
+setup is intentional.

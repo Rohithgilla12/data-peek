@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test'
+import { resolve } from 'node:path'
 
 /**
  * Playwright config for end-to-end tests against the built Electron app.
@@ -12,8 +13,11 @@ import { defineConfig } from '@playwright/test'
  * Run interactively: `pnpm test:e2e:ui`
  */
 export default defineConfig({
-  testDir: 'tests/e2e',
-  testMatch: /.*\.spec\.ts$/,
+  // Absolute path so the resolution doesn't depend on cwd; coupled with the explicit
+  // testIgnore below it keeps Playwright off our vitest unit tests in src/**/__tests__.
+  testDir: resolve(__dirname, 'tests', 'e2e'),
+  testMatch: '**/*.spec.ts',
+  testIgnore: ['**/node_modules/**'],
 
   // Electron tests share a single OS-level app instance per test, so parallelism
   // adds OS-window juggling without much speedup. Keep it simple at one worker.
