@@ -8,6 +8,7 @@ import {
   buildPreviewDDL,
   validateTableDefinition
 } from '../ddl-builder'
+import { invalidateSchemaCache } from '../schema-cache'
 import { createLogger } from '../lib/logger'
 
 const log = createLogger('ddl-handlers')
@@ -60,6 +61,9 @@ export function registerDDLHandlers(): void {
 
         await adapter.executeTransaction(config, stmtParams)
 
+        // Drop cached schemas so callers see the new table on the next read.
+        invalidateSchemaCache(config)
+
         return { success: true, data: result }
       } catch (error: unknown) {
         log.error('Create table error:', error)
@@ -92,6 +96,9 @@ export function registerDDLHandlers(): void {
         log.debug('Executing SQL:', result.executedSql)
 
         await adapter.executeTransaction(config, statements)
+
+        // Cached column sets / FK metadata are now stale; force the next read.
+        invalidateSchemaCache(config)
 
         return { success: true, data: result }
       } catch (error: unknown) {
@@ -126,6 +133,9 @@ export function registerDDLHandlers(): void {
         log.debug('Executing SQL:', sql)
 
         await adapter.executeTransaction(config, [{ sql, params: [] }])
+
+        // Drop cached schemas so the dropped table disappears from the next read.
+        invalidateSchemaCache(config)
 
         return {
           success: true,
