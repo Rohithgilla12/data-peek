@@ -7,6 +7,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Opt every javascript-action runtime in this workflow into Node 24. pnpm/action-setup
+# (and any third-party action that still ships its action.yml with `using: node20`)
+# would otherwise emit a deprecation warning and break entirely after September 2026.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 # A new commit on the same branch supersedes any in-flight e2e run.
 concurrency:
   group: e2e-${{ github.workflow }}-${{ github.ref }}
@@ -22,10 +28,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 24
 
@@ -37,7 +43,7 @@ jobs:
         run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}

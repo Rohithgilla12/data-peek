@@ -9,6 +9,12 @@ on:
 permissions:
   contents: write
 
+# Opt every javascript-action runtime in this workflow into Node 24. pnpm/action-setup
+# (still on Node 20 in v4) would otherwise emit a deprecation warning and break entirely
+# after September 2026.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   # Fast verification gate. Platform builds don't start until this passes,
   # so we don't burn 30min on three macOS/Windows/Linux runners just to
@@ -19,10 +25,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
 
@@ -34,7 +40,7 @@ jobs:
         run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
       - name: Setup pnpm cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ env.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
