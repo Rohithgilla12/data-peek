@@ -18,23 +18,19 @@ test('the app launches and shows the main window', async ({ electronApp, window 
   expect(title.length).toBeGreaterThan(0)
 })
 
-test('the renderer mounts and reaches an interactive state', async ({ window }) => {
+test('the renderer mounts and reaches an interactive state', async ({ consoleErrors, window }) => {
   // The Tanstack Router root renders a #root div regardless of route. If the renderer
   // failed to boot, this would never appear.
   await expect(window.locator('#root')).toBeAttached({ timeout: 15_000 })
 
-  // No uncaught console errors during initial mount. We allow warnings (Electron emits
-  // a few in dev mode) but error-level entries usually mean a regression.
-  const errors: string[] = []
-  window.on('console', (msg) => {
-    if (msg.type() === 'error') errors.push(msg.text())
-  })
-
   // Give React/effects time to settle.
   await window.waitForTimeout(500)
 
-  // Filter known-noisy errors here as the suite grows.
-  const meaningful = errors.filter((e) => !e.includes('Autofill.enable'))
+  // The consoleErrors fixture starts capturing inside electronApp/firstWindow, BEFORE
+  // domcontentloaded — registering the listener inside this test would miss any error
+  // emitted during the initial mount, which is the exact regression class we want to
+  // catch.
+  const meaningful = consoleErrors().filter((e) => !e.includes('Autofill.enable'))
   expect(meaningful, `Unexpected console errors during mount:\n${meaningful.join('\n')}`).toEqual([])
 })
 
@@ -42,16 +38,14 @@ test('userData isolation: each test gets a fresh app state', async ({ userDataDi
   // The temp directory exists and is unique per test (see fixture).
   expect(userDataDir).toMatch(/data-peek-e2e-/)
 
-  // The renderer should NOT find any persisted saved connections from a previous run,
-  // because each test starts with an empty userData dir. We probe via window.api which
-  // the preload script exposes.
-  const connections = await window.evaluate(async () => {
-    const api = (window as unknown as { api?: { connections?: { list?: () => Promise<unknown> } } })
-      .api
-    if (!api?.connections?.list) return null
-    return api.connections.list()
-  })
+  // Probe the IPC contract directly — and assert the response shape, not just "is it
+  // an array". The previous version called `Array.isArray(response)` on the IPC
+  // envelope `{ success, data }`, which is always false, so the assertion would pass
+  // for ANY broken state: missing `window.api`, renamed `connections` namespace,
+  // persisted state from a prior test. Now we fail loudly when the contract drifts.
+  const response = await window.evaluate(() => window.api.connections.list())
 
-  // First-run state: no persisted connections.
-  expect(Array.isArray(connections) ? connections : []).toEqual([])
+  expect(response.success).toBe(true)
+  expect(Array.isArray(response.data)).toBe(true)
+  expect(response.data).toEqual([])
 })

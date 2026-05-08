@@ -3,7 +3,7 @@
 Playwright-driven tests against the real built Electron app. The fixtures in
 `fixtures/electron-app.ts` boot `out/main/index.js` for each test with an isolated
 `--user-data-dir`, so persisted state (connections, pinned tabs, query history,
-licence activation, schema cache) does not bleed between specs.
+license activation, schema cache) does not bleed between specs.
 
 ## Run
 
