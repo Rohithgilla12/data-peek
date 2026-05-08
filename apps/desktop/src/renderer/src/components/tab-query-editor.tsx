@@ -70,7 +70,7 @@ import {
   type DataTableColumn as EditableDataTableColumn
 } from '@/components/editable-data-table'
 import type { EditContext, TableInfo } from '@data-peek/shared'
-import { analyzeEditableSelect } from '@/lib/editable-select'
+import { analyzeEditableSelect, sqlMatchesStoredTable } from '@/lib/editable-select'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
@@ -393,8 +393,18 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
             updateTabMultiResult(tabId, multiResult, null)
             markTabSaved(tabId)
 
-            // For table preview tabs, fetch total count for server-side pagination
-            if (currentTab.type === 'table-preview') {
+            // For table preview tabs, fetch total count for server-side pagination —
+            // but only if the executed SQL still queries the stored table. If the user
+            // rewrote the SQL to a different table, the stored table's count would be
+            // wrong and would mislead the pagination footer.
+            const previewSqlMatches =
+              currentTab.type === 'table-preview' &&
+              sqlMatchesStoredTable(
+                queryToRun,
+                { schema: currentTab.schemaName, table: currentTab.tableName },
+                tabConnection.dbType
+              )
+            if (currentTab.type === 'table-preview' && previewSqlMatches) {
               try {
                 const countTableRef = buildQualifiedTableRef(
                   currentTab.schemaName,
@@ -529,8 +539,33 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       )
         return
 
-      // Update pagination state and query in the store
-      updateTablePreviewPagination(tabId, page, pageSize)
+      // If the user has rewritten the editor SQL to a different table, we cannot
+      // safely rebuild a server-side pagination query — that would silently replace
+      // their typed SQL with a SELECT against the stored table. Update pagination
+      // state only; rendering falls back to client-side over the existing result set.
+      const sqlStillMatches = sqlMatchesStoredTable(
+        currentTab.savedQuery ?? currentTab.query,
+        { schema: currentTab.schemaName, table: currentTab.tableName },
+        tabConnection.dbType
+      )
+
+      if (!sqlStillMatches) {
+        updateTablePreviewPagination(tabId, page, pageSize, null)
+        return
+      }
+
+      const offset = (page - 1) * pageSize
+      const sqlTableRef = buildQualifiedTableRef(
+        currentTab.schemaName,
+        currentTab.tableName,
+        tabConnection.dbType
+      )
+      const rebuiltQuery = buildSelectQuery(sqlTableRef, tabConnection.dbType, {
+        limit: pageSize,
+        offset
+      })
+
+      updateTablePreviewPagination(tabId, page, pageSize, rebuiltQuery)
 
       // Re-run the query - handleRunQuery reads fresh state from store
       handleRunQuery()
@@ -1178,8 +1213,19 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const buildQueryWithFilters = (): string => {
     if (!tab || !isExecutableTab(tab)) return ''
 
-    // For table preview tabs, rebuild from scratch
-    if (tab.type === 'table-preview') {
+    // For table preview tabs, rebuild from the stored table — but only when the
+    // user hasn't rewritten the editor SQL to query something else. Otherwise we'd
+    // silently throw away their query and run a filtered statement against a
+    // different table than the one they've been looking at.
+    if (
+      tab.type === 'table-preview' &&
+      tabConnection &&
+      sqlMatchesStoredTable(
+        tab.savedQuery ?? tab.query,
+        { schema: tab.schemaName, table: tab.tableName },
+        tabConnection.dbType
+      )
+    ) {
       const tableRef = buildQualifiedTableRef(tab.schemaName, tab.tableName, tabConnection?.dbType)
       const wherePart = generateWhereClause(tableFilters)
       const orderPart = generateOrderByClause(tableSorting)
@@ -1191,6 +1237,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         .replace(/\s+/g, ' ')
         .trim()
     }
+    // Fallthrough — when SQL has been rewritten, treat the tab as a query tab
+    // and inject WHERE/ORDER BY into the user's SQL.
 
     // For query tabs, try to inject WHERE/ORDER BY
     // This is simplified - a full implementation would parse the SQL AST

@@ -326,6 +326,28 @@ const BLOCKING_KEYWORDS = new Set([
   'INTO'
 ])
 
+/**
+ * Returns true iff `sql` is a simple SELECT against the named table.
+ *
+ * Use to gate features that assume the executed SQL still corresponds to a known
+ * (schema, table) — e.g. table-preview's COUNT-for-pagination, server-side pagination
+ * SQL rebuild, "Apply to Query" filter injection. When the user rewrites a table-preview
+ * tab's SQL to something else, those features must NOT trust the tab's stored table name.
+ */
+export function sqlMatchesStoredTable(
+  sql: string | null | undefined,
+  stored: { schema: string; table: string },
+  dbType: DatabaseType
+): boolean {
+  if (!sql) return true // Empty/missing SQL: assume the auto-built original.
+  const info = analyzeEditableSelect(sql, dbType)
+  if (!info) return false
+  const lower = (s: string) => s.toLowerCase()
+  if (lower(info.table) !== lower(stored.table)) return false
+  if (info.schema && lower(info.schema) !== lower(stored.schema)) return false
+  return true
+}
+
 export function analyzeEditableSelect(
   sql: string,
   dbType: DatabaseType

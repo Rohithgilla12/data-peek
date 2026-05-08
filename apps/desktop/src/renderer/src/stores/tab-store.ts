@@ -215,7 +215,12 @@ interface TabState {
 
   // Server-side pagination for table previews
   setTablePreviewTotalCount: (tabId: string, count: number) => void
-  updateTablePreviewPagination: (tabId: string, page: number, pageSize: number) => void
+  updateTablePreviewPagination: (
+    tabId: string,
+    page: number,
+    pageSize: number,
+    rebuiltQuery: string | null
+  ) => void
 
   // Pinning
   pinTab: (tabId: string) => void
@@ -828,27 +833,25 @@ export const useTabStore = create<TabState>()(
         })
       },
 
-      updateTablePreviewPagination: (tabId, page, pageSize) => {
-        const tab = get().tabs.find((t) => t.id === tabId)
-        if (!tab || tab.type !== 'table-preview') return
-
-        // Get connection to determine database type
-        const connection = useConnectionStore
-          .getState()
-          .connections.find((c) => c.id === tab.connectionId)
-        const dbType = connection?.dbType
-
-        // Build new query with updated pagination
-        const offset = (page - 1) * pageSize
-        const sqlTableRef = buildQualifiedTableRef(tab.schemaName, tab.tableName, dbType)
-        const query = buildSelectQuery(sqlTableRef, dbType, { limit: pageSize, offset })
-
+      updateTablePreviewPagination: (tabId, page, pageSize, rebuiltQuery) => {
+        // The renderer decides whether the executed SQL still maps to the stored
+        // table and supplies a rebuiltQuery only when it's safe to overwrite. If
+        // null, we update pagination state without touching the user's typed SQL —
+        // pagination falls back to client-side over the existing result set.
         set((state) => ({
-          tabs: state.tabs.map((t) =>
-            t.id === tabId && t.type === 'table-preview'
-              ? { ...t, currentPage: page, pageSize, query, savedQuery: query }
-              : t
-          )
+          tabs: state.tabs.map((t) => {
+            if (t.id !== tabId || t.type !== 'table-preview') return t
+            if (rebuiltQuery !== null) {
+              return {
+                ...t,
+                currentPage: page,
+                pageSize,
+                query: rebuiltQuery,
+                savedQuery: rebuiltQuery
+              }
+            }
+            return { ...t, currentPage: page, pageSize }
+          })
         }))
       },
 
