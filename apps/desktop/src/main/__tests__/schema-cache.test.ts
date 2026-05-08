@@ -55,7 +55,9 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     const config = makeConfig('dogpile-1')
     invalidateSchemaCache(config)
 
-    let resolveFetcher: ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
+    let resolveFetcher:
+      | ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void)
+      | null = null
     const fetcher = vi.fn(
       () =>
         new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((resolve) => {
@@ -111,13 +113,14 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     invalidateSchemaCache(a)
     invalidateSchemaCache(b)
 
-    const fetcherA = vi.fn().mockResolvedValue({ schemas: fakeSchemas, customTypes: [], timestamp: 1 })
-    const fetcherB = vi.fn().mockResolvedValue({ schemas: fakeSchemas, customTypes: [], timestamp: 2 })
+    const fetcherA = vi
+      .fn()
+      .mockResolvedValue({ schemas: fakeSchemas, customTypes: [], timestamp: 1 })
+    const fetcherB = vi
+      .fn()
+      .mockResolvedValue({ schemas: fakeSchemas, customTypes: [], timestamp: 2 })
 
-    await Promise.all([
-      getOrFetchCachedSchema(a, fetcherA),
-      getOrFetchCachedSchema(b, fetcherB)
-    ])
+    await Promise.all([getOrFetchCachedSchema(a, fetcherA), getOrFetchCachedSchema(b, fetcherB)])
 
     expect(fetcherA).toHaveBeenCalledTimes(1)
     expect(fetcherB).toHaveBeenCalledTimes(1)
