@@ -343,6 +343,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       const executionId = crypto.randomUUID()
       updateTabExecuting(tabId, true, executionId)
 
+      // Drop any state writes from this execution if the tab has moved on (cancelled,
+      // re-run, or closed-and-reopened in the same session). Without this, a slow
+      // response from execution A can clobber the result of execution B that started
+      // after the user hit Stop or Run again.
+      const isStillCurrent = (): boolean => {
+        const t = useTabStore.getState().getTab(tabId)
+        return !!t && isExecutableTab(t) && t.executionId === executionId
+      }
+
       // Clear previous benchmark when running a new query
       setBenchmark(null)
 
@@ -354,6 +363,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           executionId,
           queryTimeoutMs
         )
+
+        if (!isStillCurrent()) return
 
         if (response.success && response.data) {
           const data = response.data as {
@@ -392,7 +403,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 )
                 const countQuery = buildCountQuery(countTableRef)
                 const countResponse = await window.api.db.query(tabConnection, countQuery)
-                if (countResponse.success && countResponse.data) {
+                if (isStillCurrent() && countResponse.success && countResponse.data) {
                   const countData = countResponse.data as IpcQueryResult
                   if (countData.rows?.[0]) {
                     const totalCount = Number((countData.rows[0] as Record<string, unknown>).total)
@@ -454,11 +465,13 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           })
         }
       } catch (error) {
+        if (!isStillCurrent()) return
         const errorMessage = error instanceof Error ? error.message : String(error)
         updateTabMultiResult(tabId, null, errorMessage)
         setTelemetry(null)
       } finally {
-        updateTabExecuting(tabId, false)
+        // CAS by executionId so a stale finally can't unset a newer execution's flag.
+        updateTabExecuting(tabId, false, undefined, executionId)
       }
     },
     [
@@ -480,11 +493,23 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     if (!tab || !isExecutableTab(tab)) return
     if (!tab.isExecuting || !tab.executionId) return
 
+    // Snapshot the executionId we're cancelling. If the user starts a new query before
+    // the cancel response comes back, we mustn't overwrite the new query's state with
+    // "Query cancelled by user".
+    const cancelledExecutionId = tab.executionId
+
     try {
-      const response = await window.api.db.cancelQuery(tab.executionId)
+      const response = await window.api.db.cancelQuery(cancelledExecutionId)
       if (response.success) {
-        updateTabMultiResult(tabId, null, 'Query cancelled by user')
-        updateTabExecuting(tabId, false, null)
+        const current = useTabStore.getState().getTab(tabId)
+        if (
+          current &&
+          isExecutableTab(current) &&
+          current.executionId === cancelledExecutionId
+        ) {
+          updateTabMultiResult(tabId, null, 'Query cancelled by user')
+          updateTabExecuting(tabId, false, null, cancelledExecutionId)
+        }
       }
     } catch (error) {
       console.error('Failed to cancel query:', error)

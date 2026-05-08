@@ -60,9 +60,9 @@ describe('tab-store invalidates pending edits when results change', () => {
       {
         statements: [
           {
-            index: 0,
+            statementIndex: 0,
+            isDataReturning: true,
             statement: 'SELECT * FROM users',
-            success: true,
             fields: [{ name: 'id', dataType: 'integer' }],
             rows: [{ id: 99 }],
             rowCount: 1,
@@ -97,18 +97,18 @@ describe('tab-store invalidates pending edits when results change', () => {
       {
         statements: [
           {
-            index: 0,
+            statementIndex: 0,
+            isDataReturning: true,
             statement: 'SELECT * FROM users',
-            success: true,
             fields: [{ name: 'id', dataType: 'integer' }],
             rows: [{ id: 1 }],
             rowCount: 1,
             durationMs: 1
           },
           {
-            index: 1,
+            statementIndex: 1,
+            isDataReturning: true,
             statement: 'SELECT * FROM orders',
-            success: true,
             fields: [{ name: 'id', dataType: 'integer' }],
             rows: [{ id: 100 }],
             rowCount: 1,

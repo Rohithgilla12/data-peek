@@ -201,7 +201,12 @@ interface TabState {
     error: string | null
   ) => void
   setActiveResultIndex: (tabId: string, index: number) => void
-  updateTabExecuting: (tabId: string, isExecuting: boolean, executionId?: string | null) => void
+  updateTabExecuting: (
+    tabId: string,
+    isExecuting: boolean,
+    executionId?: string | null,
+    expectedExecutionId?: string | null
+  ) => void
   markTabSaved: (tabId: string) => void
 
   // Pagination per tab
@@ -633,6 +638,15 @@ export const useTabStore = create<TabState>()(
         const tab = get().tabs.find((t) => t.id === tabId)
         if (!tab || tab.isPinned) return
 
+        // If the tab has a query in flight, ask main to cancel it before we drop the tab.
+        // Without this the pg pool client keeps streaming results that nothing reads,
+        // and with POOL_MAX=5 a few abandoned tabs starve the pool for new connections.
+        if (isExecutableTab(tab) && tab.isExecuting && tab.executionId) {
+          void window.api.db.cancelQuery(tab.executionId).catch(() => {
+            // Cancellation is best-effort — main will time out the orphan query eventually.
+          })
+        }
+
         set((state) => {
           const newTabs = state.tabs.filter((t) => t.id !== tabId)
           let newActiveId = state.activeTabId
@@ -755,10 +769,15 @@ export const useTabStore = create<TabState>()(
         }))
       },
 
-      updateTabExecuting: (tabId, isExecuting, executionId?: string | null) => {
+      updateTabExecuting: (tabId, isExecuting, executionId?, expectedExecutionId?) => {
         set((state) => {
           const tabs = mapTab(state.tabs, tabId, (t) => {
             if (!isExecutableTab(t)) return t
+            // Compare-and-swap: a stale "finally" from execution A must not flip the
+            // flag on execution B that started after A was cancelled or thrown.
+            if (expectedExecutionId !== undefined && t.executionId !== expectedExecutionId) {
+              return t
+            }
             const newExecutionId =
               executionId !== undefined ? executionId : isExecuting ? t.executionId : null
             if (t.isExecuting === isExecuting && t.executionId === newExecutionId) return t
