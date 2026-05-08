@@ -107,6 +107,80 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     expect(getCachedSchema(config)?.timestamp).toBe(7777)
   })
 
+  it('aborts the cache write when invalidateSchemaCache runs mid-fetch', async () => {
+    // Repro for the silent regression: a fetch starts at pre-DDL state, a DDL handler
+    // fires `invalidateSchemaCache`, and the fetcher then resolves. Without the
+    // generation guard, its setCachedSchema call would repopulate the cache with the
+    // pre-DDL data and the next reader would see stale schemas for the full TTL.
+    const config = makeConfig('mid-fetch')
+    invalidateSchemaCache(config)
+
+    let resolveFetcher: ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null =
+      null
+    const fetcher = vi.fn(
+      () =>
+        new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>(
+          (resolve) => {
+            resolveFetcher = resolve
+          }
+        )
+    )
+
+    const inFlight = getOrFetchCachedSchema(config, fetcher)
+
+    // DDL fires while the fetch is in-flight.
+    invalidateSchemaCache(config)
+
+    // Now the fetch resolves — with what would have been pre-DDL data.
+    resolveFetcher!({ schemas: fakeSchemas, customTypes: [], timestamp: 999 })
+    await inFlight
+
+    // The cache must NOT have been repopulated with the stale result.
+    expect(getCachedSchema(config)).toBeUndefined()
+  })
+
+  it('keeps a fresh fetch alive when an older fetch finishes after invalidation', async () => {
+    // Repro: A starts, invalidate runs, C starts a fresh fetch, A finishes. The old
+    // finally must not delete C's pendingFetches entry, otherwise a fourth caller D
+    // would dogpile (start a third underlying fetcher) instead of waiting for C.
+    const config = makeConfig('ownership')
+    invalidateSchemaCache(config)
+
+    let resolveA: ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
+    const fetcherA = vi.fn(
+      () => new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((r) => {
+        resolveA = r
+      })
+    )
+    const fetchA = getOrFetchCachedSchema(config, fetcherA)
+
+    invalidateSchemaCache(config)
+
+    let resolveC: ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
+    const fetcherC = vi.fn(
+      () => new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((r) => {
+        resolveC = r
+      })
+    )
+    const fetchC = getOrFetchCachedSchema(config, fetcherC)
+
+    // A finishes first — its finally must NOT delete C's slot.
+    resolveA!({ schemas: fakeSchemas, customTypes: [], timestamp: 1 })
+    await fetchA
+
+    // D arrives now and should coalesce with C, not start a third fetcher.
+    const fetcherD = vi.fn()
+    const fetchD = getOrFetchCachedSchema(config, fetcherD)
+    expect(fetcherD).not.toHaveBeenCalled()
+
+    resolveC!({ schemas: fakeSchemas, customTypes: [], timestamp: 2 })
+    await Promise.all([fetchC, fetchD])
+
+    expect(fetcherC).toHaveBeenCalledTimes(1)
+    expect(fetcherD).toHaveBeenCalledTimes(0)
+    expect(getCachedSchema(config)?.timestamp).toBe(2)
+  })
+
   it('does not coalesce fetches across different connection ids', async () => {
     const a = makeConfig('dogpile-a')
     const b = makeConfig('dogpile-b')
