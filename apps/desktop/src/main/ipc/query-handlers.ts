@@ -14,7 +14,7 @@ import { buildQuery, validateOperation, buildPreviewSql } from '../sql-builder'
 import {
   getCachedSchema,
   isCacheValid,
-  setCachedSchema,
+  getOrFetchCachedSchema,
   invalidateSchemaCache,
   type CachedSchema
 } from '../schema-cache'
@@ -156,35 +156,32 @@ export function registerQueryHandlers(): void {
           }
         }
 
-        // Fetch fresh data
+        // Fetch fresh data — coalesce concurrent calls so two tabs opening at the
+        // same time don't each trigger a full pg_catalog scan.
         if (forceRefresh) {
           log.debug('Force refresh, fetching from database...')
         } else {
           log.debug('Cache miss, fetching from database...')
         }
         const adapter = getAdapter(config)
-        const schemas = await adapter.getSchemas(config)
 
-        // Also fetch custom types
-        let customTypes: CachedSchema['customTypes'] = []
-        try {
-          customTypes = await adapter.getTypes(config)
-        } catch {
-          // Types are optional, ignore errors
-        }
-
-        const timestamp = Date.now()
-
-        // Update both memory and disk cache
-        const cacheEntry: CachedSchema = { schemas, customTypes, timestamp }
-        setCachedSchema(config, cacheEntry)
+        const cacheEntry = await getOrFetchCachedSchema(config, async () => {
+          const schemas = await adapter.getSchemas(config)
+          let customTypes: CachedSchema['customTypes'] = []
+          try {
+            customTypes = await adapter.getTypes(config)
+          } catch {
+            // Types are optional, ignore errors
+          }
+          return { schemas, customTypes, timestamp: Date.now() }
+        })
 
         return {
           success: true,
           data: {
-            schemas,
-            customTypes,
-            fetchedAt: timestamp,
+            schemas: cacheEntry.schemas,
+            customTypes: cacheEntry.customTypes,
+            fetchedAt: cacheEntry.timestamp,
             fromCache: false
           }
         }

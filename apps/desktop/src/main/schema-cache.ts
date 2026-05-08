@@ -25,6 +25,11 @@ const MAX_CACHE_ENTRIES = 30
 // Map preserves insertion order; we delete + re-set on access to maintain LRU order.
 const schemaMemoryCache = new Map<string, CachedSchema>()
 
+// In-flight fetch promises keyed by connection cache key. Used to coalesce concurrent
+// db:schemas requests so two tabs opening at the same time don't each trigger a full
+// pg_catalog scan against the same connection.
+const pendingFetches = new Map<string, Promise<CachedSchema>>()
+
 let schemaCacheStore: DpStorage<SchemaCacheStore> | null = null
 
 /**
@@ -110,6 +115,33 @@ export function setCachedSchema(config: ConnectionConfig, cacheEntry: CachedSche
 }
 
 /**
+ * Coalesce concurrent fetches for the same connection. Returns an existing in-flight
+ * promise if one is already running for this key; otherwise runs `fetcher`, stores the
+ * result via setCachedSchema, and resolves all callers with the same value.
+ */
+export function getOrFetchCachedSchema(
+  config: ConnectionConfig,
+  fetcher: () => Promise<CachedSchema>
+): Promise<CachedSchema> {
+  const key = getSchemaCacheKey(config)
+  const existing = pendingFetches.get(key)
+  if (existing) return existing
+
+  const run = async (): Promise<CachedSchema> => {
+    try {
+      const result = await fetcher()
+      setCachedSchema(config, result)
+      return result
+    } finally {
+      pendingFetches.delete(key)
+    }
+  }
+  const promise = run()
+  pendingFetches.set(key, promise)
+  return promise
+}
+
+/**
  * Invalidate cache for a connection
  */
 export function invalidateSchemaCache(config: ConnectionConfig): void {
@@ -122,6 +154,10 @@ export function invalidateSchemaCache(config: ConnectionConfig): void {
 
   // Remove from memory cache
   schemaMemoryCache.delete(cacheKey)
+
+  // Drop any in-flight fetch so the next caller refetches against the new state of
+  // the database (e.g. after a CREATE/ALTER/DROP TABLE).
+  pendingFetches.delete(cacheKey)
 
   // Remove from disk cache
   const allCache = schemaCacheStore.get('cache', {})

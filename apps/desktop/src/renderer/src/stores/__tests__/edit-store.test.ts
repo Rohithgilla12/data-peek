@@ -95,122 +95,176 @@ describe('useEditStore', () => {
     })
   })
 
-  describe('cell editing', () => {
+  describe('cell editing (PK-keyed identity)', () => {
     beforeEach(() => {
       const store = useEditStore.getState()
       store.enterEditMode(tabId, createContext())
     })
 
-    it('should start cell edit', () => {
-      const store = useEditStore.getState()
-
-      store.startCellEdit(tabId, 0, 'name')
-
-      // Need to get fresh state after action
-      const tabEdit = useEditStore.getState().tabEdits.get(tabId)
-      expect(tabEdit?.editingCell).toEqual({ rowIndex: 0, columnName: 'name' })
-    })
-
-    it('should cancel cell edit', () => {
-      const store = useEditStore.getState()
-
-      store.startCellEdit(tabId, 0, 'name')
-      store.cancelCellEdit(tabId)
-
-      const tabEdit = store.tabEdits.get(tabId)
-      expect(tabEdit?.editingCell).toBeNull()
-    })
-
-    it('should update cell value', () => {
+    it('updates cell value identified by the row primary key', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
 
-      expect(store.getModifiedCellValue(tabId, 0, 'name')).toBe('Jane')
-      expect(store.isCellModified(tabId, 0, 'name')).toBe(true)
+      expect(store.getModifiedCellValue(tabId, originalRow, 'name')).toBe('Jane')
+      expect(store.isCellModified(tabId, originalRow, 'name')).toBe(true)
     })
 
-    it('should remove modification when value matches original', () => {
+    it('removes the modification when the value matches the original row value', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
-      expect(store.isCellModified(tabId, 0, 'name')).toBe(true)
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
+      expect(store.isCellModified(tabId, originalRow, 'name')).toBe(true)
 
-      store.updateCellValue(tabId, 0, 'name', 'John', originalRow)
-      expect(store.isCellModified(tabId, 0, 'name')).toBe(false)
+      store.updateCellValue(tabId, originalRow, 'name', 'John')
+      expect(store.isCellModified(tabId, originalRow, 'name')).toBe(false)
     })
 
-    it('should treat empty string as null when comparing to original null', () => {
+    it('treats empty string as null when the original value is null', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: null, email: 'test@test.com' }
 
-      store.updateCellValue(tabId, 0, 'name', '', originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', '')
 
-      // Empty string matching null should not be a modification
-      expect(store.isCellModified(tabId, 0, 'name')).toBe(false)
+      expect(store.isCellModified(tabId, originalRow, 'name')).toBe(false)
     })
 
-    it('should clear editing cell after update', () => {
+    it('tracks multiple cell modifications for the same row', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      store.startCellEdit(tabId, 0, 'name')
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
+      store.updateCellValue(tabId, originalRow, 'email', 'jane@example.com')
 
-      const tabEdit = store.tabEdits.get(tabId)
-      expect(tabEdit?.editingCell).toBeNull()
+      expect(store.isCellModified(tabId, originalRow, 'name')).toBe(true)
+      expect(store.isCellModified(tabId, originalRow, 'email')).toBe(true)
+      expect(store.getModifiedCellValue(tabId, originalRow, 'name')).toBe('Jane')
+      expect(store.getModifiedCellValue(tabId, originalRow, 'email')).toBe('jane@example.com')
     })
 
-    it('should track multiple cell modifications in the same row', () => {
+    it('refuses to record an edit when the row has a null primary key value', () => {
+      // Row with no usable PK identity. The store cannot safely build a WHERE clause
+      // for this row, so it must reject the edit instead of silently corrupting data.
       const store = useEditStore.getState()
-      const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
+      const originalRow = { id: null, name: 'Orphan' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
-      store.updateCellValue(tabId, 0, 'email', 'jane@example.com', originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', 'NewName')
 
-      expect(store.isCellModified(tabId, 0, 'name')).toBe(true)
-      expect(store.isCellModified(tabId, 0, 'email')).toBe(true)
-      expect(store.getModifiedCellValue(tabId, 0, 'name')).toBe('Jane')
-      expect(store.getModifiedCellValue(tabId, 0, 'email')).toBe('jane@example.com')
+      expect(store.isCellModified(tabId, originalRow, 'name')).toBe(false)
+      expect(store.hasPendingChanges(tabId)).toBe(false)
+    })
+
+    it('refuses to record an edit when the original row is missing a primary key column', () => {
+      const store = useEditStore.getState()
+      const originalRow = { name: 'Missing PK' } // no `id`
+
+      store.updateCellValue(tabId, originalRow, 'name', 'NewName')
+
+      expect(store.hasPendingChanges(tabId)).toBe(false)
+    })
+
+    it('handles composite primary keys', () => {
+      const store = useEditStore.getState()
+      store.enterEditMode(
+        'composite-tab',
+        createContext({
+          table: 'memberships',
+          primaryKeyColumns: ['userId', 'orgId']
+        })
+      )
+
+      const rowA = { userId: 1, orgId: 10, role: 'member' }
+      const rowB = { userId: 1, orgId: 20, role: 'member' }
+
+      store.updateCellValue('composite-tab', rowA, 'role', 'admin')
+      store.updateCellValue('composite-tab', rowB, 'role', 'owner')
+
+      expect(store.getModifiedCellValue('composite-tab', rowA, 'role')).toBe('admin')
+      expect(store.getModifiedCellValue('composite-tab', rowB, 'role')).toBe('owner')
+      expect(store.getPendingChangesCount('composite-tab').updates).toBe(2)
     })
   })
 
-  describe('row deletion', () => {
+  describe('row identity stability across display reordering', () => {
+    // These tests cover the silent-corruption class of bug fixed by PK-based keying.
     beforeEach(() => {
       const store = useEditStore.getState()
       store.enterEditMode(tabId, createContext())
     })
 
-    it('should mark row for deletion', () => {
+    it('merges edits to the same row reached via different display positions', () => {
+      // Repro: user edits row {id:5} at display index 0, then sorts the table; the same
+      // row is now at display index 3; user edits another column on it. The store should
+      // see ONE logical row with TWO column changes, not two separate operations.
       const store = useEditStore.getState()
-      const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
+      const row = { id: 5, name: 'Original', email: 'orig@example.com' }
 
-      store.markRowForDeletion(tabId, 0, originalRow)
+      store.updateCellValue(tabId, row, 'name', 'Renamed')
+      // ... sort happens; rowIndex changes; but originalRow is the same object/values
+      store.updateCellValue(tabId, row, 'email', 'renamed@example.com')
 
-      expect(store.isRowMarkedForDeletion(tabId, 0)).toBe(true)
+      const batch = store.buildEditBatch(tabId, testColumns)
+      expect(batch).not.toBeNull()
+      expect(batch!.operations).toHaveLength(1)
+
+      const op = batch!.operations[0] as {
+        type: 'update'
+        changes: Array<{ column: string; newValue: unknown }>
+      }
+      expect(op.type).toBe('update')
+      expect(op.changes.map((c) => c.column).sort()).toEqual(['email', 'name'])
     })
 
-    it('should unmark row for deletion', () => {
+    it('keeps edits independent for different rows that happen to share a display position', () => {
+      // Repro: user edits row {id:5} on page 1. Switches to page 2; now row {id:50} sits
+      // at the same display position. Editing it must NOT collide with the first edit.
       const store = useEditStore.getState()
-      const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
+      const rowOnPage1 = { id: 5, name: 'A', email: 'a@example.com' }
+      const rowOnPage2 = { id: 50, name: 'B', email: 'b@example.com' }
 
-      store.markRowForDeletion(tabId, 0, originalRow)
-      store.unmarkRowForDeletion(tabId, 0)
+      store.updateCellValue(tabId, rowOnPage1, 'name', 'A-edit')
+      store.updateCellValue(tabId, rowOnPage2, 'name', 'B-edit')
 
-      expect(store.isRowMarkedForDeletion(tabId, 0)).toBe(false)
+      expect(store.getModifiedCellValue(tabId, rowOnPage1, 'name')).toBe('A-edit')
+      expect(store.getModifiedCellValue(tabId, rowOnPage2, 'name')).toBe('B-edit')
+
+      const batch = store.buildEditBatch(tabId, testColumns)
+      expect(batch!.operations).toHaveLength(2)
     })
 
-    it('should track multiple deleted rows', () => {
+    it('preserves the original PK in the WHERE clause regardless of edit ordering', () => {
+      // Even if the user edits the same row many times from different display positions,
+      // the WHERE clause must use the row's PK from the captured snapshot.
       const store = useEditStore.getState()
+      const originalRow = { id: 42, name: 'Old', email: 'old@example.com' }
 
-      store.markRowForDeletion(tabId, 0, { id: 1, name: 'A' })
-      store.markRowForDeletion(tabId, 2, { id: 3, name: 'C' })
+      store.updateCellValue(tabId, originalRow, 'name', 'X')
+      store.updateCellValue(tabId, originalRow, 'name', 'Y')
+      store.updateCellValue(tabId, originalRow, 'name', 'Z')
 
-      expect(store.isRowMarkedForDeletion(tabId, 0)).toBe(true)
-      expect(store.isRowMarkedForDeletion(tabId, 1)).toBe(false)
-      expect(store.isRowMarkedForDeletion(tabId, 2)).toBe(true)
+      const batch = store.buildEditBatch(tabId, testColumns)
+      const op = batch!.operations[0] as {
+        type: 'update'
+        primaryKeys: Array<{ column: string; value: unknown }>
+        changes: Array<{ column: string; newValue: unknown }>
+      }
+      expect(op.primaryKeys[0].value).toBe(42)
+      expect(op.changes[0].newValue).toBe('Z')
+    })
+
+    it('marks the correct row for deletion by PK identity', () => {
+      const store = useEditStore.getState()
+      const rowA = { id: 1, name: 'A' }
+      const rowB = { id: 2, name: 'B' }
+
+      store.markRowForDeletion(tabId, rowA)
+      expect(store.isRowMarkedForDeletion(tabId, rowA)).toBe(true)
+      expect(store.isRowMarkedForDeletion(tabId, rowB)).toBe(false)
+
+      store.unmarkRowForDeletion(tabId, rowA)
+      expect(store.isRowMarkedForDeletion(tabId, rowA)).toBe(false)
     })
   })
 
@@ -266,55 +320,56 @@ describe('useEditStore', () => {
       store.enterEditMode(tabId, createContext())
     })
 
-    it('should revert single cell change', () => {
+    it('reverts a single cell change', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
-      store.updateCellValue(tabId, 0, 'email', 'jane@example.com', originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
+      store.updateCellValue(tabId, originalRow, 'email', 'jane@example.com')
 
-      store.revertCellChange(tabId, 0, 'name')
+      store.revertCellChange(tabId, originalRow, 'name')
 
-      expect(store.isCellModified(tabId, 0, 'name')).toBe(false)
-      expect(store.isCellModified(tabId, 0, 'email')).toBe(true)
+      expect(store.isCellModified(tabId, originalRow, 'name')).toBe(false)
+      expect(store.isCellModified(tabId, originalRow, 'email')).toBe(true)
     })
 
-    it('should revert all row changes', () => {
+    it('reverts all changes for a row', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
-      store.updateCellValue(tabId, 0, 'email', 'jane@example.com', originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
+      store.updateCellValue(tabId, originalRow, 'email', 'jane@example.com')
 
-      store.revertRowChanges(tabId, 0)
+      store.revertRowChanges(tabId, originalRow)
 
-      expect(store.isCellModified(tabId, 0, 'name')).toBe(false)
-      expect(store.isCellModified(tabId, 0, 'email')).toBe(false)
+      expect(store.isCellModified(tabId, originalRow, 'name')).toBe(false)
+      expect(store.isCellModified(tabId, originalRow, 'email')).toBe(false)
     })
 
-    it('should revert deletion when reverting row changes', () => {
+    it('reverts deletion when reverting row changes', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      store.markRowForDeletion(tabId, 0, originalRow)
-      expect(store.isRowMarkedForDeletion(tabId, 0)).toBe(true)
+      store.markRowForDeletion(tabId, originalRow)
+      expect(store.isRowMarkedForDeletion(tabId, originalRow)).toBe(true)
 
-      store.revertRowChanges(tabId, 0)
-      expect(store.isRowMarkedForDeletion(tabId, 0)).toBe(false)
+      store.revertRowChanges(tabId, originalRow)
+      expect(store.isRowMarkedForDeletion(tabId, originalRow)).toBe(false)
     })
 
-    it('should revert all changes', () => {
+    it('reverts everything', () => {
       const store = useEditStore.getState()
-      const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
+      const rowA = { id: 1, name: 'John', email: 'john@example.com' }
+      const rowB = { id: 2, name: 'Bob' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
-      store.markRowForDeletion(tabId, 1, { id: 2, name: 'Bob' })
+      store.updateCellValue(tabId, rowA, 'name', 'Jane')
+      store.markRowForDeletion(tabId, rowB)
       store.addNewRow(tabId, { name: 'New' })
 
       store.revertAllChanges(tabId)
 
-      expect(store.isCellModified(tabId, 0, 'name')).toBe(false)
-      expect(store.isRowMarkedForDeletion(tabId, 1)).toBe(false)
+      expect(store.isCellModified(tabId, rowA, 'name')).toBe(false)
+      expect(store.isRowMarkedForDeletion(tabId, rowB)).toBe(false)
       expect(store.getNewRows(tabId)).toHaveLength(0)
     })
   })
@@ -325,17 +380,19 @@ describe('useEditStore', () => {
       store.enterEditMode(tabId, createContext())
     })
 
-    it('should count pending updates', () => {
+    it('counts pending updates by unique row identity', () => {
       const store = useEditStore.getState()
 
-      store.updateCellValue(tabId, 0, 'name', 'A', { id: 1, name: 'B', email: 'test@test.com' })
-      store.updateCellValue(tabId, 1, 'name', 'C', { id: 2, name: 'D', email: 'test2@test.com' })
+      store.updateCellValue(tabId, { id: 1, name: 'B', email: 'a@x' }, 'name', 'A')
+      store.updateCellValue(tabId, { id: 2, name: 'D', email: 'b@x' }, 'name', 'C')
+      // Multiple cells on the same row count as ONE update operation:
+      store.updateCellValue(tabId, { id: 1, name: 'B', email: 'a@x' }, 'email', 'aa@x')
 
       const counts = store.getPendingChangesCount(tabId)
       expect(counts.updates).toBe(2)
     })
 
-    it('should count pending inserts', () => {
+    it('counts pending inserts', () => {
       const store = useEditStore.getState()
 
       store.addNewRow(tabId, { name: 'A' })
@@ -345,30 +402,29 @@ describe('useEditStore', () => {
       expect(counts.inserts).toBe(2)
     })
 
-    it('should count pending deletes', () => {
+    it('counts pending deletes', () => {
       const store = useEditStore.getState()
 
-      store.markRowForDeletion(tabId, 0, { id: 1 })
-      store.markRowForDeletion(tabId, 1, { id: 2 })
+      store.markRowForDeletion(tabId, { id: 1 })
+      store.markRowForDeletion(tabId, { id: 2 })
 
       const counts = store.getPendingChangesCount(tabId)
       expect(counts.deletes).toBe(2)
     })
 
-    it('should not count deleted rows as updates', () => {
+    it('does not count modified rows that are also marked for deletion', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      // Modify and then delete the same row
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
-      store.markRowForDeletion(tabId, 0, originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
+      store.markRowForDeletion(tabId, originalRow)
 
       const counts = store.getPendingChangesCount(tabId)
-      expect(counts.updates).toBe(0) // Not counted as update since it's deleted
+      expect(counts.updates).toBe(0)
       expect(counts.deletes).toBe(1)
     })
 
-    it('should report hasPendingChanges correctly', () => {
+    it('reports hasPendingChanges correctly', () => {
       const store = useEditStore.getState()
 
       expect(store.hasPendingChanges(tabId)).toBe(false)
@@ -387,11 +443,11 @@ describe('useEditStore', () => {
       store.enterEditMode(tabId, createContext())
     })
 
-    it('should return null when no context', () => {
+    it('returns null when no context', () => {
       const store = useEditStore.getState()
       store.exitEditMode(tabId)
 
-      // Clear the context
+      // Manually clear the context (simulating internal state mutation)
       useEditStore.setState((state) => {
         const newTabEdits = new Map(state.tabEdits)
         const existing = newTabEdits.get(tabId)
@@ -405,18 +461,18 @@ describe('useEditStore', () => {
       expect(batch).toBeNull()
     })
 
-    it('should return null when no changes', () => {
+    it('returns null when there are no changes', () => {
       const store = useEditStore.getState()
 
       const batch = store.buildEditBatch(tabId, testColumns)
       expect(batch).toBeNull()
     })
 
-    it('should build update operations', () => {
+    it('builds an update operation', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
 
       const batch = store.buildEditBatch(tabId, testColumns)
 
@@ -433,11 +489,11 @@ describe('useEditStore', () => {
       expect(updateOp.changes[0].newValue).toBe('Jane')
     })
 
-    it('should build delete operations', () => {
+    it('builds a delete operation', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      store.markRowForDeletion(tabId, 0, originalRow)
+      store.markRowForDeletion(tabId, originalRow)
 
       const batch = store.buildEditBatch(tabId, testColumns)
 
@@ -446,7 +502,7 @@ describe('useEditStore', () => {
       expect(batch!.operations[0].type).toBe('delete')
     })
 
-    it('should build insert operations', () => {
+    it('builds an insert operation', () => {
       const store = useEditStore.getState()
 
       store.addNewRow(tabId, { name: 'New User', email: 'new@example.com' })
@@ -461,12 +517,12 @@ describe('useEditStore', () => {
       expect(insertOp.values.name).toBe('New User')
     })
 
-    it('should skip update for deleted rows', () => {
+    it('skips the update for a row that is also marked for deletion', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
-      store.markRowForDeletion(tabId, 0, originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
+      store.markRowForDeletion(tabId, originalRow)
 
       const batch = store.buildEditBatch(tabId, testColumns)
 
@@ -474,11 +530,11 @@ describe('useEditStore', () => {
       expect(batch!.operations[0].type).toBe('delete')
     })
 
-    it('should include primary key values in operations', () => {
+    it('includes the row primary key in update operations', () => {
       const store = useEditStore.getState()
       const originalRow = { id: 42, name: 'John', email: 'john@example.com' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
 
       const batch = store.buildEditBatch(tabId, testColumns)
       const updateOp = batch!.operations[0] as {
@@ -490,6 +546,65 @@ describe('useEditStore', () => {
       expect(updateOp.primaryKeys[0].column).toBe('id')
       expect(updateOp.primaryKeys[0].value).toBe(42)
     })
+
+    it('includes all primary key columns for composite keys', () => {
+      const store = useEditStore.getState()
+      store.enterEditMode(
+        'composite-tab',
+        createContext({
+          table: 'memberships',
+          primaryKeyColumns: ['userId', 'orgId']
+        })
+      )
+      const originalRow = { userId: 7, orgId: 99, role: 'member' }
+
+      store.updateCellValue('composite-tab', originalRow, 'role', 'admin')
+
+      const batch = store.buildEditBatch('composite-tab', testColumns)
+      const updateOp = batch!.operations[0] as {
+        type: 'update'
+        primaryKeys: Array<{ column: string; value: unknown }>
+      }
+      const pkMap = Object.fromEntries(updateOp.primaryKeys.map((p) => [p.column, p.value]))
+      expect(pkMap).toEqual({ userId: 7, orgId: 99 })
+    })
+  })
+
+  describe('cell focus (transient UI state)', () => {
+    beforeEach(() => {
+      const store = useEditStore.getState()
+      store.enterEditMode(tabId, createContext())
+    })
+
+    it('tracks the currently editing cell by display position', () => {
+      const store = useEditStore.getState()
+
+      store.startCellEdit(tabId, 0, 'name')
+
+      const tabEdit = useEditStore.getState().tabEdits.get(tabId)
+      expect(tabEdit?.editingCell).toEqual({ rowIndex: 0, columnName: 'name' })
+    })
+
+    it('clears editing cell on cancel', () => {
+      const store = useEditStore.getState()
+
+      store.startCellEdit(tabId, 0, 'name')
+      store.cancelCellEdit(tabId)
+
+      const tabEdit = useEditStore.getState().tabEdits.get(tabId)
+      expect(tabEdit?.editingCell).toBeNull()
+    })
+
+    it('clears the editing cell after a value update', () => {
+      const store = useEditStore.getState()
+      const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
+
+      store.startCellEdit(tabId, 0, 'name')
+      store.updateCellValue(tabId, originalRow, 'name', 'Jane')
+
+      const tabEdit = useEditStore.getState().tabEdits.get(tabId)
+      expect(tabEdit?.editingCell).toBeNull()
+    })
   })
 
   describe('clearPendingChanges', () => {
@@ -498,20 +613,21 @@ describe('useEditStore', () => {
       store.enterEditMode(tabId, createContext())
     })
 
-    it('should clear all pending changes while preserving edit mode', () => {
+    it('clears all pending changes while preserving edit mode', () => {
       const store = useEditStore.getState()
-      const originalRow = { id: 1, name: 'John', email: 'john@example.com' }
+      const rowA = { id: 1, name: 'John', email: 'john@example.com' }
+      const rowB = { id: 2, name: 'Bob' }
 
-      store.updateCellValue(tabId, 0, 'name', 'Jane', originalRow)
-      store.markRowForDeletion(tabId, 1, { id: 2, name: 'Bob' })
+      store.updateCellValue(tabId, rowA, 'name', 'Jane')
+      store.markRowForDeletion(tabId, rowB)
       store.addNewRow(tabId, { name: 'New' })
 
       store.clearPendingChanges(tabId)
 
-      expect(store.isInEditMode(tabId)).toBe(true) // Edit mode preserved
+      expect(store.isInEditMode(tabId)).toBe(true)
       expect(store.hasPendingChanges(tabId)).toBe(false)
-      expect(store.isCellModified(tabId, 0, 'name')).toBe(false)
-      expect(store.isRowMarkedForDeletion(tabId, 1)).toBe(false)
+      expect(store.isCellModified(tabId, rowA, 'name')).toBe(false)
+      expect(store.isRowMarkedForDeletion(tabId, rowB)).toBe(false)
       expect(store.getNewRows(tabId)).toHaveLength(0)
     })
   })
