@@ -10,6 +10,7 @@ import {
 } from '@/lib/sql-helpers'
 import { useConnectionStore } from './connection-store'
 import { useSettingsStore } from './settings-store'
+import { useEditStore } from './edit-store'
 
 /**
  * Extended QueryResult with multi-statement support
@@ -692,6 +693,10 @@ export const useTabStore = create<TabState>()(
       },
 
       updateTabResult: (tabId, result, error) => {
+        // Pending inline edits are captured against the *previous* result rows. Once the
+        // result changes, those snapshots no longer correspond to anything onscreen and
+        // committing them would target rows the user never saw — drop them defensively.
+        useEditStore.getState().clearPendingChanges(tabId)
         set((state) => ({
           tabs: state.tabs.map((t) => {
             if (t.id !== tabId) return t
@@ -703,6 +708,7 @@ export const useTabStore = create<TabState>()(
       },
 
       updateTabMultiResult: (tabId, multiResult, error) => {
+        useEditStore.getState().clearPendingChanges(tabId)
         set((state) => ({
           tabs: state.tabs.map((t) => {
             if (t.id !== tabId) return t
@@ -732,6 +738,10 @@ export const useTabStore = create<TabState>()(
       },
 
       setActiveResultIndex: (tabId, index) => {
+        // Pending edits are captured against the previously active statement; switching to
+        // a different statement (potentially a different table) would otherwise let those
+        // edits commit with the wrong context.
+        useEditStore.getState().clearPendingChanges(tabId)
         set((state) => ({
           tabs: state.tabs.map((t) =>
             t.id === tabId
