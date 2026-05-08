@@ -78,15 +78,23 @@ describe('tab-store invalidates pending edits when results change', () => {
     expect(useEditStore.getState().hasPendingChanges(tabId)).toBe(false)
   })
 
-  it('updateTabResult preserves pending edits when called with the same null result (no-op)', () => {
-    // Setting result to null with no rows shouldn't drop edits a user is mid-flight on —
-    // but the simpler invariant is: any time the result identity changes, drop edits.
-    // To keep this simple and safe, we always drop. This test pins that contract.
+  it('updateTabResult does NOT drop pending edits when called with a null result', () => {
+    // A null result means "cancel/error blanked the panel", not "new rows arrived".
+    // The user's edits are still valid against whatever was previously displayed —
+    // wiping them on Stop would silently destroy in-flight work.
     const tabId = setupTabWithEdits()
 
-    useTabStore.getState().updateTabResult(tabId, null, 'some error')
+    useTabStore.getState().updateTabResult(tabId, null, 'Query cancelled by user')
 
-    expect(useEditStore.getState().hasPendingChanges(tabId)).toBe(false)
+    expect(useEditStore.getState().hasPendingChanges(tabId)).toBe(true)
+  })
+
+  it('updateTabMultiResult does NOT drop pending edits when called with a null multiResult', () => {
+    const tabId = setupTabWithEdits()
+
+    useTabStore.getState().updateTabMultiResult(tabId, null, 'Query cancelled by user')
+
+    expect(useEditStore.getState().hasPendingChanges(tabId)).toBe(true)
   })
 
   it('setActiveResultIndex drops pending edits because they were captured against the previous statement', () => {
@@ -138,7 +146,16 @@ describe('tab-store invalidates pending edits when results change', () => {
     expect(useEditStore.getState().hasPendingChanges(tab1)).toBe(true)
     expect(useEditStore.getState().hasPendingChanges(tab2)).toBe(true)
 
-    useTabStore.getState().updateTabResult(tab1, null, null)
+    useTabStore.getState().updateTabResult(
+      tab1,
+      {
+        columns: [{ name: 'id', dataType: 'integer' }],
+        rows: [{ id: 1 }],
+        rowCount: 1,
+        durationMs: 1
+      },
+      null
+    )
 
     expect(useEditStore.getState().hasPendingChanges(tab1)).toBe(false)
     expect(useEditStore.getState().hasPendingChanges(tab2)).toBe(true)

@@ -140,6 +140,20 @@ export function isExecutableTab(tab: Tab): tab is ExecutableTab {
   return tab.type === 'query' || tab.type === 'table-preview'
 }
 
+// Fire best-effort cancel for any executable tab that's currently running a query.
+// Used by every tab-close path so the bulk-close variants (close all / close others /
+// close right) don't orphan pg pool clients — POOL_MAX is 5, a handful of abandoned
+// long-running tabs is enough to starve new connections.
+function cancelInFlightQueries(tabs: Tab[]): void {
+  for (const tab of tabs) {
+    if (isExecutableTab(tab) && tab.isExecuting && tab.executionId) {
+      void window.api.db.cancelQuery(tab.executionId).catch(() => {
+        // Cancellation is best-effort — main will time out the orphan eventually.
+      })
+    }
+  }
+}
+
 function mapTab(tabs: Tab[], id: string, updater: (t: Tab) => Tab): Tab[] {
   const idx = tabs.findIndex((t) => t.id === id)
   if (idx === -1) return tabs
@@ -214,7 +228,7 @@ interface TabState {
   setTabPageSize: (tabId: string, size: number) => void
 
   // Server-side pagination for table previews
-  setTablePreviewTotalCount: (tabId: string, count: number) => void
+  setTablePreviewTotalCount: (tabId: string, count: number | null) => void
   updateTablePreviewPagination: (
     tabId: string,
     page: number,
@@ -643,14 +657,7 @@ export const useTabStore = create<TabState>()(
         const tab = get().tabs.find((t) => t.id === tabId)
         if (!tab || tab.isPinned) return
 
-        // If the tab has a query in flight, ask main to cancel it before we drop the tab.
-        // Without this the pg pool client keeps streaming results that nothing reads,
-        // and with POOL_MAX=5 a few abandoned tabs starve the pool for new connections.
-        if (isExecutableTab(tab) && tab.isExecuting && tab.executionId) {
-          void window.api.db.cancelQuery(tab.executionId).catch(() => {
-            // Cancellation is best-effort — main will time out the orphan query eventually.
-          })
-        }
+        cancelInFlightQueries([tab])
 
         set((state) => {
           const newTabs = state.tabs.filter((t) => t.id !== tabId)
@@ -667,8 +674,11 @@ export const useTabStore = create<TabState>()(
       },
 
       closeAllTabs: () => {
-        set((state) => {
-          // Keep pinned tabs
+        const state = get()
+        const removed = state.tabs.filter((t) => !t.isPinned)
+        cancelInFlightQueries(removed)
+
+        set(() => {
           const pinnedTabs = state.tabs.filter((t) => t.isPinned)
           return {
             tabs: pinnedTabs,
@@ -678,8 +688,11 @@ export const useTabStore = create<TabState>()(
       },
 
       closeOtherTabs: (tabId) => {
-        set((state) => {
-          // Keep the specified tab and all pinned tabs
+        const state = get()
+        const removed = state.tabs.filter((t) => t.id !== tabId && !t.isPinned)
+        cancelInFlightQueries(removed)
+
+        set(() => {
           const keptTabs = state.tabs.filter((t) => t.id === tabId || t.isPinned)
           return {
             tabs: keptTabs,
@@ -689,10 +702,14 @@ export const useTabStore = create<TabState>()(
       },
 
       closeTabsToRight: (tabId) => {
-        set((state) => {
-          const tabIndex = state.tabs.findIndex((t) => t.id === tabId)
-          if (tabIndex === -1) return state
+        const state = get()
+        const tabIndex = state.tabs.findIndex((t) => t.id === tabId)
+        if (tabIndex === -1) return
 
+        const removed = state.tabs.filter((t, i) => i > tabIndex && !t.isPinned)
+        cancelInFlightQueries(removed)
+
+        set(() => {
           const keptTabs = state.tabs.filter((t, i) => i <= tabIndex || t.isPinned)
           return {
             tabs: keptTabs,
@@ -715,7 +732,11 @@ export const useTabStore = create<TabState>()(
         // Pending inline edits are captured against the *previous* result rows. Once the
         // result changes, those snapshots no longer correspond to anything onscreen and
         // committing them would target rows the user never saw — drop them defensively.
-        useEditStore.getState().clearPendingChanges(tabId)
+        // Skip when the result is being blanked by a cancellation (`null` result + error
+        // text): the user's edits are still valid against what's currently displayed.
+        if (result !== null) {
+          useEditStore.getState().clearPendingChanges(tabId)
+        }
         set((state) => ({
           tabs: state.tabs.map((t) => {
             if (t.id !== tabId) return t
@@ -727,7 +748,11 @@ export const useTabStore = create<TabState>()(
       },
 
       updateTabMultiResult: (tabId, multiResult, error) => {
-        useEditStore.getState().clearPendingChanges(tabId)
+        // Same rule as updateTabResult: a null result is a cancel/error blank, not a
+        // new result set, so don't wipe the user's pending edits.
+        if (multiResult !== null) {
+          useEditStore.getState().clearPendingChanges(tabId)
+        }
         set((state) => ({
           tabs: state.tabs.map((t) => {
             if (t.id !== tabId) return t
