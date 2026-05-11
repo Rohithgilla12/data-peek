@@ -59,3 +59,53 @@ test('userData isolation extends to connections — a fresh test sees no prior c
   expect(listResult.success).toBe(true)
   expect(listResult.data ?? []).toEqual([])
 })
+
+test('connections.update round-trips a name change', async ({ window }) => {
+  const config = pg.config
+
+  // Add first so there is something to update.
+  const addResult = await window.evaluate(async (cfg) => {
+    return window.api.connections.add(cfg)
+  }, config)
+  expect(addResult.success).toBe(true)
+
+  // connections.update takes the full ConnectionConfig with id embedded.
+  const renamed = { ...config, name: config.name + '-renamed' }
+  const updateResult = await window.evaluate(async (cfg) => {
+    return window.api.connections.update(cfg)
+  }, renamed)
+
+  expect(updateResult.success).toBe(true)
+
+  // Verify the rename is persisted.
+  const listResult = await window.evaluate(async () => {
+    return window.api.connections.list()
+  })
+  expect(listResult.success).toBe(true)
+  const names = (listResult.data ?? []).map((c) => c.name)
+  expect(names).toContain(config.name + '-renamed')
+})
+
+test('connections.delete removes the connection from the list', async ({ window }) => {
+  const config = pg.config
+
+  // Add a connection to delete.
+  const addResult = await window.evaluate(async (cfg) => {
+    return window.api.connections.add(cfg)
+  }, config)
+  expect(addResult.success).toBe(true)
+
+  const deleteResult = await window.evaluate(async (id) => {
+    return window.api.connections.delete(id)
+  }, config.id)
+
+  expect(deleteResult.success).toBe(true)
+
+  // Verify the connection is gone.
+  const listResult = await window.evaluate(async () => {
+    return window.api.connections.list()
+  })
+  expect(listResult.success).toBe(true)
+  const ids = (listResult.data ?? []).map((c) => c.id)
+  expect(ids).not.toContain(config.id)
+})
