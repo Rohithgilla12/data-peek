@@ -123,12 +123,14 @@ test('fill, test-connection, save → connection appears in connections.list', a
   await dialog(window).getByRole('button', { name: 'Test Connection' }).click()
 
   // Expect a success banner to appear inside the sheet
-  await expect(
-    dialog(window).getByText(/connection successful|connected|success/i)
-  ).toBeVisible({ timeout: 10000 })
+  await expect(dialog(window).getByText(/connection successful|connected|success/i)).toBeVisible({
+    timeout: 10000
+  })
 
   // Save
-  await dialog(window).getByRole('button', { name: /save connection/i }).click()
+  await dialog(window)
+    .getByRole('button', { name: /save connection/i })
+    .click()
 
   // Dialog must close
   await expect(window.locator('[data-slot="sheet-content"]')).toBeHidden({ timeout: 5000 })
@@ -202,7 +204,9 @@ test('edit connection → rename is reflected in connections.list', async ({ win
   await dialog(window).locator('#name').fill(renamedName)
 
   // Save — in edit mode the button reads "Update Connection"
-  await dialog(window).getByRole('button', { name: /update connection/i }).click()
+  await dialog(window)
+    .getByRole('button', { name: /update connection/i })
+    .click()
   await expect(window.locator('[data-slot="sheet-content"]')).toBeHidden({ timeout: 5000 })
 
   // Verify via IPC

@@ -52,9 +52,7 @@ test.beforeEach(async ({ window }) => {
     timeout: 5000
   })
   // The header connection indicator is a <span> inside the titlebar <header>
-  await expect(
-    window.locator('header').getByText(pg.config.name)
-  ).toBeVisible({ timeout: 5000 })
+  await expect(window.locator('header').getByText(pg.config.name)).toBeVisible({ timeout: 5000 })
 })
 
 // ---------------------------------------------------------------------------
@@ -152,7 +150,9 @@ test('invalid SQL → error message contains the bad table name', async ({ windo
   // The error message is rendered in a <p class="text-sm text-muted-foreground"> in the
   // results region (tab.error path in tab-query-editor.tsx). Two elements match the table
   // name (the Monaco syntax highlight span + the error <p>), so target the <p> directly.
-  await expect(window.locator('p.text-muted-foreground').filter({ hasText: /nonexistent_table_xyzzy/i })).toBeVisible({ timeout: 10000 })
+  await expect(
+    window.locator('p.text-muted-foreground').filter({ hasText: /nonexistent_table_xyzzy/i })
+  ).toBeVisible({ timeout: 10000 })
 })
 
 // ---------------------------------------------------------------------------
@@ -213,8 +213,7 @@ test('double-click cell → edit, commit → DB row updated', async ({ window })
 
     // Verify via IPC that the DB was actually updated
     const verify = await window.evaluate(
-      ({ cfg, id }) =>
-        window.api.db.query(cfg, `SELECT name FROM users WHERE id = '${id}'`),
+      ({ cfg, id }) => window.api.db.query(cfg, `SELECT name FROM users WHERE id = '${id}'`),
       { cfg: pg.config, id: target.id }
     )
     expect((verify.data as { rows: Array<{ name: string }> }).rows[0].name).toBe('UI Edit Marker')

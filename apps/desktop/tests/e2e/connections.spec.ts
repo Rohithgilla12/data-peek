@@ -36,9 +36,7 @@ test('window.api.connections.add persists a connection that connections.list ret
   expect(names).toContain(config.name)
 })
 
-test('window.api.db.connect succeeds against the seeded Postgres container', async ({
-  window
-}) => {
+test('window.api.db.connect succeeds against the seeded Postgres container', async ({ window }) => {
   const result = await window.evaluate(async (cfg) => {
     return window.api.db.connect(cfg)
   }, pg.config)
