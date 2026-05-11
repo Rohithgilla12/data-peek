@@ -707,6 +707,7 @@ export function SQLEditor({
 
   return (
     <div
+      data-testid="query-tab-monaco"
       className={cn(
         'relative overflow-hidden rounded-lg border border-border/50',
         'bg-background/50 backdrop-blur-sm',
