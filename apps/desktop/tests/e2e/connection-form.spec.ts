@@ -139,3 +139,29 @@ test('fill, test-connection, save → connection appears in connections.list', a
   const names = (listResult.data ?? []).map((c: { name: string }) => c.name)
   expect(names).toContain(pg.config.name)
 })
+
+// ---------------------------------------------------------------------------
+// Test 2: Bad credentials surface a visible error
+// ---------------------------------------------------------------------------
+
+test('wrong password → test connection shows an error', async ({ window }) => {
+  await openAddDialog(window)
+
+  await fillConnectionForm(window, {
+    name: 'bad-creds-' + pg.config.name,
+    host: pg.config.host,
+    port: pg.config.port,
+    database: pg.config.database,
+    user: pg.config.user,
+    password: 'definitely-wrong-password'
+  })
+
+  // Click Test and expect an error banner inside the sheet
+  await dialog(window).getByRole('button', { name: 'Test Connection' }).click()
+
+  await expect(
+    dialog(window).getByText(/authentication failed|password|connection failed|error/i)
+  ).toBeVisible({ timeout: 10000 })
+
+  // Do NOT save — the fixture tears down the Electron app after this test.
+})
