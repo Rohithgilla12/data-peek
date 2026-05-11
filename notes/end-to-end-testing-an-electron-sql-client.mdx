@@ -1,0 +1,338 @@
+---
+title: "From 4 to 25 Tests: End-to-End-Testing an Electron SQL Client"
+description: "How I taught Playwright to drive Monaco, talk to a real Postgres in Docker, and exercise the full click → IPC → main process → adapter → DB → renderer loop. Including the stale-build gotcha that bit me twice."
+date: "2026-05-11"
+author: "Rohith Gilla"
+tags: ["testing", "playwright", "electron", "postgres", "monaco"]
+published: true
+---
+
+For most of data-peek's life I treated end-to-end tests the way most people
+treat their gym membership: I knew they were important, I had four of them,
+and I was vaguely planning to add more "soon."
+
+The four I had were good. They booted the actual Electron app, attached
+Playwright to the main process, started a seeded Postgres container with
+testcontainers, and verified the IPC contract end-to-end:
+
+```ts
+test('db.query against `users` returns rows with the expected shape', async ({ window }) => {
+  const result = await window.evaluate(async (cfg) => {
+    return window.api.db.query(cfg, 'SELECT id, email, name FROM users ORDER BY email LIMIT 5')
+  }, pg.config)
+
+  expect(result.success).toBe(true)
+  expect(result.data.fields.map((f) => f.name)).toEqual(['id', 'email', 'name'])
+})
+```
+
+You can see what's happening: a real Electron process, a real preload bridge,
+a real `pg` adapter, a real Docker container running Postgres 16. That's a lot
+of real for one assertion.
+
+But the *renderer* never participated. No clicks. No typing into Monaco. No
+double-clicking a cell to edit it. The button that says "Test Connection"
+might as well have been a sticker on the screen.
+
+This weekend I fixed that. Four tests became twenty-five. Here's what I
+learned.
+
+## Why I had been avoiding it
+
+Driving a real renderer through Playwright is more painful than it sounds, and
+the pain is concentrated in three places:
+
+1. **Electron's two-process model.** Playwright connects to the main process,
+   but the UI lives in a renderer. Most online examples are for plain web
+   apps — the Electron docs exist but the worked examples are thin.
+2. **Selectors are a moving target.** A senior frontend dev's instinct is
+   "add `data-testid` everywhere." That works in CRA. In a production
+   Electron bundle with Radix portals, things get weird (more on this below).
+3. **Monaco is a black box.** It is not a `<textarea>`. It is an entire
+   editor that renders its own DOM and listens on its own keyboard handler.
+   `page.type()` does not Just Work.
+
+So I left it alone, leaned on the IPC tests, and prayed.
+
+## The plan
+
+I wanted balanced coverage: real UI flows for the two paths a user touches
+most often, plus IPC coverage for the gaps:
+
+- **Connection form** — open the Sheet, fill the inputs, click Test, click
+  Save. Then bad credentials. Then edit. Then delete (with the confirm
+  dialog).
+- **Query editor** — open a tab, type SQL into Monaco, hit `Cmd+Enter`,
+  assert the results table renders. Then invalid SQL surfacing as an error.
+  Then double-click a cell, type a new value, commit, verify the DB row
+  changed.
+- **IPC gap-fillers** — round out `connections.update`, `connections.delete`,
+  `db.explain`, and a `jsonb`/`timestamp`/`numeric` round-trip.
+
+Scope deliberately narrow. No saved queries, no Table Designer, no MySQL
+container, no license activation. One PR's worth.
+
+## Lesson 1: `data-testid` is fine. Stale builds are not.
+
+I started by sprinkling five testids across the renderer:
+`connection-dialog`, `connection-dialog-test`, `connection-dialog-save`,
+`query-tab-monaco`, `editable-cell-input`.
+
+My first run of the new spec was a string of "0 matches for
+`[data-testid=connection-dialog]`." I went hunting. Did Radix strip
+attributes when it portals `SheetContent` to `<body>`? Did electron-vite
+have a plugin that dropped `data-*` props? I rebuilt three times in
+different orders. Nothing.
+
+The actual answer was embarrassing:
+
+```bash
+# This rebuilds first:
+pnpm test:e2e
+
+# This does NOT:
+pnpm exec playwright test connection-form.spec.ts
+```
+
+The `out/` directory had been built *before* I added the testids. Playwright
+was launching `out/main/index.js` — a perfectly happy Electron app, just one
+that didn't know about the changes I had made fifteen minutes earlier.
+
+I felt this most acutely when the second implementation pass on a separate
+spec hit the *exact same trap*. It is genuinely the kind of thing that needs
+a banner.
+
+The fix in the test code is to lean on selectors that don't depend on a
+rebuild — `data-slot` attributes baked into Radix, `id` attributes on the
+form inputs (which the dialog already had), and accessible names:
+
+```ts
+async function openAddDialog(window: Page) {
+  await expect(window.getByText('Loading...')).toBeHidden({ timeout: 5000 })
+  // ... open the dropdown/button ...
+  await expect(window.locator('[data-slot="sheet-content"]')).toBeVisible({ timeout: 5000 })
+}
+
+function dialog(window: Page) {
+  return window.locator('[data-slot="sheet-content"]')
+}
+
+// Then everywhere:
+await dialog(window).locator('#name').fill(cfg.name)
+await dialog(window).locator('#host').fill(cfg.host)
+await dialog(window).locator('#port').fill(String(cfg.port))
+```
+
+The real fix is to remember to run the script that builds. But the spec is
+stronger now too: it stops depending on attributes I might forget to bake in.
+
+## Lesson 2: Monaco needs a different keyboard
+
+Here is the naive approach that I tried first:
+
+```ts
+const editor = window.locator('[data-testid=query-tab-monaco]')
+await editor.click()
+await window.keyboard.type('SELECT id FROM users LIMIT 1')
+await window.keyboard.press('Meta+Enter')
+```
+
+What happens: Monaco eats half the characters. The `<` part of `SELECT` lands
+in the editor, the `S` lands in the document because focus never quite
+transferred, and `Meta+Enter` opens... I have no idea, honestly. Possibly
+the command palette. The query doesn't run.
+
+What you actually need is to coax Monaco into a known state and *then* type:
+
+```ts
+// Click the editor wrapper to focus it.
+await window.locator('.monaco-editor').first().click()
+
+// Select-all to clear any pre-populated text from the tab's template.
+await window.keyboard.press(`${modifier}+a`)
+
+// Now type.
+await window.keyboard.type('SELECT id, email, name FROM users ORDER BY email LIMIT 3')
+
+// Cmd+Enter on darwin, Ctrl+Enter elsewhere.
+const runShortcut = process.platform === 'darwin' ? 'Meta+Enter' : 'Control+Enter'
+await window.keyboard.press(runShortcut)
+```
+
+`Cmd+A` is the magic. It forces Monaco's input handler to be the active one
+before you start sending characters. Without it, you're racing the editor's
+mount/focus dance and losing.
+
+The other thing I had to accept: Monaco renders its real edit surface inside
+an opaque DOM tree, and the "textarea" you see in DevTools is `aria-hidden`
+and not where your keystrokes land. Don't try to `.focus()` it. Click the
+wrapper, Cmd+A, type.
+
+## Lesson 3: The "Save changes" button isn't always a button
+
+The inline cell edit test was the most fun, partly because it exercises the
+full loop:
+
+1. User runs `SELECT id, name FROM users ORDER BY email LIMIT 1`.
+2. Double-clicks the `name` cell.
+3. Types a new value.
+4. The edit lands in a pending-changes batch (not committed yet).
+5. Clicks "Apply" / "Commit" / "Save changes" (the wording matters).
+6. data-peek shows a SQL preview dialog with the generated `UPDATE`.
+7. User clicks "Execute N Statement(s)".
+8. The transaction runs through `db.execute`, the row is updated.
+
+My first draft assumed step 5 → step 8 directly. It didn't. data-peek
+deliberately shows a preview because that's how you avoid "oh god I updated
+the wrong row" at 2 AM. The test had to learn the same lesson:
+
+```ts
+// Step 5: click the visible commit affordance.
+await window.getByRole('button', { name: /apply|commit|save changes/i }).first().click()
+
+// Step 6-7: the preview dialog appears. Click through it.
+await window.getByRole('button', { name: /execute \d+ statement/i }).click()
+
+// Step 8: verify via IPC, because asserting against the just-rendered
+// results table would prove that React re-rendered, not that the DB changed.
+const verify = await window.evaluate(
+  ({ cfg, id }) =>
+    window.api.db.query(cfg, `SELECT name FROM users WHERE id = '${id}'`),
+  { cfg: pg.config, id: target.id }
+)
+expect((verify.data as { rows: Array<{ name: string }> }).rows[0].name).toBe('UI Edit Marker')
+```
+
+That last point is worth dwelling on. When you write a UI test, it is very
+tempting to read the assertion back from the UI itself. "I clicked save, the
+UI shows the new value, ship it." But the UI might just be showing you your
+optimistic update. The thing you actually wanted to test is that the row
+changed in the database. Read from the source of truth.
+
+Same test, with the cleanup contract that any test mutating shared state
+must honor:
+
+```ts
+test('double-click cell → edit, commit → DB row updated', async ({ window }) => {
+  // Snapshot the target row up front.
+  const baseline = await window.evaluate(
+    (cfg) => window.api.db.query(cfg, 'SELECT id, name FROM users ORDER BY email LIMIT 1'),
+    pg.config
+  )
+  const target = baseline.data.rows[0]
+
+  try {
+    // ... open tab, type query, double-click, type, commit, verify ...
+  } finally {
+    // Restore the row even if assertions failed. CI retries inherit DB state
+    // between tests on the same container, so this matters.
+    await window.evaluate(
+      ({ cfg, id, original }) =>
+        window.api.db.query(
+          cfg,
+          `UPDATE users SET name = '${original.replace(/'/g, "''")}' WHERE id = '${id}'`
+        ),
+      { cfg: pg.config, id: target.id, original: target.name }
+    )
+  }
+})
+```
+
+The `try/finally` is non-negotiable. The Postgres container survives across
+all the tests in a file (because spinning up a fresh container per test is
+the kind of thing that turns a 60-second suite into a 6-minute one). If your
+test fails mid-mutation, the next test sees corrupted seed data and you
+spend an hour wondering why your e2e suite is flaky.
+
+## Lesson 4: Trust the IPC signature, not the plan
+
+The plan I wrote ahead of time said:
+
+> Call `window.api.connections.update(id, { ...cfg, name: cfg.name + '-renamed' })`
+
+The plan was wrong. The actual signature, once I read `packages/shared`, was:
+
+```ts
+connections.update(config: ConnectionConfig): Promise<{ success: boolean }>
+```
+
+The id is embedded in the config object. There is no separate id argument.
+The plan had assumed the kind of signature most ORMs use, and the actual API
+was something I had designed two years earlier and forgotten.
+
+Similarly, `db.explain` requires a third boolean argument:
+
+```ts
+db.explain(config: ConnectionConfig, query: string, analyze: boolean): Promise<...>
+```
+
+Not optional. The test threads `false` for cost-only mode. EXPLAIN ANALYZE
+coverage is a separate test that I haven't written yet.
+
+The lesson: when you're writing a plan that references an IPC method, *grep
+the actual exports first*. Plans are a hypothesis; the preload file is the
+truth.
+
+## What the numbers look like
+
+```
+Running 25 tests using 1 worker
+
+  ✓   1 tests/e2e/audit-regressions.spec.ts:34:5 › db.alter-table handler invalidates...
+  ✓   2 tests/e2e/audit-regressions.spec.ts:101:5 › db:invalidate-schema-cache IPC ...
+  ✓   3 tests/e2e/audit-regressions.spec.ts:150:5 › db.execute applies an UPDATE ...
+  ✓   4 tests/e2e/audit-regressions.spec.ts:243:5 › db.execute rolls back the whole ...
+  ✓   5 tests/e2e/connection-form.spec.ts:110:5 › fill, test-connection, save ...
+  ✓   6 tests/e2e/connection-form.spec.ts:149:5 › wrong password → test connection ...
+  ✓   7 tests/e2e/connection-form.spec.ts:175:5 › edit connection → rename is ...
+  ✓   8 tests/e2e/connection-form.spec.ts:223:5 › delete connection → removed ...
+  ✓   9-13 connections.spec.ts (5 cases) ...
+  ✓  14-19 queries.spec.ts (6 cases) ...
+  ✓  20 tests/e2e/query-editor.spec.ts:123:5 › run SELECT query → results table ...
+  ✓  21 tests/e2e/query-editor.spec.ts:144:5 › invalid SQL → error message ...
+  ✓  22 tests/e2e/query-editor.spec.ts:162:5 › double-click cell → edit, commit ...
+  ✓  23-25 smoke.spec.ts (3 cases) ...
+
+  25 passed (59.5s)
+```
+
+Sixty seconds for the full suite. That includes booting Electron 25 times,
+spinning up Postgres containers, building the renderer once. A coffee-break
+of confidence.
+
+## What I didn't do
+
+Plenty:
+
+- **Saved queries, Table Designer UI, multi-tab persistence.** Out of scope.
+- **MySQL / MSSQL adapters.** I have unit tests on the adapter layer; the
+  e2e suite proves the abstraction holds for Postgres and I'm leaving it
+  there for now. Adding MySQL would mean a second container and a slower CI.
+- **Visual regression testing.** Tempting, but visual diffs are a different
+  problem class with a different toolchain. Maybe later.
+
+## What I would tell past me
+
+1. **Run the build before you assume your testid doesn't work.** `pnpm
+   test:e2e` rebuilds, `pnpm exec playwright test` doesn't, and you will get
+   this wrong at least once.
+2. **Read the actual IPC exports** instead of guessing signatures from
+   memory. The preload file is the contract.
+3. **Verify from the source of truth.** If your test asserts against the UI
+   after a mutation, you are testing the optimistic update, not the change.
+4. **`try/finally` whenever you mutate shared state.** The flake you save is
+   your own.
+5. **Click the Monaco wrapper, Cmd+A, then type.** Don't fight the editor.
+
+The PR is up. The suite is 6x what it was. And if I touch the renderer next
+week and break a click handler, my CI will tell me before my users do.
+
+That's the bar.
+
+---
+
+*data-peek is an open-source SQL client built with Electron, React, and
+TypeScript. It's keyboard-first, fast, and supports PostgreSQL, MySQL, and
+Microsoft SQL Server. If you've been searching for a SQL client that feels
+like Linear or Raycast instead of a configuration wizard from 2008, give it
+a try.*
