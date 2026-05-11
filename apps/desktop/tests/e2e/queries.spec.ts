@@ -119,7 +119,7 @@ test('db.query round-trips timestamp / jsonb / numeric without lossy mapping', a
     return window.api.db.query(
       cfg,
       `SELECT
-         '2024-01-02 03:04:05'::timestamp AS t,
+         '2024-01-02 03:04:05+00'::timestamptz AS t,
          '{"a":1,"b":[true]}'::jsonb AS j,
          42.5::numeric AS n`
     )
@@ -127,7 +127,7 @@ test('db.query round-trips timestamp / jsonb / numeric without lossy mapping', a
 
   expect(result.success).toBe(true)
   const row = (result.data as { rows: Array<Record<string, unknown>> }).rows[0]
-  expect(row.t).toBeTruthy()
+  expect(row.t instanceof Date ? row.t.toISOString() : row.t).toBe('2024-01-02T03:04:05.000Z')
   expect(typeof row.j).toBe('object')
   expect((row.j as { a: number }).a).toBe(1)
   expect(Number(row.n)).toBe(42.5)
