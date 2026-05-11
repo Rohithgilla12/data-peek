@@ -385,6 +385,7 @@ export function EditableCell({
           </select>
         ) : (
           <Input
+            data-testid="editable-cell-input"
             ref={inputRef}
             type={inputType}
             value={editValue}
