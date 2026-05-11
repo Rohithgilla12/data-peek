@@ -165,3 +165,89 @@ test('wrong password → test connection shows an error', async ({ window }) => 
 
   // Do NOT save — the fixture tears down the Electron app after this test.
 })
+
+// ---------------------------------------------------------------------------
+// Test 3: Edit renames an existing connection
+// ---------------------------------------------------------------------------
+
+test('edit connection → rename is reflected in connections.list', async ({ window }) => {
+  // Seed a connection via IPC. The main process broadcasts "connections:updated"
+  // which causes the renderer store to refresh automatically.
+  await window.evaluate(async (cfg) => window.api.connections.add(cfg), pg.config)
+
+  // Wait for the sidebar switcher to transition out of "no connections" state.
+  // The connection name only appears inside the collapsed dropdown, not in the
+  // trigger button — so we open the dropdown immediately and look for it there.
+  await expect(window.getByRole('button', { name: /add connection/i })).toBeHidden({
+    timeout: 8000
+  })
+
+  // Open the ConnectionSwitcher dropdown
+  await window.locator('[data-sidebar="menu-button"]').first().click()
+
+  // Find the DropdownMenuItem for this connection and hover to reveal action buttons
+  const connectionItem = window.locator('[role="menuitem"]').filter({ hasText: pg.config.name })
+  await expect(connectionItem).toBeVisible({ timeout: 5000 })
+  await connectionItem.hover()
+
+  // Click the Pencil (Edit) button inside that item
+  await connectionItem.locator('button[title="Edit connection"]').click()
+
+  // The AddConnectionDialog should open in edit mode
+  await expect(window.locator('[data-slot="sheet-content"]')).toBeVisible({ timeout: 5000 })
+
+  // Change the connection name
+  const renamedName = pg.config.name + '-renamed'
+  await dialog(window).locator('#name').clear()
+  await dialog(window).locator('#name').fill(renamedName)
+
+  // Save — in edit mode the button reads "Update Connection"
+  await dialog(window).getByRole('button', { name: /update connection/i }).click()
+  await expect(window.locator('[data-slot="sheet-content"]')).toBeHidden({ timeout: 5000 })
+
+  // Verify via IPC
+  const listResult = await window.evaluate(async () => window.api.connections.list())
+  expect(listResult.success).toBe(true)
+  const names = (listResult.data ?? []).map((c: { name: string }) => c.name)
+  expect(names).toContain(renamedName)
+})
+
+// ---------------------------------------------------------------------------
+// Test 4: Delete removes the connection from the list
+// ---------------------------------------------------------------------------
+
+test('delete connection → removed from UI and from connections.list', async ({ window }) => {
+  // Seed a connection via IPC
+  await window.evaluate(async (cfg) => window.api.connections.add(cfg), pg.config)
+
+  // Wait for the sidebar switcher to transition out of "no connections" state.
+  await expect(window.getByRole('button', { name: /add connection/i })).toBeHidden({
+    timeout: 8000
+  })
+
+  // Open the ConnectionSwitcher dropdown
+  await window.locator('[data-sidebar="menu-button"]').first().click()
+
+  // Hover the connection item to reveal action buttons
+  const connectionItem = window.locator('[role="menuitem"]').filter({ hasText: pg.config.name })
+  await expect(connectionItem).toBeVisible({ timeout: 5000 })
+  await connectionItem.hover()
+
+  // Click the Trash2 (Delete) button inside that item
+  await connectionItem.locator('button[title="Delete connection"]').click()
+
+  // An AlertDialog appears — click the destructive "Delete" action
+  await expect(window.getByRole('alertdialog')).toBeVisible({ timeout: 5000 })
+  await window.getByRole('button', { name: /^delete$/i }).click()
+
+  // The dropdown should close and the switcher revert to "Add connection" state
+  await expect(window.getByRole('button', { name: /add connection/i })).toBeVisible({
+    timeout: 5000
+  })
+
+  // Verify via IPC
+  const listResult = await window.evaluate(async () => window.api.connections.list())
+  expect(listResult.success).toBe(true)
+  const names = (listResult.data ?? []).map((c: { name: string }) => c.name)
+  expect(names).not.toContain(pg.config.name)
+})
