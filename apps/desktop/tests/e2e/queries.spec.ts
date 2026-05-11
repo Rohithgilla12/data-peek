@@ -94,3 +94,41 @@ test('db.schemas hits the cache on the second call (returns fromCache: true)', a
   expect(second.success).toBe(true)
   expect(second.data?.fromCache).toBe(true)
 })
+
+test('db.explain returns a non-empty plan tree', async ({ window }) => {
+  // db.explain takes (config, query, analyze) — passing analyze: false for a
+  // lightweight cost-only plan that doesn't require executing the query.
+  const result = await window.evaluate(async (cfg) => {
+    return window.api.db.explain(cfg, 'SELECT id FROM users ORDER BY email LIMIT 1', false)
+  }, pg.config)
+
+  expect(result.success).toBe(true)
+  // Postgres returns FORMAT JSON as a parsed array under `plan`; durationMs is always present.
+  const data = result.data as { plan?: unknown; durationMs: number }
+  expect(data.durationMs).toBeGreaterThanOrEqual(0)
+  expect(data.plan).toBeDefined()
+  // The plan is a non-empty JSON array from Postgres EXPLAIN FORMAT JSON.
+  expect(Array.isArray(data.plan)).toBe(true)
+  expect((data.plan as unknown[]).length).toBeGreaterThan(0)
+})
+
+test('db.query round-trips timestamp / jsonb / numeric without lossy mapping', async ({
+  window
+}) => {
+  const result = await window.evaluate(async (cfg) => {
+    return window.api.db.query(
+      cfg,
+      `SELECT
+         '2024-01-02 03:04:05+00'::timestamptz AS t,
+         '{"a":1,"b":[true]}'::jsonb AS j,
+         42.5::numeric AS n`
+    )
+  }, pg.config)
+
+  expect(result.success).toBe(true)
+  const row = (result.data as { rows: Array<Record<string, unknown>> }).rows[0]
+  expect(row.t instanceof Date ? row.t.toISOString() : row.t).toBe('2024-01-02T03:04:05.000Z')
+  expect(typeof row.j).toBe('object')
+  expect((row.j as { a: number }).a).toBe(1)
+  expect(Number(row.n)).toBe(42.5)
+})

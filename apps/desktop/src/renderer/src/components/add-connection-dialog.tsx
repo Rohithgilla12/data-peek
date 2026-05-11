@@ -451,7 +451,7 @@ export function AddConnectionDialog({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-lg flex flex-col">
+      <SheetContent data-testid="connection-dialog" className="sm:max-w-lg flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Database className="size-5" />
@@ -1005,7 +1005,7 @@ export function AddConnectionDialog({
         </div>
 
         <SheetFooter className="flex-row gap-2 shrink-0 border-t pt-4">
-          <Button variant="outline" onClick={handleTestConnection} disabled={!isValid || isTesting}>
+          <Button data-testid="connection-dialog-test" variant="outline" onClick={handleTestConnection} disabled={!isValid || isTesting}>
             {isTesting ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
@@ -1015,7 +1015,7 @@ export function AddConnectionDialog({
               'Test Connection'
             )}
           </Button>
-          <Button onClick={handleSave} disabled={!isValid || isSaving}>
+          <Button data-testid="connection-dialog-save" onClick={handleSave} disabled={!isValid || isSaving}>
             {isSaving ? (
               <>
                 <Loader2 className="size-4 animate-spin" />
