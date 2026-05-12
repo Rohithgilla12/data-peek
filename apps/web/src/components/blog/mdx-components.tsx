@@ -310,9 +310,4 @@ export const mdxComponents: MDXComponents = {
     <em className="italic">{children}</em>
   ),
 };
-en}</em>
-  ),
-};
-"italic">{children}</em>
-  ),
 };
