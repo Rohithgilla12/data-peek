@@ -56,7 +56,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar className="border-r-0 bg-sidebar/80 backdrop-blur-xl" {...props}>
+    <Sidebar className="border-r-0 bg-sidebar" {...props}>
       {/* Header - Connection Switcher */}
       <SidebarHeader className={cn(platform === 'darwin' && 'pt-10')}>
         <ConnectionSwitcher />
