@@ -28,7 +28,7 @@ export function QueryToolbar({ onExecute, onExplain, onFormat, onCancel, isExecu
         <Button
           size="sm"
           onClick={onCancel}
-          className="gap-1.5 bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-all duration-200 press-effect"
+          className="gap-1.5 bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors transition-shadow duration-200 press-effect"
         >
           <Square className="h-3 w-3 fill-current" />
           Cancel
@@ -37,7 +37,7 @@ export function QueryToolbar({ onExecute, onExplain, onFormat, onCancel, isExecu
         <Button
           size="sm"
           onClick={onExecute}
-          className="gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90 hover:shadow-[0_0_12px_oklch(0.62_0.15_250/0.3)] transition-all duration-200 press-effect"
+          className="gap-1.5 bg-accent text-accent-foreground hover:bg-accent/90 hover:shadow-[0_0_12px_oklch(0.62_0.15_250/0.3)] transition-colors transition-shadow duration-200 press-effect"
         >
           <Play className="h-3 w-3" />
           Run

@@ -168,7 +168,7 @@ export const mdxComponents: MDXComponents = {
     <li className="leading-relaxed">{children}</li>
   ),
   blockquote: ({ children }: ComponentPropsWithoutRef<"blockquote">) => (
-    <blockquote className="relative border-l-2 border-[--color-accent] pl-6 py-4 my-8 bg-gradient-to-r from-[--color-surface] to-transparent rounded-r-xl overflow-hidden">
+    <blockquote className="relative border border-[--color-border-subtle] px-8 py-6 my-8 bg-[--color-surface] rounded-xl overflow-hidden">
       <div className="absolute top-3 left-3 text-4xl text-[--color-accent]/20 font-serif leading-none"></div>
       <div className="relative text-[--color-text-secondary] italic text-lg">
         {children}
@@ -309,4 +309,5 @@ export const mdxComponents: MDXComponents = {
   em: ({ children }: ComponentPropsWithoutRef<"em">) => (
     <em className="italic">{children}</em>
   ),
+};
 };
