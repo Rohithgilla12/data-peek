@@ -10,7 +10,8 @@ import {
   Timer,
   ActivitySquare,
   Share2,
-  Play
+  Play,
+  type LucideIcon
 } from 'lucide-react'
 import {
   Button,
@@ -32,14 +33,28 @@ import { TelemetryPanel } from '@/components/telemetry-panel'
 import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
 import { MaskingToolbar } from '@/components/masking-toolbar'
 
-import type { Tab } from '@/stores/tab-store'
-import type { StatementResult, EditContext } from '@data-peek/shared'
+import { isExecutableTab, type Tab } from '@/stores/tab-store'
+import type { TelemetryViewMode } from '@/stores/telemetry-store'
+import type { ConnectionWithStatus } from '@/stores/connection-store'
+import type { DataTableColumn as EditableColumn } from '@/components/editable-data-table'
+import type { DataTableColumn as ResultColumn } from '@/components/data-table'
+import type {
+  StatementResult,
+  EditContext,
+  ForeignKeyInfo,
+  QueryTelemetry,
+  BenchmarkResult,
+  PerformanceAnalysisResult
+} from '@data-peek/shared'
 import type { ExportData } from '@/lib/export'
+
+type Percentile = 'avg' | 'p90' | 'p95' | 'p99'
+type ExportType = 'csv' | 'json' | 'sql'
 
 interface QueryResultsProps {
   tabId: string
   tab: Tab
-  tabConnection: any
+  tabConnection: ConnectionWithStatus | null | undefined
   isResultsCollapsed: boolean
   setIsResultsCollapsed: (v: boolean) => void
   hasMultipleResults: boolean
@@ -48,31 +63,31 @@ interface QueryResultsProps {
   activeResultIndex: number
   setActiveResultIndex: (tabId: string, idx: number) => void
   getEditContext: () => EditContext | null
-  getColumnsForEditing: () => any[]
+  getColumnsForEditing: () => EditableColumn[]
   paginatedRows: Record<string, unknown>[]
   setTableFilters: (f: DataTableFilter[]) => void
   setTableSorting: (s: DataTableSort[]) => void
   hasActiveFiltersOrSorting: boolean
   handleApplyToQuery: () => void
-  handleFKClick: (fk: any, value: unknown) => void
-  handleFKOpenTab: (fk: any, value: unknown) => void
-  handleColumnStatsClick: (col: import("@/components/data-table").DataTableColumn) => void
+  handleFKClick: (fk: ForeignKeyInfo, value: unknown) => void
+  handleFKOpenTab: (fk: ForeignKeyInfo, value: unknown) => void
+  handleColumnStatsClick: (col: ResultColumn) => void
   handleRunQuery: () => void
   handleTablePreviewPaginationChange: (page: number, pageSize: number) => Promise<void>
   getActiveResultColumns: () => { name: string; dataType: string }[]
-  getColumnsWithFKInfo: () => any[]
+  getColumnsWithFKInfo: () => ResultColumn[]
   getAllRows: () => Record<string, unknown>[]
-  telemetry: any
-  benchmark: any
+  telemetry: QueryTelemetry | null | undefined
+  benchmark: BenchmarkResult | null | undefined
   showTelemetryPanel: boolean
   setShowTelemetryPanel: (v: boolean) => void
   showConnectionOverhead: boolean
   setShowConnectionOverhead: (v: boolean) => void
-  selectedPercentile: 'avg' | 'p90' | 'p95' | 'p99'
-  setSelectedPercentile: (v: 'avg' | 'p90' | 'p95' | 'p99') => void
-  viewMode: import('@/stores/telemetry-store').TelemetryViewMode
-  setViewMode: (v: import('@/stores/telemetry-store').TelemetryViewMode) => void
-  perfAnalysis: any
+  selectedPercentile: Percentile
+  setSelectedPercentile: (v: Percentile) => void
+  viewMode: TelemetryViewMode
+  setViewMode: (v: TelemetryViewMode) => void
+  perfAnalysis: PerformanceAnalysisResult | null | undefined
   showPerfPanel: boolean
   setShowPerfPanel: (v: boolean) => void
   handleAnalyzePerformance: () => void
@@ -83,7 +98,7 @@ interface QueryResultsProps {
   toggleSeverityFilter: (severity: 'info' | 'warning' | 'critical') => void
   setShareResultsOpen: (v: boolean) => void
   getCurrentExportData: () => ExportData | null
-  handleExport: (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => void
+  handleExport: (type: ExportType, data: ExportData, filename: string) => void
   generateExportFilename: (tableName?: string) => string
 }
 
@@ -137,70 +152,97 @@ export function QueryResults({
   handleExport,
   generateExportFilename
 }: QueryResultsProps) {
+  const executable = isExecutableTab(tab) ? tab : null
+  const tabResult = executable?.result
+  const tabMultiResult = executable?.multiResult
+  const tabError = executable?.error
+  const tabQuery = executable?.query ?? ''
+  const pageSize = executable?.pageSize ?? 50
+  const tableName = tab.type === 'table-preview' ? tab.tableName : undefined
+  const hasResults = !!tabResult || !!tabMultiResult
+
+  const runExport = (type: ExportType) => {
+    const data = getCurrentExportData()
+    if (!data) return
+    handleExport(type, data, generateExportFilename(tableName))
+  }
+
+  const ExportItem = ({
+    type,
+    Icon,
+    label
+  }: {
+    type: ExportType
+    Icon: LucideIcon
+    label: string
+  }) => (
+    <DropdownMenuItem onClick={() => runExport(type)}>
+      <Icon className="size-4 text-muted-foreground" />
+      {label}
+    </DropdownMenuItem>
+  )
+
   return (
-    <>
-{/* Results Section */}
-<div
-  className={`flex flex-col overflow-hidden transition-all duration-200 ${isResultsCollapsed ? 'h-10 shrink-0' : 'flex-1'}`}
->
-  {/* Collapsed Results Bar */}
-  {isResultsCollapsed ? (
-    <div className="flex items-center justify-between h-10 border-t border-border/40 bg-muted/30 px-3">
-      <div className="flex items-center gap-3">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 w-7 p-0"
-          onClick={() => setIsResultsCollapsed(false)}
-          title="Show results panel"
-        >
-          <PanelBottom className="size-3.5" />
-        </Button>
-        {('error' in tab ? tab.error : undefined) ? (
-          <span className="flex items-center gap-1.5 text-xs text-red-400">
-            <AlertCircle className="size-3" />
-            Query Error
-          </span>
-        ) : ('result' in tab ? tab.result : undefined) || ('multiResult' in tab ? tab.multiResult : undefined) ? (
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {hasMultipleResults ? (
-              <>
-                <span className="flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-green-500" />
-                  {statementResults.length} statements
-                </span>
-                <span className="text-muted-foreground/60">
-                  {('multiResult' in tab ? tab.multiResult : undefined)?.totalDurationMs}ms
-                </span>
-              </>
+    <div
+      className={`flex flex-col overflow-hidden transition-all duration-200 ${
+        isResultsCollapsed ? 'h-10 shrink-0' : 'flex-1'
+      }`}
+    >
+      {isResultsCollapsed ? (
+        <div className="flex items-center justify-between h-10 border-t border-border/40 bg-muted/30 px-3">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 w-7 p-0"
+              onClick={() => setIsResultsCollapsed(false)}
+              title="Show results panel"
+            >
+              <PanelBottom className="size-3.5" />
+            </Button>
+            {tabError ? (
+              <span className="flex items-center gap-1.5 text-xs text-red-400">
+                <AlertCircle className="size-3" />
+                Query Error
+              </span>
+            ) : hasResults ? (
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                {hasMultipleResults ? (
+                  <>
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-green-500" />
+                      {statementResults.length} statements
+                    </span>
+                    <span className="text-muted-foreground/60">
+                      {tabMultiResult?.totalDurationMs}ms
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1.5">
+                      <span className="size-1.5 rounded-full bg-green-500" />
+                      {tabResult?.rowCount ?? 0} rows
+                    </span>
+                    <span className="text-muted-foreground/60">{tabResult?.durationMs}ms</span>
+                  </>
+                )}
+              </div>
             ) : (
-              <>
-                <span className="flex items-center gap-1.5">
-                  <span className="size-1.5 rounded-full bg-green-500" />
-                  {('result' in tab ? tab.result : undefined)?.rowCount ?? 0} rows
-                </span>
-                <span className="text-muted-foreground/60">{('result' in tab ? tab.result : undefined)?.durationMs}ms</span>
-              </>
+              <span className="text-xs text-muted-foreground">No results</span>
             )}
           </div>
-        ) : (
-          <span className="text-xs text-muted-foreground">No results</span>
-        )}
-      </div>
-      <span className="text-[10px] text-muted-foreground/50">Results collapsed</span>
-    </div>
-  ) : (
-    <>
-      {('error' in tab) && ('error' in tab ? tab.error : undefined) ? (
+          <span className="text-[10px] text-muted-foreground/50">Results collapsed</span>
+        </div>
+      ) : tabError ? (
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="max-w-md text-center space-y-2">
             <AlertCircle className="size-8 text-red-400 mx-auto" />
             <h3 className="font-medium text-red-400">Query Error</h3>
-            <p className="text-sm text-muted-foreground">{('error' in tab ? tab.error : undefined)}</p>
+            <p className="text-sm text-muted-foreground">{tabError}</p>
           </div>
         </div>
-      ) : (('result' in tab) && ('result' in tab ? tab.result : undefined)) || (('multiResult' in tab) && ('multiResult' in tab ? tab.multiResult : undefined)) ? (        <>
-          {/* Result Set Tabs - shown when there are multiple statements */}
+      ) : hasResults ? (
+        <>
           {hasMultipleResults && (
             <div className="flex items-center gap-1 border-b border-border/40 bg-muted/10 px-3 py-1.5 shrink-0 overflow-x-auto">
               {statementResults.map((stmt, idx) => {
@@ -235,13 +277,10 @@ export function QueryResults({
             </div>
           )}
 
-          {/* Results Table */}
           <div className="flex-1 overflow-hidden p-3">
             {(() => {
               const editContext = getEditContext()
               const isTablePreview = tab.type === 'table-preview'
-              // Edit UI for table-preview (existing behavior) or for query tabs whose active
-              // statement is a simple single-table SELECT with PK columns visible.
               if (editContext && (isTablePreview ? !hasMultipleResults : true)) {
                 return (
                   <EditableDataTable
@@ -250,18 +289,16 @@ export function QueryResults({
                     columns={getColumnsForEditing()}
                     data={
                       isTablePreview && tab.totalRowCount != null
-                        ? ((('result' in tab ? tab.result : undefined)?.rows ?? []) as Record<string, unknown>[])
+                        ? ((tabResult?.rows ?? []) as Record<string, unknown>[])
                         : (paginatedRows as Record<string, unknown>[])
                     }
-                    pageSize={('pageSize' in tab ? tab.pageSize : 50)}
+                    pageSize={pageSize}
                     canEdit={true}
                     editContext={editContext}
                     connection={tabConnection}
                     onFiltersChange={setTableFilters}
                     onSortingChange={setTableSorting}
-                    onApplyToQuery={
-                      hasActiveFiltersOrSorting ? handleApplyToQuery : undefined
-                    }
+                    onApplyToQuery={hasActiveFiltersOrSorting ? handleApplyToQuery : undefined}
                     onForeignKeyClick={handleFKClick}
                     onForeignKeyOpenTab={handleFKOpenTab}
                     onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
@@ -288,7 +325,7 @@ export function QueryResults({
                     : getColumnsWithFKInfo()
                 }
                 data={getAllRows()}
-                pageSize={('pageSize' in tab ? tab.pageSize : 50)}
+                pageSize={pageSize}
                 onFiltersChange={setTableFilters}
                 onSortingChange={setTableSorting}
                 onApplyToQuery={hasActiveFiltersOrSorting ? handleApplyToQuery : undefined}
@@ -299,7 +336,6 @@ export function QueryResults({
             )}
           </div>
 
-          {/* Results Footer */}
           <div className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-3 py-1.5 shrink-0">
             <div className="flex items-center gap-2">
               <Button
@@ -322,21 +358,20 @@ export function QueryResults({
                     <span className="text-muted-foreground/60">
                       {statementResults.length} statements
                     </span>
-                    <span>{('multiResult' in tab ? tab.multiResult : undefined)?.totalDurationMs}ms total</span>
+                    <span>{tabMultiResult?.totalDurationMs}ms total</span>
                   </>
                 ) : (
                   <>
                     <span className="flex items-center gap-1.5">
                       <span className="size-1.5 rounded-full bg-green-500" />
-                      {('result' in tab ? tab.result : undefined)?.rowCount ?? 0} rows returned
+                      {tabResult?.rowCount ?? 0} rows returned
                     </span>
-                    <span>{('result' in tab ? tab.result : undefined)?.durationMs}ms</span>
+                    <span>{tabResult?.durationMs}ms</span>
                   </>
                 )}
               </div>
             </div>
             <div className="flex items-center gap-2">
-              {/* Telemetry toggle button */}
               {(telemetry || benchmark) && (
                 <TooltipProvider>
                   <Tooltip>
@@ -359,59 +394,55 @@ export function QueryResults({
                   </Tooltip>
                 </TooltipProvider>
               )}
-              {/* Performance Analysis button - PostgreSQL only */}
-              {('result' in tab ? tab.result : undefined) &&
-                (!tabConnection?.dbType || tabConnection.dbType === 'postgresql') && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={showPerfPanel ? 'secondary' : 'ghost'}
-                          size="sm"
-                          className="gap-1.5 h-7"
-                          onClick={
-                            perfAnalysis
-                              ? () => setShowPerfPanel(!showPerfPanel)
-                              : handleAnalyzePerformance
-                          }
-                          disabled={isPerfAnalyzing}
-                        >
-                          {isPerfAnalyzing ? (
-                            <Loader2 className="size-3.5 animate-spin" />
-                          ) : (
-                            <ActivitySquare className="size-3.5" />
+              {tabResult && (!tabConnection?.dbType || tabConnection.dbType === 'postgresql') && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={showPerfPanel ? 'secondary' : 'ghost'}
+                        size="sm"
+                        className="gap-1.5 h-7"
+                        onClick={
+                          perfAnalysis
+                            ? () => setShowPerfPanel(!showPerfPanel)
+                            : handleAnalyzePerformance
+                        }
+                        disabled={isPerfAnalyzing}
+                      >
+                        {isPerfAnalyzing ? (
+                          <Loader2 className="size-3.5 animate-spin" />
+                        ) : (
+                          <ActivitySquare className="size-3.5" />
+                        )}
+                        {perfAnalysis &&
+                          perfAnalysis.issueCount.critical + perfAnalysis.issueCount.warning >
+                            0 && (
+                            <Badge
+                              variant="secondary"
+                              className={`h-4 px-1.5 text-[10px] ${
+                                perfAnalysis.issueCount.critical > 0
+                                  ? 'bg-red-500/20 text-red-500'
+                                  : 'bg-yellow-500/20 text-yellow-500'
+                              }`}
+                            >
+                              {perfAnalysis.issueCount.critical + perfAnalysis.issueCount.warning}
+                            </Badge>
                           )}
-                          {perfAnalysis &&
-                            perfAnalysis.issueCount.critical +
-                              perfAnalysis.issueCount.warning >
-                              0 && (
-                              <Badge
-                                variant="secondary"
-                                className={`h-4 px-1.5 text-[10px] ${
-                                  perfAnalysis.issueCount.critical > 0
-                                    ? 'bg-red-500/20 text-red-500'
-                                    : 'bg-yellow-500/20 text-yellow-500'
-                                }`}
-                              >
-                                {perfAnalysis.issueCount.critical +
-                                  perfAnalysis.issueCount.warning}
-                              </Badge>
-                            )}
-                          Analyze
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        <p className="text-xs">
-                          {perfAnalysis
-                            ? showPerfPanel
-                              ? 'Hide performance analysis'
-                              : 'Show performance analysis'
-                            : 'Analyze query for performance issues'}
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                )}
+                        Analyze
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      <p className="text-xs">
+                        {perfAnalysis
+                          ? showPerfPanel
+                            ? 'Hide performance analysis'
+                            : 'Show performance analysis'
+                          : 'Analyze query for performance issues'}
+                      </p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
               <MaskingToolbar tabId={tabId} />
               <TooltipProvider>
                 <Tooltip>
@@ -439,51 +470,14 @@ export function QueryResults({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const data = getCurrentExportData()
-                      if (!data) return
-                      const filename = generateExportFilename(
-                        tab.type === 'table-preview' ? ('tableName' in tab ? tab.tableName : undefined) : undefined
-                      )
-                      handleExport('csv', data, filename)
-                    }}
-                  >
-                    <FileSpreadsheet className="size-4 text-muted-foreground" />
-                    Export as CSV
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const data = getCurrentExportData()
-                      if (!data) return
-                      const filename = generateExportFilename(
-                        tab.type === 'table-preview' ? ('tableName' in tab ? tab.tableName : undefined) : undefined
-                      )
-                      handleExport('json', data, filename)
-                    }}
-                  >
-                    <FileJson className="size-4 text-muted-foreground" />
-                    Export as JSON
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const data = getCurrentExportData()
-                      if (!data) return
-                      const filename = generateExportFilename(
-                        tab.type === 'table-preview' ? ('tableName' in tab ? tab.tableName : undefined) : undefined
-                      )
-                      handleExport('sql', data, filename)
-                    }}
-                  >
-                    <FileCode2 className="size-4 text-muted-foreground" />
-                    Export as SQL
-                  </DropdownMenuItem>
+                  <ExportItem type="csv" Icon={FileSpreadsheet} label="Export as CSV" />
+                  <ExportItem type="json" Icon={FileJson} label="Export as JSON" />
+                  <ExportItem type="sql" Icon={FileCode2} label="Export as SQL" />
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
 
-          {/* Telemetry Panel */}
           {showTelemetryPanel && (telemetry || benchmark) && (
             <TelemetryPanel
               telemetry={telemetry}
@@ -498,7 +492,6 @@ export function QueryResults({
             />
           )}
 
-          {/* Performance Indicator Panel */}
           {showPerfPanel && perfAnalysis && (
             <PerfIndicatorPanel
               analysis={perfAnalysis}
@@ -520,18 +513,17 @@ export function QueryResults({
             </div>
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">
-                {'query' in tab && tab.query.trim() ? 'Ready to execute' : 'Write a query to get started'}
+                {tabQuery.trim() ? 'Ready to execute' : 'Write a query to get started'}
               </p>
               <p className="text-xs text-muted-foreground/60">
-                {'query' in tab && tab.query.trim()                  ? `Press ${keys.mod}+Enter to run your query`
+                {tabQuery.trim()
+                  ? `Press ${keys.mod}+Enter to run your query`
                   : 'Browse the schema explorer to view tables, or type a SQL query above'}
               </p>
             </div>
             <div className="flex items-center justify-center gap-4 pt-1">
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
-                <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
-                  {keys.mod}Enter
-                </kbd>
+                <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">{keys.mod}Enter</kbd>
                 <span>Run</span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
@@ -549,11 +541,6 @@ export function QueryResults({
           </div>
         </div>
       )}
-    </>
-  )}
-</div>
-
-
-    </>
+    </div>
   )
 }
