@@ -52,8 +52,8 @@ export function getEncryptionKey(): string {
     // Delete corrupted key file
     try {
       unlinkSync(keyFilePath)
-    } catch {
-      // Ignore deletion errors
+    } catch (error) {
+      log.warn('Failed to delete corrupted encryption key file:', error)
     }
   }
 

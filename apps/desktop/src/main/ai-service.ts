@@ -527,7 +527,7 @@ export function getChatSessions(connectionId: string): ChatSession[] {
 
   // Check for legacy format and migrate if needed
   if (isLegacyFormat(data)) {
-    const sessions = migrateLegacyToSessions(data as StoredChatMessage[])
+    const sessions = migrateLegacyToSessions(data)
     // Save migrated data
     history[connectionId] = sessions
     chatStore.set('chatHistory', history)

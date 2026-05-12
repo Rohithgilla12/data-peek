@@ -457,8 +457,8 @@ export async function cleanup(): Promise<void> {
   if (sqliteDb) {
     try {
       sqliteDb.close()
-    } catch {
-      // ignore close errors
+    } catch (err) {
+      log.debug('Ignored error closing pg notifications sqlite db:', err)
     }
     sqliteDb = null
   }

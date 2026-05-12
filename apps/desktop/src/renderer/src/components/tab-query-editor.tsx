@@ -1,40 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Play,
-  Download,
-  FileJson,
-  FileSpreadsheet,
-  FileCode2,
-  Loader2,
-  AlertCircle,
   Database,
-  Wand2,
-  PanelTopClose,
-  PanelTop,
-  PanelBottomClose,
-  PanelBottom,
-  BarChart3,
-  Bookmark,
-  Maximize2,
-  Square,
-  Timer,
-  ActivitySquare,
-  Share2,
-  StepForward
 } from 'lucide-react'
 import {
-  Button,
   cn,
-  keys,
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-  Badge,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -60,13 +29,11 @@ import {
 import { isExecutableTab, type Tab, type MultiQueryResult } from '@/stores/tab-store'
 import type { StatementResult } from '@data-peek/shared'
 import {
-  DataTable,
   type DataTableFilter,
   type DataTableSort,
   type DataTableColumn
 } from '@/components/data-table'
 import {
-  EditableDataTable,
   type DataTableColumn as EditableDataTableColumn
 } from '@/components/editable-data-table'
 import type { EditContext, TableInfo } from '@data-peek/shared'
@@ -93,17 +60,15 @@ import { SchemaIntelPanel } from '@/components/schema-intel'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
 import { ShareQueryDialog } from '@/components/share-query-dialog'
 import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image-dialog'
-import { TelemetryPanel } from '@/components/telemetry-panel'
-import { BenchmarkButton } from '@/components/benchmark-button'
-import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
 import { ColumnStatsPanel } from '@/components/column-stats-panel'
 import { useColumnStatsStore } from '@/stores/column-stats-store'
 import type { DataTableColumn as DtColumn } from '@/components/data-table'
-import { MaskingToolbar } from '@/components/masking-toolbar'
 import { useMaskingStore } from '@/stores/masking-store'
 import type { ExportData } from '@/lib/export'
 import { StepRibbon } from './step-ribbon'
 import { StepResultsTabs } from './step-results-tabs'
+import { EditorToolbar } from './query-editor/editor-toolbar'
+import { QueryResults } from './query-editor/query-results'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
 import type { editor as monacoEditor } from 'monaco-editor'
@@ -1454,604 +1419,80 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         )}
 
         {/* Editor Toolbar */}
-        <div className="flex items-center justify-between bg-muted/20 px-3 py-2">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 w-7 p-0"
-              onClick={() => setIsEditorCollapsed(!isEditorCollapsed)}
-              title={isEditorCollapsed ? 'Show query editor' : 'Hide query editor'}
-            >
-              {isEditorCollapsed ? (
-                <PanelTop className="size-3.5" />
-              ) : (
-                <PanelTopClose className="size-3.5" />
-              )}
-            </Button>
-            {tab.isExecuting ? (
-              <Button
-                size="sm"
-                variant="destructive"
-                className="gap-1.5 h-7"
-                onClick={handleCancelQuery}
-              >
-                <Square className="size-3.5" />
-                Cancel
-              </Button>
-            ) : (
-              <Button
-                size="sm"
-                className="gap-1.5 h-7"
-                disabled={!tab.query.trim()}
-                onClick={() => handleRunQuery()}
-              >
-                <Play className="size-3.5" />
-                Run
-                <kbd className="ml-1.5 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
-                  {keys.mod}
-                  {keys.enter}
-                </kbd>
-              </Button>
-            )}
-            {tab.type === 'query' && tabConnection?.dbType === 'postgresql' && (
-              <>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleStartStep}
-                  disabled={!tab.query.trim() || !!stepSession || tab.isExecuting}
-                  className="h-7 text-xs"
-                >
-                  <StepForward className="size-3 mr-1" />
-                  Step
-                  <kbd className="ml-2 opacity-60 text-[10px]">⇧⌘↵</kbd>
-                </Button>
-                <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={inTransactionMode}
-                    onChange={(e) => setInTransactionMode(e.target.checked)}
-                    disabled={!!stepSession}
-                    className="size-3"
-                  />
-                  <span>Run in transaction</span>
-                </label>
-              </>
-            )}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="gap-1.5 h-7"
-                    disabled={tab.isExecuting || isExplaining || !tab.query.trim()}
-                    onClick={handleExplainQuery}
-                  >
-                    {isExplaining ? (
-                      <Loader2 className="size-3.5 animate-spin" />
-                    ) : (
-                      <BarChart3 className="size-3.5" />
-                    )}
-                    Explain
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p className="text-xs">Analyze query execution plan (EXPLAIN ANALYZE)</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <BenchmarkButton
-              onBenchmark={handleBenchmark}
-              isRunning={isRunningBenchmark}
-              disabled={tab.isExecuting || !tab.query.trim()}
-            />
-            {!isEditorCollapsed && (
-              <>
-                <div className="mx-1 h-4 w-px bg-border/60" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 h-7"
-                  disabled={!tab.query.trim()}
-                  onClick={handleFormatQuery}
-                >
-                  <Wand2 className="size-3.5" />
-                  Format
-                  <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
-                    {keys.mod}
-                    {keys.shift}F
-                  </kbd>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1.5 h-7"
-                  disabled={!tab.query.trim()}
-                  onClick={() => setSaveDialogOpen(true)}
-                >
-                  <Bookmark className="size-3.5" />
-                  Save
-                </Button>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="gap-1.5 h-7"
-                        disabled={!tab.query.trim()}
-                        onClick={() => setShareDialogOpen(true)}
-                      >
-                        <Share2 className="size-3.5" />
-                        Share
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p className="text-xs">Generate a beautiful image of your query to share</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <div className="mx-1 h-4 w-px bg-border/60" />
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon-sm"
-                        className={`h-7 w-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
-                        onClick={() => setIsResultsCollapsed(!isResultsCollapsed)}
-                      >
-                        <Maximize2 className="size-3.5" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom">
-                      <p className="text-xs">
-                        {isResultsCollapsed
-                          ? 'Restore results panel'
-                          : 'Collapse results to focus on query writing'}
-                      </p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {isEditorCollapsed && (
-              <code className="text-[10px] bg-muted/50 px-2 py-0.5 rounded max-w-[300px] truncate">
-                {tab.query.replace(/\s+/g, ' ').slice(0, 60)}
-                {tab.query.length > 60 ? '...' : ''}
-              </code>
-            )}
-            <span className="flex items-center gap-1.5">
-              <span
-                className={`size-1.5 rounded-full ${tabConnection.isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}
-              />
-              {tabConnection.name}
-            </span>
-          </div>
-        </div>
+        <EditorToolbar
+          tab={tab}
+          tabConnection={tabConnection}
+          isEditorCollapsed={isEditorCollapsed}
+          setIsEditorCollapsed={setIsEditorCollapsed}
+          isResultsCollapsed={isResultsCollapsed}
+          setIsResultsCollapsed={setIsResultsCollapsed}
+          handleCancelQuery={handleCancelQuery}
+          handleRunQuery={handleRunQuery}
+          handleStartStep={handleStartStep}
+          inTransactionMode={inTransactionMode}
+          setInTransactionMode={setInTransactionMode}
+          stepSession={stepSession}
+          handleExplainQuery={handleExplainQuery}
+          isExplaining={isExplaining}
+          handleBenchmark={handleBenchmark}
+          isRunningBenchmark={isRunningBenchmark}
+          handleFormatQuery={handleFormatQuery}
+          setSaveDialogOpen={setSaveDialogOpen}
+          setShareDialogOpen={setShareDialogOpen}
+        />
       </div>
 
-      {/* Results Section */}
-      <div
-        className={`flex flex-col overflow-hidden transition-all duration-200 ${isResultsCollapsed ? 'h-10 shrink-0' : 'flex-1'}`}
-      >
-        {/* Collapsed Results Bar */}
-        {isResultsCollapsed ? (
-          <div className="flex items-center justify-between h-10 border-t border-border/40 bg-muted/30 px-3">
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 w-7 p-0"
-                onClick={() => setIsResultsCollapsed(false)}
-                title="Show results panel"
-              >
-                <PanelBottom className="size-3.5" />
-              </Button>
-              {tab.error ? (
-                <span className="flex items-center gap-1.5 text-xs text-red-400">
-                  <AlertCircle className="size-3" />
-                  Query Error
-                </span>
-              ) : tab.result || tab.multiResult ? (
-                <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                  {hasMultipleResults ? (
-                    <>
-                      <span className="flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-green-500" />
-                        {statementResults.length} statements
-                      </span>
-                      <span className="text-muted-foreground/60">
-                        {tab.multiResult?.totalDurationMs}ms
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="flex items-center gap-1.5">
-                        <span className="size-1.5 rounded-full bg-green-500" />
-                        {tab.result?.rowCount ?? 0} rows
-                      </span>
-                      <span className="text-muted-foreground/60">{tab.result?.durationMs}ms</span>
-                    </>
-                  )}
-                </div>
-              ) : (
-                <span className="text-xs text-muted-foreground">No results</span>
-              )}
-            </div>
-            <span className="text-[10px] text-muted-foreground/50">Results collapsed</span>
-          </div>
-        ) : (
-          <>
-            {tab.error ? (
-              <div className="flex-1 flex items-center justify-center p-4">
-                <div className="max-w-md text-center space-y-2">
-                  <AlertCircle className="size-8 text-red-400 mx-auto" />
-                  <h3 className="font-medium text-red-400">Query Error</h3>
-                  <p className="text-sm text-muted-foreground">{tab.error}</p>
-                </div>
-              </div>
-            ) : tab.result || tab.multiResult ? (
-              <>
-                {/* Result Set Tabs - shown when there are multiple statements */}
-                {hasMultipleResults && (
-                  <div className="flex items-center gap-1 border-b border-border/40 bg-muted/10 px-3 py-1.5 shrink-0 overflow-x-auto">
-                    {statementResults.map((stmt, idx) => {
-                      const isActive = idx === activeResultIndex
-                      const label = stmt.isDataReturning
-                        ? `Result ${idx + 1} (${stmt.rowCount} rows)`
-                        : `Statement ${idx + 1} (${stmt.rowCount} affected)`
-
-                      return (
-                        <button
-                          key={stmt.statementIndex}
-                          onClick={() => setActiveResultIndex(tabId, idx)}
-                          className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors whitespace-nowrap ${
-                            isActive
-                              ? 'bg-primary text-primary-foreground'
-                              : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                          }`}
-                          title={stmt.statement.slice(0, 100)}
-                        >
-                          <span
-                            className={`size-1.5 rounded-full ${
-                              stmt.isDataReturning ? 'bg-green-500' : 'bg-blue-500'
-                            } ${isActive ? 'opacity-80' : ''}`}
-                          />
-                          {label}
-                          <span className={`text-[10px] ${isActive ? 'opacity-70' : 'opacity-50'}`}>
-                            {stmt.durationMs}ms
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
-
-                {/* Results Table */}
-                <div className="flex-1 overflow-hidden p-3">
-                  {(() => {
-                    const editContext = getEditContext()
-                    const isTablePreview = tab.type === 'table-preview'
-                    // Edit UI for table-preview (existing behavior) or for query tabs whose active
-                    // statement is a simple single-table SELECT with PK columns visible.
-                    if (editContext && (isTablePreview ? !hasMultipleResults : true)) {
-                      return (
-                        <EditableDataTable
-                          key={`result-${activeResultIndex}`}
-                          tabId={tabId}
-                          columns={getColumnsForEditing()}
-                          data={
-                            isTablePreview && tab.totalRowCount != null
-                              ? ((tab.result?.rows ?? []) as Record<string, unknown>[])
-                              : (paginatedRows as Record<string, unknown>[])
-                          }
-                          pageSize={tab.pageSize}
-                          canEdit={true}
-                          editContext={editContext}
-                          connection={tabConnection}
-                          onFiltersChange={setTableFilters}
-                          onSortingChange={setTableSorting}
-                          onApplyToQuery={
-                            hasActiveFiltersOrSorting ? handleApplyToQuery : undefined
-                          }
-                          onForeignKeyClick={handleFKClick}
-                          onForeignKeyOpenTab={handleFKOpenTab}
-                          onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
-                          onChangesCommitted={handleRunQuery}
-                          serverCurrentPage={isTablePreview ? tab.currentPage : undefined}
-                          serverTotalRowCount={isTablePreview ? tab.totalRowCount : undefined}
-                          onServerPaginationChange={
-                            isTablePreview ? handleTablePreviewPaginationChange : undefined
-                          }
-                        />
-                      )
-                    }
-                    return null
-                  })() || (
-                    <DataTable
-                      key={`result-${activeResultIndex}`}
-                      tabId={tabId}
-                      columns={
-                        hasMultipleResults
-                          ? getActiveResultColumns().map((col) => ({
-                              name: col.name,
-                              dataType: col.dataType
-                            }))
-                          : getColumnsWithFKInfo()
-                      }
-                      data={getAllRows()}
-                      pageSize={tab.pageSize}
-                      onFiltersChange={setTableFilters}
-                      onSortingChange={setTableSorting}
-                      onApplyToQuery={hasActiveFiltersOrSorting ? handleApplyToQuery : undefined}
-                      onForeignKeyClick={handleFKClick}
-                      onForeignKeyOpenTab={handleFKOpenTab}
-                      onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
-                    />
-                  )}
-                </div>
-
-                {/* Results Footer */}
-                <div className="flex items-center justify-between border-t border-border/40 bg-muted/20 px-3 py-1.5 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0"
-                      onClick={() => setIsResultsCollapsed(true)}
-                      title="Collapse results panel"
-                    >
-                      <PanelBottomClose className="size-3.5" />
-                    </Button>
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                      {hasMultipleResults ? (
-                        <>
-                          <span className="flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-green-500" />
-                            {activeStatementResult?.rowCount ?? 0}{' '}
-                            {activeStatementResult?.isDataReturning ? 'rows' : 'affected'}
-                          </span>
-                          <span className="text-muted-foreground/60">
-                            {statementResults.length} statements
-                          </span>
-                          <span>{tab.multiResult?.totalDurationMs}ms total</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="flex items-center gap-1.5">
-                            <span className="size-1.5 rounded-full bg-green-500" />
-                            {tab.result?.rowCount ?? 0} rows returned
-                          </span>
-                          <span>{tab.result?.durationMs}ms</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {/* Telemetry toggle button */}
-                    {(telemetry || benchmark) && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant={showTelemetryPanel ? 'secondary' : 'ghost'}
-                              size="sm"
-                              className="gap-1.5 h-7"
-                              onClick={() => setShowTelemetryPanel(!showTelemetryPanel)}
-                            >
-                              <Timer className="size-3.5" />
-                              Telemetry
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p className="text-xs">
-                              {showTelemetryPanel ? 'Hide' : 'Show'} query performance breakdown
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    {/* Performance Analysis button - PostgreSQL only */}
-                    {tab.result &&
-                      (!tabConnection?.dbType || tabConnection.dbType === 'postgresql') && (
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant={showPerfPanel ? 'secondary' : 'ghost'}
-                                size="sm"
-                                className="gap-1.5 h-7"
-                                onClick={
-                                  perfAnalysis
-                                    ? () => setShowPerfPanel(!showPerfPanel)
-                                    : handleAnalyzePerformance
-                                }
-                                disabled={isPerfAnalyzing}
-                              >
-                                {isPerfAnalyzing ? (
-                                  <Loader2 className="size-3.5 animate-spin" />
-                                ) : (
-                                  <ActivitySquare className="size-3.5" />
-                                )}
-                                {perfAnalysis &&
-                                  perfAnalysis.issueCount.critical +
-                                    perfAnalysis.issueCount.warning >
-                                    0 && (
-                                    <Badge
-                                      variant="secondary"
-                                      className={`h-4 px-1.5 text-[10px] ${
-                                        perfAnalysis.issueCount.critical > 0
-                                          ? 'bg-red-500/20 text-red-500'
-                                          : 'bg-yellow-500/20 text-yellow-500'
-                                      }`}
-                                    >
-                                      {perfAnalysis.issueCount.critical +
-                                        perfAnalysis.issueCount.warning}
-                                    </Badge>
-                                  )}
-                                Analyze
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top">
-                              <p className="text-xs">
-                                {perfAnalysis
-                                  ? showPerfPanel
-                                    ? 'Hide performance analysis'
-                                    : 'Show performance analysis'
-                                  : 'Analyze query for performance issues'}
-                              </p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      )}
-                    <MaskingToolbar tabId={tabId} />
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-1.5 h-7"
-                            onClick={() => setShareResultsOpen(true)}
-                          >
-                            <Share2 className="size-3.5" />
-                            Share
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent side="top">
-                          <p className="text-xs">Share results as an image</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="sm" className="gap-1.5 h-7">
-                          <Download className="size-3.5" />
-                          Export
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => {
-                            const data = getCurrentExportData()
-                            if (!data) return
-                            const filename = generateExportFilename(
-                              tab.type === 'table-preview' ? tab.tableName : undefined
-                            )
-                            handleExport('csv', data, filename)
-                          }}
-                        >
-                          <FileSpreadsheet className="size-4 text-muted-foreground" />
-                          Export as CSV
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            const data = getCurrentExportData()
-                            if (!data) return
-                            const filename = generateExportFilename(
-                              tab.type === 'table-preview' ? tab.tableName : undefined
-                            )
-                            handleExport('json', data, filename)
-                          }}
-                        >
-                          <FileJson className="size-4 text-muted-foreground" />
-                          Export as JSON
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => {
-                            const data = getCurrentExportData()
-                            if (!data) return
-                            const filename = generateExportFilename(
-                              tab.type === 'table-preview' ? tab.tableName : undefined
-                            )
-                            handleExport('sql', data, filename)
-                          }}
-                        >
-                          <FileCode2 className="size-4 text-muted-foreground" />
-                          Export as SQL
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-
-                {/* Telemetry Panel */}
-                {showTelemetryPanel && (telemetry || benchmark) && (
-                  <TelemetryPanel
-                    telemetry={telemetry}
-                    benchmark={benchmark}
-                    showConnectionOverhead={showConnectionOverhead}
-                    onToggleConnectionOverhead={setShowConnectionOverhead}
-                    selectedPercentile={selectedPercentile}
-                    onSelectPercentile={setSelectedPercentile}
-                    viewMode={viewMode}
-                    onViewModeChange={setViewMode}
-                    onClose={() => setShowTelemetryPanel(false)}
-                  />
-                )}
-
-                {/* Performance Indicator Panel */}
-                {showPerfPanel && perfAnalysis && (
-                  <PerfIndicatorPanel
-                    analysis={perfAnalysis}
-                    onClose={() => setShowPerfPanel(false)}
-                    onReanalyze={handleAnalyzePerformance}
-                    isAnalyzing={isPerfAnalyzing}
-                    showCritical={showCritical}
-                    showWarning={showWarning}
-                    showInfo={showInfo}
-                    onToggleSeverity={toggleSeverityFilter}
-                  />
-                )}
-              </>
-            ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center space-y-3 max-w-sm">
-                  <div className="size-10 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-                    <Play className="size-5 text-muted-foreground" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm text-muted-foreground">
-                      {tab.query.trim() ? 'Ready to execute' : 'Write a query to get started'}
-                    </p>
-                    <p className="text-xs text-muted-foreground/60">
-                      {tab.query.trim()
-                        ? `Press ${keys.mod}+Enter to run your query`
-                        : 'Browse the schema explorer to view tables, or type a SQL query above'}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-center gap-4 pt-1">
-                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
-                      <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
-                        {keys.mod}Enter
-                      </kbd>
-                      <span>Run</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
-                      <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
-                        {keys.mod}
-                        {keys.shift}F
-                      </kbd>
-                      <span>Format</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
-                      <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">{keys.mod}K</kbd>
-                      <span>Search</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Step-through results (shown when a step session is active) */}
+              <QueryResults
+          tabId={tabId}
+          tab={tab}
+          tabConnection={tabConnection}
+          isResultsCollapsed={isResultsCollapsed}
+          setIsResultsCollapsed={setIsResultsCollapsed}
+          hasMultipleResults={hasMultipleResults}
+          statementResults={statementResults}
+          activeStatementResult={activeStatementResult}
+          activeResultIndex={activeResultIndex}
+          setActiveResultIndex={setActiveResultIndex}
+          getEditContext={getEditContext}
+          getColumnsForEditing={getColumnsForEditing}
+          paginatedRows={paginatedRows}
+          setTableFilters={setTableFilters}
+          setTableSorting={setTableSorting}
+          hasActiveFiltersOrSorting={hasActiveFiltersOrSorting}
+          handleApplyToQuery={handleApplyToQuery}
+          handleFKClick={handleFKClick}
+          handleFKOpenTab={handleFKOpenTab}
+          handleColumnStatsClick={handleColumnStatsClick}
+          handleRunQuery={handleRunQuery}
+          handleTablePreviewPaginationChange={handleTablePreviewPaginationChange}
+          getActiveResultColumns={getActiveResultColumns}
+          getColumnsWithFKInfo={getColumnsWithFKInfo}
+          getAllRows={getAllRows}
+          telemetry={telemetry}
+          benchmark={benchmark}
+          showTelemetryPanel={showTelemetryPanel}
+          setShowTelemetryPanel={setShowTelemetryPanel}
+          showConnectionOverhead={showConnectionOverhead}
+          setShowConnectionOverhead={setShowConnectionOverhead}
+          selectedPercentile={selectedPercentile}
+          setSelectedPercentile={setSelectedPercentile}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          perfAnalysis={perfAnalysis}
+          showPerfPanel={showPerfPanel}
+          setShowPerfPanel={setShowPerfPanel}
+          handleAnalyzePerformance={handleAnalyzePerformance}
+          isPerfAnalyzing={isPerfAnalyzing}
+          showCritical={showCritical}
+          showWarning={showWarning}
+          showInfo={showInfo}
+          toggleSeverityFilter={toggleSeverityFilter}
+          setShareResultsOpen={setShareResultsOpen}
+          getCurrentExportData={getCurrentExportData}
+          handleExport={handleExport}
+          generateExportFilename={generateExportFilename}
+        />
+{/* Step-through results (shown when a step session is active) */}
       {stepSession && <StepResultsTabs tabId={tabId} />}
 
       {/* Step-through ribbon controls (bottom of layout) */}
