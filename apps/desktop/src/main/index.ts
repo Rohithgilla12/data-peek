@@ -98,20 +98,49 @@ app.whenReady().then(async () => {
     // even if some services failed to initialize
   }
 
-  // Create native application menu
-  createMenu()
+  // Anything between the init try/catch above and registerAllHandlers below that
+  // throws synchronously will skip IPC handler registration, leaving the renderer
+  // with "No handler registered for 'db:connect'" (issue #174). Every step
+  // outside the registration call is therefore isolated in its own try/catch.
 
-  // Set app user model id for windows
-  electronApp.setAppUserModelId('dev.datapeek.app')
+  try {
+    createMenu()
+  } catch (error) {
+    console.error('Failed to create native menu:', error)
+  }
 
-  // Default open or close DevTools by F12 in development
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+  try {
+    electronApp.setAppUserModelId('dev.datapeek.app')
+  } catch (error) {
+    console.error('Failed to set app user model id:', error)
+  }
 
-  // Register all IPC handlers
-  const notebookStorage = new NotebookStorage(app.getPath('userData'))
-  stepSessionRegistry.startCleanupTimer()
+  try {
+    // Default open or close DevTools by F12 in development
+    app.on('browser-window-created', (_, window) => {
+      optimizer.watchWindowShortcuts(window)
+    })
+  } catch (error) {
+    console.error('Failed to register browser-window-created listener:', error)
+  }
+
+  // NotebookStorage uses a native module (better-sqlite3) which can fail to load
+  // if the wrong-arch binary was bundled — see issue #174.
+  let notebookStorage: NotebookStorage | null = null
+  try {
+    notebookStorage = new NotebookStorage(app.getPath('userData'))
+  } catch (error) {
+    console.error('Failed to initialize NotebookStorage:', error)
+  }
+
+  try {
+    stepSessionRegistry.startCleanupTimer()
+  } catch (error) {
+    console.error('Failed to start step session cleanup timer:', error)
+  }
+
+  // CRITICAL: register IPC handlers. Nothing above this line is allowed to abort
+  // startup before we reach here.
   registerAllHandlers({
     connections: store,
     savedQueries: savedQueriesStore,
