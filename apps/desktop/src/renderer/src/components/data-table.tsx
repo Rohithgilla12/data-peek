@@ -571,7 +571,7 @@ export function DataTable<TData extends Record<string, unknown>>({
       <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
         <div ref={tableContainerRef} className="absolute inset-0 overflow-auto">
           <table className="w-full min-w-max caption-bottom text-sm">
-            <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
+            <TableHeader className="sticky top-0 bg-muted z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <React.Fragment key={headerGroup.id}>
                   <TableRow ref={headerRef} className="hover:bg-transparent border-border/50">

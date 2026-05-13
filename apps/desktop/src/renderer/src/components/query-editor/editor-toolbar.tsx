@@ -20,11 +20,13 @@ import {
   TooltipTrigger
 } from '@data-peek/ui'
 import { BenchmarkButton } from '@/components/benchmark-button'
-import type { Tab } from '@/stores/tab-store'
+import { isExecutableTab, type Tab } from '@/stores/tab-store'
+import type { StepSessionState } from '@/stores/step-store'
+import type { ConnectionWithStatus } from '@/stores/connection-store'
 
 interface EditorToolbarProps {
   tab: Tab
-  tabConnection: any
+  tabConnection: ConnectionWithStatus | null | undefined
   isEditorCollapsed: boolean
   setIsEditorCollapsed: (v: boolean) => void
   isResultsCollapsed: boolean
@@ -34,7 +36,7 @@ interface EditorToolbarProps {
   handleStartStep: () => void
   inTransactionMode: boolean
   setInTransactionMode: (v: boolean) => void
-  stepSession: any
+  stepSession: StepSessionState | null | undefined
   handleExplainQuery: () => void
   isExplaining: boolean
   handleBenchmark: (runCount: number) => Promise<void>
@@ -65,6 +67,11 @@ export function EditorToolbar({
   setSaveDialogOpen,
   setShareDialogOpen
 }: EditorToolbarProps) {
+  const executable = isExecutableTab(tab) ? tab : null
+  const query = executable?.query ?? ''
+  const isExecuting = executable?.isExecuting ?? false
+  const hasQuery = query.trim().length > 0
+
   return (
     <div className="flex items-center justify-between bg-muted/20 px-3 py-2">
       <div className="flex items-center gap-2">
@@ -81,7 +88,7 @@ export function EditorToolbar({
             <PanelTopClose className="size-3.5" />
           )}
         </Button>
-        {'isExecuting' in tab && tab.isExecuting ? (
+        {isExecuting ? (
           <Button
             size="sm"
             variant="destructive"
@@ -95,7 +102,7 @@ export function EditorToolbar({
           <Button
             size="sm"
             className="gap-1.5 h-7"
-            disabled={!('query' in tab) || !tab.query.trim()}
+            disabled={!hasQuery}
             onClick={() => handleRunQuery()}
           >
             <Play className="size-3.5" />
@@ -112,7 +119,7 @@ export function EditorToolbar({
               size="sm"
               variant="outline"
               onClick={handleStartStep}
-              disabled={!('query' in tab) || !tab.query.trim() || !!stepSession || tab.isExecuting}
+              disabled={!hasQuery || !!stepSession || isExecuting}
               className="h-7 text-xs"
             >
               <StepForward className="size-3 mr-1" />
@@ -138,7 +145,7 @@ export function EditorToolbar({
                 variant="ghost"
                 size="sm"
                 className="gap-1.5 h-7"
-                disabled={('isExecuting' in tab && tab.isExecuting) || isExplaining || !('query' in tab) || !tab.query.trim()}
+                disabled={isExecuting || isExplaining || !hasQuery}
                 onClick={handleExplainQuery}
               >
                 {isExplaining ? (
@@ -157,7 +164,7 @@ export function EditorToolbar({
         <BenchmarkButton
           onBenchmark={handleBenchmark}
           isRunning={isRunningBenchmark}
-          disabled={('isExecuting' in tab && tab.isExecuting) || !('query' in tab) || !tab.query.trim()}
+          disabled={isExecuting || !hasQuery}
         />
         {!isEditorCollapsed && (
           <>
@@ -166,7 +173,7 @@ export function EditorToolbar({
               variant="ghost"
               size="sm"
               className="gap-1.5 h-7"
-              disabled={!('query' in tab) || !tab.query.trim()}
+              disabled={!hasQuery}
               onClick={handleFormatQuery}
             >
               <Wand2 className="size-3.5" />
@@ -180,7 +187,7 @@ export function EditorToolbar({
               variant="ghost"
               size="sm"
               className="gap-1.5 h-7"
-              disabled={!('query' in tab) || !tab.query.trim()}
+              disabled={!hasQuery}
               onClick={() => setSaveDialogOpen(true)}
             >
               <Bookmark className="size-3.5" />
@@ -193,7 +200,7 @@ export function EditorToolbar({
                     variant="ghost"
                     size="sm"
                     className="gap-1.5 h-7"
-                    disabled={!('query' in tab) || !tab.query.trim()}
+                    disabled={!hasQuery}
                     onClick={() => setShareDialogOpen(true)}
                   >
                     <Share2 className="size-3.5" />
@@ -231,10 +238,10 @@ export function EditorToolbar({
         )}
       </div>
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        {isEditorCollapsed && 'query' in tab && (
+        {isEditorCollapsed && query && (
           <code className="text-[10px] bg-muted/50 px-2 py-0.5 rounded max-w-[300px] truncate">
-            {tab.query.replace(/\s+/g, ' ').slice(0, 60)}
-            {tab.query.length > 60 ? '...' : ''}
+            {query.replace(/\s+/g, ' ').slice(0, 60)}
+            {query.length > 60 ? '...' : ''}
           </code>
         )}
         <span className="flex items-center gap-1.5">

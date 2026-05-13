@@ -5,7 +5,7 @@ export function baseOptions(): BaseLayoutProps {
     nav: {
       title: (
         <span className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#6b8cf5]">
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-primary">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -14,7 +14,7 @@ export function baseOptions(): BaseLayoutProps {
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="h-4 w-4 text-[#0a0a0b]"
+              className="h-4 w-4 text-primary-foreground"
             >
               <ellipse cx="12" cy="5" rx="9" ry="3" />
               <path d="M3 5V19A9 3 0 0 0 21 19V5" />
