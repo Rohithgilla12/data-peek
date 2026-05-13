@@ -229,27 +229,30 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Get the createForeignKeyTab action
   const createForeignKeyTab = useTabStore((s) => s.createForeignKeyTab)
 
-  const buildMaskedExportData = (data: ExportData): ExportData => {
-    const masked = getEffectiveMaskedColumns(
-      tabId,
-      data.columns.map((c) => c.name)
-    )
-    if (masked.size === 0) return data
-    return {
-      ...data,
-      rows: data.rows.map((row) => {
-        const newRow = { ...row }
-        for (const col of masked) {
-          newRow[col] = '[MASKED]'
-        }
-        return newRow
-      })
-    }
-  }
+  const buildMaskedExportData = useCallback(
+    (data: ExportData): ExportData => {
+      const masked = getEffectiveMaskedColumns(
+        tabId,
+        data.columns.map((c) => c.name)
+      )
+      if (masked.size === 0) return data
+      return {
+        ...data,
+        rows: data.rows.map((row) => {
+          const newRow = { ...row }
+          for (const col of masked) {
+            newRow[col] = '[MASKED]'
+          }
+          return newRow
+        })
+      }
+    },
+    [getEffectiveMaskedColumns, tabId]
+  )
 
-  // Export data for the currently visible result set. For multi-statement queries this
-  // follows the active statement tab instead of always exporting the first result.
-  const getCurrentExportData = (): ExportData | null => {
+  // Follows the active statement tab for multi-statement queries instead of always
+  // exporting the first result.
+  const getCurrentExportData = useCallback((): ExportData | null => {
     if (!tab || !('result' in tab)) return null
     const idx = tab.activeResultIndex ?? 0
     const stmt = tab.multiResult?.statements?.[idx]
@@ -260,32 +263,38 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       }
     }
     return tab.result ?? null
-  }
+  }, [tab])
 
-  const handleExport = (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
-    const masked = getEffectiveMaskedColumns(
-      tabId,
-      data.columns.map((c) => c.name)
-    )
-    if (masked.size > 0) {
-      setPendingExport({ type, data, filename })
-      return
-    }
-    doExport(type, data, filename)
-  }
+  const doExport = useCallback(
+    (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
+      if (type === 'csv') {
+        downloadCSV(data, filename)
+      } else if (type === 'json') {
+        downloadJSON(data, filename)
+      } else {
+        downloadSQL(data, filename, {
+          tableName: tab && tab.type === 'table-preview' ? tab.tableName : 'query_result',
+          schemaName: tab && tab.type === 'table-preview' ? tab.schemaName : undefined
+        })
+      }
+    },
+    [tab]
+  )
 
-  const doExport = (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
-    if (type === 'csv') {
-      downloadCSV(data, filename)
-    } else if (type === 'json') {
-      downloadJSON(data, filename)
-    } else {
-      downloadSQL(data, filename, {
-        tableName: tab && tab.type === 'table-preview' ? tab.tableName : 'query_result',
-        schemaName: tab && tab.type === 'table-preview' ? tab.schemaName : undefined
-      })
-    }
-  }
+  const handleExport = useCallback(
+    (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
+      const masked = getEffectiveMaskedColumns(
+        tabId,
+        data.columns.map((c) => c.name)
+      )
+      if (masked.size > 0) {
+        setPendingExport({ type, data, filename })
+        return
+      }
+      doExport(type, data, filename)
+    },
+    [doExport, getEffectiveMaskedColumns, tabId]
+  )
 
   const handleRunQuery = useCallback(
     async (selectedSql?: string) => {
@@ -543,11 +552,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     [tabConnection, tabId, updateTablePreviewPagination, handleRunQuery]
   )
 
-  const handleFormatQuery = () => {
+  const handleFormatQuery = useCallback(() => {
     if (!tab || !isExecutableTab(tab) || !tab.query.trim()) return
     const formatted = formatSQL(tab.query)
     updateTabQuery(tabId, formatted)
-  }
+  }, [tab, tabId, updateTabQuery])
 
   // Handle benchmark execution
   const handleBenchmark = useCallback(
@@ -688,9 +697,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     setShowPerfPanel
   ])
 
-  const handleQueryChange = (value: string) => {
-    updateTabQuery(tabId, value)
-  }
+  const handleQueryChange = useCallback(
+    (value: string) => {
+      updateTabQuery(tabId, value)
+    },
+    [tabId, updateTabQuery]
+  )
 
   const handleStartStep = useCallback(async () => {
     if (!tab || tab.type !== 'query' || !tab.query.trim() || stepSession) return
@@ -1155,32 +1167,36 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         ) ?? null)
       : null
 
-  // Generate SQL WHERE clause from filters
-  const generateWhereClause = (filters: DataTableFilter[]): string => {
-    if (filters.length === 0) return ''
-    const dbType = tabConnection?.dbType
-    const conditions = filters.map((f) => {
-      const escapedValue = f.value.replace(/'/g, "''")
-      const quotedCol = quoteIdentifier(f.column, dbType)
-      if (dbType === 'mssql' || dbType === 'mysql') {
-        return `${quotedCol} LIKE '%${escapedValue}%'`
-      }
-      return `${quotedCol} ILIKE '%${escapedValue}%'`
-    })
-    return `WHERE ${conditions.join(' AND ')}`
-  }
+  const generateWhereClause = useCallback(
+    (filters: DataTableFilter[]): string => {
+      if (filters.length === 0) return ''
+      const dbType = tabConnection?.dbType
+      const conditions = filters.map((f) => {
+        const escapedValue = f.value.replace(/'/g, "''")
+        const quotedCol = quoteIdentifier(f.column, dbType)
+        if (dbType === 'mssql' || dbType === 'mysql') {
+          return `${quotedCol} LIKE '%${escapedValue}%'`
+        }
+        return `${quotedCol} ILIKE '%${escapedValue}%'`
+      })
+      return `WHERE ${conditions.join(' AND ')}`
+    },
+    [tabConnection]
+  )
 
-  const generateOrderByClause = (sorting: DataTableSort[]): string => {
-    if (sorting.length === 0) return ''
-    const dbType = tabConnection?.dbType
-    const orders = sorting.map(
-      (s) => `${quoteIdentifier(s.column, dbType)} ${s.direction.toUpperCase()}`
-    )
-    return `ORDER BY ${orders.join(', ')}`
-  }
+  const generateOrderByClause = useCallback(
+    (sorting: DataTableSort[]): string => {
+      if (sorting.length === 0) return ''
+      const dbType = tabConnection?.dbType
+      const orders = sorting.map(
+        (s) => `${quoteIdentifier(s.column, dbType)} ${s.direction.toUpperCase()}`
+      )
+      return `ORDER BY ${orders.join(', ')}`
+    },
+    [tabConnection]
+  )
 
-  // Build a new query with filters/sorting applied
-  const buildQueryWithFilters = (): string => {
+  const buildQueryWithFilters = useCallback((): string => {
     if (!tab || !isExecutableTab(tab)) return ''
 
     // For table preview tabs, rebuild from the stored table — but only when the
@@ -1246,17 +1262,50 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     }
     result = `${result} ${wherePart} ${orderPart}${limitClause};`.replace(/\s+/g, ' ').trim()
     return result
-  }
+  }, [tab, tabConnection, tableFilters, tableSorting, generateWhereClause, generateOrderByClause])
 
-  const handleApplyToQuery = () => {
+  const handleApplyToQuery = useCallback(() => {
     if (!tab || (tableFilters.length === 0 && tableSorting.length === 0)) return
     const newQuery = buildQueryWithFilters()
     updateTabQuery(tabId, formatSQL(newQuery))
-    // Automatically run the new query
     setTimeout(() => handleRunQuery(), 100)
-  }
+  }, [
+    tab,
+    tableFilters,
+    tableSorting,
+    buildQueryWithFilters,
+    updateTabQuery,
+    tabId,
+    handleRunQuery
+  ])
 
   const hasActiveFiltersOrSorting = tableFilters.length > 0 || tableSorting.length > 0
+
+  const statementResults = getAllStatementResults(tabId)
+  const activeStatementResult = getActiveStatementResult(tabId)
+  const hasMultipleResults = statementResults.length > 1
+
+  const getAllRows = useCallback((): Record<string, unknown>[] => {
+    if (!tab || !isExecutableTab(tab)) return []
+    if (hasMultipleResults) {
+      const statement = tab.multiResult?.statements?.[tab.activeResultIndex ?? 0]
+      return (statement?.rows ?? []) as Record<string, unknown>[]
+    }
+    return (tab.result?.rows ?? []) as Record<string, unknown>[]
+  }, [tab, hasMultipleResults])
+
+  const getActiveResultColumns = useCallback(() => {
+    if (activeStatementResult) {
+      return activeStatementResult.fields.map((f) => ({
+        name: f.name,
+        dataType: f.dataType
+      }))
+    }
+    if (tab && isExecutableTab(tab) && tab.result) {
+      return tab.result.columns
+    }
+    return []
+  }, [activeStatementResult, tab])
 
   // Auto-run query for table-preview tabs when first created
   useEffect(() => {
@@ -1344,42 +1393,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     return <SchemaIntelPanel tabId={tabId} />
   }
 
-  // Get statement results for multi-statement queries
-  const statementResults = getAllStatementResults(tabId)
-  const activeStatementResult = getActiveStatementResult(tabId)
-  const hasMultipleResults = statementResults.length > 1
-  // At this point, tab is guaranteed to be query or table-preview (not erd or table-designer)
   const activeResultIndex = tab.activeResultIndex ?? 0
 
-  // For query tabs, pass all rows and let DataTable handle client-side pagination
-  // For table-preview tabs with server-side pagination, rows are already limited by SQL
-  const getAllRows = (): Record<string, unknown>[] => {
-    if (hasMultipleResults) {
-      const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
-      return (statement?.rows ?? []) as Record<string, unknown>[]
-    }
-    return (tab.result?.rows ?? []) as Record<string, unknown>[]
-  }
-
-  // Only use store pagination for table-preview with server-side pagination (for backward compat display)
   const paginatedRows = hasMultipleResults
     ? getActiveResultPaginatedRows(tabId)
     : getTabPaginatedRows(tabId)
-
-  // Get columns from active statement result (for multi-statement) or legacy result
-  const getActiveResultColumns = () => {
-    if (activeStatementResult) {
-      return activeStatementResult.fields.map((f) => ({
-        name: f.name,
-        dataType: f.dataType
-      }))
-    }
-    // tab is guaranteed to be query or table-preview at this point
-    if (tab.result) {
-      return tab.result.columns
-    }
-    return []
-  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">

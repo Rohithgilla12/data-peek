@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import {
   Play,
   Square,
@@ -46,7 +47,7 @@ interface EditorToolbarProps {
   setShareDialogOpen: (v: boolean) => void
 }
 
-export function EditorToolbar({
+function EditorToolbarInner({
   tab,
   tabConnection,
   isEditorCollapsed,
@@ -254,3 +255,5 @@ export function EditorToolbar({
     </div>
   )
 }
+
+export const EditorToolbar = memo(EditorToolbarInner)

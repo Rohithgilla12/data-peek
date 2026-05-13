@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import {
   Download,
   FileJson,
@@ -102,7 +103,7 @@ interface QueryResultsProps {
   generateExportFilename: (tableName?: string) => string
 }
 
-export function QueryResults({
+function QueryResultsInner({
   tabId,
   tab,
   tabConnection,
@@ -167,15 +168,7 @@ export function QueryResults({
     handleExport(type, data, generateExportFilename(tableName))
   }
 
-  const ExportItem = ({
-    type,
-    Icon,
-    label
-  }: {
-    type: ExportType
-    Icon: LucideIcon
-    label: string
-  }) => (
+  const exportItem = (type: ExportType, Icon: LucideIcon, label: string) => (
     <DropdownMenuItem onClick={() => runExport(type)}>
       <Icon className="size-4 text-muted-foreground" />
       {label}
@@ -470,9 +463,9 @@ export function QueryResults({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <ExportItem type="csv" Icon={FileSpreadsheet} label="Export as CSV" />
-                  <ExportItem type="json" Icon={FileJson} label="Export as JSON" />
-                  <ExportItem type="sql" Icon={FileCode2} label="Export as SQL" />
+                  {exportItem('csv', FileSpreadsheet, 'Export as CSV')}
+                  {exportItem('json', FileJson, 'Export as JSON')}
+                  {exportItem('sql', FileCode2, 'Export as SQL')}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -544,3 +537,5 @@ export function QueryResults({
     </div>
   )
 }
+
+export const QueryResults = memo(QueryResultsInner)
