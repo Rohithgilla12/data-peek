@@ -109,8 +109,15 @@ app.whenReady().then(async () => {
     optimizer.watchWindowShortcuts(window)
   })
 
-  // Register all IPC handlers
-  const notebookStorage = new NotebookStorage(app.getPath('userData'))
+  // Register all IPC handlers. NotebookStorage uses a native module (better-sqlite3)
+  // which can fail to load if the wrong-arch binary was bundled — don't let that
+  // crash the rest of the IPC layer (e.g. db:connect, see issue #174).
+  let notebookStorage: NotebookStorage | null = null
+  try {
+    notebookStorage = new NotebookStorage(app.getPath('userData'))
+  } catch (error) {
+    console.error('Failed to initialize NotebookStorage:', error)
+  }
   stepSessionRegistry.startCleanupTimer()
   registerAllHandlers({
     connections: store,
