@@ -147,13 +147,13 @@ export default async function DatabasePage({ params }: DatabasePageProps) {
               >
                 {dbInfo.name}
                 <br />
-                <span className="text-[--color-text-secondary]">Client.</span>
+                <span className="text-(--color-text-secondary)">Client.</span>
               </h1>
-              <p className="text-base sm:text-xl text-[--color-text-muted] max-w-2xl mx-auto mb-12 font-mono leading-relaxed">
+              <p className="text-base sm:text-xl text-(--color-text-muted) max-w-2xl mx-auto mb-12 font-mono leading-relaxed">
                 {dbInfo.description}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                <Button size="xl" className="group rounded-full px-10 shadow-2xl shadow-[--color-accent]/20 font-mono uppercase tracking-widest font-bold" asChild>
+                <Button size="xl" className="group rounded-full px-10 shadow-2xl shadow-(--color-accent)/20 font-mono uppercase tracking-widest font-bold" asChild>
                   <Link href="/download">
                     <Download className="w-5 h-5 group-hover:animate-bounce" />
                     <span>Download Free</span>
@@ -184,8 +184,8 @@ export default async function DatabasePage({ params }: DatabasePageProps) {
                   key={feature}
                   className="flex items-center gap-4 p-6 rounded-[2rem] bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition-all group"
                 >
-                  <div className="p-2 rounded-xl bg-[--color-success]/10 border border-[--color-success]/20 group-hover:scale-110 transition-transform">
-                    <Check className="w-5 h-5 text-[--color-success]" />
+                  <div className="p-2 rounded-xl bg-(--color-success)/10 border border-(--color-success)/20 group-hover:scale-110 transition-transform">
+                    <Check className="w-5 h-5 text-(--color-success)" />
                   </div>
                   <span className="text-sm sm:text-base text-white font-mono opacity-80 group-hover:opacity-100 transition-opacity">
                     {feature}
@@ -199,21 +199,21 @@ export default async function DatabasePage({ params }: DatabasePageProps) {
           <FadeIn>
             <section className="relative rounded-[3rem] bg-white/[0.02] border border-white/10 p-8 sm:p-16 text-center overflow-hidden">
               <div className="absolute inset-0 grid-pattern opacity-10" />
-              <div className="absolute inset-0 bg-gradient-to-br from-[--color-accent]/5 to-purple-600/5" />
+              <div className="absolute inset-0 bg-gradient-to-br from-(--color-accent)/5 to-purple-600/5" />
               
               <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-[--color-accent]/10 flex items-center justify-center mx-auto mb-8 border border-[--color-accent]/20">
-                  <Database className="w-8 h-8 text-[--color-accent]" />
+                <div className="w-16 h-16 rounded-2xl bg-(--color-accent)/10 flex items-center justify-center mx-auto mb-8 border border-(--color-accent)/20">
+                  <Database className="w-8 h-8 text-(--color-accent)" />
                 </div>
                 <h2
                   className="text-3xl sm:text-5xl font-bold mb-6 font-mono uppercase tracking-widest text-white"
                 >
                   Ready to Peek?
                 </h2>
-                <p className="text-base sm:text-lg text-[--color-text-muted] mb-10 font-mono max-w-xl mx-auto leading-relaxed">
+                <p className="text-base sm:text-lg text-(--color-text-muted) mb-10 font-mono max-w-xl mx-auto leading-relaxed">
                   Join thousands of developers using data-peek to manage their {dbInfo.name} databases with speed and precision.
                 </p>
-                <Button size="xl" className="group rounded-2xl px-12 bg-[--color-accent] text-[--color-background] hover:bg-[--color-accent]/90 shadow-2xl shadow-[--color-accent]/20 font-mono uppercase tracking-widest font-bold" asChild>
+                <Button size="xl" className="group rounded-2xl px-12 bg-(--color-accent) text-(--color-background) hover:bg-(--color-accent)/90 shadow-2xl shadow-(--color-accent)/20 font-mono uppercase tracking-widest font-bold" asChild>
                   <Link href="/download">
                     Download for Free
                     <ArrowRight className="w-5 h-5 ml-2" />

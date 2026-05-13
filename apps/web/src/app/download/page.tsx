@@ -108,15 +108,15 @@ export default function DownloadPage() {
 
       <main className="pt-32 sm:pt-48 pb-24 overflow-hidden">
         {/* Background elements */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-[--color-accent]/5 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-gradient-to-b from-(--color-accent)/5 to-transparent pointer-events-none" />
         <div className="absolute inset-0 grid-pattern opacity-10 pointer-events-none" />
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
           {/* Hero Section */}
           <FadeIn className="text-center mb-20 sm:mb-32">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 glass-card">
-              <Zap className="w-3.5 h-3.5 text-[--color-warning]" />
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[--color-text-secondary]">
+              <Zap className="w-3.5 h-3.5 text-(--color-warning)" />
+              <span className="text-[10px] font-mono uppercase tracking-widest text-(--color-text-secondary)">
                 v0.19.0 — Latest Stable
               </span>
             </div>
@@ -124,12 +124,12 @@ export default function DownloadPage() {
             <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-8 font-mono uppercase">
               Get the client.
               <br />
-              <span className="text-[--color-text-secondary]">
+              <span className="text-(--color-text-secondary)">
                 Start peek-ing.
               </span>
             </h1>
 
-            <p className="text-base sm:text-lg text-[--color-text-muted] max-w-xl mx-auto mb-12 font-mono leading-relaxed opacity-80">
+            <p className="text-base sm:text-lg text-(--color-text-muted) max-w-xl mx-auto mb-12 font-mono leading-relaxed opacity-80">
               Free to download. No sign-up required. Experience the future of
               database management.
             </p>
@@ -157,7 +157,7 @@ export default function DownloadPage() {
                       <h3 className="text-xl font-bold font-mono uppercase tracking-widest">
                         {platform.name}
                       </h3>
-                      <p className="text-xs text-[--color-text-muted] font-mono uppercase tracking-widest opacity-60">
+                      <p className="text-xs text-(--color-text-muted) font-mono uppercase tracking-widest opacity-60">
                         {platform.description}
                       </p>
                     </div>
@@ -169,7 +169,7 @@ export default function DownloadPage() {
                         key={variant.filename}
                         href="https://github.com/Rohithgilla12/data-peek/releases"
                         target="_blank"
-                        className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-[--color-accent] hover:text-[--color-background] transition-all duration-300 group/item"
+                        className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-(--color-accent) hover:text-(--color-background) transition-all duration-300 group/item"
                       >
                         <div className="flex flex-col">
                           <span className="text-sm font-bold font-mono uppercase tracking-widest">
@@ -198,10 +198,10 @@ export default function DownloadPage() {
                 <div className="grid grid-cols-1 gap-4">
                   {requirements.map((req) => (
                     <div key={req} className="flex items-center gap-4 group">
-                      <div className="w-6 h-6 rounded-full bg-[--color-success]/10 flex items-center justify-center border border-[--color-success]/20 group-hover:scale-110 transition-transform">
-                        <Check className="w-3.5 h-3.5 text-[--color-success]" />
+                      <div className="w-6 h-6 rounded-full bg-(--color-success)/10 flex items-center justify-center border border-(--color-success)/20 group-hover:scale-110 transition-transform">
+                        <Check className="w-3.5 h-3.5 text-(--color-success)" />
                       </div>
-                      <span className="text-sm sm:text-base text-[--color-text-secondary] font-mono opacity-80">
+                      <span className="text-sm sm:text-base text-(--color-text-secondary) font-mono opacity-80">
                         {req}
                       </span>
                     </div>
@@ -211,22 +211,22 @@ export default function DownloadPage() {
             </FadeIn>
 
             <FadeIn className="h-full">
-              <div className="p-8 sm:p-12 rounded-[2.5rem] bg-gradient-to-br from-[--color-accent]/10 to-purple-600/10 border border-[--color-accent]/20 backdrop-blur-xl h-full flex flex-col justify-between">
+              <div className="p-8 sm:p-12 rounded-[2.5rem] bg-gradient-to-br from-(--color-accent)/10 to-purple-600/10 border border-(--color-accent)/20 backdrop-blur-xl h-full flex flex-col justify-between">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-[--color-accent] text-[--color-background] flex items-center justify-center mb-8 shadow-xl shadow-[--color-accent]/20">
+                  <div className="w-12 h-12 rounded-2xl bg-(--color-accent) text-(--color-background) flex items-center justify-center mb-8 shadow-xl shadow-(--color-accent)/20">
                     <Sparkles className="w-6 h-6" />
                   </div>
                   <h2 className="text-2xl font-bold mb-4 font-mono uppercase tracking-widest">
                     Go Pro
                   </h2>
-                  <p className="text-sm sm:text-base text-[--color-text-secondary] font-mono leading-relaxed opacity-80 mb-8">
+                  <p className="text-sm sm:text-base text-(--color-text-secondary) font-mono leading-relaxed opacity-80 mb-8">
                     Unlock advanced intelligence, performance telemetry, and
                     professional data tools with a one-time payment.
                   </p>
                 </div>
                 <Button
                   size="xl"
-                  className="w-full rounded-2xl py-8 font-mono uppercase tracking-widest font-bold bg-[--color-accent] text-[--color-background] hover:bg-[--color-accent]/90 shadow-xl shadow-[--color-accent]/20"
+                  className="w-full rounded-2xl py-8 font-mono uppercase tracking-widest font-bold bg-(--color-accent) text-(--color-background) hover:bg-(--color-accent)/90 shadow-xl shadow-(--color-accent)/20"
                   asChild
                 >
                   <Link href="/#pricing">

@@ -9,19 +9,19 @@ function cn(...inputs: Parameters<typeof clsx>) {
 }
 
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[--color-accent] focus:ring-offset-2 focus:ring-offset-[--color-background] disabled:opacity-50 disabled:pointer-events-none',
+  'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-(--color-accent) focus:ring-offset-2 focus:ring-offset-(--color-background) disabled:opacity-50 disabled:pointer-events-none',
   {
     variants: {
       variant: {
         primary:
-          'bg-[--color-accent] text-[--color-background] hover:bg-[--color-text-primary] hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(34,211,238,0.3)]',
+          'bg-(--color-accent) text-(--color-background) hover:bg-(--color-text-primary) hover:-translate-y-0.5 hover:shadow-[0_10px_40px_rgba(34,211,238,0.3)]',
         secondary:
-          'bg-transparent text-[--color-text-primary] border border-[--color-border] hover:border-[--color-accent] hover:text-[--color-accent] hover:bg-[--color-accent-glow]',
+          'bg-transparent text-(--color-text-primary) border border-(--color-border) hover:border-(--color-accent) hover:text-(--color-accent) hover:bg-(--color-accent-glow)',
         outline:
-          'bg-transparent text-[--color-text-primary] border border-white/10 hover:bg-white/5 hover:border-white/20',
+          'bg-transparent text-(--color-text-primary) border border-white/10 hover:bg-white/5 hover:border-white/20',
         ghost:
-          'bg-transparent text-[--color-text-secondary] hover:text-[--color-text-primary] hover:bg-[--color-surface]',
-        link: 'bg-transparent text-[--color-accent] hover:text-[--color-text-primary] underline-offset-4 hover:underline p-0',
+          'bg-transparent text-(--color-text-secondary) hover:text-(--color-text-primary) hover:bg-(--color-surface)',
+        link: 'bg-transparent text-(--color-accent) hover:text-(--color-text-primary) underline-offset-4 hover:underline p-0',
       },
       size: {
         sm: 'h-9 px-4 text-sm',

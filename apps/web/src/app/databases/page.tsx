@@ -77,7 +77,7 @@ export default function DatabasesPage() {
 
             {/* Hero Section */}
             <section className="text-center mb-20 sm:mb-32">
-              <p className="text-[12px] uppercase tracking-[0.4em] text-[--color-accent] mb-6 font-bold font-mono">
+              <p className="text-[12px] uppercase tracking-[0.4em] text-(--color-accent) mb-6 font-bold font-mono">
                 // Ecosystem
               </p>
               <h1
@@ -85,9 +85,9 @@ export default function DatabasesPage() {
               >
                 Supported
                 <br />
-                <span className="text-[--color-text-secondary]">Databases.</span>
+                <span className="text-(--color-text-secondary)">Databases.</span>
               </h1>
-              <p className="text-base sm:text-xl text-[--color-text-muted] max-w-2xl mx-auto font-mono leading-relaxed">
+              <p className="text-base sm:text-xl text-(--color-text-muted) max-w-2xl mx-auto font-mono leading-relaxed">
                 One client for all your database needs. Connect to PostgreSQL,
                 MySQL, SQL Server, and SQLite with a unified experience.
               </p>
@@ -105,7 +105,7 @@ export default function DatabasesPage() {
                 >
                   <div className="flex items-start justify-between mb-8">
                     <div className="text-6xl group-hover:scale-110 transition-transform duration-500">{db.icon}</div>
-                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-[--color-text-muted] group-hover:text-[--color-accent] group-hover:border-[--color-accent]/30 transition-all">
+                    <div className="p-3 rounded-xl bg-white/5 border border-white/10 text-(--color-text-muted) group-hover:text-(--color-accent) group-hover:border-(--color-accent)/30 transition-all">
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
@@ -114,7 +114,7 @@ export default function DatabasesPage() {
                   >
                     {db.name}
                   </h2>
-                  <p className="text-sm sm:text-base text-[--color-text-secondary] font-mono leading-relaxed group-hover:text-white/90 transition-colors">
+                  <p className="text-sm sm:text-base text-(--color-text-secondary) font-mono leading-relaxed group-hover:text-white/90 transition-colors">
                     {db.description}
                   </p>
 

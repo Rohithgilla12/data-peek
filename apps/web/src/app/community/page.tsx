@@ -90,7 +90,7 @@ export default function CommunityPage() {
           </h1>
 
           <p
-            className="text-base sm:text-lg text-[--color-text-secondary] max-w-xl mx-auto mb-6 sm:mb-8 px-2"
+            className="text-base sm:text-lg text-(--color-text-secondary) max-w-xl mx-auto mb-6 sm:mb-8 px-2"
             style={{ fontFamily: 'var(--font-body)' }}
           >
             We believe great tools should be accessible to everyone.
@@ -113,7 +113,7 @@ export default function CommunityPage() {
             {programs.map((program) => (
               <div
                 key={program.title}
-                className="rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] p-5 sm:p-8"
+                className="rounded-xl sm:rounded-2xl bg-(--color-surface) border border-(--color-border) p-5 sm:p-8"
               >
                 {/* Program Header */}
                 <div className="flex items-center gap-2.5 sm:gap-3 mb-4 sm:mb-6">
@@ -136,7 +136,7 @@ export default function CommunityPage() {
                     >
                       {program.title}
                     </h3>
-                    <p className="text-xs sm:text-sm text-[--color-text-muted]">
+                    <p className="text-xs sm:text-sm text-(--color-text-muted)">
                       {program.description}
                     </p>
                   </div>
@@ -146,10 +146,10 @@ export default function CommunityPage() {
                 <ul className="space-y-2.5 sm:space-y-3">
                   {program.eligible.map((item) => (
                     <li key={item} className="flex items-center gap-2 sm:gap-3">
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[--color-success]/10 flex items-center justify-center flex-shrink-0">
-                        <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[--color-success]" />
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-(--color-success)/10 flex items-center justify-center flex-shrink-0">
+                        <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-(--color-success)" />
                       </div>
-                      <span className="text-xs sm:text-sm text-[--color-text-secondary]">
+                      <span className="text-xs sm:text-sm text-(--color-text-secondary)">
                         {item}
                       </span>
                     </li>
@@ -162,7 +162,7 @@ export default function CommunityPage() {
 
         {/* What You Get */}
         <section className="max-w-3xl mx-auto px-4 sm:px-6 mb-12 sm:mb-20">
-          <div className="rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] p-5 sm:p-8">
+          <div className="rounded-xl sm:rounded-2xl bg-(--color-surface) border border-(--color-border) p-5 sm:p-8">
             <h2
               className="text-lg sm:text-xl font-medium mb-4 sm:mb-6"
               style={{ fontFamily: 'var(--font-display)' }}
@@ -181,10 +181,10 @@ export default function CommunityPage() {
                 '3 device activations',
               ].map((feature) => (
                 <li key={feature} className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[--color-accent]/10 flex items-center justify-center flex-shrink-0">
-                    <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[--color-accent]" />
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-(--color-accent)/10 flex items-center justify-center flex-shrink-0">
+                    <Check className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-(--color-accent)" />
                   </div>
-                  <span className="text-xs sm:text-sm text-[--color-text-secondary]">
+                  <span className="text-xs sm:text-sm text-(--color-text-secondary)">
                     {feature}
                   </span>
                 </li>
@@ -225,16 +225,16 @@ export default function CommunityPage() {
             ].map((item) => (
               <div
                 key={item.step}
-                className="rounded-xl sm:rounded-2xl bg-[--color-surface] border border-[--color-border] p-4 sm:p-6 text-center"
+                className="rounded-xl sm:rounded-2xl bg-(--color-surface) border border-(--color-border) p-4 sm:p-6 text-center"
               >
                 <span
-                  className="text-xs text-[--color-accent] mb-2 block"
+                  className="text-xs text-(--color-accent) mb-2 block"
                   style={{ fontFamily: 'var(--font-mono)' }}
                 >
                   {item.step}
                 </span>
-                <div className="w-10 h-10 rounded-xl bg-[--color-accent]/10 flex items-center justify-center mx-auto mb-3">
-                  <item.icon className="w-5 h-5 text-[--color-accent]" />
+                <div className="w-10 h-10 rounded-xl bg-(--color-accent)/10 flex items-center justify-center mx-auto mb-3">
+                  <item.icon className="w-5 h-5 text-(--color-accent)" />
                 </div>
                 <h3
                   className="text-sm font-medium mb-1.5"
@@ -242,7 +242,7 @@ export default function CommunityPage() {
                 >
                   {item.title}
                 </h3>
-                <p className="text-xs text-[--color-text-muted]">{item.description}</p>
+                <p className="text-xs text-(--color-text-muted)">{item.description}</p>
               </div>
             ))}
           </div>
@@ -250,14 +250,14 @@ export default function CommunityPage() {
 
         {/* CTA Section */}
         <section className="max-w-3xl mx-auto px-4 sm:px-6">
-          <div className="rounded-xl sm:rounded-2xl bg-gradient-to-r from-[--color-accent]/10 to-transparent border border-[--color-accent]/20 p-5 sm:p-8 text-center">
+          <div className="rounded-xl sm:rounded-2xl bg-gradient-to-r from-(--color-accent)/10 to-transparent border border-(--color-accent)/20 p-5 sm:p-8 text-center">
             <h2
               className="text-lg sm:text-xl font-medium mb-1.5 sm:mb-2"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               Ready to get started?
             </h2>
-            <p className="text-xs sm:text-sm text-[--color-text-secondary] mb-4 sm:mb-6">
+            <p className="text-xs sm:text-sm text-(--color-text-secondary) mb-4 sm:mb-6">
               Just send us an email. No forms, no verification hoops. We&apos;ll hook you up.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
