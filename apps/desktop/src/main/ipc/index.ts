@@ -39,7 +39,7 @@ export interface IpcStores {
  */
 export function registerAllHandlers(
   stores: IpcStores,
-  notebookStorage: NotebookStorage,
+  notebookStorage: NotebookStorage | null,
   stepSessionRegistry: StepSessionRegistry
 ): void {
   // Connection CRUD operations
@@ -93,8 +93,13 @@ export function registerAllHandlers(
   // PostgreSQL export/import (pg_dump/pg_restore)
   registerPgExportImportHandlers()
 
-  // SQL Notebooks
-  registerNotebookHandlers(notebookStorage)
+  // SQL Notebooks — skip if storage failed to initialise (e.g. native module load
+  // failure). Other handlers must still register so the rest of the app works.
+  if (notebookStorage) {
+    registerNotebookHandlers(notebookStorage)
+  } else {
+    log.warn('NotebookStorage unavailable; notebook handlers not registered')
+  }
 
   // Schema Intel / diagnostics
   registerIntelHandlers()

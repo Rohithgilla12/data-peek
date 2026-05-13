@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  Database,
-} from 'lucide-react'
+import { Database } from 'lucide-react'
 import {
   cn,
   AlertDialog,
@@ -33,9 +31,7 @@ import {
   type DataTableSort,
   type DataTableColumn
 } from '@/components/data-table'
-import {
-  type DataTableColumn as EditableDataTableColumn
-} from '@/components/editable-data-table'
+import { type DataTableColumn as EditableDataTableColumn } from '@/components/editable-data-table'
 import type { EditContext, TableInfo } from '@data-peek/shared'
 import { analyzeEditableSelect, sqlMatchesStoredTable } from '@/lib/editable-select'
 import { SQLEditor } from '@/components/sql-editor'
@@ -285,8 +281,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       downloadJSON(data, filename)
     } else {
       downloadSQL(data, filename, {
-        tableName: tab?.type === 'table-preview' ? tab.tableName! : 'query_result',
-        schemaName: tab?.type === 'table-preview' ? tab.schemaName : undefined
+        tableName: tab && tab.type === 'table-preview' ? tab.tableName : 'query_result',
+        schemaName: tab && tab.type === 'table-preview' ? tab.schemaName : undefined
       })
     }
   }
@@ -490,11 +486,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       const response = await window.api.db.cancelQuery(cancelledExecutionId)
       if (response.success) {
         const current = useTabStore.getState().getTab(tabId)
-        if (
-          current &&
-          isExecutableTab(current) &&
-          current.executionId === cancelledExecutionId
-        ) {
+        if (current && isExecutableTab(current) && current.executionId === cancelledExecutionId) {
           updateTabMultiResult(tabId, null, 'Query cancelled by user')
           updateTabExecuting(tabId, false, null, cancelledExecutionId)
         }
@@ -1418,7 +1410,6 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           </div>
         )}
 
-        {/* Editor Toolbar */}
         <EditorToolbar
           tab={tab}
           tabConnection={tabConnection}
@@ -1442,60 +1433,59 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         />
       </div>
 
-              <QueryResults
-          tabId={tabId}
-          tab={tab}
-          tabConnection={tabConnection}
-          isResultsCollapsed={isResultsCollapsed}
-          setIsResultsCollapsed={setIsResultsCollapsed}
-          hasMultipleResults={hasMultipleResults}
-          statementResults={statementResults}
-          activeStatementResult={activeStatementResult}
-          activeResultIndex={activeResultIndex}
-          setActiveResultIndex={setActiveResultIndex}
-          getEditContext={getEditContext}
-          getColumnsForEditing={getColumnsForEditing}
-          paginatedRows={paginatedRows}
-          setTableFilters={setTableFilters}
-          setTableSorting={setTableSorting}
-          hasActiveFiltersOrSorting={hasActiveFiltersOrSorting}
-          handleApplyToQuery={handleApplyToQuery}
-          handleFKClick={handleFKClick}
-          handleFKOpenTab={handleFKOpenTab}
-          handleColumnStatsClick={handleColumnStatsClick}
-          handleRunQuery={handleRunQuery}
-          handleTablePreviewPaginationChange={handleTablePreviewPaginationChange}
-          getActiveResultColumns={getActiveResultColumns}
-          getColumnsWithFKInfo={getColumnsWithFKInfo}
-          getAllRows={getAllRows}
-          telemetry={telemetry}
-          benchmark={benchmark}
-          showTelemetryPanel={showTelemetryPanel}
-          setShowTelemetryPanel={setShowTelemetryPanel}
-          showConnectionOverhead={showConnectionOverhead}
-          setShowConnectionOverhead={setShowConnectionOverhead}
-          selectedPercentile={selectedPercentile}
-          setSelectedPercentile={setSelectedPercentile}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          perfAnalysis={perfAnalysis}
-          showPerfPanel={showPerfPanel}
-          setShowPerfPanel={setShowPerfPanel}
-          handleAnalyzePerformance={handleAnalyzePerformance}
-          isPerfAnalyzing={isPerfAnalyzing}
-          showCritical={showCritical}
-          showWarning={showWarning}
-          showInfo={showInfo}
-          toggleSeverityFilter={toggleSeverityFilter}
-          setShareResultsOpen={setShareResultsOpen}
-          getCurrentExportData={getCurrentExportData}
-          handleExport={handleExport}
-          generateExportFilename={generateExportFilename}
-        />
-{/* Step-through results (shown when a step session is active) */}
+      <QueryResults
+        tabId={tabId}
+        tab={tab}
+        tabConnection={tabConnection}
+        isResultsCollapsed={isResultsCollapsed}
+        setIsResultsCollapsed={setIsResultsCollapsed}
+        hasMultipleResults={hasMultipleResults}
+        statementResults={statementResults}
+        activeStatementResult={activeStatementResult}
+        activeResultIndex={activeResultIndex}
+        setActiveResultIndex={setActiveResultIndex}
+        getEditContext={getEditContext}
+        getColumnsForEditing={getColumnsForEditing}
+        paginatedRows={paginatedRows}
+        setTableFilters={setTableFilters}
+        setTableSorting={setTableSorting}
+        hasActiveFiltersOrSorting={hasActiveFiltersOrSorting}
+        handleApplyToQuery={handleApplyToQuery}
+        handleFKClick={handleFKClick}
+        handleFKOpenTab={handleFKOpenTab}
+        handleColumnStatsClick={handleColumnStatsClick}
+        handleRunQuery={handleRunQuery}
+        handleTablePreviewPaginationChange={handleTablePreviewPaginationChange}
+        getActiveResultColumns={getActiveResultColumns}
+        getColumnsWithFKInfo={getColumnsWithFKInfo}
+        getAllRows={getAllRows}
+        telemetry={telemetry}
+        benchmark={benchmark}
+        showTelemetryPanel={showTelemetryPanel}
+        setShowTelemetryPanel={setShowTelemetryPanel}
+        showConnectionOverhead={showConnectionOverhead}
+        setShowConnectionOverhead={setShowConnectionOverhead}
+        selectedPercentile={selectedPercentile}
+        setSelectedPercentile={setSelectedPercentile}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        perfAnalysis={perfAnalysis}
+        showPerfPanel={showPerfPanel}
+        setShowPerfPanel={setShowPerfPanel}
+        handleAnalyzePerformance={handleAnalyzePerformance}
+        isPerfAnalyzing={isPerfAnalyzing}
+        showCritical={showCritical}
+        showWarning={showWarning}
+        showInfo={showInfo}
+        toggleSeverityFilter={toggleSeverityFilter}
+        setShareResultsOpen={setShareResultsOpen}
+        getCurrentExportData={getCurrentExportData}
+        handleExport={handleExport}
+        generateExportFilename={generateExportFilename}
+      />
+
       {stepSession && <StepResultsTabs tabId={tabId} />}
 
-      {/* Step-through ribbon controls (bottom of layout) */}
       {stepSession && <StepRibbon tabId={tabId} />}
 
       {/* FK Panel Stack */}
