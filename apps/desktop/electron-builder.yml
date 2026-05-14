@@ -51,7 +51,6 @@ appImage:
   artifactName: data-peek-${version}-${arch}.${ext}
 deb:
   artifactName: data-peek-${version}-${arch}.${ext}
-npmRebuild: false
 publish:
   provider: github
   owner: Rohithgilla12
