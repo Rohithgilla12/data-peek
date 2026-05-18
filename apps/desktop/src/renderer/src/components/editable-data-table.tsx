@@ -69,6 +69,14 @@ import {
 } from 'lucide-react'
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import * as React from 'react'
+import {
+  CellFocusOverlay,
+  CellInspector,
+  CopyFlash,
+  buildColumnOffsets,
+  useCellNavigation,
+  type CellPosition
+} from '@/components/cell-grid'
 
 const VIRTUALIZATION_THRESHOLD = 50
 const ROW_HEIGHT = 37
@@ -1081,6 +1089,120 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     }
   }, [shouldVirtualize, columnKey])
 
+  // ─── cell-grid keyboard navigation ────────────────────────────────────
+  // Active even in edit mode — only suppressed when the cell editor itself
+  // has focus (handled by ignoreInputs in the hotkeys layer).
+  const cellGridEnabled = shouldVirtualize && columnWidths.length > 0
+  const colCount = columnDefs.length
+  const rowCount = rows.length
+  const columnOffsets = React.useMemo(() => buildColumnOffsets(columnWidths), [columnWidths])
+  const geometry = React.useMemo(
+    () => ({
+      rowHeight: ROW_HEIGHT,
+      columnWidths,
+      columnOffsets,
+      totalWidth: columnOffsets[columnOffsets.length - 1] + (columnWidths.at(-1) ?? 0),
+      headerHeight: 40
+    }),
+    [columnWidths, columnOffsets]
+  )
+
+  const [inspector, setInspector] = React.useState<CellPosition | null>(null)
+  const closeInspector = React.useCallback(() => {
+    setInspector(null)
+    requestAnimationFrame(() => tableContainerRef.current?.focus({ preventScroll: true }))
+  }, [])
+
+  const handleEnter = React.useCallback((pos: CellPosition) => {
+    setInspector(pos)
+  }, [])
+
+  const [copyFlash, setCopyFlash] = React.useState<{ pos: CellPosition; nonce: number } | null>(
+    null
+  )
+  const copyFlashNonce = React.useRef(0)
+
+  const getCellAt = React.useCallback(
+    (pos: CellPosition) => {
+      const row = rows[pos.row]
+      if (!row) return { value: undefined, columnName: '', dataType: '' }
+      const col = columnDefs[pos.col]
+      if (!col) return { value: undefined, columnName: '', dataType: '' }
+      const value = (row.original as Record<string, unknown>)[col.name]
+      return {
+        value,
+        columnName: col.name,
+        dataType: col.dataType,
+        foreignKey: col.foreignKey
+      }
+    },
+    [rows, columnDefs]
+  )
+
+  const handleCellCopy = React.useCallback(
+    (pos: CellPosition) => {
+      const { value } = getCellAt(pos)
+      if (value === null || value === undefined) return
+      const text = typeof value === 'object' ? JSON.stringify(value) : String(value)
+      void navigator.clipboard.writeText(text)
+      copyFlashNonce.current += 1
+      setCopyFlash({ pos, nonce: copyFlashNonce.current })
+    },
+    [getCellAt]
+  )
+
+  const { focus, setFocus, move } = useCellNavigation({
+    rowCount,
+    colCount,
+    enabled: cellGridEnabled && inspector === null,
+    target: tableContainerRef,
+    onEnter: handleEnter,
+    onCopy: handleCellCopy
+  })
+
+  // Auto-focus first cell when a new query lands (column set changes).
+  const lastColumnKey = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    if (!cellGridEnabled) return
+    if (lastColumnKey.current === columnKey) return
+    if (rowCount === 0 || colCount === 0) return
+    lastColumnKey.current = columnKey
+    setFocus({ row: 0, col: 0 })
+  }, [cellGridEnabled, columnKey, rowCount, colCount, setFocus])
+
+  React.useEffect(() => {
+    if (!focus || !tableContainerRef.current) return
+    virtualizer.scrollToIndex(focus.row, { align: 'auto' })
+    const container = tableContainerRef.current
+    const x = columnOffsets[focus.col] ?? 0
+    const w = columnWidths[focus.col] ?? 0
+    const left = container.scrollLeft
+    const right = left + container.clientWidth
+    if (x < left) {
+      container.scrollLeft = Math.max(0, x - 12)
+    } else if (x + w > right) {
+      container.scrollLeft = x + w - container.clientWidth + 12
+    }
+  }, [focus, virtualizer, columnOffsets, columnWidths])
+
+  const handleGridClick = React.useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!cellGridEnabled) return
+      const target = e.target as HTMLElement
+      const cell = target.closest<HTMLElement>('[data-cell-row][data-cell-col]')
+      if (!cell) return
+      const row = Number(cell.dataset.cellRow)
+      const col = Number(cell.dataset.cellCol)
+      if (!Number.isNaN(row) && !Number.isNaN(col)) {
+        setFocus({ row, col })
+        tableContainerRef.current?.focus({ preventScroll: true })
+      }
+    },
+    [cellGridEnabled, setFocus]
+  )
+
+  const inspectorCell = inspector ? getCellAt(inspector) : null
+
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full min-h-0">
@@ -1123,7 +1245,33 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
 
         {/* Table */}
         <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
-          <div ref={tableContainerRef} className="absolute inset-0 overflow-auto">
+          {inspector && inspectorCell && (
+            <CellInspector
+              pos={inspector}
+              value={inspectorCell.value}
+              columnName={inspectorCell.columnName}
+              dataType={inspectorCell.dataType}
+              rowCount={rowCount}
+              colCount={colCount}
+              hasForeignKey={Boolean(inspectorCell.foreignKey)}
+              onClose={closeInspector}
+              onNavigateForeignKey={
+                inspectorCell.foreignKey && onForeignKeyClick
+                  ? () => {
+                      onForeignKeyClick(inspectorCell.foreignKey!, inspectorCell.value)
+                      closeInspector()
+                    }
+                  : undefined
+              }
+              onMove={(dr, dc) => move(dr, dc)}
+            />
+          )}
+          <div
+            ref={tableContainerRef}
+            tabIndex={0}
+            onClick={handleGridClick}
+            className="absolute inset-0 overflow-auto outline-none rounded-lg"
+          >
             <table className="w-full min-w-max caption-bottom text-sm">
               <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -1184,6 +1332,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                                   <div
                                     key={cell.id}
                                     role="cell"
+                                    data-cell-row={virtualRow.index}
+                                    data-cell-col={cellIndex}
                                     className="py-2 px-4 text-sm whitespace-nowrap overflow-hidden"
                                     style={{
                                       width: columnWidths[cellIndex] || 'auto',
@@ -1281,6 +1431,17 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   ))}
               </TableBody>
             </table>
+            <CellFocusOverlay
+              focus={focus}
+              geometry={geometry}
+              totalHeight={virtualizer.getTotalSize() + geometry.headerHeight}
+              suppressed={inspector !== null}
+            />
+            <CopyFlash
+              pos={copyFlash?.pos ?? null}
+              nonce={copyFlash?.nonce ?? 0}
+              geometry={geometry}
+            />
           </div>
         </div>
 
