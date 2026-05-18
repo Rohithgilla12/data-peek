@@ -56,6 +56,34 @@ jobs:
           pnpm exec electron-vite build
           pnpm exec electron-builder --mac --publish never
 
+      - name: Verify native module architectures in DMGs
+        working-directory: apps/desktop/dist
+        run: |
+          set -euxo pipefail
+          for dmg in *.dmg; do
+            expected_arch=$(echo "$dmg" | grep -oE 'arm64|x64')
+            if [ -z "$expected_arch" ]; then
+              echo "Skipping $dmg (no arch in name)"
+              continue
+            fi
+            mount=$(mktemp -d)
+            hdiutil attach "$dmg" -mountpoint "$mount" -nobrowse -readonly
+            app=$(find "$mount" -maxdepth 2 -name '*.app' | head -1)
+            while IFS= read -r node; do
+              info=$(file "$node")
+              case "$expected_arch" in
+                x64)   needle="x86_64" ;;
+                arm64) needle="arm64"  ;;
+              esac
+              if ! echo "$info" | grep -q "$needle"; then
+                echo "ARCH MISMATCH in $dmg: $node -> $info"
+                hdiutil detach "$mount" || true
+                exit 1
+              fi
+            done < <(find "$app" -name '*.node')
+            hdiutil detach "$mount"
+          done
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
         with:
