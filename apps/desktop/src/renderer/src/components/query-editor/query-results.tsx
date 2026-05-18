@@ -1,8 +1,5 @@
 import {
   Download,
-  FileJson,
-  FileSpreadsheet,
-  FileCode2,
   Loader2,
   AlertCircle,
   PanelBottomClose,
@@ -10,8 +7,7 @@ import {
   Timer,
   ActivitySquare,
   Share2,
-  Play,
-  type LucideIcon
+  Play
 } from 'lucide-react'
 import {
   Button,
@@ -23,7 +19,6 @@ import {
   Badge,
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger
 } from '@data-peek/ui'
 
@@ -32,6 +27,7 @@ import { EditableDataTable } from '@/components/editable-data-table'
 import { TelemetryPanel } from '@/components/telemetry-panel'
 import { PerfIndicatorPanel } from '@/components/perf-indicator-panel'
 import { MaskingToolbar } from '@/components/masking-toolbar'
+import { ExportMenuItems } from '@/components/export-menu-items'
 
 import { isExecutableTab, type Tab } from '@/stores/tab-store'
 import type { TelemetryViewMode } from '@/stores/telemetry-store'
@@ -46,10 +42,9 @@ import type {
   BenchmarkResult,
   PerformanceAnalysisResult
 } from '@data-peek/shared'
-import type { ExportData } from '@/lib/export'
+import type { ExportData, ExportDestination, ExportFormat } from '@/lib/export'
 
 type Percentile = 'avg' | 'p90' | 'p95' | 'p99'
-type ExportType = 'csv' | 'json' | 'sql'
 
 interface QueryResultsProps {
   tabId: string
@@ -98,7 +93,12 @@ interface QueryResultsProps {
   toggleSeverityFilter: (severity: 'info' | 'warning' | 'critical') => void
   setShareResultsOpen: (v: boolean) => void
   getCurrentExportData: () => ExportData | null
-  handleExport: (type: ExportType, data: ExportData, filename: string) => void
+  handleExport: (
+    format: ExportFormat,
+    destination: ExportDestination,
+    data: ExportData,
+    filename: string
+  ) => void
   generateExportFilename: (tableName?: string) => string
 }
 
@@ -161,26 +161,11 @@ export function QueryResults({
   const tableName = tab.type === 'table-preview' ? tab.tableName : undefined
   const hasResults = !!tabResult || !!tabMultiResult
 
-  const runExport = (type: ExportType) => {
+  const runExport = (format: ExportFormat, destination: ExportDestination) => {
     const data = getCurrentExportData()
     if (!data) return
-    handleExport(type, data, generateExportFilename(tableName))
+    handleExport(format, destination, data, generateExportFilename(tableName))
   }
-
-  const ExportItem = ({
-    type,
-    Icon,
-    label
-  }: {
-    type: ExportType
-    Icon: LucideIcon
-    label: string
-  }) => (
-    <DropdownMenuItem onClick={() => runExport(type)}>
-      <Icon className="size-4 text-muted-foreground" />
-      {label}
-    </DropdownMenuItem>
-  )
 
   return (
     <div
@@ -469,10 +454,8 @@ export function QueryResults({
                     Export
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <ExportItem type="csv" Icon={FileSpreadsheet} label="Export as CSV" />
-                  <ExportItem type="json" Icon={FileJson} label="Export as JSON" />
-                  <ExportItem type="sql" Icon={FileCode2} label="Export as SQL" />
+                <DropdownMenuContent align="end" className="w-36">
+                  <ExportMenuItems onSelect={runExport} />
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>

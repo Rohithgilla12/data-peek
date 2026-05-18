@@ -9,7 +9,6 @@ import {
   Database as SchemaIcon,
   Loader2,
   XCircle,
-
   X,
   Network,
   Plus,
@@ -21,9 +20,6 @@ import {
   Eye,
   Play,
   Filter,
-  FileSpreadsheet,
-  FileJson,
-  FileCode2,
   Focus,
   Upload,
   Download,
@@ -41,7 +37,6 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -68,8 +63,16 @@ import {
 
 import { useConnectionStore, useTabStore, notify } from '@/stores'
 import type { TableInfo, RoutineInfo, QueryResult as IpcQueryResult } from '@shared/index'
-import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
+import {
+  copyExportToClipboard,
+  downloadExport,
+  generateExportFilename,
+  type ExportDestination,
+  type ExportFormat,
+  type SQLExportOptions
+} from '@/lib/export'
 import { buildFullyQualifiedTableRef } from '@/lib/sql-helpers'
+import { ExportMenuItems } from '@/components/export-menu-items'
 
 // Threshold for enabling virtualization
 const VIRTUALIZATION_THRESHOLD = 50
@@ -114,7 +117,12 @@ interface VirtualizedSchemaItemsProps {
   onToggleRoutine: (routineKey: string) => void
   onTableClick: (schemaName: string, table: TableInfo) => void
   onEditTable: (schemaName: string, tableName: string) => void
-  onExportTable: (schemaName: string, tableName: string, format: 'csv' | 'json' | 'sql') => void
+  onExportTable: (
+    schemaName: string,
+    tableName: string,
+    format: ExportFormat,
+    destination: ExportDestination
+  ) => void
   onImportCsv: (schemaName: string, tableName: string) => void
   onGenerateData: (schemaName: string, tableName: string) => void
   onExecuteRoutine: (
@@ -280,24 +288,11 @@ function VirtualizedSchemaItems({
                           Generate Data
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => onExportTable(schemaName, table.name, 'csv')}
-                        >
-                          <FileSpreadsheet className="size-4 mr-2" />
-                          Export as CSV
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onExportTable(schemaName, table.name, 'json')}
-                        >
-                          <FileJson className="size-4 mr-2" />
-                          Export as JSON
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => onExportTable(schemaName, table.name, 'sql')}
-                        >
-                          <FileCode2 className="size-4 mr-2" />
-                          Export as SQL
-                        </DropdownMenuItem>
+                        <ExportMenuItems
+                          onSelect={(format, destination) =>
+                            onExportTable(schemaName, table.name, format, destination)
+                          }
+                        />
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
@@ -707,7 +702,8 @@ export function SchemaExplorer() {
   const handleExportTable = async (
     schemaName: string,
     tableName: string,
-    format: 'csv' | 'json' | 'sql'
+    format: ExportFormat,
+    destination: ExportDestination
   ) => {
     const connection = getActiveConnection()
     if (!connection) return
@@ -738,22 +734,21 @@ export function SchemaExplorer() {
       }
 
       const filename = generateExportFilename(tableName)
+      const sqlOptions: SQLExportOptions = { tableName, schemaName }
 
-      switch (format) {
-        case 'csv':
-          downloadCSV(exportData, filename)
-          break
-        case 'json':
-          downloadJSON(exportData, filename)
-          break
-        case 'sql':
-          downloadSQL(exportData, filename, { tableName, schemaName })
-          break
+      if (destination === 'clipboard') {
+        await copyExportToClipboard(exportData, format, format === 'sql' ? sqlOptions : undefined)
+        notify.success(
+          `Copied ${format.toUpperCase()} export to clipboard`,
+          `${queryResult.rowCount} rows copied from ${tableName}.`
+        )
+      } else {
+        downloadExport(exportData, format, filename, format === 'sql' ? sqlOptions : undefined)
+        notify.success(`Exported ${queryResult.rowCount} rows as ${format.toUpperCase()}`)
       }
-
-      notify.success(`Exported ${queryResult.rowCount} rows as ${format.toUpperCase()}`)
     } catch (error) {
-      notify.error(`Export failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      const action = destination === 'clipboard' ? 'Copy' : 'Export'
+      notify.error(`${action} failed`, error instanceof Error ? error.message : 'Unknown error')
     }
   }
 
@@ -1233,30 +1228,16 @@ export function SchemaExplorer() {
                                             Generate Data
                                           </DropdownMenuItem>
                                           <DropdownMenuSeparator />
-                                          <DropdownMenuItem
-                                            onClick={() =>
-                                              handleExportTable(schema.name, table.name, 'csv')
+                                          <ExportMenuItems
+                                            onSelect={(format, destination) =>
+                                              handleExportTable(
+                                                schema.name,
+                                                table.name,
+                                                format,
+                                                destination
+                                              )
                                             }
-                                          >
-                                            <FileSpreadsheet className="size-4 mr-2" />
-                                            Export as CSV
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() =>
-                                              handleExportTable(schema.name, table.name, 'json')
-                                            }
-                                          >
-                                            <FileJson className="size-4 mr-2" />
-                                            Export as JSON
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() =>
-                                              handleExportTable(schema.name, table.name, 'sql')
-                                            }
-                                          >
-                                            <FileCode2 className="size-4 mr-2" />
-                                            Export as SQL
-                                          </DropdownMenuItem>
+                                          />
                                         </DropdownMenuContent>
                                       </DropdownMenu>
                                     )}

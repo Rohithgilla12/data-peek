@@ -1,11 +1,12 @@
 ---
 title: Export
-description: Export query results to CSV and JSON formats
+description: Export query results to CSV, JSON, and SQL formats
 ---
 
 # Export
 
-Export your query results to CSV or JSON files for use in other applications.
+Export your query results to CSV, JSON, or SQL for use in other applications. You can download
+the export as a file or copy the generated content directly to your clipboard.
 
 ## Export Formats
 
@@ -23,20 +24,29 @@ JavaScript Object Notation, compatible with:
 - APIs and data pipelines
 - Programming languages
 
+### SQL
+
+SQL INSERT statements, compatible with:
+- Database migrations
+- Seed files
+- Moving selected result data between environments
+
 ## Exporting Results
 
 1. Run your query
 2. Click the **Export** button in the results toolbar
 3. Choose your format:
-   - **Export as CSV**
-   - **Export as JSON**
-4. The file downloads automatically
+   - **CSV**
+   - **JSON**
+   - **SQL**
+4. Choose **Download file** or **Copy to clipboard**
 
 ## File Naming
 
 Files are named with timestamp:
 - `query_results_2024-01-15_14-30-45.csv`
 - `query_results_2024-01-15_14-30-45.json`
+- `query_results_2024-01-15_14-30-45.sql`
 
 For table previews:
 - `users_2024-01-15_14-30-45.csv`
@@ -86,8 +96,27 @@ id,name,email,created_at
 - NULL values as `null`
 - Pretty-printed for readability
 
+## SQL Format
+
+### Structure
+
+```sql
+-- Exported 2 rows from users
+-- Generated at 2024-01-15T14:30:45.000Z
+
+INSERT INTO users (id, name, email) VALUES (1, 'John Doe', 'john@example.com');
+INSERT INTO users (id, name, email) VALUES (2, 'Jane Smith', 'jane@example.com');
+```
+
+### Features
+
+- INSERT statements with escaped identifiers
+- SQL NULL values for missing data
+- Dialect-aware value formatting where connection context is available
+
 ## Tips
 
 - **Large exports**: Export happens in memory, so very large results may be slow
 - **All data**: Export includes all rows from the current page
 - **Encoding**: Files use UTF-8 encoding
+- **Clipboard**: Copy uses the same generated content as file download

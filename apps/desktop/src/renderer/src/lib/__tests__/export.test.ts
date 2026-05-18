@@ -7,6 +7,8 @@ import {
   exportToCSV,
   exportToJSON,
   exportToSQL,
+  serializeExport,
+  maskExportData,
   generateExportFilename,
   type ExportData
 } from '../export'
@@ -485,6 +487,61 @@ describe('exportToSQL', () => {
 
     expect(sql).toContain('-- Exported 2 rows from users')
     expect(sql).toContain('-- Generated at')
+  })
+})
+
+describe('serializeExport', () => {
+  const data: ExportData = {
+    columns: [
+      { name: 'id', dataType: 'integer' },
+      { name: 'name', dataType: 'varchar' }
+    ],
+    rows: [{ id: 1, name: 'Alice' }]
+  }
+
+  it('should serialize CSV exports', () => {
+    expect(serializeExport(data, 'csv')).toBe('id,name\n1,Alice')
+  })
+
+  it('should serialize JSON exports', () => {
+    expect(JSON.parse(serializeExport(data, 'json'))).toEqual([{ id: 1, name: 'Alice' }])
+  })
+
+  it('should serialize SQL exports with table options', () => {
+    const sql = serializeExport(data, 'sql', { tableName: 'users', schemaName: 'public' })
+
+    expect(sql).toContain('INSERT INTO public.users (id, name)')
+    expect(sql).toContain("VALUES (1, 'Alice');")
+  })
+
+  it('should serialize SQL exports with a default table name', () => {
+    const sql = serializeExport(data, 'sql')
+
+    expect(sql).toContain('INSERT INTO query_result (id, name)')
+  })
+})
+
+describe('maskExportData', () => {
+  const data: ExportData = {
+    columns: [
+      { name: 'id', dataType: 'integer' },
+      { name: 'secret', dataType: 'varchar' }
+    ],
+    rows: [{ id: 1, secret: 'token' }]
+  }
+
+  it('should replace masked column values before serialization', () => {
+    const masked = maskExportData(data, new Set(['secret']))
+
+    expect(serializeExport(masked, 'csv')).toBe('id,secret\n1,[MASKED]')
+    expect(JSON.parse(serializeExport(masked, 'json'))).toEqual([{ id: 1, secret: '[MASKED]' }])
+    expect(serializeExport(masked, 'sql', { tableName: 'users' })).toContain(
+      "VALUES (1, '[MASKED]');"
+    )
+  })
+
+  it('should return the original export data when no columns are masked', () => {
+    expect(maskExportData(data, new Set())).toBe(data)
   })
 })
 
