@@ -1,36 +1,32 @@
 import * as React from 'react'
 import { Check } from 'lucide-react'
-import type { CellPosition, CellGridGeometry } from './cell-grid-context'
+import type { CellGridGeometry } from './cell-grid-types'
+import type { CellCopyEvent } from './use-cell-grid'
 
 interface CopyFlashProps {
-  /** Cell that was copied — null when nothing to flash */
-  pos: CellPosition | null
-  /** Increments each time a copy event fires so the same cell can re-flash */
-  nonce: number
+  /** Latest copy event; null when nothing to flash. Pass a new object reference per fire. */
+  event: CellCopyEvent | null
   geometry: CellGridGeometry
 }
 
 /**
- * Briefly surfaces a "Copied" pill at the focused cell — replaces the need for
- * a global toast library. Rises ~12px and fades in 900ms.
+ * Floating "Copied" pill anchored to the copied cell. Re-triggers on every new
+ * event nonce so a second copy on the same cell re-fires the animation.
  */
-export const CopyFlash = React.memo(function CopyFlash({
-  pos,
-  nonce,
-  geometry
-}: CopyFlashProps) {
+export const CopyFlash = React.memo(function CopyFlash({ event, geometry }: CopyFlashProps) {
   const [visible, setVisible] = React.useState(false)
 
   React.useEffect(() => {
-    if (!pos) return
+    if (!event) return
     setVisible(true)
     const timeout = window.setTimeout(() => setVisible(false), 900)
     return () => window.clearTimeout(timeout)
-    // re-run on every copy nonce, even for same pos
-  }, [pos, nonce])
+    // `nonce` participates so repeated copies on the same cell re-trigger.
+  }, [event?.pos, event?.nonce, event])
 
-  if (!pos || !visible) return null
+  if (!event || !visible) return null
 
+  const { pos } = event
   const { rowHeight, columnWidths, columnOffsets, headerHeight } = geometry
   const w = columnWidths[pos.col] ?? 0
   if (w === 0) return null

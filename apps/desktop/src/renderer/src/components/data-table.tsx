@@ -49,8 +49,7 @@ import {
   CellFocusOverlay,
   CellInspector,
   CopyFlash,
-  buildColumnOffsets,
-  useCellNavigation,
+  useCellGrid,
   type CellPosition
 } from '@/components/cell-grid'
 
@@ -557,116 +556,34 @@ export function DataTable<TData extends Record<string, unknown>>({
     }
   }, [shouldVirtualize, columnKey])
 
-  // ─── cell-grid keyboard navigation ────────────────────────────────────
-  const cellGridEnabled = shouldVirtualize && columnWidths.length > 0
   const colCount = columnDefs.length
   const rowCount = rows.length
-  const columnOffsets = React.useMemo(() => buildColumnOffsets(columnWidths), [columnWidths])
-  const headerHeight = 40
-  const geometry = React.useMemo(
-    () => ({
-      rowHeight: ROW_HEIGHT,
-      columnWidths,
-      columnOffsets,
-      totalWidth: columnOffsets[columnOffsets.length - 1] + (columnWidths.at(-1) ?? 0),
-      headerHeight
-    }),
-    [columnWidths, columnOffsets]
-  )
-
-  const [inspector, setInspector] = React.useState<CellPosition | null>(null)
-  const closeInspector = React.useCallback(() => {
-    setInspector(null)
-    // Return keyboard focus to the table so arrows resume working immediately
-    requestAnimationFrame(() => tableContainerRef.current?.focus({ preventScroll: true }))
-  }, [])
-
-  const handleEnter = React.useCallback((pos: CellPosition) => {
-    setInspector(pos)
-  }, [])
 
   const getCellAt = React.useCallback(
     (pos: CellPosition) => {
       const row = rows[pos.row]
-      if (!row) return { value: undefined, columnName: '', dataType: '' }
       const col = columnDefs[pos.col]
-      if (!col) return { value: undefined, columnName: '', dataType: '' }
+      if (!row || !col) return { value: undefined, columnName: '', dataType: '' }
       const value = (row.original as Record<string, unknown>)[col.name]
       return { value, columnName: col.name, dataType: col.dataType, foreignKey: col.foreignKey }
     },
     [rows, columnDefs]
   )
 
-  const [copyFlash, setCopyFlash] = React.useState<{ pos: CellPosition; nonce: number } | null>(
-    null
-  )
-  const copyFlashNonce = React.useRef(0)
-
-  const handleCopy = React.useCallback(
-    (pos: CellPosition) => {
-      const { value } = getCellAt(pos)
-      if (value === null || value === undefined) return
-      const text = typeof value === 'object' ? JSON.stringify(value) : String(value)
-      void navigator.clipboard.writeText(text)
-      copyFlashNonce.current += 1
-      setCopyFlash({ pos, nonce: copyFlashNonce.current })
-    },
-    [getCellAt]
-  )
-
-  const { focus, setFocus, move } = useCellNavigation({
-    rowCount,
-    colCount,
-    enabled: cellGridEnabled && inspector === null,
-    target: tableContainerRef,
-    onEnter: handleEnter,
-    onCopy: handleCopy
-  })
-
-  // Auto-focus the first cell when a new query lands (column set changes).
-  const lastColumnKey = React.useRef<string | null>(null)
-  React.useEffect(() => {
-    if (!cellGridEnabled) return
-    if (lastColumnKey.current === columnKey) return
-    if (rowCount === 0 || colCount === 0) return
-    lastColumnKey.current = columnKey
-    setFocus({ row: 0, col: 0 })
-  }, [cellGridEnabled, columnKey, rowCount, colCount, setFocus])
-
-  // Scroll focused cell into view
-  React.useEffect(() => {
-    if (!focus || !tableContainerRef.current) return
-    virtualizer.scrollToIndex(focus.row, { align: 'auto' })
-    const container = tableContainerRef.current
-    const x = columnOffsets[focus.col] ?? 0
-    const w = columnWidths[focus.col] ?? 0
-    const left = container.scrollLeft
-    const right = left + container.clientWidth
-    if (x < left) {
-      container.scrollLeft = Math.max(0, x - 12)
-    } else if (x + w > right) {
-      container.scrollLeft = x + w - container.clientWidth + 12
-    }
-  }, [focus, virtualizer, columnOffsets, columnWidths])
-
-  // Click-to-focus using event delegation
-  const handleGridClick = React.useCallback(
-    (e: React.MouseEvent<HTMLDivElement>) => {
-      if (!cellGridEnabled) return
-      const target = e.target as HTMLElement
-      const cell = target.closest<HTMLElement>('[data-cell-row][data-cell-col]')
-      if (!cell) return
-      const row = Number(cell.dataset.cellRow)
-      const col = Number(cell.dataset.cellCol)
-      if (!Number.isNaN(row) && !Number.isNaN(col)) {
-        setFocus({ row, col })
-        tableContainerRef.current?.focus({ preventScroll: true })
-      }
-    },
-    [cellGridEnabled, setFocus]
-  )
-
-  const inspectorCell = inspector ? getCellAt(inspector) : null
+  const { focus, geometry, inspectorOpen, inspectorCell, copyFlash, move, closeInspector, handleGridClick } =
+    useCellGrid({
+      rowCount,
+      colCount,
+      columnWidths,
+      rowHeight: ROW_HEIGHT,
+      // Must match the sticky <TableHeader> row height; drift causes overlay misalignment.
+      headerHeight: 40,
+      columnKey,
+      containerRef: tableContainerRef,
+      virtualizer,
+      getCell: getCellAt,
+      enabled: shouldVirtualize
+    })
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -688,25 +605,26 @@ export function DataTable<TData extends Record<string, unknown>>({
 
       {/* Table with single scroll container */}
       <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
-        {inspector && inspectorCell && (
+        {inspectorOpen && inspectorCell && focus && (
           <CellInspector
-            pos={inspector}
+            pos={focus}
             value={inspectorCell.value}
             columnName={inspectorCell.columnName}
             dataType={inspectorCell.dataType}
             rowCount={rowCount}
             colCount={colCount}
-            hasForeignKey={Boolean(inspectorCell.foreignKey)}
-            onClose={closeInspector}
-            onNavigateForeignKey={
+            foreignKey={
               inspectorCell.foreignKey && onForeignKeyClick
-                ? () => {
-                    onForeignKeyClick(inspectorCell.foreignKey!, inspectorCell.value)
-                    closeInspector()
+                ? {
+                    onNavigate: () => {
+                      onForeignKeyClick(inspectorCell.foreignKey!, inspectorCell.value)
+                      closeInspector()
+                    }
                   }
                 : undefined
             }
-            onMove={(dr, dc) => move(dr, dc)}
+            onClose={closeInspector}
+            onMove={move}
           />
         )}
         <div
@@ -811,17 +729,8 @@ export function DataTable<TData extends Record<string, unknown>>({
               )}
             </TableBody>
           </table>
-          <CellFocusOverlay
-            focus={focus}
-            geometry={geometry}
-            totalHeight={virtualizer.getTotalSize() + geometry.headerHeight}
-            suppressed={inspector !== null}
-          />
-          <CopyFlash
-            pos={copyFlash?.pos ?? null}
-            nonce={copyFlash?.nonce ?? 0}
-            geometry={geometry}
-          />
+          <CellFocusOverlay focus={focus} geometry={geometry} suppressed={inspectorOpen} />
+          <CopyFlash event={copyFlash} geometry={geometry} />
         </div>
       </div>
 

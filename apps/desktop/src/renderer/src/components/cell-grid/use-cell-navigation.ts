@@ -1,6 +1,10 @@
 import * as React from 'react'
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
-import type { CellPosition } from './cell-grid-context'
+import type { CellPosition } from './cell-grid-types'
+
+// PageUp/PageDown jump distance. Not viewport-derived because the hook can't
+// see the rendered row count — virtualization makes that ambiguous.
+const PAGE_STEP = 20
 
 interface UseCellNavigationOptions {
   rowCount: number
@@ -10,11 +14,12 @@ interface UseCellNavigationOptions {
   target?: React.RefObject<HTMLElement | null>
   onEnter?: (pos: CellPosition) => void
   onCopy?: (pos: CellPosition) => void
+  onEscape?: () => void
 }
 
 interface UseCellNavigationResult {
   focus: CellPosition | null
-  setFocus: React.Dispatch<React.SetStateAction<CellPosition | null>>
+  setFocus: (next: CellPosition | null) => void
   move: (drow: number, dcol: number) => void
   jumpTo: (row: number, col: number) => void
 }
@@ -25,32 +30,46 @@ export function useCellNavigation({
   enabled = true,
   target,
   onEnter,
-  onCopy
+  onCopy,
+  onEscape
 }: UseCellNavigationOptions): UseCellNavigationResult {
-  const [focus, setFocus] = React.useState<CellPosition | null>(null)
+  const [focus, setFocusInternal] = React.useState<CellPosition | null>(null)
 
-  // Auto-focus first cell when grid has data and no focus yet
+  // Clamp existing focus into bounds when row/col counts shrink; clear when grid empties.
   const hasData = rowCount > 0 && colCount > 0
   React.useEffect(() => {
     if (!enabled) return
     if (!hasData) {
-      setFocus(null)
+      setFocusInternal(null)
       return
     }
-    setFocus((current) => {
-      if (current) {
-        const row = Math.min(current.row, rowCount - 1)
-        const col = Math.min(current.col, colCount - 1)
-        if (row === current.row && col === current.col) return current
-        return { row, col }
-      }
-      return null
+    setFocusInternal((current) => {
+      if (!current) return current
+      const row = Math.min(current.row, rowCount - 1)
+      const col = Math.min(current.col, colCount - 1)
+      if (row === current.row && col === current.col) return current
+      return { row, col }
     })
   }, [enabled, hasData, rowCount, colCount])
 
+  const setFocus = React.useCallback(
+    (next: CellPosition | null) => {
+      if (next === null) {
+        setFocusInternal(null)
+        return
+      }
+      if (rowCount <= 0 || colCount <= 0) return
+      setFocusInternal({
+        row: Math.max(0, Math.min(rowCount - 1, next.row)),
+        col: Math.max(0, Math.min(colCount - 1, next.col))
+      })
+    },
+    [rowCount, colCount]
+  )
+
   const move = React.useCallback(
     (drow: number, dcol: number) => {
-      setFocus((current) => {
+      setFocusInternal((current) => {
         if (!current) {
           if (rowCount === 0 || colCount === 0) return null
           return { row: 0, col: 0 }
@@ -67,7 +86,7 @@ export function useCellNavigation({
   const jumpTo = React.useCallback(
     (row: number, col: number) => {
       if (rowCount === 0 || colCount === 0) return
-      setFocus({
+      setFocusInternal({
         row: Math.max(0, Math.min(rowCount - 1, row)),
         col: Math.max(0, Math.min(colCount - 1, col))
       })
@@ -85,8 +104,6 @@ export function useCellNavigation({
       { hotkey: 'ArrowUp', callback: () => move(-1, 0), options: opt },
       { hotkey: 'ArrowLeft', callback: () => move(0, -1), options: opt },
       { hotkey: 'ArrowRight', callback: () => move(0, 1), options: opt },
-      { hotkey: 'Tab', callback: () => move(0, 1), options: opt },
-      { hotkey: 'Shift+Tab', callback: () => move(0, -1), options: opt },
       {
         hotkey: 'Home',
         callback: () => {
@@ -113,8 +130,8 @@ export function useCellNavigation({
         callback: () => jumpTo(rowCount - 1, colCount - 1),
         options: opt
       },
-      { hotkey: 'PageDown', callback: () => move(20, 0), options: opt },
-      { hotkey: 'PageUp', callback: () => move(-20, 0), options: opt },
+      { hotkey: 'PageDown', callback: () => move(PAGE_STEP, 0), options: opt },
+      { hotkey: 'PageUp', callback: () => move(-PAGE_STEP, 0), options: opt },
       {
         hotkey: 'Enter',
         callback: () => {
@@ -123,6 +140,16 @@ export function useCellNavigation({
         },
         options: {
           enabled: enabled && Boolean(onEnter),
+          preventDefault: true,
+          target,
+          ignoreInputs: true
+        }
+      },
+      {
+        hotkey: 'Escape',
+        callback: () => onEscape?.(),
+        options: {
+          enabled: enabled && Boolean(onEscape),
           preventDefault: true,
           target,
           ignoreInputs: true
@@ -142,7 +169,7 @@ export function useCellNavigation({
         }
       }
     ]
-  }, [move, jumpTo, rowCount, colCount, enabled, onEnter, onCopy, target])
+  }, [move, jumpTo, rowCount, colCount, enabled, onEnter, onCopy, onEscape, target])
 
   useHotkeys(handlers)
 

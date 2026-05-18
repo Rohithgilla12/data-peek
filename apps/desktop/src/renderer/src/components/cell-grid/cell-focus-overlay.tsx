@@ -1,41 +1,33 @@
 import * as React from 'react'
-import type { CellPosition, CellGridGeometry } from './cell-grid-context'
+import type { CellPosition, CellGridGeometry } from './cell-grid-types'
 
 interface CellFocusOverlayProps {
   focus: CellPosition | null
   geometry: CellGridGeometry
-  /** Total scrollable height for absolute positioning context */
-  totalHeight: number
-  /** Whether the inspector is open (suppresses the overlay outline) */
+  /** Hide the outline while the inspector is taking over the cell. */
   suppressed?: boolean
 }
 
 /**
- * A single GPU-composited outline that snaps between cells.
- * Position derived from geometry — no per-cell ref tracking required.
+ * Two GPU-composited layers: a full-width row tint and the per-cell ring.
+ * Position is derived from geometry so no per-cell ref tracking is needed.
  */
 export const CellFocusOverlay = React.memo(function CellFocusOverlay({
   focus,
   geometry,
-  totalHeight,
   suppressed = false
 }: CellFocusOverlayProps) {
   if (!focus) return null
 
-  const { rowHeight, columnWidths, columnOffsets, headerHeight } = geometry
+  const { rowHeight, columnWidths, columnOffsets, headerHeight, totalWidth } = geometry
+  const w = columnWidths[focus.col] ?? 0
+  if (w === 0) return null
+
   const x = columnOffsets[focus.col] ?? 0
   const y = headerHeight + focus.row * rowHeight
-  const w = columnWidths[focus.col] ?? 0
-  const h = rowHeight
-
-  if (w === 0 || totalHeight === 0) return null
-
-  const totalWidth = geometry.totalWidth || 0
-  const stripeY = headerHeight + focus.row * rowHeight
 
   return (
     <>
-      {/* Row stripe — subtle full-width band behind the cell ring */}
       <div
         aria-hidden
         data-cell-row-stripe
@@ -44,8 +36,8 @@ export const CellFocusOverlay = React.memo(function CellFocusOverlay({
           top: 0,
           left: 0,
           width: totalWidth || '100%',
-          height: h,
-          transform: `translate3d(0, ${stripeY}px, 0)`,
+          height: rowHeight,
+          transform: `translate3d(0, ${y}px, 0)`,
           transition: 'transform 160ms cubic-bezier(0.32, 0.72, 0, 1), opacity 120ms ease-out',
           pointerEvents: 'none',
           zIndex: 18,
@@ -53,7 +45,6 @@ export const CellFocusOverlay = React.memo(function CellFocusOverlay({
           opacity: suppressed ? 0 : 1
         }}
       />
-      {/* Cell ring */}
       <div
         aria-hidden
         data-cell-focus-overlay
@@ -62,7 +53,7 @@ export const CellFocusOverlay = React.memo(function CellFocusOverlay({
           top: 0,
           left: 0,
           width: w,
-          height: h,
+          height: rowHeight,
           transform: `translate3d(${x}px, ${y}px, 0)`,
           transition:
             'transform 160ms cubic-bezier(0.32, 0.72, 0, 1), width 160ms cubic-bezier(0.32, 0.72, 0, 1), opacity 120ms ease-out',

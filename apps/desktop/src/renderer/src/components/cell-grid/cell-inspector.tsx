@@ -4,20 +4,19 @@ import { Badge, Button, cn } from '@data-peek/ui'
 import { Kbd } from '@/components/ui/kbd'
 import { getTypeColor } from '@/lib/type-colors'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import type { CellPosition } from './cell-grid-context'
+import type { CellPosition } from './cell-grid-types'
 
 interface CellInspectorProps {
   pos: CellPosition
   value: unknown
   columnName: string
   dataType: string
-  /** Total number of rows / cols, used to render position indicator */
+  /** Total rows/cols — used for the position pill and to clamp the move buttons at edges. */
   rowCount: number
   colCount: number
-  /** Optional foreign key — if present we expose a Navigate action */
-  hasForeignKey?: boolean
+  /** When present, exposes a "Follow" action that calls onNavigate(). */
+  foreignKey?: { onNavigate: () => void }
   onClose: () => void
-  onNavigateForeignKey?: () => void
   onMove?: (drow: number, dcol: number) => void
 }
 
@@ -55,9 +54,8 @@ export function CellInspector({
   dataType,
   rowCount,
   colCount,
-  hasForeignKey,
+  foreignKey,
   onClose,
-  onNavigateForeignKey,
   onMove
 }: CellInspectorProps) {
   const { copy, copied } = useCopyToClipboard()
@@ -70,40 +68,10 @@ export function CellInspector({
     copy(formatted.display)
   }, [copy, formatted])
 
-  // Esc to close. Keyboard nav arrows passed up to parent for cross-cell scrubbing.
-  React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        onClose()
-        return
-      }
-      if (!onMove) return
-      if (e.key === 'ArrowDown') {
-        e.preventDefault()
-        onMove(1, 0)
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault()
-        onMove(-1, 0)
-      } else if (e.key === 'ArrowLeft') {
-        e.preventDefault()
-        onMove(0, -1)
-      } else if (e.key === 'ArrowRight') {
-        e.preventDefault()
-        onMove(0, 1)
-      } else if ((e.metaKey || e.ctrlKey) && e.key === 'c') {
-        e.preventDefault()
-        handleCopy()
-      }
-    }
-    window.addEventListener('keydown', onKey, true)
-    return () => window.removeEventListener('keydown', onKey, true)
-  }, [onClose, onMove, handleCopy])
-
   return (
     <div
       data-cell-inspector
-      role="dialog"
+      role="region"
       aria-label={`Cell inspector for ${columnName}`}
       className={cn(
         'cell-inspector-panel',
@@ -144,12 +112,12 @@ export function CellInspector({
           )}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {hasForeignKey && onNavigateForeignKey && (
+          {foreignKey && (
             <Button
               variant="ghost"
               size="sm"
               className="h-6 px-2 text-xs gap-1"
-              onClick={onNavigateForeignKey}
+              onClick={foreignKey.onNavigate}
             >
               <Link2 className="size-3" />
               Follow

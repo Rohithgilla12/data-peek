@@ -674,8 +674,6 @@ input[type='number'] {
   }
 }
 
-/* ────────────────── cell-grid ────────────────── */
-
 [data-cell-focus-overlay] {
   --cell-focus-ring: oklch(0.45 0.15 250);
   --ring-inner: 0 0 0;
