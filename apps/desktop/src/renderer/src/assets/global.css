@@ -674,13 +674,24 @@ input[type='number'] {
   }
 }
 
-[data-cell-focus-overlay] {
+:root {
   --cell-focus-ring: oklch(0.45 0.15 250);
-  --ring-inner: 0 0 0;
+  --cell-focus-fill: oklch(0.45 0.15 250 / 0.1);
+  --cell-row-stripe: oklch(0.45 0.15 250 / 0.05);
+  --cell-flash-bg: oklch(0.45 0.15 250);
+  --cell-flash-fg: oklch(0.99 0 0);
+  --cell-flash-shadow: 0 4px 12px -4px oklch(0.45 0.15 250 / 0.4);
+  --cell-inspector-shadow:
+    0 8px 32px -12px rgb(0 0 0 / 0.18), 0 0 0 1px oklch(0.45 0.15 250 / 0.18);
 }
-.dark [data-cell-focus-overlay] {
+.dark {
   --cell-focus-ring: oklch(0.65 0.15 250);
-  --ring-inner: 1 0 0;
+  --cell-focus-fill: oklch(0.65 0.15 250 / 0.1);
+  --cell-row-stripe: oklch(0.65 0.15 250 / 0.04);
+  --cell-flash-bg: oklch(0.65 0.15 250);
+  --cell-flash-shadow: 0 4px 12px -4px oklch(0.65 0.15 250 / 0.5);
+  --cell-inspector-shadow:
+    0 8px 32px -12px rgb(0 0 0 / 0.32), 0 0 0 1px oklch(0.65 0.15 250 / 0.18);
 }
 
 .cell-inspector-panel {

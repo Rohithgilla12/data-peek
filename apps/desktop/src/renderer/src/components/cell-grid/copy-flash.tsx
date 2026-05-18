@@ -1,17 +1,16 @@
 import * as React from 'react'
 import { Check } from 'lucide-react'
-import type { CellGridGeometry } from './cell-grid-types'
-import type { CellCopyEvent } from './use-cell-grid'
+import type { CellCopyEvent, CellGridGeometry } from './cell-grid-types'
 
 interface CopyFlashProps {
-  /** Latest copy event; null when nothing to flash. Pass a new object reference per fire. */
+  /** Latest copy event; null when nothing to flash. Each fire is a fresh envelope. */
   event: CellCopyEvent | null
   geometry: CellGridGeometry
 }
 
 /**
- * Floating "Copied" pill anchored to the copied cell. Re-triggers on every new
- * event nonce so a second copy on the same cell re-fires the animation.
+ * Floating "Copied" pill anchored to the copied cell. Re-triggers whenever the
+ * event reference changes, so back-to-back copies on the same cell re-fire.
  */
 export const CopyFlash = React.memo(function CopyFlash({ event, geometry }: CopyFlashProps) {
   const [visible, setVisible] = React.useState(false)
@@ -21,8 +20,7 @@ export const CopyFlash = React.memo(function CopyFlash({ event, geometry }: Copy
     setVisible(true)
     const timeout = window.setTimeout(() => setVisible(false), 900)
     return () => window.clearTimeout(timeout)
-    // `nonce` participates so repeated copies on the same cell re-trigger.
-  }, [event?.pos, event?.nonce, event])
+  }, [event])
 
   if (!event || !visible) return null
 
@@ -57,9 +55,9 @@ export const CopyFlash = React.memo(function CopyFlash({ event, geometry }: Copy
           fontFamily: 'var(--font-mono)',
           fontSize: 10,
           letterSpacing: '0.04em',
-          background: 'oklch(0.65 0.15 250)',
-          color: 'oklch(0.99 0 0)',
-          boxShadow: '0 4px 12px -4px oklch(0.65 0.15 250 / 0.5)'
+          background: 'var(--cell-flash-bg)',
+          color: 'var(--cell-flash-fg)',
+          boxShadow: 'var(--cell-flash-shadow)'
         }}
       >
         <Check size={10} strokeWidth={3} />

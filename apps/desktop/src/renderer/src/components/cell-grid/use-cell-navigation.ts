@@ -2,6 +2,12 @@ import * as React from 'react'
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import type { CellPosition } from './cell-grid-types'
 
+function samePosition(a: CellPosition | null, b: CellPosition | null): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  return a.row === b.row && a.col === b.col
+}
+
 // PageUp/PageDown jump distance. Not viewport-derived because the hook can't
 // see the rendered row count — virtualization makes that ambiguous.
 const PAGE_STEP = 20
@@ -55,14 +61,15 @@ export function useCellNavigation({
   const setFocus = React.useCallback(
     (next: CellPosition | null) => {
       if (next === null) {
-        setFocusInternal(null)
+        setFocusInternal((prev) => (prev === null ? prev : null))
         return
       }
       if (rowCount <= 0 || colCount <= 0) return
-      setFocusInternal({
+      const clamped: CellPosition = {
         row: Math.max(0, Math.min(rowCount - 1, next.row)),
         col: Math.max(0, Math.min(colCount - 1, next.col))
-      })
+      }
+      setFocusInternal((prev) => (samePosition(prev, clamped) ? prev : clamped))
     },
     [rowCount, colCount]
   )

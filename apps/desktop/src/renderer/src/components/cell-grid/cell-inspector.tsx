@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ArrowDownToLine, ArrowRight, Copy, Link2, X } from 'lucide-react'
+import { ArrowDownToLine, ArrowLeft, ArrowRight, Copy, Link2, X } from 'lucide-react'
 import { Badge, Button, cn } from '@data-peek/ui'
 import { Kbd } from '@/components/ui/kbd'
 import { getTypeColor } from '@/lib/type-colors'
@@ -43,8 +43,9 @@ function formatValue(value: unknown): { display: string; isNull: boolean; kind: 
   return { display: String(value), isNull: false, kind: 'string' }
 }
 
+const ENCODER = new TextEncoder()
 function bytesOf(s: string): number {
-  return new TextEncoder().encode(s).length
+  return ENCODER.encode(s).length
 }
 
 export function CellInspector({
@@ -60,8 +61,13 @@ export function CellInspector({
 }: CellInspectorProps) {
   const { copy, copied } = useCopyToClipboard()
   const formatted = React.useMemo(() => formatValue(value), [value])
-  const charLength = formatted.isNull ? 0 : formatted.display.length
-  const byteLength = formatted.isNull ? 0 : bytesOf(formatted.display)
+  const { charLength, byteLength } = React.useMemo(
+    () =>
+      formatted.isNull
+        ? { charLength: 0, byteLength: 0 }
+        : { charLength: formatted.display.length, byteLength: bytesOf(formatted.display) },
+    [formatted]
+  )
 
   const handleCopy = React.useCallback(() => {
     if (formatted.isNull) return
@@ -78,9 +84,9 @@ export function CellInspector({
         'absolute inset-x-3 bottom-3 z-30',
         'flex flex-col overflow-hidden',
         'rounded-lg border border-border/60 bg-popover/95 backdrop-blur-md',
-        'shadow-[0_8px_32px_-12px_rgb(0_0_0/0.32),0_0_0_1px_oklch(0.65_0.15_250/0.18)]',
         'text-popover-foreground'
       )}
+      style={{ boxShadow: 'var(--cell-inspector-shadow)' }}
     >
       <div className="flex items-center justify-between gap-3 border-b border-border/40 px-3 py-2">
         <div className="flex items-center gap-2 min-w-0">
@@ -188,7 +194,7 @@ export function CellInspector({
               disabled={pos.col === 0}
               aria-label="Previous column"
             >
-              <ArrowRight className="size-3 -scale-x-100" />
+              <ArrowLeft className="size-3" />
             </button>
             <button
               type="button"

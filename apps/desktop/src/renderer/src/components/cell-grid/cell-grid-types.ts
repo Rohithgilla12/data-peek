@@ -1,3 +1,5 @@
+import type { ForeignKeyInfo } from '@data-peek/shared'
+
 export interface CellPosition {
   row: number
   col: number
@@ -11,14 +13,19 @@ export interface CellGridGeometry {
   headerHeight: number
 }
 
-export function buildColumnOffsets(widths: number[]): number[] {
-  const offsets: number[] = []
-  let running = 0
-  for (const w of widths) {
-    offsets.push(running)
-    running += w
-  }
-  return offsets
+export interface CellSnapshot {
+  value: unknown
+  columnName: string
+  dataType: string
+  foreignKey?: ForeignKeyInfo
+}
+
+/**
+ * Each copy action sets a fresh envelope so the consumer's effect re-fires
+ * even when the same cell is copied twice in a row.
+ */
+export interface CellCopyEvent {
+  pos: CellPosition
 }
 
 export function buildGeometry(
@@ -26,8 +33,11 @@ export function buildGeometry(
   rowHeight: number,
   headerHeight: number
 ): CellGridGeometry {
-  const columnOffsets = buildColumnOffsets(columnWidths)
-  let totalWidth = 0
-  for (const w of columnWidths) totalWidth += w
-  return { rowHeight, columnWidths, columnOffsets, totalWidth, headerHeight }
+  const columnOffsets: number[] = []
+  let running = 0
+  for (const w of columnWidths) {
+    columnOffsets.push(running)
+    running += w
+  }
+  return { rowHeight, columnWidths, columnOffsets, totalWidth: running, headerHeight }
 }

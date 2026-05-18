@@ -35,13 +35,13 @@ export const CellFocusOverlay = React.memo(function CellFocusOverlay({
           position: 'absolute',
           top: 0,
           left: 0,
-          width: totalWidth || '100%',
+          width: totalWidth,
           height: rowHeight,
           transform: `translate3d(0, ${y}px, 0)`,
           transition: 'transform 160ms cubic-bezier(0.32, 0.72, 0, 1), opacity 120ms ease-out',
           pointerEvents: 'none',
           zIndex: 18,
-          background: 'oklch(0.65 0.15 250 / 0.04)',
+          background: 'var(--cell-row-stripe)',
           opacity: suppressed ? 0 : 1
         }}
       />
@@ -62,9 +62,8 @@ export const CellFocusOverlay = React.memo(function CellFocusOverlay({
           boxSizing: 'border-box',
           borderRadius: 3,
           opacity: suppressed ? 0 : 1,
-          background: 'oklch(0.65 0.15 250 / 0.1)',
-          boxShadow:
-            'inset 0 0 0 1px oklch(1 0 0 / 0.04), 0 0 0 2px var(--cell-focus-ring, oklch(0.65 0.15 250))'
+          background: 'var(--cell-focus-fill)',
+          boxShadow: 'inset 0 0 0 1px oklch(1 0 0 / 0.04), 0 0 0 2px var(--cell-focus-ring)'
         }}
       />
     </>
