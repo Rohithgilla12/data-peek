@@ -99,7 +99,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               />
               <Link
                 href="/blog"
-                className="group inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-[--color-text-muted] hover:text-[--color-accent] transition-colors"
+                className="group inline-flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-(--color-text-muted) hover:text-(--color-accent) transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                 <span>Back to Journal</span>
@@ -111,7 +111,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 {post.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest rounded-full bg-[--color-accent]/10 border border-[--color-accent]/20 text-[--color-accent]"
+                    className="px-3 py-1 text-[10px] font-mono uppercase tracking-widest rounded-full bg-(--color-accent)/10 border border-(--color-accent)/20 text-(--color-accent)"
                   >
                     {tag}
                   </span>
@@ -124,29 +124,29 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 {post.title}
               </h1>
 
-              <p className="text-lg md:text-2xl text-[--color-text-secondary] mb-12 leading-relaxed font-mono opacity-90">
+              <p className="text-lg md:text-2xl text-(--color-text-secondary) mb-12 leading-relaxed font-mono opacity-90">
                 {post.description}
               </p>
 
               <div className="flex flex-wrap items-center gap-8 py-8 border-t border-b border-white/5">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                    <User className="w-5 h-5 text-[--color-accent]" />
+                    <User className="w-5 h-5 text-(--color-accent)" />
                   </div>
                   <div>
                     <div className="text-sm font-bold text-white font-mono uppercase tracking-widest">{post.author}</div>
-                    <div className="text-[10px] text-[--color-text-muted] font-mono uppercase tracking-widest">Engineer</div>
+                    <div className="text-[10px] text-(--color-text-muted) font-mono uppercase tracking-widest">Engineer</div>
                   </div>
                 </div>
 
                 <div className="h-10 w-px bg-white/5 hidden sm:block" />
 
-                <div className="flex items-center gap-3 text-[--color-text-muted] font-mono text-[10px] uppercase tracking-widest">
+                <div className="flex items-center gap-3 text-(--color-text-muted) font-mono text-[10px] uppercase tracking-widest">
                   <Calendar className="w-4 h-4" />
                   <time dateTime={post.date}>{formatDate(post.date)}</time>
                 </div>
 
-                <div className="flex items-center gap-3 text-[--color-text-muted] font-mono text-[10px] uppercase tracking-widest">
+                <div className="flex items-center gap-3 text-(--color-text-muted) font-mono text-[10px] uppercase tracking-widest">
                   <Clock className="w-4 h-4" />
                   <span>{post.readingTime} read</span>
                 </div>
@@ -156,7 +156,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
           <FadeIn>
             <article className="pb-24">
-              <div className="prose prose-invert max-w-none font-mono text-sm sm:text-base leading-relaxed prose-headings:font-mono prose-headings:uppercase prose-headings:tracking-tighter prose-a:text-[--color-accent] prose-pre:bg-white/[0.02] prose-pre:border prose-pre:border-white/10 prose-pre:rounded-2xl">
+              <div className="prose prose-invert max-w-none font-mono text-sm sm:text-base leading-relaxed prose-headings:font-mono prose-headings:uppercase prose-headings:tracking-tighter prose-a:text-(--color-accent) prose-pre:bg-white/[0.02] prose-pre:border prose-pre:border-white/10 prose-pre:rounded-2xl">
                 <MDXRemote
                   source={post.content}
                   components={mdxComponents}
@@ -184,22 +184,22 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           <FadeIn>
             <section className="relative rounded-[3rem] bg-white/[0.02] border border-white/10 p-8 sm:p-16 text-center overflow-hidden">
               <div className="absolute inset-0 grid-pattern opacity-10" />
-              <div className="absolute inset-0 bg-gradient-to-br from-[--color-accent]/5 to-purple-600/5" />
+              <div className="absolute inset-0 bg-gradient-to-br from-(--color-accent)/5 to-purple-600/5" />
               
               <div className="relative z-10">
-                <div className="w-16 h-16 rounded-2xl bg-[--color-accent]/10 flex items-center justify-center mx-auto mb-8 border border-[--color-accent]/20">
-                  <Sparkles className="w-8 h-8 text-[--color-accent]" />
+                <div className="w-16 h-16 rounded-2xl bg-(--color-accent)/10 flex items-center justify-center mx-auto mb-8 border border-(--color-accent)/20">
+                  <Sparkles className="w-8 h-8 text-(--color-accent)" />
                 </div>
                 <h2
                   className="text-3xl sm:text-5xl font-bold mb-6 font-mono uppercase tracking-widest text-white"
                 >
                   Join the Future.
                 </h2>
-                <p className="text-base sm:text-lg text-[--color-text-muted] mb-10 font-mono max-w-xl mx-auto leading-relaxed">
+                <p className="text-base sm:text-lg text-(--color-text-muted) mb-10 font-mono max-w-xl mx-auto leading-relaxed">
                   A database client built for professional developers. Experience the speed of native code and the power of AI.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                  <Button size="xl" className="group rounded-2xl px-12 bg-[--color-accent] text-[--color-background] hover:bg-[--color-accent]/90 shadow-2xl shadow-[--color-accent]/20 font-mono uppercase tracking-widest font-bold" asChild>
+                  <Button size="xl" className="group rounded-2xl px-12 bg-(--color-accent) text-(--color-background) hover:bg-(--color-accent)/90 shadow-2xl shadow-(--color-accent)/20 font-mono uppercase tracking-widest font-bold" asChild>
                     <Link href="/download">
                       Download Free
                       <ArrowLeft className="w-5 h-5 ml-2 rotate-180" />

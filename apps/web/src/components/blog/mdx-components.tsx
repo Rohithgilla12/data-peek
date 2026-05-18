@@ -74,16 +74,16 @@ const getLanguageIcon = (language: string): ReactNode => {
     py: <PythonIcon />,
     go: <GoIcon />,
     golang: <GoIcon />,
-    bash: <Terminal className="w-4 h-4 text-[--color-success]" />,
-    shell: <Terminal className="w-4 h-4 text-[--color-success]" />,
-    sh: <Terminal className="w-4 h-4 text-[--color-success]" />,
-    zsh: <Terminal className="w-4 h-4 text-[--color-success]" />,
-    sql: <Database className="w-4 h-4 text-[--color-accent]" />,
-    json: <Braces className="w-4 h-4 text-[--color-warning]" />,
+    bash: <Terminal className="w-4 h-4 text-(--color-success)" />,
+    shell: <Terminal className="w-4 h-4 text-(--color-success)" />,
+    sh: <Terminal className="w-4 h-4 text-(--color-success)" />,
+    zsh: <Terminal className="w-4 h-4 text-(--color-success)" />,
+    sql: <Database className="w-4 h-4 text-(--color-accent)" />,
+    json: <Braces className="w-4 h-4 text-(--color-warning)" />,
   };
 
   return (
-    iconMap[lang] || <FileCode className="w-4 h-4 text-[--color-text-muted]" />
+    iconMap[lang] || <FileCode className="w-4 h-4 text-(--color-text-muted)" />
   );
 };
 
@@ -98,10 +98,10 @@ export const mdxComponents: MDXComponents = {
   ),
   h2: ({ children }: ComponentPropsWithoutRef<"h2">) => (
     <h2
-      className="group relative text-2xl md:text-3xl font-semibold mb-4 mt-14 text-[--color-text-primary] pb-3 border-b border-[--color-border-subtle] tracking-tight"
+      className="group relative text-2xl md:text-3xl font-semibold mb-4 mt-14 text-(--color-text-primary) pb-3 border-b border-(--color-border-subtle) tracking-tight"
       style={{ fontFamily: "var(--font-display)" }}
     >
-      <span className="absolute -left-6 text-[--color-accent] opacity-0 group-hover:opacity-100 transition-opacity">
+      <span className="absolute -left-6 text-(--color-accent) opacity-0 group-hover:opacity-100 transition-opacity">
         #
       </span>
       {children}
@@ -109,10 +109,10 @@ export const mdxComponents: MDXComponents = {
   ),
   h3: ({ children }: ComponentPropsWithoutRef<"h3">) => (
     <h3
-      className="group relative text-xl md:text-2xl font-semibold mb-3 mt-10 text-[--color-text-primary] tracking-tight"
+      className="group relative text-xl md:text-2xl font-semibold mb-3 mt-10 text-(--color-text-primary) tracking-tight"
       style={{ fontFamily: "var(--font-display)" }}
     >
-      <span className="absolute -left-7 text-[--color-accent] opacity-0 group-hover:opacity-100 transition-opacity">
+      <span className="absolute -left-7 text-(--color-accent) opacity-0 group-hover:opacity-100 transition-opacity">
         ##
       </span>
       {children}
@@ -120,14 +120,14 @@ export const mdxComponents: MDXComponents = {
   ),
   h4: ({ children }: ComponentPropsWithoutRef<"h4">) => (
     <h4
-      className="text-lg font-semibold mb-2 mt-8 text-[--color-text-primary]"
+      className="text-lg font-semibold mb-2 mt-8 text-(--color-text-primary)"
       style={{ fontFamily: "var(--font-display)" }}
     >
       {children}
     </h4>
   ),
   p: ({ children }: ComponentPropsWithoutRef<"p">) => (
-    <p className="text-[--color-text-secondary] leading-relaxed mb-4">
+    <p className="text-(--color-text-secondary) leading-relaxed mb-4">
       {children}
     </p>
   ),
@@ -139,7 +139,7 @@ export const mdxComponents: MDXComponents = {
           href={href}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[--color-accent] hover:text-[--color-accent-dim] underline underline-offset-4 transition-colors"
+          className="text-(--color-accent) hover:text-(--color-accent-dim) underline underline-offset-4 transition-colors"
         >
           {children}
         </a>
@@ -148,19 +148,19 @@ export const mdxComponents: MDXComponents = {
     return (
       <Link
         href={href || "#"}
-        className="text-[--color-accent] hover:text-[--color-accent-dim] underline underline-offset-4 transition-colors"
+        className="text-(--color-accent) hover:text-(--color-accent-dim) underline underline-offset-4 transition-colors"
       >
         {children}
       </Link>
     );
   },
   ul: ({ children }: ComponentPropsWithoutRef<"ul">) => (
-    <ul className="list-disc list-inside space-y-2 mb-4 text-[--color-text-secondary] pl-2">
+    <ul className="list-disc list-inside space-y-2 mb-4 text-(--color-text-secondary) pl-2">
       {children}
     </ul>
   ),
   ol: ({ children }: ComponentPropsWithoutRef<"ol">) => (
-    <ol className="list-decimal list-inside space-y-2 mb-4 text-[--color-text-secondary] pl-2">
+    <ol className="list-decimal list-inside space-y-2 mb-4 text-(--color-text-secondary) pl-2">
       {children}
     </ol>
   ),
@@ -168,9 +168,9 @@ export const mdxComponents: MDXComponents = {
     <li className="leading-relaxed">{children}</li>
   ),
   blockquote: ({ children }: ComponentPropsWithoutRef<"blockquote">) => (
-    <blockquote className="relative border border-[--color-border-subtle] px-8 py-6 my-8 bg-[--color-surface] rounded-xl overflow-hidden">
-      <div className="absolute top-3 left-3 text-4xl text-[--color-accent]/20 font-serif leading-none"></div>
-      <div className="relative text-[--color-text-secondary] italic text-lg">
+    <blockquote className="relative border border-(--color-border-subtle) px-8 py-6 my-8 bg-(--color-surface) rounded-xl overflow-hidden">
+      <div className="absolute top-3 left-3 text-4xl text-(--color-accent)/20 font-serif leading-none"></div>
+      <div className="relative text-(--color-text-secondary) italic text-lg">
         {children}
       </div>
     </blockquote>
@@ -183,7 +183,7 @@ export const mdxComponents: MDXComponents = {
     const isInline = !className && !("data-language" in props);
     if (isInline) {
       return (
-        <code className="px-2 py-1 rounded-md bg-[--color-surface-elevated] text-[--color-accent] text-[0.9em] font-mono border border-[--color-border-subtle]">
+        <code className="px-2 py-1 rounded-md bg-(--color-surface-elevated) text-(--color-accent) text-[0.9em] font-mono border border-(--color-border-subtle)">
           {children}
         </code>
       );
@@ -206,9 +206,9 @@ export const mdxComponents: MDXComponents = {
 
     return (
       <div className="relative my-8 group">
-        <div className="absolute -inset-1 bg-gradient-to-r from-[--color-accent]/10 to-transparent rounded-xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+        <div className="absolute -inset-1 bg-gradient-to-r from-(--color-accent)/10 to-transparent rounded-xl blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="relative">
-          <div className="flex items-center justify-between px-4 py-3 bg-[#1a1b26] border border-[--color-border] border-b-0 rounded-t-xl">
+          <div className="flex items-center justify-between px-4 py-3 bg-[#1a1b26] border border-(--color-border) border-b-0 rounded-t-xl">
             <div className="flex items-center gap-3">
               <div className="flex gap-1.5">
                 <span
@@ -224,19 +224,19 @@ export const mdxComponents: MDXComponents = {
                   style={{ backgroundColor: "rgba(74, 222, 128, 0.6)" }}
                 />
               </div>
-              <span className="text-xs text-[--color-text-muted] opacity-60 font-mono">
+              <span className="text-xs text-(--color-text-muted) opacity-60 font-mono">
                 ~/{language}
               </span>
             </div>
             <div className="flex items-center gap-2">
               {getLanguageIcon(language)}
-              <span className="text-xs text-[--color-text-muted] font-medium uppercase tracking-wider">
+              <span className="text-xs text-(--color-text-muted) font-medium uppercase tracking-wider">
                 {language}
               </span>
             </div>
           </div>
           <pre
-            className="p-5 border border-[--color-border] border-t-0 rounded-b-xl overflow-x-auto text-sm leading-relaxed [&>code]:bg-transparent"
+            className="p-5 border border-(--color-border) border-t-0 rounded-b-xl overflow-x-auto text-sm leading-relaxed [&>code]:bg-transparent"
             style={{ background: "#1a1b26" }}
             {...props}
           >
@@ -248,61 +248,61 @@ export const mdxComponents: MDXComponents = {
   },
   hr: () => (
     <div className="my-12 flex items-center gap-4">
-      <div className="flex-1 h-px bg-gradient-to-r from-transparent to-[--color-border]" />
+      <div className="flex-1 h-px bg-gradient-to-r from-transparent to-(--color-border)" />
       <div className="flex gap-1">
-        <span className="w-1.5 h-1.5 rounded-full bg-[--color-accent]/40" />
-        <span className="w-1.5 h-1.5 rounded-full bg-[--color-accent]/60" />
-        <span className="w-1.5 h-1.5 rounded-full bg-[--color-accent]/40" />
+        <span className="w-1.5 h-1.5 rounded-full bg-(--color-accent)/40" />
+        <span className="w-1.5 h-1.5 rounded-full bg-(--color-accent)/60" />
+        <span className="w-1.5 h-1.5 rounded-full bg-(--color-accent)/40" />
       </div>
-      <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[--color-border]" />
+      <div className="flex-1 h-px bg-gradient-to-l from-transparent to-(--color-border)" />
     </div>
   ),
   table: ({ children }: ComponentPropsWithoutRef<"table">) => (
-    <div className="my-8 overflow-x-auto rounded-xl border border-[--color-border] bg-[--color-surface]">
+    <div className="my-8 overflow-x-auto rounded-xl border border-(--color-border) bg-(--color-surface)">
       <table className="w-full border-collapse">{children}</table>
     </div>
   ),
   thead: ({ children }: ComponentPropsWithoutRef<"thead">) => (
-    <thead className="bg-[--color-surface-elevated] border-b border-[--color-border]">
+    <thead className="bg-(--color-surface-elevated) border-b border-(--color-border)">
       {children}
     </thead>
   ),
   tbody: ({ children }: ComponentPropsWithoutRef<"tbody">) => (
-    <tbody className="divide-y divide-[--color-border-subtle]">
+    <tbody className="divide-y divide-(--color-border-subtle)">
       {children}
     </tbody>
   ),
   tr: ({ children }: ComponentPropsWithoutRef<"tr">) => (
-    <tr className="hover:bg-[--color-surface-elevated]/50 transition-colors">
+    <tr className="hover:bg-(--color-surface-elevated)/50 transition-colors">
       {children}
     </tr>
   ),
   th: ({ children }: ComponentPropsWithoutRef<"th">) => (
-    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-[--color-text-muted]">
+    <th className="px-5 py-4 text-left text-xs font-semibold uppercase tracking-wider text-(--color-text-muted)">
       {children}
     </th>
   ),
   td: ({ children }: ComponentPropsWithoutRef<"td">) => (
-    <td className="px-5 py-4 text-sm text-[--color-text-secondary]">
+    <td className="px-5 py-4 text-sm text-(--color-text-secondary)">
       {children}
     </td>
   ),
   img: ({ src, alt }: ComponentPropsWithoutRef<"img">) => (
     <figure className="my-10 group">
-      <div className="relative overflow-hidden rounded-xl border border-[--color-border] bg-[--color-surface]">
+      <div className="relative overflow-hidden rounded-xl border border-(--color-border) bg-(--color-surface)">
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={src} alt={alt || ""} className="w-full" />
       </div>
       {alt && (
-        <figcaption className="mt-3 text-center text-sm text-[--color-text-muted] italic">
+        <figcaption className="mt-3 text-center text-sm text-(--color-text-muted) italic">
           {alt}
         </figcaption>
       )}
     </figure>
   ),
   strong: ({ children }: ComponentPropsWithoutRef<"strong">) => (
-    <strong className="font-semibold text-[--color-text-primary]">
+    <strong className="font-semibold text-(--color-text-primary)">
       {children}
     </strong>
   ),

@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-@theme inline {
+@theme {
   /* Terminal-inspired color palette */
   --color-background: #0a0a0b;
   --color-surface: #111113;

@@ -56,8 +56,8 @@ export default function BlogPage() {
             <section className="text-center mb-24 sm:mb-32">
               <div className="flex items-center justify-center gap-3 mb-8">
                 <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 glass-card">
-                  <Terminal className="w-3.5 h-3.5 text-[--color-accent]" />
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[--color-text-secondary]">
+                  <Terminal className="w-3.5 h-3.5 text-(--color-accent)" />
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-(--color-text-secondary)">
                     Engineering Blog
                   </span>
                 </div>
@@ -68,10 +68,10 @@ export default function BlogPage() {
               >
                 The
                 <br />
-                <span className="text-[--color-text-secondary]">Journal.</span>
+                <span className="text-(--color-text-secondary)">Journal.</span>
               </h1>
               
-              <p className="text-base sm:text-xl text-[--color-text-muted] max-w-2xl mx-auto font-mono leading-relaxed">
+              <p className="text-base sm:text-xl text-(--color-text-muted) max-w-2xl mx-auto font-mono leading-relaxed">
                 Deep dives into database internals, performance optimization,
                 and the craft of building professional developer tools.
               </p>
@@ -83,31 +83,31 @@ export default function BlogPage() {
             <FadeIn className="mb-24 sm:mb-32">
               <Link href={`/blog/${featuredPost.slug}`} className="group block">
                 <article className="relative overflow-hidden rounded-[3rem] bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition-all duration-500 border-flow">
-                  <div className="absolute inset-0 bg-gradient-to-br from-[--color-accent]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-(--color-accent)/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                   
                   <div className="relative p-8 md:p-16">
-                    <div className="flex items-center gap-4 mb-10 font-mono text-[10px] uppercase tracking-widest text-[--color-text-muted]">
+                    <div className="flex items-center gap-4 mb-10 font-mono text-[10px] uppercase tracking-widest text-(--color-text-muted)">
                       <div className="flex gap-2">
                         <div className="w-3 h-3 rounded-full bg-red-500/50" />
                         <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
                         <div className="w-3 h-3 rounded-full bg-green-500/50" />
                       </div>
-                      <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[--color-accent]">Latest Release</span>
+                      <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-(--color-accent)">Latest Release</span>
                       <span>~/{featuredPost.slug}.mdx</span>
                     </div>
 
                     <h2
-                      className="text-3xl md:text-6xl font-bold mb-8 text-white group-hover:text-[--color-accent] transition-colors duration-300 font-mono uppercase tracking-tighter leading-tight"
+                      className="text-3xl md:text-6xl font-bold mb-8 text-white group-hover:text-(--color-accent) transition-colors duration-300 font-mono uppercase tracking-tighter leading-tight"
                     >
                       {featuredPost.title}
                     </h2>
 
-                    <p className="text-[--color-text-secondary] text-lg md:text-xl mb-12 max-w-4xl leading-relaxed font-mono opacity-80 group-hover:opacity-100 transition-opacity">
+                    <p className="text-(--color-text-secondary) text-lg md:text-xl mb-12 max-w-4xl leading-relaxed font-mono opacity-80 group-hover:opacity-100 transition-opacity">
                       {featuredPost.description}
                     </p>
 
                     <div className="flex flex-wrap items-center justify-between gap-8 pt-8 border-t border-white/5">
-                      <div className="flex flex-wrap items-center gap-6 text-[10px] font-mono uppercase tracking-widest text-[--color-text-muted]">
+                      <div className="flex flex-wrap items-center gap-6 text-[10px] font-mono uppercase tracking-widest text-(--color-text-muted)">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
                           <span>{formatDate(featuredPost.date)}</span>
@@ -119,14 +119,14 @@ export default function BlogPage() {
                         {featuredPost.tags.slice(0, 2).map((tag) => (
                           <span
                             key={tag}
-                            className="px-2 py-1 rounded bg-white/5 border border-white/10 text-[--color-text-secondary]"
+                            className="px-2 py-1 rounded bg-white/5 border border-white/10 text-(--color-text-secondary)"
                           >
                             {tag}
                           </span>
                         ))}
                       </div>
 
-                      <div className="flex items-center gap-3 text-[--color-accent] font-bold font-mono uppercase tracking-widest group-hover:gap-5 transition-all duration-300">
+                      <div className="flex items-center gap-3 text-(--color-accent) font-bold font-mono uppercase tracking-widest group-hover:gap-5 transition-all duration-300">
                         <span>Read Entry</span>
                         <ArrowRight className="w-5 h-5" />
                       </div>
@@ -146,7 +146,7 @@ export default function BlogPage() {
                   className="group block h-full"
                 >
                   <article className="relative h-full p-8 rounded-[2.5rem] bg-white/[0.02] border border-white/5 hover:bg-white/[0.04] transition-all duration-500 overflow-hidden border-flow">
-                    <div className="flex items-center gap-2 mb-8 font-mono text-[10px] uppercase tracking-widest text-[--color-text-muted] opacity-60 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2 mb-8 font-mono text-[10px] uppercase tracking-widest text-(--color-text-muted) opacity-60 group-hover:opacity-100 transition-opacity">
                       <div className="flex gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-white/20" />
                         <div className="w-2 h-2 rounded-full bg-white/20" />
@@ -156,23 +156,23 @@ export default function BlogPage() {
                     </div>
 
                     <h3
-                      className="text-xl sm:text-2xl font-bold mb-4 text-white group-hover:text-[--color-accent] transition-colors font-mono uppercase tracking-tight leading-snug line-clamp-2"
+                      className="text-xl sm:text-2xl font-bold mb-4 text-white group-hover:text-(--color-accent) transition-colors font-mono uppercase tracking-tight leading-snug line-clamp-2"
                     >
                       {post.title}
                     </h3>
 
-                    <p className="text-sm sm:text-base text-[--color-text-secondary] mb-8 line-clamp-2 leading-relaxed font-mono opacity-80 group-hover:opacity-100 transition-opacity">
+                    <p className="text-sm sm:text-base text-(--color-text-secondary) mb-8 line-clamp-2 leading-relaxed font-mono opacity-80 group-hover:opacity-100 transition-opacity">
                       {post.description}
                     </p>
 
-                    <div className="flex items-center gap-4 text-[10px] font-mono uppercase tracking-widest text-[--color-text-muted] mt-auto pt-6 border-t border-white/5">
+                    <div className="flex items-center gap-4 text-[10px] font-mono uppercase tracking-widest text-(--color-text-muted) mt-auto pt-6 border-t border-white/5">
                       <span>{formatDate(post.date)}</span>
                       <span className="w-1 h-1 rounded-full bg-white/20" />
                       <span>{post.readingTime}</span>
                     </div>
 
                     <div className="absolute bottom-8 right-8 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300">
-                      <ArrowRight className="w-5 h-5 text-[--color-accent]" />
+                      <ArrowRight className="w-5 h-5 text-(--color-accent)" />
                     </div>
                   </article>
                 </Link>

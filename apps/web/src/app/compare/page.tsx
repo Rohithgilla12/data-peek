@@ -65,8 +65,8 @@ export default function ComparePage() {
             <section className="text-center mb-24 sm:mb-32">
               <div className="flex items-center justify-center gap-3 mb-8">
                 <div className="flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 glass-card">
-                  <BarChart3 className="w-3.5 h-3.5 text-[--color-accent]" />
-                  <span className="text-[10px] font-mono uppercase tracking-widest text-[--color-text-secondary]">
+                  <BarChart3 className="w-3.5 h-3.5 text-(--color-accent)" />
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-(--color-text-secondary)">
                     Benchmarked
                   </span>
                 </div>
@@ -77,10 +77,10 @@ export default function ComparePage() {
               >
                 The
                 <br />
-                <span className="text-[--color-text-secondary]">Standard.</span>
+                <span className="text-(--color-text-secondary)">Standard.</span>
               </h1>
               
-              <p className="text-base sm:text-xl text-[--color-text-muted] max-w-2xl mx-auto font-mono leading-relaxed">
+              <p className="text-base sm:text-xl text-(--color-text-muted) max-w-2xl mx-auto font-mono leading-relaxed">
                 See how data-peek stacks up against the competition. 
                 Engineered to be faster, lighter, and more productive.
               </p>
@@ -97,10 +97,10 @@ export default function ComparePage() {
                   style={{ '--feature-color': alt.color } as React.CSSProperties}
                 >
                   <div className="flex items-center justify-between mb-8">
-                    <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono uppercase tracking-widest text-[--color-text-muted] group-hover:text-white transition-colors">
+                    <div className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono uppercase tracking-widest text-(--color-text-muted) group-hover:text-white transition-colors">
                       VS {alt.name}
                     </div>
-                    <ArrowRight className="w-5 h-5 text-[--color-text-muted] group-hover:text-[--color-accent] group-hover:translate-x-1 transition-all" />
+                    <ArrowRight className="w-5 h-5 text-(--color-text-muted) group-hover:text-(--color-accent) group-hover:translate-x-1 transition-all" />
                   </div>
                   
                   <h2
@@ -108,13 +108,13 @@ export default function ComparePage() {
                   >
                     {alt.name}
                   </h2>
-                  <p className="text-sm sm:text-base text-[--color-text-secondary] font-mono leading-relaxed group-hover:text-white/90 transition-colors">
+                  <p className="text-sm sm:text-base text-(--color-text-secondary) font-mono leading-relaxed group-hover:text-white/90 transition-colors">
                     {alt.description}
                   </p>
 
                   <div className="mt-8 flex items-center gap-4 opacity-40 group-hover:opacity-100 transition-opacity duration-500">
                     <div className="h-px flex-1 bg-white/10" />
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-[--color-accent]">Details</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-(--color-accent)">Details</span>
                   </div>
                 </Link>
               </StaggerItem>
