@@ -42,7 +42,11 @@ export function useCopyToClipboard(
         timeoutRef.current = setTimeout(() => setCopied(false), resetDelay)
       } catch (err) {
         const error = err instanceof Error ? err : new Error('Failed to copy')
-        onError?.(error)
+        if (onError) {
+          onError(error)
+        } else {
+          console.error('Clipboard copy failed:', error)
+        }
       }
     },
     [resetDelay, onSuccess, onError]

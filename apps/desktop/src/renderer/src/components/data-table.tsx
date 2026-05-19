@@ -45,6 +45,7 @@ import { getTypeColor } from '@/lib/type-colors'
 import { PaginationControls } from '@/components/pagination-controls'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useMaskingStore } from '@/stores/masking-store'
+import { CellGridInspector, CellGridOverlays, useCellGrid } from '@/components/cell-grid'
 
 const VIRTUALIZATION_THRESHOLD = 50
 const ROW_HEIGHT = 37
@@ -530,10 +531,13 @@ export function DataTable<TData extends Record<string, unknown>>({
 
     const measureWidths = () => {
       const headerCells = headerRef.current?.querySelectorAll('th')
-      if (headerCells) {
-        const widths = Array.from(headerCells).map((cell) => cell.offsetWidth)
-        setColumnWidths(widths)
-      }
+      if (!headerCells) return
+      const widths = Array.from(headerCells, (cell) => cell.offsetWidth)
+      // Skip the update when widths haven't changed — otherwise every ResizeObserver
+      // tick churns geometry identity and re-renders the overlay layer.
+      setColumnWidths((prev) =>
+        prev.length === widths.length && prev.every((w, i) => w === widths[i]) ? prev : widths
+      )
     }
 
     const timeoutId = setTimeout(measureWidths, 0)
@@ -548,6 +552,18 @@ export function DataTable<TData extends Record<string, unknown>>({
       resizeObserver.disconnect()
     }
   }, [shouldVirtualize, columnKey])
+
+  const cellGrid = useCellGrid({
+    rows,
+    columnDefs,
+    columnWidths,
+    rowHeight: ROW_HEIGHT,
+    // Must match the sticky <TableHeader> row height; drift causes overlay misalignment.
+    headerHeight: 40,
+    containerRef: tableContainerRef,
+    virtualizer,
+    enabled: shouldVirtualize
+  })
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -569,7 +585,18 @@ export function DataTable<TData extends Record<string, unknown>>({
 
       {/* Table with single scroll container */}
       <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
-        <div ref={tableContainerRef} className="absolute inset-0 overflow-auto">
+        <CellGridInspector
+          cellGrid={cellGrid}
+          rowCount={rows.length}
+          colCount={columnDefs.length}
+          onForeignKeyOpen={onForeignKeyClick}
+        />
+        <div
+          ref={tableContainerRef}
+          tabIndex={0}
+          onClick={cellGrid.handleGridClick}
+          className="absolute inset-0 overflow-auto outline-none rounded-lg"
+        >
           <table className="w-full min-w-max caption-bottom text-sm">
             <TableHeader className="sticky top-0 bg-muted z-10">
               {table.getHeaderGroups().map((headerGroup) => (
@@ -623,6 +650,8 @@ export function DataTable<TData extends Record<string, unknown>>({
                                 <div
                                   key={cell.id}
                                   role="cell"
+                                  data-cell-row={virtualRow.index}
+                                  data-cell-col={cellIndex}
                                   className="py-2 px-4 text-sm whitespace-nowrap overflow-hidden"
                                   style={{
                                     width: columnWidths[cellIndex] || 'auto',
@@ -664,6 +693,7 @@ export function DataTable<TData extends Record<string, unknown>>({
               )}
             </TableBody>
           </table>
+          <CellGridOverlays cellGrid={cellGrid} />
         </div>
       </div>
 
