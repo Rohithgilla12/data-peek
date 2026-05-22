@@ -18,7 +18,7 @@ export function Hero() {
                 className="inline-block h-1.5 w-1.5 rounded-full"
                 style={{ background: "var(--n-accent)" }}
               />
-              v0.21 — AI deps, SSH tunnel reliability
+              v0.23 — Watch Mode: pin a SELECT, see it move
               <span aria-hidden className="text-[var(--n-fg-faint)]">→</span>
               <Link
                 href="/blog"
