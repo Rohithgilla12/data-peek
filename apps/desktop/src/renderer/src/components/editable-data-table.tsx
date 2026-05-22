@@ -52,7 +52,7 @@ import {
   useReactTable,
   type ColumnDef
 } from '@tanstack/react-table'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer, type Virtualizer } from '@tanstack/react-virtual'
 import {
   ArrowDown,
   ArrowUp,
@@ -70,6 +70,8 @@ import {
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import * as React from 'react'
 import { CellGridInspector, CellGridOverlays, useCellGrid } from '@/components/cell-grid'
+import { WatchDecorationOverlay } from '@/components/cell-grid/watch-decoration-overlay'
+import { useWatchStore } from '@/stores/watch-store'
 
 const VIRTUALIZATION_THRESHOLD = 50
 const ROW_HEIGHT = 37
@@ -1311,6 +1313,14 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
               </TableBody>
             </table>
             <CellGridOverlays cellGrid={cellGrid} />
+            <EditableWatchOverlay
+              tabId={tabId}
+              rows={rows}
+              columnNames={columnDefs.map((c) => c.name)}
+              geometry={cellGrid.geometry}
+              virtualizer={virtualizer}
+              enabled={shouldVirtualize && columnWidths.length > 0}
+            />
           </div>
         </div>
 
@@ -1374,5 +1384,39 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         />
       </div>
     </TooltipProvider>
+  )
+}
+
+/**
+ * Watch Mode diff overlay for editable-data-table. Subscribes to the watch
+ * store only when a tabId is provided; renders null otherwise so the
+ * editable grid stays free of overhead when nothing is watched.
+ */
+function EditableWatchOverlay({
+  tabId,
+  rows,
+  columnNames,
+  geometry,
+  virtualizer,
+  enabled
+}: {
+  tabId?: string
+  rows: ReadonlyArray<{ original: Record<string, unknown> }>
+  columnNames: string[]
+  geometry: ReturnType<typeof useCellGrid>['geometry']
+  virtualizer: Virtualizer<HTMLDivElement, Element>
+  enabled: boolean
+}) {
+  const watchState = useWatchStore((s) => (tabId ? s.states[tabId] : null))
+  if (!enabled || !tabId || !watchState || !watchState.enabled || !watchState.diff) return null
+  return (
+    <WatchDecorationOverlay
+      diff={watchState.diff}
+      rows={rows}
+      columnNames={columnNames}
+      geometry={geometry}
+      virtualizer={virtualizer}
+      fadeMs={watchState.config.fadeMs}
+    />
   )
 }

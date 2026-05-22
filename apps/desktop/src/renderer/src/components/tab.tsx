@@ -3,6 +3,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { FileCode, Table2, Pin, X, Network, SearchCode } from 'lucide-react'
 import { cn, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from '@data-peek/ui'
 import type { Tab as TabType } from '@/stores/tab-store'
+import { useWatchStore } from '@/stores/watch-store'
 
 interface TabProps {
   tab: TabType
@@ -32,6 +33,9 @@ export function Tab({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: tab.id
   })
+  const watchState = useWatchStore((s) => s.states[tab.id])
+  const isWatching = !!watchState?.enabled
+  const isPaused = !!watchState?.paused
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -82,6 +86,22 @@ export function Tab({
 
           {/* Dirty indicator */}
           {isDirty && <span className="size-2 shrink-0 rounded-full bg-yellow-500" />}
+
+          {/* Watching indicator — pulses while polling, dimmed when paused */}
+          {isWatching && (
+            <span
+              aria-label={isPaused ? 'Watch paused' : 'Watching'}
+              className={cn(
+                'relative inline-flex size-2 shrink-0 items-center justify-center',
+                isPaused && 'opacity-50'
+              )}
+            >
+              {!isPaused && (
+                <span className="absolute inline-flex size-2 rounded-full bg-amber-500/40 motion-safe:animate-ping" />
+              )}
+              <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
+            </span>
+          )}
 
           {/* Title */}
           <span className="truncate text-sm">{tab.title}</span>
