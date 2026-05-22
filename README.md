@@ -69,6 +69,14 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Performance Indicator** - Detect missing indexes, N+1 patterns, and slow queries with auto-generated fix suggestions
 - **Cancel Queries** - Stop long-running queries mid-execution
 
+### Watch Mode
+- **Pin a SELECT, see it move** - Re-run any read-only query on a cadence (500ms → 5min) with live diff highlights
+- **Cell-level change detection** - Changed cells flash amber, new rows enter with a green band, fades over a configurable window
+- **Smart row keying** - Diffs survive sorting / pagination by keying on explicit primary keys, then a heuristic `id`/`uuid`/`*_id` column, then row position
+- **Refuses to poll mutations** - Pre-execution gate refuses `INSERT/UPDATE/DELETE/DDL/transaction/multi-statement` queries with a tooltip explaining why
+- **Pause when window hidden** - Background tabs don't burn CPU or pound the database
+- **Tab-bar pulse indicator** - Switch tabs and the amber dot keeps pulsing on watched ones
+
 ### Data Management
 - **Schema Explorer** - Browse tables, views, stored procedures, and functions
 - **Inline Editing** - Edit table data directly with INSERT/UPDATE/DELETE
