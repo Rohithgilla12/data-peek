@@ -17,6 +17,9 @@ This folder is the single source of truth for technical notes and blog posts. Fi
 | [smart-sort-bar.mdx](./smart-sort-bar.mdx) | Multi-column chip-based sorting with type-aware modes |
 | [multi-statement-step-through.mdx](./multi-statement-step-through.mdx) | Step-through debugging for multi-statement SQL scripts |
 | [schema-intel-diagnostics.mdx](./schema-intel-diagnostics.mdx) | One-click schema diagnostics for Postgres / MySQL / MSSQL |
+| [ssl-defaults-for-cloud-dbs.mdx](./ssl-defaults-for-cloud-dbs.mdx) | v0.21.3 — opt-in strict cert verification for cloud DBs |
+| [end-to-end-testing-an-electron-sql-client.mdx](./end-to-end-testing-an-electron-sql-client.mdx) | From 4 to 25 e2e tests with Playwright + Electron |
+| [v0.22.0-hardened-edges.mdx](./v0.22.0-hardened-edges.mdx) | v0.22.0 release notes — silent-corruption hunt, lifecycle hardening |
 
 ## Creating a New Post
 

@@ -4,12 +4,24 @@ import { ReleaseVideo } from './compositions/ReleaseVideo'
 import { ReleaseVideo018 } from './compositions/ReleaseVideo018'
 import { ReleaseVideo019 } from './compositions/ReleaseVideo019'
 import { ReleaseVideo020 } from './compositions/ReleaseVideo020'
+import { ReleaseVideo022 } from './compositions/ReleaseVideo022'
+import { ReleaseVideo023 } from './compositions/ReleaseVideo023'
 import { NotebookDemo } from './compositions/NotebookDemo'
+import { TrailerVideo } from './compositions/TrailerVideo'
 import './global.css'
 
 export const RemotionRoot = () => {
   return (
     <>
+      <Composition
+        id="TrailerVideo"
+        component={TrailerVideo}
+        durationInFrames={1900}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{}}
+      />
       <Composition
         id="NotebookDemo"
         component={NotebookDemo}
@@ -18,6 +30,24 @@ export const RemotionRoot = () => {
         width={1920}
         height={1080}
         defaultProps={{}}
+      />
+      <Composition
+        id="ReleaseVideo-v0-23-0"
+        component={ReleaseVideo023}
+        durationInFrames={604}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{ version: '0.23.0' }}
+      />
+      <Composition
+        id="ReleaseVideo-v0-22-0"
+        component={ReleaseVideo022}
+        durationInFrames={728}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{ version: '0.22.0' }}
       />
       <Composition
         id="ReleaseVideo-v0-20-0"
