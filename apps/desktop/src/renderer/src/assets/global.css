@@ -683,6 +683,12 @@ input[type='number'] {
   --cell-flash-shadow: 0 4px 12px -4px oklch(0.45 0.15 250 / 0.4);
   --cell-inspector-shadow:
     0 8px 32px -12px rgb(0 0 0 / 0.18), 0 0 0 1px oklch(0.45 0.15 250 / 0.18);
+  /* Watch Mode diff overlays — light theme */
+  --cell-diff-fill: oklch(0.78 0.14 80 / 0.22);
+  --cell-diff-stripe: oklch(0.62 0.18 65 / 0.85);
+  --cell-diff-added: oklch(0.85 0.12 145 / 0.22);
+  --cell-diff-added-stripe: oklch(0.58 0.16 145 / 0.65);
+  --cell-diff-removed: oklch(0.78 0.16 25 / 0.18);
 }
 .dark {
   --cell-focus-ring: oklch(0.65 0.15 250);
@@ -692,6 +698,12 @@ input[type='number'] {
   --cell-flash-shadow: 0 4px 12px -4px oklch(0.65 0.15 250 / 0.5);
   --cell-inspector-shadow:
     0 8px 32px -12px rgb(0 0 0 / 0.32), 0 0 0 1px oklch(0.65 0.15 250 / 0.18);
+  /* Watch Mode diff overlays — dark theme */
+  --cell-diff-fill: oklch(0.72 0.16 80 / 0.28);
+  --cell-diff-stripe: oklch(0.78 0.18 70 / 0.9);
+  --cell-diff-added: oklch(0.7 0.14 145 / 0.22);
+  --cell-diff-added-stripe: oklch(0.72 0.18 145 / 0.7);
+  --cell-diff-removed: oklch(0.7 0.18 25 / 0.2);
 }
 
 .cell-inspector-panel {
