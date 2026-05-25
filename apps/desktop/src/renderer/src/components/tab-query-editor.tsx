@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Database } from 'lucide-react'
 import {
   cn,
@@ -65,6 +65,11 @@ import { StepRibbon } from './step-ribbon'
 import { StepResultsTabs } from './step-results-tabs'
 import { EditorToolbar } from './query-editor/editor-toolbar'
 import { QueryResults } from './query-editor/query-results'
+import { WatchButton } from '@/components/watch-button'
+import type { WatchRunner } from '@/lib/watch-scheduler'
+import { watchScheduler } from '@/lib/watch-scheduler'
+import { useWatchStore } from '@/stores/watch-store'
+import { gateForWatch } from '@/lib/watch-sql-gate'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
 import type { editor as monacoEditor } from 'monaco-editor'
@@ -1381,6 +1386,112 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     return []
   }
 
+  // Watch Mode runner. The scheduler holds runnerRef from this object across
+  // ticks. We read the latest query/connection from the store at runQuery time
+  // so that an in-flight watch never sees stale closures.
+  const watchRunner = useMemo<WatchRunner>(
+    () => ({
+      runQuery: async () => {
+        const live = useTabStore.getState().getTab(tabId)
+        const liveConn = live?.connectionId
+          ? useConnectionStore.getState().connections.find((c) => c.id === live.connectionId)
+          : null
+        if (!live || !isExecutableTab(live) || !liveConn) {
+          return { rows: [], fields: [], durationMs: 0, error: 'No active connection.' }
+        }
+        const sql = live.query.trim()
+        if (!sql) return { rows: [], fields: [], durationMs: 0, error: 'Empty query.' }
+        try {
+          const response = await window.api.db.query(liveConn, sql)
+          if (!response.success || !response.data) {
+            return {
+              rows: [],
+              fields: [],
+              durationMs: 0,
+              error: response.error ?? 'Query failed.'
+            }
+          }
+          const data = response.data as IpcQueryResult
+          return {
+            rows: data.rows as Record<string, unknown>[],
+            fields: data.fields,
+            durationMs: data.durationMs,
+            error: null
+          }
+        } catch (err) {
+          return {
+            rows: [],
+            fields: [],
+            durationMs: 0,
+            error: err instanceof Error ? err.message : String(err)
+          }
+        }
+      },
+      getKeyColumns: () => {
+        const live = useTabStore.getState().getTab(tabId)
+        if (!live) return undefined
+        const allSchemas = useConnectionStore.getState().schemas
+
+        // Table-preview tabs know their table directly.
+        if (live.type === 'table-preview') {
+          const schemaInfo = allSchemas.find((s) => s.name === live.schemaName)
+          const tableInfo = schemaInfo?.tables.find((t) => t.name === live.tableName)
+          const pks = tableInfo?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name)
+          return pks && pks.length > 0 ? pks : undefined
+        }
+
+        // Query tabs: parse the SQL — if it's a single-table SELECT, look up
+        // that table's PK in the schema cache. Falls through to the heuristic
+        // in pickKeyingPlan when parsing or lookup fails.
+        if (live.type === 'query' && tabConnection) {
+          const info = analyzeEditableSelect(live.query, tabConnection.dbType)
+          if (!info || info.hasFilters) return undefined
+          const candidates = allSchemas.filter(
+            (s) => !info.schema || s.name.toLowerCase() === info.schema.toLowerCase()
+          )
+          for (const schema of candidates) {
+            const tableInfo = schema.tables.find(
+              (t) => t.name.toLowerCase() === info.table.toLowerCase()
+            )
+            if (tableInfo) {
+              const pks = tableInfo.columns.filter((c) => c.isPrimaryKey).map((c) => c.name)
+              if (pks.length > 0) return pks
+              break
+            }
+          }
+        }
+        return undefined
+      }
+    }),
+    [tabId]
+  )
+
+  // Cmd+Shift+W is wired via the native menu (see main/menu.ts → 'Toggle
+  // Watch Mode'). Menu accelerators win over renderer keybindings on
+  // Electron, so we subscribe to the menu IPC here rather than using
+  // useHotkeys. Scoped to the currently-mounted query editor so multi-window
+  // setups toggle the focused tab.
+  const handleToggleWatch = useCallback(() => {
+    const t = useTabStore.getState().getTab(tabId)
+    if (!t || !isExecutableTab(t) || !tabConnection) return
+    const st = useWatchStore.getState()
+    if (st.isWatching(tabId)) {
+      st.stop(tabId)
+      watchScheduler.unregister(tabId)
+      return
+    }
+    const sql = ('query' in t ? t.query : '').trim()
+    if (!sql) return
+    if (!gateForWatch(sql).ok) return
+    st.start(tabId)
+    watchScheduler.register(tabId, {
+      runQuery: () => watchRunner.runQuery(),
+      getKeyColumns: () => watchRunner.getKeyColumns?.()
+    })
+  }, [tabId, tabConnection, watchRunner])
+
+  useEffect(() => window.api.menu.onToggleWatch(handleToggleWatch), [handleToggleWatch])
+
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Query Editor Section */}
@@ -1430,6 +1541,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           handleFormatQuery={handleFormatQuery}
           setSaveDialogOpen={setSaveDialogOpen}
           setShareDialogOpen={setShareDialogOpen}
+          watchSlot={
+            <WatchButton
+              tabId={tabId}
+              query={tabQuery}
+              runner={watchRunner}
+              disabled={!tabConnection}
+            />
+          }
         />
       </div>
 

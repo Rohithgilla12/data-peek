@@ -19,6 +19,7 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
     id: "performance",
     label: "Performance",
     items: [
+      { title: "Watch Mode", body: "Pin a SELECT, see it move. Re-runs on a cadence with live cell-level diff highlights. Refuses to poll INSERT/UPDATE/DELETE/DDL." },
       { title: "Cold start under 2s", body: "No splash, no warmup. Open the app, you're in your last connection." },
       { title: "Query telemetry", body: "Wall time, plan time, execute time. Waterfall and P90/P95/P99 benchmark mode." },
       { title: "Missing index hints", body: "Catch N+1 patterns and sequential scans. Suggested indexes are copy-pasteable." },

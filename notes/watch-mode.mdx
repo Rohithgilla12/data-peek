@@ -1,0 +1,175 @@
+---
+title: "Watch Mode — Pin a SELECT, see it move"
+description: "Re-run any SELECT on a cadence and see live diffs in the result grid. Changed cells flash amber, new rows enter green, row count delta in the tab. Cmd+Shift+W to start, refuses to poll INSERT/UPDATE/DELETE/DDL. No other major SQL client gets this right."
+date: "2026-05-22"
+author: "Rohith Gilla"
+tags: ["release-notes", "feature", "polling", "diff", "postgres", "mysql"]
+published: true
+---
+
+Most of the queries I run mid-debug are about *change*. Is the job done
+yet? Did the row count actually drop? Did that webhook handler write the
+record? In every existing SQL client the answer is: re-run the query.
+Then re-run it again. Then again. There's a Ctrl-R reflex you build up
+that's somehow both essential and a tell that you're using the wrong
+tool.
+
+This is the release that fixes that. Press `⌘⇧W` on any `SELECT` and
+data-peek will hold onto it for you. The query re-runs on a cadence,
+the result grid stays where you left it, and the cells that move
+visibly move.
+
+## The headline behaviour
+
+- **Cells that changed flash amber** for a configurable fade window
+  (default 8s). The diff carries forward across ticks so you can glance
+  away and still see what moved.
+- **New rows enter with a green band** down their left edge. Easy to
+  spot a new job in a queue table or a fresh login attempt without
+  scanning the rowcount column.
+- **The tab dot pulses while watching.** Switch to another tab — the
+  watch keeps running, and a small amber dot on the tab title tells you
+  it's still polling.
+- **The row count delta is in your face.** `247 → 253 rows` shows up in
+  the Watch popover and as a `+6` chip while the diff is fresh.
+- **Cadence presets from 500ms to 5min.** The popover lets you flip
+  cadence mid-watch and the scheduler re-arms without losing history.
+  500ms is real-time-ish; 5min is for "is the dashboard catching up
+  yet."
+
+## The refusals (which are the feature)
+
+Auto-polling a query is fine until someone forgets they wrote a
+`DELETE`. Watch Mode refuses to poll anything that isn't a row-producing
+read.
+
+The SQL gate is pre-execution:
+
+- `INSERT`, `UPDATE`, `DELETE`, `MERGE`, `UPSERT`, `COPY`, `TRUNCATE` →
+  refused as `destructive_statement`
+- `CREATE`, `DROP`, `ALTER`, `VACUUM`, `ANALYZE`, `GRANT`, `REVOKE`,
+  `RENAME`, `REFRESH`, `CLUSTER`, `REINDEX` → refused as `ddl_statement`
+- `BEGIN`, `COMMIT`, `ROLLBACK`, `SET`, `LOCK` → refused as
+  `transaction_statement`
+- More than one statement → refused as `multi_statement`
+- Empty / comments-only → refused as `empty`
+
+`SELECT`, `WITH ... SELECT`, `VALUES (...)`, and `TABLE foo` are
+accepted as row-producing.
+
+The gate parses dialect-agnostically: strips line and block comments,
+respects single-quoted strings (including doubled escapes), respects
+Postgres dollar-quoted strings, and only splits on top-level semicolons.
+26 tests pin the gate's accepts and refuses.
+
+## How the diff stays meaningful across ticks
+
+A naïve diff would compare row 0 of tick N to row 0 of tick N+1. That
+falls apart the moment you `ORDER BY created_at DESC` and a new row
+pushes everything down — every cell in the result lights up amber and
+the diff is useless noise.
+
+The differ keys rows three ways, best to worst:
+
+1. **Explicit primary key** when the watch is on a table-preview tab
+   and the schema cache knows the PK columns. Composite PKs join with a
+   NUL separator. Survives sorts, pagination, filter changes.
+2. **Heuristic primary key** when there's no schema info — looks for an
+   `id`, `uuid`, or `*_id` column in the result and uses that. Best
+   effort, but right far more often than not.
+3. **Row position** when nothing identifies. Documented as "diffs by
+   position" — a `SELECT ... ORDER BY some_stable_thing` will diff
+   cleanly here, an unordered SELECT won't.
+
+The keying choice is sticky across a watch session — the differ
+caches it until the result's field signature changes (which only
+happens if you edit the SQL, in which case the watch invalidates).
+
+## What does it cost
+
+A `setTimeout` cycle per watched tab. The scheduler is a singleton, not
+a per-component thing — switching tabs doesn't reset cadence and
+doesn't tear down history.
+
+The diff itself is `O(rows × columns)` with a serialise-and-compare
+inner loop. On a 5000-row × 30-column snapshot the diff finishes in
+~3ms on an M-series Mac. The 250ms cadence floor means even pathological
+cases have budget. The differ runs synchronously — there's no Web
+Worker offload yet, but the cadence floor + visibility-pause means it's
+hard to get a workload where you'd notice.
+
+Three protections against polling-as-foot-gun:
+
+1. **Cadence floor of 250ms** regardless of config. You cannot ask the
+   scheduler to poll faster than this.
+2. **Pause when window hidden** (default on). Backgrounded windows stop
+   polling. Bring the app forward and it fires one tick immediately so
+   you don't sit waiting for the next interval.
+3. **Skip-on-overlap.** If a tick's query is still in flight when the
+   next tick is scheduled to fire, the new tick is skipped — never
+   queued. A slow database doesn't pile up requests.
+
+## SQL invalidation
+
+Edit the SQL while a watch is running and the watch invalidates. The
+result grid stops diffing against rows from a query that isn't running
+anymore — which is the correct behaviour, since otherwise the next tick
+would diff the new query's output against the old query's rows and
+everything would look like it changed.
+
+Re-engage `⌘⇧W` to resume on the new SQL. Cadence is preserved across
+the invalidate so you don't lose your "1s" choice from before.
+
+## A demo that writes itself
+
+`SELECT * FROM jobs WHERE status='pending' ORDER BY created_at LIMIT 50`,
+`⌘⇧W`, set cadence 1s. Walk away. When you come back:
+
+- Rows that completed are gone. (Removed from the watch's input.)
+- Rows that are new have a green band on the left.
+- The `status` column ticks `pending → processing → done` on cells you
+  haven't even looked at yet, amber-fading as each one updates.
+- The tab title's amber dot keeps pulsing the whole time.
+
+No click. No refresh. No keystroke. The query is doing the watching for
+you.
+
+## What's not in this release
+
+- No notifications when a value crosses a threshold. That's a separate
+  feature (alerts on watched queries) — natural composition with this
+  one, planned for a follow-up.
+- No persistence of watch state across app restart. Snapshots are
+  session-only — restarting starts fresh.
+- No Web Worker offload for >20k row results. The synchronous differ +
+  cadence floor handles current needs; if someone watches a 100k-row
+  result at 500ms we'll revisit.
+- No per-query saved cadence. The cadence picker resets to 5s on each
+  new watch.
+
+## Internals
+
+If you want the full architecture writeup — the scheduler's tick
+contract, the three keying strategies, the carry-forward fade math —
+see [the plan in the repo](https://github.com/Rohithgilla12/data-peek/blob/main/docs/PLAN-watch-mode.md).
+The shipped code mostly tracks the plan; the noteworthy MVP cuts are
+the Web Worker offload and snapshot-persistence sections.
+
+The feature is **~1,200 lines** across:
+
+- `lib/watch-types.ts` — types, defaults, cadence presets
+- `lib/watch-sql-gate.ts` — pre-execution refusal logic + dialect-agnostic statement split
+- `lib/watch-row-keying.ts` — keying strategy + key derivation
+- `lib/watch-diff.ts` — synchronous differ + fade carry-forward
+- `lib/watch-scheduler.ts` — singleton timer owner + visibility integration + tab-store cleanup
+- `stores/watch-store.ts` — per-tab Zustand state with config clamping
+- `components/watch-button.tsx` — toolbar button + popover (cadence picker, pause/run/stop, totals)
+- `components/cell-grid/watch-decoration-overlay.tsx` — GPU-composited diff layer
+
+59 new tests across the gate, keying, differ, and store.
+
+## Upgrade
+
+Auto-update via **data-peek → Check for Updates**. The Watch button
+lives next to Benchmark in the editor toolbar; the keyboard shortcut is
+`⌘⇧W` (Mac) / `Ctrl+Shift+W` (Win/Linux).

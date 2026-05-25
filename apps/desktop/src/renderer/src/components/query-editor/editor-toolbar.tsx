@@ -23,6 +23,7 @@ import { BenchmarkButton } from '@/components/benchmark-button'
 import { isExecutableTab, type Tab } from '@/stores/tab-store'
 import type { StepSessionState } from '@/stores/step-store'
 import type { ConnectionWithStatus } from '@/stores/connection-store'
+import type { ReactNode } from 'react'
 
 interface EditorToolbarProps {
   tab: Tab
@@ -44,6 +45,8 @@ interface EditorToolbarProps {
   handleFormatQuery: () => void
   setSaveDialogOpen: (v: boolean) => void
   setShareDialogOpen: (v: boolean) => void
+  /** Slot for the Watch button — rendered between Benchmark and Format. */
+  watchSlot?: ReactNode
 }
 
 export function EditorToolbar({
@@ -65,7 +68,8 @@ export function EditorToolbar({
   isRunningBenchmark,
   handleFormatQuery,
   setSaveDialogOpen,
-  setShareDialogOpen
+  setShareDialogOpen,
+  watchSlot
 }: EditorToolbarProps) {
   const executable = isExecutableTab(tab) ? tab : null
   const query = executable?.query ?? ''
@@ -166,6 +170,7 @@ export function EditorToolbar({
           isRunning={isRunningBenchmark}
           disabled={isExecuting || !hasQuery}
         />
+        {watchSlot}
         {!isEditorCollapsed && (
           <>
             <div className="mx-1 h-4 w-px bg-border/60" />

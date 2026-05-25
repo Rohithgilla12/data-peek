@@ -7,7 +7,7 @@ import {
   useReactTable,
   type ColumnDef
 } from '@tanstack/react-table'
-import { useVirtualizer } from '@tanstack/react-virtual'
+import { useVirtualizer, type Virtualizer } from '@tanstack/react-virtual'
 import { ArrowUpDown, ArrowUp, ArrowDown, Link2, Copy, BarChart2, Lock, Unlock } from 'lucide-react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
 import { RowContextMenu } from '@/components/row-context-menu'
@@ -46,6 +46,8 @@ import { PaginationControls } from '@/components/pagination-controls'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useMaskingStore } from '@/stores/masking-store'
 import { CellGridInspector, CellGridOverlays, useCellGrid } from '@/components/cell-grid'
+import { WatchDecorationOverlay } from '@/components/cell-grid/watch-decoration-overlay'
+import { useWatchStore } from '@/stores/watch-store'
 
 const VIRTUALIZATION_THRESHOLD = 50
 const ROW_HEIGHT = 37
@@ -694,6 +696,14 @@ export function DataTable<TData extends Record<string, unknown>>({
             </TableBody>
           </table>
           <CellGridOverlays cellGrid={cellGrid} />
+          <WatchOverlay
+            tabId={tabId}
+            rows={rows}
+            columnDefs={columnDefs}
+            geometry={cellGrid.geometry}
+            virtualizer={virtualizer}
+            enabled={shouldVirtualize && columnWidths.length > 0}
+          />
         </div>
       </div>
 
@@ -713,5 +723,41 @@ export function DataTable<TData extends Record<string, unknown>>({
         canNextPage={table.getCanNextPage()}
       />
     </div>
+  )
+}
+
+/**
+ * Lightweight wrapper that subscribes to the watch store for this tab and
+ * renders the diff layer. Split out so DataTable doesn't subscribe to the
+ * store when the tab isn't being watched.
+ */
+function WatchOverlay({
+  tabId,
+  rows,
+  columnDefs,
+  geometry,
+  virtualizer,
+  enabled
+}: {
+  tabId?: string
+  rows: ReadonlyArray<{ original: Record<string, unknown> }>
+  columnDefs: DataTableColumn[]
+  geometry: ReturnType<typeof useCellGrid>['geometry']
+  virtualizer: Virtualizer<HTMLDivElement, Element>
+  enabled: boolean
+}) {
+  const watchState = useWatchStore((s) => (tabId ? s.states[tabId] : null))
+  if (!enabled || !tabId || !watchState || !watchState.enabled || !watchState.diff) {
+    return null
+  }
+  return (
+    <WatchDecorationOverlay
+      diff={watchState.diff}
+      rows={rows}
+      columnNames={columnDefs.map((c) => c.name)}
+      geometry={geometry}
+      virtualizer={virtualizer}
+      fadeMs={watchState.config.fadeMs}
+    />
   )
 }

@@ -1,0 +1,228 @@
+---
+title: "v0.22.0 — Hardened Edges"
+description: "No new features. We spent the cycle hunting silent corruption in the edit and pagination paths, hardening the query lifecycle against late responses and orphaned pool clients, and rewriting our end-to-end suite from 4 specs to 25. The boring parts of a SQL client are the ones you cannot afford to get wrong."
+date: "2026-05-13"
+author: "Rohith Gilla"
+tags: ["release-notes", "postgres", "mysql", "reliability", "audit"]
+published: true
+---
+
+Every long-running app has a moment where the right thing to ship is
+not a feature. v0.22.0 is that release for data-peek.
+
+There is no new icon in the sidebar. No new tab type. No new
+keyboard shortcut to remember. The headline is that we held a
+post-audit hunt across the editing, pagination, lifecycle, and
+schema-cache layers, and we killed every silent-corruption path we
+could find. The kind of bug that does not throw, does not log,
+and quietly changes the row your `UPDATE` lands on.
+
+If you use data-peek to edit data, paginate through results, or run
+DDL on a connection that has been open for a while — **upgrade**.
+Several of the bugs in this release could and did corrupt the wrong
+row.
+
+## What "silent corruption" actually means
+
+The worst bugs in a SQL client are not the ones that crash. A crash
+is honest. You see it, you reproduce it, you fix it. The dangerous
+class is the one where:
+
+- The UI looks fine
+- The SQL looks fine
+- The `UPDATE` succeeds
+- But it touched the wrong row
+
+You only find out hours later, when a customer reports something
+weird, and you trace it back and realise the inline edit you made
+this morning hit a row you never saw. By then you have explanations
+to write.
+
+We found seven of these.
+
+## The keystroke that moved
+
+Inline edits used to be stored keyed by the row's display index —
+the position in the array of rows currently being shown by the
+table. Which sounds reasonable until you do anything to that array.
+
+You edit `email` on what is currently row 0. Then you sort by
+`created_at`. Now a different underlying row is at index 0. Type
+another character into the same cell on screen and the new keystroke
+lands against the new row's primary key, while overwriting the first
+edit's value.
+
+We have rewritten the edit store to key by primary key value. The
+edit knows which row it belongs to, and the row keeps its identity
+across sorts, filters, pagination, and result-tab switches. Rows
+that don't have a usable PK get the keystroke rejected outright —
+better to lose the change than build an `UPDATE` with no safe
+`WHERE` clause.
+
+22 new tests pin this. Composite primary keys, null PK values, sort
+stability, page-flip identity, multi-statement context switches.
+
+## The query that finished after you cancelled it
+
+Run a slow query. Realise it's wrong. Hit Stop. Type a new query.
+Hit Run.
+
+The first query finishes a second later. The `pg` client has been
+streaming results into a callback that no longer has any reason to
+exist. The callback updates tab state with the old result, blowing
+away the new query's result that just landed.
+
+Three races on this path are now gone:
+
+1. Every `handleRunQuery` and `handleCancelQuery` invocation
+   snapshots its `executionId` in a closure. Before writing any tab
+   state, it checks the live `executionId` is still the same one it
+   was called with. Stale finishes get dropped on the floor.
+
+2. `updateTabExecuting` is now a compare-and-swap. A `finally` from
+   execution A cannot clear the executing flag belonging to
+   execution B.
+
+3. Closing a tab — single close, "close all", "close others",
+   "close to right" — fires a `cancelQuery` first. The pg client
+   used to keep streaming results that nothing read, holding the
+   pool slot until the server-side query completed. With
+   `POOL_MAX = 5`, a few abandoned long-runners starved new
+   connections. Pinned tabs (which the close handler no-ops on)
+   correctly skip the cancel.
+
+9 new tests pin the CAS contract and the cancel-on-close path.
+
+## The schema cache that lied for 24 hours
+
+We cache schema introspection for 24 hours. It is a real
+performance win — `pg_catalog` scans on big databases are not
+cheap, and the cache is keyed by saved connection so it survives
+restarts.
+
+Two correctness gaps:
+
+**DDL did not invalidate the cache.** `CREATE TABLE`, `ALTER
+TABLE`, `DROP TABLE` ran the SQL but left cached column sets and FK
+metadata in place. The Table Designer, the inline-edit context
+lookup, the FK drilldown — every one of them would read pre-DDL
+columns. Insert into a removed column, miss a new `NOT NULL`,
+drill on a foreign key that no longer existed. For 24 hours, until
+the TTL kicked in.
+
+Every successful DDL handler now invalidates.
+
+**Concurrent fetches dogpiled.** App start with two tabs against
+the same connection? Two simultaneous full schema scans, both
+writing back to the cache. The new `getOrFetchCachedSchema` keeps
+in-flight fetches in a map; the second caller awaits the same
+promise.
+
+And then we found the race inside the race. A fetch started just
+before a DDL invalidate would:
+
+1. Capture pre-DDL schema state
+2. Get past `await fetcher()`
+3. `invalidateSchemaCache` clears the cache
+4. The fetcher resolves and unconditionally calls
+   `setCachedSchema(config, result)`
+
+The just-invalidated cache is repopulated with pre-DDL data for
+another 24 hours. Exactly the silent-wrong-state bug the
+invalidation was meant to prevent.
+
+Now there's a per-key generation token. `invalidateSchemaCache`
+bumps the generation **before** clearing memory state. The
+fetcher captures the generation at start and refuses to write back
+if the generation has moved on. Two extra tests pin both failure
+modes (mid-fetch invalidation; older fetch finishing after a fresh
+one has taken its slot).
+
+## The pagination that dropped your WHERE
+
+You're on a table-preview tab. You rewrite the SQL in the editor:
+
+```sql
+SELECT * FROM users WHERE org_id = 42 LIMIT 100;
+```
+
+You hit Next Page. data-peek rebuilds the query for the next page —
+and silently drops your `WHERE`, replacing it with
+`SELECT * FROM users LIMIT 100 OFFSET 100`. You now have 100 rows
+from the wrong organisation, and the pagination footer is telling
+you there are 9 million more.
+
+Three places trusted the stored table name from the tab metadata
+over the SQL on screen: the count-for-pagination query, the
+page-change SQL rebuild, and the "Apply to Query" branch.
+
+A new `hasFilters` boolean comes out of the SELECT parser — true if
+a row-set-modifying clause (`WHERE` / `GROUP BY` / `HAVING` /
+`UNION` / `FOR`) is at depth 0. The match check that gates all
+three call sites refuses to match when `hasFilters` is true.
+`ORDER BY` / `LIMIT` / `OFFSET` don't count — they change order
+and window, not which rows come out.
+
+When SQL diverges from the stored table source, the cached
+`serverTotalRowCount` clears so the pagination footer stops
+claiming the original table's total.
+
+## End-to-end testing — 4 specs to 25
+
+The audit also produced a thicker safety net. Until this release,
+we had four end-to-end tests. Now we have 25, plus a separate
+suite for IPC gap coverage. The audit-fix regression specs pin
+every path above so the next refactor doesn't re-introduce a class
+of bug we already paid to find.
+
+The full story of how Playwright got there — driving Monaco,
+talking to a real Postgres in Docker, surviving stale builds — is
+in [From 4 to 25 Tests](/blog/end-to-end-testing-an-electron-sql-client).
+
+## Design system, normalised
+
+While we were in there:
+
+- Hex colors replaced with theme tokens across the docs and
+  marketing components. The codebase is no longer a graveyard of
+  one-off `#6b8cf5` literals.
+- Side-stripe borders and excessive `backdrop-blur` — two
+  AI-generated design anti-patterns that crept in during fast
+  iteration — are gone.
+- Sidebar and table headers moved to solid backgrounds. The
+  "honest, minimal" direction does not include a frosted-glass
+  table header.
+- Button transitions switched from `transition-all` to
+  `transition-colors` — fewer layout-thrashing repaints.
+- The 3,000-line `tab-query-editor` lost over 1,000 lines to two
+  proper extracted components (`EditorToolbar`, `QueryResults`),
+  with ~10 `any` props replaced by concrete types along the way.
+
+## Bug fixes worth naming
+
+- `NotebookStorage` no longer errors on first launch (#176).
+- The marketing site build no longer trips on a stray brace in
+  `mdx-components.tsx` (#175).
+- The marketing site now ships Vercel Speed Insights — real-user
+  vitals feed back into design decisions (#173).
+
+## What this means for you
+
+If you do any of the following, you specifically benefit from
+upgrading:
+
+- Edit rows inline after sorting or paginating
+- Edit rows with a bigint primary key
+- Run DDL inside the app and immediately use the changed table
+- Keep tabs open against slow databases with `POOL_MAX = 5`
+- Use table-preview tabs and rewrite the SQL with a `WHERE` before
+  paginating
+- Hit Stop, then run a different query
+
+Auto-update via **data-peek → Check for Updates**, or grab the
+build from the [downloads page](/download).
+
+This was a maintenance release. The next one has features in it.
+But the boring parts of a SQL client are the ones you cannot
+afford to get wrong, and v0.22.0 is the bill for the year we spent
+shipping fast.

@@ -292,6 +292,7 @@ interface DataPeekApi {
     onExecuteQuery: (callback: () => void) => () => void
     onFormatSql: (callback: () => void) => () => void
     onClearResults: (callback: () => void) => () => void
+    onToggleWatch: (callback: () => void) => () => void
     onToggleSidebar: (callback: () => void) => () => void
     onOpenSettings: (callback: () => void) => () => void
     onSaveChanges: (callback: () => void) => () => void

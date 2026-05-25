@@ -258,6 +258,11 @@ const api = {
       ipcRenderer.on('menu:clear-results', handler)
       return () => ipcRenderer.removeListener('menu:clear-results', handler)
     },
+    onToggleWatch: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('menu:toggle-watch', handler)
+      return () => ipcRenderer.removeListener('menu:toggle-watch', handler)
+    },
     onToggleSidebar: (callback: () => void): (() => void) => {
       const handler = (): void => callback()
       ipcRenderer.on('menu:toggle-sidebar', handler)

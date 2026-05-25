@@ -226,6 +226,17 @@ export function createMenu(): void {
               focusedWindow.webContents.send('menu:clear-results')
             }
           }
+        },
+        { type: 'separator' },
+        {
+          label: 'Toggle Watch Mode',
+          accelerator: 'CmdOrCtrl+Shift+W',
+          click: (): void => {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              focusedWindow.webContents.send('menu:toggle-watch')
+            }
+          }
         }
       ]
     },
