@@ -12,6 +12,7 @@
  * parse time (the resolver double-checks before generating CTEs).
  */
 
+import { isSQLKeyword } from '@data-peek/shared'
 import {
   REF_NAME_MAX_LENGTH,
   REF_NAME_PATTERN,
@@ -133,7 +134,12 @@ export function validateRefName(
       }
     }
   }
-  if (RESERVED_REF_NAMES.has(normalized)) {
+  if (RESERVED_REF_NAMES.has(normalized) || isSQLKeyword(normalized)) {
+    // Local list catches common keywords with a clear message; the shared
+    // isSQLKeyword catches the long tail (table, into, set, recursive,
+    // references, using, over, etc.) that the resolver would otherwise
+    // reject at run time with `unknown_reference`. Surface them here so
+    // the rename UI catches the bad name on input.
     return {
       ok: false,
       error: { kind: 'reserved_word', word: normalized }

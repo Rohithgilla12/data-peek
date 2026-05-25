@@ -76,6 +76,17 @@ describe('validateRefName', () => {
       expect(isReservedRefName('SELECT')).toBe(true)
       expect(isReservedRefName('users')).toBe(false)
     })
+
+    it('rejects the broader shared SQL keyword set (table / into / set / over)', () => {
+      // Not in the local RESERVED_REF_NAMES list but caught by the shared
+      // isSQLKeyword check. Bug fix from PR #184 review — these would
+      // otherwise pass validation and only fail at resolve time.
+      for (const kw of ['table', 'into', 'set', 'over', 'using', 'references']) {
+        const r = validateRefName(kw)
+        expect(r.ok).toBe(false)
+        if (!r.ok) expect(r.error.kind).toBe('reserved_word')
+      }
+    })
   })
 
   describe('uniqueness', () => {
