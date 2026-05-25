@@ -1,10 +1,10 @@
 {
   "name": "@data-peek/video",
-  "version": "0.22.0",
+  "version": "0.23.0",
   "private": true,
   "scripts": {
     "dev": "remotion studio",
-    "build": "remotion render ReleaseVideo-v0-22-0 out/release-v0.22.0.mp4",
+    "build": "remotion render ReleaseVideo-v0-23-0 out/release-v0.23.0.mp4",
     "render": "node render.mjs",
     "typecheck": "tsc --noEmit"
   },

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { computeDiff } from '../watch-diff'
-import type { KeyingPlan } from '../watch-row-keying'
+import { cellKey, type KeyingPlan } from '../watch-row-keying'
 
 const pkPlan = (col: string): KeyingPlan => ({
   strategy: 'primary_key',
@@ -76,11 +76,11 @@ describe('computeDiff', () => {
       now,
       fadeMs: 8000
     })
-    const cell = diff.cells.get('1:n')
+    const cell = diff.cells.get(cellKey('1', 'n'))
     expect(cell?.kind).toBe('changed')
     expect(cell?.changedAt).toBe(now)
     expect(cell?.previousValue).toBe(1)
-    expect(diff.cells.get('1:id')).toBeUndefined()
+    expect(diff.cells.get(cellKey('1', 'id'))).toBeUndefined()
   })
 
   it('ignores unchanged cells', () => {
@@ -108,7 +108,7 @@ describe('computeDiff', () => {
       now,
       fadeMs: 8000
     })
-    const cell = diff.cells.get('#1:name')
+    const cell = diff.cells.get(cellKey('#1', 'name'))
     expect(cell?.kind).toBe('changed')
   })
 
@@ -124,7 +124,7 @@ describe('computeDiff', () => {
       now: tickA,
       fadeMs: 8000
     })
-    expect(diffA.cells.get('1:n')?.changedAt).toBe(tickA)
+    expect(diffA.cells.get(cellKey('1', 'n'))?.changedAt).toBe(tickA)
 
     // Next tick — value didn't change again, but we're still within fade.
     const tickB = tickA + 1000
@@ -140,7 +140,7 @@ describe('computeDiff', () => {
       fadeMs: 8000
     })
     // Carried forward, with the *original* changedAt timestamp.
-    expect(diffB.cells.get('1:n')?.changedAt).toBe(tickA)
+    expect(diffB.cells.get(cellKey('1', 'n'))?.changedAt).toBe(tickA)
   })
 
   it('drops carried diffs past the fade window', () => {
@@ -196,7 +196,27 @@ describe('computeDiff', () => {
       now,
       fadeMs: 8000
     })
-    expect(diff.cells.get('1:meta')?.kind).toBe('changed')
+    expect(diff.cells.get(cellKey('1', 'meta'))?.kind).toBe('changed')
+  })
+
+  it('cell key does not collide when row key contains a colon (e.g. URN-style PKs)', () => {
+    // Regression for the `${key}:${field}` collision: a row whose PK is
+    // 'a:foo' would key its `bar` cell as `a:foo:bar`, which would also
+    // be matched by row 'a' + field 'foo:bar'. The shared cellKey helper
+    // uses a NUL separator so the namespaces stay disjoint.
+    const diff = computeDiff({
+      previous: { rows: [{ urn: 'a:foo', bar: 1 }], keyingPlan: pkPlan('urn') },
+      next: {
+        rows: [{ urn: 'a:foo', bar: 2 }],
+        keyingPlan: pkPlan('urn'),
+        fieldNames: ['urn', 'bar']
+      },
+      now,
+      fadeMs: 8000
+    })
+    expect(diff.cells.get(cellKey('a:foo', 'bar'))?.kind).toBe('changed')
+    // The pre-fix collision key must NOT be present:
+    expect(diff.cells.get('a:foo:bar')).toBeUndefined()
   })
 
   it('does not double-count when a previously-changed cell changes again', () => {
@@ -223,6 +243,6 @@ describe('computeDiff', () => {
       carryFromPrevious: diffA,
       fadeMs: 10_000
     })
-    expect(diffB.cells.get('1:n')?.changedAt).toBe(tickB)
+    expect(diffB.cells.get(cellKey('1', 'n'))?.changedAt).toBe(tickB)
   })
 })

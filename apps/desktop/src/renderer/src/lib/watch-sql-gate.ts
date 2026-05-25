@@ -202,6 +202,123 @@ function leadingKeyword(stmt: string): string {
   return m ? m[0].toUpperCase() : ''
 }
 
+/**
+ * Walk a single statement and return every identifier-shaped token,
+ * uppercased, that appears outside string literals and comments. Used for
+ * the CTE-body scan: a top-level `WITH` says "this is a CTE-led SELECT"
+ * but doesn't preclude `WITH x AS (DELETE FROM ... RETURNING ...) SELECT *`,
+ * which would re-fire the mutation every tick.
+ *
+ * Mirrors splitStatements' string/comment handling exactly so a token like
+ * INSERT inside a string literal (e.g. `SELECT 'INSERT' as msg`) doesn't
+ * trigger a false positive.
+ */
+function extractKeywordTokens(stmt: string): Set<string> {
+  const tokens = new Set<string>()
+  let i = 0
+  const n = stmt.length
+  let inSingle = false
+  let inDouble = false
+  let inDollar = false
+  let dollarTag = ''
+  let inLine = false
+  let blockDepth = 0
+
+  while (i < n) {
+    const c = stmt[i]
+    const nx = stmt[i + 1]
+
+    if (inLine) {
+      if (c === '\n') inLine = false
+      i++
+      continue
+    }
+    if (blockDepth > 0) {
+      if (c === '*' && nx === '/') {
+        blockDepth--
+        i += 2
+        continue
+      }
+      if (c === '/' && nx === '*') {
+        blockDepth++
+        i += 2
+        continue
+      }
+      i++
+      continue
+    }
+    if (inDollar) {
+      if (stmt.startsWith(dollarTag, i)) {
+        i += dollarTag.length
+        inDollar = false
+        continue
+      }
+      i++
+      continue
+    }
+    if (inSingle) {
+      if (c === "'" && stmt[i - 1] !== '\\') {
+        if (nx === "'") {
+          i += 2
+          continue
+        }
+        inSingle = false
+      }
+      i++
+      continue
+    }
+    if (inDouble) {
+      if (c === '"') inDouble = false
+      i++
+      continue
+    }
+
+    if (c === '-' && nx === '-') {
+      inLine = true
+      i += 2
+      continue
+    }
+    if (c === '/' && nx === '*') {
+      blockDepth = 1
+      i += 2
+      continue
+    }
+
+    if (c === '$') {
+      let j = i + 1
+      while (j < n && /[A-Za-z0-9_]/.test(stmt[j])) j++
+      if (stmt[j] === '$') {
+        dollarTag = stmt.slice(i, j + 1)
+        inDollar = true
+        i = j + 1
+        continue
+      }
+    }
+
+    if (c === "'") {
+      inSingle = true
+      i++
+      continue
+    }
+    if (c === '"') {
+      inDouble = true
+      i++
+      continue
+    }
+
+    if (/[A-Za-z_]/.test(c)) {
+      let j = i + 1
+      while (j < n && /[A-Za-z0-9_]/.test(stmt[j])) j++
+      tokens.add(stmt.slice(i, j).toUpperCase())
+      i = j
+      continue
+    }
+    i++
+  }
+
+  return tokens
+}
+
 export function gateForWatch(sql: string): WatchGateResult {
   const statements = splitStatements(sql ?? '')
 
@@ -219,10 +336,37 @@ export function gateForWatch(sql: string): WatchGateResult {
   const stmt = statements[0]
   const kw = leadingKeyword(stmt)
 
-  if (kw === 'SELECT' || kw === 'WITH' || kw === 'TABLE' || kw === 'VALUES') {
-    // SELECT, CTE-led SELECT, and the postgres-friendly `TABLE foo` / `VALUES (..)`
-    // shorthand are all row-producing. We surface them as SELECT for the UI.
-    return { ok: true, leadingKeyword: kw === 'WITH' ? 'WITH' : 'SELECT' }
+  if (kw === 'WITH') {
+    // CTE-led SELECT is row-producing on its surface, but PG (and MSSQL via
+    // CHANGES/DELETED) allow mutating CTEs: `WITH x AS (DELETE FROM ...
+    // RETURNING ...) SELECT * FROM x`. The wrapping SELECT looks innocent —
+    // the side effect runs every tick. Walk the body, look for mutating
+    // keywords outside strings/comments, refuse if any are present.
+    const bodyTokens = extractKeywordTokens(stmt)
+    for (const bad of DESTRUCTIVE) {
+      if (bodyTokens.has(bad)) {
+        return {
+          ok: false,
+          reason: 'destructive_statement',
+          detail: `Watch Mode refuses mutating CTEs (found ${bad} inside WITH).`
+        }
+      }
+    }
+    for (const bad of DDL) {
+      if (bodyTokens.has(bad)) {
+        return {
+          ok: false,
+          reason: 'ddl_statement',
+          detail: `Watch Mode refuses DDL inside CTEs (found ${bad} inside WITH).`
+        }
+      }
+    }
+    return { ok: true, leadingKeyword: 'WITH' }
+  }
+  if (kw === 'SELECT' || kw === 'TABLE' || kw === 'VALUES') {
+    // SELECT and the postgres-friendly `TABLE foo` / `VALUES (..)` shorthand
+    // are all row-producing. We surface them as SELECT for the UI.
+    return { ok: true, leadingKeyword: 'SELECT' }
   }
   if (DESTRUCTIVE.has(kw)) {
     return {

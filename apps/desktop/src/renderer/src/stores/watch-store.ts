@@ -71,14 +71,24 @@ function makeInitialState(config: WatchConfig): TabWatchState {
 
 function clampConfig(partial: Partial<WatchConfig>, base: WatchConfig): WatchConfig {
   const merged = { ...base, ...partial }
-  if (typeof merged.cadenceMs === 'number') {
+  // Number.isFinite filters NaN, +Infinity, -Infinity. typeof alone accepts
+  // those — and `{ cadenceMs: NaN }` would poison the scheduler with
+  // `Math.max(250, NaN) === NaN`, busy-looping setTimeout. Fall back to the
+  // prior base value so the watch stays sane.
+  if (typeof merged.cadenceMs === 'number' && Number.isFinite(merged.cadenceMs)) {
     merged.cadenceMs = Math.max(CADENCE_FLOOR_MS, Math.round(merged.cadenceMs))
+  } else {
+    merged.cadenceMs = base.cadenceMs
   }
-  if (typeof merged.historyLimit === 'number') {
+  if (typeof merged.historyLimit === 'number' && Number.isFinite(merged.historyLimit)) {
     merged.historyLimit = Math.max(2, Math.min(50, Math.round(merged.historyLimit)))
+  } else {
+    merged.historyLimit = base.historyLimit
   }
-  if (typeof merged.fadeMs === 'number') {
+  if (typeof merged.fadeMs === 'number' && Number.isFinite(merged.fadeMs)) {
     merged.fadeMs = Math.max(0, Math.round(merged.fadeMs))
+  } else {
+    merged.fadeMs = base.fadeMs
   }
   return merged
 }

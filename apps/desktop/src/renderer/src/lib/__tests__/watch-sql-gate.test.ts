@@ -22,6 +22,20 @@ describe('gateForWatch', () => {
       expect(r).toEqual({ ok: true, leadingKeyword: 'WITH' })
     })
 
+    it('CTE that mentions a mutating keyword inside a string literal is fine', () => {
+      const r = gateForWatch(
+        "WITH t AS (SELECT 'INSERT INTO logs' AS msg, 1 AS id) SELECT * FROM t"
+      )
+      expect(r.ok).toBe(true)
+    })
+
+    it('CTE that mentions a mutating keyword inside a block comment is fine', () => {
+      const r = gateForWatch(
+        'WITH t AS (SELECT 1 /* INSERT INTO logs */ AS id) SELECT * FROM t'
+      )
+      expect(r.ok).toBe(true)
+    })
+
     it('trailing semicolon is fine', () => {
       expect(gateForWatch('SELECT 1;').ok).toBe(true)
     })
@@ -38,6 +52,42 @@ describe('gateForWatch', () => {
 
     it('VALUES shorthand is accepted', () => {
       expect(gateForWatch("VALUES (1, 'a'), (2, 'b')").ok).toBe(true)
+    })
+  })
+
+  describe('rejects mutating CTEs (the WITH body-scan)', () => {
+    it('WITH x AS (DELETE ... RETURNING ...) SELECT * FROM x', () => {
+      const r = gateForWatch(
+        'WITH x AS (DELETE FROM users WHERE id = 1 RETURNING *) SELECT * FROM x'
+      )
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.reason).toBe('destructive_statement')
+    })
+
+    it('WITH x AS (UPDATE ... RETURNING ...) SELECT *', () => {
+      const r = gateForWatch(
+        "WITH x AS (UPDATE users SET email = 'x' WHERE id = 1 RETURNING *) SELECT * FROM x"
+      )
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.reason).toBe('destructive_statement')
+    })
+
+    it('WITH x AS (INSERT ... RETURNING ...) SELECT *', () => {
+      const r = gateForWatch(
+        "WITH x AS (INSERT INTO logs(msg) VALUES ('hi') RETURNING *) SELECT * FROM x"
+      )
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.reason).toBe('destructive_statement')
+    })
+
+    it('WITH x AS (CREATE TABLE ...) — DDL inside CTE is also refused', () => {
+      // Not valid PG (CREATE inside CTE is rejected by the planner), but the
+      // gate should reject early so the watch never gets to dispatch it.
+      const r = gateForWatch(
+        'WITH x AS (CREATE TABLE foo (id int)) SELECT 1'
+      )
+      expect(r.ok).toBe(false)
+      if (!r.ok) expect(r.reason).toBe('ddl_statement')
     })
   })
 

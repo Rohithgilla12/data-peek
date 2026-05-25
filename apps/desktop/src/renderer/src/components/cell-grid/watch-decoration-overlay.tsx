@@ -2,10 +2,18 @@ import * as React from 'react'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import type { CellGridGeometry } from './cell-grid-types'
 import type { WatchDiff } from '@/lib/watch-types'
-import { deriveRowKey, type KeyingPlan } from '@/lib/watch-row-keying'
+import { cellKey, deriveRowKey, type KeyingPlan } from '@/lib/watch-row-keying'
 
 interface RowLike {
   original: Record<string, unknown>
+  /**
+   * Absolute index of this row within the unpaginated result set. The
+   * differ keys row_position diffs by absolute index; the overlay must
+   * key the same way or paginated views map highlights onto the wrong
+   * rows. Falls back to the visible index when the host doesn't provide
+   * one (small / unpaginated tables behave identically).
+   */
+  index?: number
 }
 
 interface WatchDecorationOverlayProps {
@@ -37,11 +45,20 @@ export function WatchDecorationOverlay({
   virtualizer,
   fadeMs
 }: WatchDecorationOverlayProps) {
-  // Tick a re-render every 200ms so fades visibly progress. Only while a
-  // diff is present.
+  // Tick a re-render every 200ms so fades visibly progress. Any of changed
+  // cells, added rows, or removed rows needs the ticker — a tick that only
+  // added rows would otherwise leave the green band stuck on screen
+  // indefinitely.
   const [, force] = React.useState(0)
   React.useEffect(() => {
-    if (!diff || diff.cells.size === 0) return
+    if (!diff) return
+    if (
+      diff.cells.size === 0 &&
+      diff.addedRowKeys.size === 0 &&
+      diff.removedRowKeys.size === 0
+    ) {
+      return
+    }
     const id = setInterval(() => force((n) => n + 1), 200)
     return () => clearInterval(id)
   }, [diff])
@@ -67,7 +84,11 @@ export function WatchDecorationOverlay({
     const rowLike = rows[rowIndex]
     if (!rowLike) continue
     const row = rowLike.original
-    const key = deriveRowKey(row, plan, rowIndex)
+    // Use the absolute index when the host provides one (paginated /
+    // server-side results) so row_position keys match what the differ
+    // computed. Falls back to the page-local index for un-paginated tables.
+    const absoluteIndex = rowLike.index ?? rowIndex
+    const key = deriveRowKey(row, plan, absoluteIndex)
     const y = geometry.headerHeight + rowIndex * geometry.rowHeight
 
     // Row-level: added rows get a band the full width
@@ -100,8 +121,7 @@ export function WatchDecorationOverlay({
     // Per-cell changed highlights
     for (let c = 0; c < columnNames.length; c++) {
       const colName = columnNames[c]
-      const cellKey = `${key}:${colName}`
-      const cell = diff.cells.get(cellKey)
+      const cell = diff.cells.get(cellKey(key, colName))
       if (!cell || cell.kind !== 'changed') continue
       const age = now - cell.changedAt
       const intensity = Math.max(0, 1 - age / fadeMs)

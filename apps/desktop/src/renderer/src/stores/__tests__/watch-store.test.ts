@@ -119,6 +119,32 @@ describe('useWatchStore', () => {
     expect(st?.config.fadeMs).toBe(0)
   })
 
+  it('updateConfig falls back to base for NaN cadence', () => {
+    useWatchStore.getState().start(TAB, { cadenceMs: 5000 })
+    useWatchStore.getState().updateConfig(TAB, { cadenceMs: NaN })
+    expect(useWatchStore.getState().getState(TAB)?.config.cadenceMs).toBe(5000)
+  })
+
+  it('updateConfig falls back to base for +Infinity cadence', () => {
+    useWatchStore.getState().start(TAB, { cadenceMs: 5000 })
+    useWatchStore.getState().updateConfig(TAB, { cadenceMs: Number.POSITIVE_INFINITY })
+    expect(useWatchStore.getState().getState(TAB)?.config.cadenceMs).toBe(5000)
+  })
+
+  it('updateConfig falls back to base for NaN historyLimit + fadeMs', () => {
+    useWatchStore.getState().start(TAB)
+    const before = useWatchStore.getState().getState(TAB)?.config
+    useWatchStore.getState().updateConfig(TAB, { historyLimit: NaN, fadeMs: NaN })
+    const after = useWatchStore.getState().getState(TAB)?.config
+    expect(after?.historyLimit).toBe(before?.historyLimit)
+    expect(after?.fadeMs).toBe(before?.fadeMs)
+  })
+
+  it('start with NaN cadence falls back to default', () => {
+    useWatchStore.getState().start(TAB, { cadenceMs: NaN })
+    expect(useWatchStore.getState().getState(TAB)?.config.cadenceMs).toBe(5000)
+  })
+
   it('isWatching reflects enabled flag', () => {
     expect(useWatchStore.getState().isWatching(TAB)).toBe(false)
     useWatchStore.getState().start(TAB)
