@@ -6,9 +6,12 @@ export type { SQLDialect } from '@shared/sql-escape'
 import { escapeSQLIdentifier, escapeSQLValue } from '@shared/sql-escape'
 import type { SQLDialect } from '@shared/sql-escape'
 
+export type ExportFormat = 'csv' | 'json' | 'sql'
+export type ExportDestination = 'download' | 'clipboard'
+
 export interface ExportOptions {
   filename: string
-  format: 'csv' | 'json' | 'sql' | 'xlsx'
+  format: ExportFormat | 'xlsx'
 }
 
 export interface ExportData {
@@ -119,6 +122,56 @@ export function exportToSQL(data: ExportData, options: SQLExportOptions): string
   return lines.join('\n')
 }
 
+export function serializeExport(
+  data: ExportData,
+  format: ExportFormat,
+  options?: SQLExportOptions
+): string {
+  switch (format) {
+    case 'csv':
+      return exportToCSV(data)
+    case 'json':
+      return exportToJSON(data)
+    case 'sql':
+      return exportToSQL(data, options ?? { tableName: 'query_result' })
+  }
+}
+
+export function maskExportData(data: ExportData, maskedColumns: Set<string>): ExportData {
+  if (maskedColumns.size === 0) return data
+
+  return {
+    ...data,
+    rows: data.rows.map((row) => {
+      const newRow = { ...row }
+      for (const column of maskedColumns) {
+        newRow[column] = '[MASKED]'
+      }
+      return newRow
+    })
+  }
+}
+
+function getExportExtension(format: ExportFormat): string {
+  return format
+}
+
+function getExportMimeType(format: ExportFormat): string {
+  switch (format) {
+    case 'csv':
+      return 'text/csv'
+    case 'json':
+      return 'application/json'
+    case 'sql':
+      return 'text/sql'
+  }
+}
+
+function ensureExportExtension(filename: string, format: ExportFormat): string {
+  const extension = getExportExtension(format)
+  return filename.endsWith(`.${extension}`) ? filename : `${filename}.${extension}`
+}
+
 // Trigger download in browser
 export function downloadFile(content: string | Blob, filename: string, mimeType: string): void {
   const blob = content instanceof Blob ? content : new Blob([content], { type: mimeType })
@@ -132,22 +185,38 @@ export function downloadFile(content: string | Blob, filename: string, mimeType:
   URL.revokeObjectURL(url)
 }
 
+export function downloadExport(
+  data: ExportData,
+  format: ExportFormat,
+  filename: string,
+  options?: SQLExportOptions
+): void {
+  const content = serializeExport(data, format, options)
+  downloadFile(content, ensureExportExtension(filename, format), getExportMimeType(format))
+}
+
+export async function copyExportToClipboard(
+  data: ExportData,
+  format: ExportFormat,
+  options?: SQLExportOptions
+): Promise<void> {
+  const content = serializeExport(data, format, options)
+  await navigator.clipboard.writeText(content)
+}
+
 // Export and download CSV
 export function downloadCSV(data: ExportData, filename: string): void {
-  const csv = exportToCSV(data)
-  downloadFile(csv, filename.endsWith('.csv') ? filename : `${filename}.csv`, 'text/csv')
+  downloadExport(data, 'csv', filename)
 }
 
 // Export and download JSON
 export function downloadJSON(data: ExportData, filename: string): void {
-  const json = exportToJSON(data)
-  downloadFile(json, filename.endsWith('.json') ? filename : `${filename}.json`, 'application/json')
+  downloadExport(data, 'json', filename)
 }
 
 // Export and download SQL
 export function downloadSQL(data: ExportData, filename: string, options: SQLExportOptions): void {
-  const sql = exportToSQL(data, options)
-  downloadFile(sql, filename.endsWith('.sql') ? filename : `${filename}.sql`, 'text/sql')
+  downloadExport(data, 'sql', filename, options)
 }
 
 // Generate default filename based on timestamp and optional table name

@@ -36,7 +36,12 @@ import type { EditContext, TableInfo } from '@data-peek/shared'
 import { analyzeEditableSelect, sqlMatchesStoredTable } from '@/lib/editable-select'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
-import { downloadCSV, downloadJSON, downloadSQL, generateExportFilename } from '@/lib/export'
+import {
+  copyExportToClipboard,
+  downloadExport,
+  generateExportFilename,
+  maskExportData
+} from '@/lib/export'
 import {
   buildQualifiedTableRef,
   buildFullyQualifiedTableRef,
@@ -60,7 +65,7 @@ import { ColumnStatsPanel } from '@/components/column-stats-panel'
 import { useColumnStatsStore } from '@/stores/column-stats-store'
 import type { DataTableColumn as DtColumn } from '@/components/data-table'
 import { useMaskingStore } from '@/stores/masking-store'
-import type { ExportData } from '@/lib/export'
+import type { ExportData, ExportDestination, ExportFormat, SQLExportOptions } from '@/lib/export'
 import { StepRibbon } from './step-ribbon'
 import { StepResultsTabs } from './step-results-tabs'
 import { EditorToolbar } from './query-editor/editor-toolbar'
@@ -224,7 +229,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
 
   // Export with masked columns confirmation
   const [pendingExport, setPendingExport] = useState<null | {
-    type: 'csv' | 'json' | 'sql'
+    format: ExportFormat
+    destination: ExportDestination
     data: ExportData
     filename: string
   }>(null)
@@ -240,16 +246,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       data.columns.map((c) => c.name)
     )
     if (masked.size === 0) return data
-    return {
-      ...data,
-      rows: data.rows.map((row) => {
-        const newRow = { ...row }
-        for (const col of masked) {
-          newRow[col] = '[MASKED]'
-        }
-        return newRow
-      })
-    }
+    return maskExportData(data, masked)
   }
 
   // Export data for the currently visible result set. For multi-statement queries this
@@ -267,28 +264,49 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     return tab.result ?? null
   }
 
-  const handleExport = (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
+  const handleExport = (
+    format: ExportFormat,
+    destination: ExportDestination,
+    data: ExportData,
+    filename: string
+  ) => {
     const masked = getEffectiveMaskedColumns(
       tabId,
       data.columns.map((c) => c.name)
     )
     if (masked.size > 0) {
-      setPendingExport({ type, data, filename })
+      setPendingExport({ format, destination, data, filename })
       return
     }
-    doExport(type, data, filename)
+    void doExport(format, destination, data, filename)
   }
 
-  const doExport = (type: 'csv' | 'json' | 'sql', data: ExportData, filename: string) => {
-    if (type === 'csv') {
-      downloadCSV(data, filename)
-    } else if (type === 'json') {
-      downloadJSON(data, filename)
-    } else {
-      downloadSQL(data, filename, {
-        tableName: tab && tab.type === 'table-preview' ? tab.tableName : 'query_result',
-        schemaName: tab && tab.type === 'table-preview' ? tab.schemaName : undefined
-      })
+  const getSQLExportOptions = (): SQLExportOptions => ({
+    tableName: tab && tab.type === 'table-preview' ? tab.tableName : 'query_result',
+    schemaName: tab && tab.type === 'table-preview' ? tab.schemaName : undefined
+  })
+
+  const doExport = async (
+    format: ExportFormat,
+    destination: ExportDestination,
+    data: ExportData,
+    filename: string
+  ) => {
+    const options = format === 'sql' ? getSQLExportOptions() : undefined
+
+    try {
+      if (destination === 'clipboard') {
+        await copyExportToClipboard(data, format, options)
+        notify.success(`Copied ${format.toUpperCase()} export to clipboard`)
+      } else {
+        downloadExport(data, format, filename, options)
+      }
+    } catch (error) {
+      const action = destination === 'clipboard' ? 'Copy' : 'Export'
+      notify.error(
+        `${action} failed`,
+        error instanceof Error ? error.message : 'An unexpected error occurred'
+      )
     }
   }
 
@@ -1775,9 +1793,13 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       <AlertDialog open={!!pendingExport} onOpenChange={(open) => !open && setPendingExport(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Export with masked columns?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {pendingExport?.destination === 'clipboard'
+                ? 'Copy with masked columns?'
+                : 'Export with masked columns?'}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Some columns are currently masked. The exported file will contain{' '}
+              Some columns are currently masked. The exported data will contain{' '}
               <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">[MASKED]</code> in
               place of sensitive values. Do you want to continue?
             </AlertDialogDescription>
@@ -1788,11 +1810,18 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               onClick={() => {
                 if (!pendingExport) return
                 const maskedData = buildMaskedExportData(pendingExport.data)
-                doExport(pendingExport.type, maskedData, pendingExport.filename)
+                void doExport(
+                  pendingExport.format,
+                  pendingExport.destination,
+                  maskedData,
+                  pendingExport.filename
+                )
                 setPendingExport(null)
               }}
             >
-              Export with [MASKED] values
+              {pendingExport?.destination === 'clipboard'
+                ? 'Copy with [MASKED] values'
+                : 'Export with [MASKED] values'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
