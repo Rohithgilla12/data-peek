@@ -62,6 +62,13 @@ jobs:
         with:
           node-version: 24
 
+      # Pin Python 3.11 so node-gyp 9.x (used by @electron/rebuild) still has
+      # `distutils` available. Python 3.12 removed it.
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
@@ -166,6 +173,11 @@ jobs:
         with:
           node-version: 24
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
 
@@ -212,6 +224,11 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
