@@ -123,6 +123,7 @@ export function Tab({
                 setNameError(null)
               }}
               onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 e.stopPropagation()
                 if (e.key === 'Enter') {
