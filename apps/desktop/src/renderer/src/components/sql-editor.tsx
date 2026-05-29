@@ -5,7 +5,13 @@ import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 import { formatSQL } from '@/lib/sql-formatter'
 import { cn } from '@data-peek/ui'
 import { useTheme } from '@/components/theme-provider'
-import type { SchemaInfo, Snippet, TableInfo } from '@data-peek/shared'
+import type { DatabaseType, SchemaInfo, Snippet, TableInfo } from '@data-peek/shared'
+import type { CrossTabRef } from '@/lib/cross-tab-integration'
+import {
+  ensureCrossTabProviders,
+  updateCrossTabRefs,
+  updateCrossTabMarkers
+} from '@/components/cross-tab/cross-tab-editor'
 import { SQL_KEYWORDS } from '@/constants/sql-keywords'
 
 // Configure Monaco workers for Vite + Electron (avoids CSP issues)
@@ -474,6 +480,10 @@ export interface SQLEditorProps {
   onMount?: (editor: EditorType, monaco: Monaco) => void
   /** Enable glyph margin (for breakpoint decorations) */
   glyphMargin?: boolean
+  /** Named tabs available for @name references on this connection. */
+  crossTabRefs?: CrossTabRef[]
+  /** Dialect used for cross-tab parsing/markers. */
+  crossTabDialect?: DatabaseType
 }
 
 // Custom dark theme inspired by the app's aesthetic
@@ -567,11 +577,14 @@ export function SQLEditor({
   schemas = [],
   snippets = [],
   onMount,
-  glyphMargin = false
+  glyphMargin = false,
+  crossTabRefs = [],
+  crossTabDialect
 }: SQLEditorProps) {
   const { theme } = useTheme()
   const editorRef = React.useRef<EditorType | null>(null)
   const monacoRef = React.useRef<Monaco | null>(null)
+  const crossTabDialectRef = React.useRef<DatabaseType | undefined>(crossTabDialect)
 
   // Use refs to always hold the latest callbacks to avoid stale closures
   const onRunRef = React.useRef(onRun)
@@ -594,6 +607,10 @@ export function SQLEditor({
     onFormatRef.current = onFormat
   }, [onFormat])
 
+  React.useEffect(() => {
+    crossTabDialectRef.current = crossTabDialect
+  }, [crossTabDialect])
+
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
     monacoRef.current = monaco
@@ -606,6 +623,13 @@ export function SQLEditor({
     updateCompletionSchemas(schemas)
     updateCompletionSnippets(snippets)
     ensureCompletionProvider(monaco)
+
+    updateCrossTabRefs(crossTabRefs)
+    ensureCrossTabProviders(monaco)
+    const crossTabModel = editor.getModel()
+    if (crossTabModel && crossTabDialectRef.current) {
+      updateCrossTabMarkers(monaco, crossTabModel, crossTabDialectRef.current)
+    }
 
     // Set the theme based on current app theme
     const editorTheme = resolvedTheme === 'dark' ? 'data-peek-dark' : 'data-peek-light'
@@ -701,8 +725,21 @@ export function SQLEditor({
     updateCompletionSnippets(snippets)
   }, [snippets])
 
+  // Update cross-tab refs + markers when they change
+  React.useEffect(() => {
+    updateCrossTabRefs(crossTabRefs)
+    const model = editorRef.current?.getModel()
+    if (monacoRef.current && model && crossTabDialect) {
+      updateCrossTabMarkers(monacoRef.current, model, crossTabDialect)
+    }
+  }, [crossTabRefs, crossTabDialect])
+
   const handleChange = (newValue: string | undefined) => {
     onChange?.(newValue ?? '')
+    const model = editorRef.current?.getModel()
+    if (monacoRef.current && model && crossTabDialectRef.current) {
+      updateCrossTabMarkers(monacoRef.current, model, crossTabDialectRef.current)
+    }
   }
 
   return (

@@ -34,7 +34,7 @@ import {
 import { type DataTableColumn as EditableDataTableColumn } from '@/components/editable-data-table'
 import type { EditContext, TableInfo } from '@data-peek/shared'
 import { analyzeEditableSelect, sqlMatchesStoredTable } from '@/lib/editable-select'
-import { resolveForRun, crossTabErrorMessage } from '@/lib/cross-tab-integration'
+import { resolveForRun, crossTabErrorMessage, buildCrossTabRefs } from '@/lib/cross-tab-integration'
 import type { ResolveForRunSummary } from '@/lib/cross-tab-integration'
 import { CrossTabSubmitDialog } from '@/components/cross-tab/cross-tab-submit-dialog'
 import { SQLEditor } from '@/components/sql-editor'
@@ -125,6 +125,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const getAllSnippets = useSnippetStore((s) => s.getAllSnippets)
   const initializeSnippets = useSnippetStore((s) => s.initializeSnippets)
   const allSnippets = getAllSnippets()
+
+  const allTabs = useTabStore((s) => s.tabs)
+  const crossTabRefs = useMemo(
+    () => buildCrossTabRefs(allTabs, tab?.connectionId ?? null, tabId),
+    [allTabs, tab?.connectionId, tabId]
+  )
 
   const stepSession = useStepStore((s) => s.sessions.get(tabId))
   const startStep = useStepStore((s) => s.startStep)
@@ -1583,6 +1589,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               snippets={allSnippets}
               readOnly={!!stepSession}
               glyphMargin={!!stepSession}
+              crossTabRefs={crossTabRefs}
+              crossTabDialect={tabConnection?.dbType}
               onMount={(editor, monaco) => {
                 editorRef.current = editor
                 monacoRef.current = monaco
