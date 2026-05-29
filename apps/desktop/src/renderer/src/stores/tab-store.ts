@@ -181,6 +181,8 @@ interface PersistedTab {
   tableName?: string
   mode?: 'create' | 'edit'
   notebookId?: string
+  /** Cross-tab reference name (query tabs only). */
+  name?: string
 }
 
 interface TabState {
@@ -1166,7 +1168,8 @@ export const useTabStore = create<TabState>()(
               ...base,
               query: t.query,
               schemaName: t.type === 'table-preview' ? t.schemaName : undefined,
-              tableName: t.type === 'table-preview' ? t.tableName : undefined
+              tableName: t.type === 'table-preview' ? t.tableName : undefined,
+              name: t.type === 'query' ? t.name : undefined
             }
           }),
         activeTabId: state.activeTabId
