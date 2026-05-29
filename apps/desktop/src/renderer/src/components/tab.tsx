@@ -6,6 +6,24 @@ import { cn, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSepara
 import type { Tab as TabType } from '@/stores/tab-store'
 import { useTabStore } from '@/stores/tab-store'
 import { useWatchStore } from '@/stores/watch-store'
+import type { RefNameValidationError } from '@/lib/cross-tab-types'
+
+function refNameErrorMessage(error: RefNameValidationError): string {
+  switch (error.kind) {
+    case 'empty':
+      return 'Enter a name'
+    case 'too_long':
+      return `Too long (max ${error.max})`
+    case 'invalid_chars':
+      return error.detail
+    case 'reserved_word':
+      return `"${error.word}" is a reserved word`
+    case 'duplicate':
+      return 'Already used on this connection'
+    case 'not_a_query_tab':
+      return 'Only query tabs can be named'
+  }
+}
 
 interface TabProps {
   tab: TabType
@@ -129,13 +147,14 @@ export function Tab({
                 if (e.key === 'Enter') {
                   const res = setTabName(tab.id, nameDraft)
                   if (res.ok) setRenaming(false)
-                  else setNameError('Invalid or duplicate name')
+                  else setNameError(refNameErrorMessage(res.error))
                 } else if (e.key === 'Escape') {
                   setRenaming(false)
                 }
               }}
               onBlur={() => setRenaming(false)}
               placeholder="name"
+              title={nameError ?? undefined}
               className={cn(
                 'w-24 bg-transparent text-sm outline-none border-b',
                 nameError ? 'border-red-500' : 'border-primary/50'

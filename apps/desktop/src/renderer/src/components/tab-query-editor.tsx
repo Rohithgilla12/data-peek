@@ -536,12 +536,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         tabs: useTabStore.getState().tabs
       })
       if (!resolved.ok) {
+        setRefsSummary(null)
         updateTabMultiResult(tabId, null, crossTabErrorMessage(resolved.error))
         return
       }
 
       const summary = resolved.summary
-      setRefsSummary(summary.refCount > 0 ? summary : null)
 
       // Heavy inlined payloads get a confirm dialog so the user knows what's about to run.
       const isHeavy = summary.rowsInlined > HEAVY_ROWS || summary.bytesAdded > HEAVY_BYTES
@@ -550,6 +550,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         return
       }
 
+      setRefsSummary(summary.refCount > 0 ? summary : null)
       await executeSql(resolved.finalSql, queryToRun)
     },
     [tabId, tabConnection, executeSql, updateTabMultiResult]
@@ -1756,7 +1757,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           const run = pendingHeavyRun
           setPendingHeavyRun(null)
           if (dontAskAgain) skipHeavyConfirmRef.current = true
-          if (run) void executeSql(run.sql, run.originalQuery)
+          if (run) {
+            setRefsSummary(run.summary.refCount > 0 ? run.summary : null)
+            void executeSql(run.sql, run.originalQuery)
+          }
         }}
       />
 
