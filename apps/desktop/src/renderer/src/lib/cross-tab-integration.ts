@@ -78,7 +78,10 @@ function namedQueryTabs(
   )
 }
 
-/** Build the resolver's lookup: name → ResolvableTab, scoped to the connection, excluding the current tab. */
+/**
+ * Build the resolver's lookup: name → ResolvableTab, scoped to the
+ * connection, excluding the current tab.
+ */
 export function buildTabLookup(
   tabs: Tab[],
   connectionId: string | null,
@@ -188,7 +191,10 @@ export function crossTabErrorMessage(error: ResolveErrorKind): string {
     case 'circular':
       return `@${error.chain.join(' → @')} can't reference itself.`
     case 'too_large':
-      return `@${error.name} has ${error.rows} rows (cap ${error.cap.rows}). Add a LIMIT to the referenced query.`
+      return (
+        `@${error.name} has ${error.rows} rows (cap ${error.cap.rows}). ` +
+        'Add a LIMIT to the referenced query.'
+      )
     case 'too_many_columns':
       return `@${error.name} has ${error.columns} columns (cap ${error.cap}).`
     case 'duplicate_cte_name':
