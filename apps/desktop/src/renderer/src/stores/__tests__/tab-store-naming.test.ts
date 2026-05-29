@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useTabStore, type QueryTab } from '../tab-store'
 
-function queryTab(id: string, connectionId: string | null, overrides: Partial<QueryTab> = {}): QueryTab {
+function queryTab(
+  id: string,
+  connectionId: string | null,
+  overrides: Partial<QueryTab> = {}
+): QueryTab {
   return {
     id,
     type: 'query',
@@ -80,5 +84,27 @@ describe('tab-store cross-tab naming', () => {
     })
     const named = useTabStore.getState().getNamedTabs('conn1')
     expect(named.map((t) => t.id)).toEqual(['a'])
+  })
+
+  it('allows a tab to re-set its own existing name', () => {
+    useTabStore.setState({ tabs: [queryTab('a', 'conn1', { name: 'recent' })] })
+    const res = useTabStore.getState().setTabName('a', 'recent')
+    expect(res.ok).toBe(true)
+  })
+
+  it('names a tab with a null connection', () => {
+    useTabStore.setState({ tabs: [queryTab('a', null)] })
+    const res = useTabStore.getState().setTabName('a', 'scratch')
+    expect(res.ok).toBe(true)
+  })
+
+  it('treats two null-connection tabs as the same scope for duplicates', () => {
+    useTabStore.setState({
+      tabs: [queryTab('a', null, { name: 'scratch' }), queryTab('b', null)]
+    })
+    const res = useTabStore.getState().setTabName('b', 'scratch')
+    expect(res.ok).toBe(false)
+    if (res.ok) return
+    expect(res.error.kind).toBe('duplicate')
   })
 })

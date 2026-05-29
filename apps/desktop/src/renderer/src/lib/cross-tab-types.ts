@@ -24,6 +24,7 @@ export type RefNameValidationError =
   | { kind: 'invalid_chars'; detail: string }
   | { kind: 'reserved_word'; word: string }
   | { kind: 'duplicate'; conflictingTabId: string }
+  | { kind: 'not_a_query_tab' }
 
 export type RefNameValidationResult =
   | { ok: true; normalized: string }

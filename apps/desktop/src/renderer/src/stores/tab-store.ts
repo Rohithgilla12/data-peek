@@ -931,28 +931,34 @@ export const useTabStore = create<TabState>()(
       setTabName: (tabId, name) => {
         const tab = get().tabs.find((t) => t.id === tabId)
         if (!tab || tab.type !== 'query') {
-          return { ok: false, error: { kind: 'invalid_chars', detail: 'Only query tabs can be named.' } }
+          return { ok: false, error: { kind: 'not_a_query_tab' } }
         }
         const taken = new Map<string, string>()
         for (const t of get().tabs) {
-          if (t.type === 'query' && t.connectionId === tab.connectionId && typeof t.name === 'string' && t.name) {
+          if (
+            t.type === 'query' &&
+            t.connectionId === tab.connectionId &&
+            typeof t.name === 'string' &&
+            t.name
+          ) {
             taken.set(t.name, t.id)
           }
         }
         const result = validateRefName(name, { takenNames: taken, ownTabId: tabId })
         if (!result.ok) return result
         set((state) => ({
-          tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, name: result.normalized } : t))
+          tabs: mapTab(state.tabs, tabId, (t) => ({ ...t, name: result.normalized }))
         }))
         return result
       },
 
       clearTabName: (tabId) => {
-        set((state) => ({
-          tabs: state.tabs.map((t) =>
-            t.id === tabId && t.type === 'query' ? { ...t, name: undefined } : t
+        set((state) => {
+          const tabs = mapTab(state.tabs, tabId, (t) =>
+            t.type === 'query' && t.name !== undefined ? { ...t, name: undefined } : t
           )
-        }))
+          return tabs === state.tabs ? {} : { tabs }
+        })
       },
 
       getNamedTabs: (connectionId) => {
@@ -1095,9 +1101,7 @@ export const useTabStore = create<TabState>()(
       },
 
       findSchemaIntelTab: (connectionId) => {
-        return get().tabs.find(
-          (t) => t.type === 'schema-intel' && t.connectionId === connectionId
-        )
+        return get().tabs.find((t) => t.type === 'schema-intel' && t.connectionId === connectionId)
       }
     }),
     {
