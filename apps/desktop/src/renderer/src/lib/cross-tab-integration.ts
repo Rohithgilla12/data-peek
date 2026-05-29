@@ -31,13 +31,16 @@ export function toSQLDialect(dbType: DatabaseType): SQLDialect {
 }
 
 /** The active result set of a query tab: prefer the active multi-statement, else legacy result. */
-function activeResultOf(
-  tab: QueryTab
-): { rows: ReadonlyArray<Record<string, unknown>>; fields: ReadonlyArray<{ name: string; dataType: string }> } | null {
+function activeResultOf(tab: QueryTab): {
+  rows: ReadonlyArray<Record<string, unknown>>
+  fields: ReadonlyArray<{ name: string; dataType: string }>
+} | null {
   const statements = tab.multiResult?.statements
   if (statements && statements.length > 0) {
-    const s = statements[tab.activeResultIndex] ?? statements[0]
-    if (s) return { rows: s.rows, fields: s.fields }
+    // Out-of-bounds activeResultIndex (e.g. a re-run produced fewer statements)
+    // → treat as no usable result rather than silently inlining the wrong one.
+    const s = tab.activeResultIndex < statements.length ? statements[tab.activeResultIndex] : null
+    return s ? { rows: s.rows, fields: s.fields } : null
   }
   if (tab.result) return { rows: tab.result.rows, fields: tab.result.columns }
   return null
@@ -53,12 +56,20 @@ export function mapTabToResolvable(tab: QueryTab): ResolvableTab {
   if (!active) {
     return { tabId: tab.id, name, result: { kind: 'none' } }
   }
-  return { tabId: tab.id, name, result: { kind: 'success', rows: active.rows, fields: active.fields } }
+  return {
+    tabId: tab.id,
+    name,
+    result: { kind: 'success', rows: active.rows, fields: active.fields }
+  }
 }
 
-function namedQueryTabs(tabs: Tab[], connectionId: string | null, currentTabId: string): QueryTab[] {
+function namedQueryTabs(
+  tabs: Tab[],
+  connectionId: string | null,
+  currentTabId: string
+): Array<QueryTab & { name: string }> {
   return tabs.filter(
-    (t): t is QueryTab =>
+    (t): t is QueryTab & { name: string } =>
       t.type === 'query' &&
       typeof t.name === 'string' &&
       t.name !== '' &&
@@ -75,7 +86,7 @@ export function buildTabLookup(
 ): (name: string) => ResolvableTab | null {
   const byName = new Map<string, QueryTab>()
   for (const t of namedQueryTabs(tabs, connectionId, currentTabId)) {
-    byName.set(t.name as string, t)
+    byName.set(t.name, t)
   }
   return (name) => {
     const tab = byName.get(name)
@@ -105,12 +116,16 @@ export interface ResolveForRunContext {
 export function resolveForRun(sql: string, ctx: ResolveForRunContext): ResolveForRunResult {
   const knownNames =
     ctx.dbType === 'mysql' || ctx.dbType === 'mssql'
-      ? new Set(namedQueryTabs(ctx.tabs, ctx.connectionId, ctx.currentTabId).map((t) => t.name as string))
+      ? new Set(namedQueryTabs(ctx.tabs, ctx.connectionId, ctx.currentTabId).map((t) => t.name))
       : undefined
 
   const parsed = parseTabReferences(sql, { dialect: ctx.dbType, knownNames })
   if (parsed.references.length === 0) {
-    return { ok: true, finalSql: sql, summary: { refCount: 0, rowsInlined: 0, bytesAdded: 0, references: [] } }
+    return {
+      ok: true,
+      finalSql: sql,
+      summary: { refCount: 0, rowsInlined: 0, bytesAdded: 0, references: [] }
+    }
   }
 
   const lookup = buildTabLookup(ctx.tabs, ctx.connectionId, ctx.currentTabId)
@@ -143,14 +158,19 @@ export interface CrossTabRef {
 }
 
 /** Summarize the named tabs available to the current editor for the Monaco providers. */
-export function buildCrossTabRefs(tabs: Tab[], connectionId: string | null, currentTabId: string): CrossTabRef[] {
+export function buildCrossTabRefs(
+  tabs: Tab[],
+  connectionId: string | null,
+  currentTabId: string
+): CrossTabRef[] {
   return namedQueryTabs(tabs, connectionId, currentTabId).map((t) => {
     const active = activeResultOf(t)
     return {
-      name: t.name as string,
+      name: t.name,
       tabTitle: t.title,
       rowCount: active?.rows.length ?? 0,
       colCount: active?.fields.length ?? 0,
+      // error beats any stale result — same priority as mapTabToResolvable
       hasResult: !!active && !t.error
     }
   })

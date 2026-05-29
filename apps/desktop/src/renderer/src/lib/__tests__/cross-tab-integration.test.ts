@@ -11,16 +11,36 @@ import type { QueryTab, Tab } from '../../stores/tab-store'
 
 function qtab(id: string, connectionId: string | null, o: Partial<QueryTab> = {}): QueryTab {
   return {
-    id, type: 'query', title: 'Query', isPinned: false, connectionId,
-    createdAt: 0, order: 0, query: '', savedQuery: '',
-    result: null, multiResult: null, activeResultIndex: 0, error: null,
-    isExecuting: false, executionId: null, currentPage: 1, pageSize: 100, ...o
+    id,
+    type: 'query',
+    title: 'Query',
+    isPinned: false,
+    connectionId,
+    createdAt: 0,
+    order: 0,
+    query: '',
+    savedQuery: '',
+    result: null,
+    multiResult: null,
+    activeResultIndex: 0,
+    error: null,
+    isExecuting: false,
+    executionId: null,
+    currentPage: 1,
+    pageSize: 100,
+    ...o
   }
 }
 
 const RES = {
-  columns: [{ name: 'id', dataType: 'integer' }, { name: 'email', dataType: 'text' }],
-  rows: [{ id: 1, email: 'a@x.com' }, { id: 2, email: 'b@x.com' }],
+  columns: [
+    { name: 'id', dataType: 'integer' },
+    { name: 'email', dataType: 'text' }
+  ],
+  rows: [
+    { id: 1, email: 'a@x.com' },
+    { id: 2, email: 'b@x.com' }
+  ],
   rowCount: 2,
   durationMs: 1
 }
@@ -72,6 +92,21 @@ describe('mapTabToResolvable', () => {
     const r = mapTabToResolvable(qtab('a', 'c1', { name: 'u' }))
     expect(r.result).toEqual({ kind: 'none' })
   })
+
+  it('treats an out-of-bounds activeResultIndex as no result', () => {
+    const tab = qtab('a', 'c1', {
+      name: 'u',
+      activeResultIndex: 5,
+      multiResult: {
+        statements: [
+          { rows: [{ x: 1 }], fields: [{ name: 'x', dataType: 'integer' }], rowCount: 1 }
+        ],
+        totalDurationMs: 1,
+        statementCount: 1
+      } as unknown as QueryTab['multiResult']
+    })
+    expect(mapTabToResolvable(tab).result).toEqual({ kind: 'none' })
+  })
 })
 
 describe('buildTabLookup', () => {
@@ -86,8 +121,12 @@ describe('buildTabLookup', () => {
     expect(lookup('recent')?.tabId).toBe('a')
   })
   it('does not cross connections', () => {
-    const lookup = buildTabLookup(tabs, 'c1', 'b')
-    expect(lookup('recent')?.tabId).toBe('a')
+    // c2 also has a tab named 'recent'; a c1-scoped lookup must resolve to c1's tab
+    const lookupC1 = buildTabLookup(tabs, 'c1', 'b')
+    expect(lookupC1('recent')?.tabId).toBe('a')
+    // a c2-scoped lookup resolves to c2's tab, not c1's
+    const lookupC2 = buildTabLookup(tabs, 'c2', 'x')
+    expect(lookupC2('recent')?.tabId).toBe('c')
   })
   it('excludes the current tab (no self-reference via lookup)', () => {
     const lookup = buildTabLookup(tabs, 'c1', 'self')
@@ -103,7 +142,12 @@ describe('resolveForRun', () => {
   const tabs: Tab[] = [qtab('a', 'c1', { name: 'active_users', result: RES })]
 
   it('passes through SQL with no references', () => {
-    const r = resolveForRun('SELECT 1', { dbType: 'postgresql', connectionId: 'c1', currentTabId: 'b', tabs })
+    const r = resolveForRun('SELECT 1', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs
+    })
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.finalSql).toBe('SELECT 1')
@@ -111,7 +155,12 @@ describe('resolveForRun', () => {
   })
 
   it('resolves a reference into a CTE (postgres)', () => {
-    const r = resolveForRun('SELECT * FROM @active_users', { dbType: 'postgresql', connectionId: 'c1', currentTabId: 'b', tabs })
+    const r = resolveForRun('SELECT * FROM @active_users', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs
+    })
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.finalSql).toContain('WITH')
@@ -123,7 +172,12 @@ describe('resolveForRun', () => {
 
   it('resolves across all dialects without throwing', () => {
     for (const dbType of ['postgresql', 'mysql', 'mssql', 'sqlite'] as const) {
-      const r = resolveForRun('SELECT * FROM @active_users', { dbType, connectionId: 'c1', currentTabId: 'b', tabs })
+      const r = resolveForRun('SELECT * FROM @active_users', {
+        dbType,
+        connectionId: 'c1',
+        currentTabId: 'b',
+        tabs
+      })
       expect(r.ok).toBe(true)
       if (!r.ok) return
       expect(r.finalSql).not.toContain('@active_users')
@@ -131,14 +185,24 @@ describe('resolveForRun', () => {
   })
 
   it('reports unknown_reference on postgres for a missing name', () => {
-    const r = resolveForRun('SELECT * FROM @ghost', { dbType: 'postgresql', connectionId: 'c1', currentTabId: 'b', tabs })
+    const r = resolveForRun('SELECT * FROM @ghost', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs
+    })
     expect(r.ok).toBe(false)
     if (r.ok) return
     expect(r.error.kind).toBe('unknown_reference')
   })
 
   it('on mysql, ignores @vars that are not named tabs (no error)', () => {
-    const r = resolveForRun('SELECT @offset, * FROM @active_users', { dbType: 'mysql', connectionId: 'c1', currentTabId: 'b', tabs })
+    const r = resolveForRun('SELECT @offset, * FROM @active_users', {
+      dbType: 'mysql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs
+    })
     expect(r.ok).toBe(true)
     if (!r.ok) return
     expect(r.finalSql).toContain('@offset')
@@ -163,12 +227,26 @@ describe('buildCrossTabRefs', () => {
 
 describe('crossTabErrorMessage', () => {
   it('renders each error kind', () => {
-    expect(crossTabErrorMessage({ kind: 'unknown_reference', name: 'x' })).toBe('No tab named @x on this connection.')
+    expect(crossTabErrorMessage({ kind: 'unknown_reference', name: 'x' })).toBe(
+      'No tab named @x on this connection.'
+    )
     expect(crossTabErrorMessage({ kind: 'no_result', name: 'x' })).toContain("hasn't been run")
     expect(crossTabErrorMessage({ kind: 'circular', chain: ['x'] })).toContain('reference itself')
-    expect(crossTabErrorMessage({ kind: 'too_large', name: 'x', rows: 5, bytes: 1, cap: { rows: 4, bytes: 9 } })).toContain('cap 4')
-    expect(crossTabErrorMessage({ kind: 'too_many_columns', name: 'x', columns: 200, cap: 100 })).toContain('200 columns')
+    expect(
+      crossTabErrorMessage({
+        kind: 'too_large',
+        name: 'x',
+        rows: 5,
+        bytes: 1,
+        cap: { rows: 4, bytes: 9 }
+      })
+    ).toContain('cap 4')
+    expect(
+      crossTabErrorMessage({ kind: 'too_many_columns', name: 'x', columns: 200, cap: 100 })
+    ).toContain('200 columns')
     expect(crossTabErrorMessage({ kind: 'duplicate_cte_name', name: 'x' })).toContain('collides')
-    expect(crossTabErrorMessage({ kind: 'errored_result', name: 'x', error: 'oops' })).toContain('oops')
+    expect(crossTabErrorMessage({ kind: 'errored_result', name: 'x', error: 'oops' })).toContain(
+      'oops'
+    )
   })
 })
