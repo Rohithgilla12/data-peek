@@ -35,6 +35,8 @@ import { type DataTableColumn as EditableDataTableColumn } from '@/components/ed
 import type { EditContext, TableInfo } from '@data-peek/shared'
 import { analyzeEditableSelect, sqlMatchesStoredTable } from '@/lib/editable-select'
 import { resolveForRun, crossTabErrorMessage } from '@/lib/cross-tab-integration'
+import type { ResolveForRunSummary } from '@/lib/cross-tab-integration'
+import { CrossTabSubmitDialog } from '@/components/cross-tab/cross-tab-submit-dialog'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import {
@@ -79,6 +81,10 @@ import { gateForWatch } from '@/lib/watch-sql-gate'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
 import type { editor as monacoEditor } from 'monaco-editor'
+
+// Above these thresholds, inlined cross-tab refs trigger a confirm dialog before running.
+const HEAVY_ROWS = 1000
+const HEAVY_BYTES = 256 * 1024
 
 /** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
 function ensureArray(value: unknown): string[] | undefined {
@@ -228,6 +234,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Share results image dialog state
   const [shareResultsOpen, setShareResultsOpen] = useState(false)
 
+  // Cross-tab @name reference state: pill summary + heavy-run confirm gating.
+  const [refsSummary, setRefsSummary] = useState<ResolveForRunSummary | null>(null)
+  const [pendingHeavyRun, setPendingHeavyRun] = useState<{
+    summary: ResolveForRunSummary
+    sql: string
+    originalQuery: string
+  } | null>(null)
+  const skipHeavyConfirmRef = useRef(false)
+
   // Export with masked columns confirmation
   const [pendingExport, setPendingExport] = useState<null | {
     format: ExportFormat
@@ -311,31 +326,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     }
   }
 
-  const handleRunQuery = useCallback(
-    async (selectedSql?: string) => {
-      // Read fresh tab state from store to avoid stale closure issues
-      // (important for server-side pagination where query is updated before this runs)
+  // Execution body for a query run. `sqlToExecute` is the resolved SQL actually sent to
+  // the database (with cross-tab @name references inlined). `originalQuery` is the user's
+  // typed text, used for history and stored-table checks so they reflect intent, not the
+  // expanded CTE payload. Reads fresh tab state from the store to avoid stale closures.
+  const executeSql = useCallback(
+    async (sqlToExecute: string, originalQuery: string) => {
       const currentTab = useTabStore.getState().getTab(tabId)
-
-      if (!currentTab || !isExecutableTab(currentTab) || !tabConnection || currentTab.isExecuting) {
-        return
-      }
-
-      const queryToRun = (selectedSql ?? currentTab.query).trim()
-      if (!queryToRun) return
-
-      // Resolve @name cross-tab references into VALUES-backed CTEs.
-      const resolved = resolveForRun(queryToRun, {
-        dbType: tabConnection.dbType,
-        connectionId: currentTab.connectionId,
-        currentTabId: tabId,
-        tabs: useTabStore.getState().tabs
-      })
-      if (!resolved.ok) {
-        updateTabMultiResult(tabId, null, crossTabErrorMessage(resolved.error))
-        return
-      }
-      const sqlToExecute = resolved.finalSql
+      if (!currentTab || !isExecutableTab(currentTab) || !tabConnection) return
 
       // Generate unique execution ID for cancellation support
       const executionId = crypto.randomUUID()
@@ -398,7 +396,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
             const previewSqlMatches =
               currentTab.type === 'table-preview' &&
               sqlMatchesStoredTable(
-                queryToRun,
+                originalQuery,
                 { schema: currentTab.schemaName, table: currentTab.tableName },
                 tabConnection.dbType
               )
@@ -441,7 +439,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
             // Add to global history with total row count
             const totalRows = multiResult.statements.reduce((sum, s) => sum + s.rowCount, 0)
             addToHistory({
-              query: queryToRun,
+              query: originalQuery,
               durationMs: multiResult.totalDurationMs,
               rowCount: totalRows,
               status: 'success',
@@ -464,7 +462,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
             markTabSaved(tabId)
 
             addToHistory({
-              query: queryToRun,
+              query: originalQuery,
               durationMs: singleResult.durationMs,
               rowCount: result.rowCount,
               status: 'success',
@@ -477,7 +475,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           setTelemetry(null)
 
           addToHistory({
-            query: queryToRun,
+            query: originalQuery,
             durationMs: 0,
             rowCount: 0,
             status: 'error',
@@ -508,6 +506,46 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       queryTimeoutMs,
       setTablePreviewTotalCount
     ]
+  )
+
+  const handleRunQuery = useCallback(
+    async (selectedSql?: string) => {
+      // Read fresh tab state from store to avoid stale closure issues
+      // (important for server-side pagination where query is updated before this runs)
+      const currentTab = useTabStore.getState().getTab(tabId)
+
+      if (!currentTab || !isExecutableTab(currentTab) || !tabConnection || currentTab.isExecuting) {
+        return
+      }
+
+      const queryToRun = (selectedSql ?? currentTab.query).trim()
+      if (!queryToRun) return
+
+      // Resolve @name cross-tab references into VALUES-backed CTEs.
+      const resolved = resolveForRun(queryToRun, {
+        dbType: tabConnection.dbType,
+        connectionId: currentTab.connectionId,
+        currentTabId: tabId,
+        tabs: useTabStore.getState().tabs
+      })
+      if (!resolved.ok) {
+        updateTabMultiResult(tabId, null, crossTabErrorMessage(resolved.error))
+        return
+      }
+
+      const summary = resolved.summary
+      setRefsSummary(summary.refCount > 0 ? summary : null)
+
+      // Heavy inlined payloads get a confirm dialog so the user knows what's about to run.
+      const isHeavy = summary.rowsInlined > HEAVY_ROWS || summary.bytesAdded > HEAVY_BYTES
+      if (isHeavy && !skipHeavyConfirmRef.current) {
+        setPendingHeavyRun({ summary, sql: resolved.finalSql, originalQuery: queryToRun })
+        return
+      }
+
+      await executeSql(resolved.finalSql, queryToRun)
+    },
+    [tabId, tabConnection, executeSql, updateTabMultiResult]
   )
 
   const handleCancelQuery = useCallback(async () => {
@@ -1581,6 +1619,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               disabled={!tabConnection}
             />
           }
+          refsSlot={
+            refsSummary && refsSummary.refCount > 0 ? (
+              <code className="text-[10px] bg-muted/50 px-2 py-0.5 rounded">
+                {refsSummary.refCount} {refsSummary.refCount === 1 ? 'ref' : 'refs'} ·{' '}
+                {refsSummary.rowsInlined.toLocaleString()} rows inlined
+              </code>
+            ) : undefined
+          }
         />
       </div>
 
@@ -1689,6 +1735,20 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           </div>
         </>
       )}
+
+      {/* Cross-tab heavy-run confirm dialog */}
+      <CrossTabSubmitDialog
+        open={pendingHeavyRun !== null}
+        onOpenChange={(o) => {
+          if (!o) setPendingHeavyRun(null)
+        }}
+        summary={pendingHeavyRun?.summary ?? null}
+        onConfirm={() => {
+          const run = pendingHeavyRun
+          setPendingHeavyRun(null)
+          if (run) void executeSql(run.sql, run.originalQuery)
+        }}
+      />
 
       {/* Save Query Dialog */}
       <SaveQueryDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} query={tab.query} />
