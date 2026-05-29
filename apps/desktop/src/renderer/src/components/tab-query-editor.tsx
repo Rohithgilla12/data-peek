@@ -333,7 +333,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const executeSql = useCallback(
     async (sqlToExecute: string, originalQuery: string) => {
       const currentTab = useTabStore.getState().getTab(tabId)
-      if (!currentTab || !isExecutableTab(currentTab) || !tabConnection) return
+      if (!currentTab || !isExecutableTab(currentTab) || !tabConnection || currentTab.isExecuting)
+        return
 
       // Generate unique execution ID for cancellation support
       const executionId = crypto.randomUUID()
@@ -1620,7 +1621,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
             />
           }
           refsSlot={
-            refsSummary && refsSummary.refCount > 0 ? (
+            refsSummary ? (
               <code className="text-[10px] bg-muted/50 px-2 py-0.5 rounded">
                 {refsSummary.refCount} {refsSummary.refCount === 1 ? 'ref' : 'refs'} ·{' '}
                 {refsSummary.rowsInlined.toLocaleString()} rows inlined
@@ -1743,9 +1744,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           if (!o) setPendingHeavyRun(null)
         }}
         summary={pendingHeavyRun?.summary ?? null}
-        onConfirm={() => {
+        onConfirm={(dontAskAgain) => {
           const run = pendingHeavyRun
           setPendingHeavyRun(null)
+          if (dontAskAgain) skipHeavyConfirmRef.current = true
           if (run) void executeSql(run.sql, run.originalQuery)
         }}
       />

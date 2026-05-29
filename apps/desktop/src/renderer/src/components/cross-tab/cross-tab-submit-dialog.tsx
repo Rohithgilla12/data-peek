@@ -1,10 +1,13 @@
+import { useState } from 'react'
 import {
   Button,
+  Checkbox,
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
-  DialogTitle
+  DialogTitle,
+  Label
 } from '@data-peek/ui'
 import { Layers } from 'lucide-react'
 import type { ResolveForRunSummary } from '@/lib/cross-tab-integration'
@@ -13,7 +16,7 @@ interface CrossTabSubmitDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   summary: ResolveForRunSummary | null
-  onConfirm: () => void
+  onConfirm: (dontAskAgain: boolean) => void
 }
 
 export function CrossTabSubmitDialog({
@@ -22,6 +25,8 @@ export function CrossTabSubmitDialog({
   summary,
   onConfirm
 }: CrossTabSubmitDialogProps) {
+  const [dontAskAgain, setDontAskAgain] = useState(false)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
@@ -45,6 +50,16 @@ export function CrossTabSubmitDialog({
             Inlined: {summary?.rowsInlined.toLocaleString()} rows ·{' '}
             {((summary?.bytesAdded ?? 0) / 1024).toFixed(1)}KB
           </div>
+          <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+            <Checkbox
+              id="dont-ask-again"
+              checked={dontAskAgain}
+              onCheckedChange={(checked) => setDontAskAgain(checked === true)}
+            />
+            <Label htmlFor="dont-ask-again" className="text-xs font-normal cursor-pointer">
+              Don&apos;t ask again this session
+            </Label>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
@@ -52,7 +67,7 @@ export function CrossTabSubmitDialog({
           </Button>
           <Button
             onClick={() => {
-              onConfirm()
+              onConfirm(dontAskAgain)
               onOpenChange(false)
             }}
           >
