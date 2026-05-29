@@ -34,6 +34,7 @@ import {
 import { type DataTableColumn as EditableDataTableColumn } from '@/components/editable-data-table'
 import type { EditContext, TableInfo } from '@data-peek/shared'
 import { analyzeEditableSelect, sqlMatchesStoredTable } from '@/lib/editable-select'
+import { resolveForRun, crossTabErrorMessage } from '@/lib/cross-tab-integration'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import {
@@ -323,6 +324,19 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       const queryToRun = (selectedSql ?? currentTab.query).trim()
       if (!queryToRun) return
 
+      // Resolve @name cross-tab references into VALUES-backed CTEs.
+      const resolved = resolveForRun(queryToRun, {
+        dbType: tabConnection.dbType,
+        connectionId: currentTab.connectionId,
+        currentTabId: tabId,
+        tabs: useTabStore.getState().tabs
+      })
+      if (!resolved.ok) {
+        updateTabMultiResult(tabId, null, crossTabErrorMessage(resolved.error))
+        return
+      }
+      const sqlToExecute = resolved.finalSql
+
       // Generate unique execution ID for cancellation support
       const executionId = crypto.randomUUID()
       updateTabExecuting(tabId, true, executionId)
@@ -343,7 +357,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         // Use telemetry-enabled query API with timeout from settings
         const response = await window.api.db.queryWithTelemetry(
           tabConnection,
-          queryToRun,
+          sqlToExecute,
           executionId,
           queryTimeoutMs
         )
