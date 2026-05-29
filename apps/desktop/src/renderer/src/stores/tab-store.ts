@@ -11,6 +11,8 @@ import {
 import { useConnectionStore } from './connection-store'
 import { useSettingsStore } from './settings-store'
 import { useEditStore } from './edit-store'
+import { validateRefName } from '@/lib/cross-tab-name-validation'
+import type { RefNameValidationResult } from '@/lib/cross-tab-types'
 
 /**
  * Extended QueryResult with multi-statement support
@@ -60,6 +62,8 @@ export interface QueryTab extends BaseTab {
   executionId: string | null // ID for cancellation support
   currentPage: number
   pageSize: number
+  /** User-assigned cross-tab reference name (e.g. used as @active_users). Query tabs only. */
+  name?: string
 }
 
 // Table preview tab
@@ -245,6 +249,11 @@ interface TabState {
 
   // Tab title
   renameTab: (tabId: string, title: string) => void
+
+  // Cross-tab naming
+  setTabName: (tabId: string, name: string) => RefNameValidationResult
+  clearTabName: (tabId: string) => void
+  getNamedTabs: (connectionId: string | null) => QueryTab[]
 
   // Connection sync
   syncActiveTabWithConnection: (connectionId: string | null) => void
@@ -917,6 +926,43 @@ export const useTabStore = create<TabState>()(
         set((state) => ({
           tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, title } : t))
         }))
+      },
+
+      setTabName: (tabId, name) => {
+        const tab = get().tabs.find((t) => t.id === tabId)
+        if (!tab || tab.type !== 'query') {
+          return { ok: false, error: { kind: 'invalid_chars', detail: 'Only query tabs can be named.' } }
+        }
+        const taken = new Map<string, string>()
+        for (const t of get().tabs) {
+          if (t.type === 'query' && t.connectionId === tab.connectionId && typeof t.name === 'string' && t.name) {
+            taken.set(t.name, t.id)
+          }
+        }
+        const result = validateRefName(name, { takenNames: taken, ownTabId: tabId })
+        if (!result.ok) return result
+        set((state) => ({
+          tabs: state.tabs.map((t) => (t.id === tabId ? { ...t, name: result.normalized } : t))
+        }))
+        return result
+      },
+
+      clearTabName: (tabId) => {
+        set((state) => ({
+          tabs: state.tabs.map((t) =>
+            t.id === tabId && t.type === 'query' ? { ...t, name: undefined } : t
+          )
+        }))
+      },
+
+      getNamedTabs: (connectionId) => {
+        return get().tabs.filter(
+          (t): t is QueryTab =>
+            t.type === 'query' &&
+            typeof t.name === 'string' &&
+            t.name !== '' &&
+            t.connectionId === connectionId
+        )
       },
 
       syncActiveTabWithConnection: (connectionId) => {
