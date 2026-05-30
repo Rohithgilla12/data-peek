@@ -10,7 +10,8 @@ import type { CrossTabRef } from '@/lib/cross-tab-integration'
 import {
   ensureCrossTabProviders,
   updateCrossTabRefs,
-  updateCrossTabMarkers
+  updateCrossTabMarkers,
+  clearCrossTabMarkers
 } from '@/components/cross-tab/cross-tab-editor'
 import { SQL_KEYWORDS } from '@/constants/sql-keywords'
 
@@ -729,16 +730,23 @@ export function SQLEditor({
   React.useEffect(() => {
     updateCrossTabRefs(crossTabRefs)
     const model = editorRef.current?.getModel()
-    if (monacoRef.current && model && crossTabDialect) {
+    if (!monacoRef.current || !model) return
+    if (crossTabDialect) {
       updateCrossTabMarkers(monacoRef.current, model, crossTabDialect)
+    } else {
+      clearCrossTabMarkers(monacoRef.current, model)
     }
   }, [crossTabRefs, crossTabDialect])
 
   const handleChange = (newValue: string | undefined) => {
     onChange?.(newValue ?? '')
     const model = editorRef.current?.getModel()
-    if (monacoRef.current && model && crossTabDialectRef.current) {
-      updateCrossTabMarkers(monacoRef.current, model, crossTabDialectRef.current)
+    if (monacoRef.current && model) {
+      if (crossTabDialectRef.current) {
+        updateCrossTabMarkers(monacoRef.current, model, crossTabDialectRef.current)
+      } else {
+        clearCrossTabMarkers(monacoRef.current, model)
+      }
     }
   }
 

@@ -63,6 +63,11 @@ export function mapTabToResolvable(tab: QueryTab): ResolvableTab {
   }
 }
 
+/** True when the tab is a query tab carrying a non-empty cross-tab reference name. */
+export function isNamedQueryTab(t: Tab): t is QueryTab & { name: string } {
+  return t.type === 'query' && typeof t.name === 'string' && t.name !== ''
+}
+
 function namedQueryTabs(
   tabs: Tab[],
   connectionId: string | null,
@@ -70,11 +75,7 @@ function namedQueryTabs(
 ): Array<QueryTab & { name: string }> {
   return tabs.filter(
     (t): t is QueryTab & { name: string } =>
-      t.type === 'query' &&
-      typeof t.name === 'string' &&
-      t.name !== '' &&
-      t.connectionId === connectionId &&
-      t.id !== currentTabId
+      isNamedQueryTab(t) && t.connectionId === connectionId && t.id !== currentTabId
   )
 }
 
@@ -102,6 +103,21 @@ export interface ResolveForRunSummary {
   rowsInlined: number
   bytesAdded: number
   references: ResolveResult['references']
+}
+
+/**
+ * Default thresholds above which an inlined run prompts a confirm dialog.
+ * A UX heuristic for "this round-trip could be noticeably heavy" — separate
+ * from the resolver's hard ResolveCaps.
+ */
+export const HEAVY_RUN_DEFAULTS = { rows: 1000, bytes: 256 * 1024 }
+
+/** True when the inlined payload is large enough to warrant a pre-run confirmation. */
+export function isHeavyResolve(
+  summary: ResolveForRunSummary,
+  thresholds: { rows: number; bytes: number } = HEAVY_RUN_DEFAULTS
+): boolean {
+  return summary.rowsInlined > thresholds.rows || summary.bytesAdded > thresholds.bytes
 }
 
 export type ResolveForRunResult =

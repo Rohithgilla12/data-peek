@@ -80,6 +80,7 @@ export function ensureCrossTabProviders(monacoInstance: Monaco): void {
       const word = model.getWordAtPosition(position)
       if (!word) return null
       const lineText = model.getLineContent(position.lineNumber)
+      // Monaco columns are 1-based; startColumn-2 indexes the char just before the word.
       if (lineText[word.startColumn - 2] !== '@') return null
       const ref = currentRefs.find((r) => r.name === word.word.toLowerCase())
       if (!ref) return null
@@ -143,4 +144,12 @@ export function updateCrossTabMarkers(
     }
   }
   monacoInstance.editor.setModelMarkers(model, MARKER_OWNER, markers)
+}
+
+/** Clear all cross-tab diagnostic markers from a model (e.g. when the tab has no connection/dialect). */
+export function clearCrossTabMarkers(
+  monacoInstance: Monaco,
+  model: monaco.editor.ITextModel
+): void {
+  monacoInstance.editor.setModelMarkers(model, MARKER_OWNER, [])
 }

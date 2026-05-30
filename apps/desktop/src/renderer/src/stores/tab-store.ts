@@ -13,6 +13,7 @@ import { useSettingsStore } from './settings-store'
 import { useEditStore } from './edit-store'
 import { validateRefName } from '@/lib/cross-tab-name-validation'
 import type { RefNameValidationResult } from '@/lib/cross-tab-types'
+import { isNamedQueryTab } from '@/lib/cross-tab-integration'
 
 /**
  * Extended QueryResult with multi-statement support
@@ -255,7 +256,6 @@ interface TabState {
   // Cross-tab naming
   setTabName: (tabId: string, name: string) => RefNameValidationResult
   clearTabName: (tabId: string) => void
-  getNamedTabs: (connectionId: string | null) => QueryTab[]
 
   // Connection sync
   syncActiveTabWithConnection: (connectionId: string | null) => void
@@ -937,12 +937,7 @@ export const useTabStore = create<TabState>()(
         }
         const taken = new Map<string, string>()
         for (const t of get().tabs) {
-          if (
-            t.type === 'query' &&
-            t.connectionId === tab.connectionId &&
-            typeof t.name === 'string' &&
-            t.name
-          ) {
+          if (isNamedQueryTab(t) && t.connectionId === tab.connectionId) {
             taken.set(t.name, t.id)
           }
         }
@@ -961,16 +956,6 @@ export const useTabStore = create<TabState>()(
           )
           return tabs === state.tabs ? {} : { tabs }
         })
-      },
-
-      getNamedTabs: (connectionId) => {
-        return get().tabs.filter(
-          (t): t is QueryTab =>
-            t.type === 'query' &&
-            typeof t.name === 'string' &&
-            t.name !== '' &&
-            t.connectionId === connectionId
-        )
       },
 
       syncActiveTabWithConnection: (connectionId) => {

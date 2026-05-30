@@ -74,18 +74,6 @@ describe('tab-store cross-tab naming', () => {
     expect((useTabStore.getState().getTab('a') as QueryTab).name).toBeUndefined()
   })
 
-  it('getNamedTabs returns only named query tabs on the connection', () => {
-    useTabStore.setState({
-      tabs: [
-        queryTab('a', 'conn1', { name: 'recent' }),
-        queryTab('b', 'conn1'),
-        queryTab('c', 'conn2', { name: 'other' })
-      ]
-    })
-    const named = useTabStore.getState().getNamedTabs('conn1')
-    expect(named.map((t) => t.id)).toEqual(['a'])
-  })
-
   it('allows a tab to re-set its own existing name', () => {
     useTabStore.setState({ tabs: [queryTab('a', 'conn1', { name: 'recent' })] })
     const res = useTabStore.getState().setTabName('a', 'recent')

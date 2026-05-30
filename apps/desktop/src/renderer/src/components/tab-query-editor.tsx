@@ -34,7 +34,12 @@ import {
 import { type DataTableColumn as EditableDataTableColumn } from '@/components/editable-data-table'
 import type { EditContext, TableInfo } from '@data-peek/shared'
 import { analyzeEditableSelect, sqlMatchesStoredTable } from '@/lib/editable-select'
-import { resolveForRun, crossTabErrorMessage, buildCrossTabRefs } from '@/lib/cross-tab-integration'
+import {
+  resolveForRun,
+  crossTabErrorMessage,
+  buildCrossTabRefs,
+  isHeavyResolve
+} from '@/lib/cross-tab-integration'
 import type { ResolveForRunSummary } from '@/lib/cross-tab-integration'
 import { CrossTabSubmitDialog } from '@/components/cross-tab/cross-tab-submit-dialog'
 import { SQLEditor } from '@/components/sql-editor'
@@ -81,10 +86,6 @@ import { gateForWatch } from '@/lib/watch-sql-gate'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
 import type { editor as monacoEditor } from 'monaco-editor'
-
-// Above these thresholds, inlined cross-tab refs trigger a confirm dialog before running.
-const HEAVY_ROWS = 1000
-const HEAVY_BYTES = 256 * 1024
 
 /** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
 function ensureArray(value: unknown): string[] | undefined {
@@ -544,7 +545,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       const summary = resolved.summary
 
       // Heavy inlined payloads get a confirm dialog so the user knows what's about to run.
-      const isHeavy = summary.rowsInlined > HEAVY_ROWS || summary.bytesAdded > HEAVY_BYTES
+      const isHeavy = isHeavyResolve(summary)
       if (isHeavy && !skipHeavyConfirmRef.current) {
         setPendingHeavyRun({ summary, sql: resolved.finalSql, originalQuery: queryToRun })
         return

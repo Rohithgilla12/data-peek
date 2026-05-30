@@ -5,7 +5,8 @@ import {
   buildTabLookup,
   resolveForRun,
   buildCrossTabRefs,
-  crossTabErrorMessage
+  crossTabErrorMessage,
+  isHeavyResolve
 } from '../cross-tab-integration'
 import type { QueryTab, Tab } from '../../stores/tab-store'
 
@@ -208,6 +209,47 @@ describe('resolveForRun', () => {
     expect(r.finalSql).toContain('@offset')
     expect(r.finalSql).not.toContain('@active_users')
   })
+
+  it('reports no_result for a named tab that has not been run', () => {
+    const t: Tab[] = [qtab('a', 'c1', { name: 'pending' })]
+    const r = resolveForRun('SELECT * FROM @pending', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs: t
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('no_result')
+  })
+
+  it('reports errored_result (with the message) for a tab whose last run errored', () => {
+    const t: Tab[] = [qtab('a', 'c1', { name: 'broken', error: 'boom' })]
+    const r = resolveForRun('SELECT * FROM @broken', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs: t
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('errored_result')
+    if (r.error.kind !== 'errored_result') return
+    expect(r.error.error).toBe('boom')
+  })
+
+  it('a self-reference resolves to unknown_reference (current tab excluded from lookup)', () => {
+    const t: Tab[] = [qtab('self', 'c1', { name: 'me', result: RES })]
+    const r = resolveForRun('SELECT * FROM @me', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'self',
+      tabs: t
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('unknown_reference')
+  })
 })
 
 describe('buildCrossTabRefs', () => {
@@ -248,5 +290,29 @@ describe('crossTabErrorMessage', () => {
     expect(crossTabErrorMessage({ kind: 'errored_result', name: 'x', error: 'oops' })).toContain(
       'oops'
     )
+  })
+})
+
+describe('isHeavyResolve', () => {
+  const summary = (rowsInlined: number, bytesAdded: number) => ({
+    refCount: 1,
+    rowsInlined,
+    bytesAdded,
+    references: []
+  })
+  it('is not heavy at exactly the row threshold', () => {
+    expect(isHeavyResolve(summary(1000, 0))).toBe(false)
+  })
+  it('is heavy one row over the threshold', () => {
+    expect(isHeavyResolve(summary(1001, 0))).toBe(true)
+  })
+  it('is heavy when bytes exceed the cap even with rows under', () => {
+    expect(isHeavyResolve(summary(10, 256 * 1024 + 1))).toBe(true)
+  })
+  it('is not heavy at exactly the byte threshold', () => {
+    expect(isHeavyResolve(summary(10, 256 * 1024))).toBe(false)
+  })
+  it('respects custom thresholds', () => {
+    expect(isHeavyResolve(summary(5, 0), { rows: 4, bytes: 100 })).toBe(true)
   })
 })
