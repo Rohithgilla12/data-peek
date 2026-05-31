@@ -20,8 +20,6 @@ function refNameErrorMessage(error: RefNameValidationError): string {
       return `"${error.word}" is a reserved word`
     case 'duplicate':
       return 'Already used on this connection'
-    case 'not_a_query_tab':
-      return 'Only query tabs can be named'
   }
 }
 
@@ -146,8 +144,13 @@ export function Tab({
                 e.stopPropagation()
                 if (e.key === 'Enter') {
                   const res = setTabName(tab.id, nameDraft)
-                  if (res.ok) setRenaming(false)
-                  else setNameError(refNameErrorMessage(res.error))
+                  if (res.ok) {
+                    setRenaming(false)
+                  } else if (res.error.kind === 'not_a_query_tab') {
+                    setNameError('Only query tabs can be named')
+                  } else {
+                    setNameError(refNameErrorMessage(res.error))
+                  }
                 } else if (e.key === 'Escape') {
                   setRenaming(false)
                 }

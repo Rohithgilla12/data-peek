@@ -261,8 +261,12 @@ describe('buildCrossTabRefs', () => {
     ]
     const refs = buildCrossTabRefs(tabs, 'c1', 'cur')
     expect(refs).toEqual([
-      { name: 'active_users', tabTitle: 'Users', rowCount: 2, colCount: 2, hasResult: true },
-      { name: 'pending', tabTitle: 'Query', rowCount: 0, colCount: 0, hasResult: false }
+      {
+        name: 'active_users',
+        tabTitle: 'Users',
+        result: { kind: 'ready', rowCount: 2, colCount: 2 }
+      },
+      { name: 'pending', tabTitle: 'Query', result: { kind: 'not_run' } }
     ])
   })
 })

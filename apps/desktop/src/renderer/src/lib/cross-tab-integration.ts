@@ -171,9 +171,7 @@ export function resolveForRun(sql: string, ctx: ResolveForRunContext): ResolveFo
 export interface CrossTabRef {
   name: string
   tabTitle: string
-  rowCount: number
-  colCount: number
-  hasResult: boolean
+  result: { kind: 'ready'; rowCount: number; colCount: number } | { kind: 'not_run' }
 }
 
 /** Summarize the named tabs available to the current editor for the Monaco providers. */
@@ -184,14 +182,12 @@ export function buildCrossTabRefs(
 ): CrossTabRef[] {
   return namedQueryTabs(tabs, connectionId, currentTabId).map((t) => {
     const active = activeResultOf(t)
-    return {
-      name: t.name,
-      tabTitle: t.title,
-      rowCount: active?.rows.length ?? 0,
-      colCount: active?.fields.length ?? 0,
-      // error beats any stale result — same priority as mapTabToResolvable
-      hasResult: !!active && !t.error
-    }
+    // error beats any stale result — same priority as mapTabToResolvable
+    const result =
+      active && !t.error
+        ? { kind: 'ready' as const, rowCount: active.rows.length, colCount: active.fields.length }
+        : { kind: 'not_run' as const }
+    return { name: t.name, tabTitle: t.title, result }
   })
 }
 

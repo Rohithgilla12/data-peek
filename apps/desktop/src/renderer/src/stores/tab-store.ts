@@ -12,7 +12,7 @@ import { useConnectionStore } from './connection-store'
 import { useSettingsStore } from './settings-store'
 import { useEditStore } from './edit-store'
 import { validateRefName } from '@/lib/cross-tab-name-validation'
-import type { RefNameValidationResult } from '@/lib/cross-tab-types'
+import type { SetTabNameResult } from '@/lib/cross-tab-types'
 import { isNamedQueryTab } from '@/lib/cross-tab-integration'
 
 /**
@@ -254,7 +254,7 @@ interface TabState {
   renameTab: (tabId: string, title: string) => void
 
   // Cross-tab naming
-  setTabName: (tabId: string, name: string) => RefNameValidationResult
+  setTabName: (tabId: string, name: string) => SetTabNameResult
   clearTabName: (tabId: string) => void
 
   // Connection sync

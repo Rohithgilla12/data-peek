@@ -24,11 +24,15 @@ export type RefNameValidationError =
   | { kind: 'invalid_chars'; detail: string }
   | { kind: 'reserved_word'; word: string }
   | { kind: 'duplicate'; conflictingTabId: string }
-  | { kind: 'not_a_query_tab' }
 
 export type RefNameValidationResult =
   | { ok: true; normalized: string }
   | { ok: false; error: RefNameValidationError }
+
+/** Result of TabStore.setTabName — name-validation outcomes plus the non-query-tab precondition. */
+export type SetTabNameResult =
+  | RefNameValidationResult
+  | { ok: false; error: { kind: 'not_a_query_tab' } }
 
 /**
  * A single `@name` token discovered in source SQL.

@@ -22,9 +22,9 @@ describe('atTokenBeforeCursor', () => {
 
 describe('filterRefs', () => {
   const refs: CrossTabRef[] = [
-    { name: 'active_users', tabTitle: 'A', rowCount: 1, colCount: 1, hasResult: true },
-    { name: 'archived', tabTitle: 'B', rowCount: 1, colCount: 1, hasResult: true },
-    { name: 'pending', tabTitle: 'C', rowCount: 0, colCount: 0, hasResult: false }
+    { name: 'active_users', tabTitle: 'A', result: { kind: 'ready', rowCount: 1, colCount: 1 } },
+    { name: 'archived', tabTitle: 'B', result: { kind: 'ready', rowCount: 1, colCount: 1 } },
+    { name: 'pending', tabTitle: 'C', result: { kind: 'not_run' } }
   ]
   it('returns all refs for an empty partial', () => {
     expect(filterRefs(refs, '')).toHaveLength(3)

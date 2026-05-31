@@ -67,7 +67,10 @@ export function ensureCrossTabProviders(monacoInstance: Monaco): void {
           kind: monacoInstance.languages.CompletionItemKind.Variable,
           insertText: r.name,
           range,
-          detail: r.hasResult ? `${r.rowCount} rows · ${r.colCount} cols` : 'not run yet',
+          detail:
+            r.result.kind === 'ready'
+              ? `${r.result.rowCount} rows · ${r.result.colCount} cols`
+              : 'not run yet',
           documentation: { value: `Result of tab **${r.tabTitle}**` },
           sortText: '0' + r.name
         }))
@@ -94,9 +97,10 @@ export function ensureCrossTabProviders(monacoInstance: Monaco): void {
         contents: [
           { value: `**@${ref.name}** — tab "${ref.tabTitle}"` },
           {
-            value: ref.hasResult
-              ? `${ref.rowCount} rows · ${ref.colCount} columns`
-              : "_hasn't been run yet_"
+            value:
+              ref.result.kind === 'ready'
+                ? `${ref.result.rowCount} rows · ${ref.result.colCount} columns`
+                : "_hasn't been run yet_"
           }
         ]
       }
@@ -135,7 +139,7 @@ export function updateCrossTabMarkers(
         severity: monacoInstance.MarkerSeverity.Error,
         message: `No tab named @${ref.name} on this connection.`
       })
-    } else if (!known.hasResult) {
+    } else if (known.result.kind === 'not_run') {
       markers.push({
         ...base,
         severity: monacoInstance.MarkerSeverity.Warning,
