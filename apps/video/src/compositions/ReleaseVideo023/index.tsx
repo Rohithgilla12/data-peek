@@ -8,6 +8,7 @@ import { Background } from '../../components/Background'
 import { Intro } from './Intro'
 import { WatchHero } from './WatchHero'
 import { SafetyGate } from './SafetyGate'
+import { CellGridScene } from './CellGridScene'
 import { Outro } from './Outro'
 import { ensureFonts } from '../../lib/fonts'
 
@@ -52,6 +53,11 @@ export const ReleaseVideo023: React.FC<ReleaseVideoProps> = ({ version }) => {
         <TransitionSeries.Transition presentation={slidePresentation} timing={fadeTiming} />
         <TransitionSeries.Sequence durationInFrames={150}>
           <SafetyGate />
+        </TransitionSeries.Sequence>
+
+        <TransitionSeries.Transition presentation={slidePresentation} timing={fadeTiming} />
+        <TransitionSeries.Sequence durationInFrames={170}>
+          <CellGridScene />
         </TransitionSeries.Sequence>
 
         <TransitionSeries.Transition presentation={fadePresentation} timing={fadeTiming} />
