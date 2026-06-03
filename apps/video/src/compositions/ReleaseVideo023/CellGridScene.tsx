@@ -7,19 +7,19 @@ import {
 } from 'remotion'
 import { brand } from '../../lib/colors'
 import { CyanGlow } from '../../components/CyanGlow'
-import { Keyboard } from 'lucide-react'
+import { Keyboard, Check } from 'lucide-react'
 
 /**
  * Cell-grid scene: a focused cell ring snaps between cells via deterministic
- * arrow-key choreography, then Enter docks an inspector that scrubs in
- * lockstep with the cursor. ~150 frames (5s).
+ * arrow-key choreography, Enter docks an inspector that tracks the focused
+ * cell, and ⌘C fires a "Copied" flash. 170 frames (~5.7s @ 30fps).
  */
 
-const COL_COUNT = 4
 const ROW_COUNT = 6
 const ROW_HEIGHT = 38
 const HEADER_HEIGHT = 36
 const COLUMN_WIDTHS = [70, 280, 110, 160] as const
+const COL_COUNT = COLUMN_WIDTHS.length
 const TOTAL_GRID_WIDTH = COLUMN_WIDTHS.reduce((a, b) => a + b, 0)
 
 const columns = [
@@ -39,17 +39,19 @@ const rows: Row[] = [
   [1847, 'billing@cmp.io', 'pro', '2026-04-15 12:18:47+00'],
 ]
 
-type ArrowKey = 'right' | 'down' | 'enter'
-type KeyEvent = { frame: number; key: ArrowKey }
+type KeyAction = 'right' | 'down' | 'enter' | 'copy'
+type KeyEvent = { frame: number; key: KeyAction }
 
-// Choreography — starts at (0,0), each event advances focus and (eventually) opens inspector.
+// Choreography — pairs are (col, row); starts at (0,0). Must stay frame-sorted
+// (resolveFocus stops at the first event past the current frame).
 const events: KeyEvent[] = [
-  { frame: 26, key: 'right' }, // (0,0) → (1,0) — long email cell
-  { frame: 42, key: 'down' }, // (1,0) → (1,1)
+  { frame: 26, key: 'right' }, // (0,0) → (1,0) — email column
+  { frame: 42, key: 'down' }, // (1,0) → (1,1) — the long, truncated email
   { frame: 58, key: 'enter' }, // open inspector at (1,1)
   { frame: 88, key: 'down' }, // (1,1) → (1,2)
   { frame: 104, key: 'right' }, // (1,2) → (2,2)
   { frame: 120, key: 'down' }, // (2,2) → (2,3)
+  { frame: 142, key: 'copy' }, // ⌘C — copy the focused cell (pays off the caption)
 ]
 
 interface FocusState {
@@ -57,7 +59,8 @@ interface FocusState {
   row: number
   changedAt: number
   inspectorOpenAtFrame: number | null
-  lastKey: ArrowKey | null
+  copyAtFrame: number | null
+  lastKey: KeyAction | null
   lastKeyFrame: number
 }
 
@@ -66,7 +69,8 @@ function resolveFocus(frame: number): FocusState {
   let row = 0
   let changedAt = 0
   let inspectorOpenAtFrame: number | null = null
-  let lastKey: ArrowKey | null = null
+  let copyAtFrame: number | null = null
+  let lastKey: KeyAction | null = null
   let lastKeyFrame = -100
   for (const ev of events) {
     if (ev.frame > frame) break
@@ -80,9 +84,11 @@ function resolveFocus(frame: number): FocusState {
       changedAt = ev.frame
     } else if (ev.key === 'enter' && inspectorOpenAtFrame === null) {
       inspectorOpenAtFrame = ev.frame
+    } else if (ev.key === 'copy' && copyAtFrame === null) {
+      copyAtFrame = ev.frame
     }
   }
-  return { col, row, changedAt, inspectorOpenAtFrame, lastKey, lastKeyFrame }
+  return { col, row, changedAt, inspectorOpenAtFrame, copyAtFrame, lastKey, lastKeyFrame }
 }
 
 const ACCENT = brand.accent
@@ -110,25 +116,14 @@ export const CellGridScene: React.FC = () => {
   const targetW = COLUMN_WIDTHS[focus.col]
   const targetY = HEADER_HEIGHT + focus.row * ROW_HEIGHT
 
-  // Snap interpolation — match the 160ms snap from the real grid.
-  const ringX = interpolate(
-    frame,
-    [focus.changedAt, focus.changedAt + Math.round(fps * 0.16)],
-    [colOffsets[focus.col === 0 ? 0 : Math.max(0, focus.col)], targetX],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: easingSnap }
-  )
-  // Animate Y similarly by interpolating from previous-row position. For
-  // determinism we just snap-with-easing toward target from where we were
-  // a frame before the change.
+  // Snap from where the ring sat a frame before the change toward the new
+  // target, eased over ~160ms — matches the real grid's snap.
   const prevY =
     focus.changedAt === 0
       ? targetY
-      : HEADER_HEIGHT +
-        (resolveFocus(focus.changedAt - 1).row) * ROW_HEIGHT
+      : HEADER_HEIGHT + resolveFocus(focus.changedAt - 1).row * ROW_HEIGHT
   const prevX =
-    focus.changedAt === 0
-      ? targetX
-      : colOffsets[resolveFocus(focus.changedAt - 1).col]
+    focus.changedAt === 0 ? targetX : colOffsets[resolveFocus(focus.changedAt - 1).col]
   const animX = interpolate(
     frame,
     [focus.changedAt, focus.changedAt + Math.round(fps * 0.16)],
@@ -141,21 +136,43 @@ export const CellGridScene: React.FC = () => {
     [prevY, targetY],
     { extrapolateLeft: 'clamp', extrapolateRight: 'clamp', easing: easingSnap }
   )
-  const animW = targetW
 
+  const inspectorAge =
+    focus.inspectorOpenAtFrame !== null ? frame - focus.inspectorOpenAtFrame : -1
   const inspectorOpen = focus.inspectorOpenAtFrame !== null
-  const inspectorAge = inspectorOpen
-    ? frame - (focus.inspectorOpenAtFrame as number)
-    : -1
   const inspectorEntrance = inspectorOpen
     ? Math.min(1, Math.max(0, inspectorAge / Math.round(fps * 0.22)))
     : 0
   const inspectorOpacity = inspectorEntrance
   const inspectorTx = interpolate(inspectorEntrance, [0, 1], [40, 0])
 
+  // Copy flash — a "Copied" pill rising from the focused cell + a brief ring
+  // pulse, paying off the "Cmd+C copies" caption.
+  const copyAge = focus.copyAtFrame !== null ? frame - focus.copyAtFrame : -1
+  const copyActive = copyAge >= 0
+  const copyRise = interpolate(copyAge, [0, Math.round(fps * 0.9)], [4, -18], {
+    extrapolateLeft: 'clamp',
+    extrapolateRight: 'clamp',
+  })
+  const copyOpacity = copyActive
+    ? interpolate(
+        copyAge,
+        [0, Math.round(fps * 0.12), Math.round(fps * 0.7), Math.round(fps * 0.95)],
+        [0, 1, 1, 0],
+        { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
+      )
+    : 0
+  const copyPulse = copyActive
+    ? interpolate(copyAge, [0, Math.round(fps * 0.18)], [0.4, 0], {
+        extrapolateLeft: 'clamp',
+        extrapolateRight: 'clamp',
+      })
+    : 0
+  const copyPillTransform =
+    `translate3d(${animX + targetW / 2}px, ${animY + copyRise}px, 0) translate(-50%, -100%)`
+
   const focusedCellValue = String(rows[focus.row][focus.col])
   const focusedCol = columns[focus.col]
-  const focusedRow = rows[focus.row]
 
   return (
     <AbsoluteFill
@@ -170,7 +187,12 @@ export const CellGridScene: React.FC = () => {
     >
       <CyanGlow size={420} y="42%" delay={0} />
 
-      <KeyTicker lastKey={focus.lastKey} lastKeyFrame={focus.lastKeyFrame} frame={frame} fps={fps} />
+      <KeyTicker
+        lastKey={focus.lastKey}
+        lastKeyFrame={focus.lastKeyFrame}
+        frame={frame}
+        fps={fps}
+      />
 
       <div
         style={{
@@ -227,7 +249,13 @@ export const CellGridScene: React.FC = () => {
           </div>
 
           {/* Grid + focus overlay */}
-          <div style={{ position: 'relative', width: TOTAL_GRID_WIDTH, height: HEADER_HEIGHT + ROW_COUNT * ROW_HEIGHT }}>
+          <div
+            style={{
+              position: 'relative',
+              width: TOTAL_GRID_WIDTH,
+              height: HEADER_HEIGHT + ROW_COUNT * ROW_HEIGHT,
+            }}
+          >
             {/* Header */}
             <div
               style={{
@@ -260,16 +288,16 @@ export const CellGridScene: React.FC = () => {
               ))}
             </div>
 
-            {/* Row stripe (focused row) */}
+            {/* Row stripe (focused row) — glides with the ring via animY */}
             <div
               style={{
                 position: 'absolute',
-                top: HEADER_HEIGHT + focus.row * ROW_HEIGHT,
+                top: 0,
                 left: 0,
                 width: TOTAL_GRID_WIDTH,
                 height: ROW_HEIGHT,
+                transform: `translateY(${animY}px)`,
                 background: `${ACCENT}0d`,
-                transition: 'top 160ms',
                 pointerEvents: 'none',
               }}
             />
@@ -290,9 +318,7 @@ export const CellGridScene: React.FC = () => {
                   fontSize: 14,
                   color: brand.textPrimary,
                   borderBottom:
-                    ri === rows.length - 1
-                      ? 'none'
-                      : `1px solid ${brand.border}30`,
+                    ri === rows.length - 1 ? 'none' : `1px solid ${brand.border}30`,
                 }}
               >
                 {r.map((v, ci) => (
@@ -325,7 +351,7 @@ export const CellGridScene: React.FC = () => {
                 position: 'absolute',
                 top: 0,
                 left: 0,
-                width: animW,
+                width: targetW,
                 height: ROW_HEIGHT,
                 transform: `translate3d(${animX}px, ${animY}px, 0)`,
                 background: `${ACCENT}1f`,
@@ -334,6 +360,50 @@ export const CellGridScene: React.FC = () => {
                 pointerEvents: 'none',
               }}
             />
+
+            {/* Copy flash — ring pulse + "Copied" pill rising from the cell */}
+            {copyActive && (
+              <>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: targetW,
+                    height: ROW_HEIGHT,
+                    transform: `translate3d(${animX}px, ${animY}px, 0)`,
+                    background: ACCENT,
+                    opacity: copyPulse,
+                    borderRadius: 4,
+                    pointerEvents: 'none',
+                  }}
+                />
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    transform: copyPillTransform,
+                    opacity: copyOpacity,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '4px 10px',
+                    borderRadius: 999,
+                    background: brand.surfaceElevated,
+                    border: `1px solid ${brand.accent}55`,
+                    color: brand.accent,
+                    fontFamily: 'Geist Mono, monospace',
+                    fontSize: 12,
+                    whiteSpace: 'nowrap',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <Check size={12} color={brand.accent} />
+                  Copied
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -427,9 +497,7 @@ export const CellGridScene: React.FC = () => {
                 borderTop: `1px solid ${brand.border}`,
               }}
             >
-              <span>
-                {focusedCellValue.length} chars
-              </span>
+              <span>{focusedCellValue.length} chars</span>
               <span>·</span>
               <span>{byteCount(focusedCellValue)} bytes</span>
               <span style={{ marginLeft: 'auto', color: brand.textSecondary }}>
@@ -446,7 +514,7 @@ export const CellGridScene: React.FC = () => {
 }
 
 function easingSnap(t: number): number {
-  // cubic-bezier(0.32, 0.72, 0, 1) approximation — fast start, soft landing.
+  // ease-out-cubic — fast start, soft decelerating landing.
   return 1 - Math.pow(1 - t, 3)
 }
 
@@ -457,12 +525,12 @@ function planColor(plan: string): string {
 }
 
 function byteCount(s: string): number {
-  // Approximation; for ASCII matches char count. Realistic for the demo data.
+  // Exact UTF-8 byte length; equals char count for the ASCII-only demo data.
   return new TextEncoder().encode(s).length
 }
 
 const KeyTicker: React.FC<{
-  lastKey: ArrowKey | null
+  lastKey: KeyAction | null
   lastKeyFrame: number
   frame: number
   fps: number
@@ -477,7 +545,9 @@ const KeyTicker: React.FC<{
         ? '↓'
         : lastKey === 'enter'
           ? 'Enter'
-          : ''
+          : lastKey === 'copy'
+            ? '⌘C'
+            : ''
 
   return (
     <div
