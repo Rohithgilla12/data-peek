@@ -1,8 +1,9 @@
 /**
  * Monaco providers for cross-tab @name references — completion, hover, and
- * diagnostics. Follows the singleton-provider + module-state pattern from
- * sql-editor.tsx: the active editor pushes refs via updateCrossTabRefs and
- * the providers read the latest snapshot.
+ * diagnostics. The completion/hover providers are registered once globally for
+ * the 'sql' language and fire for whichever model is focused, so refs are kept
+ * per-model: a second SQLEditor mounting (a dashboard widget dialog, the sidebar
+ * quick query, a notebook cell) must not clobber the active tab editor's refs.
  */
 
 import type * as monaco from 'monaco-editor'
@@ -11,13 +12,22 @@ import type { DatabaseType } from '@data-peek/shared'
 import { parseTabReferences } from '@/lib/cross-tab-parser'
 import type { CrossTabRef } from '@/lib/cross-tab-integration'
 
-let currentRefs: CrossTabRef[] = []
+const refsByModel = new Map<string, CrossTabRef[]>()
 let providersRegistered = false
 
 const MARKER_OWNER = 'cross-tab'
 
-export function updateCrossTabRefs(refs: CrossTabRef[]): void {
-  currentRefs = refs
+function refsFor(model: monaco.editor.ITextModel): CrossTabRef[] {
+  return refsByModel.get(model.uri.toString()) ?? []
+}
+
+export function updateCrossTabRefs(model: monaco.editor.ITextModel, refs: CrossTabRef[]): void {
+  refsByModel.set(model.uri.toString(), refs)
+}
+
+/** Forget a model's refs + markers when its editor unmounts. */
+export function disposeCrossTabRefs(model: monaco.editor.ITextModel): void {
+  refsByModel.delete(model.uri.toString())
 }
 
 /** True when the text immediately before the cursor is an @-token being typed (not @@, not email). */
@@ -62,7 +72,7 @@ export function ensureCrossTabProviders(monacoInstance: Monaco): void {
         endColumn: word.endColumn
       }
       return {
-        suggestions: filterRefs(currentRefs, tok.partial).map((r) => ({
+        suggestions: filterRefs(refsFor(model), tok.partial).map((r) => ({
           label: `@${r.name}`,
           kind: monacoInstance.languages.CompletionItemKind.Variable,
           insertText: r.name,
@@ -85,7 +95,7 @@ export function ensureCrossTabProviders(monacoInstance: Monaco): void {
       const lineText = model.getLineContent(position.lineNumber)
       // Monaco columns are 1-based; startColumn-2 indexes the char just before the word.
       if (lineText[word.startColumn - 2] !== '@') return null
-      const ref = currentRefs.find((r) => r.name === word.word.toLowerCase())
+      const ref = refsFor(model).find((r) => r.name === word.word.toLowerCase())
       if (!ref) return null
       return {
         range: new monacoInstance.Range(
@@ -118,7 +128,7 @@ export function updateCrossTabMarkers(
   model: monaco.editor.ITextModel,
   dbType: DatabaseType
 ): void {
-  const byName = new Map(currentRefs.map((r) => [r.name, r]))
+  const byName = new Map(refsFor(model).map((r) => [r.name, r]))
   const knownNames = dbType === 'mysql' || dbType === 'mssql' ? new Set(byName.keys()) : undefined
   const parsed = parseTabReferences(model.getValue(), { dialect: dbType, knownNames })
 

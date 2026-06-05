@@ -11,7 +11,8 @@ import {
   ensureCrossTabProviders,
   updateCrossTabRefs,
   updateCrossTabMarkers,
-  clearCrossTabMarkers
+  clearCrossTabMarkers,
+  disposeCrossTabRefs
 } from '@/components/cross-tab/cross-tab-editor'
 import { SQL_KEYWORDS } from '@/constants/sql-keywords'
 
@@ -625,11 +626,13 @@ export function SQLEditor({
     updateCompletionSnippets(snippets)
     ensureCompletionProvider(monaco)
 
-    updateCrossTabRefs(crossTabRefs)
     ensureCrossTabProviders(monaco)
     const crossTabModel = editor.getModel()
-    if (crossTabModel && crossTabDialectRef.current) {
-      updateCrossTabMarkers(monaco, crossTabModel, crossTabDialectRef.current)
+    if (crossTabModel) {
+      updateCrossTabRefs(crossTabModel, crossTabRefs)
+      if (crossTabDialectRef.current) {
+        updateCrossTabMarkers(monaco, crossTabModel, crossTabDialectRef.current)
+      }
     }
 
     // Set the theme based on current app theme
@@ -728,15 +731,23 @@ export function SQLEditor({
 
   // Update cross-tab refs + markers when they change
   React.useEffect(() => {
-    updateCrossTabRefs(crossTabRefs)
     const model = editorRef.current?.getModel()
     if (!monacoRef.current || !model) return
+    updateCrossTabRefs(model, crossTabRefs)
     if (crossTabDialect) {
       updateCrossTabMarkers(monacoRef.current, model, crossTabDialect)
     } else {
       clearCrossTabMarkers(monacoRef.current, model)
     }
   }, [crossTabRefs, crossTabDialect])
+
+  // Drop this model's cross-tab refs when the editor unmounts.
+  React.useEffect(() => {
+    return () => {
+      const model = editorRef.current?.getModel()
+      if (model) disposeCrossTabRefs(model)
+    }
+  }, [])
 
   const handleChange = (newValue: string | undefined) => {
     onChange?.(newValue ?? '')

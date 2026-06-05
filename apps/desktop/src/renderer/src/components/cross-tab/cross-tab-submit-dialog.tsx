@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Button,
   Checkbox,
@@ -26,6 +26,12 @@ export function CrossTabSubmitDialog({
   onConfirm
 }: CrossTabSubmitDialogProps) {
   const [dontAskAgain, setDontAskAgain] = useState(false)
+
+  // The dialog stays mounted across opens; reset the opt-out so a checked-then-
+  // cancelled box can't silently persist on the next confirm.
+  useEffect(() => {
+    if (!open) setDontAskAgain(false)
+  }, [open])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -1,7 +1,7 @@
 # Cross-Tab `@name` References — v1 Integration Design
 
 **Date:** 2026-05-29
-**Status:** Approved (design); pending implementation plan
+**Status:** Approved (design & implementation plan)
 **Builds on:** PR #184 (`feat(cross-tab): @name references — foundations`)
 **Parent plan:** `docs/PLAN-cross-tab-query.md`
 
@@ -88,7 +88,7 @@ so the entire remaining feature is integration — no changes to the parser or r
 
 ## Architecture & data flow
 
-```
+```text
 User runs SQL in tab B (⌘↵)
         │
 handleRunQuery (tab-query-editor.tsx:313)
@@ -230,7 +230,7 @@ Editor squiggles + hover prevent most of these before the user runs. Resolve-err
 
 ## File plan
 
-```
+```text
 stores/tab-store.ts                                 (edit: name field, setTabName/clearTabName, getNamedTabs)
 lib/cross-tab-integration.ts                        (NEW: mapTabToResolvable, buildTabLookup, resolveForRun, dialectFor)
 lib/__tests__/cross-tab-integration.test.ts         (NEW)

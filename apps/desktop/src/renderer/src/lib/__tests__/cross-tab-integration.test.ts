@@ -118,23 +118,24 @@ describe('buildTabLookup', () => {
     qtab('self', 'c1', { name: 'me', result: RES })
   ]
   it('finds a named tab on the same connection', () => {
-    const lookup = buildTabLookup(tabs, 'c1', 'b')
+    const lookup = buildTabLookup(tabs, 'c1')
     expect(lookup('recent')?.tabId).toBe('a')
   })
   it('does not cross connections', () => {
     // c2 also has a tab named 'recent'; a c1-scoped lookup must resolve to c1's tab
-    const lookupC1 = buildTabLookup(tabs, 'c1', 'b')
+    const lookupC1 = buildTabLookup(tabs, 'c1')
     expect(lookupC1('recent')?.tabId).toBe('a')
     // a c2-scoped lookup resolves to c2's tab, not c1's
-    const lookupC2 = buildTabLookup(tabs, 'c2', 'x')
+    const lookupC2 = buildTabLookup(tabs, 'c2')
     expect(lookupC2('recent')?.tabId).toBe('c')
   })
-  it('excludes the current tab (no self-reference via lookup)', () => {
-    const lookup = buildTabLookup(tabs, 'c1', 'self')
-    expect(lookup('me')).toBeNull()
+  it('includes the current tab so the resolver can flag a self-reference', () => {
+    // The lookup returns the tab itself; the resolver turns tabId === currentTabId into `circular`.
+    const lookup = buildTabLookup(tabs, 'c1')
+    expect(lookup('me')?.tabId).toBe('self')
   })
   it('returns null for an unknown name', () => {
-    const lookup = buildTabLookup(tabs, 'c1', 'b')
+    const lookup = buildTabLookup(tabs, 'c1')
     expect(lookup('nope')).toBeNull()
   })
 })
@@ -238,7 +239,7 @@ describe('resolveForRun', () => {
     expect(r.error.error).toBe('boom')
   })
 
-  it('a self-reference resolves to unknown_reference (current tab excluded from lookup)', () => {
+  it('a self-reference resolves to circular (postgres)', () => {
     const t: Tab[] = [qtab('self', 'c1', { name: 'me', result: RES })]
     const r = resolveForRun('SELECT * FROM @me', {
       dbType: 'postgresql',
@@ -248,7 +249,20 @@ describe('resolveForRun', () => {
     })
     expect(r.ok).toBe(false)
     if (r.ok) return
-    expect(r.error.kind).toBe('unknown_reference')
+    expect(r.error.kind).toBe('circular')
+  })
+
+  it('a self-reference resolves to circular on mysql (current name is a known name)', () => {
+    const t: Tab[] = [qtab('self', 'c1', { name: 'me', result: RES })]
+    const r = resolveForRun('SELECT * FROM @me', {
+      dbType: 'mysql',
+      connectionId: 'c1',
+      currentTabId: 'self',
+      tabs: t
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('circular')
   })
 })
 
@@ -287,6 +301,16 @@ describe('crossTabErrorMessage', () => {
         cap: { rows: 4, bytes: 9 }
       })
     ).toContain('cap 4')
+    // byte-cap breach (under the row cap) names KB, not rows
+    expect(
+      crossTabErrorMessage({
+        kind: 'too_large',
+        name: 'x',
+        rows: 2,
+        bytes: 600 * 1024,
+        cap: { rows: 1000, bytes: 256 * 1024 }
+      })
+    ).toContain('KB')
     expect(
       crossTabErrorMessage({ kind: 'too_many_columns', name: 'x', columns: 200, cap: 100 })
     ).toContain('200 columns')

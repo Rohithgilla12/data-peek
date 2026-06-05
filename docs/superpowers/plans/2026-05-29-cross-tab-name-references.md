@@ -31,7 +31,7 @@
 
 ## File structure
 
-```
+```text
 stores/tab-store.ts                                   (edit) name field, setTabName/clearTabName/getNamedTabs, persistence
 stores/__tests__/tab-store-naming.test.ts             (new)  store action tests
 lib/cross-tab-integration.ts                          (new)  toSQLDialect, mapTabToResolvable, buildTabLookup, resolveForRun, buildCrossTabRefs, crossTabErrorMessage, CrossTabRef type

@@ -95,4 +95,29 @@ describe('tab-store cross-tab naming', () => {
     if (res.ok) return
     expect(res.error.kind).toBe('duplicate')
   })
+
+  it('drops a named tab’s name when moved onto a connection that already uses it', () => {
+    useTabStore.setState({
+      tabs: [
+        queryTab('a', 'conn2', { name: 'recent' }),
+        queryTab('b', 'conn1', { name: 'recent' })
+      ],
+      activeTabId: 'b'
+    })
+    useTabStore.getState().syncActiveTabWithConnection('conn2')
+    const moved = useTabStore.getState().getTab('b') as QueryTab
+    expect(moved.connectionId).toBe('conn2')
+    expect(moved.name).toBeUndefined()
+  })
+
+  it('keeps a named tab’s name when moved onto a connection where it is free', () => {
+    useTabStore.setState({
+      tabs: [queryTab('a', 'conn2', { name: 'other' }), queryTab('b', 'conn1', { name: 'recent' })],
+      activeTabId: 'b'
+    })
+    useTabStore.getState().syncActiveTabWithConnection('conn2')
+    const moved = useTabStore.getState().getTab('b') as QueryTab
+    expect(moved.connectionId).toBe('conn2')
+    expect(moved.name).toBe('recent')
+  })
 })

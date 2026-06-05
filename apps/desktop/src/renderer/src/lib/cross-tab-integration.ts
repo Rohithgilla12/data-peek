@@ -68,28 +68,36 @@ export function isNamedQueryTab(t: Tab): t is QueryTab & { name: string } {
   return t.type === 'query' && typeof t.name === 'string' && t.name !== ''
 }
 
+/** Named query tabs on the connection, including the current tab. */
+function namedQueryTabsOnConnection(
+  tabs: Tab[],
+  connectionId: string | null
+): Array<QueryTab & { name: string }> {
+  return tabs.filter(
+    (t): t is QueryTab & { name: string } => isNamedQueryTab(t) && t.connectionId === connectionId
+  )
+}
+
+/** ...same, excluding the current tab — the editor never suggests a self-reference. */
 function namedQueryTabs(
   tabs: Tab[],
   connectionId: string | null,
   currentTabId: string
 ): Array<QueryTab & { name: string }> {
-  return tabs.filter(
-    (t): t is QueryTab & { name: string } =>
-      isNamedQueryTab(t) && t.connectionId === connectionId && t.id !== currentTabId
-  )
+  return namedQueryTabsOnConnection(tabs, connectionId).filter((t) => t.id !== currentTabId)
 }
 
 /**
- * Build the resolver's lookup: name → ResolvableTab, scoped to the
- * connection, excluding the current tab.
+ * Build the resolver's lookup: name → ResolvableTab, scoped to the connection.
+ * The current tab is included so a self-reference resolves to its own tab and
+ * the resolver can emit `circular` (instead of a misleading `unknown_reference`).
  */
 export function buildTabLookup(
   tabs: Tab[],
-  connectionId: string | null,
-  currentTabId: string
+  connectionId: string | null
 ): (name: string) => ResolvableTab | null {
   const byName = new Map<string, QueryTab>()
-  for (const t of namedQueryTabs(tabs, connectionId, currentTabId)) {
+  for (const t of namedQueryTabsOnConnection(tabs, connectionId)) {
     byName.set(t.name, t)
   }
   return (name) => {
@@ -133,9 +141,12 @@ export interface ResolveForRunContext {
 
 /** Parse + resolve a query's @name references into a runnable SQL string. Pure. */
 export function resolveForRun(sql: string, ctx: ResolveForRunContext): ResolveForRunResult {
+  // Include the current tab's name so a self-reference (@self) is still parsed
+  // as a cross-tab ref on mysql/mssql and reaches the resolver's circular check,
+  // rather than being mistaken for a bare @variable and passed through.
   const knownNames =
     ctx.dbType === 'mysql' || ctx.dbType === 'mssql'
-      ? new Set(namedQueryTabs(ctx.tabs, ctx.connectionId, ctx.currentTabId).map((t) => t.name))
+      ? new Set(namedQueryTabsOnConnection(ctx.tabs, ctx.connectionId).map((t) => t.name))
       : undefined
 
   const parsed = parseTabReferences(sql, { dialect: ctx.dbType, knownNames })
@@ -147,7 +158,7 @@ export function resolveForRun(sql: string, ctx: ResolveForRunContext): ResolveFo
     }
   }
 
-  const lookup = buildTabLookup(ctx.tabs, ctx.connectionId, ctx.currentTabId)
+  const lookup = buildTabLookup(ctx.tabs, ctx.connectionId)
   const resolved = resolveReferences(sql, parsed, {
     lookup,
     currentTabId: ctx.currentTabId,
@@ -202,11 +213,14 @@ export function crossTabErrorMessage(error: ResolveErrorKind): string {
       return `@${error.name}'s last run errored: ${error.error}`
     case 'circular':
       return `@${error.chain.join(' → @')} can't reference itself.`
-    case 'too_large':
-      return (
-        `@${error.name} has ${error.rows} rows (cap ${error.cap.rows}). ` +
-        'Add a LIMIT to the referenced query.'
-      )
+    case 'too_large': {
+      // too_large fires on the row cap or the byte cap — name whichever was breached.
+      const overBytes = error.bytes > error.cap.bytes
+      const measure = overBytes
+        ? `${Math.round(error.bytes / 1024)}KB (cap ${Math.round(error.cap.bytes / 1024)}KB)`
+        : `${error.rows} rows (cap ${error.cap.rows})`
+      return `@${error.name} has ${measure}. Add a LIMIT to the referenced query.`
+    }
     case 'too_many_columns':
       return `@${error.name} has ${error.columns} columns (cap ${error.cap}).`
     case 'duplicate_cte_name':

@@ -967,8 +967,25 @@ export const useTabStore = create<TabState>()(
         // ERD and table designer are also database-specific
         if (activeTab.type !== 'query') return
 
+        // A tab's @name is unique per connection. Moving a named tab onto a
+        // connection that already uses that name would make @name resolution
+        // ambiguous, so drop the name when it collides on the target connection.
+        let keepName = true
+        if (isNamedQueryTab(activeTab)) {
+          const taken = new Set<string>()
+          for (const t of get().tabs) {
+            if (isNamedQueryTab(t) && t.connectionId === connectionId && t.id !== activeTab.id) {
+              taken.add(t.name)
+            }
+          }
+          keepName = !taken.has(activeTab.name)
+        }
+
         set((state) => ({
-          tabs: state.tabs.map((t) => (t.id === activeTab.id ? { ...t, connectionId } : t))
+          tabs: state.tabs.map((t) => {
+            if (t.id !== activeTab.id || t.type !== 'query') return t
+            return { ...t, connectionId, name: keepName ? t.name : undefined }
+          })
         }))
       },
 
