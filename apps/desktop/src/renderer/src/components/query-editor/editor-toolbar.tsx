@@ -47,6 +47,8 @@ interface EditorToolbarProps {
   setShareDialogOpen: (v: boolean) => void
   /** Slot for the Watch button — rendered between Benchmark and Format. */
   watchSlot?: ReactNode
+  /** Slot for the cross-tab inlined-refs pill — rendered next to the Watch button. */
+  refsSlot?: ReactNode
 }
 
 export function EditorToolbar({
@@ -69,7 +71,8 @@ export function EditorToolbar({
   handleFormatQuery,
   setSaveDialogOpen,
   setShareDialogOpen,
-  watchSlot
+  watchSlot,
+  refsSlot
 }: EditorToolbarProps) {
   const executable = isExecutableTab(tab) ? tab : null
   const query = executable?.query ?? ''
@@ -171,6 +174,7 @@ export function EditorToolbar({
           disabled={isExecuting || !hasQuery}
         />
         {watchSlot}
+        {refsSlot}
         {!isEditorCollapsed && (
           <>
             <div className="mx-1 h-4 w-px bg-border/60" />

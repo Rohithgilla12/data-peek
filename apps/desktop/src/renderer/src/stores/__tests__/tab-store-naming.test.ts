@@ -1,0 +1,123 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { useTabStore, type QueryTab } from '../tab-store'
+
+function queryTab(
+  id: string,
+  connectionId: string | null,
+  overrides: Partial<QueryTab> = {}
+): QueryTab {
+  return {
+    id,
+    type: 'query',
+    title: 'Query',
+    isPinned: false,
+    connectionId,
+    createdAt: 0,
+    order: 0,
+    query: 'select 1',
+    savedQuery: '',
+    result: null,
+    multiResult: null,
+    activeResultIndex: 0,
+    error: null,
+    isExecuting: false,
+    executionId: null,
+    currentPage: 1,
+    pageSize: 100,
+    ...overrides
+  }
+}
+
+describe('tab-store cross-tab naming', () => {
+  beforeEach(() => {
+    useTabStore.setState({ tabs: [], activeTabId: null })
+  })
+
+  it('setTabName normalizes and stores a valid name', () => {
+    useTabStore.setState({ tabs: [queryTab('a', 'conn1')] })
+    const res = useTabStore.getState().setTabName('a', '  Active_Users  ')
+    expect(res.ok).toBe(true)
+    if (!res.ok) return
+    expect(res.normalized).toBe('active_users')
+    expect((useTabStore.getState().getTab('a') as QueryTab).name).toBe('active_users')
+  })
+
+  it('rejects a duplicate name on the same connection', () => {
+    useTabStore.setState({
+      tabs: [queryTab('a', 'conn1', { name: 'recent' }), queryTab('b', 'conn1')]
+    })
+    const res = useTabStore.getState().setTabName('b', 'recent')
+    expect(res.ok).toBe(false)
+    if (res.ok) return
+    expect(res.error.kind).toBe('duplicate')
+  })
+
+  it('allows the same name on a different connection', () => {
+    useTabStore.setState({
+      tabs: [queryTab('a', 'conn1', { name: 'recent' }), queryTab('b', 'conn2')]
+    })
+    const res = useTabStore.getState().setTabName('b', 'recent')
+    expect(res.ok).toBe(true)
+  })
+
+  it('rejects a reserved word', () => {
+    useTabStore.setState({ tabs: [queryTab('a', 'conn1')] })
+    const res = useTabStore.getState().setTabName('a', 'select')
+    expect(res.ok).toBe(false)
+    if (res.ok) return
+    expect(res.error.kind).toBe('reserved_word')
+  })
+
+  it('clearTabName removes the name', () => {
+    useTabStore.setState({ tabs: [queryTab('a', 'conn1', { name: 'recent' })] })
+    useTabStore.getState().clearTabName('a')
+    expect((useTabStore.getState().getTab('a') as QueryTab).name).toBeUndefined()
+  })
+
+  it('allows a tab to re-set its own existing name', () => {
+    useTabStore.setState({ tabs: [queryTab('a', 'conn1', { name: 'recent' })] })
+    const res = useTabStore.getState().setTabName('a', 'recent')
+    expect(res.ok).toBe(true)
+  })
+
+  it('names a tab with a null connection', () => {
+    useTabStore.setState({ tabs: [queryTab('a', null)] })
+    const res = useTabStore.getState().setTabName('a', 'scratch')
+    expect(res.ok).toBe(true)
+  })
+
+  it('treats two null-connection tabs as the same scope for duplicates', () => {
+    useTabStore.setState({
+      tabs: [queryTab('a', null, { name: 'scratch' }), queryTab('b', null)]
+    })
+    const res = useTabStore.getState().setTabName('b', 'scratch')
+    expect(res.ok).toBe(false)
+    if (res.ok) return
+    expect(res.error.kind).toBe('duplicate')
+  })
+
+  it('drops a named tab’s name when moved onto a connection that already uses it', () => {
+    useTabStore.setState({
+      tabs: [
+        queryTab('a', 'conn2', { name: 'recent' }),
+        queryTab('b', 'conn1', { name: 'recent' })
+      ],
+      activeTabId: 'b'
+    })
+    useTabStore.getState().syncActiveTabWithConnection('conn2')
+    const moved = useTabStore.getState().getTab('b') as QueryTab
+    expect(moved.connectionId).toBe('conn2')
+    expect(moved.name).toBeUndefined()
+  })
+
+  it('keeps a named tab’s name when moved onto a connection where it is free', () => {
+    useTabStore.setState({
+      tabs: [queryTab('a', 'conn2', { name: 'other' }), queryTab('b', 'conn1', { name: 'recent' })],
+      activeTabId: 'b'
+    })
+    useTabStore.getState().syncActiveTabWithConnection('conn2')
+    const moved = useTabStore.getState().getTab('b') as QueryTab
+    expect(moved.connectionId).toBe('conn2')
+    expect(moved.name).toBe('recent')
+  })
+})

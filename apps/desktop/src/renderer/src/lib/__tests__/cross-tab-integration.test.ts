@@ -1,0 +1,346 @@
+import { describe, it, expect } from 'vitest'
+import {
+  toSQLDialect,
+  mapTabToResolvable,
+  buildTabLookup,
+  resolveForRun,
+  buildCrossTabRefs,
+  crossTabErrorMessage,
+  isHeavyResolve
+} from '../cross-tab-integration'
+import type { QueryTab, Tab } from '../../stores/tab-store'
+
+function qtab(id: string, connectionId: string | null, o: Partial<QueryTab> = {}): QueryTab {
+  return {
+    id,
+    type: 'query',
+    title: 'Query',
+    isPinned: false,
+    connectionId,
+    createdAt: 0,
+    order: 0,
+    query: '',
+    savedQuery: '',
+    result: null,
+    multiResult: null,
+    activeResultIndex: 0,
+    error: null,
+    isExecuting: false,
+    executionId: null,
+    currentPage: 1,
+    pageSize: 100,
+    ...o
+  }
+}
+
+const RES = {
+  columns: [
+    { name: 'id', dataType: 'integer' },
+    { name: 'email', dataType: 'text' }
+  ],
+  rows: [
+    { id: 1, email: 'a@x.com' },
+    { id: 2, email: 'b@x.com' }
+  ],
+  rowCount: 2,
+  durationMs: 1
+}
+
+describe('toSQLDialect', () => {
+  it('maps database types to escaper dialects (sqlite → standard)', () => {
+    expect(toSQLDialect('postgresql')).toBe('postgresql')
+    expect(toSQLDialect('mysql')).toBe('mysql')
+    expect(toSQLDialect('mssql')).toBe('mssql')
+    expect(toSQLDialect('sqlite')).toBe('standard')
+  })
+})
+
+describe('mapTabToResolvable', () => {
+  it('maps a successful legacy result to kind:success with fields from columns', () => {
+    const r = mapTabToResolvable(qtab('a', 'c1', { name: 'u', result: RES }))
+    expect(r.result.kind).toBe('success')
+    if (r.result.kind !== 'success') return
+    expect(r.result.rows).toHaveLength(2)
+    expect(r.result.fields).toEqual(RES.columns)
+  })
+
+  it('prefers the active multiResult statement over legacy result', () => {
+    const tab = qtab('a', 'c1', {
+      name: 'u',
+      result: RES,
+      activeResultIndex: 1,
+      multiResult: {
+        statements: [
+          { rows: [], fields: [], rowCount: 0 },
+          { rows: [{ x: 9 }], fields: [{ name: 'x', dataType: 'integer' }], rowCount: 1 }
+        ],
+        totalDurationMs: 1,
+        statementCount: 2
+      } as unknown as QueryTab['multiResult']
+    })
+    const r = mapTabToResolvable(tab)
+    expect(r.result.kind).toBe('success')
+    if (r.result.kind !== 'success') return
+    expect(r.result.rows).toEqual([{ x: 9 }])
+  })
+
+  it('maps an error to kind:error', () => {
+    const r = mapTabToResolvable(qtab('a', 'c1', { name: 'u', error: 'boom' }))
+    expect(r.result).toEqual({ kind: 'error', message: 'boom' })
+  })
+
+  it('maps a never-run tab to kind:none', () => {
+    const r = mapTabToResolvable(qtab('a', 'c1', { name: 'u' }))
+    expect(r.result).toEqual({ kind: 'none' })
+  })
+
+  it('treats an out-of-bounds activeResultIndex as no result', () => {
+    const tab = qtab('a', 'c1', {
+      name: 'u',
+      activeResultIndex: 5,
+      multiResult: {
+        statements: [
+          { rows: [{ x: 1 }], fields: [{ name: 'x', dataType: 'integer' }], rowCount: 1 }
+        ],
+        totalDurationMs: 1,
+        statementCount: 1
+      } as unknown as QueryTab['multiResult']
+    })
+    expect(mapTabToResolvable(tab).result).toEqual({ kind: 'none' })
+  })
+})
+
+describe('buildTabLookup', () => {
+  const tabs: Tab[] = [
+    qtab('a', 'c1', { name: 'recent', result: RES }),
+    qtab('b', 'c1'),
+    qtab('c', 'c2', { name: 'recent', result: RES }),
+    qtab('self', 'c1', { name: 'me', result: RES })
+  ]
+  it('finds a named tab on the same connection', () => {
+    const lookup = buildTabLookup(tabs, 'c1')
+    expect(lookup('recent')?.tabId).toBe('a')
+  })
+  it('does not cross connections', () => {
+    // c2 also has a tab named 'recent'; a c1-scoped lookup must resolve to c1's tab
+    const lookupC1 = buildTabLookup(tabs, 'c1')
+    expect(lookupC1('recent')?.tabId).toBe('a')
+    // a c2-scoped lookup resolves to c2's tab, not c1's
+    const lookupC2 = buildTabLookup(tabs, 'c2')
+    expect(lookupC2('recent')?.tabId).toBe('c')
+  })
+  it('includes the current tab so the resolver can flag a self-reference', () => {
+    // The lookup returns the tab itself; the resolver turns tabId === currentTabId into `circular`.
+    const lookup = buildTabLookup(tabs, 'c1')
+    expect(lookup('me')?.tabId).toBe('self')
+  })
+  it('returns null for an unknown name', () => {
+    const lookup = buildTabLookup(tabs, 'c1')
+    expect(lookup('nope')).toBeNull()
+  })
+})
+
+describe('resolveForRun', () => {
+  const tabs: Tab[] = [qtab('a', 'c1', { name: 'active_users', result: RES })]
+
+  it('passes through SQL with no references', () => {
+    const r = resolveForRun('SELECT 1', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs
+    })
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.finalSql).toBe('SELECT 1')
+    expect(r.summary.refCount).toBe(0)
+  })
+
+  it('resolves a reference into a CTE (postgres)', () => {
+    const r = resolveForRun('SELECT * FROM @active_users', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs
+    })
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.finalSql).toContain('WITH')
+    expect(r.finalSql).toContain('active_users')
+    expect(r.finalSql).not.toContain('@active_users')
+    expect(r.summary.refCount).toBe(1)
+    expect(r.summary.rowsInlined).toBe(2)
+  })
+
+  it('resolves across all dialects without throwing', () => {
+    for (const dbType of ['postgresql', 'mysql', 'mssql', 'sqlite'] as const) {
+      const r = resolveForRun('SELECT * FROM @active_users', {
+        dbType,
+        connectionId: 'c1',
+        currentTabId: 'b',
+        tabs
+      })
+      expect(r.ok).toBe(true)
+      if (!r.ok) return
+      expect(r.finalSql).not.toContain('@active_users')
+    }
+  })
+
+  it('reports unknown_reference on postgres for a missing name', () => {
+    const r = resolveForRun('SELECT * FROM @ghost', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('unknown_reference')
+  })
+
+  it('on mysql, ignores @vars that are not named tabs (no error)', () => {
+    const r = resolveForRun('SELECT @offset, * FROM @active_users', {
+      dbType: 'mysql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs
+    })
+    expect(r.ok).toBe(true)
+    if (!r.ok) return
+    expect(r.finalSql).toContain('@offset')
+    expect(r.finalSql).not.toContain('@active_users')
+  })
+
+  it('reports no_result for a named tab that has not been run', () => {
+    const t: Tab[] = [qtab('a', 'c1', { name: 'pending' })]
+    const r = resolveForRun('SELECT * FROM @pending', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs: t
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('no_result')
+  })
+
+  it('reports errored_result (with the message) for a tab whose last run errored', () => {
+    const t: Tab[] = [qtab('a', 'c1', { name: 'broken', error: 'boom' })]
+    const r = resolveForRun('SELECT * FROM @broken', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'b',
+      tabs: t
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('errored_result')
+    if (r.error.kind !== 'errored_result') return
+    expect(r.error.error).toBe('boom')
+  })
+
+  it('a self-reference resolves to circular (postgres)', () => {
+    const t: Tab[] = [qtab('self', 'c1', { name: 'me', result: RES })]
+    const r = resolveForRun('SELECT * FROM @me', {
+      dbType: 'postgresql',
+      connectionId: 'c1',
+      currentTabId: 'self',
+      tabs: t
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('circular')
+  })
+
+  it('a self-reference resolves to circular on mysql (current name is a known name)', () => {
+    const t: Tab[] = [qtab('self', 'c1', { name: 'me', result: RES })]
+    const r = resolveForRun('SELECT * FROM @me', {
+      dbType: 'mysql',
+      connectionId: 'c1',
+      currentTabId: 'self',
+      tabs: t
+    })
+    expect(r.ok).toBe(false)
+    if (r.ok) return
+    expect(r.error.kind).toBe('circular')
+  })
+})
+
+describe('buildCrossTabRefs', () => {
+  it('summarizes named query tabs on the connection (excluding current)', () => {
+    const tabs: Tab[] = [
+      qtab('a', 'c1', { name: 'active_users', title: 'Users', result: RES }),
+      qtab('b', 'c1', { name: 'pending' }),
+      qtab('cur', 'c1', { name: 'self', result: RES })
+    ]
+    const refs = buildCrossTabRefs(tabs, 'c1', 'cur')
+    expect(refs).toEqual([
+      {
+        name: 'active_users',
+        tabTitle: 'Users',
+        result: { kind: 'ready', rowCount: 2, colCount: 2 }
+      },
+      { name: 'pending', tabTitle: 'Query', result: { kind: 'not_run' } }
+    ])
+  })
+})
+
+describe('crossTabErrorMessage', () => {
+  it('renders each error kind', () => {
+    expect(crossTabErrorMessage({ kind: 'unknown_reference', name: 'x' })).toBe(
+      'No tab named @x on this connection.'
+    )
+    expect(crossTabErrorMessage({ kind: 'no_result', name: 'x' })).toContain("hasn't been run")
+    expect(crossTabErrorMessage({ kind: 'circular', chain: ['x'] })).toContain('reference itself')
+    expect(
+      crossTabErrorMessage({
+        kind: 'too_large',
+        name: 'x',
+        rows: 5,
+        bytes: 1,
+        cap: { rows: 4, bytes: 9 }
+      })
+    ).toContain('cap 4')
+    // byte-cap breach (under the row cap) names KB, not rows
+    expect(
+      crossTabErrorMessage({
+        kind: 'too_large',
+        name: 'x',
+        rows: 2,
+        bytes: 600 * 1024,
+        cap: { rows: 1000, bytes: 256 * 1024 }
+      })
+    ).toContain('KB')
+    expect(
+      crossTabErrorMessage({ kind: 'too_many_columns', name: 'x', columns: 200, cap: 100 })
+    ).toContain('200 columns')
+    expect(crossTabErrorMessage({ kind: 'duplicate_cte_name', name: 'x' })).toContain('collides')
+    expect(crossTabErrorMessage({ kind: 'errored_result', name: 'x', error: 'oops' })).toContain(
+      'oops'
+    )
+  })
+})
+
+describe('isHeavyResolve', () => {
+  const summary = (rowsInlined: number, bytesAdded: number) => ({
+    refCount: 1,
+    rowsInlined,
+    bytesAdded,
+    references: []
+  })
+  it('is not heavy at exactly the row threshold', () => {
+    expect(isHeavyResolve(summary(1000, 0))).toBe(false)
+  })
+  it('is heavy one row over the threshold', () => {
+    expect(isHeavyResolve(summary(1001, 0))).toBe(true)
+  })
+  it('is heavy when bytes exceed the cap even with rows under', () => {
+    expect(isHeavyResolve(summary(10, 256 * 1024 + 1))).toBe(true)
+  })
+  it('is not heavy at exactly the byte threshold', () => {
+    expect(isHeavyResolve(summary(10, 256 * 1024))).toBe(false)
+  })
+  it('respects custom thresholds', () => {
+    expect(isHeavyResolve(summary(5, 0), { rows: 4, bytes: 100 })).toBe(true)
+  })
+})

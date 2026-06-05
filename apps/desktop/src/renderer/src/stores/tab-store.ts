@@ -11,6 +11,9 @@ import {
 import { useConnectionStore } from './connection-store'
 import { useSettingsStore } from './settings-store'
 import { useEditStore } from './edit-store'
+import { validateRefName } from '@/lib/cross-tab-name-validation'
+import type { SetTabNameResult } from '@/lib/cross-tab-types'
+import { isNamedQueryTab } from '@/lib/cross-tab-integration'
 
 /**
  * Extended QueryResult with multi-statement support
@@ -60,6 +63,8 @@ export interface QueryTab extends BaseTab {
   executionId: string | null // ID for cancellation support
   currentPage: number
   pageSize: number
+  /** User-assigned cross-tab reference name (e.g. used as @active_users). Query tabs only. */
+  name?: string
 }
 
 // Table preview tab
@@ -177,6 +182,8 @@ interface PersistedTab {
   tableName?: string
   mode?: 'create' | 'edit'
   notebookId?: string
+  /** Cross-tab reference name (query tabs only). */
+  name?: string
 }
 
 interface TabState {
@@ -245,6 +252,10 @@ interface TabState {
 
   // Tab title
   renameTab: (tabId: string, title: string) => void
+
+  // Cross-tab naming
+  setTabName: (tabId: string, name: string) => SetTabNameResult
+  clearTabName: (tabId: string) => void
 
   // Connection sync
   syncActiveTabWithConnection: (connectionId: string | null) => void
@@ -919,6 +930,34 @@ export const useTabStore = create<TabState>()(
         }))
       },
 
+      setTabName: (tabId, name) => {
+        const tab = get().tabs.find((t) => t.id === tabId)
+        if (!tab || tab.type !== 'query') {
+          return { ok: false, error: { kind: 'not_a_query_tab' } }
+        }
+        const taken = new Map<string, string>()
+        for (const t of get().tabs) {
+          if (isNamedQueryTab(t) && t.connectionId === tab.connectionId) {
+            taken.set(t.name, t.id)
+          }
+        }
+        const result = validateRefName(name, { takenNames: taken, ownTabId: tabId })
+        if (!result.ok) return result
+        set((state) => ({
+          tabs: mapTab(state.tabs, tabId, (t) => ({ ...t, name: result.normalized }))
+        }))
+        return result
+      },
+
+      clearTabName: (tabId) => {
+        set((state) => {
+          const tabs = mapTab(state.tabs, tabId, (t) =>
+            t.type === 'query' && t.name !== undefined ? { ...t, name: undefined } : t
+          )
+          return tabs === state.tabs ? {} : { tabs }
+        })
+      },
+
       syncActiveTabWithConnection: (connectionId) => {
         const activeTab = get().getActiveTab()
         if (!activeTab) return
@@ -928,8 +967,25 @@ export const useTabStore = create<TabState>()(
         // ERD and table designer are also database-specific
         if (activeTab.type !== 'query') return
 
+        // A tab's @name is unique per connection. Moving a named tab onto a
+        // connection that already uses that name would make @name resolution
+        // ambiguous, so drop the name when it collides on the target connection.
+        let keepName = true
+        if (isNamedQueryTab(activeTab)) {
+          const taken = new Set<string>()
+          for (const t of get().tabs) {
+            if (isNamedQueryTab(t) && t.connectionId === connectionId && t.id !== activeTab.id) {
+              taken.add(t.name)
+            }
+          }
+          keepName = !taken.has(activeTab.name)
+        }
+
         set((state) => ({
-          tabs: state.tabs.map((t) => (t.id === activeTab.id ? { ...t, connectionId } : t))
+          tabs: state.tabs.map((t) => {
+            if (t.id !== activeTab.id || t.type !== 'query') return t
+            return { ...t, connectionId, name: keepName ? t.name : undefined }
+          })
         }))
       },
 
@@ -1049,9 +1105,7 @@ export const useTabStore = create<TabState>()(
       },
 
       findSchemaIntelTab: (connectionId) => {
-        return get().tabs.find(
-          (t) => t.type === 'schema-intel' && t.connectionId === connectionId
-        )
+        return get().tabs.find((t) => t.type === 'schema-intel' && t.connectionId === connectionId)
       }
     }),
     {
@@ -1116,7 +1170,8 @@ export const useTabStore = create<TabState>()(
               ...base,
               query: t.query,
               schemaName: t.type === 'table-preview' ? t.schemaName : undefined,
-              tableName: t.type === 'table-preview' ? t.tableName : undefined
+              tableName: t.type === 'table-preview' ? t.tableName : undefined,
+              name: t.type === 'query' ? t.name : undefined
             }
           }),
         activeTabId: state.activeTabId
