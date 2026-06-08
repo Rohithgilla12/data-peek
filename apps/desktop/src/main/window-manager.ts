@@ -56,7 +56,12 @@ class WindowManager {
       ...(process.platform === 'linux' ? { icon } : {}),
       webPreferences: {
         preload: join(__dirname, '../preload/index.js'),
-        sandbox: true,
+        // sandbox stays disabled: the current preload bundle doesn't run under the
+        // renderer sandbox (window.api ends up undefined, which breaks the whole app
+        // and the e2e suite). contextIsolation + nodeIntegration:false still provide
+        // the primary renderer isolation. Re-enabling the sandbox needs preload build
+        // work (CommonJS, no incompatible imports) and is tracked as a follow-up.
+        sandbox: false,
         contextIsolation: true,
         nodeIntegration: false,
         webSecurity: true
