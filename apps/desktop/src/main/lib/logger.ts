@@ -1,5 +1,6 @@
 import log from 'electron-log/main'
 import { app } from 'electron'
+import { redactSensitive } from '@shared/redact'
 
 // Initialize electron-log
 // Logs are stored in:
@@ -14,39 +15,6 @@ log.transports.file.level = level
 
 log.transports.file.maxSize = 5 * 1024 * 1024 // 5MB
 log.transports.file.format = '[{y}-{m}-{d} {h}:{i}:{s}.{ms}] [{level}] {text}'
-
-const SENSITIVE_KEYS = [
-  'password',
-  'license_key',
-  'licenseKey',
-  'api_key',
-  'apiKey',
-  'secret',
-  'token',
-  'authorization'
-]
-
-function redactSensitive(obj: unknown): unknown {
-  if (obj === null || obj === undefined) return obj
-  if (typeof obj !== 'object') return obj
-
-  if (Array.isArray(obj)) {
-    return obj.map(redactSensitive)
-  }
-
-  const result: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
-    const lowerKey = key.toLowerCase()
-    if (SENSITIVE_KEYS.some((sk) => lowerKey.includes(sk))) {
-      result[key] = '***REDACTED***'
-    } else if (typeof value === 'object' && value !== null) {
-      result[key] = redactSensitive(value)
-    } else {
-      result[key] = value
-    }
-  }
-  return result
-}
 
 function formatArgs(args: unknown[]): string {
   return args

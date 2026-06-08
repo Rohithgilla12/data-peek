@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { z } from 'zod'
 import type {
   ConnectionConfig,
   SchemaInfo,
@@ -30,6 +31,33 @@ import type {
   QueryOptions
 } from '../db-adapter'
 import { splitStatements } from '../lib/sql-parser'
+
+// Runtime shapes for SQLite catalog/PRAGMA introspection. Parsing (rather than
+// casting) means a SQLite version that returns an unexpected shape fails loudly at
+// the boundary instead of silently flowing `undefined` into the schema model.
+const SqliteMasterRow = z.object({ name: z.string(), type: z.string() })
+
+const PragmaTableInfo = z.object({
+  cid: z.number(),
+  name: z.string(),
+  type: z.string(),
+  notnull: z.number(),
+  // SQLite returns the default as text, but numeric defaults can arrive as a number;
+  // coerce so a valid default never trips the parser.
+  dflt_value: z.coerce.string().nullable(),
+  pk: z.number()
+})
+
+const PragmaForeignKey = z.object({
+  id: z.number(),
+  seq: z.number(),
+  table: z.string(),
+  from: z.string(),
+  to: z.string(),
+  on_update: z.string(),
+  on_delete: z.string(),
+  match: z.string()
+})
 
 /** Split SQL into statements for SQLite */
 const splitSqliteStatements = (sql: string) => splitStatements(sql, 'sqlite')
@@ -279,32 +307,19 @@ export class SQLiteAdapter implements DatabaseAdapter {
              AND name NOT LIKE 'sqlite_%'
            ORDER BY name`
         )
-        .all() as Array<{ name: string; type: string }>
-
+        .all()
       const tables: TableInfo[] = []
 
-      for (const tableRow of tablesResult) {
+      for (const tableRow of z.array(SqliteMasterRow).parse(tablesResult)) {
         // Get column info using PRAGMA
-        const columnsResult = db.prepare(`PRAGMA table_info("${tableRow.name}")`).all() as Array<{
-          cid: number
-          name: string
-          type: string
-          notnull: number
-          dflt_value: string | null
-          pk: number
-        }>
+        const columnsResult = z
+          .array(PragmaTableInfo)
+          .parse(db.prepare(`PRAGMA table_info("${tableRow.name}")`).all())
 
         // Get foreign key info
-        const fkResult = db.prepare(`PRAGMA foreign_key_list("${tableRow.name}")`).all() as Array<{
-          id: number
-          seq: number
-          table: string
-          from: string
-          to: string
-          on_update: string
-          on_delete: string
-          match: string
-        }>
+        const fkResult = z
+          .array(PragmaForeignKey)
+          .parse(db.prepare(`PRAGMA foreign_key_list("${tableRow.name}")`).all())
 
         // Build foreign key lookup map
         const fkMap = new Map<string, ForeignKeyInfo>()

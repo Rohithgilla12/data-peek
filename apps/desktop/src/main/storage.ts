@@ -16,13 +16,41 @@ type StoreOptions<T extends StoreRecord> = {
   defaults: T
 }
 
+/**
+ * Common surface shared by the plaintext and encrypted storage facades, so callers
+ * can accept either backing without knowing how persistence is implemented.
+ */
+export interface PersistentStore<T extends StoreRecord> {
+  get<K extends keyof T>(key: K): T[K]
+  get<K extends keyof T>(key: K, defaultValue: T[K]): T[K]
+  set<K extends keyof T>(key: K, value: T[K]): void
+  delete<K extends keyof T>(key: K): void
+  clear(): void
+  has<K extends keyof T>(key: K): boolean
+  readonly path: string
+  reset(): void
+}
+
+/** Thrown when OS-level secure storage is unavailable and secrets cannot be encrypted. */
+export class EncryptionUnavailableError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'EncryptionUnavailableError'
+  }
+}
+
 // Cache the encryption key in memory for the session
 let cachedEncryptionKey: string | null = null
 
 /**
  * Get or create a persistent encryption key using Electron's safeStorage.
- * The key is generated once and stored encrypted on disk.
- * Falls back to a static key if safeStorage is not available.
+ *
+ * The key is generated once and stored encrypted on disk, then reused across
+ * sessions. This function is fail-closed: if secure storage is unavailable or the
+ * key cannot be persisted, it throws rather than substituting a constant key
+ * (which would make encryption meaningless). Callers decide how to degrade.
+ *
+ * @throws {EncryptionUnavailableError} when OS secure storage is not available
  */
 export function getEncryptionKey(): string {
   // Return cached key if available
@@ -30,47 +58,33 @@ export function getEncryptionKey(): string {
     return cachedEncryptionKey
   }
 
+  // Fail closed — never fall back to a static key. A constant key would let anyone
+  // with the source decrypt the store, so it is no better than plaintext.
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new EncryptionUnavailableError('OS secure storage (safeStorage) is unavailable')
+  }
+
   const userDataPath = app.getPath('userData')
   const keyFilePath = join(userDataPath, '.encryption-key')
 
-  // Check if safeStorage is available
-  if (!safeStorage.isEncryptionAvailable()) {
-    log.warn('safeStorage not available, using static fallback key')
-    cachedEncryptionKey = 'data-peek-fallback-key-v1'
+  if (existsSync(keyFilePath)) {
+    // Do NOT delete the key on failure. On Linux the safeStorage backend can change
+    // between launches; deleting and regenerating the key here would orphan every
+    // store previously written under it (the original cause of the "corruption" that
+    // led to encryption being disabled). Let a genuine decrypt failure propagate.
+    const encryptedKey = readFileSync(keyFilePath)
+    cachedEncryptionKey = safeStorage.decryptString(encryptedKey)
     return cachedEncryptionKey
   }
 
-  try {
-    if (existsSync(keyFilePath)) {
-      // Read and decrypt existing key
-      const encryptedKey = readFileSync(keyFilePath)
-      cachedEncryptionKey = safeStorage.decryptString(encryptedKey)
-      return cachedEncryptionKey
-    }
-  } catch {
-    log.warn('Failed to read encryption key, generating new one')
-    // Delete corrupted key file
-    try {
-      unlinkSync(keyFilePath)
-    } catch (error) {
-      log.warn('Failed to delete corrupted encryption key file:', error)
-    }
-  }
-
-  // Generate a new random key
+  // No key yet: generate one and persist it. If it can't be written, throw — a key
+  // that isn't stable across sessions can't protect anything.
   const newKey = randomBytes(32).toString('hex')
-  try {
-    const encryptedKey = safeStorage.encryptString(newKey)
-    writeFileSync(keyFilePath, encryptedKey)
-    cachedEncryptionKey = newKey
-    log.debug('Generated and stored new encryption key')
-    return cachedEncryptionKey
-  } catch (error) {
-    log.error('Failed to store encryption key:', error)
-    // Fall back to static key if we can't write
-    cachedEncryptionKey = 'data-peek-fallback-key-v1'
-    return cachedEncryptionKey
-  }
+  const encryptedKey = safeStorage.encryptString(newKey)
+  writeFileSync(keyFilePath, encryptedKey)
+  cachedEncryptionKey = newKey
+  log.debug('Generated and stored new encryption key')
+  return cachedEncryptionKey
 }
 
 /**
@@ -100,7 +114,7 @@ function deleteStoreFile(storeName: string): void {
  *   store.get('myData')
  *   store.set('myData', 'value')
  */
-export class DpStorage<T extends StoreRecord> {
+export class DpStorage<T extends StoreRecord> implements PersistentStore<T> {
   private store: ElectronStore<T>
   private storeName: string
 
@@ -165,10 +179,11 @@ export class DpStorage<T extends StoreRecord> {
  * DpSecureStorage - Encrypted storage with automatic corruption recovery
  *
  * Uses a persistent encryption key stored securely via Electron's safeStorage.
- * The key is generated once and reused across sessions.
+ * The key is generated once and reused across sessions (see getEncryptionKey).
  *
- * NOTE: Currently not in use due to corruption issues. Using DpStorage instead.
- * TODO: Investigate and fix safeStorage corruption issues before re-enabling.
+ * Used for connection credentials. If secure storage is unavailable, creation
+ * throws EncryptionUnavailableError and the caller is expected to degrade
+ * gracefully (see createConnectionsStore in index.ts).
  *
  * Usage:
  *   const store = await DpSecureStorage.create<{ secret: string }>({
@@ -176,7 +191,7 @@ export class DpStorage<T extends StoreRecord> {
  *     defaults: { secret: '' }
  *   })
  */
-export class DpSecureStorage<T extends StoreRecord> {
+export class DpSecureStorage<T extends StoreRecord> implements PersistentStore<T> {
   private store: ElectronStore<T>
   private storeName: string
 
@@ -197,8 +212,14 @@ export class DpSecureStorage<T extends StoreRecord> {
     try {
       const store = new Store<T>({ ...options, encryptionKey })
       return new DpSecureStorage(store, options.name)
-    } catch {
-      log.warn(`Secure store "${options.name}" corrupted, recreating`)
+    } catch (error) {
+      // The encryption key is now stable across sessions, so reaching here means the
+      // store file is genuinely corrupt rather than encrypted under a different key.
+      // Recreate it as a last resort, but log loudly — this discards stored secrets.
+      log.error(
+        `Secure store "${options.name}" unreadable, recreating (stored secrets lost):`,
+        error
+      )
       deleteStoreFile(options.name)
       const store = new Store<T>({ ...options, encryptionKey })
       return new DpSecureStorage(store, options.name)

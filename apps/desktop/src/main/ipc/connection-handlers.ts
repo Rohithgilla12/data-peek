@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 import type { ConnectionConfig } from '@shared/index'
-import type { DpStorage } from '../storage'
+import type { PersistentStore } from '../storage'
 import { windowManager } from '../window-manager'
 import { closePgPool } from '../adapters/pg-pool-manager'
 import { invalidateSchemaCache } from '../schema-cache'
@@ -24,7 +24,7 @@ function teardownConnection(connection: ConnectionConfig): void {
  * Register connection CRUD handlers
  */
 export function registerConnectionHandlers(
-  store: DpStorage<{ connections: ConnectionConfig[] }>
+  store: PersistentStore<{ connections: ConnectionConfig[] }>
 ): void {
   // List all connections
   ipcMain.handle('connections:list', () => {
