@@ -16,7 +16,7 @@ import type {
   SchedulePreset
 } from '@shared/index'
 import { SCHEDULE_PRESETS } from '@shared/index'
-import { DpStorage } from './storage'
+import { DpStorage, type PersistentStore } from './storage'
 import { getAdapter } from './db-adapter'
 import { createLogger } from './lib/logger'
 
@@ -25,7 +25,7 @@ const log = createLogger('dashboard')
 const activeRefreshJobs = new Map<string, ScheduledTask>()
 
 let dashboardsStore: DpStorage<{ dashboards: Dashboard[] }>
-let connectionsStore: DpStorage<{ connections: ConnectionConfig[] }>
+let connectionsStore: PersistentStore<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 
 /**
@@ -38,7 +38,7 @@ let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
  * @param queriesStore - Storage handle that provides saved queries
  */
 export async function initDashboardService(
-  connStore: DpStorage<{ connections: ConnectionConfig[] }>,
+  connStore: PersistentStore<{ connections: ConnectionConfig[] }>,
   queriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 ): Promise<void> {
   connectionsStore = connStore
@@ -700,7 +700,8 @@ export function getNextRefreshTimes(
     }
 
     return times
-  } catch {
+  } catch (error) {
+    log.warn(`Failed to compute next refresh times for cron "${expression}":`, error)
     return []
   }
 }

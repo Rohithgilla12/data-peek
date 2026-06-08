@@ -1,5 +1,5 @@
 import type { ConnectionConfig, SavedQuery, Snippet } from '@shared/index'
-import type { DpStorage } from '../storage'
+import type { DpStorage, PersistentStore } from '../storage'
 import type { NotebookStorage } from '../notebook-storage'
 import { registerConnectionHandlers } from './connection-handlers'
 import { registerQueryHandlers } from './query-handlers'
@@ -27,7 +27,7 @@ import type { StepSessionRegistry } from '../step-session'
 const log = createLogger('ipc')
 
 export interface IpcStores {
-  connections: DpStorage<{ connections: ConnectionConfig[] }>
+  connections: PersistentStore<{ connections: ConnectionConfig[] }>
   savedQueries: DpStorage<{ savedQueries: SavedQuery[] }>
   snippets: DpStorage<{ snippets: Snippet[] }>
 }

@@ -240,7 +240,10 @@ export async function resolveFK(
       const r = row as Record<string, unknown>
       return r[fkColumn]
     })
-  } catch {
-    return []
+  } catch (error) {
+    // Surface the failure with context rather than returning [] — an empty result
+    // here would silently generate rows with null FK values, corrupting the output.
+    const message = error instanceof Error ? error.message : String(error)
+    throw new Error(`Failed to resolve FK values from ${tableRef}.${fkColumn}: ${message}`)
   }
 }

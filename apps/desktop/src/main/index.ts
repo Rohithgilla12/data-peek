@@ -1,6 +1,7 @@
 import { config } from 'dotenv'
-import { app, BrowserWindow } from 'electron'
-import { resolve } from 'path'
+import { app, BrowserWindow, safeStorage } from 'electron'
+import { resolve, join } from 'path'
+import { existsSync, readFileSync, unlinkSync } from 'fs'
 import { electronApp, optimizer } from '@electron-toolkit/utils'
 
 // Load .env file - in development, it's in the desktop app directory
@@ -10,7 +11,12 @@ import { createMenu } from './menu'
 import { initLicenseStore } from './license-service'
 import { initAIStore } from './ai-service'
 import { initAutoUpdater, stopPeriodicChecks } from './updater'
-import { DpStorage } from './storage'
+import {
+  DpStorage,
+  DpSecureStorage,
+  EncryptionUnavailableError,
+  type PersistentStore
+} from './storage'
 import { NotebookStorage } from './notebook-storage'
 import { initSchemaCache } from './schema-cache'
 import { registerAllHandlers } from './ipc'
@@ -26,22 +32,74 @@ import { createLogger } from './lib/logger'
 const log = createLogger('app')
 
 // Store instances
-let store: DpStorage<{ connections: ConnectionConfig[] }>
+let store: PersistentStore<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 let snippetsStore: DpStorage<{ snippets: Snippet[] }>
 
 const stepSessionRegistry = new StepSessionRegistry()
 
 /**
+ * One-time migration of connections from the legacy plaintext store into the
+ * encrypted store. Idempotent: only copies when the encrypted store is empty, and
+ * removes the plaintext file afterwards so credentials no longer sit in cleartext.
+ */
+function migratePlaintextConnections(
+  secure: PersistentStore<{ connections: ConnectionConfig[] }>
+): void {
+  const legacyPath = join(app.getPath('userData'), 'data-peek-connections.json')
+  if (!existsSync(legacyPath)) return
+
+  try {
+    const parsed = JSON.parse(readFileSync(legacyPath, 'utf8')) as {
+      connections?: ConnectionConfig[]
+    }
+    const legacy = parsed.connections ?? []
+    if (legacy.length > 0 && secure.get('connections', []).length === 0) {
+      secure.set('connections', legacy)
+      log.info(`Migrated ${legacy.length} connection(s) to encrypted storage`)
+    }
+    unlinkSync(legacyPath)
+    log.info('Removed legacy plaintext connections file')
+  } catch (error) {
+    log.error('Failed to migrate plaintext connections:', error)
+  }
+}
+
+/**
+ * Create the connections store, preferring OS-encrypted storage. If secure storage
+ * is unavailable (e.g. a Linux box without a keyring), fall back to plaintext so the
+ * app stays usable — but log it, since credentials are then unencrypted on disk.
+ */
+async function createConnectionsStore(): Promise<
+  PersistentStore<{ connections: ConnectionConfig[] }>
+> {
+  try {
+    const secure = await DpSecureStorage.create<{ connections: ConnectionConfig[] }>({
+      name: 'data-peek-connections-secure',
+      defaults: { connections: [] }
+    })
+    migratePlaintextConnections(secure)
+    return secure
+  } catch (error) {
+    if (error instanceof EncryptionUnavailableError) {
+      log.warn(
+        'Secure storage unavailable — connection credentials will be stored unencrypted on this machine.'
+      )
+    } else {
+      log.error('Failed to open encrypted connections store, falling back to plaintext:', error)
+    }
+    return DpStorage.create<{ connections: ConnectionConfig[] }>({
+      name: 'data-peek-connections',
+      defaults: { connections: [] }
+    })
+  }
+}
+
+/**
  * Initialize all persistent stores
  */
 async function initStores(): Promise<void> {
-  store = await DpStorage.create<{ connections: ConnectionConfig[] }>({
-    name: 'data-peek-connections',
-    defaults: {
-      connections: []
-    }
-  })
+  store = await createConnectionsStore()
 
   savedQueriesStore = await DpStorage.create<{ savedQueries: SavedQuery[] }>({
     name: 'data-peek-saved-queries',
@@ -77,6 +135,17 @@ process.on('unhandledRejection', (reason) => {
 
 // Application initialization
 app.whenReady().then(async () => {
+  // Pin a non-plaintext safeStorage backend on Linux so the encryption key stays
+  // decryptable across launches (the keyring backend can otherwise vary). Must run
+  // before any safeStorage use. No-op / unsupported elsewhere, so guard it.
+  if (process.platform === 'linux') {
+    try {
+      safeStorage.setUsePlainTextEncryption(false)
+    } catch (error) {
+      log.warn('Failed to pin safeStorage backend:', error)
+    }
+  }
+
   try {
     // Initialize stores
     await initStores()
@@ -141,11 +210,15 @@ app.whenReady().then(async () => {
 
   // CRITICAL: register IPC handlers. Nothing above this line is allowed to abort
   // startup before we reach here.
-  registerAllHandlers({
-    connections: store,
-    savedQueries: savedQueriesStore,
-    snippets: snippetsStore
-  }, notebookStorage, stepSessionRegistry)
+  registerAllHandlers(
+    {
+      connections: store,
+      savedQueries: savedQueriesStore,
+      snippets: snippetsStore
+    },
+    notebookStorage,
+    stepSessionRegistry
+  )
 
   // Create initial window
   await windowManager.createWindow()

@@ -11,13 +11,23 @@ import {
   Wand2,
   Bookmark
 } from 'lucide-react'
-import { Button, keys, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  Button,
+  keys,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 import { useQueryStore, useConnectionStore, useSnippetStore } from '@/stores'
 import { DataTable } from '@/components/data-table'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
+import { createLogger } from '@/lib/logger'
+
+const log = createLogger('query-editor')
 
 export function QueryEditor() {
   const activeConnection = useConnectionStore((s) => s.getActiveConnection())
@@ -58,16 +68,15 @@ export function QueryEditor() {
   }, [error])
 
   const handleRunQuery = () => {
-    console.log('[QueryEditor] handleRunQuery called')
-    console.log('[QueryEditor] activeConnection:', activeConnection)
-    console.log('[QueryEditor] isExecuting:', isExecuting)
-    console.log('[QueryEditor] currentQuery:', currentQuery)
+    log.debug('handleRunQuery called', {
+      hasConnection: !!activeConnection,
+      isExecuting,
+      hasQuery: !!currentQuery.trim()
+    })
 
     if (!activeConnection || isExecuting || !currentQuery.trim()) {
-      console.log('[QueryEditor] Skipping - conditions not met')
       return
     }
-    console.log('[QueryEditor] Calling executeQuery...')
     executeQuery(activeConnection)
   }
 

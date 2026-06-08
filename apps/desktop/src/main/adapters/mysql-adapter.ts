@@ -1465,8 +1465,9 @@ export class MySQLAdapter implements DatabaseAdapter {
     try {
       connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
 
-      try {
-        const [rows] = await connection.query(`
+      // Let query failures (e.g. missing performance_schema grants) propagate so the
+      // db:locks handler surfaces a real error instead of an empty "no locks" result.
+      const [rows] = await connection.query(`
           SELECT
             r.REQUESTING_ENGINE_TRANSACTION_ID AS blocked_trx,
             r.BLOCKING_ENGINE_TRANSACTION_ID AS blocking_trx,
@@ -1486,24 +1487,21 @@ export class MySQLAdapter implements DatabaseAdapter {
           JOIN performance_schema.processlist b ON b.ID = b_t.PROCESSLIST_ID
         `)
 
-        return (rows as Array<Record<string, unknown>>).map((row) => {
-          const waitSec = Math.abs(Number(row.wait_sec ?? 0))
-          return {
-            blockedPid: Number(row.blocked_pid ?? 0),
-            blockedUser: String(row.blocked_user ?? ''),
-            blockedQuery: String(row.blocked_query ?? ''),
-            blockingPid: Number(row.blocking_pid ?? 0),
-            blockingUser: String(row.blocking_user ?? ''),
-            blockingQuery: String(row.blocking_query ?? ''),
-            lockType: String(row.lock_type ?? ''),
-            relation: row.relation ? String(row.relation) : undefined,
-            waitDuration: `${waitSec}s`,
-            waitDurationMs: waitSec * 1000
-          }
-        })
-      } catch {
-        return []
-      }
+      return (rows as Array<Record<string, unknown>>).map((row) => {
+        const waitSec = Math.abs(Number(row.wait_sec ?? 0))
+        return {
+          blockedPid: Number(row.blocked_pid ?? 0),
+          blockedUser: String(row.blocked_user ?? ''),
+          blockedQuery: String(row.blocked_query ?? ''),
+          blockingPid: Number(row.blocking_pid ?? 0),
+          blockingUser: String(row.blocking_user ?? ''),
+          blockingQuery: String(row.blocking_query ?? ''),
+          lockType: String(row.lock_type ?? ''),
+          relation: row.relation ? String(row.relation) : undefined,
+          waitDuration: `${waitSec}s`,
+          waitDurationMs: waitSec * 1000
+        }
+      })
     } finally {
       if (connection) await connection.end().catch(() => {})
       closeTunnel(tunnelSession)

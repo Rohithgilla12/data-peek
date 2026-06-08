@@ -1,0 +1,825 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>data-peek · Top 10 Issues — Fix Report</title>
+    <style>
+      :root {
+        --bg: #0b0d10;
+        --bg-1: #11141a;
+        --bg-2: #161b22;
+        --bg-3: #1c222c;
+        --border: #232a35;
+        --border-2: #2d3643;
+        --text: #e6e9ee;
+        --text-dim: #9aa4b2;
+        --text-faint: #6b7689;
+        --blue: #6b8cf5;
+        --blue-deep: #3b52c4;
+        --blue-glow: rgba(107, 140, 245, 0.14);
+        --crit: #f0616d;
+        --high: #f0a35e;
+        --med: #e6cf5a;
+        --low: #5ad19a;
+        --green: #5ad19a;
+        --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        font-size: 15px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      .layout { display: grid; grid-template-columns: 280px 1fr; max-width: 1500px; margin: 0 auto; }
+      /* Sidebar */
+      nav {
+        position: sticky;
+        top: 0;
+        align-self: start;
+        height: 100vh;
+        overflow-y: auto;
+        border-right: 1px solid var(--border);
+        padding: 28px 20px;
+        background: var(--bg-1);
+      }
+      nav .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+      nav .brand .dot { width: 10px; height: 10px; border-radius: 3px; background: var(--blue); box-shadow: 0 0 12px var(--blue); }
+      nav .brand h1 { font-size: 15px; margin: 0; font-family: var(--mono); letter-spacing: -0.3px; }
+      nav .sub { color: var(--text-faint); font-size: 12px; margin: 0 0 22px 20px; font-family: var(--mono); }
+      nav .nav-group { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-faint); margin: 20px 0 8px; }
+      nav a {
+        display: flex; gap: 9px; align-items: baseline;
+        color: var(--text-dim); text-decoration: none;
+        font-size: 13px; padding: 5px 8px; border-radius: 6px; margin: 1px 0;
+        border: 1px solid transparent;
+      }
+      nav a:hover { background: var(--bg-3); color: var(--text); }
+      nav a .num { font-family: var(--mono); font-size: 11px; color: var(--text-faint); min-width: 16px; }
+      nav a .sev { width: 6px; height: 6px; border-radius: 50%; margin-left: auto; align-self: center; flex: none; }
+      .sev.s-crit { background: var(--crit); }
+      .sev.s-high { background: var(--high); }
+      .sev.s-med { background: var(--med); }
+      /* Main */
+      main { padding: 40px 56px 120px; min-width: 0; }
+      header.hero { margin-bottom: 40px; }
+      header.hero .kicker { font-family: var(--mono); color: var(--blue); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+      header.hero h1 { font-size: 34px; margin: 8px 0 6px; letter-spacing: -0.8px; }
+      header.hero p.lede { color: var(--text-dim); font-size: 16px; max-width: 760px; margin: 0; }
+      header.hero .meta { margin-top: 16px; font-family: var(--mono); font-size: 12px; color: var(--text-faint); }
+      /* Dashboard */
+      .dash { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin: 32px 0 44px; }
+      .stat { background: var(--bg-1); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; }
+      .stat .big { font-size: 30px; font-family: var(--mono); font-weight: 600; letter-spacing: -1px; }
+      .stat .lbl { color: var(--text-dim); font-size: 12.5px; margin-top: 2px; }
+      .stat.crit .big { color: var(--crit); }
+      .stat.high .big { color: var(--high); }
+      .stat.good .big { color: var(--green); }
+      .stat.blue .big { color: var(--blue); }
+      /* Section heading */
+      .theme { margin: 56px 0 8px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; }
+      .theme h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-dim); margin: 0; font-family: var(--mono); }
+      .theme .line { flex: 1; }
+      .theme .cnt { font-family: var(--mono); font-size: 12px; color: var(--text-faint); }
+      /* Issue card */
+      .issue { background: var(--bg-1); border: 1px solid var(--border); border-radius: 14px; margin: 22px 0; overflow: hidden; scroll-margin-top: 20px; }
+      .issue > summary { list-style: none; cursor: pointer; padding: 22px 26px; display: flex; align-items: flex-start; gap: 16px; transition: background 0.12s; }
+      .issue > summary::-webkit-details-marker { display: none; }
+      .issue > summary:hover { background: var(--bg-2); }
+      .issue[open] > summary { border-bottom: 1px solid var(--border); }
+      .issue .idnum {
+        font-family: var(--mono); font-size: 13px; font-weight: 600;
+        background: var(--bg-3); color: var(--blue); border: 1px solid var(--border-2);
+        width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; flex: none;
+      }
+      .issue .head-main { flex: 1; min-width: 0; }
+      .issue .head-main h3 { margin: 0 0 7px; font-size: 18px; letter-spacing: -0.3px; }
+      .issue .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+      .chip {
+        font-family: var(--mono); font-size: 11px; padding: 2.5px 9px; border-radius: 20px;
+        border: 1px solid var(--border-2); color: var(--text-dim); background: var(--bg-2);
+        display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+      }
+      .chip b { color: var(--text); font-weight: 600; }
+      .chip.sev-crit { color: var(--crit); border-color: rgba(240,97,109,0.4); background: rgba(240,97,109,0.08); }
+      .chip.sev-high { color: var(--high); border-color: rgba(240,163,94,0.4); background: rgba(240,163,94,0.08); }
+      .chip.sev-med { color: var(--med); border-color: rgba(230,207,90,0.4); background: rgba(230,207,90,0.08); }
+      .chevron { color: var(--text-faint); font-family: var(--mono); font-size: 13px; align-self: center; transition: transform 0.18s; flex: none; }
+      .issue[open] .chevron { transform: rotate(90deg); }
+      .body { padding: 4px 26px 26px; }
+      .body h4 {
+        font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--blue);
+        margin: 26px 0 10px; font-family: var(--mono); display: flex; align-items: center; gap: 8px;
+      }
+      .body h4::before { content: ""; width: 5px; height: 5px; background: var(--blue); border-radius: 50%; }
+      .body p { margin: 8px 0; color: var(--text); }
+      .body ol, .body ul { margin: 8px 0; padding-left: 22px; color: var(--text); }
+      .body li { margin: 5px 0; }
+      .body code { font-family: var(--mono); font-size: 12.5px; background: var(--bg-3); padding: 1.5px 6px; border-radius: 5px; color: #c9d4e6; border: 1px solid var(--border); }
+      .ref { color: var(--blue); font-family: var(--mono); font-size: 12.5px; background: var(--blue-glow); padding: 1px 6px; border-radius: 5px; border: 1px solid rgba(107,140,245,0.2); white-space: nowrap; }
+      pre {
+        background: #0a0c10; border: 1px solid var(--border); border-radius: 10px;
+        padding: 16px 18px; overflow-x: auto; margin: 12px 0;
+        font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: #cdd6e4;
+      }
+      pre.before { border-left: 3px solid var(--crit); }
+      pre.after { border-left: 3px solid var(--green); }
+      .codelabel { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin: 16px 0 -4px; display: flex; align-items: center; gap: 7px; }
+      .codelabel.b { color: var(--crit); }
+      .codelabel.a { color: var(--green); }
+      .tok-c { color: #6b7689; font-style: italic; } /* comment */
+      .tok-k { color: #c792ea; } /* keyword */
+      .tok-s { color: #c3e88d; } /* string */
+      .tok-f { color: #82aaff; } /* func */
+      table.grid { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+      table.grid th { text-align: left; font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-faint); padding: 8px 12px; border-bottom: 1px solid var(--border-2); }
+      table.grid td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text-dim); }
+      table.grid td b { color: var(--text); }
+      table.grid tr:last-child td { border-bottom: none; }
+      .callout { border-radius: 10px; padding: 14px 16px; margin: 16px 0; font-size: 13.5px; display: flex; gap: 12px; }
+      .callout .ic { font-family: var(--mono); font-weight: 700; flex: none; }
+      .callout.warn { background: rgba(240,97,109,0.07); border: 1px solid rgba(240,97,109,0.25); }
+      .callout.warn .ic { color: var(--crit); }
+      .callout.info { background: var(--blue-glow); border: 1px solid rgba(107,140,245,0.25); }
+      .callout.info .ic { color: var(--blue); }
+      .verify { background: rgba(90,209,154,0.06); border: 1px solid rgba(90,209,154,0.22); border-radius: 10px; padding: 4px 18px 14px; margin-top: 18px; }
+      .verify h4 { color: var(--green); }
+      .verify h4::before { background: var(--green); }
+      footer { color: var(--text-faint); font-size: 12.5px; font-family: var(--mono); border-top: 1px solid var(--border); margin-top: 60px; padding-top: 22px; }
+      .roadmap { background: var(--bg-1); border: 1px solid var(--border); border-radius: 14px; padding: 8px 26px 22px; margin: 24px 0; }
+      .roadmap ol { padding-left: 20px; }
+      .roadmap li { margin: 10px 0; }
+      .pill { font-family: var(--mono); font-size: 11px; padding: 1px 8px; border-radius: 5px; background: var(--bg-3); border: 1px solid var(--border-2); color: var(--text-dim); }
+      a.inline { color: var(--blue); text-decoration: none; border-bottom: 1px solid rgba(107,140,245,0.3); }
+      @media (max-width: 1000px) {
+        .layout { grid-template-columns: 1fr; }
+        nav { display: none; }
+        main { padding: 28px 22px 80px; }
+        .dash { grid-template-columns: repeat(2, 1fr); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <nav>
+        <div class="brand"><span class="dot"></span><h1>data-peek</h1></div>
+        <p class="sub">fix report · v0.23.0</p>
+
+        <div class="nav-group">Security</div>
+        <a href="#i1"><span class="num">01</span>Plaintext credentials<span class="sev s-crit"></span></a>
+        <a href="#i7"><span class="num">07</span>Logging &amp; redaction<span class="sev s-med"></span></a>
+        <a href="#i8"><span class="num">08</span>Electron sandbox<span class="sev s-med"></span></a>
+
+        <div class="nav-group">Testing</div>
+        <a href="#i2"><span class="num">02</span>Adapter unit tests<span class="sev s-crit"></span></a>
+        <a href="#i9"><span class="num">09</span>Component logic tests<span class="sev s-med"></span></a>
+        <a href="#i10"><span class="num">10</span>Orchestration tests<span class="sev s-med"></span></a>
+
+        <div class="nav-group">Architecture</div>
+        <a href="#i3"><span class="num">03</span>Adapter dedup<span class="sev s-high"></span></a>
+        <a href="#i4"><span class="num">04</span>Monolith split<span class="sev s-high"></span></a>
+        <a href="#i5"><span class="num">05</span>Silent failures<span class="sev s-high"></span></a>
+        <a href="#i6"><span class="num">06</span>Unvalidated casts<span class="sev s-high"></span></a>
+
+        <div class="nav-group">Plan</div>
+        <a href="#roadmap"><span class="num">→</span>Recommended order</a>
+      </nav>
+
+      <main>
+        <header class="hero">
+          <div class="kicker">Staff-level codebase review · proposed fixes</div>
+          <h1>Top 10 Issues &amp; How to Fix Them</h1>
+          <p class="lede">
+            Every issue from the architecture review, investigated by a dedicated agent and turned into a
+            concrete, code-specific remediation: root cause confirmed in source, before/after snippets, effort,
+            risk, and a verification step. Snippets follow the repo's Prettier style (single quotes, no semicolons).
+          </p>
+          <div class="meta">apps/desktop · packages/shared · 316 source files · 38 test files · 0 <code style="font-family:var(--mono)">as&nbsp;any</code></div>
+        </header>
+
+        <section class="dash">
+          <div class="stat crit"><div class="big">2</div><div class="lbl">Critical issues</div></div>
+          <div class="stat high"><div class="big">4</div><div class="lbl">High impact</div></div>
+          <div class="stat blue"><div class="big">~4.6k</div><div class="lbl">Untested adapter LOC</div></div>
+          <div class="stat good"><div class="big">0</div><div class="lbl">as&nbsp;any / : any</div></div>
+        </section>
+
+        <div class="callout info">
+          <span class="ic">i</span>
+          <div>
+            <b>Two dependency edges to respect.</b> Issue&nbsp;6 (runtime validation) only surfaces errors usefully once
+            Issue&nbsp;5 (rethrow + log convention) lands — do 5 then 6. And Issue&nbsp;3 (adapter dedup) must not start
+            before Issue&nbsp;2 (adapter tests) exist, or the refactor is unverifiable.
+          </div>
+        </div>
+
+        <!-- ============ SECURITY ============ -->
+        <div class="theme"><h2>Security</h2><span class="line"></span><span class="cnt">3 issues · do first</span></div>
+
+        <!-- ISSUE 1 -->
+        <details class="issue" id="i1" open>
+          <summary>
+            <span class="idnum">01</span>
+            <div class="head-main">
+              <h3>Plaintext credential storage</h3>
+              <div class="chips">
+                <span class="chip sev-crit">● Critical</span>
+                <span class="chip">Effort <b>M</b></span>
+                <span class="chip">Risk <b>Med</b></span>
+                <span class="chip">main/storage.ts · index.ts</span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Root cause</h4>
+            <p>
+              Connections — including DB <code>password</code>, <code>sshConfig.password</code>, <code>passphrase</code>,
+              and <code>privateKeyPath</code> — are persisted through the <b>unencrypted</b> <code>DpStorage</code> facade at
+              <span class="ref">index.ts:39</span>, landing as cleartext JSON in <code>userData/data-peek-connections.json</code>.
+              The encrypted <code>DpSecureStorage</code> exists but is disabled (<span class="ref">storage.ts:170</span>),
+              and <code>getEncryptionKey()</code> falls back to a <b>hardcoded static key</b> <code>'data-peek-fallback-key-v1'</code>
+              (<span class="ref">storage.ts:39, 71</span>). Same plaintext store also holds AI keys and license data.
+            </p>
+            <p><b>Why it "corrupts":</b> on Linux, Electron's safeStorage backend can change between launches, so
+              <code>decryptString</code> throws → the catch at <span class="ref">storage.ts:50</span> <b>deletes the key file</b>
+              and generates a new random key → electron-store can no longer decrypt the existing JSON, which reads as corruption.
+              The static-fallback ↔ real-key mismatch causes the same. The "fix" they shipped (disable encryption) was a band-aid for an unstable key, not a flaw in encryption itself.</p>
+
+            <h4>Fix approach</h4>
+            <ol>
+              <li>Make the key <b>stable and fail-closed</b> — never substitute a constant. If safeStorage is unavailable or the key can't persist, refuse to write secrets (in-memory only) rather than encrypt with a constant or fall back to plaintext.</li>
+              <li>Stop <b>deleting</b> the key file on a single read failure; only regenerate when genuinely absent.</li>
+              <li>Pin the safeStorage backend on Linux early in startup.</li>
+              <li>Re-enable <code>DpSecureStorage</code> for connections under a <b>new store name</b> + one-time migration from the plaintext file, then delete the plaintext file.</li>
+            </ol>
+
+            <div class="codelabel b">— before · storage.ts getEncryptionKey (abridged)</div>
+            <pre class="before"><span class="tok-k">if</span> (!safeStorage.isEncryptionAvailable()) {
+  log.warn(<span class="tok-s">'safeStorage not available, using static fallback key'</span>)
+  cachedEncryptionKey = <span class="tok-s">'data-peek-fallback-key-v1'</span>   <span class="tok-c">// ← constant key</span>
+  <span class="tok-k">return</span> cachedEncryptionKey
+}
+<span class="tok-k">try</span> {
+  <span class="tok-k">if</span> (existsSync(keyFilePath)) {
+    cachedEncryptionKey = safeStorage.decryptString(readFileSync(keyFilePath))
+    <span class="tok-k">return</span> cachedEncryptionKey
+  }
+} <span class="tok-k">catch</span> {
+  unlinkSync(keyFilePath)   <span class="tok-c">// ← destroys the key on a transient failure</span>
+}</pre>
+
+            <div class="codelabel a">+ after</div>
+            <pre class="after"><span class="tok-k">if</span> (!safeStorage.isEncryptionAvailable()) {
+  <span class="tok-k">throw new</span> <span class="tok-f">EncryptionUnavailableError</span>(<span class="tok-s">'OS secure storage (safeStorage) is unavailable'</span>)
+}
+<span class="tok-k">if</span> (existsSync(keyFilePath)) {
+  <span class="tok-c">// Do NOT delete on failure — a transient backend mismatch must not destroy the key</span>
+  cachedEncryptionKey = safeStorage.decryptString(readFileSync(keyFilePath))
+  <span class="tok-k">return</span> cachedEncryptionKey
+}
+<span class="tok-k">const</span> newKey = randomBytes(32).toString(<span class="tok-s">'hex'</span>)
+writeFileSync(keyFilePath, safeStorage.encryptString(newKey)) <span class="tok-c">// throws if it can't persist — fail closed</span>
+cachedEncryptionKey = newKey
+<span class="tok-k">return</span> cachedEncryptionKey</pre>
+
+            <div class="codelabel a">+ after · index.ts — pin backend, migrate, use secure store</div>
+            <pre class="after"><span class="tok-k">if</span> (process.platform === <span class="tok-s">'linux'</span>) safeStorage.setUsePlainTextEncryption(<span class="tok-k">false</span>)
+
+store = <span class="tok-k">await</span> DpSecureStorage.create&lt;{ connections: ConnectionConfig[] }&gt;({
+  name: <span class="tok-s">'data-peek-connections-secure'</span>,
+  defaults: { connections: [] }
+})
+<span class="tok-k">await</span> <span class="tok-f">migratePlaintextConnections</span>(store) <span class="tok-c">// reads legacy json once, then unlinks it</span></pre>
+
+            <div class="callout warn"><span class="ic">!</span><div><b>Migration concern:</b> use a <b>new</b> store name so a fresh encrypted file is created — never feed an encrypted blob to the old plaintext reader. Migration must be idempotent (guard on <code>existsSync</code> + empty target) and delete the plaintext file only after a successful write. Linux users whose key already churned re-enter credentials once. Apply the same treatment to AI keys / license data in a follow-up.</div></div>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li>Add a connection, quit, inspect <code>data-peek-connections-secure.json</code> → values are ciphertext; old <code>data-peek-connections.json</code> is gone.</li>
+                <li>Relaunch repeatedly (esp. Linux/CI without keyring) → no key-file deletion, no "recreating" logs, connections persist.</li>
+                <li>Force <code>isEncryptionAvailable()</code> false → app refuses to persist secrets, never writes plaintext.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ISSUE 7 -->
+        <details class="issue" id="i7">
+          <summary>
+            <span class="idnum">07</span>
+            <div class="head-main">
+              <h3>No renderer logging strategy · no redaction</h3>
+              <div class="chips">
+                <span class="chip sev-med">● Medium</span>
+                <span class="chip">Effort <b>M</b></span>
+                <span class="chip">Risk <b>Low</b></span>
+                <span class="chip">~145 console.* sites</span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Root cause</h4>
+            <p>Main has a redacting logger (<span class="ref">main/lib/logger.ts</span>), but the renderer has <b>no logger</b> and ~125 raw <code>console.*</code> calls (main has ~20 more). Confirmed leak: <span class="ref">query-editor.tsx:62</span> logs the entire <code>activeConnection</code> object — password and SSH secrets included — to DevTools. This directly compounds Issue&nbsp;1.</p>
+
+            <h4>Fix approach</h4>
+            <ol>
+              <li>Extract <code>SENSITIVE_KEYS</code> + <code>redactSensitive</code> into a shared module so main and renderer share one policy. Extend the key list to catch <code>passphrase</code>, <code>privateKeyPath</code>, <code>sslKey</code>, <code>connectionString</code> (substring match misses these today).</li>
+              <li>Add a renderer logger that mirrors main and redacts objects before printing.</li>
+              <li>Migrate <code>console.*</code> → logger; fix the <span class="ref">query-editor.tsx:62</span> leak immediately.</li>
+              <li>Add an ESLint <code>no-console</code> rule with the logger module as the only exception.</li>
+            </ol>
+
+            <div class="codelabel a">+ renderer/src/lib/logger.ts</div>
+            <pre class="after"><span class="tok-k">import</span> { redactSensitive } <span class="tok-k">from</span> <span class="tok-s">'@shared/redact'</span>
+
+<span class="tok-k">function</span> <span class="tok-f">format</span>(args: unknown[]): unknown[] {
+  <span class="tok-k">return</span> args.map((a) =&gt; (<span class="tok-k">typeof</span> a === <span class="tok-s">'object'</span> &amp;&amp; a !== <span class="tok-k">null</span> ? redactSensitive(a) : a))
+}
+
+<span class="tok-k">export function</span> <span class="tok-f">createLogger</span>(module: string) {
+  <span class="tok-k">const</span> prefix = <span class="tok-s">`[${module}]`</span>
+  <span class="tok-k">return</span> {
+    debug: (...a: unknown[]) =&gt; import.meta.env.DEV &amp;&amp; console.debug(prefix, ...format(a)),
+    info: (...a: unknown[]) =&gt; console.info(prefix, ...format(a)),
+    warn: (...a: unknown[]) =&gt; console.warn(prefix, ...format(a)),
+    error: (...a: unknown[]) =&gt; console.error(prefix, ...format(a))
+  }
+}</pre>
+
+            <div class="codelabel b">— before · query-editor.tsx:62 (leaks credentials)</div>
+            <pre class="before">console.log(<span class="tok-s">'[QueryEditor] activeConnection:'</span>, activeConnection)</pre>
+            <div class="codelabel a">+ after</div>
+            <pre class="after"><span class="tok-k">const</span> log = <span class="tok-f">createLogger</span>(<span class="tok-s">'query-editor'</span>)
+log.debug(<span class="tok-s">'handleRunQuery called'</span>, { isExecuting, hasConnection: !!activeConnection })</pre>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li><code>pnpm lint</code> fails on any new raw <code>console.*</code>.</li>
+                <li>Run a query with DevTools open → no connection objects/passwords; redacted fields show <code>***REDACTED***</code>.</li>
+                <li>Unit-test <code>redactSensitive</code> against a <code>ConnectionConfig</code> with <code>password</code> + <code>sshConfig.passphrase</code> + <code>privateKeyPath</code> → all redacted.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ISSUE 8 -->
+        <details class="issue" id="i8">
+          <summary>
+            <span class="idnum">08</span>
+            <div class="head-main">
+              <h3>Electron renderer sandbox disabled</h3>
+              <div class="chips">
+                <span class="chip sev-med">● Medium</span>
+                <span class="chip">Effort <b>S</b></span>
+                <span class="chip">Risk <b>Low</b></span>
+                <span class="chip">window-manager.ts:57</span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Root cause</h4>
+            <p><span class="ref">window-manager.ts:57</span> sets <code>{ preload, sandbox: false }</code> and does not pin <code>contextIsolation</code> / <code>nodeIntegration</code>. The agent audited the preload (<span class="ref">preload/index.ts</span>) and its one dep <code>@electron-toolkit/preload</code>: <b>nothing requires <code>sandbox:false</code></b> — only <code>contextBridge</code>, <code>ipcRenderer</code>, and <code>process.*</code> are used, all available under the sandbox. So it can be flipped safely.</p>
+
+            <div class="codelabel b">— before</div>
+            <pre class="before">webPreferences: {
+  preload: join(__dirname, <span class="tok-s">'../preload/index.js'</span>),
+  sandbox: <span class="tok-k">false</span>
+}</pre>
+            <div class="codelabel a">+ after</div>
+            <pre class="after">webPreferences: {
+  preload: join(__dirname, <span class="tok-s">'../preload/index.js'</span>),
+  sandbox: <span class="tok-k">true</span>,
+  contextIsolation: <span class="tok-k">true</span>,
+  nodeIntegration: <span class="tok-k">false</span>,
+  webSecurity: <span class="tok-k">true</span>
+}</pre>
+            <p>Keep the preload limited to <code>electron</code>/IPC so a future Node built-in at preload scope doesn't break the sandbox. The existing <code>setWindowOpenHandler</code> (deny + <code>openExternal</code>) is unaffected.</p>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li>Launch app → <code>window.api</code> / <code>window.electron</code> still populate (run a query, list connections).</li>
+                <li>In the renderer console, <code>typeof require</code> and Node globals are <code>undefined</code> (isolation enforced).</li>
+                <li>No "Insecure webPreferences" warning in the dev console.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ============ TESTING ============ -->
+        <div class="theme"><h2>Testing</h2><span class="line"></span><span class="cnt">3 issues · Vitest 4, node env</span></div>
+
+        <!-- ISSUE 2 -->
+        <details class="issue" id="i2">
+          <summary>
+            <span class="idnum">02</span>
+            <div class="head-main">
+              <h3>Core DB adapters have zero unit tests</h3>
+              <div class="chips">
+                <span class="chip sev-crit">● Critical</span>
+                <span class="chip">Effort <b>S→M</b></span>
+                <span class="chip">~4,600 LOC untested</span>
+                <span class="chip">pg · mysql · mssql</span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Root cause</h4>
+            <p>postgres (1391), mysql (1566), mssql (1675) have no tests; only <code>sqlite-adapter.test.ts</code> exists. Runner is <b>Vitest 4</b> (<span class="ref">vitest.config.ts</span>, <code>environment: 'node'</code>). The proven mocking pattern to copy lives in <span class="ref">__tests__/pg-pool-manager.test.ts</span> (<code>vi.hoisted</code> + <code>vi.mock</code>, import SUT after mocks).</p>
+
+            <div class="callout warn"><span class="ic">!</span><div><b>Two config blockers to fix first.</b> (1) The three adapters aren't in <code>coverage.include</code> — coverage reports 0 regardless of new tests; add them. (2) Don't name files so they hit the existing <code>**/sqlite-adapter.test.ts</code> / <code>notebook-storage.test.ts</code> exclude (those need a native build).</div></div>
+
+            <h4>Highest-value units (pure → export &amp; test directly)</h4>
+            <table class="grid">
+              <tr><th>Adapter</th><th>Unit</th><th>Ref</th><th>Why</th></tr>
+              <tr><td><b>postgres</b></td><td><code>parsePostgresArray</code></td><td><span class="ref">:54</span></td><td>Parses <code>'{a,b}'</code> → enum/index values; quoting + empty edge cases</td></tr>
+              <tr><td><b>postgres</b></td><td><code>isDataReturningStatement</code></td><td><span class="ref">:70</span></td><td>Wrong answer corrupts the result panel (CTE/RETURNING)</td></tr>
+              <tr><td><b>mysql</b></td><td><code>toMySQLConfig</code></td><td><span class="ref">:93</span></td><td>SSL/CA branching for RDS/PlanetScale — security-relevant</td></tr>
+              <tr><td><b>mssql</b></td><td><code>toMSSQLConfig</code></td><td><span class="ref">:132</span></td><td>Azure-AD vs SQL-auth, encrypt defaults — most silent-misconfig surface</td></tr>
+              <tr><td><b>mssql</b></td><td><code>bindParameter</code></td><td><span class="ref">:113</span></td><td>JS value → <code>sql.Int/Bit/...</code>; spy on <code>request.input</code></td></tr>
+            </table>
+            <p>Plus <code>getTableDDL</code> constraint/column/index mapping in all three (mock the driver query — pure transform over result rows), and the untested shared <code>resolvePostgresType</code> at <span class="ref">type-maps.ts:99</span>.</p>
+
+            <h4>Example — postgres-adapter.test.ts (drop-in)</h4>
+            <pre class="after"><span class="tok-k">const</span> { withPgClient, fakeClient } = vi.hoisted(() =&gt; {
+  <span class="tok-k">const</span> fakeClient = { query: vi.fn() }
+  <span class="tok-k">const</span> withPgClient = vi.fn(<span class="tok-k">async</span> (_cfg, fn) =&gt; fn(fakeClient))
+  <span class="tok-k">return</span> { withPgClient, fakeClient }
+})
+vi.mock(<span class="tok-s">'../adapters/pg-pool-manager'</span>, () =&gt; ({ withPgClient, withPgTransaction: vi.fn() }))
+vi.mock(<span class="tok-s">'../lib/logger'</span>, () =&gt; ({ createLogger: () =&gt; ({ debug: vi.fn(), error: vi.fn() }) }))
+
+<span class="tok-k">import</span> { PostgresAdapter } <span class="tok-k">from</span> <span class="tok-s">'../adapters/postgres-adapter'</span>
+
+it(<span class="tok-s">'maps columns, a unique constraint, and a btree index'</span>, <span class="tok-k">async</span> () =&gt; {
+  fakeClient.query                                  <span class="tok-c">// getTableDDL fires 4 queries in order</span>
+    .mockResolvedValueOnce({ rows: [{ column_name: <span class="tok-s">'email'</span>, udt_name: <span class="tok-s">'varchar'</span>, is_nullable: <span class="tok-s">'NO'</span>, character_maximum_length: 255 }] })
+    .mockResolvedValueOnce({ rows: [{ constraint_name: <span class="tok-s">'users_email_key'</span>, constraint_type: <span class="tok-s">'UNIQUE'</span>, column_name: <span class="tok-s">'email'</span> }] })
+    .mockResolvedValueOnce({ rows: [{ index_name: <span class="tok-s">'idx_email'</span>, is_unique: <span class="tok-k">true</span>, index_method: <span class="tok-s">'btree'</span>, columns: [<span class="tok-s">'email'</span>] }] })
+    .mockResolvedValueOnce({ rows: [{ comment: <span class="tok-s">'app users'</span> }] })
+
+  <span class="tok-k">const</span> def = <span class="tok-k">await new</span> PostgresAdapter().getTableDDL(config, <span class="tok-s">'public'</span>, <span class="tok-s">'users'</span>)
+  expect(def.columns.find((c) =&gt; c.name === <span class="tok-s">'email'</span>)).toMatchObject({ length: 255, isUnique: <span class="tok-k">true</span> })
+  expect(def.constraints[0]).toMatchObject({ type: <span class="tok-s">'unique'</span>, columns: [<span class="tok-s">'email'</span>] })
+})</pre>
+
+            <p><b>Driver mocking cheatsheet:</b> pg → mock <code>./pg-pool-manager</code> (cleaner than <code>pg</code>); mysql2 <code>query</code> resolves a <code>[rows, fields]</code> <b>tuple</b>, not <code>{rows}</code>; mssql → fake <code>ConnectionPool</code> + <code>request.input</code> spy with sentinel <code>sql.*</code> tokens. A Docker-gated integration suite is warranted and <b>the infra already exists</b> — <code>@testcontainers/postgresql</code> + the seeded fixture at <span class="ref">tests/e2e/fixtures/postgres.ts</span>; gate it behind <code>DB_INTEGRATION=1</code>.</p>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li><code>cd apps/desktop &amp;&amp; pnpm test</code> stays green; new file runs.</li>
+                <li>Add adapters to <code>coverage.include</code>, run <code>pnpm test:coverage</code> once before (~0%) and after each rollout step — watch per-file % climb.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ISSUE 9 -->
+        <details class="issue" id="i9">
+          <summary>
+            <span class="idnum">09</span>
+            <div class="head-main">
+              <h3>Large React components — extract logic, then test</h3>
+              <div class="chips">
+                <span class="chip sev-med">● Medium</span>
+                <span class="chip">Effort <b>S→M</b></span>
+                <span class="chip">node env · no jsdom</span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Root cause &amp; constraint</h4>
+            <p>The high-logic components (<code>tab-query-editor</code>, <code>editable-data-table</code>, <code>schema-explorer</code>, <code>command-palette</code>) have no tests. <b>Decisive constraint:</b> Vitest runs in <code>node</code> env, collects only <code>*.test.ts</code> (not <code>.tsx</code>), and there's no jsdom/Testing-Library. The project deliberately tests <b>pure logic, never JSX</b> — and already extracts table logic into pure modules (<code>applySorts</code>, <code>chipMatchesRow</code>). Continue that pattern.</p>
+
+            <h4>Per-component extract → test</h4>
+            <table class="grid">
+              <tr><th>Component</th><th>Extract to</th><th>Test cases</th></tr>
+              <tr><td><b>command-palette</b> <span class="pill">do first</span></td><td><code>export</code> existing free fns <code>fuzzyFilter</code> (<span class="ref">:49</span>), <code>calculateFuzzyScore</code>, <code>getQueryType</code></td><td>query-type detection, acronym match <code>'nqt'</code>→"New Query Tab", score 0 on partial</td></tr>
+              <tr><td><b>tab-query-editor</b></td><td><code>lib/query-execution.ts</code> (<code>normalizeQueryResponse</code>, <code>makeExecutionGuard</code>), <code>lib/run-decision.ts</code></td><td>picks first data-returning stmt; guard false after executionId changes (stale-clobber); heavy-run gating</td></tr>
+              <tr><td><b>editable-data-table</b></td><td><code>lib/editable-data-table-model.ts</code> (<code>chipsToFilters</code>, <code>buildFkValuesQuery</code>)</td><td>drops null-column chips; mssql <code>TOP</code> vs <code>LIMIT</code> dialect branch (real bug surface)</td></tr>
+              <tr><td><b>schema-explorer</b></td><td><code>lib/schema-filter-tree.ts</code> (<code>filteredSchemas</code>, <span class="ref">:546</span>)</td><td>hides views when toggled off; keeps schema if any child matches search</td></tr>
+            </table>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li>New tests are <code>*.test.ts</code> under <code>__tests__/</code> (the <code>.tsx</code> glob is excluded).</li>
+                <li>Component still imports the moved fn; <code>pnpm typecheck</code> + <code>pnpm lint</code> pass (pure move, no behavior change).</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ISSUE 10 -->
+        <details class="issue" id="i10">
+          <summary>
+            <span class="idnum">10</span>
+            <div class="head-main">
+              <h3>Thin coverage on orchestration hot paths</h3>
+              <div class="chips">
+                <span class="chip sev-med">● Medium</span>
+                <span class="chip">Effort <b>S→M</b></span>
+                <span class="chip">query-handlers is the funnel</span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Root cause &amp; existing pattern</h4>
+            <p>Central modules with heavy branching and little direct coverage: <code>ipc/query-handlers.ts</code> (504), <code>ai-service.ts</code> (680), <code>scheduler-service.ts</code> (616), <code>dashboard-service.ts</code> (706). The <b>handler-test pattern</b> already exists in <span class="ref">__tests__/connection-handlers.test.ts</span> + <span class="ref">register-all-handlers.test.ts</span>: <code>vi.hoisted</code> a <code>handlers</code> Map, <code>vi.mock('electron')</code> so <code>ipcMain.handle</code> writes into it, then invoke handlers directly. <code>query-handlers</code> imports <code>getAdapter</code> at module scope → mock <code>../db-adapter</code>.</p>
+
+            <h4>Priority branches to cover</h4>
+            <table class="grid">
+              <tr><th>Service</th><th>Highest-risk branch</th><th>Ref</th></tr>
+              <tr><td><b>query-handlers</b> <span class="pill">do first</span></td><td>legacy field selection — rows from first <code>isDataReturning</code> result, not stmt 0; error→<code>{success:false}</code>; <code>db:schemas</code> stale-cache-on-error</td><td><span class="ref">:84-95, :191-206</span></td></tr>
+              <tr><td><b>scheduler</b></td><td><code>validateCronExpression</code> / <code>getNextRunTimes</code> are exported &amp; pure — test invalid cron fallback with no mocks</td><td><span class="ref">:577, :597</span></td></tr>
+              <tr><td><b>dashboard</b></td><td><code>executeWidget</code> guards: no-SQL, connection-not-found, adapter-failure→<code>result.error</code></td><td><span class="ref">:405-438</span></td></tr>
+              <tr><td><b>ai-service</b></td><td><code>migrateLegacyConfig</code> legacy→multi-provider; idempotent; key-validation error mapping</td><td><span class="ref">:114-139</span></td></tr>
+            </table>
+
+            <h4>Example — query-handlers.test.ts</h4>
+            <pre class="after"><span class="tok-k">const</span> { handlers, queryMultiple } = vi.hoisted(() =&gt; ({ handlers: <span class="tok-k">new</span> Map(), queryMultiple: vi.fn() }))
+vi.mock(<span class="tok-s">'electron'</span>, () =&gt; ({ ipcMain: { handle: (ch, fn) =&gt; handlers.set(ch, fn) } }))
+vi.mock(<span class="tok-s">'../db-adapter'</span>, () =&gt; ({ getAdapter: () =&gt; ({ queryMultiple }) }))
+<span class="tok-k">import</span> { registerQueryHandlers } <span class="tok-k">from</span> <span class="tok-s">'../ipc/query-handlers'</span>
+
+it(<span class="tok-s">'returns rows from the first data-returning statement, not statement 0'</span>, <span class="tok-k">async</span> () =&gt; {
+  queryMultiple.mockResolvedValue({ results: [
+    { isDataReturning: <span class="tok-k">false</span>, rows: [], fields: [], rowCount: 1 },
+    { isDataReturning: <span class="tok-k">true</span>, rows: [{ id: 7 }], fields: [{ name: <span class="tok-s">'id'</span> }], rowCount: 1 }
+  ] })
+  registerQueryHandlers()
+  <span class="tok-k">const</span> res = <span class="tok-k">await</span> handlers.get(<span class="tok-s">'db:query'</span>)(<span class="tok-k">null</span>, { config, query: <span class="tok-s">'update x; select * from x'</span> })
+  expect(res.data.rows).toEqual([{ id: 7 }])
+})</pre>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li><code>cd apps/desktop &amp;&amp; pnpm test</code>; extend <code>coverage.include</code> with the four services, then <code>pnpm test:coverage</code>.</li>
+                <li>Order: command-palette → query-handlers → scheduler → tab-query-editor → dashboard/ai.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ============ ARCHITECTURE ============ -->
+        <div class="theme"><h2>Architecture</h2><span class="line"></span><span class="cnt">4 issues · compounding</span></div>
+
+        <!-- ISSUE 3 -->
+        <details class="issue" id="i3">
+          <summary>
+            <span class="idnum">03</span>
+            <div class="head-main">
+              <h3>Three near-duplicate adapters</h3>
+              <div class="chips">
+                <span class="chip sev-high">● High</span>
+                <span class="chip">Effort <b>L</b></span>
+                <span class="chip">Risk <b>Med</b></span>
+                <span class="chip">~1,100–1,300 dup LOC</span>
+                <span class="chip">depends on #2</span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Duplication evidence</h4>
+            <p>The worst offender is the SSH-tunnel + connection-lifecycle preamble, repeated <b>16× in mysql</b> and <b>16× in mssql</b> (~290 LOC) — Postgres already eliminated it via <code>withPgClient</code>. Plus <code>getTableDDL</code> assembly (~220 LOC), the <code>queryMultiple</code> loop (~270 LOC), and <code>getColumnStats</code> orchestration (~150×3). The FK cast block is byte-identical at <span class="ref">postgres:840</span> and <span class="ref">mssql:1068</span>; <code>formatBytes</code> is identical at <span class="ref">mysql:1560</span> / <span class="ref">mssql:1669</span>.</p>
+
+            <h4>Target architecture</h4>
+            <table class="grid">
+              <tr><th>New file</th><th>Responsibility</th></tr>
+              <tr><td><code>adapters/base-sql-adapter.ts</code></td><td>Abstract class with invariant <code>queryMultiple</code> / <code>getTableDDL</code> / <code>getColumnStats</code> orchestration; abstract <code>withConnection</code> / <code>runStatement</code> hooks</td></tr>
+              <tr><td><code>adapters/lib/connection-runner.ts</code></td><td>Generic <code>withTunnel(...)</code> — kills the 290 LOC of tunnel boilerplate</td></tr>
+              <tr><td><code>adapters/lib/ddl-assembler.ts</code></td><td><code>assembleConstraints/Columns/Indexes</code> — pure fns over a normalized row shape</td></tr>
+              <tr><td><code>adapters/lib/statement-helpers.ts</code></td><td><code>isDataReturningStatement</code>, <code>formatBytes</code>, <code>makeTypeResolver</code>, <code>buildStatementError</code></td></tr>
+            </table>
+            <p>Estimated shrink: postgres <b>1391 → ~650</b>, mysql <b>→ ~750</b>, mssql <b>→ ~820</b>. SQLite stays outside the base (synchronous, mostly unsupported ops).</p>
+
+            <h4>Safe migration order</h4>
+            <ol>
+              <li><b>Step 0 (blocker):</b> land Issue&nbsp;2 characterization tests first — the refactor is unverifiable without them.</li>
+              <li>Extract pure leaf helpers (<code>statement-helpers.ts</code>) — smallest blast radius.</li>
+              <li>Extract <code>ddl-assembler.ts</code>; refactor each <code>getTableDDL</code> to map rows → assembler.</li>
+              <li>Extract <code>connection-runner.ts</code>; migrate mysql then mssql one method at a time.</li>
+              <li>Introduce <code>BaseSqlAdapter</code> + <code>queryMultiple</code> template — Postgres first.</li>
+              <li>Move <code>getColumnStats</code> last — histogram SQL genuinely diverges (<code>width_bucket</code> vs <code>CASE</code> vs <code>NTILE</code>); keep hook-driven.</li>
+            </ol>
+            <div class="callout warn"><span class="ic">!</span><div><b>Don't over-merge.</b> MSSQL registers/unregisters query tracking <b>per statement</b> (<span class="ref">:393, :484</span>) while others register once; <code>getColumnStats</code> histograms differ per dialect. These must stay hooks, not be flattened into the base.</div></div>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li>Snapshot <code>getTableDDL</code>/<code>getColumnStats</code>/<code>getSchemas</code>/<code>queryMultiple</code> against seeded DBs — must stay byte-identical across the refactor.</li>
+                <li><code>pnpm typecheck</code> + <code>pnpm lint</code> after each step; the <code>DatabaseAdapter</code> interface is the contract.</li>
+                <li>One extraction per commit so any regression bisects cleanly.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ISSUE 4 -->
+        <details class="issue" id="i4">
+          <summary>
+            <span class="idnum">04</span>
+            <div class="head-main">
+              <h3>Monolithic modules</h3>
+              <div class="chips">
+                <span class="chip sev-high">● High</span>
+                <span class="chip">shared/index.ts <b>M/Low</b></span>
+                <span class="chip">tab-query-editor <b>L/Med</b></span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Target A — packages/shared/src/index.ts (2,433 lines)</h4>
+            <p>A flat barrel of ~114 interfaces + ~46 types with <b>zero internal cross-references</b> → clean to slice. Split into ~20 domain files (<code>ai.ts</code>, <code>connection.ts</code>, <code>query.ts</code>, <code>schema.ts</code>, <code>edit.ts</code>, <code>ddl.ts</code>, <code>license.ts</code>, <code>dashboard.ts</code>, <code>scheduling.ts</code>, …) re-exported from a thin <code>index.ts</code>.</p>
+            <div class="callout info"><span class="ic">i</span><div><b>Fully backward compatible.</b> <code>package.json</code> points <code>main</code>/<code>types</code> at <code>src/index.ts</code> with no build step and no <code>exports</code> map. Keeping <code>index.ts</code> as the barrel means all <b>171 importing files</b> keep working unchanged. Only one real cross-edge: <code>telemetry.ts → query.ts</code> (<code>MultiStatementResultWithTelemetry extends MultiStatementResult</code>) — move that pair last.</div></div>
+            <pre class="after"><span class="tok-c">// packages/shared/src/index.ts — barrel only, no declarations</span>
+<span class="tok-k">export</span> * <span class="tok-k">from</span> <span class="tok-s">'./connection'</span>
+<span class="tok-k">export</span> * <span class="tok-k">from</span> <span class="tok-s">'./query'</span>
+<span class="tok-k">export</span> * <span class="tok-k">from</span> <span class="tok-s">'./ddl'</span>
+<span class="tok-k">export</span> * <span class="tok-k">from</span> <span class="tok-s">'./ai'</span>
+<span class="tok-c">// ...one line per domain + the pre-existing side modules (notebook-types, type-maps, sql-escape)</span></pre>
+
+            <h4>Target B — tab-query-editor.tsx (1,920 lines, 48 imports)</h4>
+            <p>Decomposition has already started (<code>query-editor/editor-toolbar.tsx</code>, <code>query-results.tsx</code>). Remaining bloat is handler/orchestration state — extract into co-located hooks:</p>
+            <table class="grid">
+              <tr><th>New hook</th><th>What moves in</th></tr>
+              <tr><td><code>use-query-execution.ts</code></td><td><code>executeSql</code>, <code>handleRunQuery/Cancel</code>, heavy-run gating (most coupled — do last)</td></tr>
+              <tr><td><code>use-editable-result.ts</code> <span class="pill">do first</span></td><td><code>getColumnsWithFKInfo</code>, <code>resolveEditSourceTable</code>, <code>getEditContext</code> — pure derivation</td></tr>
+              <tr><td><code>use-fk-drilldown.ts</code></td><td>FK panel stack + handlers</td></tr>
+              <tr><td><code>use-result-export.ts</code></td><td>export + masking-confirm</td></tr>
+              <tr><td><code>use-step-decorations.ts</code> / <code>use-watch-runner.ts</code></td><td>Monaco step glyphs; watch scheduler</td></tr>
+            </table>
+            <p>Plus presentational extracts: <code>execution-plan-panel.tsx</code>, <code>share-results-image.tsx</code>, <code>masked-export-dialog.tsx</code>. Target: container <b>~1,920 → ~250–300 lines</b>.</p>
+            <p style="color:var(--text-dim)"><b>Honorable mentions:</b> <code>tab-store.ts</code> (1292) → Zustand slices; <code>schema-explorer.tsx</code> (1490) → tree-node + <code>use-schema-tree</code>; <code>editable-data-table.tsx</code> (1422) → cell-editing reducer; <code>smart-sort-bar.tsx</code> (1259) → condition-builder rows.</p>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li>A: after each domain move, <code>pnpm --filter @data-peek/shared typecheck</code>; diff the generated <code>.d.ts</code> symbol list before/after — must be identical.</li>
+                <li>B: extract pure-derivation + presentational pieces first, behavioral hooks last; smoke-test run/cancel/explain/FK/stats/export/step/watch (1:1 with the hooks). Do A and B in parallel — they don't overlap.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ISSUE 5 -->
+        <details class="issue" id="i5">
+          <summary>
+            <span class="idnum">05</span>
+            <div class="head-main">
+              <h3>Silent-failure / catch-and-default pattern</h3>
+              <div class="chips">
+                <span class="chip sev-high">● High</span>
+                <span class="chip">Effort <b>S</b></span>
+                <span class="chip">Risk <b>Low–Med</b></span>
+                <span class="chip">6 production sites</span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Root cause &amp; breadth</h4>
+            <p>Of ~345 catch blocks, the swallowing pattern narrows to <b>6 production sites</b>. The IPC boundary is already correct — <code>IpcResponse&lt;T&gt;</code> + <code>wrapHandler</code> exist and <code>db:schemas</code> even falls back to stale cache with a <code>refreshError</code> flag. The real risk is <b>internal helpers</b> that catch and never throw.</p>
+            <table class="grid">
+              <tr><th>Site</th><th>Returns</th><th>Bucket</th></tr>
+              <tr><td><code>mysql-adapter.ts:1505</code> <code>getLocks</code></td><td><code>[]</code></td><td><b>must-surface</b> — hides perms failure as "no locks", no log</td></tr>
+              <tr><td><code>data-generator.ts:244</code> <code>resolveFK</code></td><td><code>[]</code></td><td><b>must-surface</b> — emits bad data with null FKs silently</td></tr>
+              <tr><td><code>scheduler-service.ts:614</code> / <code>dashboard-service.ts:704</code></td><td><code>[]</code></td><td>recoverable but <b>unlogged</b> (bare <code>catch {}</code>)</td></tr>
+            </table>
+
+            <h4>Convention</h4>
+            <p>Reuse the existing boundary contract — <b>do not</b> add a new <code>Result&lt;T&gt;</code>. Helpers/adapters throw; the IPC handler wraps. A catch may return a default <b>only if</b> the default is semantically correct <b>and</b> it logs with context. Bare <code>catch {}</code> is banned.</p>
+            <div class="codelabel b">— before · mysql-adapter.ts:1504</div>
+            <pre class="before">} <span class="tok-k">catch</span> {
+  <span class="tok-k">return</span> []   <span class="tok-c">// "no locks" — indistinguishable from failure</span>
+}</pre>
+            <div class="codelabel a">+ after</div>
+            <pre class="after">} <span class="tok-k">catch</span> (err) {
+  log.error(<span class="tok-s">'Failed to fetch MySQL locks'</span>, err)
+  <span class="tok-k">throw</span> err   <span class="tok-c">// db:locks handler already wraps → surfaces as an error toast</span>
+}</pre>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li><code>pnpm typecheck:node</code>; confirm the <code>db:locks</code> / data-gen handlers wrap before rethrowing.</li>
+                <li>Connect a MySQL user lacking <code>performance_schema</code> → Locks view shows an error, not an empty list.</li>
+                <li><code>grep -rn "} catch *{" src/main</code> → zero bare empty catches.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ISSUE 6 -->
+        <details class="issue" id="i6">
+          <summary>
+            <span class="idnum">06</span>
+            <div class="head-main">
+              <h3>Unvalidated casts on driver result rows</h3>
+              <div class="chips">
+                <span class="chip sev-high">● High</span>
+                <span class="chip">Effort <b>S–M</b></span>
+                <span class="chip">Risk <b>Low</b></span>
+                <span class="chip">zod already a dep</span>
+                <span class="chip">do after #5</span>
+              </div>
+            </div>
+            <span class="chevron">▶</span>
+          </summary>
+          <div class="body">
+            <h4>Root cause</h4>
+            <p>~378 <code>as</code> casts (zero <code>as any</code>). Two classes: <b>bulk data-row</b> casts (<code>as Record&lt;string, unknown&gt;[]</code> — acceptable, fields already coerced defensively) and <b>introspection-shape</b> casts that assert specific fields with no runtime check — these need validation. Confirmed: <span class="ref">sqlite-adapter.ts:282-298</span> casting PRAGMA output, <span class="ref">mssql-adapter.ts:275</span> column metadata. <b>zod is already installed</b> (<code>^3.25.42</code>).</p>
+            <div class="callout info"><span class="ic">i</span><div><b>The 16 sqlite ts-ignore/eslint-disable are a non-issue</b> — all are <code>no-unused-vars</code> on interface-mandated unused params (<code>_config</code>, <code>_schema</code>…); zero are <code>@ts-ignore</code> on a cast. Remove them all at once by setting <code>argsIgnorePattern: '^_'</code> in eslint.</div></div>
+
+            <div class="codelabel b">— before · sqlite-adapter.ts:288</div>
+            <pre class="before"><span class="tok-k">const</span> columnsResult = db.prepare(<span class="tok-s">`PRAGMA table_info("${tableRow.name}")`</span>).all() <span class="tok-k">as</span> Array&lt;{
+  cid: number; name: string; type: string; notnull: number; dflt_value: string | <span class="tok-k">null</span>; pk: number
+}&gt;</pre>
+            <div class="codelabel a">+ after</div>
+            <pre class="after"><span class="tok-k">const</span> PragmaTableInfo = z.object({
+  cid: z.number(), name: z.string(), type: z.string(),
+  notnull: z.number(), dflt_value: z.string().nullable(), pk: z.number()
+})
+<span class="tok-k">const</span> columnsResult = z.array(PragmaTableInfo)
+  .parse(db.prepare(<span class="tok-s">`PRAGMA table_info("${tableRow.name}")`</span>).all())</pre>
+            <p>Use <code>.parse</code> (fail loud), not <code>.safeParse</code> — a malformed catalog should read as an error (surfaced via Issue&nbsp;5's boundary), not a silently truncated schema.</p>
+
+            <div class="verify">
+              <h4>Verify</h4>
+              <ul>
+                <li><code>pnpm typecheck:node</code> + <code>pnpm lint</code>; open schema browser on a real SQLite DB → columns/FKs render identically.</li>
+                <li>Negative test: rename one schema field → <code>getSchemas</code> throws → UI shows an error, not a truncated table list.</li>
+              </ul>
+            </div>
+          </div>
+        </details>
+
+        <!-- ============ ROADMAP ============ -->
+        <div class="theme" id="roadmap"><h2>Recommended Order</h2><span class="line"></span><span class="cnt">sequence the work</span></div>
+        <div class="roadmap">
+          <ol>
+            <li><span class="pill">S · low risk</span> &nbsp;<b>#8 Electron sandbox</b> — one config block, trivial, immediate hardening.</li>
+            <li><span class="pill">M · low risk</span> &nbsp;<b>#7 Logging + redaction</b> — stops active credential leaks to DevTools (mechanical, lint-enforced).</li>
+            <li><span class="pill">M · med risk</span> &nbsp;<b>#1 Encrypt credentials</b> — the headline fix; careful migration, keep plaintext until migration succeeds.</li>
+            <li><span class="pill">S→M</span> &nbsp;<b>#2 Adapter tests</b> — config prep + pure-helper tests first; <b>unblocks #3</b>.</li>
+            <li><span class="pill">S</span> &nbsp;<b>#5 Stop swallowing errors</b> → then <span class="pill">S–M</span> <b>#6 Runtime validation</b> (6 depends on 5's convention).</li>
+            <li><span class="pill">S→M</span> &nbsp;<b>#10 + #9 Orchestration / component tests</b> — command-palette &amp; query-handlers are the quick, high-value wins.</li>
+            <li><span class="pill">M · low</span> &nbsp;<b>#4 Split shared/index.ts</b> (backward-compatible) — can run in parallel with everything.</li>
+            <li><span class="pill">L · med</span> &nbsp;<b>#3 Adapter dedup</b> + <b>#4 tab-query-editor</b> — the big refactors, last, behind test coverage.</li>
+          </ol>
+          <p style="margin:8px 0 0; color:var(--text-dim)"><b>If you fix only three:</b> #1 (encrypt), #2 (adapter tests), #5 (stop swallowing) — security, correctness, and debuggability in one pass.</p>
+        </div>
+
+        <footer>
+          Generated from a 6-agent parallel investigation · data-peek @ main (v0.23.0) · all findings confirmed against source.<br />
+          Strengths preserved: parameterized SQL builder · correct identifier escaping · zero <code style="font-family:var(--mono)">as&nbsp;any</code> · clean <code style="font-family:var(--mono)">ipc/</code> handler layer.
+        </footer>
+      </main>
+    </div>
+
+    <script>
+      // Highlight the active nav item on scroll
+      const links = [...document.querySelectorAll('nav a[href^="#"]')]
+      const map = new Map(links.map((l) => [l.getAttribute('href').slice(1), l]))
+      const obs = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            const l = map.get(e.target.id)
+            if (l && e.isIntersecting) {
+              links.forEach((x) => (x.style.background = ''))
+              l.style.background = 'var(--bg-3)'
+              l.style.color = 'var(--text)'
+            }
+          })
+        },
+        { rootMargin: '-10% 0px -80% 0px' }
+      )
+      document.querySelectorAll('.issue, .roadmap').forEach((s) => obs.observe(s))
+      // Open a card when navigated to via the sidebar
+      links.forEach((l) =>
+        l.addEventListener('click', () => {
+          const t = document.getElementById(l.getAttribute('href').slice(1))
+          if (t && t.tagName === 'DETAILS') t.open = true
+        })
+      )
+    </script>
+  </body>
+</html>

@@ -10,7 +10,7 @@ import type {
   ConnectionConfig
 } from '@shared/index'
 import { SCHEDULE_PRESETS } from '@shared/index'
-import { DpStorage } from './storage'
+import { DpStorage, type PersistentStore } from './storage'
 import { getAdapter } from './db-adapter'
 import { createLogger } from './lib/logger'
 
@@ -22,7 +22,7 @@ const MAX_PREVIEW_ROWS = 5
 // Store instances
 let scheduledQueriesStore: DpStorage<{ scheduledQueries: ScheduledQuery[] }>
 let scheduledQueryRunsStore: DpStorage<{ runs: ScheduledQueryRun[] }>
-let connectionsStore: DpStorage<{ connections: ConnectionConfig[] }>
+let connectionsStore: PersistentStore<{ connections: ConnectionConfig[] }>
 
 // Active cron jobs for scheduled queries
 const activeJobs = new Map<string, ScheduledTask>()
@@ -36,7 +36,7 @@ let saveRunLock: Promise<void> = Promise.resolve()
  * @param connStore - Storage instance containing connection configurations used by scheduled queries
  */
 export async function initSchedulerService(
-  connStore: DpStorage<{ connections: ConnectionConfig[] }>
+  connStore: PersistentStore<{ connections: ConnectionConfig[] }>
 ): Promise<void> {
   connectionsStore = connStore
 
@@ -610,7 +610,8 @@ export function getNextRunTimes(
     }
 
     return times
-  } catch {
+  } catch (error) {
+    log.warn(`Failed to compute next run times for cron "${expression}":`, error)
     return []
   }
 }
