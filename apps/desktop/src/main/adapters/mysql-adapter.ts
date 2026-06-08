@@ -82,7 +82,7 @@ const MYSQL_TYPE_MAP: Record<number, string> = {
 /**
  * Resolve MySQL type code to human-readable type name
  */
-function resolveMySQLType(typeCode: number): string {
+export function resolveMySQLType(typeCode: number): string {
   return MYSQL_TYPE_MAP[typeCode] ?? `unknown(${typeCode})`
 }
 
@@ -90,7 +90,7 @@ function resolveMySQLType(typeCode: number): string {
  * Create MySQL connection config from our ConnectionConfig
  * Properly handles SSL options for cloud databases like AWS RDS
  */
-function toMySQLConfig(
+export function toMySQLConfig(
   config: ConnectionConfig,
   overrides?: { host: string; port: number }
 ): mysql.ConnectionOptions {
@@ -134,7 +134,7 @@ function toMySQLConfig(
  * Normalize row from MySQL query to lowercase keys
  * MySQL can return column names in different cases depending on configuration
  */
-function normalizeRow<T extends Record<string, unknown>>(row: Record<string, unknown>): T {
+export function normalizeRow<T extends Record<string, unknown>>(row: Record<string, unknown>): T {
   const normalized: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(row)) {
     normalized[key.toLowerCase()] = value
@@ -145,7 +145,7 @@ function normalizeRow<T extends Record<string, unknown>>(row: Record<string, unk
 /**
  * Check if a SQL statement is data-returning (SELECT, SHOW, etc.)
  */
-function isDataReturningStatement(sql: string): boolean {
+export function isDataReturningStatement(sql: string): boolean {
   const normalized = sql.trim().toUpperCase()
   if (normalized.startsWith('SELECT')) return true
   if (normalized.startsWith('SHOW')) return true
