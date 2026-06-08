@@ -14,6 +14,12 @@ export default defineConfig({
         'src/main/sql-builder.ts',
         'src/main/ddl-builder.ts',
         'src/main/sql-utils.ts',
+        'src/main/adapters/postgres-adapter.ts',
+        'src/main/adapters/mysql-adapter.ts',
+        'src/main/adapters/mssql-adapter.ts',
+        'src/main/ipc/query-handlers.ts',
+        'src/renderer/src/lib/command-search.ts',
+        'packages/shared/src/type-maps.ts',
         'src/renderer/src/stores/**/*.ts'
       ],
       exclude: ['**/node_modules/**', '**/__tests__/**']

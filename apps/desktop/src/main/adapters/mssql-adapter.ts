@@ -94,11 +94,11 @@ const SYSTEM_SCHEMAS = [
   'db_denydatawriter'
 ]
 
-function resolveMSSQLType(dataTypeID: number): string {
+export function resolveMSSQLType(dataTypeID: number): string {
   return MSSQL_TYPE_MAP[dataTypeID] ?? `unknown(${dataTypeID})`
 }
 
-function inferTypeFromValue(value: unknown): { dataType: string; dataTypeID: number } {
+export function inferTypeFromValue(value: unknown): { dataType: string; dataTypeID: number } {
   if (value === null || value === undefined) return { dataType: 'nvarchar', dataTypeID: 231 }
   if (typeof value === 'number') {
     return Number.isInteger(value)
@@ -129,7 +129,7 @@ function bindParameter(request: sql.Request, paramName: string, value: unknown):
 /**
  * Create MSSQL connection config from our ConnectionConfig
  */
-function toMSSQLConfig(
+export function toMSSQLConfig(
   config: ConnectionConfig,
   overrides?: { host: string; port: number }
 ): sql.config {
@@ -216,7 +216,7 @@ function toMSSQLConfig(
 /**
  * Check if a SQL statement is data-returning (SELECT, etc.)
  */
-function isDataReturningStatement(sqlText: string): boolean {
+export function isDataReturningStatement(sqlText: string): boolean {
   const normalized = sqlText.trim().toUpperCase()
   if (normalized.startsWith('SELECT')) return true
   if (normalized.startsWith('WITH') && normalized.includes('SELECT')) return true

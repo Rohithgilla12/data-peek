@@ -51,7 +51,7 @@ const splitPgStatements = (sql: string) => splitStatements(sql, 'postgresql')
  * The pg driver sometimes returns array_agg results as raw strings instead of
  * parsed JS arrays (especially for name[] / _name type).
  */
-function parsePostgresArray(value: unknown): string[] {
+export function parsePostgresArray(value: unknown): string[] {
   if (Array.isArray(value)) return value
   if (typeof value === 'string') {
     const trimmed = value.trim()
@@ -67,7 +67,7 @@ function parsePostgresArray(value: unknown): string[] {
 /**
  * Check if a SQL statement is data-returning (SELECT, RETURNING, etc.)
  */
-function isDataReturningStatement(sql: string): boolean {
+export function isDataReturningStatement(sql: string): boolean {
   const normalized = sql.trim().toUpperCase()
   // SELECT statements return data
   if (normalized.startsWith('SELECT')) return true
