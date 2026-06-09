@@ -1,16 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Database } from 'lucide-react'
-import {
-  cn,
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from '@data-peek/ui'
 import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
 import { usePanelCollapse } from '@/hooks/use-panel-collapse'
 
@@ -26,13 +15,7 @@ import {
 } from '@/stores'
 import { isExecutableTab, type Tab, type MultiQueryResult } from '@/stores/tab-store'
 import type { StatementResult } from '@data-peek/shared'
-import {
-  type DataTableFilter,
-  type DataTableSort,
-  type DataTableColumn
-} from '@/components/data-table'
-import { type DataTableColumn as EditableDataTableColumn } from '@/components/editable-data-table'
-import type { EditContext, TableInfo } from '@data-peek/shared'
+import { type DataTableFilter, type DataTableSort } from '@/components/data-table'
 import { analyzeEditableSelect, sqlMatchesStoredTable } from '@/lib/editable-select'
 import {
   resolveForRun,
@@ -57,6 +40,7 @@ import {
   buildCountQuery,
   quoteIdentifier
 } from '@/lib/sql-helpers'
+import { buildQueryWithFilters } from '@/lib/table-query-builder'
 import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
 import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
 import { ERDVisualization } from '@/components/erd-visualization'
@@ -68,7 +52,6 @@ import { HealthMonitor } from '@/components/health-monitor'
 import { SchemaIntelPanel } from '@/components/schema-intel'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
 import { ShareQueryDialog } from '@/components/share-query-dialog'
-import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image-dialog'
 import { ColumnStatsPanel } from '@/components/column-stats-panel'
 import { useColumnStatsStore } from '@/stores/column-stats-store'
 import type { DataTableColumn as DtColumn } from '@/components/data-table'
@@ -78,6 +61,9 @@ import { StepRibbon } from './step-ribbon'
 import { StepResultsTabs } from './step-results-tabs'
 import { EditorToolbar } from './query-editor/editor-toolbar'
 import { QueryResults } from './query-editor/query-results'
+import { MaskedExportDialog } from './query-editor/masked-export-dialog'
+import { ShareResultsImage } from './query-editor/share-results-image'
+import { useEditableResult } from './query-editor/use-editable-result'
 import { WatchButton } from '@/components/watch-button'
 import type { WatchRunner } from '@/lib/watch-scheduler'
 import { watchScheduler } from '@/lib/watch-scheduler'
@@ -86,17 +72,6 @@ import { gateForWatch } from '@/lib/watch-sql-gate'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
 import type { editor as monacoEditor } from 'monaco-editor'
-
-/** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
-function ensureArray(value: unknown): string[] | undefined {
-  if (Array.isArray(value)) return value
-  if (typeof value === 'string' && value.startsWith('{') && value.endsWith('}')) {
-    const inner = value.slice(1, -1)
-    if (inner === '') return []
-    return inner.split(',').map((v) => v.trim().replace(/^"|"$/g, ''))
-  }
-  return undefined
-}
 
 interface TabQueryEditorProps {
   tabId: string
@@ -920,138 +895,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     return () => disposable.dispose()
   }, [stepSession, tabId, toggleBreakpoint])
 
-  // Helper: Look up column info from schema (for FK details)
-  const getColumnsWithFKInfo = useCallback((): DataTableColumn[] => {
-    if (!tab || !isExecutableTab(tab) || !tab.result?.columns) return []
-
-    // For table-preview tabs, we can directly look up the columns from schema
-    if (tab.type === 'table-preview') {
-      const schema = schemas.find((s) => s.name === tab.schemaName)
-      const tableInfo = schema?.tables.find((t) => t.name === tab.tableName)
-
-      if (tableInfo) {
-        return tab.result.columns.map((col) => {
-          const schemaCol = tableInfo.columns.find((c) => c.name === col.name)
-          return {
-            name: col.name,
-            dataType: col.dataType,
-            foreignKey: schemaCol?.foreignKey
-          }
-        })
-      }
-    }
-
-    // For query tabs, try to match columns across all tables
-    // This is a simplified approach - won't work for aliased columns
-    return tab.result.columns.map((col) => {
-      // Search all schemas/tables for this column
-      for (const schema of schemas) {
-        for (const table of schema.tables) {
-          const schemaCol = table.columns.find((c) => c.name === col.name)
-          if (schemaCol?.foreignKey) {
-            return {
-              name: col.name,
-              dataType: col.dataType,
-              foreignKey: schemaCol.foreignKey
-            }
-          }
-        }
-      }
-      return { name: col.name, dataType: col.dataType }
-    })
-  }, [tab, schemas])
-
-  // Resolve the source table for editing by parsing the actually-executed SQL.
-  // Applies to both query and table-preview tabs: the tab's stored schemaName/tableName is
-  // only an initial hint — once the user changes the SQL, the executed query is the source of
-  // truth. This prevents UPDATEs from targeting the wrong table when a table-preview tab's
-  // query has been rewritten to query a different table.
-  const resolveEditSourceTable = useCallback((): {
-    schemaName: string
-    tableName: string
-    tableInfo: TableInfo
-  } | null => {
-    if (!tab || !isExecutableTab(tab) || !tabConnection) return null
-
-    const idx = tab.activeResultIndex ?? 0
-    const stmts = tab.multiResult?.statements
-    const sql = stmts?.[idx]?.statement ?? tab.savedQuery ?? tab.query
-    if (!sql) return null
-
-    const info = analyzeEditableSelect(sql, tabConnection.dbType)
-    if (!info) return null
-
-    const lower = (s: string) => s.toLowerCase()
-    const schemaCandidates = info.schema
-      ? schemas.filter((s) => lower(s.name) === lower(info.schema as string))
-      : schemas
-
-    let match: { schemaName: string; tableInfo: TableInfo } | null = null
-    for (const s of schemaCandidates) {
-      const t = s.tables.find((t) => lower(t.name) === lower(info.table) && t.type === 'table')
-      if (!t) continue
-      if (match) return null // ambiguous — bail rather than guess wrong
-      match = { schemaName: s.name, tableInfo: t }
-    }
-    if (!match) return null
-
-    const pkCols = match.tableInfo.columns.filter((c) => c.isPrimaryKey)
-    if (pkCols.length === 0) return null
-
-    if (info.projection.type === 'columns') {
-      const projLower = new Set(info.projection.names.map(lower))
-      for (const pk of pkCols) {
-        if (!projLower.has(lower(pk.name))) return null
-      }
-    }
-
-    return {
-      schemaName: match.schemaName,
-      tableName: match.tableInfo.name,
-      tableInfo: match.tableInfo
-    }
-  }, [tab, schemas, tabConnection])
-
-  // Helper: Get columns with full info including isPrimaryKey (for editable table)
-  const getColumnsForEditing = useCallback((): EditableDataTableColumn[] => {
-    const source = resolveEditSourceTable()
-    if (!source || !tab || !('result' in tab)) return []
-
-    const idx = tab.activeResultIndex ?? 0
-    const stmtFields = tab.multiResult?.statements?.[idx]?.fields
-    const resultCols = stmtFields
-      ? stmtFields.map((f) => ({ name: f.name, dataType: f.dataType }))
-      : (tab.result?.columns ?? [])
-
-    return resultCols.map((col) => {
-      const schemaCol = source.tableInfo.columns.find((c) => c.name === col.name)
-      return {
-        name: col.name,
-        dataType: col.dataType,
-        foreignKey: schemaCol?.foreignKey,
-        isPrimaryKey: schemaCol?.isPrimaryKey ?? false,
-        isNullable: schemaCol?.isNullable ?? true,
-        enumValues: ensureArray(schemaCol?.enumValues) ?? ensureArray(getEnumValues(col.dataType))
-      }
-    })
-  }, [resolveEditSourceTable, tab, getEnumValues])
-
-  // Helper: Build EditContext for the currently active result
-  const getEditContext = useCallback((): EditContext | null => {
-    const source = resolveEditSourceTable()
-    if (!source) return null
-
-    const primaryKeyColumns = source.tableInfo.columns
-      .filter((c) => c.isPrimaryKey)
-      .map((c) => c.name)
-
-    return {
-      schema: source.schemaName,
-      table: source.tableName,
-      primaryKeyColumns,
-      columns: source.tableInfo.columns
-    }
-  }, [resolveEditSourceTable])
+  const { getColumnsWithFKInfo, getColumnsForEditing, getEditContext } = useEditableResult({
+    tab,
+    schemas,
+    tabConnection,
+    getEnumValues
+  })
 
   // FK Panel: Fetch data for a referenced row
   const fetchFKData = useCallback(
@@ -1240,101 +1089,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       : null
 
   // Generate SQL WHERE clause from filters
-  const generateWhereClause = (filters: DataTableFilter[]): string => {
-    if (filters.length === 0) return ''
-    const dbType = tabConnection?.dbType
-    const conditions = filters.map((f) => {
-      const escapedValue = f.value.replace(/'/g, "''")
-      const quotedCol = quoteIdentifier(f.column, dbType)
-      if (dbType === 'mssql' || dbType === 'mysql') {
-        return `${quotedCol} LIKE '%${escapedValue}%'`
-      }
-      return `${quotedCol} ILIKE '%${escapedValue}%'`
-    })
-    return `WHERE ${conditions.join(' AND ')}`
-  }
-
-  const generateOrderByClause = (sorting: DataTableSort[]): string => {
-    if (sorting.length === 0) return ''
-    const dbType = tabConnection?.dbType
-    const orders = sorting.map(
-      (s) => `${quoteIdentifier(s.column, dbType)} ${s.direction.toUpperCase()}`
-    )
-    return `ORDER BY ${orders.join(', ')}`
-  }
-
-  // Build a new query with filters/sorting applied
-  const buildQueryWithFilters = (): string => {
-    if (!tab || !isExecutableTab(tab)) return ''
-
-    // For table preview tabs, rebuild from the stored table — but only when the
-    // user hasn't rewritten the editor SQL to query something else. Otherwise we'd
-    // silently throw away their query and run a filtered statement against a
-    // different table than the one they've been looking at.
-    if (
-      tab.type === 'table-preview' &&
-      tabConnection &&
-      sqlMatchesStoredTable(
-        tab.savedQuery ?? tab.query,
-        { schema: tab.schemaName, table: tab.tableName },
-        tabConnection.dbType
-      )
-    ) {
-      const tableRef = buildQualifiedTableRef(tab.schemaName, tab.tableName, tabConnection?.dbType)
-      const wherePart = generateWhereClause(tableFilters)
-      const orderPart = generateOrderByClause(tableSorting)
-      return buildSelectQuery(tableRef, tabConnection?.dbType, {
-        where: wherePart,
-        orderBy: orderPart,
-        limit: 100
-      })
-        .replace(/\s+/g, ' ')
-        .trim()
-    }
-    // Fallthrough — when SQL has been rewritten, treat the tab as a query tab
-    // and inject WHERE/ORDER BY into the user's SQL.
-
-    // For query tabs, try to inject WHERE/ORDER BY
-    // This is simplified - a full implementation would parse the SQL AST
-    let baseQuery = tab.query.trim()
-
-    // Remove trailing semicolon
-    if (baseQuery.endsWith(';')) {
-      baseQuery = baseQuery.slice(0, -1)
-    }
-
-    // Remove existing LIMIT (PostgreSQL/MySQL) or TOP (MSSQL) for re-adding
-    // LIMIT is at the end: SELECT * FROM table LIMIT 100
-    // TOP is after SELECT: SELECT TOP 100 * FROM table
-    const limitMatch = baseQuery.match(/\s+LIMIT\s+\d+\s*$/i)
-    const topMatch = baseQuery.match(/^(SELECT)\s+(TOP\s+\d+)\s+/i)
-    let limitClause = ''
-    let topClause = ''
-
-    if (limitMatch) {
-      limitClause = limitMatch[0]
-      baseQuery = baseQuery.slice(0, -limitMatch[0].length)
-    }
-    if (topMatch) {
-      topClause = topMatch[2] + ' '
-      baseQuery = baseQuery.replace(/^SELECT\s+TOP\s+\d+\s+/i, 'SELECT ')
-    }
-
-    const wherePart = generateWhereClause(tableFilters)
-    const orderPart = generateOrderByClause(tableSorting)
-
-    // Re-add TOP after SELECT for MSSQL, or LIMIT at the end for others
-    let result = baseQuery
-    if (topClause) {
-      result = result.replace(/^SELECT\s+/i, `SELECT ${topClause}`)
-    }
-    result = `${result} ${wherePart} ${orderPart}${limitClause};`.replace(/\s+/g, ' ').trim()
-    return result
-  }
-
   const handleApplyToQuery = () => {
     if (!tab || (tableFilters.length === 0 && tableSorting.length === 0)) return
-    const newQuery = buildQueryWithFilters()
+    const newQuery = buildQueryWithFilters({
+      tab,
+      dbType: tabConnection?.dbType,
+      filters: tableFilters,
+      sorting: tableSorting
+    })
     updateTabQuery(tabId, formatSQL(newQuery))
     // Automatically run the new query
     setTimeout(() => handleRunQuery(), 100)
@@ -1778,143 +1540,29 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       />
 
       {/* Share Results Image Dialog */}
-      <ShareImageDialog
+      <ShareResultsImage
         open={shareResultsOpen}
         onOpenChange={setShareResultsOpen}
-        title="Share Results"
-        description="Generate a shareable image of your query results. Review data before sharing — the image may contain sensitive values."
-        filenamePrefix="query-results"
-      >
-        {(theme: ShareImageTheme) => {
-          const result = tab.result
-          if (!result || result.columns.length === 0) {
-            const mutedColor = theme === 'light' ? 'text-zinc-500' : 'text-zinc-400'
-            return <p className={cn('py-4 text-center text-xs', mutedColor)}>No results to share</p>
-          }
-
-          const textColor = theme === 'light' ? 'text-zinc-800' : 'text-zinc-100'
-          const mutedColor = theme === 'light' ? 'text-zinc-500' : 'text-zinc-400'
-          const headerColor = theme === 'light' ? 'text-zinc-700' : 'text-zinc-300'
-          const borderColor = theme === 'light' ? 'border-zinc-200' : 'border-zinc-700'
-          const maxRows = 25
-          const visibleRows = result.rows.slice(0, maxRows)
-          const visibleCols = result.columns.slice(0, 10)
-          const connLabel = tabConnection?.name || tabConnection?.host || ''
-
-          return (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <p className={cn('text-sm font-semibold', textColor)}>
-                    {result.tableName || 'Query Results'}
-                  </p>
-                  <p className={cn('text-xs', mutedColor)}>
-                    {result.rowCount} rows &middot; {result.durationMs}ms
-                  </p>
-                </div>
-                {connLabel && <p className={cn('text-xs', mutedColor)}>{connLabel}</p>}
-              </div>
-              <div className="overflow-hidden">
-                <table className="w-full text-xs" style={{ borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr className={cn(borderColor)} style={{ borderBottom: '1px solid' }}>
-                      {visibleCols.map((col) => (
-                        <th
-                          key={col.name}
-                          className={cn('py-1.5 pr-3 text-left font-medium', headerColor)}
-                        >
-                          {col.name}
-                        </th>
-                      ))}
-                      {result.columns.length > 10 && (
-                        <th className={cn('py-1.5 text-left font-medium', mutedColor)}>
-                          +{result.columns.length - 10} more
-                        </th>
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {visibleRows.map((row, rowIdx) => (
-                      <tr
-                        key={rowIdx}
-                        className={cn(borderColor)}
-                        style={{ borderBottom: '1px solid' }}
-                      >
-                        {visibleCols.map((col) => {
-                          const val = row[col.name]
-                          const display =
-                            val === null
-                              ? 'NULL'
-                              : typeof val === 'object'
-                                ? JSON.stringify(val)
-                                : String(val)
-                          return (
-                            <td
-                              key={col.name}
-                              className={cn(
-                                'max-w-[200px] truncate py-1.5 pr-3 font-mono',
-                                val === null ? mutedColor : textColor
-                              )}
-                            >
-                              {display.length > 50 ? display.slice(0, 50) + '...' : display}
-                            </td>
-                          )
-                        })}
-                        {result.columns.length > 10 && (
-                          <td className={cn('py-1.5 pr-3', mutedColor)}>...</td>
-                        )}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {result.rows.length > maxRows && (
-                  <p className={cn('mt-2 text-xs', mutedColor)}>
-                    Showing {maxRows} of {result.rows.length} rows
-                  </p>
-                )}
-              </div>
-            </div>
-          )
-        }}
-      </ShareImageDialog>
+        result={tab.result}
+        connection={tabConnection}
+      />
 
       {/* Export with masked columns confirmation */}
-      <AlertDialog open={!!pendingExport} onOpenChange={(open) => !open && setPendingExport(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingExport?.destination === 'clipboard'
-                ? 'Copy with masked columns?'
-                : 'Export with masked columns?'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Some columns are currently masked. The exported data will contain{' '}
-              <code className="font-mono text-xs bg-muted px-1 py-0.5 rounded">[MASKED]</code> in
-              place of sensitive values. Do you want to continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (!pendingExport) return
-                const maskedData = buildMaskedExportData(pendingExport.data)
-                void doExport(
-                  pendingExport.format,
-                  pendingExport.destination,
-                  maskedData,
-                  pendingExport.filename
-                )
-                setPendingExport(null)
-              }}
-            >
-              {pendingExport?.destination === 'clipboard'
-                ? 'Copy with [MASKED] values'
-                : 'Export with [MASKED] values'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <MaskedExportDialog
+        pendingExport={pendingExport}
+        onOpenChange={(open) => !open && setPendingExport(null)}
+        onConfirm={() => {
+          if (!pendingExport) return
+          const maskedData = buildMaskedExportData(pendingExport.data)
+          void doExport(
+            pendingExport.format,
+            pendingExport.destination,
+            maskedData,
+            pendingExport.filename
+          )
+          setPendingExport(null)
+        }}
+      />
     </div>
   )
 }
