@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity,
+  BellRing,
   Pause,
   Play,
+  Plus,
   Square,
   RotateCw,
   Eye,
   EyeOff,
-  AlertTriangle
+  AlertTriangle,
+  Trash2
 } from 'lucide-react'
 import {
   cn,
@@ -23,8 +26,42 @@ import {
 } from '@data-peek/ui'
 import { useWatchStore } from '@/stores/watch-store'
 import { gateForWatch } from '@/lib/watch-sql-gate'
-import { CADENCE_PRESETS_MS, DEFAULT_WATCH_CONFIG } from '@/lib/watch-types'
+import {
+  CADENCE_PRESETS_MS,
+  DEFAULT_WATCH_CONFIG,
+  type WatchAlertCondition
+} from '@/lib/watch-types'
 import { watchScheduler, type WatchRunner } from '@/lib/watch-scheduler'
+import { describeAlertCondition } from '@/lib/watch-alerts'
+import { WatchSparkline } from './watch-sparkline'
+
+/** How long the toolbar pill stays rose-tinted after an alert fires. */
+const ALERT_FLASH_MS = 4000
+
+type AlertDraftKind = 'rows_gt' | 'rows_lt' | 'rows_change' | 'any_change' | 'query_errors'
+
+const ALERT_DRAFT_OPTIONS: Array<{ value: AlertDraftKind; label: string; needsValue: boolean }> = [
+  { value: 'rows_gt', label: 'rows >', needsValue: true },
+  { value: 'rows_lt', label: 'rows <', needsValue: true },
+  { value: 'rows_change', label: 'row count changes', needsValue: false },
+  { value: 'any_change', label: 'anything changes', needsValue: false },
+  { value: 'query_errors', label: 'query errors', needsValue: false }
+]
+
+function draftToCondition(kind: AlertDraftKind, value: number): WatchAlertCondition {
+  switch (kind) {
+    case 'rows_gt':
+      return { kind: 'row_count', op: 'gt', value }
+    case 'rows_lt':
+      return { kind: 'row_count', op: 'lt', value }
+    case 'rows_change':
+      return { kind: 'row_count_changes' }
+    case 'any_change':
+      return { kind: 'any_change' }
+    case 'query_errors':
+      return { kind: 'query_errors' }
+  }
+}
 
 interface WatchButtonProps {
   tabId: string
@@ -67,8 +104,12 @@ export function WatchButton({
   const resume = useWatchStore((s) => s.resume)
   const updateConfig = useWatchStore((s) => s.updateConfig)
   const invalidate = useWatchStore((s) => s.invalidate)
+  const addAlert = useWatchStore((s) => s.addAlert)
+  const removeAlert = useWatchStore((s) => s.removeAlert)
 
   const [open, setOpen] = useState(false)
+  const [draftKind, setDraftKind] = useState<AlertDraftKind>('rows_gt')
+  const [draftValue, setDraftValue] = useState('')
   const enabled = !!watchState && watchState.enabled
   const paused = !!watchState?.paused
   const config = watchState?.config ?? DEFAULT_WATCH_CONFIG
@@ -121,6 +162,22 @@ export function WatchButton({
   const countdownMs = useCountdown(watchState?.nextTickAt ?? null, paused)
   const lastSnap = watchState?.snapshots[0]
   const totals = watchState?.totals
+  const alerts = watchState?.alerts ?? []
+
+  // The countdown hook already forces a re-render every 250ms while
+  // watching, so this Date.now() comparison clears itself without a timer.
+  const lastAlertFiredAt = alerts.reduce<number>((acc, a) => Math.max(acc, a.lastFiredAt ?? 0), 0)
+  const alertFlash = lastAlertFiredAt > 0 && Date.now() - lastAlertFiredAt < ALERT_FLASH_MS
+
+  const draftNeedsValue = ALERT_DRAFT_OPTIONS.find((o) => o.value === draftKind)?.needsValue
+  const draftValueNum = Number(draftValue)
+  const draftValid = !draftNeedsValue || (Number.isFinite(draftValueNum) && draftValue !== '')
+
+  const handleAddAlert = useCallback(() => {
+    if (!draftValid) return
+    addAlert(tabId, draftToCondition(draftKind, draftValueNum))
+    setDraftValue('')
+  }, [addAlert, draftKind, draftValid, draftValueNum, tabId])
   const rowDelta =
     watchState?.snapshots && watchState.snapshots.length >= 2
       ? watchState.snapshots[0].rowCount - watchState.snapshots[1].rowCount
@@ -140,7 +197,7 @@ export function WatchButton({
   const tooltipMessage = !enabled
     ? gate.ok
       ? 'Watch this query — re-runs on a cadence with live diff (⇧⌘W)'
-      : `Watch Mode disabled: ${gate.reason === 'empty' ? 'no query' : gate.detail ?? gate.reason}`
+      : `Watch Mode disabled: ${gate.reason === 'empty' ? 'no query' : (gate.detail ?? gate.reason)}`
     : `Watching every ${cadenceLabel} · ⇧⌘W to stop`
 
   return (
@@ -168,13 +225,16 @@ export function WatchButton({
                 className={cn(
                   'gap-1.5 h-7 px-2.5 transition-colors',
                   enabled && !paused && 'text-amber-500 bg-amber-500/10 hover:bg-amber-500/15',
-                  enabled && paused && 'text-muted-foreground bg-muted/50'
+                  enabled && paused && 'text-muted-foreground bg-muted/50',
+                  enabled && alertFlash && 'text-rose-500 bg-rose-500/10 hover:bg-rose-500/15'
                 )}
                 data-watch-active={enabled || undefined}
               >
                 {enabled ? (
                   paused ? (
                     <EyeOff className="size-3.5" />
+                  ) : alertFlash ? (
+                    <BellRing className="size-3.5" />
                   ) : (
                     <span
                       aria-hidden
@@ -251,6 +311,88 @@ export function WatchButton({
               }}
             />
           </label>
+        </div>
+
+        <div className="border-t px-3 py-2 space-y-1">
+          <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Row count
+          </label>
+          <WatchSparkline points={watchState?.metrics ?? []} />
+        </div>
+
+        <div className="border-t px-3 py-2 space-y-1.5">
+          <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Alerts
+          </label>
+          {alerts.length > 0 && (
+            <ul className="space-y-1">
+              {alerts.map((alert) => (
+                <li key={alert.id} className="flex items-center gap-1.5 text-xs">
+                  <BellRing
+                    className={cn(
+                      'size-3 shrink-0',
+                      alert.firedCount > 0 ? 'text-rose-500' : 'text-muted-foreground'
+                    )}
+                  />
+                  <span className="flex-1 truncate">{describeAlertCondition(alert.condition)}</span>
+                  {alert.firedCount > 0 && (
+                    <span className="tabular-nums text-[10px] text-rose-500">
+                      {alert.firedCount}×
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    aria-label="Remove alert"
+                    className="text-muted-foreground hover:text-rose-500 transition-colors"
+                    onClick={() => removeAlert(tabId, alert.id)}
+                  >
+                    <Trash2 className="size-3" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex items-center gap-1">
+            <select
+              value={draftKind}
+              onChange={(e) => setDraftKind(e.target.value as AlertDraftKind)}
+              className="h-6 flex-1 rounded border bg-transparent px-1 text-[11px]"
+              aria-label="Alert condition"
+            >
+              {ALERT_DRAFT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {draftNeedsValue && (
+              <input
+                type="number"
+                min={0}
+                value={draftValue}
+                onChange={(e) => setDraftValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddAlert()
+                }}
+                placeholder="100"
+                aria-label="Alert threshold"
+                className="h-6 w-16 rounded border bg-transparent px-1.5 text-[11px] tabular-nums"
+              />
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0"
+              disabled={!draftValid}
+              onClick={handleAddAlert}
+              aria-label="Add alert"
+            >
+              <Plus className="size-3.5" />
+            </Button>
+          </div>
+          <p className="text-[10px] leading-snug text-muted-foreground">
+            Fires an OS notification. Thresholds re-arm when the condition clears.
+          </p>
         </div>
 
         <div className="border-t px-3 py-2 grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">

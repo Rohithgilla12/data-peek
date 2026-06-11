@@ -14,14 +14,15 @@
 import { create } from 'zustand'
 import type {
   TabWatchState,
+  WatchAlert,
+  WatchAlertCondition,
   WatchConfig,
+  WatchMetricPoint,
   WatchSnapshot,
   WatchDiff
 } from '@/lib/watch-types'
-import {
-  CADENCE_FLOOR_MS,
-  DEFAULT_WATCH_CONFIG
-} from '@/lib/watch-types'
+import { CADENCE_FLOOR_MS, DEFAULT_WATCH_CONFIG, METRICS_HISTORY_LIMIT } from '@/lib/watch-types'
+import { makeAlert } from '@/lib/watch-alerts'
 
 interface WatchStore {
   states: Record<string, TabWatchState>
@@ -40,6 +41,12 @@ interface WatchStore {
   setNextTickAt: (tabId: string, at: number | null) => void
   /** Apply a new snapshot + diff (called by the scheduler after each tick). */
   applyTick: (tabId: string, snapshot: WatchSnapshot, diff: WatchDiff) => void
+  /** Add a user-defined alert. */
+  addAlert: (tabId: string, condition: WatchAlertCondition) => void
+  /** Remove an alert by id. */
+  removeAlert: (tabId: string, alertId: string) => void
+  /** Commit alert state updated by the evaluator (called by the scheduler). */
+  setAlerts: (tabId: string, alerts: WatchAlert[]) => void
   /** Soft-cancel: clear state because the user edited SQL or changed conn. */
   invalidate: (
     tabId: string,
@@ -65,6 +72,8 @@ function makeInitialState(config: WatchConfig): TabWatchState {
       rowsAddedCumulative: 0,
       rowsRemovedCumulative: 0
     },
+    metrics: [],
+    alerts: [],
     invalidatedReason: null
   }
 }
@@ -183,11 +192,54 @@ export const useWatchStore = create<WatchStore>((set, get) => ({
       totals.cellsChangedCumulative += freshlyChanged
       totals.rowsAddedCumulative += diff.addedRowKeys.size
       totals.rowsRemovedCumulative += diff.removedRowKeys.size
+      const metric: WatchMetricPoint = {
+        tick: snapshot.tick,
+        capturedAt: snapshot.capturedAt,
+        rowCount: snapshot.rowCount,
+        durationMs: snapshot.durationMs,
+        errored: snapshot.error !== null
+      }
+      const metrics = [...cur.metrics, metric].slice(-METRICS_HISTORY_LIMIT)
       return {
         states: {
           ...s.states,
-          [tabId]: { ...cur, snapshots, diff, totals }
+          [tabId]: { ...cur, snapshots, diff, totals, metrics }
         }
+      }
+    })
+  },
+
+  addAlert: (tabId, condition) => {
+    set((s) => {
+      const cur = s.states[tabId]
+      if (!cur) return s
+      return {
+        states: {
+          ...s.states,
+          [tabId]: { ...cur, alerts: [...cur.alerts, makeAlert(condition, Date.now())] }
+        }
+      }
+    })
+  },
+
+  removeAlert: (tabId, alertId) => {
+    set((s) => {
+      const cur = s.states[tabId]
+      if (!cur) return s
+      const alerts = cur.alerts.filter((a) => a.id !== alertId)
+      if (alerts.length === cur.alerts.length) return s
+      return {
+        states: { ...s.states, [tabId]: { ...cur, alerts } }
+      }
+    })
+  },
+
+  setAlerts: (tabId, alerts) => {
+    set((s) => {
+      const cur = s.states[tabId]
+      if (!cur) return s
+      return {
+        states: { ...s.states, [tabId]: { ...cur, alerts } }
       }
     })
   },

@@ -145,6 +145,53 @@ describe('useWatchStore', () => {
     expect(useWatchStore.getState().getState(TAB)?.config.cadenceMs).toBe(5000)
   })
 
+  it('applyTick appends a metric point per tick, oldest-first', () => {
+    useWatchStore.getState().start(TAB, { historyLimit: 2 })
+    for (let i = 1; i <= 4; i++) {
+      useWatchStore.getState().applyTick(TAB, makeSnap({ tick: i, rowCount: i * 10 }), makeDiff())
+    }
+    const st = useWatchStore.getState().getState(TAB)
+    // Snapshots capped at 2 but metrics keep the full trend.
+    expect(st?.snapshots.length).toBe(2)
+    expect(st?.metrics.map((m) => m.tick)).toEqual([1, 2, 3, 4])
+    expect(st?.metrics.map((m) => m.rowCount)).toEqual([10, 20, 30, 40])
+  })
+
+  it('applyTick marks errored metric points', () => {
+    useWatchStore.getState().start(TAB)
+    useWatchStore.getState().applyTick(TAB, makeSnap({ error: 'boom' }), makeDiff())
+    expect(useWatchStore.getState().getState(TAB)?.metrics[0]?.errored).toBe(true)
+  })
+
+  it('addAlert / removeAlert manage the alert list', () => {
+    useWatchStore.getState().start(TAB)
+    useWatchStore.getState().addAlert(TAB, { kind: 'row_count', op: 'gt', value: 100 })
+    useWatchStore.getState().addAlert(TAB, { kind: 'query_errors' })
+    let st = useWatchStore.getState().getState(TAB)
+    expect(st?.alerts.length).toBe(2)
+    expect(st?.alerts[0].armed).toBe(true)
+
+    useWatchStore.getState().removeAlert(TAB, st!.alerts[0].id)
+    st = useWatchStore.getState().getState(TAB)
+    expect(st?.alerts.length).toBe(1)
+    expect(st?.alerts[0].condition.kind).toBe('query_errors')
+  })
+
+  it('setAlerts replaces alert state wholesale', () => {
+    useWatchStore.getState().start(TAB)
+    useWatchStore.getState().addAlert(TAB, { kind: 'any_change' })
+    const alert = useWatchStore.getState().getState(TAB)!.alerts[0]
+    useWatchStore.getState().setAlerts(TAB, [{ ...alert, firedCount: 3 }])
+    expect(useWatchStore.getState().getState(TAB)?.alerts[0].firedCount).toBe(3)
+  })
+
+  it('alert actions are no-ops for unknown tabs', () => {
+    useWatchStore.getState().addAlert('ghost', { kind: 'any_change' })
+    useWatchStore.getState().removeAlert('ghost', 'nope')
+    useWatchStore.getState().setAlerts('ghost', [])
+    expect(useWatchStore.getState().getState('ghost')).toBeNull()
+  })
+
   it('isWatching reflects enabled flag', () => {
     expect(useWatchStore.getState().isWatching(TAB)).toBe(false)
     useWatchStore.getState().start(TAB)
