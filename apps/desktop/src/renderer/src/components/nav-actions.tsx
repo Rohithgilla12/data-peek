@@ -13,12 +13,29 @@ import {
   Sparkles
 } from 'lucide-react'
 
-import { Button, Popover, PopoverContent, PopoverTrigger, Tooltip, TooltipContent, TooltipTrigger, keys, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@data-peek/ui'
+import {
+  Button,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  keys,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem
+} from '@data-peek/ui'
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { formatSQL } from '@/lib/sql-formatter'
-import { useQueryStore, useConnectionStore } from '@/stores'
-import { exportToSQL } from '@/lib/export'
+import { useQueryStore, useConnectionStore, useTabStore } from '@/stores'
+import { downloadExport, generateExportFilename, type ExportFormat } from '@/lib/export'
+import { getExportDataForTab } from '@/lib/tab-export'
 
 export function NavActions() {
   const [isOpen, setIsOpen] = React.useState(false)
@@ -29,6 +46,14 @@ export function NavActions() {
   const setCurrentQuery = useQueryStore((s) => s.setCurrentQuery)
   const setIsExecuting = useQueryStore((s) => s.setIsExecuting)
   const addToHistory = useQueryStore((s) => s.addToHistory)
+  const activeTab = useTabStore((s) => s.getActiveTab())
+
+  const exportData = getExportDataForTab(activeTab)
+  const exportTableName = activeTab?.type === 'table-preview' ? activeTab.tableName : undefined
+  const sqlExportOptions =
+    activeTab?.type === 'table-preview'
+      ? { tableName: activeTab.tableName, schemaName: activeTab.schemaName }
+      : { tableName: 'query_result' }
 
   const handleRunQuery = () => {
     if (!activeConnection || isExecuting || !currentQuery.trim()) return
@@ -70,65 +95,29 @@ export function NavActions() {
     setIsOpen(false)
   }
 
-  const handleExportCSV = () => {
-    if (!result) return
-    // Generate CSV
-    const headers = result.columns.map((c) => c.name).join(',')
-    const rows = result.rows.map((row) =>
-      result.columns
-        .map((c) => {
-          const val = row[c.name]
-          if (val === null || val === undefined) return ''
-          const str = String(val)
-          return str.includes(',') || str.includes('"') ? `"${str.replace(/"/g, '""')}"` : str
-        })
-        .join(',')
+  const handleExport = (format: ExportFormat) => {
+    if (!exportData) return
+    downloadExport(
+      exportData,
+      format,
+      generateExportFilename(exportTableName),
+      format === 'sql' ? sqlExportOptions : undefined
     )
-    const csv = [headers, ...rows].join('\n')
-
-    // Download
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `query-results-${Date.now()}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
     setIsOpen(false)
   }
 
+  const handleExportCSV = () => handleExport('csv')
+
   const handleExportJSON = () => {
-    if (!result) return
-    const json = JSON.stringify(result.rows, null, 2)
-    const blob = new Blob([json], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `query-results-${Date.now()}.json`
-    a.click()
-    URL.revokeObjectURL(url)
-    setIsOpen(false)
+    handleExport('json')
   }
 
   const handleExportSQL = () => {
-    if (!result) return
-    const exportData = {
-      columns: result.columns,
-      rows: result.rows
-    }
-    const sql = exportToSQL(exportData, { tableName: 'query_result' })
-    const blob = new Blob([sql], { type: 'text/sql' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `query-results-${Date.now()}.sql`
-    a.click()
-    URL.revokeObjectURL(url)
-    setIsOpen(false)
+    handleExport('sql')
   }
 
   const canRun = activeConnection && currentQuery.trim() && !isExecuting
-  const hasResults = !!result
+  const hasResults = !!exportData
 
   return (
     <div className="flex items-center gap-1.5">
