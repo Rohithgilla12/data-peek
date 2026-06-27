@@ -1,5 +1,5 @@
 import { createHash } from 'crypto'
-import { Pool, type PoolClient } from 'pg'
+import { types as pgTypes, Pool, type PoolClient } from 'pg'
 import type { ConnectionConfig } from '@shared/index'
 import { closeTunnel, createTunnel, type TunnelSession } from '../ssh-tunnel-service'
 import { createLogger } from '../lib/logger'
@@ -62,6 +62,11 @@ async function createPoolEntry(config: ConnectionConfig, key: string): Promise<P
       idleTimeoutMillis: IDLE_TIMEOUT_MS,
       connectionTimeoutMillis: CONNECT_TIMEOUT_MS
     })
+
+    // Return timestamp (without tz) values as raw ISO strings so JavaScript's
+    // Date auto-conversion doesn't shift UTC-stored timestamps to local time.
+    // OID 1114 = timestamp, 1184 = timestamptz (timestamptz SHOULD be shifted).
+    pgTypes.setTypeParser(1114, (val: string) => val)
 
     // pg.Pool emits 'error' for idle clients that die between checkouts (e.g. server-side
     // timeout). Without a listener the process crashes on unhandled error.
