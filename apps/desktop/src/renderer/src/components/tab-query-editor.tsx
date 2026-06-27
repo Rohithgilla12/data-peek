@@ -1121,112 +1121,6 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     }
   }, [handleRunQuery, tab, tabConnection])
 
-  if (!tab || tab.type === 'notebook') {
-    return null
-  }
-
-  if (!tabConnection) {
-    return (
-      <div className="flex flex-1 items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-            <Database className="size-8 text-muted-foreground" />
-          </div>
-          <div>
-            <h2 className="text-lg font-medium">No Connection</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              This tab&apos;s connection is no longer available.
-              <br />
-              Select a different connection from the sidebar.
-            </p>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Render ERD visualization for ERD tabs
-  if (tab.type === 'erd') {
-    return (
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <div className="flex items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-2">
-          <span className="text-sm font-medium">Entity Relationship Diagram</span>
-          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <span
-              className={`size-1.5 rounded-full ${tabConnection.isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}
-            />
-            {tabConnection.name}
-          </span>
-        </div>
-        <div className="flex-1">
-          <ERDVisualization schemas={schemas} />
-        </div>
-      </div>
-    )
-  }
-
-  // Render Table Designer for table-designer tabs
-  if (tab.type === 'table-designer') {
-    return <TableDesigner tabId={tabId} />
-  }
-
-  // Render Data Generator for data-generator tabs
-  if (tab.type === 'data-generator') {
-    return <DataGenerator tabId={tabId} />
-  }
-
-  // Render PG Notifications panel
-  if (tab.type === 'pg-notifications') {
-    return <PgNotificationsPanel tabId={tabId} />
-  }
-
-  // Render Health Monitor dashboard
-  if (tab.type === 'health-monitor') {
-    return <HealthMonitor tabId={tabId} />
-  }
-
-  // Render Schema Intel / diagnostics panel
-  if (tab.type === 'schema-intel') {
-    return <SchemaIntelPanel tabId={tabId} />
-  }
-
-  // Get statement results for multi-statement queries
-  const statementResults = getAllStatementResults(tabId)
-  const activeStatementResult = getActiveStatementResult(tabId)
-  const hasMultipleResults = statementResults.length > 1
-  // At this point, tab is guaranteed to be query or table-preview (not erd or table-designer)
-  const activeResultIndex = tab.activeResultIndex ?? 0
-
-  // For query tabs, pass all rows and let DataTable handle client-side pagination
-  // For table-preview tabs with server-side pagination, rows are already limited by SQL
-  const getAllRows = (): Record<string, unknown>[] => {
-    if (hasMultipleResults) {
-      const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
-      return (statement?.rows ?? []) as Record<string, unknown>[]
-    }
-    return (tab.result?.rows ?? []) as Record<string, unknown>[]
-  }
-
-  // Only use store pagination for table-preview with server-side pagination (for backward compat display)
-  const paginatedRows = hasMultipleResults
-    ? getActiveResultPaginatedRows(tabId)
-    : getTabPaginatedRows(tabId)
-
-  // Get columns from active statement result (for multi-statement) or legacy result
-  const getActiveResultColumns = () => {
-    if (activeStatementResult) {
-      return activeStatementResult.fields.map((f) => ({
-        name: f.name,
-        dataType: f.dataType
-      }))
-    }
-    // tab is guaranteed to be query or table-preview at this point
-    if (tab.result) {
-      return tab.result.columns
-    }
-    return []
-  }
-
   // Watch Mode runner. The scheduler holds runnerRef from this object across
   // ticks. We read the latest query/connection from the store at runQuery time
   // so that an in-flight watch never sees stale closures.
@@ -1332,6 +1226,112 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   }, [tabId, tabConnection, watchRunner])
 
   useEffect(() => window.api.menu.onToggleWatch(handleToggleWatch), [handleToggleWatch])
+
+  if (!tab || tab.type === 'notebook') {
+    return null
+  }
+
+  if (!tabConnection) {
+    return (
+      <div className="flex flex-1 items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
+            <Database className="size-8 text-muted-foreground" />
+          </div>
+          <div>
+            <h2 className="text-lg font-medium">No Connection</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              This tab&apos;s connection is no longer available.
+              <br />
+              Select a different connection from the sidebar.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Render ERD visualization for ERD tabs
+  if (tab.type === 'erd') {
+    return (
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex items-center justify-between border-b border-border/40 bg-muted/20 px-3 py-2">
+          <span className="text-sm font-medium">Entity Relationship Diagram</span>
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span
+              className={`size-1.5 rounded-full ${tabConnection.isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}
+            />
+            {tabConnection.name}
+          </span>
+        </div>
+        <div className="flex-1">
+          <ERDVisualization schemas={schemas} />
+        </div>
+      </div>
+    )
+  }
+
+  // Render Table Designer for table-designer tabs
+  if (tab.type === 'table-designer') {
+    return <TableDesigner tabId={tabId} />
+  }
+
+  // Render Data Generator for data-generator tabs
+  if (tab.type === 'data-generator') {
+    return <DataGenerator tabId={tabId} />
+  }
+
+  // Render PG Notifications panel
+  if (tab.type === 'pg-notifications') {
+    return <PgNotificationsPanel tabId={tabId} />
+  }
+
+  // Render Health Monitor dashboard
+  if (tab.type === 'health-monitor') {
+    return <HealthMonitor tabId={tabId} />
+  }
+
+  // Render Schema Intel / diagnostics panel
+  if (tab.type === 'schema-intel') {
+    return <SchemaIntelPanel tabId={tabId} />
+  }
+
+  // Get statement results for multi-statement queries
+  const statementResults = getAllStatementResults(tabId)
+  const activeStatementResult = getActiveStatementResult(tabId)
+  const hasMultipleResults = statementResults.length > 1
+  // At this point, tab is guaranteed to be query or table-preview (not erd or table-designer)
+  const activeResultIndex = tab.activeResultIndex ?? 0
+
+  // For query tabs, pass all rows and let DataTable handle client-side pagination
+  // For table-preview tabs with server-side pagination, rows are already limited by SQL
+  const getAllRows = (): Record<string, unknown>[] => {
+    if (hasMultipleResults) {
+      const statement = tab.multiResult?.statements?.[tab.activeResultIndex]
+      return (statement?.rows ?? []) as Record<string, unknown>[]
+    }
+    return (tab.result?.rows ?? []) as Record<string, unknown>[]
+  }
+
+  // Only use store pagination for table-preview with server-side pagination (for backward compat display)
+  const paginatedRows = hasMultipleResults
+    ? getActiveResultPaginatedRows(tabId)
+    : getTabPaginatedRows(tabId)
+
+  // Get columns from active statement result (for multi-statement) or legacy result
+  const getActiveResultColumns = () => {
+    if (activeStatementResult) {
+      return activeStatementResult.fields.map((f) => ({
+        name: f.name,
+        dataType: f.dataType
+      }))
+    }
+    // tab is guaranteed to be query or table-preview at this point
+    if (tab.result) {
+      return tab.result.columns
+    }
+    return []
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
