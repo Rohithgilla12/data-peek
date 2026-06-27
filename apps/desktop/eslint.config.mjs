@@ -42,7 +42,7 @@ export default defineConfig(
   {
     // Playwright fixtures use `async ({}, use) => {}` — the empty destructure
     // and the `use` callback are framework idioms, not React hooks.
-    files: ['tests/**/*.{ts,tsx}'],
+    files: ['tests/e2e/**/*.{ts,tsx}'],
     rules: {
       'react-hooks/rules-of-hooks': 'off',
       'no-empty-pattern': 'off'

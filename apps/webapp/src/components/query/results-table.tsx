@@ -147,17 +147,34 @@ function ActiveCellInput({
   // current cell value without syncing through an effect.
   const [editValue, setEditValue] = useState(() => initialValue)
 
+  // A keyboard action (Enter/Escape) unmounts the focused input, which also
+  // fires onBlur. Without this guard, Escape would still commit via the blur
+  // and Enter would commit twice. Finalize exactly once.
+  const finalizedRef = useRef(false)
+  const commit = () => {
+    if (finalizedRef.current) return
+    finalizedRef.current = true
+    onCommit(editValue)
+  }
+  const cancel = () => {
+    if (finalizedRef.current) return
+    finalizedRef.current = true
+    onCancel()
+  }
+
   return (
     <input
       autoFocus
       value={editValue}
       onChange={(e) => setEditValue(e.target.value)}
-      onBlur={() => onCommit(editValue)}
+      onBlur={commit}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
-          onCommit(editValue)
+          e.preventDefault()
+          commit()
         } else if (e.key === 'Escape') {
-          onCancel()
+          e.preventDefault()
+          cancel()
         }
       }}
       className="w-full h-6 bg-background border border-accent/50 rounded px-1 text-xs outline-none focus:border-accent"
