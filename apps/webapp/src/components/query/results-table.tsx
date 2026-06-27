@@ -133,6 +133,38 @@ const CellValue = memo(function CellValue({ value, dataType }: { value: unknown;
   )
 })
 
+function ActiveCellInput({
+  initialValue,
+  onCommit,
+  onCancel
+}: {
+  initialValue: string
+  onCommit: (value: string) => void
+  onCancel: () => void
+}) {
+  // State is seeded once on mount via the initializer. The input is only
+  // mounted while its cell is active, so a fresh edit always starts from the
+  // current cell value without syncing through an effect.
+  const [editValue, setEditValue] = useState(() => initialValue)
+
+  return (
+    <input
+      autoFocus
+      value={editValue}
+      onChange={(e) => setEditValue(e.target.value)}
+      onBlur={() => onCommit(editValue)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') {
+          onCommit(editValue)
+        } else if (e.key === 'Escape') {
+          onCancel()
+        }
+      }}
+      className="w-full h-6 bg-background border border-accent/50 rounded px-1 text-xs outline-none focus:border-accent"
+    />
+  )
+}
+
 function EditableCell({
   value,
   dataType,
@@ -154,13 +186,6 @@ function EditableCell({
   const isActiveCell = tabEdit?.editingCell?.rowIndex === rowIndex && tabEdit?.editingCell?.columnName === columnName
   const isModified = isCellModified(tabId, rowIndex, columnName)
   const displayValue = isModified ? getModifiedCellValue(tabId, rowIndex, columnName) : value
-  const [editValue, setEditValue] = useState('')
-
-  useEffect(() => {
-    if (isActiveCell) {
-      setEditValue(displayValue === null || displayValue === undefined ? '' : String(displayValue))
-    }
-  }, [isActiveCell, displayValue])
 
   if (!isEditing) {
     return <CellValue value={value} dataType={dataType} />
@@ -168,23 +193,13 @@ function EditableCell({
 
   if (isActiveCell) {
     return (
-      <input
-        autoFocus
-        value={editValue}
-        onChange={(e) => setEditValue(e.target.value)}
-        onBlur={() => {
+      <ActiveCellInput
+        initialValue={displayValue === null || displayValue === undefined ? '' : String(displayValue)}
+        onCommit={(editValue) => {
           const newValue = editValue === '' ? null : editValue
           updateCellValue(tabId, rowIndex, columnName, newValue, row)
         }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            const newValue = editValue === '' ? null : editValue
-            updateCellValue(tabId, rowIndex, columnName, newValue, row)
-          } else if (e.key === 'Escape') {
-            cancelCellEdit(tabId)
-          }
-        }}
-        className="w-full h-6 bg-background border border-accent/50 rounded px-1 text-xs outline-none focus:border-accent"
+        onCancel={() => cancelCellEdit(tabId)}
       />
     )
   }

@@ -10,9 +10,7 @@ export function useSavedQueries(connectionId?: string, search?: string) {
   const queries = useLiveQuery(async () => {
     if (!userId) return []
     const db = getDB(userId)
-    let collection = db.savedQueries
-      .where('_syncStatus')
-      .notEqual('deleted')
+    const collection = db.savedQueries.where('_syncStatus').notEqual('deleted')
 
     let results = await collection.reverse().sortBy('updatedAt')
 

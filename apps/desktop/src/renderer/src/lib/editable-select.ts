@@ -257,7 +257,7 @@ function tokenize(sql: string, dbType: DatabaseType): Tok[] {
 
     // Numbers
     if (c >= '0' && c <= '9') {
-      while (i < n && /[\d.eE+\-]/.test(sql[i])) i++
+      while (i < n && /[\d.eE+-]/.test(sql[i])) i++
       toks.push({ type: 'NUMBER' })
       continue
     }
