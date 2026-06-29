@@ -5,6 +5,7 @@ import icon from '../../resources/icon.png?asset'
 import { getWindowState, trackWindowState } from './window-state'
 import { setupContextMenu } from './context-menu'
 import { shouldForceQuit } from './app-state'
+import { computeWindowTitles, pickFocusTarget } from './window-presentation'
 
 // Lazy import to avoid circular dependency (menu.ts imports windowManager)
 const scheduleMenuUpdate = (): void => {
@@ -19,7 +20,9 @@ const CASCADE_OFFSET = 30
 class WindowManager {
   private windows = new Map<number, BrowserWindow>()
   private lastWindowPosition: { x: number; y: number } | null = null
-  private lastFocusedWindowId: number | null = null
+  // Window ids ordered least- → most-recently focused. Used to restore the
+  // genuinely active window on a dock/taskbar click (issue #195).
+  private focusOrder: number[] = []
   private windowConnectionNames = new Map<number, string>()
 
   /**
@@ -68,8 +71,10 @@ class WindowManager {
       }
     })
 
-    // Track this window
+    // Track this window. A freshly created window receives focus, so seed the
+    // focus order with it immediately (in case the 'focus' event is delayed).
     this.windows.set(window.id, window)
+    this.markFocused(window.id)
     this.lastWindowPosition = { x: cascadePosition.x ?? 0, y: cascadePosition.y ?? 0 }
 
     // Track window state for persistence (only first window persists state)
@@ -93,7 +98,7 @@ class WindowManager {
 
     // Update menu when window gains focus and track last focused window
     window.on('focus', () => {
-      this.lastFocusedWindowId = window.id
+      this.markFocused(window.id)
       scheduleMenuUpdate()
     })
 
@@ -113,9 +118,7 @@ class WindowManager {
     window.on('closed', () => {
       this.windows.delete(window.id)
       this.windowConnectionNames.delete(window.id)
-      if (this.lastFocusedWindowId === window.id) {
-        this.lastFocusedWindowId = null
-      }
+      this.focusOrder = this.focusOrder.filter((id) => id !== window.id)
       // Reset cascade position if all windows closed
       if (this.windows.size === 0) {
         this.lastWindowPosition = null
@@ -220,24 +223,37 @@ class WindowManager {
   }
 
   /**
-   * Show a window on macOS dock click.
-   * Prefers the last focused window; falls back to any visible window, then primary.
+   * Record that a window became the active one, keeping it at the end of the
+   * most-recently-focused order.
+   */
+  private markFocused(windowId: number): void {
+    this.focusOrder = this.focusOrder.filter((id) => id !== windowId)
+    this.focusOrder.push(windowId)
+  }
+
+  /**
+   * Bring a window back to the foreground on a dock/taskbar click.
+   *
+   * Restores the genuinely active (most recently focused) window rather than
+   * always focusing the first one — see issue #195. Falls back to the most
+   * recently opened window if the focus history points at a closed window.
    */
   showPrimaryWindow(): void {
-    // Try last focused window first
-    if (this.lastFocusedWindowId) {
-      const lastFocused = this.windows.get(this.lastFocusedWindowId)
-      if (lastFocused && !lastFocused.isDestroyed()) {
-        lastFocused.show()
-        return
-      }
-    }
+    const aliveIds = Array.from(this.windows.keys())
+    const targetId = pickFocusTarget(this.focusOrder, aliveIds)
+    if (targetId == null) return
 
-    // Fall back to any existing window
-    const primary = this.getPrimaryWindow()
-    if (primary && !primary.isDestroyed()) {
-      primary.show()
+    const target = this.windows.get(targetId)
+    if (!target || target.isDestroyed()) return
+
+    // Restore, reveal, and explicitly focus so the window is raised above its
+    // siblings on every platform — `show()` alone does not reliably re-focus a
+    // window that is already visible.
+    if (target.isMinimized()) {
+      target.restore()
     }
+    target.show()
+    target.focus()
   }
 
   /**
@@ -261,46 +277,20 @@ class WindowManager {
    * Multiple windows with same connection: "Data Peek — mydb — 1", "Data Peek — mydb — 2"
    */
   private updateWindowTitles(): void {
-    const windows = this.getAllWindows()
+    const windows = this.getAllWindows().filter((win) => !win.isDestroyed())
 
-    if (windows.length <= 1) {
-      const win = windows[0]
-      if (win && !win.isDestroyed()) {
-        const connName = this.windowConnectionNames.get(win.id)
-        win.setTitle(connName ? `Data Peek — ${connName}` : 'Data Peek')
-      }
-      return
-    }
-
-    // Count how many windows share each connection name
-    const nameCounts = new Map<string, number>()
-    for (const win of windows) {
-      const name = this.windowConnectionNames.get(win.id) || ''
-      nameCounts.set(name, (nameCounts.get(name) || 0) + 1)
-    }
-
-    // Track per-name index for numbering duplicates
-    const nameIndexes = new Map<string, number>()
+    const titles = computeWindowTitles(
+      windows.map((win) => ({
+        id: win.id,
+        connName: this.windowConnectionNames.get(win.id)
+      }))
+    )
 
     for (const win of windows) {
-      if (win.isDestroyed()) continue
-
-      const connName = this.windowConnectionNames.get(win.id)
-      const key = connName || ''
-      const count = nameCounts.get(key) || 1
-      const idx = (nameIndexes.get(key) || 0) + 1
-      nameIndexes.set(key, idx)
-
-      let title: string
-      if (!connName) {
-        title = count > 1 ? `Data Peek — ${idx}` : 'Data Peek'
-      } else if (count > 1) {
-        title = `Data Peek — ${connName} — ${idx}`
-      } else {
-        title = `Data Peek — ${connName}`
+      const title = titles.get(win.id)
+      if (title) {
+        win.setTitle(title)
       }
-
-      win.setTitle(title)
     }
   }
 
