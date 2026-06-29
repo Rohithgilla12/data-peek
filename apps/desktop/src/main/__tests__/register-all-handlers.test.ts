@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import type { ConnectionConfig, SavedQuery, Snippet } from '@shared/index'
+import type { ConnectionConfig, QueryHistoryEntry, SavedQuery, Snippet } from '@shared/index'
 
 type Handler = (event: unknown, ...args: unknown[]) => unknown
 
@@ -20,6 +20,7 @@ const hoisted = vi.hoisted(() => ({
   registerDDLHandlers: vi.fn(),
   registerLicenseHandlers: vi.fn(),
   registerSavedQueriesHandlers: vi.fn(),
+  registerQueryHistoryHandlers: vi.fn(),
   registerSnippetHandlers: vi.fn(),
   registerScheduledQueriesHandlers: vi.fn(),
   registerDashboardHandlers: vi.fn(),
@@ -66,6 +67,9 @@ vi.mock('../ipc/license-handlers', () => ({
 }))
 vi.mock('../ipc/saved-queries-handlers', () => ({
   registerSavedQueriesHandlers: hoisted.registerSavedQueriesHandlers
+}))
+vi.mock('../ipc/query-history-handlers', () => ({
+  registerQueryHistoryHandlers: hoisted.registerQueryHistoryHandlers
 }))
 vi.mock('../ipc/snippet-handlers', () => ({
   registerSnippetHandlers: hoisted.registerSnippetHandlers
@@ -127,7 +131,8 @@ function makeStores() {
   return {
     connections: makeStubStore<{ connections: ConnectionConfig[] }>(),
     savedQueries: makeStubStore<{ savedQueries: SavedQuery[] }>(),
-    snippets: makeStubStore<{ snippets: Snippet[] }>()
+    snippets: makeStubStore<{ snippets: Snippet[] }>(),
+    queryHistory: makeStubStore<{ queryHistory: QueryHistoryEntry[] }>()
   }
 }
 
@@ -143,6 +148,7 @@ beforeEach(() => {
   hoisted.registerDDLHandlers.mockReset()
   hoisted.registerLicenseHandlers.mockReset()
   hoisted.registerSavedQueriesHandlers.mockReset()
+  hoisted.registerQueryHistoryHandlers.mockReset()
   hoisted.registerSnippetHandlers.mockReset()
   hoisted.registerScheduledQueriesHandlers.mockReset()
   hoisted.registerDashboardHandlers.mockReset()
@@ -206,6 +212,7 @@ describe('registerAllHandlers', () => {
     expect(hoisted.registerDDLHandlers).toHaveBeenCalled()
     expect(hoisted.registerLicenseHandlers).toHaveBeenCalled()
     expect(hoisted.registerSavedQueriesHandlers).toHaveBeenCalled()
+    expect(hoisted.registerQueryHistoryHandlers).toHaveBeenCalled()
     expect(hoisted.registerSnippetHandlers).toHaveBeenCalled()
     expect(hoisted.registerScheduledQueriesHandlers).toHaveBeenCalled()
     expect(hoisted.registerDashboardHandlers).toHaveBeenCalled()

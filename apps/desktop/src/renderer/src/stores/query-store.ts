@@ -1,7 +1,11 @@
 import { buildQualifiedTableRef, buildSelectQuery } from '@/lib/sql-helpers'
-import { resolvePostgresType, type QueryResult as IpcQueryResult } from '@data-peek/shared'
+import {
+  capQueryHistoryPerConnection,
+  resolvePostgresType,
+  type QueryHistoryEntry,
+  type QueryResult as IpcQueryResult
+} from '@data-peek/shared'
 import { create } from 'zustand'
-import { createJSONStorage, persist } from 'zustand/middleware'
 import type { Connection, Table } from './connection-store'
 
 export interface QueryHistoryItem {
@@ -23,6 +27,17 @@ export interface QueryResult {
   tableName?: string
 }
 
+// History is persisted in the main process (electron-store) so it survives app
+// restarts — localStorage in the renderer is evicted by Chromium between launches.
+// The persisted form uses numeric timestamps; convert at this boundary.
+function toEntry(item: QueryHistoryItem): QueryHistoryEntry {
+  return { ...item, timestamp: item.timestamp.getTime() }
+}
+
+function fromEntry(entry: QueryHistoryEntry): QueryHistoryItem {
+  return { ...entry, timestamp: new Date(entry.timestamp) }
+}
+
 interface QueryState {
   // Editor state
   currentQuery: string
@@ -34,6 +49,7 @@ interface QueryState {
 
   // History
   history: QueryHistoryItem[]
+  isHistoryLoaded: boolean
 
   // Pagination
   currentPage: number
@@ -51,6 +67,9 @@ interface QueryState {
   // Execute a query against the database
   executeQuery: (connection: Connection, query?: string) => Promise<void>
 
+  // Load persisted history from the main process (once)
+  loadHistory: () => Promise<void>
+
   addToHistory: (item: Omit<QueryHistoryItem, 'id' | 'timestamp'>) => void
   clearHistory: () => void
   removeFromHistory: (id: string) => void
@@ -63,153 +82,149 @@ interface QueryState {
   getPaginatedRows: () => Record<string, unknown>[]
 }
 
-export const useQueryStore = create<QueryState>()(
-  persist(
-    (set, get) => ({
-      // Initial state
-      currentQuery: '',
-      isExecuting: false,
-      result: null,
-      error: null,
-      history: [],
-      currentPage: 1,
-      pageSize: 100,
+export const useQueryStore = create<QueryState>()((set, get) => ({
+  // Initial state
+  currentQuery: '',
+  isExecuting: false,
+  result: null,
+  error: null,
+  history: [],
+  isHistoryLoaded: false,
+  currentPage: 1,
+  pageSize: 100,
 
-      // Actions
-      setCurrentQuery: (query) => set({ currentQuery: query }),
-      setIsExecuting: (executing) => set({ isExecuting: executing }),
-      setResult: (result) => set({ result, error: null, currentPage: 1 }),
-      setError: (error) => set({ error, result: null }),
+  // Actions
+  setCurrentQuery: (query) => set({ currentQuery: query }),
+  setIsExecuting: (executing) => set({ isExecuting: executing }),
+  setResult: (result) => set({ result, error: null, currentPage: 1 }),
+  setError: (error) => set({ error, result: null }),
 
-      loadTableData: (schemaName, table, connection) => {
-        const sqlTableRef = buildQualifiedTableRef(schemaName, table.name, connection.dbType)
-        const query = buildSelectQuery(sqlTableRef, connection.dbType, { limit: 100 })
+  loadTableData: (schemaName, table, connection) => {
+    const sqlTableRef = buildQualifiedTableRef(schemaName, table.name, connection.dbType)
+    const query = buildSelectQuery(sqlTableRef, connection.dbType, { limit: 100 })
 
-        set({ currentQuery: query })
+    set({ currentQuery: query })
 
-        // Execute the query
-        get().executeQuery(connection, query)
-      },
+    // Execute the query
+    get().executeQuery(connection, query)
+  },
 
-      executeQuery: async (connection, queryOverride) => {
-        const query = queryOverride ?? get().currentQuery
-        if (!query.trim()) return
+  executeQuery: async (connection, queryOverride) => {
+    const query = queryOverride ?? get().currentQuery
+    if (!query.trim()) return
 
-        set({ isExecuting: true, error: null })
+    set({ isExecuting: true, error: null })
 
-        try {
-          const response = await window.api.db.query(connection, query)
+    try {
+      const response = await window.api.db.query(connection, query)
 
-          if (response.success && response.data) {
-            const data = response.data as IpcQueryResult
-            const result: QueryResult = {
-              columns: data.fields.map((f) => ({
-                name: f.name,
-                dataType: resolvePostgresType(f.dataTypeID as number)
-              })),
-              rows: data.rows,
-              rowCount: data.rowCount ?? data.rows.length,
-              durationMs: data.durationMs
-            }
-
-            const history = get().history
-            const newHistoryItem: QueryHistoryItem = {
-              id: crypto.randomUUID(),
-              query,
-              timestamp: new Date(),
-              durationMs: data.durationMs,
-              rowCount: result.rowCount,
-              status: 'success',
-              connectionId: connection.id
-            }
-
-            set({
-              isExecuting: false,
-              result,
-              error: null,
-              history: [newHistoryItem, ...history].slice(0, 100)
-            })
-          } else {
-            const errorMessage = response.error ?? 'Query execution failed'
-            const history = get().history
-            const newHistoryItem: QueryHistoryItem = {
-              id: crypto.randomUUID(),
-              query,
-              timestamp: new Date(),
-              durationMs: 0,
-              rowCount: 0,
-              status: 'error',
-              connectionId: connection.id,
-              errorMessage
-            }
-
-            set({
-              isExecuting: false,
-              result: null,
-              error: errorMessage,
-              history: [newHistoryItem, ...history].slice(0, 100)
-            })
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error)
-
-          set({
-            isExecuting: false,
-            result: null,
-            error: errorMessage
-          })
+      if (response.success && response.data) {
+        const data = response.data as IpcQueryResult
+        const result: QueryResult = {
+          columns: data.fields.map((f) => ({
+            name: f.name,
+            dataType: resolvePostgresType(f.dataTypeID as number)
+          })),
+          rows: data.rows,
+          rowCount: data.rowCount ?? data.rows.length,
+          durationMs: data.durationMs
         }
-      },
 
-      addToHistory: (item) =>
-        set((state) => ({
-          history: [
-            {
-              ...item,
-              id: crypto.randomUUID(),
-              timestamp: new Date()
-            },
-            ...state.history
-          ].slice(0, 100)
-        })),
+        set({ isExecuting: false, result, error: null })
+        get().addToHistory({
+          query,
+          durationMs: data.durationMs,
+          rowCount: result.rowCount,
+          status: 'success',
+          connectionId: connection.id
+        })
+      } else {
+        const errorMessage = response.error ?? 'Query execution failed'
 
-      clearHistory: () => set({ history: [] }),
-
-      removeFromHistory: (id) =>
-        set((state) => ({
-          history: state.history.filter((h) => h.id !== id)
-        })),
-
-      setCurrentPage: (page) => set({ currentPage: page }),
-      setPageSize: (size) => set({ pageSize: size, currentPage: 1 }),
-
-      getTotalPages: () => {
-        const state = get()
-        if (!state.result) return 0
-        return Math.ceil(state.result.rowCount / state.pageSize)
-      },
-
-      getPaginatedRows: () => {
-        const state = get()
-        if (!state.result) return []
-        const start = (state.currentPage - 1) * state.pageSize
-        return state.result.rows.slice(start, start + state.pageSize)
+        set({ isExecuting: false, result: null, error: errorMessage })
+        get().addToHistory({
+          query,
+          durationMs: 0,
+          rowCount: 0,
+          status: 'error',
+          connectionId: connection.id,
+          errorMessage
+        })
       }
-    }),
-    {
-      name: 'data-peek-query-store',
-      storage: createJSONStorage(() => localStorage),
-      // Only persist history - results/currentQuery are ephemeral per session.
-      partialize: (state) => ({ history: state.history }),
-      // Timestamps serialize as ISO strings; rehydrate them back to Date objects.
-      merge: (persisted, current) => {
-        const p = persisted as { history?: QueryHistoryItem[] } | undefined
-        const history = (p?.history ?? []).map((h) => ({
-          ...h,
-          timestamp: new Date(h.timestamp)
-        }))
-        return { ...current, history }
-      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+
+      set({
+        isExecuting: false,
+        result: null,
+        error: errorMessage
+      })
     }
-  )
-)
+  },
+
+  loadHistory: async () => {
+    if (get().isHistoryLoaded) return
+
+    try {
+      const response = await window.api.queryHistory.list()
+      if (response.success && response.data) {
+        set({ history: response.data.map(fromEntry), isHistoryLoaded: true })
+      } else {
+        // Mark as loaded anyway so a failed read doesn't block in-session history.
+        set({ isHistoryLoaded: true })
+      }
+    } catch (error) {
+      console.error('Failed to load query history:', error)
+      set({ isHistoryLoaded: true })
+    }
+  },
+
+  addToHistory: (item) => {
+    const newItem: QueryHistoryItem = {
+      ...item,
+      id: crypto.randomUUID(),
+      timestamp: new Date()
+    }
+
+    set((state) => ({
+      history: capQueryHistoryPerConnection([newItem, ...state.history])
+    }))
+
+    // Persist asynchronously; the in-memory state is the source of truth for the UI.
+    window.api.queryHistory.add(toEntry(newItem)).catch((error) => {
+      console.error('Failed to persist query history entry:', error)
+    })
+  },
+
+  clearHistory: () => {
+    set({ history: [] })
+    window.api.queryHistory.clear().catch((error) => {
+      console.error('Failed to clear query history:', error)
+    })
+  },
+
+  removeFromHistory: (id) => {
+    set((state) => ({
+      history: state.history.filter((h) => h.id !== id)
+    }))
+    window.api.queryHistory.remove(id).catch((error) => {
+      console.error('Failed to remove query history entry:', error)
+    })
+  },
+
+  setCurrentPage: (page) => set({ currentPage: page }),
+  setPageSize: (size) => set({ pageSize: size, currentPage: 1 }),
+
+  getTotalPages: () => {
+    const state = get()
+    if (!state.result) return 0
+    return Math.ceil(state.result.rowCount / state.pageSize)
+  },
+
+  getPaginatedRows: () => {
+    const state = get()
+    if (!state.result) return []
+    const start = (state.currentPage - 1) * state.pageSize
+    return state.result.rows.slice(start, start + state.pageSize)
+  }
+}))

@@ -1,7 +1,30 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { ChevronRight, Clock, Copy, MoreHorizontal, Play, Trash2 } from 'lucide-react'
 
-import { Badge, Collapsible, CollapsibleContent, CollapsibleTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, SidebarGroup, SidebarGroupAction, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@data-peek/ui'
+import {
+  Badge,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar
+} from '@data-peek/ui'
 
 import { useQueryStore, useConnectionStore, useTabStore } from '@/stores'
 import { QueryHistoryDialog } from './query-history-dialog'
@@ -17,6 +40,7 @@ export function QueryHistory() {
   const history = useQueryStore((s) => s.history)
   const clearHistory = useQueryStore((s) => s.clearHistory)
   const removeFromHistory = useQueryStore((s) => s.removeFromHistory)
+  const loadHistory = useQueryStore((s) => s.loadHistory)
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
   const activeTabId = useTabStore((s) => s.activeTabId)
   const updateTabQuery = useTabStore((s) => s.updateTabQuery)
@@ -24,6 +48,11 @@ export function QueryHistory() {
   const createQueryTab = useTabStore((s) => s.createQueryTab)
   const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+
+  // Load persisted history once on mount so it survives app restarts.
+  useEffect(() => {
+    loadHistory()
+  }, [loadHistory])
 
   const filteredHistory = useMemo(() => {
     return activeConnectionId

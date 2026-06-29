@@ -1602,6 +1602,58 @@ export interface QueryHistoryItemForAnalysis {
 }
 
 /**
+ * A persisted query history entry.
+ *
+ * This is the shape stored on disk and sent over IPC. Timestamps are stored as
+ * Unix epoch milliseconds (numbers) rather than `Date` objects so they survive
+ * JSON serialisation cleanly; the renderer converts to/from `Date` at its edge.
+ */
+export interface QueryHistoryEntry {
+  /** Unique identifier */
+  id: string;
+  /** The SQL query text */
+  query: string;
+  /** When the query was executed (Unix timestamp, ms) */
+  timestamp: number;
+  /** Execution duration in milliseconds */
+  durationMs: number;
+  /** Number of rows returned/affected */
+  rowCount: number;
+  /** Whether the query succeeded or errored */
+  status: "success" | "error";
+  /** Connection the query was run against */
+  connectionId: string;
+  /** Error message, present when status is "error" */
+  errorMessage?: string;
+}
+
+/**
+ * Maximum number of history entries retained per connection.
+ *
+ * History is capped per connection (rather than globally) so that a single busy
+ * connection cannot evict the history of others.
+ */
+export const MAX_QUERY_HISTORY_PER_CONNECTION = 100;
+
+/**
+ * Trim a newest-first history list so each connection keeps at most `max` entries.
+ *
+ * Assumes `history` is already ordered newest-first; the oldest entries for a
+ * connection are the ones dropped once its cap is exceeded. Order is preserved.
+ */
+export function capQueryHistoryPerConnection<T extends { connectionId: string }>(
+  history: T[],
+  max: number = MAX_QUERY_HISTORY_PER_CONNECTION
+): T[] {
+  const counts = new Map<string, number>();
+  return history.filter((item) => {
+    const next = (counts.get(item.connectionId) ?? 0) + 1;
+    counts.set(item.connectionId, next);
+    return next <= max;
+  });
+}
+
+/**
  * Cron schedule expression or preset
  */
 export type SchedulePreset =
