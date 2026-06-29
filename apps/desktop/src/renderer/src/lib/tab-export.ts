@@ -6,7 +6,6 @@ export function getExportDataForTab(tab: Tab | null | undefined): ExportData | n
 
   if (tab.multiResult) {
     const statement = tab.multiResult.statements[tab.activeResultIndex ?? 0]
-    const statement = tab.multiResult.statements[tab.activeResultIndex ?? 0]
     if (!statement || !statement.isDataReturning) return null
 
     return {
