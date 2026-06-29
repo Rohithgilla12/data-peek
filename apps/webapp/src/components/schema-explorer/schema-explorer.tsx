@@ -103,7 +103,7 @@ export function SchemaExplorer() {
         })}
         {filteredSchemas.length === 0 && search && (
           <div className="px-3 py-4 text-xs text-muted-foreground text-center">
-            No tables or columns match "{search}"
+            No tables or columns match &ldquo;{search}&rdquo;
           </div>
         )}
       </div>

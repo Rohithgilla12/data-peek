@@ -255,9 +255,12 @@ function tokenize(sql: string, dbType: DatabaseType): Tok[] {
       continue
     }
 
-    // Numbers
+    // Numbers — only consume a well-formed literal so `1+2`, `1-2`, and
+    // `1-- comment` don't collapse into a single NUMBER token (the sign is
+    // only part of the literal inside an exponent).
     if (c >= '0' && c <= '9') {
-      while (i < n && /[\d.eE+\-]/.test(sql[i])) i++
+      const match = /^\d+(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(sql.slice(i))
+      i += match ? match[0].length : 1
       toks.push({ type: 'NUMBER' })
       continue
     }

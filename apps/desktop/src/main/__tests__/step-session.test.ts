@@ -30,7 +30,9 @@ class MockClient {
   responses: Array<{ rows?: unknown[]; fields?: unknown[]; rowCount?: number; error?: Error }> = []
   ended = false
 
-  async connect() {}
+  async connect() {
+    /* no-op mock */
+  }
   async query(sql: string) {
     this.calls.push(sql)
     const response = this.responses.shift()

@@ -52,6 +52,8 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.7",
+    "eslint": "^9",
+    "eslint-config-next": "16.0.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

@@ -78,7 +78,7 @@ export default function DatabasesPage() {
             {/* Hero Section */}
             <section className="text-center mb-20 sm:mb-32">
               <p className="text-[12px] uppercase tracking-[0.4em] text-(--color-accent) mb-6 font-bold font-mono">
-                // Ecosystem
+                {'// Ecosystem'}
               </p>
               <h1
                 className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-8 text-white font-mono uppercase"
