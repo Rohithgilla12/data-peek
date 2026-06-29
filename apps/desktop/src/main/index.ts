@@ -6,7 +6,7 @@ import { electronApp, optimizer } from '@electron-toolkit/utils'
 
 // Load .env file - in development, it's in the desktop app directory
 config({ path: resolve(__dirname, '../../.env') })
-import type { ConnectionConfig, SavedQuery, Snippet } from '@shared/index'
+import type { ConnectionConfig, QueryHistoryEntry, SavedQuery, Snippet } from '@shared/index'
 import { createMenu } from './menu'
 import { initLicenseStore } from './license-service'
 import { initAIStore } from './ai-service'
@@ -35,6 +35,7 @@ const log = createLogger('app')
 let store: PersistentStore<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 let snippetsStore: DpStorage<{ snippets: Snippet[] }>
+let queryHistoryStore: DpStorage<{ queryHistory: QueryHistoryEntry[] }>
 
 const stepSessionRegistry = new StepSessionRegistry()
 
@@ -112,6 +113,13 @@ async function initStores(): Promise<void> {
     name: 'data-peek-snippets',
     defaults: {
       snippets: []
+    }
+  })
+
+  queryHistoryStore = await DpStorage.create<{ queryHistory: QueryHistoryEntry[] }>({
+    name: 'data-peek-query-history',
+    defaults: {
+      queryHistory: []
     }
   })
 
@@ -214,7 +222,8 @@ app.whenReady().then(async () => {
     {
       connections: store,
       savedQueries: savedQueriesStore,
-      snippets: snippetsStore
+      snippets: snippetsStore,
+      queryHistory: queryHistoryStore
     },
     notebookStorage,
     stepSessionRegistry

@@ -1,4 +1,4 @@
-import type { ConnectionConfig, SavedQuery, Snippet } from '@shared/index'
+import type { ConnectionConfig, QueryHistoryEntry, SavedQuery, Snippet } from '@shared/index'
 import type { DpStorage, PersistentStore } from '../storage'
 import type { NotebookStorage } from '../notebook-storage'
 import { registerConnectionHandlers } from './connection-handlers'
@@ -6,6 +6,7 @@ import { registerQueryHandlers } from './query-handlers'
 import { registerDDLHandlers } from './ddl-handlers'
 import { registerLicenseHandlers } from './license-handlers'
 import { registerSavedQueriesHandlers } from './saved-queries-handlers'
+import { registerQueryHistoryHandlers } from './query-history-handlers'
 import { registerSnippetHandlers } from './snippet-handlers'
 import { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
 import { registerDashboardHandlers } from './dashboard-handlers'
@@ -30,6 +31,7 @@ export interface IpcStores {
   connections: PersistentStore<{ connections: ConnectionConfig[] }>
   savedQueries: DpStorage<{ savedQueries: SavedQuery[] }>
   snippets: DpStorage<{ snippets: Snippet[] }>
+  queryHistory: DpStorage<{ queryHistory: QueryHistoryEntry[] }>
 }
 
 /**
@@ -56,6 +58,9 @@ export function registerAllHandlers(
 
   // Saved queries management
   registerSavedQueriesHandlers(stores.savedQueries)
+
+  // Query history persistence
+  registerQueryHistoryHandlers(stores.queryHistory)
 
   // Snippets management
   registerSnippetHandlers(stores.snippets)
@@ -116,6 +121,7 @@ export { registerQueryHandlers } from './query-handlers'
 export { registerDDLHandlers } from './ddl-handlers'
 export { registerLicenseHandlers } from './license-handlers'
 export { registerSavedQueriesHandlers } from './saved-queries-handlers'
+export { registerQueryHistoryHandlers } from './query-history-handlers'
 export { registerSnippetHandlers } from './snippet-handlers'
 export { registerScheduledQueriesHandlers } from './scheduled-queries-handlers'
 export { registerDashboardHandlers } from './dashboard-handlers'

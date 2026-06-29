@@ -15,6 +15,7 @@ import type {
   LicenseActivationRequest,
   LicenseType,
   SavedQuery,
+  QueryHistoryEntry,
   Snippet,
   SchemaInfo,
   AIProvider,
@@ -321,6 +322,16 @@ const api = {
       ipcRenderer.on('open-saved-queries', handler)
       return () => ipcRenderer.removeListener('open-saved-queries', handler)
     }
+  },
+  // Query history persistence
+  queryHistory: {
+    list: (): Promise<IpcResponse<QueryHistoryEntry[]>> => ipcRenderer.invoke('query-history:list'),
+    add: (entry: QueryHistoryEntry): Promise<IpcResponse<QueryHistoryEntry>> =>
+      ipcRenderer.invoke('query-history:add', entry),
+    remove: (id: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('query-history:remove', id),
+    clear: (connectionId?: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('query-history:clear', connectionId)
   },
   // Snippets management
   snippets: {

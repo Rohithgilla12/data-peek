@@ -14,6 +14,7 @@ import type {
   LicenseActivationRequest,
   LicenseType,
   SavedQuery,
+  QueryHistoryEntry,
   SchemaInfo,
   BenchmarkResult,
   MultiStatementResultWithTelemetry,
@@ -318,6 +319,12 @@ interface DataPeekApi {
     delete: (id: string) => Promise<IpcResponse<void>>
     incrementUsage: (id: string) => Promise<IpcResponse<SavedQuery>>
     onOpenDialog: (callback: () => void) => () => void
+  }
+  queryHistory: {
+    list: () => Promise<IpcResponse<QueryHistoryEntry[]>>
+    add: (entry: QueryHistoryEntry) => Promise<IpcResponse<QueryHistoryEntry>>
+    remove: (id: string) => Promise<IpcResponse<void>>
+    clear: (connectionId?: string) => Promise<IpcResponse<void>>
   }
   snippets: {
     list: () => Promise<IpcResponse<Snippet[]>>
