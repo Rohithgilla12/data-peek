@@ -17,7 +17,7 @@ import { Button, Popover, PopoverContent, PopoverTrigger, Tooltip, TooltipConten
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { formatSQL } from '@/lib/sql-formatter'
-import { useQueryStore, useConnectionStore, useTabStore } from '@/stores'
+import { useQueryStore, useConnectionStore } from '@/stores'
 import { exportToSQL } from '@/lib/export'
 
 export function NavActions() {
@@ -29,12 +29,6 @@ export function NavActions() {
   const setCurrentQuery = useQueryStore((s) => s.setCurrentQuery)
   const setIsExecuting = useQueryStore((s) => s.setIsExecuting)
   const addToHistory = useQueryStore((s) => s.addToHistory)
-
-  // For multi-statement queries, use the currently active result set
-  // instead of always exporting the first statement's result.
-  const activeTabId = useTabStore((s) => s.activeTabId)
-  const getActiveStatementResult = useTabStore((s) => s.getActiveStatementResult)
-  const exportResult = activeTabId ? (getActiveStatementResult(activeTabId) ?? result) : result
 
   const handleRunQuery = () => {
     if (!activeConnection || isExecuting || !currentQuery.trim()) return
@@ -77,7 +71,7 @@ export function NavActions() {
   }
 
   const handleExportCSV = () => {
-    if (!exportResult) return
+    if (!result) return
     // Generate CSV
     const headers = result.columns.map((c) => c.name).join(',')
     const rows = result.rows.map((row) =>
@@ -104,8 +98,8 @@ export function NavActions() {
   }
 
   const handleExportJSON = () => {
-    if (!exportResult) return
-    const json = JSON.stringify(exportResult.rows, null, 2)
+    if (!result) return
+    const json = JSON.stringify(result.rows, null, 2)
     const blob = new Blob([json], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -117,10 +111,10 @@ export function NavActions() {
   }
 
   const handleExportSQL = () => {
-    if (!exportResult) return
+    if (!result) return
     const exportData = {
-      columns: exportResult.columns,
-      rows: exportResult.rows
+      columns: result.columns,
+      rows: result.rows
     }
     const sql = exportToSQL(exportData, { tableName: 'query_result' })
     const blob = new Blob([sql], { type: 'text/sql' })
@@ -134,7 +128,7 @@ export function NavActions() {
   }
 
   const canRun = activeConnection && currentQuery.trim() && !isExecuting
-  const hasResults = !!exportResult
+  const hasResults = !!result
 
   return (
     <div className="flex items-center gap-1.5">
