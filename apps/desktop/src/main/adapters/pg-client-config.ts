@@ -1,6 +1,11 @@
 import { readFileSync } from 'fs'
 import type { ClientConfig } from 'pg'
 import type { ConnectionConfig } from '@shared/index'
+import { configurePgTypeParsers } from './pg-type-parsers'
+
+// Register raw date/time parsers once, on the connection path, before any query
+// runs. setTypeParser mutates the process-global pg-types registry.
+configurePgTypeParsers()
 
 /**
  * Build pg ClientConfig from a ConnectionConfig.

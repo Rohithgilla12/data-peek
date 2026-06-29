@@ -8,7 +8,14 @@ const { mockClient, mockPool, PoolCtor } = vi.hoisted(() => {
   return { mockClient, mockPool, PoolCtor }
 })
 
-vi.mock('pg', () => ({ Pool: PoolCtor }))
+vi.mock('pg', () => ({
+  Pool: PoolCtor,
+  // pg-client-config registers global type parsers on import.
+  types: {
+    setTypeParser: vi.fn(),
+    builtins: { TIMESTAMP: 1114, TIMESTAMPTZ: 1184, DATE: 1082 }
+  }
+}))
 vi.mock('../ssh-tunnel-service', () => ({
   createTunnel: vi.fn(),
   closeTunnel: vi.fn()
