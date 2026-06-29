@@ -8,7 +8,11 @@ const { mockClient, mockPool, PoolCtor } = vi.hoisted(() => {
   return { mockClient, mockPool, PoolCtor }
 })
 
-vi.mock('pg', () => ({ Pool: PoolCtor }))
+vi.mock('pg', () => ({
+  Pool: PoolCtor,
+  // createPoolEntry registers a raw parser for timestamp (OID 1114).
+  types: { setTypeParser: vi.fn() }
+}))
 vi.mock('../ssh-tunnel-service', () => ({
   createTunnel: vi.fn(),
   closeTunnel: vi.fn()
