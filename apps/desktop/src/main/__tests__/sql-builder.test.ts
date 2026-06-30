@@ -119,6 +119,24 @@ describe('buildQuery', () => {
       expect(result.params).toEqual(['{"foo":"baz","extra":true}', 1])
     })
 
+    it('should serialize scalar JSON/JSONB values (string/number/boolean) as JSON text', () => {
+      const scalarUpdate: RowUpdate = {
+        type: 'update',
+        id: 'op-3b',
+        primaryKeys: [{ column: 'id', value: 1, dataType: 'integer' }],
+        changes: [
+          { column: 'a', oldValue: null, newValue: 'hello', dataType: 'jsonb' },
+          { column: 'b', oldValue: null, newValue: 42, dataType: 'jsonb' },
+          { column: 'c', oldValue: null, newValue: true, dataType: 'json' }
+        ],
+        originalRow: { id: 1 }
+      }
+      const result = buildQuery(scalarUpdate, createContext(), 'postgresql')
+      // A bare `hello` is invalid JSON input for a jsonb column — it must be
+      // sent as the JSON text `"hello"`. Same for numbers/booleans.
+      expect(result.params).toEqual(['"hello"', '42', 'true', 1])
+    })
+
     it('should handle boolean data types', () => {
       const boolUpdate: RowUpdate = {
         type: 'update',
