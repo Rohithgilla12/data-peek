@@ -29,14 +29,15 @@ mac:
   gatekeeperAssess: false
   notarize: true
   category: public.app-category.developer-tools
+  # arm64 only: the CI runner is Apple Silicon and several native deps (ssh2's
+  # sshcrypto, etc.) don't cross-build a correct x64 binary, so an x64 DMG would
+  # ship arm64 .node files. Apple Silicon is the only supported mac target.
   target:
     - target: dmg
       arch:
-        - x64
         - arm64
     - target: zip
       arch:
-        - x64
         - arm64
 dmg:
   artifactName: data-peek-${version}-${arch}.${ext}
