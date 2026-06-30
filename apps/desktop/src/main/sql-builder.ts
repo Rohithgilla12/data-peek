@@ -82,8 +82,11 @@ function serializeValue(value: unknown, dataType: string): unknown {
     return null
   }
 
-  // Handle JSON/JSONB - stringify objects
-  if ((dataType === 'json' || dataType === 'jsonb') && typeof value === 'object') {
+  // Handle JSON/JSONB. The cell editor hands us a parsed value (object, array,
+  // or scalar), so always serialize back to JSON text — a bare scalar like
+  // `hello` is invalid input for a json/jsonb column and must be sent as the
+  // quoted JSON text `"hello"`.
+  if (dataType === 'json' || dataType === 'jsonb') {
     return JSON.stringify(value)
   }
 
