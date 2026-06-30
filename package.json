@@ -45,12 +45,14 @@
       "@clerk/shared",
       "better-sqlite3",
       "core-js",
-      "cpu-features",
       "electron",
       "esbuild",
       "sharp",
       "ssh2",
       "unrs-resolver"
+    ],
+    "ignoredOptionalDependencies": [
+      "cpu-features"
     ]
   },
   "dependencies": {
