@@ -147,7 +147,7 @@ export class TimeMachineStorage {
           id,
           payload.connectionId,
           fingerprint,
-          fingerprint,
+          payload.sql,
           payload.capturedAt,
           payload.durationMs,
           payload.rowCount,
