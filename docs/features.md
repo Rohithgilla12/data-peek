@@ -116,6 +116,9 @@ For power users and teams:
 | **Primary Key Indicators** | Visual markers for primary key columns |
 | **Nullable Indicators** | See which columns allow NULL values |
 | **Foreign Key Display** | View foreign key relationships |
+| **Functions & Procedures** | Browse routines with their parameters and return types |
+| **Triggers** | Inspect trigger timing, events, and body; view, alter, enable/disable, or drop them |
+| **Object Filters** | Toggle tables, views, materialized views, functions, procedures, and triggers |
 | **Table Search** | Filter tables by name with instant search |
 | **Click to Query** | Click any table to generate a SELECT query |
 | **Schema Refresh** | Reload schema after database changes |

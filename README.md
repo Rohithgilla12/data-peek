@@ -78,7 +78,8 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Tab-bar pulse indicator** - Switch tabs and the amber dot keeps pulsing on watched ones
 
 ### Data Management
-- **Schema Explorer** - Browse tables, views, stored procedures, and functions
+- **Schema Explorer** - Browse tables, views, stored procedures, functions, and triggers
+- **Triggers** - View trigger definitions and alter, enable/disable, or drop them from the schema sidebar
 - **Inline Editing** - Edit table data directly with INSERT/UPDATE/DELETE
 - **Table Designer** - Create and alter tables with full DDL support (columns, indexes, constraints, partitions)
 - **JSON Editor** - Dedicated editor for JSON/JSONB columns

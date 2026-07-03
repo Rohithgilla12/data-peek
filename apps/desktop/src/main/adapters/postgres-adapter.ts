@@ -16,6 +16,7 @@ import {
   type StatementResult,
   type RoutineInfo,
   type RoutineParameterInfo,
+  type TriggerInfo,
   type ColumnStats,
   type ColumnStatsType,
   type HistogramBucket,
@@ -62,6 +63,37 @@ export function parsePostgresArray(value: unknown): string[] {
     }
   }
   return []
+}
+
+// PostgreSQL encodes trigger metadata as a bitmask in pg_trigger.tgtype.
+const TRIGGER_TYPE_ROW = 1 << 0
+const TRIGGER_TYPE_BEFORE = 1 << 1
+const TRIGGER_TYPE_INSERT = 1 << 2
+const TRIGGER_TYPE_DELETE = 1 << 3
+const TRIGGER_TYPE_UPDATE = 1 << 4
+const TRIGGER_TYPE_TRUNCATE = 1 << 5
+const TRIGGER_TYPE_INSTEAD = 1 << 6
+
+/**
+ * Decode a PostgreSQL `pg_trigger.tgtype` bitmask into readable trigger metadata.
+ */
+export function parsePostgresTriggerType(
+  tgtype: number
+): Pick<TriggerInfo, 'timing' | 'events' | 'orientation'> {
+  const timing: TriggerInfo['timing'] =
+    tgtype & TRIGGER_TYPE_INSTEAD ? 'INSTEAD OF' : tgtype & TRIGGER_TYPE_BEFORE ? 'BEFORE' : 'AFTER'
+
+  const events: string[] = []
+  if (tgtype & TRIGGER_TYPE_INSERT) events.push('INSERT')
+  if (tgtype & TRIGGER_TYPE_UPDATE) events.push('UPDATE')
+  if (tgtype & TRIGGER_TYPE_DELETE) events.push('DELETE')
+  if (tgtype & TRIGGER_TYPE_TRUNCATE) events.push('TRUNCATE')
+
+  return {
+    timing,
+    events,
+    orientation: tgtype & TRIGGER_TYPE_ROW ? 'ROW' : 'STATEMENT'
+  }
 }
 
 /**
@@ -464,6 +496,29 @@ export class PostgresAdapter implements DatabaseAdapter {
         ORDER BY p.specific_schema, p.specific_name, p.ordinal_position
       `)
 
+      // Query 7: Get all triggers (excluding internal constraint triggers)
+      const triggersResult = await client.query(`
+        SELECT
+          n.nspname AS schema_name,
+          c.relname AS table_name,
+          t.tgname AS trigger_name,
+          t.tgtype AS trigger_type,
+          t.tgenabled AS trigger_enabled,
+          p.proname AS function_name,
+          np.nspname AS function_schema,
+          pg_get_triggerdef(t.oid) AS definition
+        FROM pg_trigger t
+        JOIN pg_class c ON c.oid = t.tgrelid
+        JOIN pg_namespace n ON n.oid = c.relnamespace
+        JOIN pg_proc p ON p.oid = t.tgfoid
+        JOIN pg_namespace np ON np.oid = p.pronamespace
+        WHERE NOT t.tgisinternal
+          AND n.nspname NOT IN ('pg_catalog', 'information_schema', 'pg_toast')
+          AND n.nspname NOT LIKE 'pg_toast_temp_%'
+          AND n.nspname NOT LIKE 'pg_temp_%'
+        ORDER BY n.nspname, c.relname, t.tgname
+      `)
+
       // Build foreign key lookup map: "schema.table.column" -> ForeignKeyInfo
       const fkMap = new Map<string, ForeignKeyInfo>()
       for (const row of foreignKeysResult.rows) {
@@ -527,6 +582,30 @@ export class PostgresAdapter implements DatabaseAdapter {
         })
       }
 
+      // Build triggers lookup map: "schema" -> TriggerInfo[]
+      const triggersMap = new Map<string, TriggerInfo[]>()
+      for (const row of triggersResult.rows) {
+        if (!triggersMap.has(row.schema_name)) {
+          triggersMap.set(row.schema_name, [])
+        }
+
+        const functionName =
+          row.function_schema && row.function_schema !== row.schema_name
+            ? `${row.function_schema}.${row.function_name}`
+            : row.function_name
+
+        triggersMap.get(row.schema_name)!.push({
+          name: row.trigger_name,
+          schema: row.schema_name,
+          table: row.table_name,
+          ...parsePostgresTriggerType(Number(row.trigger_type)),
+          // tgenabled: 'D' = disabled, anything else (O/R/A) is enabled
+          enabled: row.trigger_enabled !== 'D',
+          functionName: functionName || undefined,
+          definition: row.definition
+        })
+      }
+
       // Build schema structure
       const schemaMap = new Map<string, SchemaInfo>()
 
@@ -535,7 +614,8 @@ export class PostgresAdapter implements DatabaseAdapter {
         schemaMap.set(row.schema_name, {
           name: row.schema_name,
           tables: [],
-          routines: routinesMap.get(row.schema_name) || []
+          routines: routinesMap.get(row.schema_name) || [],
+          triggers: triggersMap.get(row.schema_name) || []
         })
       }
 
@@ -573,7 +653,8 @@ export class PostgresAdapter implements DatabaseAdapter {
           schema = {
             name: row.table_schema,
             tables: [],
-            routines: []
+            routines: [],
+            triggers: triggersMap.get(row.table_schema) || []
           }
           schemaMap.set(row.table_schema, schema)
         }

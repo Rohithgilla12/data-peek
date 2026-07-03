@@ -6,9 +6,9 @@ export type {
   CreateNotebookInput,
   UpdateNotebookInput,
   AddCellInput,
-  UpdateCellInput
-} from './notebook-types'
-export { MAX_PINNED_ROWS } from './notebook-types'
+  UpdateCellInput,
+} from "./notebook-types";
+export { MAX_PINNED_ROWS } from "./notebook-types";
 export { PG_TYPE_MAP, resolvePostgresType } from "./type-maps";
 export {
   escapeSQLValue,
@@ -550,11 +550,16 @@ export interface MSSQLConnectionOptions {
   };
 }
 
-export type EnvironmentPreset = 'production' | 'staging' | 'uat' | 'development' | 'local';
+export type EnvironmentPreset =
+  | "production"
+  | "staging"
+  | "uat"
+  | "development"
+  | "local";
 
 export type ConnectionEnvironment =
   | { preset: EnvironmentPreset }
-  | { preset: 'custom'; customLabel: string; customColor: string };
+  | { preset: "custom"; customLabel: string; customColor: string };
 
 export interface ConnectionConfig {
   id: string;
@@ -729,6 +734,32 @@ export interface RoutineInfo {
 }
 
 /**
+ * Database trigger metadata
+ * Compatible with: PostgreSQL, MySQL, SQL Server, SQLite
+ */
+export interface TriggerInfo {
+  name: string;
+  /** Schema of the table the trigger belongs to */
+  schema: string;
+  /** Table the trigger is attached to */
+  table: string;
+  /** When the trigger fires relative to the event */
+  timing: "BEFORE" | "AFTER" | "INSTEAD OF";
+  /** Events that fire the trigger (INSERT, UPDATE, DELETE, TRUNCATE) */
+  events: string[];
+  /** Whether the trigger fires per row or per statement */
+  orientation?: "ROW" | "STATEMENT";
+  /** Whether the trigger is currently enabled */
+  enabled: boolean;
+  /** Function/procedure invoked by the trigger (PostgreSQL) */
+  functionName?: string;
+  /** Optional WHEN condition that gates the trigger */
+  condition?: string;
+  /** Full CREATE TRIGGER definition (for viewing and altering) */
+  definition: string;
+}
+
+/**
  * Schema/namespace metadata
  * Note: SQLite doesn't have schemas, will use 'main' as default
  */
@@ -737,6 +768,8 @@ export interface SchemaInfo {
   tables: TableInfo[];
   /** Stored procedures and functions */
   routines?: RoutineInfo[];
+  /** Table triggers */
+  triggers?: TriggerInfo[];
 }
 
 /**
@@ -1641,10 +1674,9 @@ export const MAX_QUERY_HISTORY_PER_CONNECTION = 100;
  * Assumes `history` is already ordered newest-first; the oldest entries for a
  * connection are the ones dropped once its cap is exceeded. Order is preserved.
  */
-export function capQueryHistoryPerConnection<T extends { connectionId: string }>(
-  history: T[],
-  max: number = MAX_QUERY_HISTORY_PER_CONNECTION
-): T[] {
+export function capQueryHistoryPerConnection<
+  T extends { connectionId: string },
+>(history: T[], max: number = MAX_QUERY_HISTORY_PER_CONNECTION): T[] {
   const counts = new Map<string, number>();
   return history.filter((item) => {
     const next = (counts.get(item.connectionId) ?? 0) + 1;
@@ -2328,7 +2360,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Tables without a primary key make replication, de-duplication, and row-level edits more difficult.",
     severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql", "mssql"]
+    supportedDbTypes: ["postgresql", "mysql", "mssql"],
   },
   {
     id: "missing_fk_indexes",
@@ -2336,7 +2368,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Foreign key columns without a supporting index force sequential scans during joins and deletes on the parent table.",
     severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql"]
+    supportedDbTypes: ["postgresql", "mysql"],
   },
   {
     id: "duplicate_indexes",
@@ -2344,7 +2376,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Multiple indexes that cover the same leading columns waste disk space and slow writes.",
     severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql"]
+    supportedDbTypes: ["postgresql", "mysql"],
   },
   {
     id: "unused_indexes",
@@ -2352,7 +2384,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Indexes that have never served a scan since stats were reset. They add maintenance overhead without speeding up reads.",
     severity: "info",
-    supportedDbTypes: ["postgresql"]
+    supportedDbTypes: ["postgresql"],
   },
   {
     id: "invalid_indexes",
@@ -2360,7 +2392,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Indexes that failed to build (e.g. from a cancelled CREATE INDEX CONCURRENTLY). They are not used by the planner and should be dropped or rebuilt.",
     severity: "critical",
-    supportedDbTypes: ["postgresql"]
+    supportedDbTypes: ["postgresql"],
   },
   {
     id: "bloated_tables",
@@ -2368,7 +2400,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Tables where dead tuples make up a large share of storage. Consider VACUUM (FULL) or pg_repack.",
     severity: "info",
-    supportedDbTypes: ["postgresql"]
+    supportedDbTypes: ["postgresql"],
   },
   {
     id: "never_vacuumed",
@@ -2376,7 +2408,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Tables that autovacuum has never touched typically have stale statistics, leading to poor plans.",
     severity: "info",
-    supportedDbTypes: ["postgresql"]
+    supportedDbTypes: ["postgresql"],
   },
   {
     id: "nullable_fks",
@@ -2384,8 +2416,8 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Foreign key columns that allow NULL can silently orphan rows. Decide whether NULL is really allowed.",
     severity: "info",
-    supportedDbTypes: ["postgresql", "mysql"]
-  }
+    supportedDbTypes: ["postgresql", "mysql"],
+  },
 ];
 
 // ── PostgreSQL Export/Import (pg_dump / pg_restore) ──────────────────────────
@@ -2476,10 +2508,10 @@ export type {
   SkipStepResponse,
   ContinueStepResponse,
   RetryStepResponse,
-  StopStepResponse
-} from './step-types'
+  StopStepResponse,
+} from "./step-types";
 export {
   STEP_SESSION_IDLE_TIMEOUT_MS,
   STEP_SESSION_CLEANUP_INTERVAL_MS,
-  DDL_KEYWORD_REGEX
-} from './step-types'
+  DDL_KEYWORD_REGEX,
+} from "./step-types";

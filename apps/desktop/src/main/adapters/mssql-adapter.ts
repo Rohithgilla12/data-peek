@@ -15,6 +15,7 @@ import type {
   StatementResult,
   RoutineInfo,
   RoutineParameterInfo,
+  TriggerInfo,
   ColumnStats,
   ColumnStatsType,
   CommonValue,
@@ -651,8 +652,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
           )
       ])
 
-      const [columnsResult, foreignKeysResult, routinesResult, paramsResult] = await Promise.all([
-        pool.request().query(`
+      const [columnsResult, foreignKeysResult, routinesResult, paramsResult, triggersResult] =
+        await Promise.all([
+          pool.request().query(`
           SELECT c.table_schema, c.table_name, c.column_name, c.data_type, c.is_nullable,
                  c.column_default, c.ordinal_position, c.character_maximum_length,
                  c.numeric_precision, c.numeric_scale,
@@ -668,7 +670,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
           WHERE c.table_schema NOT IN (${schemaList})
           ORDER BY c.table_schema, c.table_name, c.ordinal_position
         `),
-        pool.request().query(`
+          pool.request().query(`
           SELECT fk_schema.table_schema, fk_schema.table_name, fk_col.column_name,
                  fk_schema.constraint_name, pk_schema.table_schema AS referenced_schema,
                  pk_schema.table_name AS referenced_table, pk_col.column_name AS referenced_column
@@ -687,22 +689,34 @@ export class MSSQLAdapter implements DatabaseAdapter {
             AND pk_schema.table_schema NOT IN (${schemaList})
           ORDER BY fk_schema.table_schema, fk_schema.table_name, fk_col.column_name
         `),
-        pool.request().query(`
+          pool.request().query(`
           SELECT r.routine_schema, r.routine_name, r.routine_type,
                  r.data_type as return_type, r.specific_name
           FROM information_schema.routines r
           WHERE r.routine_schema NOT IN (${schemaList})
           ORDER BY r.routine_schema, r.routine_name
         `),
-        pool.request().query(`
+          pool.request().query(`
           SELECT p.specific_schema, p.specific_name, p.parameter_name,
                  p.data_type, p.parameter_mode, p.ordinal_position
           FROM information_schema.parameters p
           WHERE p.specific_schema NOT IN (${schemaList})
             AND p.parameter_name IS NOT NULL
           ORDER BY p.specific_schema, p.specific_name, p.ordinal_position
+        `),
+          pool.request().query(`
+          SELECT s.name AS trigger_schema, o.name AS table_name, tr.name AS trigger_name,
+                 tr.is_disabled, tr.is_instead_of_trigger, m.definition, te.type_desc AS event
+          FROM sys.triggers tr
+          JOIN sys.objects o ON o.object_id = tr.parent_id
+          JOIN sys.schemas s ON s.schema_id = o.schema_id
+          LEFT JOIN sys.sql_modules m ON m.object_id = tr.object_id
+          LEFT JOIN sys.trigger_events te ON te.object_id = tr.object_id
+          WHERE tr.is_ms_shipped = 0 AND tr.parent_class = 1
+            AND s.name NOT IN (${schemaList})
+          ORDER BY s.name, o.name, tr.name
         `)
-      ])
+        ])
 
       // Build parameters lookup map
       const paramsMap = new Map<string, RoutineParameterInfo[]>()
@@ -736,6 +750,34 @@ export class MSSQLAdapter implements DatabaseAdapter {
         })
       }
 
+      // Build triggers lookup map. A trigger may fire on multiple events, so we
+      // aggregate the per-event rows into a single TriggerInfo per trigger.
+      const triggersMap = new Map<string, TriggerInfo[]>()
+      const triggerByKey = new Map<string, TriggerInfo>()
+      for (const row of triggersResult.recordset) {
+        const key = `${row.trigger_schema}.${row.table_name}.${row.trigger_name}`
+        let trigger = triggerByKey.get(key)
+        if (!trigger) {
+          trigger = {
+            name: row.trigger_name,
+            schema: row.trigger_schema,
+            table: row.table_name,
+            timing: row.is_instead_of_trigger ? 'INSTEAD OF' : 'AFTER',
+            events: [],
+            enabled: !row.is_disabled,
+            definition: row.definition || ''
+          }
+          triggerByKey.set(key, trigger)
+          if (!triggersMap.has(row.trigger_schema)) {
+            triggersMap.set(row.trigger_schema, [])
+          }
+          triggersMap.get(row.trigger_schema)!.push(trigger)
+        }
+        if (row.event && !trigger.events.includes(row.event)) {
+          trigger.events.push(row.event)
+        }
+      }
+
       // Build schema structure
       const schemaMap = new Map<string, SchemaInfo>()
 
@@ -744,7 +786,8 @@ export class MSSQLAdapter implements DatabaseAdapter {
         schemaMap.set(row.schema_name, {
           name: row.schema_name,
           tables: [],
-          routines: routinesMap.get(row.schema_name) || []
+          routines: routinesMap.get(row.schema_name) || [],
+          triggers: triggersMap.get(row.schema_name) || []
         })
       }
 
