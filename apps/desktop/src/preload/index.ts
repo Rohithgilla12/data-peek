@@ -80,7 +80,12 @@ import type {
   SkipStepResponse,
   ContinueStepResponse,
   RetryStepResponse,
-  StopStepResponse
+  StopStepResponse,
+  TimeMachineCapturePayload,
+  TimeMachineRunMeta,
+  TimeMachineSnapshot,
+  TimeMachineListResult,
+  TimeMachineStats
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -264,6 +269,11 @@ const api = {
       ipcRenderer.on('menu:toggle-watch', handler)
       return () => ipcRenderer.removeListener('menu:toggle-watch', handler)
     },
+    onToggleTimeMachine: (callback: () => void): (() => void) => {
+      const handler = (): void => callback()
+      ipcRenderer.on('menu:toggle-time-machine', handler)
+      return () => ipcRenderer.removeListener('menu:toggle-time-machine', handler)
+    },
     onToggleSidebar: (callback: () => void): (() => void) => {
       const handler = (): void => callback()
       ipcRenderer.on('menu:toggle-sidebar', handler)
@@ -362,6 +372,22 @@ const api = {
       ipcRenderer.invoke('notebooks:delete-cell', cellId),
     reorderCells: (notebookId: string, cellIds: string[]): Promise<IpcResponse<void>> =>
       ipcRenderer.invoke('notebooks:reorder-cells', { notebookId, cellIds })
+  },
+  // Time Machine result snapshots
+  timeMachine: {
+    capture: (payload: TimeMachineCapturePayload): Promise<IpcResponse<TimeMachineRunMeta>> =>
+      ipcRenderer.invoke('time-machine:capture', payload),
+    listRuns: (connectionId: string, sql: string): Promise<IpcResponse<TimeMachineListResult>> =>
+      ipcRenderer.invoke('time-machine:list-runs', { connectionId, sql }),
+    getSnapshot: (id: string): Promise<IpcResponse<TimeMachineSnapshot>> =>
+      ipcRenderer.invoke('time-machine:get-snapshot', id),
+    deleteRun: (id: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('time-machine:delete-run', id),
+    clearQuery: (connectionId: string, sql: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('time-machine:clear-query', { connectionId, sql }),
+    clearAll: (connectionId?: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('time-machine:clear-all', connectionId),
+    stats: (): Promise<IpcResponse<TimeMachineStats>> => ipcRenderer.invoke('time-machine:stats')
   },
   step: {
     start: (

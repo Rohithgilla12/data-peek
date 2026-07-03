@@ -21,6 +21,9 @@ export interface AppSettings {
   // Fun features
   /** Show Pokemon buddy and fun analytics widgets */
   pokemonBuddyEnabled: boolean
+  // Time Machine
+  /** Snapshot successful SELECT results locally for the run-history timeline */
+  timeMachineEnabled: boolean
 }
 
 interface SettingsState extends AppSettings {
@@ -31,6 +34,7 @@ interface SettingsState extends AppSettings {
   setQueryTimeoutMs: (value: number) => void
   setDefaultPageSize: (size: PageSizeOption) => void
   setPokemonBuddyEnabled: (value: boolean) => void
+  setTimeMachineEnabled: (value: boolean) => void
   resetSettings: () => void
   setHideQuickQueryPanel: (value: boolean) => void
 }
@@ -42,7 +46,8 @@ const defaultSettings: AppSettings = {
   hideQuickQueryPanel: true,
   queryTimeoutMs: 0, // 0 = no timeout
   defaultPageSize: 100,
-  pokemonBuddyEnabled: false
+  pokemonBuddyEnabled: false,
+  timeMachineEnabled: true
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -55,6 +60,7 @@ export const useSettingsStore = create<SettingsState>()(
       setQueryTimeoutMs: (value) => set({ queryTimeoutMs: value }),
       setDefaultPageSize: (size) => set({ defaultPageSize: size }),
       setPokemonBuddyEnabled: (value) => set({ pokemonBuddyEnabled: value }),
+      setTimeMachineEnabled: (value) => set({ timeMachineEnabled: value }),
       setHideQuickQueryPanel: (value) => set({ hideQuickQueryPanel: value }),
       resetSettings: () => set(defaultSettings)
     }),

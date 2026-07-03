@@ -137,6 +137,8 @@ export function serializeExport(
   }
 }
 
+export const MASKED_PLACEHOLDER = '[MASKED]'
+
 export function maskExportData(data: ExportData, maskedColumns: Set<string>): ExportData {
   if (maskedColumns.size === 0) return data
 
@@ -145,7 +147,7 @@ export function maskExportData(data: ExportData, maskedColumns: Set<string>): Ex
     rows: data.rows.map((row) => {
       const newRow = { ...row }
       for (const column of maskedColumns) {
-        newRow[column] = '[MASKED]'
+        newRow[column] = MASKED_PLACEHOLDER
       }
       return newRow
     })

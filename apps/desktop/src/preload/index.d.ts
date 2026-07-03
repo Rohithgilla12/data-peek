@@ -71,7 +71,12 @@ import type {
   SkipStepResponse,
   ContinueStepResponse,
   RetryStepResponse,
-  StopStepResponse
+  StopStepResponse,
+  TimeMachineCapturePayload,
+  TimeMachineRunMeta,
+  TimeMachineSnapshot,
+  TimeMachineListResult,
+  TimeMachineStats
 } from '@shared/index'
 
 // AI Types
@@ -294,6 +299,7 @@ interface DataPeekApi {
     onFormatSql: (callback: () => void) => () => void
     onClearResults: (callback: () => void) => () => void
     onToggleWatch: (callback: () => void) => () => void
+    onToggleTimeMachine: (callback: () => void) => () => void
     onToggleSidebar: (callback: () => void) => () => void
     onOpenSettings: (callback: () => void) => () => void
     onSaveChanges: (callback: () => void) => () => void
@@ -503,6 +509,15 @@ interface DataPeekApi {
     updateCell: (cellId: string, updates: UpdateCellInput) => Promise<IpcResponse<NotebookCell>>
     deleteCell: (cellId: string) => Promise<IpcResponse<void>>
     reorderCells: (notebookId: string, cellIds: string[]) => Promise<IpcResponse<void>>
+  }
+  timeMachine: {
+    capture: (payload: TimeMachineCapturePayload) => Promise<IpcResponse<TimeMachineRunMeta>>
+    listRuns: (connectionId: string, sql: string) => Promise<IpcResponse<TimeMachineListResult>>
+    getSnapshot: (id: string) => Promise<IpcResponse<TimeMachineSnapshot>>
+    deleteRun: (id: string) => Promise<IpcResponse<void>>
+    clearQuery: (connectionId: string, sql: string) => Promise<IpcResponse<void>>
+    clearAll: (connectionId?: string) => Promise<IpcResponse<void>>
+    stats: () => Promise<IpcResponse<TimeMachineStats>>
   }
   step: {
     start: (

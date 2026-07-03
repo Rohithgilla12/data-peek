@@ -17,12 +17,14 @@ import {
   ChevronLeft,
   Pin,
   PinOff,
-  Pencil
+  Pencil,
+  History
 } from 'lucide-react'
 
 import { useTheme } from '@/components/theme-provider'
 import { DatabaseIcon } from '@/components/database-icons'
-import { useConnectionStore, useTabStore } from '@/stores'
+import { useConnectionStore, useTabStore, useSettingsStore } from '@/stores'
+import { useTimeMachineStore } from '@/stores/time-machine-store'
 import { useSavedQueryStore } from '@/stores/saved-queries-store'
 import { useAIStore } from '@/stores/ai-store'
 import {
@@ -365,6 +367,30 @@ export function CommandPalette({
                   <Bookmark className="text-amber-400" />
                   <span>Saved Queries</span>
                   <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                </CommandItem>
+                <CommandItem
+                  value="query-time-machine"
+                  keywords={['history', 'snapshot', 'timeline', 'diff', 'runs', 'past']}
+                  onSelect={() => {
+                    const { activeTabId, getTab } = useTabStore.getState()
+                    const activeTab = activeTabId ? getTab(activeTabId) : null
+                    if (
+                      activeTab?.type === 'query' &&
+                      useSettingsStore.getState().timeMachineEnabled
+                    ) {
+                      const tm = useTimeMachineStore.getState()
+                      if (tm.getState(activeTab.id)?.open) tm.closeStrip(activeTab.id)
+                      else tm.openStrip(activeTab.id)
+                    }
+                    onClose()
+                  }}
+                >
+                  <History className="text-amber-400" />
+                  <span>Toggle Time Machine</span>
+                  <CommandShortcut>
+                    {keys.mod}
+                    {keys.shift}H
+                  </CommandShortcut>
                 </CommandItem>
               </CommandGroup>
 
