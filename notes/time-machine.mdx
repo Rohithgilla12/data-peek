@@ -1,0 +1,79 @@
+---
+title: "Time Machine — every query gets a memory"
+description: "data-peek now snapshots every successful SELECT locally. Scrub back through past runs on a timeline, view any old result read-only, and diff any two runs at cell level. Cmd+Shift+H. Masked columns stay redacted on disk, storage is capped, and one click wipes it all."
+date: "2026-07-02"
+author: "Rohith Gilla"
+tags: ["release-notes", "feature", "history", "diff", "postgres", "mysql"]
+published: false
+---
+
+You run the same query all day. Checking a migration, watching a job
+table, verifying a fix — the SQL barely changes, the *data* does. And
+every SQL client on earth treats each run as a fresh start: the moment
+results land, the previous state is gone. "Wait, what did this look
+like an hour ago?" has no answer. You either screenshotted it or you
+didn't.
+
+Time Machine is the answer. data-peek now snapshots the result of every
+successful `SELECT` you run in a query tab — automatically, locally, no
+setup. Press `⌘⇧H` and a timeline strip appears above the grid: one
+chip per run, oldest to newest, with a row-count sparkline. Click a
+chip and the grid shows *that* result, read-only, with a banner so you
+always know you're looking at the past. Click **Live** and you're back.
+
+## Diff any two runs
+
+Viewing history is half of it. Select a run, then ⌥-click another and
+data-peek diffs them cell by cell — the same differ that powers Watch
+Mode, so the semantics match: changed cells highlight amber with the
+old value a hover away, added rows band green, and the banner counts
+what moved: `+6 added · −2 removed · 14 cells changed`.
+
+Rows are keyed the way Watch Mode keys them: by the table's primary key
+when your query selects from one table, then a heuristic
+`id`/`uuid`/`*_id` column, then row position as a last resort. The
+banner tells you which strategy was used, because a position-keyed diff
+after an `ORDER BY` change is a different claim than a PK-keyed one.
+
+## Watch Mode shows you now. Time Machine shows you then.
+
+The two compose. Watch Mode is live — it polls and flashes as data
+moves, holding six snapshots in memory. Time Machine is durable — every
+manual run lands on disk and survives restarts. Run a query before
+kicking off a migration, run it after, diff the two. That's a
+before/after audit you previously needed a scratch file and discipline
+for.
+
+## The boring parts, done properly
+
+Persisting query results to disk is the kind of feature that goes wrong
+quietly, so the guardrails are the feature:
+
+- **Masked columns never reach disk.** If a column matches your
+  data-masking rules (email, password, token, ssn out of the box), the
+  snapshot stores `[MASKED]` — redaction happens before the rows leave
+  the renderer, not at display time.
+- **Storage is capped, not open-ended.** 2,000 rows per snapshot, 50
+  runs per query, 512 MB global budget with oldest-first eviction, and
+  the database vacuums itself after cleanup.
+- **Only deliberate runs are captured.** Single-statement pure SELECTs
+  from query tabs. Watch ticks, notebook cells, AI-assistant runs, and
+  table-preview page flips never pollute the timeline.
+- **One switch, one wipe.** Settings → Time Machine: turn capture off,
+  see exactly how much disk history is using, delete all of it with two
+  clicks.
+
+## Under the hood
+
+Snapshots live in a dedicated SQLite database in your app data
+directory, columnar-encoded to skip repeating column names per row.
+Runs are grouped by a normalized fingerprint of the SQL — literals are
+stripped, so `WHERE id = 1` and `WHERE id = 2` share a timeline, which
+is what you want when you're poking at different rows of the same
+question. Values are normalized once at capture (timestamps to ISO,
+binary to hex previews) so a diff between two snapshots never lies
+about a timestamp cell because of serialization drift.
+
+`⌘⇧H` to try it. It's been running on every query I've made this week,
+and the first time you catch a row changing between two runs you didn't
+plan to compare, it clicks.

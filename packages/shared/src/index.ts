@@ -2483,3 +2483,65 @@ export {
   STEP_SESSION_CLEANUP_INTERVAL_MS,
   DDL_KEYWORD_REGEX
 } from './step-types'
+
+/**
+ * Time Machine — persisted result-history for query tabs.
+ *
+ * Runs are keyed by (connectionId, fingerprint) where the fingerprint is the FULL
+ * normalized-SQL string produced main-side by fingerprintQuery — never the 32-bit
+ * hashFingerprint, whose collisions would silently merge two queries' histories.
+ * Timestamps are epoch ms so they survive JSON/IPC. Row payloads are columnar
+ * (unknown[][] with column metadata stored once), values pre-normalized at capture:
+ * Date → ISO string, bigint → string, undefined → null, binary → capped hex preview.
+ */
+export interface TimeMachineRunMeta {
+  id: string
+  connectionId: string
+  fingerprint: string
+  sql: string
+  capturedAt: number
+  durationMs: number
+  rowCount: number
+  storedRowCount: number
+  truncated: boolean
+  contentHash: string
+  keyStrategy: 'primary_key' | 'row_position'
+  keyColumns: string[]
+  /** False when the payload exceeded TM_MAX_SNAPSHOT_PAYLOAD_BYTES and only metadata was kept. */
+  hasRows: boolean
+}
+
+export interface TimeMachineSnapshot extends TimeMachineRunMeta {
+  columns: { name: string; dataType: string }[]
+  rows: unknown[][]
+}
+
+export interface TimeMachineCapturePayload {
+  connectionId: string
+  sql: string
+  capturedAt: number
+  durationMs: number
+  rowCount: number
+  truncated: boolean
+  keyStrategy: 'primary_key' | 'row_position'
+  keyColumns: string[]
+  columns: { name: string; dataType: string }[]
+  rows: unknown[][]
+}
+
+export interface TimeMachineListResult {
+  fingerprint: string
+  runs: TimeMachineRunMeta[]
+}
+
+export interface TimeMachineStats {
+  runCount: number
+  queryCount: number
+  totalBytes: number
+  oldestCapturedAt: number | null
+}
+
+export const TM_MAX_SNAPSHOT_ROWS = 2000
+export const TM_MAX_SNAPSHOT_PAYLOAD_BYTES = 6 * 1024 * 1024
+export const TM_MAX_RUNS_PER_QUERY = 50
+export const TM_GLOBAL_BUDGET_BYTES = 512 * 1024 * 1024

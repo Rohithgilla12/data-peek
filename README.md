@@ -77,6 +77,12 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Pause when window hidden** - Background tabs don't burn CPU or pound the database
 - **Tab-bar pulse indicator** - Switch tabs and the amber dot keeps pulsing on watched ones
 
+### Time Machine
+- **Every query gets a memory** - Successful SELECT results are snapshotted locally; a timeline strip (`Cmd/Ctrl+Shift+H`) scrubs back through past runs
+- **View any past run read-only** - Load an old result into the grid with a clear "viewing the past" banner and row-count sparkline
+- **Diff any two runs** - Cell-level highlights show what changed between runs, plus added/removed row counts, keyed the same way Watch Mode diffs
+- **Privacy-aware by construction** - Masked columns are stored redacted, storage is capped (50 runs per query, 512 MB global budget), and Settings has a one-click wipe
+
 ### Data Management
 - **Schema Explorer** - Browse tables, views, stored procedures, and functions
 - **Inline Editing** - Edit table data directly with INSERT/UPDATE/DELETE

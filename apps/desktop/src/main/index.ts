@@ -18,6 +18,7 @@ import {
   type PersistentStore
 } from './storage'
 import { NotebookStorage } from './notebook-storage'
+import { TimeMachineStorage } from './time-machine-storage'
 import { initSchemaCache } from './schema-cache'
 import { registerAllHandlers } from './ipc'
 import { setForceQuit } from './app-state'
@@ -36,6 +37,7 @@ let store: PersistentStore<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 let snippetsStore: DpStorage<{ snippets: Snippet[] }>
 let queryHistoryStore: DpStorage<{ queryHistory: QueryHistoryEntry[] }>
+let timeMachineStorage: TimeMachineStorage | null = null
 
 const stepSessionRegistry = new StepSessionRegistry()
 
@@ -210,6 +212,14 @@ app.whenReady().then(async () => {
     console.error('Failed to initialize NotebookStorage:', error)
   }
 
+  // Same native-module caveat as NotebookStorage — degrade to null so handler
+  // registration below is always reached.
+  try {
+    timeMachineStorage = new TimeMachineStorage(app.getPath('userData'))
+  } catch (error) {
+    log.warn('Failed to initialize TimeMachineStorage:', error)
+  }
+
   try {
     stepSessionRegistry.startCleanupTimer()
   } catch (error) {
@@ -226,6 +236,7 @@ app.whenReady().then(async () => {
       queryHistory: queryHistoryStore
     },
     notebookStorage,
+    timeMachineStorage,
     stepSessionRegistry
   )
 
@@ -272,6 +283,11 @@ app.on('before-quit', (event) => {
     .catch((err) => log.error('cleanupAll failed during quit:', err))
     .finally(() => {
       stepSessionRegistry.stopCleanupTimer()
+      try {
+        timeMachineStorage?.close()
+      } catch (err) {
+        log.warn('TimeMachineStorage close failed during quit:', err)
+      }
       app.quit()
     })
 })

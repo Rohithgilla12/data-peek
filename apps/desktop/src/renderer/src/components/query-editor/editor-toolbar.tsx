@@ -47,6 +47,8 @@ interface EditorToolbarProps {
   setShareDialogOpen: (v: boolean) => void
   /** Slot for the Watch button — rendered between Benchmark and Format. */
   watchSlot?: ReactNode
+  /** Slot for the Time Machine button — rendered next to the Watch button. */
+  timeMachineSlot?: ReactNode
   /** Slot for the cross-tab inlined-refs pill — rendered next to the Watch button. */
   refsSlot?: ReactNode
 }
@@ -72,6 +74,7 @@ export function EditorToolbar({
   setSaveDialogOpen,
   setShareDialogOpen,
   watchSlot,
+  timeMachineSlot,
   refsSlot
 }: EditorToolbarProps) {
   const executable = isExecutableTab(tab) ? tab : null
@@ -174,6 +177,7 @@ export function EditorToolbar({
           disabled={isExecuting || !hasQuery}
         />
         {watchSlot}
+        {timeMachineSlot}
         {refsSlot}
         {!isEditorCollapsed && (
           <>

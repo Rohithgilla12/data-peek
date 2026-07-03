@@ -16,7 +16,7 @@ import {
 import { isExecutableTab, type Tab, type MultiQueryResult } from '@/stores/tab-store'
 import type { StatementResult } from '@data-peek/shared'
 import { type DataTableFilter, type DataTableSort } from '@/components/data-table'
-import { analyzeEditableSelect, sqlMatchesStoredTable } from '@/lib/editable-select'
+import { sqlMatchesStoredTable } from '@/lib/editable-select'
 import {
   resolveForRun,
   crossTabErrorMessage,
@@ -69,6 +69,10 @@ import type { WatchRunner } from '@/lib/watch-scheduler'
 import { watchScheduler } from '@/lib/watch-scheduler'
 import { useWatchStore } from '@/stores/watch-store'
 import { gateForWatch } from '@/lib/watch-sql-gate'
+import { TimeMachineButton } from '@/components/time-machine/time-machine-button'
+import { captureRun } from '@/lib/time-machine-capture'
+import { resolveSelectKeyColumns } from '@/lib/result-key-columns'
+import { useTimeMachineStore } from '@/stores/time-machine-store'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
 import type { editor as monacoEditor } from 'monaco-editor'
@@ -322,6 +326,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       const executionId = crypto.randomUUID()
       updateTabExecuting(tabId, true, executionId)
 
+      // Running a query always returns the panel to the live result — leaving
+      // a Time Machine snapshot on screen would silently hide the fresh rows.
+      useTimeMachineStore.getState().backToLive(tabId)
+
       // Drop any state writes from this execution if the tab has moved on (cancelled,
       // re-run, or closed-and-reopened in the same session). Without this, a slow
       // response from execution A can clobber the result of execution B that started
@@ -427,6 +435,28 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               rowCount: totalRows,
               status: 'success',
               connectionId: tabConnection.id
+            })
+
+            captureRun(tabId, {
+              enabled: useSettingsStore.getState().timeMachineEnabled,
+              tabType: currentTab.type,
+              connectionId: tabConnection.id,
+              sql: originalQuery,
+              statements: multiResult.statements,
+              explicitKeyColumns: resolveSelectKeyColumns(
+                originalQuery,
+                tabConnection.dbType,
+                useConnectionStore.getState().schemas
+              ),
+              maskedColumns: useMaskingStore
+                .getState()
+                .getEffectiveMaskedColumns(
+                  tabId,
+                  multiResult.statements
+                    .find((s) => s.isDataReturning)
+                    ?.fields.map((f) => f.name) ?? []
+                ),
+              capturedAt: Date.now()
             })
           } else {
             // Legacy single result (fallback)
@@ -1175,25 +1205,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           return pks && pks.length > 0 ? pks : undefined
         }
 
-        // Query tabs: parse the SQL — if it's a single-table SELECT, look up
-        // that table's PK in the schema cache. Falls through to the heuristic
-        // in pickKeyingPlan when parsing or lookup fails.
+        // Query tabs: single-table SELECTs resolve their PK from the schema
+        // cache (shared with Time Machine capture so both key rows the same
+        // way); pickKeyingPlan's heuristic covers everything else.
         if (live.type === 'query' && tabConnection) {
-          const info = analyzeEditableSelect(live.query, tabConnection.dbType)
-          if (!info || info.hasFilters) return undefined
-          const candidates = allSchemas.filter(
-            (s) => !info.schema || s.name.toLowerCase() === info.schema.toLowerCase()
-          )
-          for (const schema of candidates) {
-            const tableInfo = schema.tables.find(
-              (t) => t.name.toLowerCase() === info.table.toLowerCase()
-            )
-            if (tableInfo) {
-              const pks = tableInfo.columns.filter((c) => c.isPrimaryKey).map((c) => c.name)
-              if (pks.length > 0) return pks
-              break
-            }
-          }
+          return resolveSelectKeyColumns(live.query, tabConnection.dbType, allSchemas)
         }
         return undefined
       }
@@ -1226,6 +1242,25 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   }, [tabId, tabConnection, watchRunner])
 
   useEffect(() => window.api.menu.onToggleWatch(handleToggleWatch), [handleToggleWatch])
+
+  // ⌘⇧H — same menu-accelerator wiring as Watch Mode (menu wins over
+  // renderer keybindings on Electron).
+  const handleToggleTimeMachine = useCallback(() => {
+    const t = useTabStore.getState().getTab(tabId)
+    if (!t || t.type !== 'query') return
+    if (!useSettingsStore.getState().timeMachineEnabled) return
+    const tm = useTimeMachineStore.getState()
+    if (tm.getState(tabId)?.open) {
+      tm.closeStrip(tabId)
+    } else {
+      tm.openStrip(tabId)
+    }
+  }, [tabId])
+
+  useEffect(
+    () => window.api.menu.onToggleTimeMachine(handleToggleTimeMachine),
+    [handleToggleTimeMachine]
+  )
 
   if (!tab || tab.type === 'notebook') {
     return null
@@ -1391,6 +1426,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               runner={watchRunner}
               disabled={!tabConnection}
             />
+          }
+          timeMachineSlot={
+            tab.type === 'query' ? (
+              <TimeMachineButton tabId={tabId} disabled={!tabConnection} />
+            ) : undefined
           }
           refsSlot={
             refsSummary ? (

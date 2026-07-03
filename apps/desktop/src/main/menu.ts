@@ -237,6 +237,16 @@ export function createMenu(): void {
               focusedWindow.webContents.send('menu:toggle-watch')
             }
           }
+        },
+        {
+          label: 'Toggle Time Machine',
+          accelerator: 'CmdOrCtrl+Shift+H',
+          click: (): void => {
+            const focusedWindow = BrowserWindow.getFocusedWindow()
+            if (focusedWindow) {
+              focusedWindow.webContents.send('menu:toggle-time-machine')
+            }
+          }
         }
       ]
     },

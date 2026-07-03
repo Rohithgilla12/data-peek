@@ -23,7 +23,9 @@ import { registerPgExportImportHandlers } from './pg-export-import-handlers'
 import { registerNotebookHandlers } from './notebook-handlers'
 import { registerIntelHandlers } from './intel-handlers'
 import { registerStepHandlers } from './step-handlers'
+import { registerTimeMachineHandlers } from './time-machine-handlers'
 import type { StepSessionRegistry } from '../step-session'
+import type { TimeMachineStorage } from '../time-machine-storage'
 
 const log = createLogger('ipc')
 
@@ -42,6 +44,7 @@ export interface IpcStores {
 export function registerAllHandlers(
   stores: IpcStores,
   notebookStorage: NotebookStorage | null,
+  timeMachineStorage: TimeMachineStorage | null,
   stepSessionRegistry: StepSessionRegistry
 ): void {
   // Connection CRUD operations
@@ -106,6 +109,13 @@ export function registerAllHandlers(
     log.warn('NotebookStorage unavailable; notebook handlers not registered')
   }
 
+  // Time Machine result snapshots — same degrade-to-null contract as notebooks.
+  if (timeMachineStorage) {
+    registerTimeMachineHandlers(timeMachineStorage)
+  } else {
+    log.warn('TimeMachineStorage unavailable; time machine handlers not registered')
+  }
+
   // Schema Intel / diagnostics
   registerIntelHandlers()
 
@@ -134,3 +144,4 @@ export { registerPgExportImportHandlers } from './pg-export-import-handlers'
 export { registerNotebookHandlers } from './notebook-handlers'
 export { registerIntelHandlers } from './intel-handlers'
 export { registerStepHandlers } from './step-handlers'
+export { registerTimeMachineHandlers } from './time-machine-handlers'
