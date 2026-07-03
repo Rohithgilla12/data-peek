@@ -6,6 +6,8 @@ import { ReleaseVideo019 } from './compositions/ReleaseVideo019'
 import { ReleaseVideo020 } from './compositions/ReleaseVideo020'
 import { ReleaseVideo022 } from './compositions/ReleaseVideo022'
 import { ReleaseVideo023 } from './compositions/ReleaseVideo023'
+import { ReleaseVideo024 } from './compositions/ReleaseVideo024'
+import { ReleaseVideo025 } from './compositions/ReleaseVideo025'
 import { NotebookDemo } from './compositions/NotebookDemo'
 import { TrailerVideo } from './compositions/TrailerVideo'
 import './global.css'
@@ -30,6 +32,24 @@ export const RemotionRoot = () => {
         width={1920}
         height={1080}
         defaultProps={{}}
+      />
+      <Composition
+        id="ReleaseVideo-v0-25-0"
+        component={ReleaseVideo025}
+        durationInFrames={620}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{ version: '0.25.0' }}
+      />
+      <Composition
+        id="ReleaseVideo-v0-24-0"
+        component={ReleaseVideo024}
+        durationInFrames={620}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{ version: '0.24.0' }}
       />
       <Composition
         id="ReleaseVideo-v0-23-0"
