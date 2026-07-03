@@ -1192,39 +1192,57 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                             const originalRow = row.original as Record<string, unknown>
                             const isDeleted = isRowMarkedForDeletion(tabId, originalRow)
                             return (
-                              <div
+                              <RowContextMenu
                                 key={row.id}
-                                role="row"
-                                aria-rowindex={rowIndex + 1}
-                                data-index={virtualRow.index}
-                                className={cn(
-                                  'hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center',
-                                  isDeleted && 'bg-red-500/5'
-                                )}
-                                style={{
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: 0,
-                                  height: `${virtualRow.size}px`,
-                                  transform: `translateY(${virtualRow.start}px)`
-                                }}
+                                row={originalRow}
+                                columns={columnDefs.map((c) => ({
+                                  name: c.name,
+                                  dataType: c.dataType
+                                }))}
+                                onDuplicate={
+                                  canEdit && editContext
+                                    ? () => handleDuplicateRow(originalRow)
+                                    : undefined
+                                }
+                                onDelete={
+                                  canEdit && editContext && !isDeleted
+                                    ? () => markRowForDeletion(tabId, originalRow)
+                                    : undefined
+                                }
                               >
-                                {row.getVisibleCells().map((cell, cellIndex) => (
-                                  <div
-                                    key={cell.id}
-                                    role="cell"
-                                    data-cell-row={virtualRow.index}
-                                    data-cell-col={cellIndex}
-                                    className="py-2 px-4 text-sm whitespace-nowrap overflow-hidden"
-                                    style={{
-                                      width: columnWidths[cellIndex] || 'auto',
-                                      flexShrink: 0
-                                    }}
-                                  >
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                  </div>
-                                ))}
-                              </div>
+                                <div
+                                  role="row"
+                                  aria-rowindex={rowIndex + 1}
+                                  data-index={virtualRow.index}
+                                  className={cn(
+                                    'hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center',
+                                    isDeleted && 'bg-red-500/5'
+                                  )}
+                                  style={{
+                                    position: 'absolute',
+                                    top: 0,
+                                    left: 0,
+                                    height: `${virtualRow.size}px`,
+                                    transform: `translateY(${virtualRow.start}px)`
+                                  }}
+                                >
+                                  {row.getVisibleCells().map((cell, cellIndex) => (
+                                    <div
+                                      key={cell.id}
+                                      role="cell"
+                                      data-cell-row={virtualRow.index}
+                                      data-cell-col={cellIndex}
+                                      className="py-2 px-4 text-sm whitespace-nowrap overflow-hidden"
+                                      style={{
+                                        width: columnWidths[cellIndex] || 'auto',
+                                        flexShrink: 0
+                                      }}
+                                    >
+                                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </div>
+                                  ))}
+                                </div>
+                              </RowContextMenu>
                             )
                           })}
                         </div>
