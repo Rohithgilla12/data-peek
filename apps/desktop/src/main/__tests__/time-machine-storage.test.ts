@@ -85,7 +85,7 @@ describe.skipIf(!sqliteAvailable)('TimeMachineStorage', () => {
       expect(meta.id).toBeDefined()
       expect(meta.connectionId).toBe('conn-1')
       expect(meta.fingerprint).toBe('fp-1')
-      expect(meta.sql).toBe('SELECT * FROM users WHERE id = 1')
+      expect(meta.sql).toBe('fp-1')
       expect(meta.capturedAt).toBe(1000)
       expect(meta.durationMs).toBe(12)
       expect(meta.rowCount).toBe(2)

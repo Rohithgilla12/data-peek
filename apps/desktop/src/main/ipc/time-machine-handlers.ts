@@ -3,6 +3,35 @@ import type { TimeMachineCapturePayload } from '@shared/index'
 import type { TimeMachineStorage } from '../time-machine-storage'
 import { fingerprintQuery } from '../lib/query-fingerprint'
 
+function isValidCapturePayload(payload: unknown): payload is TimeMachineCapturePayload {
+  if (!payload || typeof payload !== 'object') return false
+  const p = payload as Record<string, unknown>
+
+  if (typeof p.connectionId !== 'string' || p.connectionId.length === 0) return false
+  if (typeof p.sql !== 'string' || p.sql.length === 0) return false
+  if (typeof p.capturedAt !== 'number' || !Number.isFinite(p.capturedAt)) return false
+  if (typeof p.durationMs !== 'number' || !Number.isFinite(p.durationMs) || p.durationMs < 0)
+    return false
+  if (typeof p.rowCount !== 'number' || !Number.isFinite(p.rowCount) || p.rowCount < 0) return false
+  if (typeof p.truncated !== 'boolean') return false
+  if (p.keyStrategy !== 'primary_key' && p.keyStrategy !== 'row_position') return false
+  if (!Array.isArray(p.keyColumns) || p.keyColumns.some((c) => typeof c !== 'string')) return false
+  if (
+    !Array.isArray(p.columns) ||
+    p.columns.some(
+      (c) =>
+        !c ||
+        typeof c !== 'object' ||
+        typeof (c as Record<string, unknown>).name !== 'string' ||
+        typeof (c as Record<string, unknown>).dataType !== 'string'
+    )
+  )
+    return false
+  if (!Array.isArray(p.rows) || p.rows.some((row) => !Array.isArray(row))) return false
+
+  return true
+}
+
 /**
  * Register Time Machine result-snapshot handlers.
  *
@@ -16,14 +45,7 @@ export function registerTimeMachineHandlers(storage: TimeMachineStorage | null):
 
   ipcMain.handle('time-machine:capture', (_, payload: TimeMachineCapturePayload) => {
     try {
-      if (
-        !payload ||
-        typeof payload.connectionId !== 'string' ||
-        payload.connectionId.length === 0 ||
-        typeof payload.sql !== 'string' ||
-        payload.sql.length === 0 ||
-        !Array.isArray(payload.rows)
-      ) {
+      if (!isValidCapturePayload(payload)) {
         return { success: false, error: 'Invalid capture payload' }
       }
       const fingerprint = fingerprintQuery(payload.sql)

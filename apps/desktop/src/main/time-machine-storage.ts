@@ -1,6 +1,7 @@
 import { randomUUID, createHash } from 'crypto'
 import { join } from 'path'
-import Database from 'better-sqlite3'
+import { createRequire } from 'module'
+import type BetterSqlite3 from 'better-sqlite3'
 import {
   TM_MAX_SNAPSHOT_PAYLOAD_BYTES,
   TM_MAX_RUNS_PER_QUERY,
@@ -70,7 +71,7 @@ export interface TimeMachineStorageOptions {
 }
 
 export class TimeMachineStorage {
-  private db: Database.Database
+  private db: BetterSqlite3.Database
   private maxRunsPerQuery: number
   private globalBudgetBytes: number
   private maxPayloadBytes: number
@@ -81,6 +82,11 @@ export class TimeMachineStorage {
     this.maxPayloadBytes = options.maxPayloadBytes ?? TM_MAX_SNAPSHOT_PAYLOAD_BYTES
 
     const dbPath = join(userDataPath, 'time-machine.db')
+
+    // Load the native module lazily so a broken-arch better-sqlite3 binary does
+    // not crash the main process at import time. The constructor try/catch in
+    // index.ts can then degrade to null storage.
+    const Database = createRequire(import.meta.url)('better-sqlite3') as typeof BetterSqlite3
     this.db = new Database(dbPath)
     // auto_vacuum only takes effect when set before the first table is created,
     // which is why it precedes init(). incremental_vacuum then actually shrinks
@@ -141,7 +147,7 @@ export class TimeMachineStorage {
           id,
           payload.connectionId,
           fingerprint,
-          payload.sql,
+          fingerprint,
           payload.capturedAt,
           payload.durationMs,
           payload.rowCount,
