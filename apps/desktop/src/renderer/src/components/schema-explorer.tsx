@@ -318,7 +318,7 @@ function VirtualizedSchemaItems({
         const tableKey = `${schemaName}.${item.data.name}`
         return expandedTables.has(tableKey) ? 28 + item.data.columns.length * 24 : 28
       } else if (item.type === 'trigger') {
-        const triggerKey = `${schemaName}.${item.data.name}`
+        const triggerKey = `${schemaName}.${item.data.table}.${item.data.name}`
         return expandedTriggers.has(triggerKey) ? 28 + triggerDetailCount(item.data) * 24 : 28
       } else {
         const routineKey = `${schemaName}.${item.data.name}`
@@ -527,7 +527,7 @@ function VirtualizedSchemaItems({
             )
           } else if (item.type === 'trigger') {
             const trigger = item.data
-            const triggerKey = `${schemaName}.${trigger.name}`
+            const triggerKey = `${schemaName}.${trigger.table}.${trigger.name}`
             return (
               <TriggerSubItem
                 key={triggerKey}
@@ -1788,7 +1788,7 @@ export function SchemaExplorer() {
                           })}
                           {/* Triggers */}
                           {schema.triggers?.map((trigger) => {
-                            const triggerKey = `${schema.name}.${trigger.name}`
+                            const triggerKey = `${schema.name}.${trigger.table}.${trigger.name}`
                             return (
                               <TriggerSubItem
                                 key={triggerKey}

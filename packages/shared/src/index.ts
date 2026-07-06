@@ -6,85 +6,80 @@ export type {
   CreateNotebookInput,
   UpdateNotebookInput,
   AddCellInput,
-  UpdateCellInput,
-} from "./notebook-types";
-export { MAX_PINNED_ROWS } from "./notebook-types";
-export { PG_TYPE_MAP, resolvePostgresType } from "./type-maps";
-export {
-  escapeSQLValue,
-  escapeSQLIdentifier,
-  isSQLKeyword,
-  type SQLDialect,
-} from "./sql-escape";
+  UpdateCellInput
+} from './notebook-types'
+export { MAX_PINNED_ROWS } from './notebook-types'
+export { PG_TYPE_MAP, resolvePostgresType } from './type-maps'
+export { escapeSQLValue, escapeSQLIdentifier, isSQLKeyword, type SQLDialect } from './sql-escape'
 
 /**
  * Base URL for the data-peek website
  */
-export const DATAPEEK_BASE_URL = "https://www.datapeek.dev";
+export const DATAPEEK_BASE_URL = 'https://www.datapeek.dev'
 
 /**
  * UTM parameters for tracking
  */
 export interface UTMParams {
-  source?: string;
-  medium?: string;
-  campaign?: string;
-  content?: string;
+  source?: string
+  medium?: string
+  campaign?: string
+  content?: string
 }
 
 /**
  * Build a URL with UTM tracking parameters
  */
 export function buildTrackingUrl(path: string, utm: UTMParams = {}): string {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams()
 
-  if (utm.source) params.set("utm_source", utm.source);
-  if (utm.medium) params.set("utm_medium", utm.medium);
-  if (utm.campaign) params.set("utm_campaign", utm.campaign);
-  if (utm.content) params.set("utm_content", utm.content);
+  if (utm.source) params.set('utm_source', utm.source)
+  if (utm.medium) params.set('utm_medium', utm.medium)
+  if (utm.campaign) params.set('utm_campaign', utm.campaign)
+  if (utm.content) params.set('utm_content', utm.content)
 
-  const queryString = params.toString();
-  const separator = path.includes("?") ? "&" : "?";
+  const queryString = params.toString()
+  const separator = path.includes('?') ? '&' : '?'
 
-  return `${DATAPEEK_BASE_URL}${path}${queryString ? separator + queryString : ""}`;
+  return `${DATAPEEK_BASE_URL}${path}${queryString ? separator + queryString : ''}`
 }
 
 /**
  * Supported AI providers
  */
 export type AIProvider =
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "groq"
-  | "deepseek"
-  | "mistral"
-  | "xai"
-  | "glm"
-  | "ollama";
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'groq'
+  | 'deepseek'
+  | 'mistral'
+  | 'xai'
+  | 'glm'
+  | 'ollama'
 
 /**
  * Configuration for AI service
  */
 export interface AIConfig {
-  provider: AIProvider;
-  apiKey?: string;
-  model: string;
-  baseUrl?: string;
+  provider: AIProvider
+  apiKey?: string
+  model: string
+  baseUrl?: string
 }
 
 /**
  * Configuration for a single AI provider (API key and optional base URL)
  */
 export interface AIProviderConfig {
-  apiKey?: string;
-  baseUrl?: string;
+  apiKey?: string
+  baseUrl?: string
 }
 
 /**
  * Map of provider ID to provider configuration
  */
-export type AIProviderConfigs = Partial<Record<AIProvider, AIProviderConfig>>;
+export type AIProviderConfigs = Partial<Record<AIProvider, AIProviderConfig>>
 
 /**
  * Multi-provider AI configuration
@@ -92,33 +87,33 @@ export type AIProviderConfigs = Partial<Record<AIProvider, AIProviderConfig>>;
  */
 export interface AIMultiProviderConfig {
   /** API keys and base URLs for each provider */
-  providers: AIProviderConfigs;
+  providers: AIProviderConfigs
   /** Currently active provider */
-  activeProvider: AIProvider;
+  activeProvider: AIProvider
   /** Currently selected model for each provider */
-  activeModels: Partial<Record<AIProvider, string>>;
+  activeModels: Partial<Record<AIProvider, string>>
 }
 
 /**
  * Provider model information for UI display
  */
 export interface ProviderModel {
-  id: string;
-  name: string;
-  recommended?: boolean;
-  description?: string;
+  id: string
+  name: string
+  recommended?: boolean
+  description?: string
 }
 
 /**
  * Provider configuration for UI display
  */
 export interface ProviderInfo {
-  id: AIProvider;
-  name: string;
-  description: string;
-  keyPrefix: string | null;
-  keyUrl: string;
-  models: ProviderModel[];
+  id: AIProvider
+  name: string
+  description: string
+  keyPrefix: string | null
+  keyUrl: string
+  models: ProviderModel[]
 }
 
 /**
@@ -127,232 +122,231 @@ export interface ProviderInfo {
  */
 export const AI_PROVIDERS: readonly ProviderInfo[] = [
   {
-    id: "openai",
-    name: "OpenAI",
-    description: "GPT-5.1 Codex, GPT-5.1 Mini/Nano, GPT-4o",
-    keyPrefix: "sk-",
-    keyUrl: "https://platform.openai.com/api-keys",
+    id: 'openai',
+    name: 'OpenAI',
+    description: 'GPT-5.1 Codex, GPT-5.1 Mini/Nano, GPT-4o',
+    keyPrefix: 'sk-',
+    keyUrl: 'https://platform.openai.com/api-keys',
     models: [
       {
-        id: "gpt-5.1-codex",
-        name: "GPT-5.1 Codex",
+        id: 'gpt-5.1-codex',
+        name: 'GPT-5.1 Codex',
         recommended: true,
-        description: "Best for SQL & code",
+        description: 'Best for SQL & code'
       },
-      { id: "gpt-5.1", name: "GPT-5.1", description: "Most capable" },
+      { id: 'gpt-5.1', name: 'GPT-5.1', description: 'Most capable' },
       {
-        id: "gpt-5.1-codex-mini",
-        name: "GPT-5.1 Codex Mini",
-        description: "Balanced",
+        id: 'gpt-5.1-codex-mini',
+        name: 'GPT-5.1 Codex Mini',
+        description: 'Balanced'
       },
-      { id: "gpt-5-nano", name: "GPT-5 Nano", description: "Fast & efficient" },
-      { id: "gpt-4o", name: "GPT-4o", description: "Previous gen" },
+      { id: 'gpt-5-nano', name: 'GPT-5 Nano', description: 'Fast & efficient' },
+      { id: 'gpt-4o', name: 'GPT-4o', description: 'Previous gen' },
       {
-        id: "gpt-4o-mini",
-        name: "GPT-4o Mini",
-        description: "Faster & cheaper",
-      },
-    ],
+        id: 'gpt-4o-mini',
+        name: 'GPT-4o Mini',
+        description: 'Faster & cheaper'
+      }
+    ]
   },
   {
-    id: "anthropic",
-    name: "Anthropic",
-    description: "Claude Sonnet 4.5, Claude Opus 4.5",
-    keyPrefix: "sk-ant-",
-    keyUrl: "https://console.anthropic.com/settings/keys",
+    id: 'anthropic',
+    name: 'Anthropic',
+    description: 'Claude Sonnet 4.5, Claude Opus 4.5',
+    keyPrefix: 'sk-ant-',
+    keyUrl: 'https://console.anthropic.com/settings/keys',
     models: [
       {
-        id: "claude-sonnet-4-5",
-        name: "Claude Sonnet 4.5",
+        id: 'claude-sonnet-4-5',
+        name: 'Claude Sonnet 4.5',
         recommended: true,
-        description: "Balanced",
+        description: 'Balanced'
       },
       {
-        id: "claude-opus-4-5",
-        name: "Claude Opus 4.5",
-        description: "Best for coding",
+        id: 'claude-opus-4-5',
+        name: 'Claude Opus 4.5',
+        description: 'Best for coding'
       },
       {
-        id: "claude-haiku-4-5",
-        name: "Claude 4.5 Haiku",
-        description: "Faster & cheaper",
-      },
-    ],
+        id: 'claude-haiku-4-5',
+        name: 'Claude 4.5 Haiku',
+        description: 'Faster & cheaper'
+      }
+    ]
   },
   {
-    id: "google",
-    name: "Google",
-    description: "Gemini 3, Gemini 2.5",
-    keyPrefix: "AI",
-    keyUrl: "https://aistudio.google.com/app/apikey",
+    id: 'google',
+    name: 'Google',
+    description: 'Gemini 3, Gemini 2.5',
+    keyPrefix: 'AI',
+    keyUrl: 'https://aistudio.google.com/app/apikey',
     models: [
       {
-        id: "gemini-3-pro-preview",
-        name: "Gemini 3 Pro",
+        id: 'gemini-3-pro-preview',
+        name: 'Gemini 3 Pro',
         recommended: true,
-        description: "Most capable",
+        description: 'Most capable'
       },
-      { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", description: "Balanced" },
+      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro', description: 'Balanced' },
       {
-        id: "gemini-2.5-flash",
-        name: "Gemini 2.5 Flash",
-        description: "Faster",
+        id: 'gemini-2.5-flash',
+        name: 'Gemini 2.5 Flash',
+        description: 'Faster'
       },
       {
-        id: "gemini-2.0-flash",
-        name: "Gemini 2.0 Flash",
-        description: "Previous gen",
-      },
-    ],
+        id: 'gemini-2.0-flash',
+        name: 'Gemini 2.0 Flash',
+        description: 'Previous gen'
+      }
+    ]
   },
   {
-    id: "groq",
-    name: "Groq",
-    description: "Llama 3.3, Mixtral (Ultra Fast)",
-    keyPrefix: "gsk_",
-    keyUrl: "https://console.groq.com/keys",
+    id: 'groq',
+    name: 'Groq',
+    description: 'Llama 3.3, Mixtral (Ultra Fast)',
+    keyPrefix: 'gsk_',
+    keyUrl: 'https://console.groq.com/keys',
     models: [
       {
-        id: "llama-3.3-70b-versatile",
-        name: "Llama 3.3 70B",
-        recommended: true,
+        id: 'llama-3.3-70b-versatile',
+        name: 'Llama 3.3 70B',
+        recommended: true
       },
       {
-        id: "llama-3.1-8b-instant",
-        name: "Llama 3.1 8B",
-        description: "Fastest",
+        id: 'llama-3.1-8b-instant',
+        name: 'Llama 3.1 8B',
+        description: 'Fastest'
       },
-      { id: "mixtral-8x7b-32768", name: "Mixtral 8x7B" },
-      { id: "qwen-qwq-32b", name: "Qwen QwQ 32B", description: "Reasoning" },
-    ],
+      { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B' },
+      { id: 'qwen-qwq-32b', name: 'Qwen QwQ 32B', description: 'Reasoning' }
+    ]
   },
   {
-    id: "deepseek",
-    name: "DeepSeek",
-    description: "DeepSeek V3, DeepSeek R1 (Reasoning)",
-    keyPrefix: "sk-",
-    keyUrl: "https://platform.deepseek.com/api_keys",
+    id: 'deepseek',
+    name: 'DeepSeek',
+    description: 'DeepSeek V3, DeepSeek R1 (Reasoning)',
+    keyPrefix: 'sk-',
+    keyUrl: 'https://platform.deepseek.com/api_keys',
     models: [
       {
-        id: "deepseek-chat",
-        name: "DeepSeek V3",
+        id: 'deepseek-chat',
+        name: 'DeepSeek V3',
         recommended: true,
-        description: "Best for SQL & code",
+        description: 'Best for SQL & code'
       },
       {
-        id: "deepseek-reasoner",
-        name: "DeepSeek R1",
-        description: "Reasoning model",
-      },
-    ],
+        id: 'deepseek-reasoner',
+        name: 'DeepSeek R1',
+        description: 'Reasoning model'
+      }
+    ]
   },
   {
-    id: "mistral",
-    name: "Mistral",
-    description: "Mistral Large, Codestral",
+    id: 'mistral',
+    name: 'Mistral',
+    description: 'Mistral Large, Codestral',
     keyPrefix: null,
-    keyUrl: "https://console.mistral.ai/api-keys",
+    keyUrl: 'https://console.mistral.ai/api-keys',
     models: [
       {
-        id: "mistral-large-latest",
-        name: "Mistral Large",
+        id: 'mistral-large-latest',
+        name: 'Mistral Large',
         recommended: true,
-        description: "Most capable",
+        description: 'Most capable'
       },
       {
-        id: "codestral-latest",
-        name: "Codestral",
-        description: "Best for code",
+        id: 'codestral-latest',
+        name: 'Codestral',
+        description: 'Best for code'
       },
       {
-        id: "mistral-small-latest",
-        name: "Mistral Small",
-        description: "Fast & efficient",
-      },
-    ],
+        id: 'mistral-small-latest',
+        name: 'Mistral Small',
+        description: 'Fast & efficient'
+      }
+    ]
   },
   {
-    id: "xai",
-    name: "xAI",
-    description: "Grok-3, Grok-3 Mini",
-    keyPrefix: "xai-",
-    keyUrl: "https://console.x.ai",
+    id: 'xai',
+    name: 'xAI',
+    description: 'Grok-3, Grok-3 Mini',
+    keyPrefix: 'xai-',
+    keyUrl: 'https://console.x.ai',
     models: [
       {
-        id: "grok-3",
-        name: "Grok-3",
+        id: 'grok-3',
+        name: 'Grok-3',
         recommended: true,
-        description: "Most capable",
+        description: 'Most capable'
       },
       {
-        id: "grok-3-mini",
-        name: "Grok-3 Mini",
-        description: "Fast & efficient",
+        id: 'grok-3-mini',
+        name: 'Grok-3 Mini',
+        description: 'Fast & efficient'
       },
-      { id: "grok-2", name: "Grok-2", description: "Previous gen" },
-    ],
+      { id: 'grok-2', name: 'Grok-2', description: 'Previous gen' }
+    ]
   },
   {
-    id: "glm",
-    name: "GLM",
-    description: "ChatGLM-4 Plus, Flash (Zhipu AI)",
+    id: 'glm',
+    name: 'GLM',
+    description: 'ChatGLM-4 Plus, Flash (Zhipu AI)',
     keyPrefix: null,
-    keyUrl: "https://open.bigmodel.cn/usercenter/apikeys",
+    keyUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
     models: [
       {
-        id: "glm-4-plus",
-        name: "GLM-4 Plus",
+        id: 'glm-4-plus',
+        name: 'GLM-4 Plus',
         recommended: true,
-        description: "Most capable",
+        description: 'Most capable'
       },
       {
-        id: "glm-4-flash",
-        name: "GLM-4 Flash",
-        description: "Fast & efficient",
+        id: 'glm-4-flash',
+        name: 'GLM-4 Flash',
+        description: 'Fast & efficient'
       },
       {
-        id: "glm-4-long",
-        name: "GLM-4 Long",
-        description: "Long context",
-      },
-    ],
+        id: 'glm-4-long',
+        name: 'GLM-4 Long',
+        description: 'Long context'
+      }
+    ]
   },
   {
-    id: "ollama",
-    name: "Ollama",
-    description: "Local models (no API key)",
+    id: 'ollama',
+    name: 'Ollama',
+    description: 'Local models (no API key)',
     keyPrefix: null,
-    keyUrl: "https://ollama.ai",
+    keyUrl: 'https://ollama.ai',
     models: [
-      { id: "llama3.2", name: "Llama 3.2", recommended: true },
+      { id: 'llama3.2', name: 'Llama 3.2', recommended: true },
       {
-        id: "qwen2.5-coder:32b",
-        name: "Qwen 2.5 Coder 32B",
-        description: "Best for SQL",
+        id: 'qwen2.5-coder:32b',
+        name: 'Qwen 2.5 Coder 32B',
+        description: 'Best for SQL'
       },
-      { id: "codellama", name: "Code Llama" },
-      { id: "mistral", name: "Mistral" },
-      { id: "deepseek-coder-v2", name: "DeepSeek Coder V2" },
-    ],
-  },
-] as const;
+      { id: 'codellama', name: 'Code Llama' },
+      { id: 'mistral', name: 'Mistral' },
+      { id: 'deepseek-coder-v2', name: 'DeepSeek Coder V2' }
+    ]
+  }
+] as const
 
 /**
  * Helper function to get the recommended model ID for a provider
  * Falls back to the first model if no recommended model is found
  */
 function getRecommendedModel(providerId: AIProvider): string {
-  const provider = AI_PROVIDERS.find((p) => p.id === providerId);
+  const provider = AI_PROVIDERS.find((p) => p.id === providerId)
   if (!provider) {
-    throw new Error(`Provider ${providerId} not found in AI_PROVIDERS`);
+    throw new Error(`Provider ${providerId} not found in AI_PROVIDERS`)
   }
   // Prefer recommended model, fall back to first model
-  const recommendedModel =
-    provider.models.find((m) => m.recommended) || provider.models[0];
+  const recommendedModel = provider.models.find((m) => m.recommended) || provider.models[0]
   if (!recommendedModel) {
-    throw new Error(`No models found for provider ${providerId}`);
+    throw new Error(`No models found for provider ${providerId}`)
   }
-  return recommendedModel.id;
+  return recommendedModel.id
 }
 
 /**
@@ -360,34 +354,29 @@ function getRecommendedModel(providerId: AIProvider): string {
  * Derived from AI_PROVIDERS - uses the recommended model for each provider
  */
 export const DEFAULT_MODELS: Record<AIProvider, string> = {
-  openai: getRecommendedModel("openai"),
-  anthropic: getRecommendedModel("anthropic"),
-  google: getRecommendedModel("google"),
-  groq: getRecommendedModel("groq"),
-  deepseek: getRecommendedModel("deepseek"),
-  mistral: getRecommendedModel("mistral"),
-  xai: getRecommendedModel("xai"),
-  glm: getRecommendedModel("glm"),
-  ollama: getRecommendedModel("ollama"),
-};
+  openai: getRecommendedModel('openai'),
+  anthropic: getRecommendedModel('anthropic'),
+  google: getRecommendedModel('google'),
+  groq: getRecommendedModel('groq'),
+  deepseek: getRecommendedModel('deepseek'),
+  mistral: getRecommendedModel('mistral'),
+  xai: getRecommendedModel('xai'),
+  glm: getRecommendedModel('glm'),
+  ollama: getRecommendedModel('ollama')
+}
 
 /**
  * AI message for chat conversations
  */
 export interface AIMessage {
-  role: "user" | "assistant" | "system";
-  content: string;
+  role: 'user' | 'assistant' | 'system'
+  content: string
 }
 
 /**
  * AI response types for structured output
  */
-export type AIResponseType =
-  | "message"
-  | "query"
-  | "chart"
-  | "metric"
-  | "schema";
+export type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
 
 /**
  * AI structured response - flat object with nullable fields.
@@ -395,31 +384,31 @@ export type AIResponseType =
  * Check the 'type' field to determine which fields are populated.
  */
 export interface AIStructuredResponse {
-  type: AIResponseType;
-  message: string;
+  type: AIResponseType
+  message: string
   // Query fields (null when type is not query)
-  sql: string | null;
-  explanation: string | null;
-  warning: string | null;
+  sql: string | null
+  explanation: string | null
+  warning: string | null
   /** If true, query should NOT be auto-executed (UPDATE/DELETE operations) */
-  requiresConfirmation: boolean | null;
+  requiresConfirmation: boolean | null
   // Chart fields (null when type is not chart)
-  title: string | null;
-  description: string | null;
-  chartType: "bar" | "line" | "pie" | "area" | null;
-  xKey: string | null;
-  yKeys: string[] | null;
+  title: string | null
+  description: string | null
+  chartType: 'bar' | 'line' | 'pie' | 'area' | null
+  xKey: string | null
+  yKeys: string[] | null
   // Metric fields (null when type is not metric)
-  label: string | null;
-  format: "number" | "currency" | "percent" | "duration" | null;
+  label: string | null
+  format: 'number' | 'currency' | 'percent' | 'duration' | null
   // Schema fields (null when type is not schema)
-  tables: string[] | null;
+  tables: string[] | null
 }
 
 /**
  * Alias for AIChatResponse (same as AIStructuredResponse)
  */
-export type AIChatResponse = AIStructuredResponse;
+export type AIChatResponse = AIStructuredResponse
 
 // Stored response data types (without message field since it's in content)
 
@@ -427,41 +416,41 @@ export type AIChatResponse = AIStructuredResponse;
  * Stored query data for persistence
  */
 export interface StoredQueryData {
-  type: "query";
-  sql: string;
-  explanation: string;
-  warning?: string;
+  type: 'query'
+  sql: string
+  explanation: string
+  warning?: string
 }
 
 /**
  * Stored chart data for persistence
  */
 export interface StoredChartData {
-  type: "chart";
-  title: string;
-  description?: string;
-  chartType: "bar" | "line" | "pie" | "area";
-  sql: string;
-  xKey: string;
-  yKeys: string[];
+  type: 'chart'
+  title: string
+  description?: string
+  chartType: 'bar' | 'line' | 'pie' | 'area'
+  sql: string
+  xKey: string
+  yKeys: string[]
 }
 
 /**
  * Stored metric data for persistence
  */
 export interface StoredMetricData {
-  type: "metric";
-  label: string;
-  sql: string;
-  format: "number" | "currency" | "percent" | "duration";
+  type: 'metric'
+  label: string
+  sql: string
+  format: 'number' | 'currency' | 'percent' | 'duration'
 }
 
 /**
  * Stored schema data for persistence
  */
 export interface StoredSchemaData {
-  type: "schema";
-  tables: string[];
+  type: 'schema'
+  tables: string[]
 }
 
 /**
@@ -472,41 +461,41 @@ export type StoredResponseData =
   | StoredChartData
   | StoredMetricData
   | StoredSchemaData
-  | null;
+  | null
 
 /**
  * Stored chat message type (with serializable createdAt)
  */
 export interface StoredChatMessage {
-  id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
-  responseData?: StoredResponseData;
-  createdAt: string; // ISO string for storage
+  id: string
+  role: 'user' | 'assistant' | 'system'
+  content: string
+  responseData?: StoredResponseData
+  createdAt: string // ISO string for storage
 }
 
 /**
  * Chat session type - represents a single conversation thread
  */
 export interface ChatSession {
-  id: string;
-  title: string;
-  messages: StoredChatMessage[];
-  createdAt: string; // ISO string
-  updatedAt: string; // ISO string
+  id: string
+  title: string
+  messages: StoredChatMessage[]
+  createdAt: string // ISO string
+  updatedAt: string // ISO string
 }
 
 /**
  * SQLite connection mode (local file only)
  */
-export type SQLiteMode = "local";
+export type SQLiteMode = 'local'
 
 /**
  * SQLite-specific connection options
  */
 export interface SQLiteConnectionOptions {
   /** Connection mode: local file */
-  mode: SQLiteMode;
+  mode: SQLiteMode
 }
 
 /**
@@ -520,12 +509,12 @@ export interface SSLConnectionOptions {
    * or when connecting through VPN to cloud databases (like AWS RDS).
    * Default: true
    */
-  rejectUnauthorized?: boolean;
+  rejectUnauthorized?: boolean
   /**
    * Optional path to CA certificate file (PEM format)
    * Use this when connecting to a server with a certificate signed by a private CA
    */
-  ca?: string;
+  ca?: string
 }
 
 /**
@@ -533,89 +522,84 @@ export interface SSLConnectionOptions {
  */
 export interface MSSQLConnectionOptions {
   authentication?:
-    | "SQL Server Authentication"
-    | "ActiveDirectoryIntegrated"
-    | "ActiveDirectoryPassword"
-    | "ActiveDirectoryServicePrincipal"
-    | "ActiveDirectoryDeviceCodeFlow";
-  encrypt?: boolean;
-  trustServerCertificate?: boolean;
-  enableArithAbort?: boolean;
-  connectionTimeout?: number;
-  requestTimeout?: number;
+    | 'SQL Server Authentication'
+    | 'ActiveDirectoryIntegrated'
+    | 'ActiveDirectoryPassword'
+    | 'ActiveDirectoryServicePrincipal'
+    | 'ActiveDirectoryDeviceCodeFlow'
+  encrypt?: boolean
+  trustServerCertificate?: boolean
+  enableArithAbort?: boolean
+  connectionTimeout?: number
+  requestTimeout?: number
   pool?: {
-    max?: number;
-    min?: number;
-    idleTimeoutMillis?: number;
-  };
+    max?: number
+    min?: number
+    idleTimeoutMillis?: number
+  }
 }
 
-export type EnvironmentPreset =
-  | "production"
-  | "staging"
-  | "uat"
-  | "development"
-  | "local";
+export type EnvironmentPreset = 'production' | 'staging' | 'uat' | 'development' | 'local'
 
 export type ConnectionEnvironment =
   | { preset: EnvironmentPreset }
-  | { preset: "custom"; customLabel: string; customColor: string };
+  | { preset: 'custom'; customLabel: string; customColor: string }
 
 export interface ConnectionConfig {
-  id: string;
-  name: string;
-  host: string;
-  port: number;
-  database: string;
-  user?: string; // Optional for MSSQL with Azure AD authentication
-  password?: string;
-  ssl?: boolean;
-  ssh?: boolean;
-  dbType: DatabaseType;
-  dstPort: number;
-  sshConfig?: SSHConfig;
+  id: string
+  name: string
+  host: string
+  port: number
+  database: string
+  user?: string // Optional for MSSQL with Azure AD authentication
+  password?: string
+  ssl?: boolean
+  ssh?: boolean
+  dbType: DatabaseType
+  dstPort: number
+  sshConfig?: SSHConfig
   /** SSL/TLS options for PostgreSQL and MySQL (only used when ssl is true) */
-  sslOptions?: SSLConnectionOptions;
+  sslOptions?: SSLConnectionOptions
   /** MSSQL-specific connection options (only used when dbType is 'mssql') */
-  mssqlOptions?: MSSQLConnectionOptions;
+  mssqlOptions?: MSSQLConnectionOptions
   /** SQLite-specific connection options (only used when dbType is 'sqlite') */
-  sqliteOptions?: SQLiteConnectionOptions;
-  environment?: ConnectionEnvironment;
+  sqliteOptions?: SQLiteConnectionOptions
+  environment?: ConnectionEnvironment
 }
 
 export interface SSHConfig {
-  host: string;
-  port: number;
-  user: string;
-  password?: string;
-  passphrase?: string;
-  localport?: number;
-  authMethod: SSHAuthenticationMethod;
-  privateKeyPath: string;
+  host: string
+  port: number
+  user: string
+  password?: string
+  passphrase?: string
+  localport?: number
+  authMethod: SSHAuthenticationMethod
+  privateKeyPath: string
 }
 
 /**
  * Supported database types
  */
-export type DatabaseType = "postgresql" | "mysql" | "sqlite" | "mssql";
+export type DatabaseType = 'postgresql' | 'mysql' | 'sqlite' | 'mssql'
 
 /**
  * Field metadata from query results
  * The server resolves type names so the frontend stays database-agnostic
  */
 export interface QueryField {
-  name: string;
+  name: string
   /** Human-readable data type (e.g., 'varchar', 'integer', 'jsonb') */
-  dataType: string;
+  dataType: string
   /** Original database-specific type ID (for advanced use cases) */
-  dataTypeID?: number;
+  dataTypeID?: number
 }
 
 export interface QueryResult {
-  rows: Record<string, unknown>[];
-  fields: QueryField[];
-  rowCount: number;
-  durationMs: number;
+  rows: Record<string, unknown>[]
+  fields: QueryField[]
+  rowCount: number
+  durationMs: number
 }
 
 /**
@@ -624,19 +608,19 @@ export interface QueryResult {
  */
 export interface StatementResult {
   /** The SQL statement that produced this result */
-  statement: string;
+  statement: string
   /** Index of this statement in the original query (0-based) */
-  statementIndex: number;
+  statementIndex: number
   /** Row data */
-  rows: Record<string, unknown>[];
+  rows: Record<string, unknown>[]
   /** Column metadata */
-  fields: QueryField[];
+  fields: QueryField[]
   /** Number of rows returned/affected */
-  rowCount: number;
+  rowCount: number
   /** Execution time for this statement */
-  durationMs: number;
+  durationMs: number
   /** Whether this statement returns rows (SELECT) or affects rows (INSERT/UPDATE/DELETE) */
-  isDataReturning: boolean;
+  isDataReturning: boolean
 }
 
 /**
@@ -645,17 +629,17 @@ export interface StatementResult {
  */
 export interface MultiStatementResult {
   /** Array of results, one per statement */
-  results: StatementResult[];
+  results: StatementResult[]
   /** Total execution time for all statements */
-  totalDurationMs: number;
+  totalDurationMs: number
   /** Total number of statements executed */
-  statementCount: number;
+  statementCount: number
 }
 
 export interface IpcResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
+  success: boolean
+  data?: T
+  error?: string
 }
 
 /**
@@ -663,13 +647,13 @@ export interface IpcResponse<T> {
  */
 export interface ForeignKeyInfo {
   /** Constraint name in the database */
-  constraintName: string;
+  constraintName: string
   /** Schema containing the referenced table */
-  referencedSchema: string;
+  referencedSchema: string
   /** Referenced table name */
-  referencedTable: string;
+  referencedTable: string
   /** Referenced column name */
-  referencedColumn: string;
+  referencedColumn: string
 }
 
 /**
@@ -677,60 +661,60 @@ export interface ForeignKeyInfo {
  * Compatible with: PostgreSQL, MySQL, SQLite
  */
 export interface ColumnInfo {
-  name: string;
-  dataType: string;
-  isNullable: boolean;
-  isPrimaryKey: boolean;
-  defaultValue?: string;
+  name: string
+  dataType: string
+  isNullable: boolean
+  isPrimaryKey: boolean
+  defaultValue?: string
   /** Column position in the table (1-indexed) */
-  ordinalPosition: number;
+  ordinalPosition: number
   /** Foreign key relationship (if this column references another table) */
-  foreignKey?: ForeignKeyInfo;
+  foreignKey?: ForeignKeyInfo
   /** Enum values (if this column is an enum type) */
-  enumValues?: string[];
+  enumValues?: string[]
 }
 
 /**
  * Table or view metadata
  */
 export interface TableInfo {
-  name: string;
-  type: "table" | "view" | "materialized_view";
-  columns: ColumnInfo[];
+  name: string
+  type: 'table' | 'view' | 'materialized_view'
+  columns: ColumnInfo[]
   /** Estimated row count (if available) */
-  estimatedRowCount?: number;
+  estimatedRowCount?: number
 }
 
 /**
  * Parameter metadata for a routine (function/procedure)
  */
 export interface RoutineParameterInfo {
-  name: string;
-  dataType: string;
+  name: string
+  dataType: string
   /** Parameter mode: IN, OUT, INOUT */
-  mode: "IN" | "OUT" | "INOUT";
+  mode: 'IN' | 'OUT' | 'INOUT'
   /** Default value (if any) */
-  defaultValue?: string;
+  defaultValue?: string
   /** Position in parameter list (1-indexed) */
-  ordinalPosition: number;
+  ordinalPosition: number
 }
 
 /**
  * Stored procedure or function metadata
  */
 export interface RoutineInfo {
-  name: string;
-  type: "function" | "procedure";
+  name: string
+  type: 'function' | 'procedure'
   /** Return type (for functions) */
-  returnType?: string;
+  returnType?: string
   /** Parameters */
-  parameters: RoutineParameterInfo[];
+  parameters: RoutineParameterInfo[]
   /** Language the routine is written in (e.g., 'plpgsql', 'sql') */
-  language?: string;
+  language?: string
   /** Whether the function is deterministic (IMMUTABLE/STABLE/VOLATILE) */
-  volatility?: "IMMUTABLE" | "STABLE" | "VOLATILE";
+  volatility?: 'IMMUTABLE' | 'STABLE' | 'VOLATILE'
   /** Brief description/comment */
-  comment?: string;
+  comment?: string
 }
 
 /**
@@ -738,25 +722,25 @@ export interface RoutineInfo {
  * Compatible with: PostgreSQL, MySQL, SQL Server, SQLite
  */
 export interface TriggerInfo {
-  name: string;
+  name: string
   /** Schema of the table the trigger belongs to */
-  schema: string;
+  schema: string
   /** Table the trigger is attached to */
-  table: string;
+  table: string
   /** When the trigger fires relative to the event */
-  timing: "BEFORE" | "AFTER" | "INSTEAD OF";
+  timing: 'BEFORE' | 'AFTER' | 'INSTEAD OF'
   /** Events that fire the trigger (INSERT, UPDATE, DELETE, TRUNCATE) */
-  events: string[];
+  events: string[]
   /** Whether the trigger fires per row or per statement */
-  orientation?: "ROW" | "STATEMENT";
+  orientation?: 'ROW' | 'STATEMENT'
   /** Whether the trigger is currently enabled */
-  enabled: boolean;
+  enabled: boolean
   /** Function/procedure invoked by the trigger (PostgreSQL) */
-  functionName?: string;
+  functionName?: string
   /** Optional WHEN condition that gates the trigger */
-  condition?: string;
+  condition?: string
   /** Full CREATE TRIGGER definition (for viewing and altering) */
-  definition: string;
+  definition: string
 }
 
 /**
@@ -764,21 +748,21 @@ export interface TriggerInfo {
  * Note: SQLite doesn't have schemas, will use 'main' as default
  */
 export interface SchemaInfo {
-  name: string;
-  tables: TableInfo[];
+  name: string
+  tables: TableInfo[]
   /** Stored procedures and functions */
-  routines?: RoutineInfo[];
+  routines?: RoutineInfo[]
   /** Table triggers */
-  triggers?: TriggerInfo[];
+  triggers?: TriggerInfo[]
 }
 
 /**
  * Complete database schema structure
  */
 export interface DatabaseSchema {
-  schemas: SchemaInfo[];
+  schemas: SchemaInfo[]
   /** When the schema was last fetched */
-  fetchedAt: number;
+  fetchedAt: number
 }
 
 /**
@@ -787,23 +771,23 @@ export interface DatabaseSchema {
  */
 export interface DatabaseSchemaResponse extends DatabaseSchema {
   /** Custom database types (enums, composites, etc.) */
-  customTypes?: CustomTypeInfo[];
+  customTypes?: CustomTypeInfo[]
   /** Whether the response was served from cache */
-  fromCache?: boolean;
+  fromCache?: boolean
   /** Whether the cached data is stale (past TTL but still usable) */
-  stale?: boolean;
+  stale?: boolean
   /** Error message if background refresh failed */
-  refreshError?: string;
+  refreshError?: string
 }
 
 /**
  * Represents a single cell change
  */
 export interface CellChange {
-  column: string;
-  oldValue: unknown;
-  newValue: unknown;
-  dataType: string;
+  column: string
+  oldValue: unknown
+  newValue: unknown
+  dataType: string
 }
 
 /**
@@ -811,145 +795,145 @@ export interface CellChange {
  * Supports composite primary keys
  */
 export interface PrimaryKeyValue {
-  column: string;
-  value: unknown;
-  dataType: string;
+  column: string
+  value: unknown
+  dataType: string
 }
 
 /**
  * Represents a row modification (UPDATE)
  */
 export interface RowUpdate {
-  type: "update";
+  type: 'update'
   /** Unique identifier for this change (client-side) */
-  id: string;
+  id: string
   /** Primary key(s) to identify the row */
-  primaryKeys: PrimaryKeyValue[];
+  primaryKeys: PrimaryKeyValue[]
   /** Changed cells */
-  changes: CellChange[];
+  changes: CellChange[]
   /** Original row data for reference */
-  originalRow: Record<string, unknown>;
+  originalRow: Record<string, unknown>
 }
 
 /**
  * Represents a row insertion (INSERT)
  */
 export interface RowInsert {
-  type: "insert";
+  type: 'insert'
   /** Unique identifier for this change (client-side) */
-  id: string;
+  id: string
   /** New row data */
-  values: Record<string, unknown>;
+  values: Record<string, unknown>
   /** Column metadata for type information */
-  columns: Array<{ name: string; dataType: string }>;
+  columns: Array<{ name: string; dataType: string }>
 }
 
 /**
  * Represents a row deletion (DELETE)
  */
 export interface RowDelete {
-  type: "delete";
+  type: 'delete'
   /** Unique identifier for this change (client-side) */
-  id: string;
+  id: string
   /** Primary key(s) to identify the row */
-  primaryKeys: PrimaryKeyValue[];
+  primaryKeys: PrimaryKeyValue[]
   /** Original row data for reference/undo */
-  originalRow: Record<string, unknown>;
+  originalRow: Record<string, unknown>
 }
 
 /**
  * Union type for all edit operations
  */
-export type EditOperation = RowUpdate | RowInsert | RowDelete;
+export type EditOperation = RowUpdate | RowInsert | RowDelete
 
 /**
  * Context for edit operations - identifies the target table
  */
 export interface EditContext {
-  schema: string;
-  table: string;
+  schema: string
+  table: string
   /** Primary key column names */
-  primaryKeyColumns: string[];
+  primaryKeyColumns: string[]
   /** All columns with their types */
-  columns: ColumnInfo[];
+  columns: ColumnInfo[]
 }
 
 /**
  * Batch of edit operations to execute
  */
 export interface EditBatch {
-  context: EditContext;
-  operations: EditOperation[];
+  context: EditContext
+  operations: EditOperation[]
 }
 
 /**
  * Result of executing edit operations
  */
 export interface EditResult {
-  success: boolean;
+  success: boolean
   /** Number of rows affected */
-  rowsAffected: number;
+  rowsAffected: number
   /** Generated SQL statements (for transparency) */
-  executedSql: string[];
+  executedSql: string[]
   /** Any errors that occurred */
   errors?: Array<{
-    operationId: string;
-    message: string;
-  }>;
+    operationId: string
+    message: string
+  }>
 }
 
 /**
  * SQL statement with parameters (for parameterized queries)
  */
 export interface ParameterizedQuery {
-  sql: string;
-  params: unknown[];
+  sql: string
+  params: unknown[]
 }
 
 /**
  * PostgreSQL data types for the type selector dropdown
  */
 export type PostgresDataType =
-  | "smallint"
-  | "integer"
-  | "bigint"
-  | "serial"
-  | "bigserial"
-  | "numeric"
-  | "real"
-  | "double precision"
-  | "money"
-  | "char"
-  | "varchar"
-  | "text"
-  | "bytea"
-  | "timestamp"
-  | "timestamptz"
-  | "date"
-  | "time"
-  | "timetz"
-  | "interval"
-  | "boolean"
-  | "uuid"
-  | "json"
-  | "jsonb"
-  | "xml"
-  | "point"
-  | "line"
-  | "lseg"
-  | "box"
-  | "path"
-  | "polygon"
-  | "circle"
-  | "cidr"
-  | "inet"
-  | "macaddr"
-  | "int4range"
-  | "int8range"
-  | "numrange"
-  | "tsrange"
-  | "tstzrange"
-  | "daterange";
+  | 'smallint'
+  | 'integer'
+  | 'bigint'
+  | 'serial'
+  | 'bigserial'
+  | 'numeric'
+  | 'real'
+  | 'double precision'
+  | 'money'
+  | 'char'
+  | 'varchar'
+  | 'text'
+  | 'bytea'
+  | 'timestamp'
+  | 'timestamptz'
+  | 'date'
+  | 'time'
+  | 'timetz'
+  | 'interval'
+  | 'boolean'
+  | 'uuid'
+  | 'json'
+  | 'jsonb'
+  | 'xml'
+  | 'point'
+  | 'line'
+  | 'lseg'
+  | 'box'
+  | 'path'
+  | 'polygon'
+  | 'circle'
+  | 'cidr'
+  | 'inet'
+  | 'macaddr'
+  | 'int4range'
+  | 'int8range'
+  | 'numrange'
+  | 'tsrange'
+  | 'tstzrange'
+  | 'daterange'
 
 /**
  * Column definition for table designer
@@ -957,95 +941,85 @@ export type PostgresDataType =
  */
 export interface ColumnDefinition {
   /** Client-side tracking ID */
-  id: string;
+  id: string
   /** Column name */
-  name: string;
+  name: string
   /** Data type (PostgreSQL type or custom type) */
-  dataType: PostgresDataType | string;
+  dataType: PostgresDataType | string
   /** Length for varchar(n), char(n) */
-  length?: number;
+  length?: number
   /** Precision for numeric(p,s) */
-  precision?: number;
+  precision?: number
   /** Scale for numeric(p,s) */
-  scale?: number;
+  scale?: number
   /** Whether the column allows NULL values */
-  isNullable: boolean;
+  isNullable: boolean
   /** Whether this column is part of the primary key */
-  isPrimaryKey: boolean;
+  isPrimaryKey: boolean
   /** Whether this column has a UNIQUE constraint */
-  isUnique: boolean;
+  isUnique: boolean
   /** Default value expression */
-  defaultValue?: string;
+  defaultValue?: string
   /** Type of default value */
-  defaultType?: "value" | "expression" | "sequence";
+  defaultType?: 'value' | 'expression' | 'sequence'
   /** Sequence name for nextval('sequence') */
-  sequenceName?: string;
+  sequenceName?: string
   /** Column-level CHECK constraint expression */
-  checkConstraint?: string;
+  checkConstraint?: string
   /** Column comment */
-  comment?: string;
+  comment?: string
   /** Collation for text types */
-  collation?: string;
+  collation?: string
   /** Whether this is an array type (e.g., text[]) */
-  isArray?: boolean;
+  isArray?: boolean
 }
 
 /**
  * Constraint types supported by PostgreSQL
  */
-export type ConstraintType =
-  | "primary_key"
-  | "foreign_key"
-  | "unique"
-  | "check"
-  | "exclude";
+export type ConstraintType = 'primary_key' | 'foreign_key' | 'unique' | 'check' | 'exclude'
 
 /**
  * Foreign key referential actions
  */
-export type ReferentialAction =
-  | "NO ACTION"
-  | "RESTRICT"
-  | "CASCADE"
-  | "SET NULL"
-  | "SET DEFAULT";
+export type ReferentialAction = 'NO ACTION' | 'RESTRICT' | 'CASCADE' | 'SET NULL' | 'SET DEFAULT'
 
 /**
  * Index access methods
  */
-export type IndexMethod = "btree" | "hash" | "gist" | "gin" | "spgist" | "brin";
+export type IndexMethod = 'btree' | 'hash' | 'gist' | 'gin' | 'spgist' | 'brin'
 
 /**
  * Constraint definition for table designer
  */
 export interface ConstraintDefinition {
   /** Client-side tracking ID */
-  id: string;
+  id: string
   /** Constraint name (optional, auto-generated if not provided) */
-  name?: string;
+  name?: string
   /** Type of constraint */
-  type: ConstraintType;
+  type: ConstraintType
   /** Columns involved in the constraint */
-  columns: string[];
+  columns: string[]
   // Foreign key specific
   /** Schema containing the referenced table */
-  referencedSchema?: string;
+  referencedSchema?: string
   /** Referenced table name */
-  referencedTable?: string;
+  referencedTable?: string
   /** Referenced column names */
-  referencedColumns?: string[];
+  referencedColumns?: string[]
   /** ON UPDATE action */
-  onUpdate?: ReferentialAction;
+  onUpdate?: ReferentialAction
   /** ON DELETE action */
-  onDelete?: ReferentialAction;
+  onDelete?: ReferentialAction
   // Check constraint specific
   /** CHECK constraint expression */
-  checkExpression?: string;
+  checkExpression?: string
   // Exclude constraint specific
   /** Exclude constraint elements */
-  excludeElements?: Array<{ column: string; operator: string }>;
+  excludeElements?: Array<{ column: string; operator: string }>
   /** Index method for exclude constraint */
-  excludeUsing?: IndexMethod;
+  excludeUsing?: IndexMethod
 }
 
 /**
@@ -1053,11 +1027,11 @@ export interface ConstraintDefinition {
  */
 export interface IndexColumn {
   /** Column name or expression */
-  name: string;
+  name: string
   /** Sort order */
-  order?: "ASC" | "DESC";
+  order?: 'ASC' | 'DESC'
   /** NULLS position */
-  nullsPosition?: "FIRST" | "LAST";
+  nullsPosition?: 'FIRST' | 'LAST'
 }
 
 /**
@@ -1065,36 +1039,36 @@ export interface IndexColumn {
  */
 export interface IndexDefinition {
   /** Client-side tracking ID */
-  id: string;
+  id: string
   /** Index name (optional, auto-generated if not provided) */
-  name?: string;
+  name?: string
   /** Columns or expressions in the index */
-  columns: IndexColumn[];
+  columns: IndexColumn[]
   /** Whether this is a unique index */
-  isUnique: boolean;
+  isUnique: boolean
   /** Index access method */
-  method?: IndexMethod;
+  method?: IndexMethod
   /** Partial index WHERE clause */
-  where?: string;
+  where?: string
   /** INCLUDE columns (covering index) */
-  include?: string[];
+  include?: string[]
   /** Whether to create index concurrently */
-  concurrent?: boolean;
+  concurrent?: boolean
 }
 
 /**
  * Table partitioning strategy
  */
-export type PartitionType = "RANGE" | "LIST" | "HASH";
+export type PartitionType = 'RANGE' | 'LIST' | 'HASH'
 
 /**
  * Partition definition for partitioned tables
  */
 export interface PartitionDefinition {
   /** Partitioning strategy */
-  type: PartitionType;
+  type: PartitionType
   /** Partition key columns */
-  columns: string[];
+  columns: string[]
 }
 
 /**
@@ -1102,83 +1076,83 @@ export interface PartitionDefinition {
  */
 export interface TableDefinition {
   /** Schema name */
-  schema: string;
+  schema: string
   /** Table name */
-  name: string;
+  name: string
   /** Column definitions */
-  columns: ColumnDefinition[];
+  columns: ColumnDefinition[]
   /** Table-level constraints */
-  constraints: ConstraintDefinition[];
+  constraints: ConstraintDefinition[]
   /** Index definitions */
-  indexes: IndexDefinition[];
+  indexes: IndexDefinition[]
   /** Partition configuration */
-  partition?: PartitionDefinition;
+  partition?: PartitionDefinition
   /** Parent tables for inheritance */
-  inherits?: string[];
+  inherits?: string[]
   /** Tablespace name */
-  tablespace?: string;
+  tablespace?: string
   /** Table comment */
-  comment?: string;
+  comment?: string
   /** Whether to include OIDs (deprecated in PG 12+) */
-  withOids?: boolean;
+  withOids?: boolean
   /** Whether this is an unlogged table */
-  unlogged?: boolean;
+  unlogged?: boolean
 }
 
 /**
  * Column-level ALTER TABLE operations
  */
 export type AlterColumnOperation =
-  | { type: "add"; column: ColumnDefinition }
-  | { type: "drop"; columnName: string; cascade?: boolean }
-  | { type: "rename"; oldName: string; newName: string }
-  | { type: "set_type"; columnName: string; newType: string; using?: string }
-  | { type: "set_nullable"; columnName: string; nullable: boolean }
-  | { type: "set_default"; columnName: string; defaultValue: string | null }
-  | { type: "set_comment"; columnName: string; comment: string | null };
+  | { type: 'add'; column: ColumnDefinition }
+  | { type: 'drop'; columnName: string; cascade?: boolean }
+  | { type: 'rename'; oldName: string; newName: string }
+  | { type: 'set_type'; columnName: string; newType: string; using?: string }
+  | { type: 'set_nullable'; columnName: string; nullable: boolean }
+  | { type: 'set_default'; columnName: string; defaultValue: string | null }
+  | { type: 'set_comment'; columnName: string; comment: string | null }
 
 /**
  * Constraint-level ALTER TABLE operations
  */
 export type AlterConstraintOperation =
-  | { type: "add_constraint"; constraint: ConstraintDefinition }
-  | { type: "drop_constraint"; name: string; cascade?: boolean }
-  | { type: "rename_constraint"; oldName: string; newName: string };
+  | { type: 'add_constraint'; constraint: ConstraintDefinition }
+  | { type: 'drop_constraint'; name: string; cascade?: boolean }
+  | { type: 'rename_constraint'; oldName: string; newName: string }
 
 /**
  * Index ALTER operations
  */
 export type AlterIndexOperation =
-  | { type: "create_index"; index: IndexDefinition }
+  | { type: 'create_index'; index: IndexDefinition }
   | {
-      type: "drop_index";
-      name: string;
-      cascade?: boolean;
-      concurrent?: boolean;
+      type: 'drop_index'
+      name: string
+      cascade?: boolean
+      concurrent?: boolean
     }
-  | { type: "rename_index"; oldName: string; newName: string }
-  | { type: "reindex"; name: string; concurrent?: boolean };
+  | { type: 'rename_index'; oldName: string; newName: string }
+  | { type: 'reindex'; name: string; concurrent?: boolean }
 
 /**
  * Batch of ALTER TABLE operations to execute
  */
 export interface AlterTableBatch {
   /** Target schema */
-  schema: string;
+  schema: string
   /** Target table */
-  table: string;
+  table: string
   /** Column operations */
-  columnOperations: AlterColumnOperation[];
+  columnOperations: AlterColumnOperation[]
   /** Constraint operations */
-  constraintOperations: AlterConstraintOperation[];
+  constraintOperations: AlterConstraintOperation[]
   /** Index operations */
-  indexOperations: AlterIndexOperation[];
+  indexOperations: AlterIndexOperation[]
   /** New table name (for RENAME TO) */
-  renameTable?: string;
+  renameTable?: string
   /** New schema (for SET SCHEMA) */
-  setSchema?: string;
+  setSchema?: string
   /** Table comment (null to remove) */
-  comment?: string | null;
+  comment?: string | null
 }
 
 /**
@@ -1186,11 +1160,11 @@ export interface AlterTableBatch {
  */
 export interface DDLResult {
   /** Whether all operations succeeded */
-  success: boolean;
+  success: boolean
   /** SQL statements that were executed */
-  executedSql: string[];
+  executedSql: string[]
   /** Errors encountered during execution */
-  errors?: string[];
+  errors?: string[]
 }
 
 /**
@@ -1198,15 +1172,15 @@ export interface DDLResult {
  */
 export interface SequenceInfo {
   /** Schema containing the sequence */
-  schema: string;
+  schema: string
   /** Sequence name */
-  name: string;
+  name: string
   /** Data type of the sequence */
-  dataType: string;
+  dataType: string
   /** Start value */
-  startValue: string;
+  startValue: string
   /** Increment value */
-  increment: string;
+  increment: string
 }
 
 /**
@@ -1214,40 +1188,40 @@ export interface SequenceInfo {
  */
 export interface CustomTypeInfo {
   /** Schema containing the type */
-  schema: string;
+  schema: string
   /** Type name */
-  name: string;
+  name: string
   /** Type category */
-  type: "enum" | "composite" | "range" | "domain";
+  type: 'enum' | 'composite' | 'range' | 'domain'
   /** Enum values (for enum types) */
-  values?: string[];
+  values?: string[]
 }
 
 /**
  * License type enumeration
  */
-export type LicenseType = "personal" | "individual" | "team";
+export type LicenseType = 'personal' | 'individual' | 'team'
 
 /**
  * Stored license data (encrypted locally)
  */
 export interface LicenseData {
   /** License key (from Dodo Payments) */
-  key: string;
+  key: string
   /** Type of license */
-  type: LicenseType;
+  type: LicenseType
   /** Email address of license owner */
-  email: string;
+  email: string
   /** Subscription expiry date / updates_until (ISO string) */
-  expiresAt: string;
+  expiresAt: string
   /** Last version the user is entitled to use perpetually */
-  perpetualVersion: string;
+  perpetualVersion: string
   /** When this license was activated (ISO string) */
-  activatedAt: string;
+  activatedAt: string
   /** Last time the license was validated online (ISO string) */
-  lastValidated: string;
+  lastValidated: string
   /** Dodo instance ID for this activation (needed for deactivation) */
-  instanceId?: string;
+  instanceId?: string
 }
 
 /**
@@ -1255,54 +1229,54 @@ export interface LicenseData {
  */
 export interface LicenseStatus {
   /** Whether the license is valid */
-  isValid: boolean;
+  isValid: boolean
   /** Whether commercial use is allowed */
-  isCommercial: boolean;
+  isCommercial: boolean
   /** Type of license */
-  type: LicenseType;
+  type: LicenseType
   /** Expiry date (null for personal) */
-  expiresAt: string | null;
+  expiresAt: string | null
   /** Days until expiry (null for personal or expired) */
-  daysUntilExpiry: number | null;
+  daysUntilExpiry: number | null
   /** Perpetual version the user can use after expiry */
-  perpetualVersion: string | null;
+  perpetualVersion: string | null
   /** Whether revalidation is needed */
-  needsRevalidation: boolean;
+  needsRevalidation: boolean
   /** Email associated with the license */
-  email?: string;
+  email?: string
   /** Number of devices activated */
-  devicesUsed?: number;
+  devicesUsed?: number
   /** Maximum devices allowed */
-  devicesAllowed?: number;
+  devicesAllowed?: number
 }
 
 /**
  * License activation request
  */
 export interface LicenseActivationRequest {
-  key: string;
-  email: string;
+  key: string
+  email: string
 }
 
 /**
  * License activation response
  */
 export interface LicenseActivationResponse {
-  success: boolean;
-  error?: string;
-  type?: LicenseType;
-  expiresAt?: string;
-  perpetualVersion?: string;
-  devicesUsed?: number;
-  devicesAllowed?: number;
+  success: boolean
+  error?: string
+  type?: LicenseType
+  expiresAt?: string
+  perpetualVersion?: string
+  devicesUsed?: number
+  devicesAllowed?: number
 }
 
 /**
  * License deactivation response
  */
 export interface LicenseDeactivationResponse {
-  success: boolean;
-  error?: string;
+  success: boolean
+  error?: string
 }
 
 /**
@@ -1310,80 +1284,80 @@ export interface LicenseDeactivationResponse {
  */
 export interface SavedQuery {
   /** Unique identifier */
-  id: string;
+  id: string
   /** Display name for the query */
-  name: string;
+  name: string
   /** The SQL query text */
-  query: string;
+  query: string
   /** Optional description of what the query does */
-  description?: string;
+  description?: string
   /** Optional connection ID - if set, opens in this connection by default */
-  connectionId?: string;
+  connectionId?: string
   /** Tags for organization and filtering */
-  tags: string[];
+  tags: string[]
   /** Folder path for grouping (e.g., "Reports/Monthly") */
-  folder?: string;
+  folder?: string
   /** Whether this query is pinned (favorites) */
-  isPinned?: boolean;
+  isPinned?: boolean
   /** Number of times this query has been used */
-  usageCount: number;
+  usageCount: number
   /** Last time the query was used (Unix timestamp) */
-  lastUsedAt?: number;
+  lastUsedAt?: number
   /** When the query was created (Unix timestamp) */
-  createdAt: number;
+  createdAt: number
   /** When the query was last updated (Unix timestamp) */
-  updatedAt: number;
+  updatedAt: number
 }
 
 /**
  * Category for SQL snippets
  */
 export type SnippetCategory =
-  | "select"
-  | "insert"
-  | "update"
-  | "delete"
-  | "ddl"
-  | "aggregate"
-  | "join"
-  | "other";
+  | 'select'
+  | 'insert'
+  | 'update'
+  | 'delete'
+  | 'ddl'
+  | 'aggregate'
+  | 'join'
+  | 'other'
 
 /**
  * A reusable SQL snippet/template
  */
 export interface Snippet {
   /** Unique identifier */
-  id: string;
+  id: string
   /** Display name for the snippet */
-  name: string;
+  name: string
   /** Description of what the snippet does */
-  description: string;
+  description: string
   /** SQL template with Monaco placeholders: ${1:table}, $2, etc. */
-  template: string;
+  template: string
   /** Category for organization */
-  category: SnippetCategory;
+  category: SnippetCategory
   /** Whether this is a built-in snippet (cannot be deleted) */
-  isBuiltIn: boolean;
+  isBuiltIn: boolean
   /** Optional trigger prefix for autocomplete (e.g., "sel" for SELECT) */
-  triggerPrefix?: string;
+  triggerPrefix?: string
   /** When the snippet was created (Unix timestamp) */
-  createdAt: number;
+  createdAt: number
   /** When the snippet was last updated (Unix timestamp) */
-  updatedAt: number;
+  updatedAt: number
 }
 
-export type SSHAuthenticationMethod = "Password" | "Public Key";
+export type SSHAuthenticationMethod = 'Password' | 'Public Key'
 
 /**
  * Individual timing phase within query execution
  */
 export interface TimingPhase {
   /** Phase name (e.g., 'tcp_handshake', 'execution') */
-  name: string;
+  name: string
   /** Duration in milliseconds */
-  durationMs: number;
+  durationMs: number
   /** Offset from query start in milliseconds */
-  startOffset: number;
+  startOffset: number
 }
 
 /**
@@ -1391,50 +1365,50 @@ export interface TimingPhase {
  */
 export interface QueryTelemetry {
   /** Unique identifier for this execution */
-  executionId: string;
+  executionId: string
   /** Total execution time in milliseconds */
-  totalDurationMs: number;
+  totalDurationMs: number
   /** All timing phases */
-  phases: TimingPhase[];
+  phases: TimingPhase[]
 
   // Individual phase durations (convenience accessors)
   /** TCP connection establishment time */
-  tcpHandshakeMs?: number;
+  tcpHandshakeMs?: number
   /** Database authentication/protocol handshake time */
-  dbHandshakeMs?: number;
+  dbHandshakeMs?: number
   /** Network round-trip latency */
-  networkLatencyMs?: number;
+  networkLatencyMs?: number
   /** Query plan generation time (from EXPLAIN) */
-  planningMs?: number;
+  planningMs?: number
   /** Server-side query execution time */
-  executionMs?: number;
+  executionMs?: number
   /** Data transfer time from server */
-  downloadMs?: number;
+  downloadMs?: number
   /** Client-side result parsing time */
-  parseMs?: number;
+  parseMs?: number
 
   // Metadata
   /** Whether an existing connection was reused */
-  connectionReused: boolean;
+  connectionReused: boolean
   /** Number of rows returned */
-  rowCount: number;
+  rowCount: number
   /** Bytes received from server */
-  bytesReceived?: number;
+  bytesReceived?: number
   /** Unix timestamp when telemetry was recorded */
-  timestamp: number;
+  timestamp: number
 }
 
 /**
  * Statistical aggregations for benchmark runs
  */
 export interface TelemetryStats {
-  avg: number;
-  min: number;
-  max: number;
-  p90: number;
-  p95: number;
-  p99: number;
-  stdDev: number;
+  avg: number
+  min: number
+  max: number
+  p90: number
+  p95: number
+  p99: number
+  stdDev: number
 }
 
 /**
@@ -1443,10 +1417,10 @@ export interface TelemetryStats {
  * @param p - Percentile to calculate (0-100)
  */
 export function calcPercentile(sorted: number[], p: number): number {
-  if (sorted.length === 0) return 0;
-  if (sorted.length === 1) return sorted[0];
-  const idx = Math.ceil((p / 100) * sorted.length) - 1;
-  return sorted[Math.max(0, Math.min(idx, sorted.length - 1))];
+  if (sorted.length === 0) return 0
+  if (sorted.length === 1) return sorted[0]
+  const idx = Math.ceil((p / 100) * sorted.length) - 1
+  return sorted[Math.max(0, Math.min(idx, sorted.length - 1))]
 }
 
 /**
@@ -1455,21 +1429,19 @@ export function calcPercentile(sorted: number[], p: number): number {
  * @param mean - Pre-calculated mean of the values
  */
 export function calcStdDev(values: number[], mean: number): number {
-  if (values.length === 0) return 0;
-  const variance =
-    values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) /
-    values.length;
-  return Math.sqrt(variance);
+  if (values.length === 0) return 0
+  const variance = values.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / values.length
+  return Math.sqrt(variance)
 }
 
 /**
  * Per-phase statistics for benchmark analysis
  */
 export interface PhaseStats {
-  avg: number;
-  p90: number;
-  p95: number;
-  p99: number;
+  avg: number
+  p90: number
+  p95: number
+  p99: number
 }
 
 /**
@@ -1477,13 +1449,13 @@ export interface PhaseStats {
  */
 export interface BenchmarkResult {
   /** Number of iterations completed */
-  runCount: number;
+  runCount: number
   /** Individual telemetry data for each run */
-  telemetryRuns: QueryTelemetry[];
+  telemetryRuns: QueryTelemetry[]
   /** Aggregated statistics across all runs */
-  stats: TelemetryStats;
+  stats: TelemetryStats
   /** Per-phase statistics (keyed by phase name) */
-  phaseStats: Record<string, PhaseStats>;
+  phaseStats: Record<string, PhaseStats>
 }
 
 /**
@@ -1491,11 +1463,11 @@ export interface BenchmarkResult {
  */
 export interface TelemetryQueryOptions {
   /** Unique execution ID for cancellation support */
-  executionId?: string;
+  executionId?: string
   /** Whether to collect detailed telemetry */
-  collectTelemetry?: boolean;
+  collectTelemetry?: boolean
   /** Number of times to run query for benchmarking */
-  benchmarkRuns?: number;
+  benchmarkRuns?: number
 }
 
 /**
@@ -1503,59 +1475,59 @@ export interface TelemetryQueryOptions {
  */
 export interface MultiStatementResultWithTelemetry extends MultiStatementResult {
   /** Telemetry data for this execution */
-  telemetry?: QueryTelemetry;
+  telemetry?: QueryTelemetry
   /** Benchmark results (when benchmarkRuns > 1) */
-  benchmark?: BenchmarkResult;
+  benchmark?: BenchmarkResult
 }
 
 /**
  * Severity levels for performance issues
  */
-export type PerformanceIssueSeverity = "critical" | "warning" | "info";
+export type PerformanceIssueSeverity = 'critical' | 'warning' | 'info'
 
 /**
  * Categories of performance issues detected during analysis
  */
 export type PerformanceIssueType =
-  | "missing_index"
-  | "n_plus_one"
-  | "slow_query"
-  | "high_filter_ratio"
-  | "row_estimate_off"
-  | "disk_spill";
+  | 'missing_index'
+  | 'n_plus_one'
+  | 'slow_query'
+  | 'high_filter_ratio'
+  | 'row_estimate_off'
+  | 'disk_spill'
 
 /**
  * A single performance issue detected during query analysis
  */
 export interface PerformanceIssue {
   /** Unique identifier for this issue */
-  id: string;
+  id: string
   /** Type of performance issue */
-  type: PerformanceIssueType;
+  type: PerformanceIssueType
   /** Severity level */
-  severity: PerformanceIssueSeverity;
+  severity: PerformanceIssueSeverity
   /** Short title describing the issue */
-  title: string;
+  title: string
   /** Detailed description of the issue */
-  message: string;
+  message: string
   /** Actionable suggestion to fix the issue */
-  suggestion: string;
+  suggestion: string
   /** Table name if applicable */
-  tableName?: string;
+  tableName?: string
   /** Column name if applicable */
-  columnName?: string;
+  columnName?: string
   /** Suggested CREATE INDEX statement */
-  indexSuggestion?: string;
+  indexSuggestion?: string
   /** Related queries for N+1 patterns */
-  relatedQueries?: string[];
+  relatedQueries?: string[]
   /** Threshold that was exceeded (for slow queries) */
-  threshold?: number;
+  threshold?: number
   /** Actual value that exceeded the threshold */
-  actualValue?: number;
+  actualValue?: number
   /** Plan node type from EXPLAIN (e.g., 'Seq Scan') */
-  planNodeType?: string;
+  planNodeType?: string
   /** Additional details from the plan node */
-  planNodeDetails?: Record<string, unknown>;
+  planNodeDetails?: Record<string, unknown>
 }
 
 /**
@@ -1563,19 +1535,19 @@ export interface PerformanceIssue {
  */
 export interface NplusOnePattern {
   /** Normalized query fingerprint */
-  fingerprint: string;
+  fingerprint: string
   /** Query template with placeholders */
-  queryTemplate: string;
+  queryTemplate: string
   /** Number of occurrences detected */
-  occurrences: number;
+  occurrences: number
   /** Sample queries (limited to 3) */
-  querySamples: string[];
+  querySamples: string[]
   /** Table name extracted from query */
-  tableName?: string;
+  tableName?: string
   /** Column name in WHERE clause */
-  columnName?: string;
+  columnName?: string
   /** Time window in which these occurred (ms) */
-  timeWindowMs: number;
+  timeWindowMs: number
 }
 
 /**
@@ -1583,29 +1555,29 @@ export interface NplusOnePattern {
  */
 export interface PerformanceAnalysisResult {
   /** Unique identifier for this analysis */
-  queryId: string;
+  queryId: string
   /** Original query that was analyzed */
-  query: string;
+  query: string
   /** Unix timestamp when analysis was performed */
-  analyzedAt: number;
+  analyzedAt: number
   /** Time taken to perform analysis (ms) */
-  durationMs: number;
+  durationMs: number
   /** Issue counts by severity */
   issueCount: {
-    critical: number;
-    warning: number;
-    info: number;
-  };
+    critical: number
+    warning: number
+    info: number
+  }
   /** Detected performance issues */
-  issues: PerformanceIssue[];
+  issues: PerformanceIssue[]
   /** Detected N+1 patterns */
-  nplusOnePatterns: NplusOnePattern[];
+  nplusOnePatterns: NplusOnePattern[]
   /** Raw EXPLAIN plan for reference */
-  explainPlan?: unknown;
+  explainPlan?: unknown
   /** Database type */
-  dbType: "postgresql";
+  dbType: 'postgresql'
   /** Connection identifier */
-  connectionId: string;
+  connectionId: string
 }
 
 /**
@@ -1613,13 +1585,13 @@ export interface PerformanceAnalysisResult {
  */
 export interface PerformanceAnalysisConfig {
   /** Threshold for slow query warning (default: 1000ms) */
-  slowQueryThresholdMs: number;
+  slowQueryThresholdMs: number
   /** Time window for N+1 detection (default: 5000ms) */
-  nplusOneWindowMs: number;
+  nplusOneWindowMs: number
   /** Minimum occurrences to flag N+1 (default: 3) */
-  nplusOneMinOccurrences: number;
+  nplusOneMinOccurrences: number
   /** Number of recent queries to analyze for N+1 (default: 50) */
-  historyLookbackCount: number;
+  historyLookbackCount: number
 }
 
 /**
@@ -1627,11 +1599,11 @@ export interface PerformanceAnalysisConfig {
  */
 export interface QueryHistoryItemForAnalysis {
   /** The SQL query */
-  query: string;
+  query: string
   /** Unix timestamp when executed */
-  timestamp: number;
+  timestamp: number
   /** Connection ID */
-  connectionId: string;
+  connectionId: string
 }
 
 /**
@@ -1643,21 +1615,21 @@ export interface QueryHistoryItemForAnalysis {
  */
 export interface QueryHistoryEntry {
   /** Unique identifier */
-  id: string;
+  id: string
   /** The SQL query text */
-  query: string;
+  query: string
   /** When the query was executed (Unix timestamp, ms) */
-  timestamp: number;
+  timestamp: number
   /** Execution duration in milliseconds */
-  durationMs: number;
+  durationMs: number
   /** Number of rows returned/affected */
-  rowCount: number;
+  rowCount: number
   /** Whether the query succeeded or errored */
-  status: "success" | "error";
+  status: 'success' | 'error'
   /** Connection the query was run against */
-  connectionId: string;
+  connectionId: string
   /** Error message, present when status is "error" */
-  errorMessage?: string;
+  errorMessage?: string
 }
 
 /**
@@ -1666,7 +1638,7 @@ export interface QueryHistoryEntry {
  * History is capped per connection (rather than globally) so that a single busy
  * connection cannot evict the history of others.
  */
-export const MAX_QUERY_HISTORY_PER_CONNECTION = 100;
+export const MAX_QUERY_HISTORY_PER_CONNECTION = 100
 
 /**
  * Trim a newest-first history list so each connection keeps at most `max` entries.
@@ -1674,91 +1646,92 @@ export const MAX_QUERY_HISTORY_PER_CONNECTION = 100;
  * Assumes `history` is already ordered newest-first; the oldest entries for a
  * connection are the ones dropped once its cap is exceeded. Order is preserved.
  */
-export function capQueryHistoryPerConnection<
-  T extends { connectionId: string },
->(history: T[], max: number = MAX_QUERY_HISTORY_PER_CONNECTION): T[] {
-  const counts = new Map<string, number>();
+export function capQueryHistoryPerConnection<T extends { connectionId: string }>(
+  history: T[],
+  max: number = MAX_QUERY_HISTORY_PER_CONNECTION
+): T[] {
+  const counts = new Map<string, number>()
   return history.filter((item) => {
-    const next = (counts.get(item.connectionId) ?? 0) + 1;
-    counts.set(item.connectionId, next);
-    return next <= max;
-  });
+    const next = (counts.get(item.connectionId) ?? 0) + 1
+    counts.set(item.connectionId, next)
+    return next <= max
+  })
 }
 
 /**
  * Cron schedule expression or preset
  */
 export type SchedulePreset =
-  | "every_minute"
-  | "every_5_minutes"
-  | "every_15_minutes"
-  | "every_30_minutes"
-  | "every_hour"
-  | "every_6_hours"
-  | "every_12_hours"
-  | "daily"
-  | "weekly"
-  | "monthly"
-  | "custom";
+  | 'every_minute'
+  | 'every_5_minutes'
+  | 'every_15_minutes'
+  | 'every_30_minutes'
+  | 'every_hour'
+  | 'every_6_hours'
+  | 'every_12_hours'
+  | 'daily'
+  | 'weekly'
+  | 'monthly'
+  | 'custom'
 
 /**
  * Maps schedule presets to human-readable labels and cron expressions
  */
 export const SCHEDULE_PRESETS: Record<
-  Exclude<SchedulePreset, "custom">,
+  Exclude<SchedulePreset, 'custom'>,
   { label: string; cron: string }
 > = {
-  every_minute: { label: "Every minute", cron: "* * * * *" },
-  every_5_minutes: { label: "Every 5 minutes", cron: "*/5 * * * *" },
-  every_15_minutes: { label: "Every 15 minutes", cron: "*/15 * * * *" },
-  every_30_minutes: { label: "Every 30 minutes", cron: "*/30 * * * *" },
-  every_hour: { label: "Every hour", cron: "0 * * * *" },
-  every_6_hours: { label: "Every 6 hours", cron: "0 */6 * * *" },
-  every_12_hours: { label: "Every 12 hours", cron: "0 */12 * * *" },
-  daily: { label: "Daily at midnight", cron: "0 0 * * *" },
-  weekly: { label: "Weekly on Sunday", cron: "0 0 * * 0" },
-  monthly: { label: "Monthly on 1st", cron: "0 0 1 * *" },
-};
+  every_minute: { label: 'Every minute', cron: '* * * * *' },
+  every_5_minutes: { label: 'Every 5 minutes', cron: '*/5 * * * *' },
+  every_15_minutes: { label: 'Every 15 minutes', cron: '*/15 * * * *' },
+  every_30_minutes: { label: 'Every 30 minutes', cron: '*/30 * * * *' },
+  every_hour: { label: 'Every hour', cron: '0 * * * *' },
+  every_6_hours: { label: 'Every 6 hours', cron: '0 */6 * * *' },
+  every_12_hours: { label: 'Every 12 hours', cron: '0 */12 * * *' },
+  daily: { label: 'Daily at midnight', cron: '0 0 * * *' },
+  weekly: { label: 'Weekly on Sunday', cron: '0 0 * * 0' },
+  monthly: { label: 'Monthly on 1st', cron: '0 0 1 * *' }
+}
 
 /**
  * Schedule configuration for a scheduled query
  */
 export interface ScheduleConfig {
   /** Preset schedule type */
-  preset: SchedulePreset;
+  preset: SchedulePreset
   /** Custom cron expression (when preset is 'custom') */
-  cronExpression?: string;
+  cronExpression?: string
   /** Timezone for schedule (default: local) */
-  timezone?: string;
+  timezone?: string
 }
 
 /**
  * Status of a scheduled query
  */
-export type ScheduledQueryStatus = "active" | "paused" | "error";
+export type ScheduledQueryStatus = 'active' | 'paused' | 'error'
 
 /**
  * Result of a scheduled query execution
  */
 export interface ScheduledQueryRun {
   /** Unique run identifier */
-  id: string;
+  id: string
   /** Scheduled query ID */
-  scheduledQueryId: string;
+  scheduledQueryId: string
   /** When the run started (Unix timestamp) */
-  startedAt: number;
+  startedAt: number
   /** When the run completed (Unix timestamp) */
-  completedAt?: number;
+  completedAt?: number
   /** Duration in milliseconds */
-  durationMs?: number;
+  durationMs?: number
   /** Whether the run succeeded */
-  success: boolean;
+  success: boolean
   /** Error message if failed */
-  error?: string;
+  error?: string
   /** Number of rows returned/affected */
-  rowCount?: number;
+  rowCount?: number
   /** Truncated preview of results (first few rows) */
-  resultPreview?: Record<string, unknown>[];
+  resultPreview?: Record<string, unknown>[]
 }
 
 /**
@@ -1766,35 +1739,35 @@ export interface ScheduledQueryRun {
  */
 export interface ScheduledQuery {
   /** Unique identifier */
-  id: string;
+  id: string
   /** Display name for the scheduled query */
-  name: string;
+  name: string
   /** The SQL query to execute */
-  query: string;
+  query: string
   /** Optional description */
-  description?: string;
+  description?: string
   /** Connection ID to run against (required) */
-  connectionId: string;
+  connectionId: string
   /** Schedule configuration */
-  schedule: ScheduleConfig;
+  schedule: ScheduleConfig
   /** Current status */
-  status: ScheduledQueryStatus;
+  status: ScheduledQueryStatus
   /** Whether to show desktop notifications on completion */
-  notifyOnComplete: boolean;
+  notifyOnComplete: boolean
   /** Whether to show desktop notifications on failure */
-  notifyOnError: boolean;
+  notifyOnError: boolean
   /** Maximum number of runs to keep in history */
-  maxHistoryRuns: number;
+  maxHistoryRuns: number
   /** Last error message (if status is 'error') */
-  lastError?: string;
+  lastError?: string
   /** Next scheduled run time (Unix timestamp) */
-  nextRunAt?: number;
+  nextRunAt?: number
   /** Last run time (Unix timestamp) */
-  lastRunAt?: number;
+  lastRunAt?: number
   /** When the scheduled query was created (Unix timestamp) */
-  createdAt: number;
+  createdAt: number
   /** When the scheduled query was last updated (Unix timestamp) */
-  updatedAt: number;
+  updatedAt: number
 }
 
 /**
@@ -1802,25 +1775,19 @@ export interface ScheduledQuery {
  */
 export type CreateScheduledQueryInput = Omit<
   ScheduledQuery,
-  | "id"
-  | "status"
-  | "lastError"
-  | "nextRunAt"
-  | "lastRunAt"
-  | "createdAt"
-  | "updatedAt"
->;
+  'id' | 'status' | 'lastError' | 'nextRunAt' | 'lastRunAt' | 'createdAt' | 'updatedAt'
+>
 
 /**
  * Input for updating a scheduled query
  */
 export type UpdateScheduledQueryInput = Partial<
-  Omit<ScheduledQuery, "id" | "createdAt" | "updatedAt">
->;
+  Omit<ScheduledQuery, 'id' | 'createdAt' | 'updatedAt'>
+>
 
-export type WidgetType = "chart" | "kpi" | "table";
-export type ChartWidgetType = "bar" | "line" | "area" | "pie";
-export type KPIFormat = "number" | "currency" | "percent" | "duration";
+export type WidgetType = 'chart' | 'kpi' | 'table'
+export type ChartWidgetType = 'bar' | 'line' | 'area' | 'pie'
+export type KPIFormat = 'number' | 'currency' | 'percent' | 'duration'
 
 /**
  * Data source configuration for a widget
@@ -1828,97 +1795,94 @@ export type KPIFormat = "number" | "currency" | "percent" | "duration";
  */
 export interface WidgetDataSource {
   /** Whether to use a saved query or inline SQL */
-  type: "saved-query" | "inline";
+  type: 'saved-query' | 'inline'
   /** Reference to saved query (when type is 'saved-query') */
-  savedQueryId?: string;
+  savedQueryId?: string
   /** Inline SQL query (when type is 'inline') */
-  sql?: string;
+  sql?: string
   /** Connection to execute against */
-  connectionId: string;
+  connectionId: string
 }
 
 /**
  * Configuration for chart widgets
  */
 export interface ChartWidgetConfig {
-  widgetType: "chart";
-  chartType: ChartWidgetType;
+  widgetType: 'chart'
+  chartType: ChartWidgetType
   /** Column to use for X axis */
-  xKey: string;
+  xKey: string
   /** Columns to use for Y axis (supports multiple series) */
-  yKeys: string[];
+  yKeys: string[]
   /** Custom colors for series */
-  colors?: string[];
+  colors?: string[]
   /** Whether to show legend */
-  showLegend?: boolean;
+  showLegend?: boolean
   /** Whether to show grid lines */
-  showGrid?: boolean;
+  showGrid?: boolean
   /** Chart title */
-  title?: string;
+  title?: string
   /** Chart description */
-  description?: string;
+  description?: string
 }
 
 /**
  * Configuration for KPI/metric widgets
  */
 export interface KPIWidgetConfig {
-  widgetType: "kpi";
+  widgetType: 'kpi'
   /** Display format for the value */
-  format: KPIFormat;
+  format: KPIFormat
   /** Label shown above the value */
-  label: string;
+  label: string
   /** Column containing the main value */
-  valueKey: string;
+  valueKey: string
   /** Column for trend calculation (optional) */
-  trendKey?: string;
+  trendKey?: string
   /** Whether up is good or bad for trend coloring */
-  trendType?: "up-good" | "down-good";
+  trendType?: 'up-good' | 'down-good'
   /** Column for sparkline data (optional) */
-  sparklineKey?: string;
+  sparklineKey?: string
   /** Prefix for value display (e.g., '$') */
-  prefix?: string;
+  prefix?: string
   /** Suffix for value display (e.g., '%') */
-  suffix?: string;
+  suffix?: string
 }
 
 /**
  * Configuration for table preview widgets
  */
 export interface TableWidgetConfig {
-  widgetType: "table";
+  widgetType: 'table'
   /** Maximum rows to display */
-  maxRows: number;
+  maxRows: number
   /** Specific columns to show (all if not specified) */
-  columns?: string[];
+  columns?: string[]
   /** Default sort configuration */
-  sortBy?: { column: string; direction: "asc" | "desc" };
+  sortBy?: { column: string; direction: 'asc' | 'desc' }
 }
 
 /**
  * Union type for all widget configurations
  */
-export type WidgetConfig =
-  | ChartWidgetConfig
-  | KPIWidgetConfig
-  | TableWidgetConfig;
+export type WidgetConfig = ChartWidgetConfig | KPIWidgetConfig | TableWidgetConfig
 
 /**
  * Widget position and size in the grid layout
  */
 export interface WidgetLayout {
   /** X position in grid units */
-  x: number;
+  x: number
   /** Y position in grid units */
-  y: number;
+  y: number
   /** Width in grid units */
-  w: number;
+  w: number
   /** Height in grid units */
-  h: number;
+  h: number
   /** Minimum width (optional) */
-  minW?: number;
+  minW?: number
   /** Minimum height (optional) */
-  minH?: number;
+  minH?: number
 }
 
 /**
@@ -1926,23 +1890,23 @@ export interface WidgetLayout {
  */
 export interface Widget {
   /** Unique identifier */
-  id: string;
+  id: string
   /** Display name */
-  name: string;
+  name: string
   /** Data source configuration */
-  dataSource: WidgetDataSource;
+  dataSource: WidgetDataSource
   /** Widget-specific configuration */
-  config: WidgetConfig;
+  config: WidgetConfig
   /** Position and size in grid */
-  layout: WidgetLayout;
+  layout: WidgetLayout
   /** Auto-refresh interval in seconds (optional) */
-  refreshInterval?: number;
+  refreshInterval?: number
   /** Whether this widget was AI-generated */
-  aiGenerated?: boolean;
+  aiGenerated?: boolean
   /** When the widget was created (Unix timestamp) */
-  createdAt: number;
+  createdAt: number
   /** When the widget was last updated (Unix timestamp) */
-  updatedAt: number;
+  updatedAt: number
 }
 
 /**
@@ -1950,21 +1914,21 @@ export interface Widget {
  */
 export interface WidgetRunResult {
   /** Widget ID */
-  widgetId: string;
+  widgetId: string
   /** Whether execution succeeded */
-  success: boolean;
+  success: boolean
   /** Query result data */
-  data?: Record<string, unknown>[];
+  data?: Record<string, unknown>[]
   /** Column metadata */
-  fields?: QueryField[];
+  fields?: QueryField[]
   /** Error message if failed */
-  error?: string;
+  error?: string
   /** Execution duration in milliseconds */
-  durationMs: number;
+  durationMs: number
   /** Number of rows returned */
-  rowCount: number;
+  rowCount: number
   /** When the query was executed (Unix timestamp) */
-  executedAt: number;
+  executedAt: number
 }
 
 /**
@@ -1972,316 +1936,304 @@ export interface WidgetRunResult {
  */
 export interface Dashboard {
   /** Unique identifier */
-  id: string;
+  id: string
   /** Display name */
-  name: string;
+  name: string
   /** Optional description */
-  description?: string;
+  description?: string
   /** Tags for organization */
-  tags: string[];
+  tags: string[]
   /** Widgets in this dashboard */
-  widgets: Widget[];
+  widgets: Widget[]
   /** Number of columns in the grid layout */
-  layoutCols: number;
+  layoutCols: number
   /** Auto-refresh schedule configuration */
   refreshSchedule?: {
     /** Whether auto-refresh is enabled */
-    enabled: boolean;
+    enabled: boolean
     /** Schedule preset */
-    preset: SchedulePreset;
+    preset: SchedulePreset
     /** Custom cron expression (when preset is 'custom') */
-    cronExpression?: string;
+    cronExpression?: string
     /** Timezone for schedule */
-    timezone?: string;
-  };
+    timezone?: string
+  }
   /** When the dashboard was created (Unix timestamp) */
-  createdAt: number;
+  createdAt: number
   /** When the dashboard was last updated (Unix timestamp) */
-  updatedAt: number;
+  updatedAt: number
   /** Version number for conflict detection (future sync) */
-  version: number;
+  version: number
   /** Server-assigned sync ID (for future cloud sync) */
-  syncId?: string;
+  syncId?: string
 }
 
 /**
  * Input for creating a new dashboard
  */
-export type CreateDashboardInput = Omit<
-  Dashboard,
-  "id" | "createdAt" | "updatedAt" | "version"
->;
+export type CreateDashboardInput = Omit<Dashboard, 'id' | 'createdAt' | 'updatedAt' | 'version'>
 
 /**
  * Input for updating a dashboard
  */
-export type UpdateDashboardInput = Partial<
-  Omit<Dashboard, "id" | "createdAt" | "updatedAt">
->;
+export type UpdateDashboardInput = Partial<Omit<Dashboard, 'id' | 'createdAt' | 'updatedAt'>>
 
 /**
  * Input for creating a new widget
  */
-export type CreateWidgetInput = Omit<Widget, "id" | "createdAt" | "updatedAt">;
+export type CreateWidgetInput = Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>
 
 /**
  * Input for updating a widget
  */
-export type UpdateWidgetInput = Partial<
-  Omit<Widget, "id" | "createdAt" | "updatedAt">
->;
+export type UpdateWidgetInput = Partial<Omit<Widget, 'id' | 'createdAt' | 'updatedAt'>>
 
 export interface ColumnStatsRequest {
-  schema: string;
-  table: string;
-  column: string;
-  dataType: string;
+  schema: string
+  table: string
+  column: string
+  dataType: string
 }
 
-export type ColumnStatsType =
-  | "numeric"
-  | "text"
-  | "datetime"
-  | "boolean"
-  | "other";
+export type ColumnStatsType = 'numeric' | 'text' | 'datetime' | 'boolean' | 'other'
 
 export interface HistogramBucket {
-  min: number;
-  max: number;
-  count: number;
+  min: number
+  max: number
+  count: number
 }
 
 export interface CommonValue {
-  value: string | null;
-  count: number;
-  percentage: number;
+  value: string | null
+  count: number
+  percentage: number
 }
 
 export interface ColumnStats {
-  column: string;
-  dataType: string;
-  statsType: ColumnStatsType;
-  totalRows: number;
-  nullCount: number;
-  nullPercentage: number;
-  distinctCount: number;
-  distinctPercentage: number;
-  min?: string | number | null;
-  max?: string | number | null;
-  avg?: number | null;
-  median?: number | null;
-  stdDev?: number | null;
-  minLength?: number | null;
-  maxLength?: number | null;
-  avgLength?: number | null;
-  histogram?: HistogramBucket[];
-  commonValues?: CommonValue[];
-  trueCount?: number;
-  falseCount?: number;
+  column: string
+  dataType: string
+  statsType: ColumnStatsType
+  totalRows: number
+  nullCount: number
+  nullPercentage: number
+  distinctCount: number
+  distinctPercentage: number
+  min?: string | number | null
+  max?: string | number | null
+  avg?: number | null
+  median?: number | null
+  stdDev?: number | null
+  minLength?: number | null
+  maxLength?: number | null
+  avgLength?: number | null
+  histogram?: HistogramBucket[]
+  commonValues?: CommonValue[]
+  trueCount?: number
+  falseCount?: number
 }
 
 export interface CsvColumnMapping {
-  csvColumn: string;
-  tableColumn: string | null;
-  inferredType?: string;
+  csvColumn: string
+  tableColumn: string | null
+  inferredType?: string
 }
 
 export interface CsvImportOptions {
-  batchSize: number;
-  onConflict: "error" | "skip" | "update";
-  truncateFirst: boolean;
-  useTransaction: boolean;
-  useCopy: boolean;
+  batchSize: number
+  onConflict: 'error' | 'skip' | 'update'
+  truncateFirst: boolean
+  useTransaction: boolean
+  useCopy: boolean
 }
 
 export interface CsvImportRequest {
-  schema: string;
-  table: string;
-  columns: string[];
-  mappings: CsvColumnMapping[];
-  options: CsvImportOptions;
-  createTable: boolean;
+  schema: string
+  table: string
+  columns: string[]
+  mappings: CsvColumnMapping[]
+  options: CsvImportOptions
+  createTable: boolean
   tableDefinition?: {
-    columns: Array<{ name: string; dataType: string; isNullable: boolean }>;
-  };
+    columns: Array<{ name: string; dataType: string; isNullable: boolean }>
+  }
 }
 
 export interface CsvImportProgress {
-  phase: "preparing" | "importing" | "complete" | "error";
-  rowsImported: number;
-  totalRows: number;
-  currentBatch: number;
-  totalBatches: number;
-  error?: string;
+  phase: 'preparing' | 'importing' | 'complete' | 'error'
+  rowsImported: number
+  totalRows: number
+  currentBatch: number
+  totalBatches: number
+  error?: string
 }
 
 export interface CsvImportResult {
-  success: boolean;
-  rowsImported: number;
-  rowsSkipped: number;
-  rowsFailed: number;
-  error?: string;
-  durationMs: number;
+  success: boolean
+  rowsImported: number
+  rowsSkipped: number
+  rowsFailed: number
+  error?: string
+  durationMs: number
 }
 
 export interface BatchInsertOptions {
-  schema: string;
-  table: string;
-  columns: string[];
-  onConflict: "error" | "skip" | "update";
-  primaryKeyColumns?: string[];
+  schema: string
+  table: string
+  columns: string[]
+  onConflict: 'error' | 'skip' | 'update'
+  primaryKeyColumns?: string[]
 }
 
 export interface BatchInsertResult {
-  rowsInserted: number;
-  rowsSkipped: number;
-  rowsFailed: number;
+  rowsInserted: number
+  rowsSkipped: number
+  rowsFailed: number
 }
 
 export type GeneratorType =
-  | "auto-increment"
-  | "uuid"
-  | "faker"
-  | "random-int"
-  | "random-float"
-  | "random-boolean"
-  | "random-date"
-  | "random-enum"
-  | "fk-reference"
-  | "fixed"
-  | "null"
-  | "expression";
+  | 'auto-increment'
+  | 'uuid'
+  | 'faker'
+  | 'random-int'
+  | 'random-float'
+  | 'random-boolean'
+  | 'random-date'
+  | 'random-enum'
+  | 'fk-reference'
+  | 'fixed'
+  | 'null'
+  | 'expression'
 
 export interface ColumnGenerator {
-  columnName: string;
-  dataType: string;
-  generatorType: GeneratorType;
-  fakerMethod?: string;
-  fixedValue?: string;
-  minValue?: number;
-  maxValue?: number;
-  enumValues?: string[];
-  nullPercentage: number;
-  skip: boolean;
-  fkTable?: string;
-  fkColumn?: string;
+  columnName: string
+  dataType: string
+  generatorType: GeneratorType
+  fakerMethod?: string
+  fixedValue?: string
+  minValue?: number
+  maxValue?: number
+  enumValues?: string[]
+  nullPercentage: number
+  skip: boolean
+  fkTable?: string
+  fkColumn?: string
 }
 
 export interface DataGenConfig {
-  schema: string;
-  table: string;
-  rowCount: number;
-  seed?: number;
-  columns: ColumnGenerator[];
-  batchSize: number;
+  schema: string
+  table: string
+  rowCount: number
+  seed?: number
+  columns: ColumnGenerator[]
+  batchSize: number
 }
 
 export interface DataGenProgress {
-  phase: "generating" | "inserting" | "complete" | "error";
-  rowsGenerated: number;
-  rowsInserted: number;
-  totalRows: number;
-  error?: string;
+  phase: 'generating' | 'inserting' | 'complete' | 'error'
+  rowsGenerated: number
+  rowsInserted: number
+  totalRows: number
+  error?: string
 }
 
 export interface DataGenResult {
-  success: boolean;
-  rowsInserted: number;
-  durationMs: number;
-  error?: string;
+  success: boolean
+  rowsInserted: number
+  durationMs: number
+  error?: string
 }
 
 export interface PgNotificationEvent {
-  id: string;
-  connectionId: string;
-  channel: string;
-  payload: string;
-  receivedAt: number;
+  id: string
+  connectionId: string
+  channel: string
+  payload: string
+  receivedAt: number
 }
 
 export interface PgNotificationChannel {
-  name: string;
-  isListening: boolean;
-  eventCount: number;
-  lastEventAt?: number;
+  name: string
+  isListening: boolean
+  eventCount: number
+  lastEventAt?: number
 }
 
 export interface PgNotificationStats {
-  eventsPerSecond: number;
-  totalEvents: number;
-  avgPayloadSize: number;
-  connectedSince?: number;
+  eventsPerSecond: number
+  totalEvents: number
+  avgPayloadSize: number
+  connectedSince?: number
 }
 
 export type PgNotificationConnectionState =
-  | "idle"
-  | "connecting"
-  | "connected"
-  | "reconnecting"
-  | "disconnected"
-  | "error";
+  | 'idle'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'disconnected'
+  | 'error'
 
 export interface PgNotificationConnectionStatus {
-  connectionId: string;
-  state: PgNotificationConnectionState;
-  connectedSince?: number;
-  lastError?: string;
-  retryAttempt: number;
-  nextRetryAt?: number;
-  backoffMs?: number;
+  connectionId: string
+  state: PgNotificationConnectionState
+  connectedSince?: number
+  lastError?: string
+  retryAttempt: number
+  nextRetryAt?: number
+  backoffMs?: number
 }
 
 export interface ActiveQuery {
-  pid: number;
-  user: string;
-  database: string;
-  state: string;
-  duration: string;
-  durationMs: number;
-  query: string;
-  waitEvent?: string;
-  applicationName?: string;
+  pid: number
+  user: string
+  database: string
+  state: string
+  duration: string
+  durationMs: number
+  query: string
+  waitEvent?: string
+  applicationName?: string
 }
 
 export interface TableSizeInfo {
-  schema: string;
-  table: string;
-  rowCountEstimate: number;
-  dataSize: string;
-  dataSizeBytes: number;
-  indexSize: string;
-  indexSizeBytes: number;
-  totalSize: string;
-  totalSizeBytes: number;
+  schema: string
+  table: string
+  rowCountEstimate: number
+  dataSize: string
+  dataSizeBytes: number
+  indexSize: string
+  indexSizeBytes: number
+  totalSize: string
+  totalSizeBytes: number
 }
 
 export interface CacheStats {
-  bufferCacheHitRatio: number;
-  indexHitRatio: number;
+  bufferCacheHitRatio: number
+  indexHitRatio: number
   tableCacheDetails?: Array<{
-    table: string;
-    hitRatio: number;
-    seqScans: number;
-    indexScans: number;
-  }>;
+    table: string
+    hitRatio: number
+    seqScans: number
+    indexScans: number
+  }>
 }
 
 export interface LockInfo {
-  blockedPid: number;
-  blockedUser: string;
-  blockedQuery: string;
-  blockingPid: number;
-  blockingUser: string;
-  blockingQuery: string;
-  lockType: string;
-  relation?: string;
-  waitDuration: string;
-  waitDurationMs: number;
+  blockedPid: number
+  blockedUser: string
+  blockedQuery: string
+  blockingPid: number
+  blockingUser: string
+  blockingQuery: string
+  lockType: string
+  relation?: string
+  waitDuration: string
+  waitDurationMs: number
 }
 
 export interface DatabaseSizeInfo {
-  totalSize: string;
-  totalSizeBytes: number;
+  totalSize: string
+  totalSizeBytes: number
 }
 
 // ── Schema Intel / Diagnostics ──────────────────────────────────────────────
@@ -2290,16 +2242,16 @@ export interface DatabaseSizeInfo {
  * Identifier for a schema diagnostic check.
  */
 export type SchemaIntelCheckId =
-  | "tables_without_pk"
-  | "unused_indexes"
-  | "duplicate_indexes"
-  | "missing_fk_indexes"
-  | "invalid_indexes"
-  | "bloated_tables"
-  | "never_vacuumed"
-  | "nullable_fks";
+  | 'tables_without_pk'
+  | 'unused_indexes'
+  | 'duplicate_indexes'
+  | 'missing_fk_indexes'
+  | 'invalid_indexes'
+  | 'bloated_tables'
+  | 'never_vacuumed'
+  | 'nullable_fks'
 
-export type SchemaIntelSeverity = "info" | "warning" | "critical";
+export type SchemaIntelSeverity = 'info' | 'warning' | 'critical'
 
 /**
  * Static metadata about a diagnostic check (id, title, description, supported
@@ -2308,194 +2260,194 @@ export type SchemaIntelSeverity = "info" | "warning" | "critical";
  * label.
  */
 export interface SchemaIntelCheckDefinition {
-  id: SchemaIntelCheckId;
-  title: string;
-  description: string;
-  severity: SchemaIntelSeverity;
+  id: SchemaIntelCheckId
+  title: string
+  description: string
+  severity: SchemaIntelSeverity
   /** Database types this check is supported on. */
-  supportedDbTypes: DatabaseType[];
+  supportedDbTypes: DatabaseType[]
 }
 
 /**
  * A single actionable finding surfaced by a check.
  */
 export interface SchemaIntelFinding {
-  checkId: SchemaIntelCheckId;
-  severity: SchemaIntelSeverity;
+  checkId: SchemaIntelCheckId
+  severity: SchemaIntelSeverity
   /** Short human-readable headline (e.g. "public.users has no primary key"). */
-  title: string;
+  title: string
   /** Longer explanation / impact. */
-  detail?: string;
+  detail?: string
   /** Primary database entity this finding refers to. */
   entity?: {
-    schema?: string;
-    name: string;
-    kind: "table" | "index" | "column" | "foreign_key";
-  };
+    schema?: string
+    name: string
+    kind: 'table' | 'index' | 'column' | 'foreign_key'
+  }
   /** Auxiliary structured data (e.g. row counts, column lists). */
-  metadata?: Record<string, unknown>;
+  metadata?: Record<string, unknown>
   /** SQL the user can copy/run to resolve the finding. */
-  suggestedSql?: string;
+  suggestedSql?: string
 }
 
 /**
  * Report returned by a single intel run.
  */
 export interface SchemaIntelReport {
-  findings: SchemaIntelFinding[];
+  findings: SchemaIntelFinding[]
   /**
    * Checks that were requested but could not be run (unsupported DB,
    * permission error, missing extension, etc.).
    */
-  skipped: Array<{ checkId: SchemaIntelCheckId; reason: string }>;
-  durationMs: number;
-  ranAt: number;
+  skipped: Array<{ checkId: SchemaIntelCheckId; reason: string }>
+  durationMs: number
+  ranAt: number
 }
 
 /** List of all check definitions surfaced to the renderer. */
 export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
   {
-    id: "tables_without_pk",
-    title: "Tables without a primary key",
+    id: 'tables_without_pk',
+    title: 'Tables without a primary key',
     description:
-      "Tables without a primary key make replication, de-duplication, and row-level edits more difficult.",
-    severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql", "mssql"],
+      'Tables without a primary key make replication, de-duplication, and row-level edits more difficult.',
+    severity: 'warning',
+    supportedDbTypes: ['postgresql', 'mysql', 'mssql']
   },
   {
-    id: "missing_fk_indexes",
-    title: "Foreign keys missing an index",
+    id: 'missing_fk_indexes',
+    title: 'Foreign keys missing an index',
     description:
-      "Foreign key columns without a supporting index force sequential scans during joins and deletes on the parent table.",
-    severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql"],
+      'Foreign key columns without a supporting index force sequential scans during joins and deletes on the parent table.',
+    severity: 'warning',
+    supportedDbTypes: ['postgresql', 'mysql']
   },
   {
-    id: "duplicate_indexes",
-    title: "Duplicate or redundant indexes",
+    id: 'duplicate_indexes',
+    title: 'Duplicate or redundant indexes',
     description:
-      "Multiple indexes that cover the same leading columns waste disk space and slow writes.",
-    severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql"],
+      'Multiple indexes that cover the same leading columns waste disk space and slow writes.',
+    severity: 'warning',
+    supportedDbTypes: ['postgresql', 'mysql']
   },
   {
-    id: "unused_indexes",
-    title: "Unused indexes",
+    id: 'unused_indexes',
+    title: 'Unused indexes',
     description:
-      "Indexes that have never served a scan since stats were reset. They add maintenance overhead without speeding up reads.",
-    severity: "info",
-    supportedDbTypes: ["postgresql"],
+      'Indexes that have never served a scan since stats were reset. They add maintenance overhead without speeding up reads.',
+    severity: 'info',
+    supportedDbTypes: ['postgresql']
   },
   {
-    id: "invalid_indexes",
-    title: "Invalid indexes",
+    id: 'invalid_indexes',
+    title: 'Invalid indexes',
     description:
-      "Indexes that failed to build (e.g. from a cancelled CREATE INDEX CONCURRENTLY). They are not used by the planner and should be dropped or rebuilt.",
-    severity: "critical",
-    supportedDbTypes: ["postgresql"],
+      'Indexes that failed to build (e.g. from a cancelled CREATE INDEX CONCURRENTLY). They are not used by the planner and should be dropped or rebuilt.',
+    severity: 'critical',
+    supportedDbTypes: ['postgresql']
   },
   {
-    id: "bloated_tables",
-    title: "Bloated tables",
+    id: 'bloated_tables',
+    title: 'Bloated tables',
     description:
-      "Tables where dead tuples make up a large share of storage. Consider VACUUM (FULL) or pg_repack.",
-    severity: "info",
-    supportedDbTypes: ["postgresql"],
+      'Tables where dead tuples make up a large share of storage. Consider VACUUM (FULL) or pg_repack.',
+    severity: 'info',
+    supportedDbTypes: ['postgresql']
   },
   {
-    id: "never_vacuumed",
-    title: "Never vacuumed or analyzed",
+    id: 'never_vacuumed',
+    title: 'Never vacuumed or analyzed',
     description:
-      "Tables that autovacuum has never touched typically have stale statistics, leading to poor plans.",
-    severity: "info",
-    supportedDbTypes: ["postgresql"],
+      'Tables that autovacuum has never touched typically have stale statistics, leading to poor plans.',
+    severity: 'info',
+    supportedDbTypes: ['postgresql']
   },
   {
-    id: "nullable_fks",
-    title: "Nullable foreign keys",
+    id: 'nullable_fks',
+    title: 'Nullable foreign keys',
     description:
-      "Foreign key columns that allow NULL can silently orphan rows. Decide whether NULL is really allowed.",
-    severity: "info",
-    supportedDbTypes: ["postgresql", "mysql"],
-  },
-];
+      'Foreign key columns that allow NULL can silently orphan rows. Decide whether NULL is really allowed.',
+    severity: 'info',
+    supportedDbTypes: ['postgresql', 'mysql']
+  }
+]
 
 // ── PostgreSQL Export/Import (pg_dump / pg_restore) ──────────────────────────
 
-export type PgExportMode = "full" | "schema-only" | "data-only";
+export type PgExportMode = 'full' | 'schema-only' | 'data-only'
 
 export interface PgExportOptions {
-  mode: PgExportMode;
-  schemas: string[];
-  tables: string[];
-  excludeTables: string[];
-  includeTypes: boolean;
-  includeSequences: boolean;
-  includeFunctions: boolean;
-  includeViews: boolean;
-  dataBatchSize: number;
-  includeDropStatements: boolean;
-  includeTransaction: boolean;
+  mode: PgExportMode
+  schemas: string[]
+  tables: string[]
+  excludeTables: string[]
+  includeTypes: boolean
+  includeSequences: boolean
+  includeFunctions: boolean
+  includeViews: boolean
+  dataBatchSize: number
+  includeDropStatements: boolean
+  includeTransaction: boolean
 }
 
 export type PgExportPhase =
-  | "preparing"
-  | "types"
-  | "sequences"
-  | "tables"
-  | "data"
-  | "indexes"
-  | "foreign_keys"
-  | "views"
-  | "functions"
-  | "complete"
-  | "error";
+  | 'preparing'
+  | 'types'
+  | 'sequences'
+  | 'tables'
+  | 'data'
+  | 'indexes'
+  | 'foreign_keys'
+  | 'views'
+  | 'functions'
+  | 'complete'
+  | 'error'
 
 export interface PgExportProgress {
-  phase: PgExportPhase;
-  currentObject: string;
-  objectsProcessed: number;
-  totalObjects: number;
-  rowsExported: number;
-  bytesWritten: number;
-  error?: string;
+  phase: PgExportPhase
+  currentObject: string
+  objectsProcessed: number
+  totalObjects: number
+  rowsExported: number
+  bytesWritten: number
+  error?: string
 }
 
 export interface PgExportResult {
-  success: boolean;
-  filePath: string;
-  tablesExported: number;
-  rowsExported: number;
-  bytesWritten: number;
-  durationMs: number;
-  error?: string;
+  success: boolean
+  filePath: string
+  tablesExported: number
+  rowsExported: number
+  bytesWritten: number
+  durationMs: number
+  error?: string
 }
 
-export type PgImportOnError = "abort" | "skip";
+export type PgImportOnError = 'abort' | 'skip'
 
 export interface PgImportOptions {
-  onError: PgImportOnError;
-  useTransaction: boolean;
+  onError: PgImportOnError
+  useTransaction: boolean
 }
 
-export type PgImportPhase = "reading" | "executing" | "complete" | "error";
+export type PgImportPhase = 'reading' | 'executing' | 'complete' | 'error'
 
 export interface PgImportProgress {
-  phase: PgImportPhase;
-  statementsExecuted: number;
-  totalStatements: number;
-  currentStatement: string;
-  errorsEncountered: number;
-  error?: string;
+  phase: PgImportPhase
+  statementsExecuted: number
+  totalStatements: number
+  currentStatement: string
+  errorsEncountered: number
+  error?: string
 }
 
 export interface PgImportResult {
-  success: boolean;
-  statementsExecuted: number;
-  statementsSkipped: number;
-  statementsFailed: number;
-  errors: Array<{ statementIndex: number; statement: string; error: string }>;
-  durationMs: number;
+  success: boolean
+  statementsExecuted: number
+  statementsSkipped: number
+  statementsFailed: number
+  errors: Array<{ statementIndex: number; statement: string; error: string }>
+  durationMs: number
 }
 
 export type {
@@ -2508,10 +2460,10 @@ export type {
   SkipStepResponse,
   ContinueStepResponse,
   RetryStepResponse,
-  StopStepResponse,
-} from "./step-types";
+  StopStepResponse
+} from './step-types'
 export {
   STEP_SESSION_IDLE_TIMEOUT_MS,
   STEP_SESSION_CLEANUP_INTERVAL_MS,
-  DDL_KEYWORD_REGEX,
-} from "./step-types";
+  DDL_KEYWORD_REGEX
+} from './step-types'
