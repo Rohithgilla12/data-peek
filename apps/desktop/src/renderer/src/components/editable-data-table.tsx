@@ -1019,21 +1019,31 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     toggleHeaderSort
   ])
 
+  const tableState = React.useMemo(
+    () => ({
+      globalFilter: filterChips
+    }),
+    [filterChips]
+  )
+
+  const tableInitialState = React.useMemo(
+    () => ({
+      pagination: { pageSize }
+    }),
+    [pageSize]
+  )
+
+  const tableGlobalFilterFn = React.useCallback((row: any) => globalFilterFn(row), [globalFilterFn])
+
   const table = useReactTable({
     data: sortedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    globalFilterFn: (row) => globalFilterFn(row),
-    state: {
-      globalFilter: filterChips
-    },
-    initialState: {
-      pagination: {
-        pageSize
-      }
-    }
+    globalFilterFn: tableGlobalFilterFn,
+    state: tableState,
+    initialState: tableInitialState
   })
 
   React.useEffect(() => {

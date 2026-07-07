@@ -1,48 +1,55 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo } from 'react'
-import { useQueryState, parseAsString } from 'nuqs'
-import { ChevronRight, Database, Loader2, Search } from 'lucide-react'
-import { trpc } from '@/lib/trpc-client'
-import { useConnectionStore } from '@/stores/connection-store'
-import { useSchemaStore } from '@/stores/schema-store'
-import { SchemaTableItem } from './schema-table-item'
+import { useEffect, useMemo } from "react";
+import { useQueryState, parseAsString } from "nuqs";
+import { ChevronRight, Database, Loader2, Search } from "lucide-react";
+import { trpc } from "@/lib/trpc-client";
+import { useConnectionStore } from "@/stores/connection-store";
+import { useSchemaStore } from "@/stores/schema-store";
+import { SchemaTableItem } from "./schema-table-item";
 
 export function SchemaExplorer() {
-  const { activeConnectionId } = useConnectionStore()
-  const { schemas, setSchemas, expandedSchemas, toggleSchema } = useSchemaStore()
-  const [search, setSearch] = useQueryState('schemaSearch', parseAsString.withDefault(''))
+  const { activeConnectionId } = useConnectionStore();
+  const { schemas, setSchemas, expandedSchemas, toggleSchema } =
+    useSchemaStore();
+  const [search, setSearch] = useQueryState(
+    "schemaSearch",
+    parseAsString.withDefault(""),
+  );
 
   const { data, isLoading, error } = trpc.schema.getSchemas.useQuery(
     { connectionId: activeConnectionId! },
     { enabled: !!activeConnectionId },
-  )
+  );
 
   useEffect(() => {
-    if (data) setSchemas(data)
-  }, [data, setSchemas])
+    if (data) setSchemas(data);
+  }, [data, setSchemas]);
 
   const filteredSchemas = useMemo(() => {
-    if (!search.trim()) return schemas
-    const term = search.toLowerCase()
+    if (!search.trim()) return schemas;
+    const term = search.toLowerCase();
     return schemas
       .map((schema) => ({
         ...schema,
         tables: schema.tables.filter(
           (t) =>
             t.name.toLowerCase().includes(term) ||
-            t.columns.some((c) => c.name.toLowerCase().includes(term))
+            t.columns.some((c) => c.name.toLowerCase().includes(term)),
         ),
       }))
-      .filter((schema) => schema.tables.length > 0 || schema.name.toLowerCase().includes(term))
-  }, [schemas, search])
+      .filter(
+        (schema) =>
+          schema.tables.length > 0 || schema.name.toLowerCase().includes(term),
+      );
+  }, [schemas, search]);
 
   if (!activeConnectionId) {
     return (
       <div className="px-3 py-4 text-xs text-muted-foreground">
         Select a connection to browse schemas
       </div>
-    )
+    );
   }
 
   if (isLoading) {
@@ -51,11 +58,13 @@ export function SchemaExplorer() {
         <Loader2 className="h-3 w-3 animate-spin" />
         Loading schema...
       </div>
-    )
+    );
   }
 
   if (error) {
-    return <div className="px-3 py-4 text-xs text-destructive">{error.message}</div>
+    return (
+      <div className="px-3 py-4 text-xs text-destructive">{error.message}</div>
+    );
   }
 
   return (
@@ -77,16 +86,21 @@ export function SchemaExplorer() {
       {/* Tree */}
       <div className="flex-1 overflow-y-auto py-1">
         {filteredSchemas.map((schema) => {
-          const isExpanded = expandedSchemas.has(schema.name) || search.trim().length > 0
+          const isExpanded =
+            expandedSchemas.has(schema.name) || search.trim().length > 0;
           return (
             <div key={schema.name}>
               <button
                 onClick={() => toggleSchema(schema.name)}
                 className="flex w-full items-center gap-1.5 px-3 py-1 text-xs hover:bg-muted/50 transition-colors"
               >
-                <ChevronRight className={`h-3 w-3 text-muted-foreground transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`} />
+                <ChevronRight
+                  className={`h-3 w-3 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                />
                 <Database className="h-3 w-3 text-accent" />
-                <span className="font-medium text-foreground">{schema.name}</span>
+                <span className="font-medium text-foreground">
+                  {schema.name}
+                </span>
                 <span className="ml-auto text-[10px] text-muted-foreground">
                   {schema.tables.length}
                 </span>
@@ -94,12 +108,16 @@ export function SchemaExplorer() {
               {isExpanded && (
                 <div className="animate-expand">
                   {schema.tables.map((table) => (
-                    <SchemaTableItem key={table.name} table={table} schemaName={schema.name} />
+                    <SchemaTableItem
+                      key={table.name}
+                      table={table}
+                      schemaName={schema.name}
+                    />
                   ))}
                 </div>
               )}
             </div>
-          )
+          );
         })}
         {filteredSchemas.length === 0 && search && (
           <div className="px-3 py-4 text-xs text-muted-foreground text-center">
@@ -108,5 +126,5 @@ export function SchemaExplorer() {
         )}
       </div>
     </div>
-  )
+  );
 }

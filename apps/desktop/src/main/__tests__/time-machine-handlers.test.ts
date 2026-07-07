@@ -130,10 +130,22 @@ describe('time-machine:capture', () => {
     ['missing connectionId', payload({ connectionId: '' })],
     ['missing sql', payload({ sql: '' })],
     ['non-array rows', { ...payload(), rows: 'nope' } as unknown as TimeMachineCapturePayload],
-    ['missing capturedAt', { ...payload(), capturedAt: undefined } as unknown as TimeMachineCapturePayload],
-    ['invalid durationMs', { ...payload(), durationMs: -1 } as unknown as TimeMachineCapturePayload],
-    ['invalid keyStrategy', { ...payload(), keyStrategy: 'other' } as unknown as TimeMachineCapturePayload],
-    ['non-array keyColumns', { ...payload(), keyColumns: 'id' } as unknown as TimeMachineCapturePayload],
+    [
+      'missing capturedAt',
+      { ...payload(), capturedAt: undefined } as unknown as TimeMachineCapturePayload
+    ],
+    [
+      'invalid durationMs',
+      { ...payload(), durationMs: -1 } as unknown as TimeMachineCapturePayload
+    ],
+    [
+      'invalid keyStrategy',
+      { ...payload(), keyStrategy: 'other' } as unknown as TimeMachineCapturePayload
+    ],
+    [
+      'non-array keyColumns',
+      { ...payload(), keyColumns: 'id' } as unknown as TimeMachineCapturePayload
+    ],
     ['non-array columns', { ...payload(), columns: 'id' } as unknown as TimeMachineCapturePayload]
   ])('rejects invalid payloads: %s', (_label, invalid) => {
     const storage = makeStorage()

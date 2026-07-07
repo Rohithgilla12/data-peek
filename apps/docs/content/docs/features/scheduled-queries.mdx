@@ -19,13 +19,13 @@ Schedule queries to run automatically at recurring intervals. Useful for monitor
 
 ### Schedule Presets
 
-| Preset | Cron |
-|--------|------|
-| Every minute | `* * * * *` |
-| Every 5 minutes | `*/5 * * * *` |
-| Every hour | `0 * * * *` |
-| Every day at midnight | `0 0 * * *` |
-| Custom | Any valid cron expression |
+| Preset                | Cron                      |
+| --------------------- | ------------------------- |
+| Every minute          | `* * * * *`               |
+| Every 5 minutes       | `*/5 * * * *`             |
+| Every hour            | `0 * * * *`               |
+| Every day at midnight | `0 0 * * *`               |
+| Custom                | Any valid cron expression |
 
 ## Managing Schedules
 
@@ -40,6 +40,7 @@ Trigger an immediate execution outside the schedule.
 ### View Run History
 
 Click a schedule to see all past runs with:
+
 - Execution timestamp
 - Duration
 - Row count or error message
@@ -50,5 +51,6 @@ Click a schedule to see all past runs with:
 When a scheduled query completes, data-peek sends a desktop notification with the result summary.
 
 <Callout type="warning">
-  Scheduled queries only run while data-peek is open. They do not run in the background after quitting the app.
+  Scheduled queries only run while data-peek is open. They do not run in the
+  background after quitting the app.
 </Callout>

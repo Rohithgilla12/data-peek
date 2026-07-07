@@ -12,6 +12,7 @@ data-peek's query editor is powered by Monaco, the same editor engine used in VS
 ### Syntax Highlighting
 
 Full SQL syntax highlighting with support for:
+
 - Keywords (SELECT, FROM, WHERE, etc.)
 - Functions (COUNT, SUM, NOW, etc.)
 - Strings, numbers, and operators
@@ -20,6 +21,7 @@ Full SQL syntax highlighting with support for:
 ### Auto-Completion
 
 As you type, the editor suggests:
+
 - SQL keywords
 - Table and column names (schema-aware)
 - Function names
@@ -37,11 +39,13 @@ Auto-format your SQL for better readability:
 - **Menu:** View → Format SQL
 
 Before:
+
 ```sql
 select id,name,email from users where created_at>'2024-01-01' order by name
 ```
 
 After:
+
 ```sql
 SELECT
   id,
@@ -68,7 +72,8 @@ ORDER BY
 If your editor contains multiple SQL statements, data-peek executes them all sequentially. Results from each statement are combined.
 
 <Callout type="warning">
-  For safety, only SELECT statements return visible results. INSERT, UPDATE, and DELETE statements report affected row counts.
+  For safety, only SELECT statements return visible results. INSERT, UPDATE, and
+  DELETE statements report affected row counts.
 </Callout>
 
 ## Tab Management
@@ -81,16 +86,17 @@ If your editor contains multiple SQL statements, data-peek executes them all seq
 
 ### Tab Types
 
-| Tab Type | Icon | Description |
-|----------|------|-------------|
-| Query | 📝 | Custom SQL query |
-| Table Preview | 📊 | Auto-generated SELECT from table |
-| ERD | 🔗 | Entity relationship diagram |
-| Table Designer | 🛠 | Create/edit table structure |
+| Tab Type       | Icon | Description                      |
+| -------------- | ---- | -------------------------------- |
+| Query          | 📝   | Custom SQL query                 |
+| Table Preview  | 📊   | Auto-generated SELECT from table |
+| ERD            | 🔗   | Entity relationship diagram      |
+| Table Designer | 🛠   | Create/edit table structure      |
 
 ### Tab Actions
 
 Right-click a tab to:
+
 - **Close** - Close this tab
 - **Close Others** - Close all except this tab
 - **Close to Right** - Close tabs to the right
@@ -120,7 +126,8 @@ Every executed query is saved to history:
 3. Click a history item to load it into a new tab
 
 <Callout type="info">
-  History is stored locally and persists across app restarts. The last 100 queries are kept.
+  History is stored locally and persists across app restarts. The last 100
+  queries are kept.
 </Callout>
 
 ## Editor Preferences
@@ -132,13 +139,13 @@ Customize the editor in Settings:
 
 ## Keyboard Shortcuts
 
-| Action | macOS | Windows/Linux |
-|--------|-------|---------------|
-| Execute query | `Cmd+Enter` | `Ctrl+Enter` |
-| Format SQL | `Cmd+Shift+F` | `Ctrl+Shift+F` |
-| New tab | `Cmd+T` | `Ctrl+T` |
-| Close tab | `Cmd+W` | `Ctrl+W` |
-| Save query | `Cmd+Shift+S` | `Ctrl+Shift+S` |
-| Toggle autocomplete | `Ctrl+Space` | `Ctrl+Space` |
-| Undo | `Cmd+Z` | `Ctrl+Z` |
-| Redo | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |
+| Action              | macOS         | Windows/Linux  |
+| ------------------- | ------------- | -------------- |
+| Execute query       | `Cmd+Enter`   | `Ctrl+Enter`   |
+| Format SQL          | `Cmd+Shift+F` | `Ctrl+Shift+F` |
+| New tab             | `Cmd+T`       | `Ctrl+T`       |
+| Close tab           | `Cmd+W`       | `Ctrl+W`       |
+| Save query          | `Cmd+Shift+S` | `Ctrl+Shift+S` |
+| Toggle autocomplete | `Ctrl+Space`  | `Ctrl+Space`   |
+| Undo                | `Cmd+Z`       | `Ctrl+Z`       |
+| Redo                | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |

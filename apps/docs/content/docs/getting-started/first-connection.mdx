@@ -12,22 +12,21 @@ Let's connect data-peek to your database. This guide uses PostgreSQL, but the pr
 1. Click the **+** button in the sidebar under "Connections"
 2. Fill in your connection details:
 
-| Field | Description | Example |
-|-------|-------------|---------|
-| **Name** | A friendly name for this connection | `Local Dev` |
-| **Host** | Database server hostname or IP | `localhost` |
-| **Port** | Database port | `5432` (PostgreSQL) or `3306` (MySQL) |
-| **Database** | Database name | `myapp_development` |
-| **User** | Database username | `postgres` |
-| **Password** | Database password | `••••••••` |
+| Field        | Description                         | Example                               |
+| ------------ | ----------------------------------- | ------------------------------------- |
+| **Name**     | A friendly name for this connection | `Local Dev`                           |
+| **Host**     | Database server hostname or IP      | `localhost`                           |
+| **Port**     | Database port                       | `5432` (PostgreSQL) or `3306` (MySQL) |
+| **Database** | Database name                       | `myapp_development`                   |
+| **User**     | Database username                   | `postgres`                            |
+| **Password** | Database password                   | `••••••••`                            |
 
 3. Click **Test Connection** to verify your settings
 4. Click **Save** to add the connection
 
 <Callout type="tip">
-  You can also paste a connection string directly. data-peek will auto-fill all fields from URLs like:
-  ```
-  postgresql://user:password@localhost:5432/database
+  You can also paste a connection string directly. data-peek will auto-fill all
+  fields from URLs like: ``` postgresql://user:password@localhost:5432/database
   ```
 </Callout>
 
@@ -80,11 +79,11 @@ For secure connections to cloud databases:
 
 The connection indicator shows:
 
-| Status | Meaning |
-|--------|---------|
-| 🟢 Green | Connected and ready |
-| 🟡 Yellow | Connecting... |
-| 🔴 Red | Connection error |
+| Status    | Meaning             |
+| --------- | ------------------- |
+| 🟢 Green  | Connected and ready |
+| 🟡 Yellow | Connecting...       |
+| 🔴 Red    | Connection error    |
 
 ## Next Steps
 

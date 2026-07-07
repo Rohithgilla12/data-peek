@@ -5,60 +5,77 @@ import {
   spring,
   interpolate,
   Sequence,
-} from 'remotion'
-import { brand } from '../../lib/colors'
-import { Play, Pin, ChevronDown } from 'lucide-react'
+} from "remotion";
+import { brand } from "../../lib/colors";
+import { Play, Pin, ChevronDown } from "lucide-react";
 
 const SQL_TEXT = `SELECT id, amount, status
 FROM payments
 WHERE status = 'processing'
-AND updated_at < NOW() - interval '30 mins'`
+AND updated_at < NOW() - interval '30 mins'`;
 
 const GATEWAY_SQL = `SELECT id, gateway, error_code
 FROM gateway_logs
-WHERE created_at > NOW() - interval '1h'`
+WHERE created_at > NOW() - interval '1h'`;
 
-type SyntaxToken = { text: string; color: string }
+type SyntaxToken = { text: string; color: string };
 
 function tokenizeSql(sql: string): SyntaxToken[] {
-  const keywords = ['SELECT', 'FROM', 'WHERE', 'AND', 'OR', 'INSERT', 'UPDATE', 'DELETE', 'JOIN', 'ON', 'AS', 'interval']
-  const tableNames = ['payments', 'gateway_logs']
-  const tokens: SyntaxToken[] = []
+  const keywords = [
+    "SELECT",
+    "FROM",
+    "WHERE",
+    "AND",
+    "OR",
+    "INSERT",
+    "UPDATE",
+    "DELETE",
+    "JOIN",
+    "ON",
+    "AS",
+    "interval",
+  ];
+  const tableNames = ["payments", "gateway_logs"];
+  const tokens: SyntaxToken[] = [];
 
-  const parts = sql.split(/(\s+|,|'[^']*'|\bNOW\(\)|\b\w+\b)/)
+  const parts = sql.split(/(\s+|,|'[^']*'|\bNOW\(\)|\b\w+\b)/);
 
   for (const part of parts) {
-    if (!part) continue
-    const isKeyword = keywords.includes(part.toUpperCase()) || keywords.includes(part)
-    const isTable = tableNames.includes(part)
-    const isString = part.startsWith("'") && part.endsWith("'")
-    const isFunction = /^\w+\(\)$/.test(part)
-    const isOperator = ['>', '<', '=', '>=', '<=', '!=', '-'].includes(part)
-    const isNumber = /^\d+$/.test(part)
+    if (!part) continue;
+    const isKeyword =
+      keywords.includes(part.toUpperCase()) || keywords.includes(part);
+    const isTable = tableNames.includes(part);
+    const isString = part.startsWith("'") && part.endsWith("'");
+    const isFunction = /^\w+\(\)$/.test(part);
+    const isOperator = [">", "<", "=", ">=", "<=", "!=", "-"].includes(part);
+    const isNumber = /^\d+$/.test(part);
 
     if (isKeyword) {
-      tokens.push({ text: part, color: '#a855f7' })
+      tokens.push({ text: part, color: "#a855f7" });
     } else if (isTable) {
-      tokens.push({ text: part, color: '#22d3ee' })
+      tokens.push({ text: part, color: "#22d3ee" });
     } else if (isString) {
-      tokens.push({ text: part, color: '#fbbf24' })
+      tokens.push({ text: part, color: "#fbbf24" });
     } else if (isFunction) {
-      tokens.push({ text: part, color: '#22d3ee' })
+      tokens.push({ text: part, color: "#22d3ee" });
     } else if (isOperator) {
-      tokens.push({ text: part, color: brand.textMuted })
+      tokens.push({ text: part, color: brand.textMuted });
     } else if (isNumber) {
-      tokens.push({ text: part, color: '#fbbf24' })
+      tokens.push({ text: part, color: "#fbbf24" });
     } else {
-      tokens.push({ text: part, color: brand.textSecondary })
+      tokens.push({ text: part, color: brand.textSecondary });
     }
   }
 
-  return tokens
+  return tokens;
 }
 
-function renderSqlWithHighlighting(sql: string, visibleChars: number): React.ReactNode {
-  const visibleText = sql.slice(0, visibleChars)
-  const tokens = tokenizeSql(visibleText)
+function renderSqlWithHighlighting(
+  sql: string,
+  visibleChars: number,
+): React.ReactNode {
+  const visibleText = sql.slice(0, visibleChars);
+  const tokens = tokenizeSql(visibleText);
 
   return (
     <span>
@@ -68,42 +85,43 @@ function renderSqlWithHighlighting(sql: string, visibleChars: number): React.Rea
         </span>
       ))}
     </span>
-  )
+  );
 }
 
 type CellBadgeProps = {
-  type: 'SQL' | 'MD'
-}
+  type: "SQL" | "MD";
+};
 
 const CellBadge: React.FC<CellBadgeProps> = ({ type }) => (
   <div
     style={{
-      color: type === 'SQL' ? brand.accent : brand.textMuted,
-      backgroundColor: type === 'SQL' ? `${brand.accent}15` : `${brand.textMuted}20`,
+      color: type === "SQL" ? brand.accent : brand.textMuted,
+      backgroundColor:
+        type === "SQL" ? `${brand.accent}15` : `${brand.textMuted}20`,
       fontSize: 10,
       fontWeight: 700,
-      fontFamily: 'Geist Mono, monospace',
-      padding: '2px 8px',
+      fontFamily: "Geist Mono, monospace",
+      padding: "2px 8px",
       borderRadius: 4,
-      letterSpacing: '0.05em',
+      letterSpacing: "0.05em",
     }}
   >
     {type}
   </div>
-)
+);
 
 type ResultTableProps = {
-  opacity: number
-  translateY: number
-}
+  opacity: number;
+  translateY: number;
+};
 
 const ResultTable: React.FC<ResultTableProps> = ({ opacity, translateY }) => {
   const rows = [
-    { id: 'pay_8xk2', amount: '$142.00', status: 'processing' },
-    { id: 'pay_9mf4', amount: '$89.50', status: 'processing' },
-    { id: 'pay_3qz7', amount: '$256.00', status: 'processing' },
-  ]
-  const cols = ['id', 'amount', 'status']
+    { id: "pay_8xk2", amount: "$142.00", status: "processing" },
+    { id: "pay_9mf4", amount: "$89.50", status: "processing" },
+    { id: "pay_3qz7", amount: "$256.00", status: "processing" },
+  ];
+  const cols = ["id", "amount", "status"];
 
   return (
     <div
@@ -111,14 +129,14 @@ const ResultTable: React.FC<ResultTableProps> = ({ opacity, translateY }) => {
         opacity,
         transform: `translateY(${translateY}px)`,
         borderTop: `1px solid ${brand.border}`,
-        padding: '8px 0',
+        padding: "8px 0",
       }}
     >
       <div
         style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          padding: '4px 16px',
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          padding: "4px 16px",
           marginBottom: 4,
         }}
       >
@@ -126,12 +144,12 @@ const ResultTable: React.FC<ResultTableProps> = ({ opacity, translateY }) => {
           <div
             key={col}
             style={{
-              fontFamily: 'Geist Mono, monospace',
+              fontFamily: "Geist Mono, monospace",
               fontSize: 10,
               fontWeight: 700,
               color: brand.textMuted,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
             }}
           >
             {col}
@@ -142,15 +160,16 @@ const ResultTable: React.FC<ResultTableProps> = ({ opacity, translateY }) => {
         <div
           key={i}
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr 1fr',
-            padding: '5px 16px',
-            backgroundColor: i % 2 === 0 ? `${brand.surfaceElevated}80` : 'transparent',
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            padding: "5px 16px",
+            backgroundColor:
+              i % 2 === 0 ? `${brand.surfaceElevated}80` : "transparent",
           }}
         >
           <div
             style={{
-              fontFamily: 'Geist Mono, monospace',
+              fontFamily: "Geist Mono, monospace",
               fontSize: 12,
               color: brand.textSecondary,
             }}
@@ -159,7 +178,7 @@ const ResultTable: React.FC<ResultTableProps> = ({ opacity, translateY }) => {
           </div>
           <div
             style={{
-              fontFamily: 'Geist Mono, monospace',
+              fontFamily: "Geist Mono, monospace",
               fontSize: 12,
               color: brand.textSecondary,
             }}
@@ -168,9 +187,9 @@ const ResultTable: React.FC<ResultTableProps> = ({ opacity, translateY }) => {
           </div>
           <div
             style={{
-              fontFamily: 'Geist Mono, monospace',
+              fontFamily: "Geist Mono, monospace",
               fontSize: 12,
-              color: '#fbbf24',
+              color: "#fbbf24",
             }}
           >
             {row.status}
@@ -179,8 +198,8 @@ const ResultTable: React.FC<ResultTableProps> = ({ opacity, translateY }) => {
       ))}
       <div
         style={{
-          padding: '4px 16px',
-          fontFamily: 'Geist Mono, monospace',
+          padding: "4px 16px",
+          fontFamily: "Geist Mono, monospace",
           fontSize: 10,
           color: brand.textMuted,
           marginTop: 4,
@@ -189,35 +208,35 @@ const ResultTable: React.FC<ResultTableProps> = ({ opacity, translateY }) => {
         3 rows · 12ms
       </div>
     </div>
-  )
-}
+  );
+};
 
 type PinBadgeProps = {
-  opacity: number
-  scale: number
-}
+  opacity: number;
+  scale: number;
+};
 
 const PinBadge: React.FC<PinBadgeProps> = ({ opacity, scale }) => (
   <div
     style={{
-      position: 'absolute',
+      position: "absolute",
       top: 8,
       right: 12,
-      display: 'flex',
-      alignItems: 'center',
+      display: "flex",
+      alignItems: "center",
       gap: 4,
       opacity,
       transform: `scale(${scale})`,
       backgroundColor: `${brand.accent}20`,
       border: `1px solid ${brand.accent}40`,
       borderRadius: 6,
-      padding: '3px 8px',
+      padding: "3px 8px",
     }}
   >
     <Pin size={10} color={brand.accent} />
     <span
       style={{
-        fontFamily: 'Geist Mono, monospace',
+        fontFamily: "Geist Mono, monospace",
         fontSize: 10,
         color: brand.accent,
         fontWeight: 600,
@@ -226,78 +245,104 @@ const PinBadge: React.FC<PinBadgeProps> = ({ opacity, scale }) => (
       pinned
     </span>
   </div>
-)
+);
 
 export const NotebookMockup: React.FC = () => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const notebookEntrance = spring({ frame, fps, config: { damping: 200 } })
-  const notebookOpacity = interpolate(notebookEntrance, [0, 1], [0, 1])
-  const notebookY = interpolate(notebookEntrance, [0, 1], [40, 0])
+  const notebookEntrance = spring({ frame, fps, config: { damping: 200 } });
+  const notebookOpacity = interpolate(notebookEntrance, [0, 1], [0, 1]);
+  const notebookY = interpolate(notebookEntrance, [0, 1], [40, 0]);
 
-  const cell1Entrance = spring({ frame: frame - 60, fps, config: { damping: 200 } })
-  const cell1Opacity = interpolate(cell1Entrance, [0, 1], [0, 1])
-  const cell1Y = interpolate(cell1Entrance, [0, 1], [20, 0])
+  const cell1Entrance = spring({
+    frame: frame - 60,
+    fps,
+    config: { damping: 200 },
+  });
+  const cell1Opacity = interpolate(cell1Entrance, [0, 1], [0, 1]);
+  const cell1Y = interpolate(cell1Entrance, [0, 1], [20, 0]);
 
-  const cell2Entrance = spring({ frame: frame - 120, fps, config: { damping: 200 } })
-  const cell2Opacity = interpolate(cell2Entrance, [0, 1], [0, 1])
-  const cell2Y = interpolate(cell2Entrance, [0, 1], [20, 0])
+  const cell2Entrance = spring({
+    frame: frame - 120,
+    fps,
+    config: { damping: 200 },
+  });
+  const cell2Opacity = interpolate(cell2Entrance, [0, 1], [0, 1]);
+  const cell2Y = interpolate(cell2Entrance, [0, 1], [20, 0]);
 
-  const localSqlFrame = Math.max(0, frame - 120)
-  const totalSqlChars = SQL_TEXT.length
-  const framesPerChar = fps / 30
-  const sqlCharsVisible = Math.min(totalSqlChars, Math.floor(localSqlFrame / framesPerChar))
+  const localSqlFrame = Math.max(0, frame - 120);
+  const totalSqlChars = SQL_TEXT.length;
+  const framesPerChar = fps / 30;
+  const sqlCharsVisible = Math.min(
+    totalSqlChars,
+    Math.floor(localSqlFrame / framesPerChar),
+  );
 
-  const runPulseFrame = Math.max(0, frame - 200)
+  const runPulseFrame = Math.max(0, frame - 200);
   const runPulse = interpolate(
     (runPulseFrame % 20) / 20,
     [0, 0.5, 1],
-    [0.5, 1, 0.5]
-  )
-  const runVisible = frame >= 200 && frame < 240
+    [0.5, 1, 0.5],
+  );
+  const runVisible = frame >= 200 && frame < 240;
 
-  const resultsEntrance = spring({ frame: frame - 240, fps, config: { damping: 200 } })
-  const resultsOpacity = interpolate(resultsEntrance, [0, 1], [0, 1])
-  const resultsY = interpolate(resultsEntrance, [0, 1], [20, 0])
+  const resultsEntrance = spring({
+    frame: frame - 240,
+    fps,
+    config: { damping: 200 },
+  });
+  const resultsOpacity = interpolate(resultsEntrance, [0, 1], [0, 1]);
+  const resultsY = interpolate(resultsEntrance, [0, 1], [20, 0]);
 
-  const pinEntrance = spring({ frame: frame - 280, fps, config: { damping: 200 } })
-  const pinOpacity = interpolate(pinEntrance, [0, 1], [0, 1])
-  const pinScale = interpolate(pinEntrance, [0, 1], [0.5, 1])
+  const pinEntrance = spring({
+    frame: frame - 280,
+    fps,
+    config: { damping: 200 },
+  });
+  const pinOpacity = interpolate(pinEntrance, [0, 1], [0, 1]);
+  const pinScale = interpolate(pinEntrance, [0, 1], [0.5, 1]);
 
-  const pinGlowOpacity = frame >= 280 ? interpolate(frame - 280, [0, 20], [0.8, 0.3], {
-    extrapolateRight: 'clamp',
-  }) : 0
+  const pinGlowOpacity =
+    frame >= 280
+      ? interpolate(frame - 280, [0, 20], [0.8, 0.3], {
+          extrapolateRight: "clamp",
+        })
+      : 0;
 
-  const cell3Entrance = spring({ frame: frame - 300, fps, config: { damping: 200 } })
-  const cell3Opacity = interpolate(cell3Entrance, [0, 1], [0, 1])
-  const cell3Y = interpolate(cell3Entrance, [0, 1], [20, 0])
+  const cell3Entrance = spring({
+    frame: frame - 300,
+    fps,
+    config: { damping: 200 },
+  });
+  const cell3Opacity = interpolate(cell3Entrance, [0, 1], [0, 1]);
+  const cell3Y = interpolate(cell3Entrance, [0, 1], [20, 0]);
 
-  const localGatewaySqlFrame = Math.max(0, frame - 300)
+  const localGatewaySqlFrame = Math.max(0, frame - 300);
   const gatewayCharsVisible = Math.min(
     GATEWAY_SQL.length,
-    Math.floor(localGatewaySqlFrame / framesPerChar)
-  )
+    Math.floor(localGatewaySqlFrame / framesPerChar),
+  );
 
   return (
     <AbsoluteFill
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '80px 160px',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "80px 160px",
       }}
     >
       <div
         style={{
-          width: '100%',
+          width: "100%",
           maxWidth: 1100,
           opacity: notebookOpacity,
           transform: `translateY(${notebookY}px)`,
           backgroundColor: brand.surface,
           border: `1px solid ${brand.border}`,
           borderRadius: 12,
-          overflow: 'hidden',
+          overflow: "hidden",
           boxShadow: `0 0 60px ${brand.accent}10, 0 20px 60px rgba(0,0,0,0.5)`,
         }}
       >
@@ -305,24 +350,29 @@ export const NotebookMockup: React.FC = () => {
           style={{
             backgroundColor: brand.surfaceElevated,
             borderBottom: `1px solid ${brand.border}`,
-            padding: '10px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            padding: "10px 16px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ display: 'flex', gap: 6 }}>
-              {['#ff5f57', '#ffbd2e', '#28ca41'].map((c, i) => (
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              {["#ff5f57", "#ffbd2e", "#28ca41"].map((c, i) => (
                 <div
                   key={i}
-                  style={{ width: 10, height: 10, borderRadius: '50%', backgroundColor: c }}
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    backgroundColor: c,
+                  }}
                 />
               ))}
             </div>
             <div
               style={{
-                fontFamily: 'Geist Mono, monospace',
+                fontFamily: "Geist Mono, monospace",
                 fontSize: 14,
                 fontWeight: 600,
                 color: brand.textPrimary,
@@ -333,26 +383,26 @@ export const NotebookMockup: React.FC = () => {
           </div>
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 6,
               backgroundColor: `${brand.accent}15`,
               border: `1px solid ${brand.accent}30`,
               borderRadius: 6,
-              padding: '4px 10px',
+              padding: "4px 10px",
             }}
           >
             <div
               style={{
                 width: 6,
                 height: 6,
-                borderRadius: '50%',
-                backgroundColor: '#22c55e',
+                borderRadius: "50%",
+                backgroundColor: "#22c55e",
               }}
             />
             <span
               style={{
-                fontFamily: 'Geist Mono, monospace',
+                fontFamily: "Geist Mono, monospace",
                 fontSize: 11,
                 color: brand.accent,
                 fontWeight: 500,
@@ -363,7 +413,14 @@ export const NotebookMockup: React.FC = () => {
           </div>
         </div>
 
-        <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div
+          style={{
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+          }}
+        >
           <Sequence from={60} layout="none">
             <div
               style={{
@@ -372,25 +429,25 @@ export const NotebookMockup: React.FC = () => {
                 backgroundColor: brand.surface,
                 border: `1px solid ${brand.border}`,
                 borderRadius: 8,
-                overflow: 'hidden',
+                overflow: "hidden",
               }}
             >
               <div
                 style={{
                   backgroundColor: brand.surfaceElevated,
                   borderBottom: `1px solid ${brand.border}`,
-                  padding: '5px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
+                  padding: "5px 12px",
+                  display: "flex",
+                  alignItems: "center",
                   gap: 8,
                 }}
               >
                 <CellBadge type="MD" />
               </div>
-              <div style={{ padding: '10px 16px' }}>
+              <div style={{ padding: "10px 16px" }}>
                 <span
                   style={{
-                    fontFamily: 'Geist Mono, monospace',
+                    fontFamily: "Geist Mono, monospace",
                     fontSize: 16,
                     fontWeight: 700,
                     color: brand.textPrimary,
@@ -410,19 +467,23 @@ export const NotebookMockup: React.FC = () => {
                 backgroundColor: brand.surface,
                 border: `2px solid ${brand.accent}60`,
                 borderRadius: 8,
-                overflow: 'hidden',
-                position: 'relative',
+                overflow: "hidden",
+                position: "relative",
                 boxShadow: `0 0 20px ${brand.accent}15`,
               }}
             >
               {frame >= 280 && (
                 <div
                   style={{
-                    position: 'absolute',
+                    position: "absolute",
                     inset: 0,
                     borderRadius: 8,
-                    boxShadow: `inset 0 0 20px ${brand.accent}${Math.floor(pinGlowOpacity * 30).toString(16).padStart(2, '0')}`,
-                    pointerEvents: 'none',
+                    boxShadow: `inset 0 0 20px ${brand.accent}${Math.floor(
+                      pinGlowOpacity * 30,
+                    )
+                      .toString(16)
+                      .padStart(2, "0")}`,
+                    pointerEvents: "none",
                   }}
                 />
               )}
@@ -431,27 +492,31 @@ export const NotebookMockup: React.FC = () => {
                 style={{
                   backgroundColor: brand.surfaceElevated,
                   borderBottom: `1px solid ${brand.border}`,
-                  padding: '5px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
+                  padding: "5px 12px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <CellBadge type="SQL" />
                   {runVisible && (
                     <div
                       style={{
-                        display: 'flex',
-                        alignItems: 'center',
+                        display: "flex",
+                        alignItems: "center",
                         gap: 4,
                         opacity: runPulse,
                       }}
                     >
-                      <Play size={10} color={brand.accent} fill={brand.accent} />
+                      <Play
+                        size={10}
+                        color={brand.accent}
+                        fill={brand.accent}
+                      />
                       <span
                         style={{
-                          fontFamily: 'Geist Mono, monospace',
+                          fontFamily: "Geist Mono, monospace",
                           fontSize: 10,
                           color: brand.accent,
                         }}
@@ -464,7 +529,7 @@ export const NotebookMockup: React.FC = () => {
                 {frame >= 240 && (
                   <span
                     style={{
-                      fontFamily: 'Geist Mono, monospace',
+                      fontFamily: "Geist Mono, monospace",
                       fontSize: 10,
                       color: brand.textMuted,
                     }}
@@ -474,10 +539,10 @@ export const NotebookMockup: React.FC = () => {
                 )}
               </div>
 
-              <div style={{ padding: '12px 16px', position: 'relative' }}>
+              <div style={{ padding: "12px 16px", position: "relative" }}>
                 <pre
                   style={{
-                    fontFamily: 'Geist Mono, monospace',
+                    fontFamily: "Geist Mono, monospace",
                     fontSize: 13,
                     lineHeight: 1.6,
                     margin: 0,
@@ -485,7 +550,12 @@ export const NotebookMockup: React.FC = () => {
                 >
                   {renderSqlWithHighlighting(SQL_TEXT, sqlCharsVisible)}
                   {sqlCharsVisible < SQL_TEXT.length && (
-                    <span style={{ opacity: Math.round(frame / 8) % 2 === 0 ? 1 : 0, color: brand.accent }}>
+                    <span
+                      style={{
+                        opacity: Math.round(frame / 8) % 2 === 0 ? 1 : 0,
+                        color: brand.accent,
+                      }}
+                    >
                       |
                     </span>
                   )}
@@ -507,8 +577,8 @@ export const NotebookMockup: React.FC = () => {
               style={{
                 opacity: cell3Opacity,
                 transform: `translateY(${cell3Y}px)`,
-                display: 'flex',
-                flexDirection: 'column',
+                display: "flex",
+                flexDirection: "column",
                 gap: 8,
               }}
             >
@@ -517,25 +587,25 @@ export const NotebookMockup: React.FC = () => {
                   backgroundColor: brand.surface,
                   border: `1px solid ${brand.border}`,
                   borderRadius: 8,
-                  overflow: 'hidden',
+                  overflow: "hidden",
                 }}
               >
                 <div
                   style={{
                     backgroundColor: brand.surfaceElevated,
                     borderBottom: `1px solid ${brand.border}`,
-                    padding: '5px 12px',
-                    display: 'flex',
-                    alignItems: 'center',
+                    padding: "5px 12px",
+                    display: "flex",
+                    alignItems: "center",
                     gap: 8,
                   }}
                 >
                   <CellBadge type="MD" />
                 </div>
-                <div style={{ padding: '10px 16px' }}>
+                <div style={{ padding: "10px 16px" }}>
                   <span
                     style={{
-                      fontFamily: 'Geist Mono, monospace',
+                      fontFamily: "Geist Mono, monospace",
                       fontSize: 16,
                       fontWeight: 700,
                       color: brand.textPrimary,
@@ -552,31 +622,34 @@ export const NotebookMockup: React.FC = () => {
                     backgroundColor: brand.surface,
                     border: `1px solid ${brand.border}`,
                     borderRadius: 8,
-                    overflow: 'hidden',
+                    overflow: "hidden",
                   }}
                 >
                   <div
                     style={{
                       backgroundColor: brand.surfaceElevated,
                       borderBottom: `1px solid ${brand.border}`,
-                      padding: '5px 12px',
-                      display: 'flex',
-                      alignItems: 'center',
+                      padding: "5px 12px",
+                      display: "flex",
+                      alignItems: "center",
                       gap: 8,
                     }}
                   >
                     <CellBadge type="SQL" />
                   </div>
-                  <div style={{ padding: '12px 16px' }}>
+                  <div style={{ padding: "12px 16px" }}>
                     <pre
                       style={{
-                        fontFamily: 'Geist Mono, monospace',
+                        fontFamily: "Geist Mono, monospace",
                         fontSize: 13,
                         lineHeight: 1.6,
                         margin: 0,
                       }}
                     >
-                      {renderSqlWithHighlighting(GATEWAY_SQL, gatewayCharsVisible)}
+                      {renderSqlWithHighlighting(
+                        GATEWAY_SQL,
+                        gatewayCharsVisible,
+                      )}
                       {gatewayCharsVisible < GATEWAY_SQL.length && (
                         <span
                           style={{
@@ -598,9 +671,9 @@ export const NotebookMockup: React.FC = () => {
         <div
           style={{
             borderTop: `1px solid ${brand.border}`,
-            padding: '6px 16px',
-            display: 'flex',
-            alignItems: 'center',
+            padding: "6px 16px",
+            display: "flex",
+            alignItems: "center",
             gap: 8,
             backgroundColor: brand.surfaceElevated,
           }}
@@ -608,7 +681,7 @@ export const NotebookMockup: React.FC = () => {
           <ChevronDown size={12} color={brand.textMuted} />
           <span
             style={{
-              fontFamily: 'Geist Mono, monospace',
+              fontFamily: "Geist Mono, monospace",
               fontSize: 11,
               color: brand.textMuted,
             }}
@@ -618,5 +691,5 @@ export const NotebookMockup: React.FC = () => {
         </div>
       </div>
     </AbsoluteFill>
-  )
-}
+  );
+};

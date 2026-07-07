@@ -18,7 +18,19 @@ import {
   Pencil,
   Check
 } from 'lucide-react'
-import { Button, Badge, ScrollArea, Tooltip, TooltipContent, TooltipTrigger, cn, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  ScrollArea,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 import { AIMessage } from './ai-message'
 import { AISuggestions } from './ai-suggestions'

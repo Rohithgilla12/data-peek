@@ -1,6 +1,14 @@
 import * as React from 'react'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useSettingsStore, PAGE_SIZE_OPTIONS, type PageSizeOption } from '@/stores/settings-store'
 

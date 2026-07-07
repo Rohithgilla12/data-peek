@@ -52,7 +52,10 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      deleted: { proExpired: proExpiredDeleted.length, freeExpired: freeDeleted },
+      deleted: {
+        proExpired: proExpiredDeleted.length,
+        freeExpired: freeDeleted,
+      },
       timestamp: now.toISOString(),
     });
   } catch (error) {

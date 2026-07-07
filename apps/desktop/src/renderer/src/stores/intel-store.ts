@@ -1,9 +1,5 @@
 import { create } from 'zustand'
-import type {
-  ConnectionConfig,
-  SchemaIntelCheckId,
-  SchemaIntelReport
-} from '@data-peek/shared'
+import type { ConnectionConfig, SchemaIntelCheckId, SchemaIntelReport } from '@data-peek/shared'
 
 interface IntelState {
   /** Report keyed by connection id, so swapping tabs doesn't clear results. */

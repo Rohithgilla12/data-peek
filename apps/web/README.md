@@ -32,6 +32,7 @@ cp .env.example .env.local
 ```
 
 Required variables:
+
 - `DATABASE_URL` - PostgreSQL connection string
 - `CLERK_SECRET_KEY` - Clerk authentication
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk public key

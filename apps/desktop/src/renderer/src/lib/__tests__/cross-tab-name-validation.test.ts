@@ -1,8 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  validateRefName,
-  isReservedRefName
-} from '../cross-tab-name-validation'
+import { validateRefName, isReservedRefName } from '../cross-tab-name-validation'
 import { REF_NAME_MAX_LENGTH } from '../cross-tab-types'
 
 describe('validateRefName', () => {

@@ -12,6 +12,7 @@ Now that you're connected to a database, let's run your first query!
 1. **Open a new tab** by clicking the **+** button in the tab bar or pressing `Cmd+T` (macOS) or `Ctrl+T` (Windows/Linux)
 
 2. **Type your query** in the editor:
+
    ```sql
    SELECT * FROM users LIMIT 10;
    ```
@@ -21,7 +22,8 @@ Now that you're connected to a database, let's run your first query!
 4. **View the results** in the table below the editor
 
 <Callout type="tip">
-  The results show the first 100 rows by default. Use the pagination controls at the bottom to navigate through larger result sets.
+  The results show the first 100 rows by default. Use the pagination controls at
+  the bottom to navigate through larger result sets.
 </Callout>
 
 ## Quick Table Preview
@@ -36,24 +38,24 @@ Instead of writing a query, you can quickly preview any table:
 
 ### Results Toolbar
 
-| Feature | Description |
-|---------|-------------|
-| **Row count** | Shows number of rows returned |
-| **Duration** | Query execution time in milliseconds |
-| **Export** | Download results as CSV or JSON |
-| **Edit** | Enable inline data editing |
+| Feature       | Description                          |
+| ------------- | ------------------------------------ |
+| **Row count** | Shows number of rows returned        |
+| **Duration**  | Query execution time in milliseconds |
+| **Export**    | Download results as CSV or JSON      |
+| **Edit**      | Enable inline data editing           |
 
 ### Data Type Indicators
 
 Columns show colored badges indicating their data type:
 
-| Color | Types |
-|-------|-------|
-| 🟣 Purple | UUID |
-| 🟢 Green | Text, VARCHAR |
-| 🔵 Blue | Integer, Numeric |
-| 🟠 Orange | Date, Timestamp |
-| 🟡 Yellow | Boolean |
+| Color     | Types            |
+| --------- | ---------------- |
+| 🟣 Purple | UUID             |
+| 🟢 Green  | Text, VARCHAR    |
+| 🔵 Blue   | Integer, Numeric |
+| 🟠 Orange | Date, Timestamp  |
+| 🟡 Yellow | Boolean          |
 
 ### NULL Values
 
@@ -86,6 +88,7 @@ Press `Cmd+Shift+F` (macOS) or `Ctrl+Shift+F` (Windows/Linux) to auto-format you
 ### Multiple Tabs
 
 Open multiple query tabs to work on different queries simultaneously. Each tab maintains its own:
+
 - Query text
 - Results
 - Pagination state
@@ -114,7 +117,19 @@ Bookmark frequently used queries:
 Now that you know the basics, explore more features:
 
 <Cards>
-  <Card title="Query Editor" href="/docs/features/query-editor" description="Advanced editor features" />
-  <Card title="Schema Explorer" href="/docs/features/schema-explorer" description="Navigate your database structure" />
-  <Card title="Inline Editing" href="/docs/features/inline-editing" description="Edit data directly in the results" />
+  <Card
+    title="Query Editor"
+    href="/docs/features/query-editor"
+    description="Advanced editor features"
+  />
+  <Card
+    title="Schema Explorer"
+    href="/docs/features/schema-explorer"
+    description="Navigate your database structure"
+  />
+  <Card
+    title="Inline Editing"
+    href="/docs/features/inline-editing"
+    description="Edit data directly in the results"
+  />
 </Cards>

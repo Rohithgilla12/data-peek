@@ -10,7 +10,23 @@ import {
   ChevronRight,
   AlertCircle
 } from 'lucide-react'
-import { Button, Input, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 import type {
   ConstraintDefinition,

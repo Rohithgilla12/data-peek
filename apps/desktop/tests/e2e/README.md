@@ -81,6 +81,7 @@ on a Postgres minor bump. Container lifetime is bounded by the testcontainers Ry
 reaper, so even if a test crashes mid-run the container is reaped within seconds.
 
 Requirements:
+
 - Docker available locally (Docker Desktop or OrbStack on macOS, Docker Engine on Linux).
 - Existing tests assume the seed file at `seeds/acme_saas_seed.sql` is unchanged. If
   the seed grows or shrinks, update the assertions in `queries.spec.ts`.

@@ -8,7 +8,13 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log("[activate] Request body:", JSON.stringify(body));
 
-    const { license_key: rawLicenseKey, name, device_id, os, app_version } = body as {
+    const {
+      license_key: rawLicenseKey,
+      name,
+      device_id,
+      os,
+      app_version,
+    } = body as {
       license_key: string;
       name: string;
       device_id?: string;
@@ -22,7 +28,7 @@ export async function POST(request: NextRequest) {
     if (!license_key || !name) {
       return NextResponse.json(
         { error: "License key and device name are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -34,14 +40,14 @@ export async function POST(request: NextRequest) {
     if (!license) {
       return NextResponse.json(
         { error: "License key not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     if (license.status !== "active") {
       return NextResponse.json(
         { error: `License is ${license.status}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -50,7 +56,7 @@ export async function POST(request: NextRequest) {
       ? await db.query.activations.findFirst({
           where: and(
             eq(activations.licenseId, license.id),
-            eq(activations.deviceId, device_id)
+            eq(activations.deviceId, device_id),
           ),
         })
       : null;
@@ -72,14 +78,16 @@ export async function POST(request: NextRequest) {
       const currentActivations = await db.query.activations.findMany({
         where: and(
           eq(activations.licenseId, license.id),
-          eq(activations.isActive, true)
+          eq(activations.isActive, true),
         ),
       });
 
       if (currentActivations.length >= license.maxActivations) {
         return NextResponse.json(
-          { error: `Activation limit reached (${license.maxActivations} devices)` },
-          { status: 400 }
+          {
+            error: `Activation limit reached (${license.maxActivations} devices)`,
+          },
+          { status: 400 },
         );
       }
 
@@ -98,7 +106,9 @@ export async function POST(request: NextRequest) {
         .returning();
 
       activation = newActivation;
-      console.log(`[activate] Created new activation for ${license_key}: ${instanceId}`);
+      console.log(
+        `[activate] Created new activation for ${license_key}: ${instanceId}`,
+      );
     }
 
     // Check updates availability
@@ -116,10 +126,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[activate] Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: errorMessage },
-      { status: 500 }
-    );
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

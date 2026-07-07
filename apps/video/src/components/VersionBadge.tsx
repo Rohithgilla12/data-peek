@@ -1,28 +1,28 @@
-import { useCurrentFrame, useVideoConfig, spring, interpolate } from 'remotion'
-import { brand } from '../lib/colors'
+import { useCurrentFrame, useVideoConfig, spring, interpolate } from "remotion";
+import { brand } from "../lib/colors";
 
 type VersionBadgeProps = {
-  version: string
-}
+  version: string;
+};
 
 export const VersionBadge: React.FC<VersionBadgeProps> = ({ version }) => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const scale = spring({ frame, fps, config: { damping: 200 } })
+  const scale = spring({ frame, fps, config: { damping: 200 } });
   const opacity = interpolate(frame, [0, 15], [0, 1], {
-    extrapolateRight: 'clamp',
-  })
+    extrapolateRight: "clamp",
+  });
 
   return (
     <div
       style={{
         opacity,
         transform: `scale(${scale})`,
-        display: 'inline-flex',
-        alignItems: 'center',
+        display: "inline-flex",
+        alignItems: "center",
         gap: 8,
-        padding: '8px 20px',
+        padding: "8px 20px",
         borderRadius: 999,
         border: `1px solid ${brand.accent}60`,
         backgroundColor: `${brand.accent}15`,
@@ -30,15 +30,15 @@ export const VersionBadge: React.FC<VersionBadgeProps> = ({ version }) => {
     >
       <span
         style={{
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 24,
           fontWeight: 500,
           color: brand.accent,
-          letterSpacing: '-0.02em',
+          letterSpacing: "-0.02em",
         }}
       >
         v{version}
       </span>
     </div>
-  )
-}
+  );
+};

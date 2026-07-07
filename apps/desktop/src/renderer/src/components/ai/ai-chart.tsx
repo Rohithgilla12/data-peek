@@ -23,7 +23,17 @@ import {
   Hash,
   Calendar
 } from 'lucide-react'
-import { Button, Badge, cn, ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  cn,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig
+} from '@data-peek/ui'
 
 // Chart types supported
 type ChartType = 'bar' | 'line' | 'pie' | 'area'

@@ -5,9 +5,9 @@ import {
   spring,
   interpolate,
   Sequence,
-} from 'remotion'
-import { brand } from '../../lib/colors'
-import { CyanGlow } from '../../components/CyanGlow'
+} from "remotion";
+import { brand } from "../../lib/colors";
+import { CyanGlow } from "../../components/CyanGlow";
 import {
   BarChart3,
   EyeOff,
@@ -15,39 +15,39 @@ import {
   FlaskConical,
   Bell,
   Activity,
-} from 'lucide-react'
+} from "lucide-react";
 
 type OutroProps = {
-  version: string
-}
+  version: string;
+};
 
 const featureIcons = [
-  { icon: BarChart3, color: '#06b6d4' },
-  { icon: EyeOff, color: '#f59e0b' },
-  { icon: FileUp, color: '#10b981' },
-  { icon: FlaskConical, color: '#8b5cf6' },
-  { icon: Bell, color: '#3b82f6' },
-  { icon: Activity, color: '#ef4444' },
-]
+  { icon: BarChart3, color: "#06b6d4" },
+  { icon: EyeOff, color: "#f59e0b" },
+  { icon: FileUp, color: "#10b981" },
+  { icon: FlaskConical, color: "#8b5cf6" },
+  { icon: Bell, color: "#3b82f6" },
+  { icon: Activity, color: "#ef4444" },
+];
 
 export const Outro: React.FC<OutroProps> = ({ version }) => {
-  const frame = useCurrentFrame()
-  const { fps, durationInFrames } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
 
   const fadeOut = interpolate(
     frame,
     [durationInFrames - 15, durationInFrames],
     [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  )
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
 
   return (
     <AbsoluteFill
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
         gap: 40,
         opacity: fadeOut,
       }}
@@ -56,7 +56,7 @@ export const Outro: React.FC<OutroProps> = ({ version }) => {
 
       <div
         style={{
-          display: 'flex',
+          display: "flex",
           gap: 24,
         }}
       >
@@ -65,8 +65,8 @@ export const Outro: React.FC<OutroProps> = ({ version }) => {
             frame: frame - i * 5,
             fps,
             config: { damping: 12, stiffness: 100 },
-          })
-          const scale = interpolate(entrance, [0, 1], [0, 1])
+          });
+          const scale = interpolate(entrance, [0, 1], [0, 1]);
 
           return (
             <div
@@ -77,15 +77,15 @@ export const Outro: React.FC<OutroProps> = ({ version }) => {
                 borderRadius: 16,
                 backgroundColor: `${color}15`,
                 border: `1px solid ${color}40`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 transform: `scale(${scale})`,
               }}
             >
               <Icon size={28} color={color} strokeWidth={1.5} />
             </div>
-          )
+          );
         })}
       </div>
 
@@ -97,65 +97,64 @@ export const Outro: React.FC<OutroProps> = ({ version }) => {
         <CtaReveal />
       </Sequence>
     </AbsoluteFill>
-  )
-}
+  );
+};
 
 const TitleReveal: React.FC<{ version: string }> = ({ version }) => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const entrance = spring({ frame, fps, config: { damping: 200 } })
-  const opacity = interpolate(entrance, [0, 1], [0, 1])
-  const translateY = interpolate(entrance, [0, 1], [20, 0])
+  const entrance = spring({ frame, fps, config: { damping: 200 } });
+  const opacity = interpolate(entrance, [0, 1], [0, 1]);
+  const translateY = interpolate(entrance, [0, 1], [20, 0]);
 
   return (
     <div
       style={{
         opacity,
         transform: `translateY(${translateY}px)`,
-        textAlign: 'center',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        textAlign: "center",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
         gap: 8,
       }}
     >
       <div
         style={{
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 64,
           fontWeight: 700,
           color: brand.textPrimary,
-          letterSpacing: '-0.04em',
+          letterSpacing: "-0.04em",
         }}
       >
-        data-peek{' '}
-        <span style={{ color: brand.accent }}>v{version}</span>
+        data-peek <span style={{ color: brand.accent }}>v{version}</span>
       </div>
     </div>
-  )
-}
+  );
+};
 
 const CtaReveal: React.FC = () => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const entrance = spring({ frame, fps, config: { damping: 200 } })
-  const opacity = interpolate(entrance, [0, 1], [0, 1])
+  const entrance = spring({ frame, fps, config: { damping: 200 } });
+  const opacity = interpolate(entrance, [0, 1], [0, 1]);
 
   return (
     <div
       style={{
         opacity,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
         gap: 12,
       }}
     >
       <div
         style={{
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 28,
           color: brand.textMuted,
         }}
@@ -164,7 +163,7 @@ const CtaReveal: React.FC = () => {
       </div>
       <div
         style={{
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 32,
           fontWeight: 500,
           color: brand.accent,
@@ -175,5 +174,5 @@ const CtaReveal: React.FC = () => {
         datapeek.dev
       </div>
     </div>
-  )
-}
+  );
+};

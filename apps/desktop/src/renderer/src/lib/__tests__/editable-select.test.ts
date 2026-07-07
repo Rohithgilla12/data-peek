@@ -250,11 +250,7 @@ describe('sqlMatchesStoredTable', () => {
 
   it('returns true for ORDER BY + LIMIT (count is unaffected)', () => {
     expect(
-      sqlMatchesStoredTable(
-        'SELECT * FROM users ORDER BY name LIMIT 100',
-        stored,
-        'postgresql'
-      )
+      sqlMatchesStoredTable('SELECT * FROM users ORDER BY name LIMIT 100', stored, 'postgresql')
     ).toBe(true)
   })
 
@@ -263,11 +259,7 @@ describe('sqlMatchesStoredTable', () => {
     // public.users would tell the user "1 — 50 of 10000" while the actual filtered
     // result has far fewer rows.
     expect(
-      sqlMatchesStoredTable(
-        'SELECT * FROM users WHERE deleted = false',
-        stored,
-        'postgresql'
-      )
+      sqlMatchesStoredTable('SELECT * FROM users WHERE deleted = false', stored, 'postgresql')
     ).toBe(false)
   })
 

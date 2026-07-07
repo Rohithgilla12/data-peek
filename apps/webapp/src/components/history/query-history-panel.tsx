@@ -1,35 +1,42 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Play, Trash2, CheckCircle, XCircle } from 'lucide-react'
-import { useQueryHistory } from '@/hooks/use-query-history'
-import { useConnectionStore } from '@/stores/connection-store'
-import { useQueryTabs } from '@/hooks/use-query-tabs'
+import { useState } from "react";
+import { Play, Trash2, CheckCircle, XCircle } from "lucide-react";
+import { useQueryHistory } from "@/hooks/use-query-history";
+import { useConnectionStore } from "@/stores/connection-store";
+import { useQueryTabs } from "@/hooks/use-query-tabs";
 
 function formatRelativeTime(date: Date | string): string {
-  const now = Date.now()
-  const then = new Date(date).getTime()
-  const diffMs = now - then
-  const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return 'just now'
-  if (diffMin < 60) return `${diffMin}m ago`
-  const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr}h ago`
-  const diffDays = Math.floor(diffHr / 24)
-  if (diffDays < 7) return `${diffDays}d ago`
-  return new Date(date).toLocaleDateString()
+  const now = Date.now();
+  const then = new Date(date).getTime();
+  const diffMs = now - then;
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDays = Math.floor(diffHr / 24);
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return new Date(date).toLocaleDateString();
 }
 
 export function QueryHistoryPanel() {
-  const [statusFilter, setStatusFilter] = useState<'success' | 'error' | undefined>()
-  const { activeConnectionId } = useConnectionStore()
-  const { activeTabId, updateSql } = useQueryTabs()
-  const { history, remove } = useQueryHistory(activeConnectionId ?? undefined, statusFilter)
+  const [statusFilter, setStatusFilter] = useState<
+    "success" | "error" | undefined
+  >();
+  const { activeConnectionId } = useConnectionStore();
+  const { activeTabId, updateSql } = useQueryTabs();
+  const { history, remove } = useQueryHistory(
+    activeConnectionId ?? undefined,
+    statusFilter,
+  );
 
   if (!activeConnectionId) {
     return (
-      <div className="px-3 py-4 text-xs text-muted-foreground">Select a connection first</div>
-    )
+      <div className="px-3 py-4 text-xs text-muted-foreground">
+        Select a connection first
+      </div>
+    );
   }
 
   return (
@@ -37,26 +44,28 @@ export function QueryHistoryPanel() {
       <div className="flex items-center gap-1.5 px-3 py-2 border-b border-border">
         <button
           onClick={() => setStatusFilter(undefined)}
-          className={`rounded px-2 py-0.5 text-[10px] ${!statusFilter ? 'bg-accent/10 text-accent' : 'text-muted-foreground hover:text-foreground'}`}
+          className={`rounded px-2 py-0.5 text-[10px] ${!statusFilter ? "bg-accent/10 text-accent" : "text-muted-foreground hover:text-foreground"}`}
         >
           All
         </button>
         <button
-          onClick={() => setStatusFilter('success')}
-          className={`rounded px-2 py-0.5 text-[10px] ${statusFilter === 'success' ? 'bg-success/10 text-success' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setStatusFilter("success")}
+          className={`rounded px-2 py-0.5 text-[10px] ${statusFilter === "success" ? "bg-success/10 text-success" : "text-muted-foreground hover:text-foreground"}`}
         >
           Success
         </button>
         <button
-          onClick={() => setStatusFilter('error')}
-          className={`rounded px-2 py-0.5 text-[10px] ${statusFilter === 'error' ? 'bg-destructive/10 text-destructive' : 'text-muted-foreground hover:text-foreground'}`}
+          onClick={() => setStatusFilter("error")}
+          className={`rounded px-2 py-0.5 text-[10px] ${statusFilter === "error" ? "bg-destructive/10 text-destructive" : "text-muted-foreground hover:text-foreground"}`}
         >
           Errors
         </button>
       </div>
       <div className="flex-1 overflow-y-auto">
         {history.length === 0 && (
-          <div className="px-3 py-4 text-xs text-muted-foreground text-center">No history yet</div>
+          <div className="px-3 py-4 text-xs text-muted-foreground text-center">
+            No history yet
+          </div>
         )}
         {history.map((entry) => (
           <div
@@ -65,7 +74,7 @@ export function QueryHistoryPanel() {
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                {entry.status === 'success' ? (
+                {entry.status === "success" ? (
                   <CheckCircle className="h-3 w-3 text-success flex-shrink-0" />
                 ) : (
                   <XCircle className="h-3 w-3 text-destructive flex-shrink-0" />
@@ -78,11 +87,13 @@ export function QueryHistoryPanel() {
                     · {entry.durationMs}ms
                   </span>
                 )}
-                {entry.rowCount !== null && entry.rowCount !== undefined && entry.status === 'success' && (
-                  <span className="text-[10px] text-muted-foreground">
-                    · {entry.rowCount} rows
-                  </span>
-                )}
+                {entry.rowCount !== null &&
+                  entry.rowCount !== undefined &&
+                  entry.status === "success" && (
+                    <span className="text-[10px] text-muted-foreground">
+                      · {entry.rowCount} rows
+                    </span>
+                  )}
               </div>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
@@ -105,11 +116,13 @@ export function QueryHistoryPanel() {
               {entry.query}
             </pre>
             {entry.errorMessage && (
-              <p className="mt-1 text-[10px] text-destructive truncate">{entry.errorMessage}</p>
+              <p className="mt-1 text-[10px] text-destructive truncate">
+                {entry.errorMessage}
+              </p>
             )}
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }

@@ -1,6 +1,14 @@
-'use client'
+"use client";
 
-import { Fragment, useMemo, useRef, useState, useCallback, useEffect, memo } from 'react'
+import {
+  Fragment,
+  useMemo,
+  useRef,
+  useState,
+  useCallback,
+  useEffect,
+  memo,
+} from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -13,8 +21,8 @@ import {
   type Column,
   type ColumnDef,
   type Row,
-} from '@tanstack/react-table'
-import { useVirtualizer } from '@tanstack/react-virtual'
+} from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   ArrowUp,
   ArrowDown,
@@ -29,7 +37,7 @@ import {
   ChevronsRight,
   Trash2,
   Undo2,
-} from 'lucide-react'
+} from "lucide-react";
 import {
   Button,
   Badge,
@@ -39,128 +47,184 @@ import {
   TableHead,
   TableRow,
   TableCell,
-} from '@data-peek/ui'
-import type { QueryField } from '@shared/index'
-import { useEditStore } from '@/stores/edit-store'
-import { useQueryTabs } from '@/hooks/use-query-tabs'
+} from "@data-peek/ui";
+import type { QueryField } from "@shared/index";
+import { useEditStore } from "@/stores/edit-store";
+import { useQueryTabs } from "@/hooks/use-query-tabs";
 
 const typeColors: Record<string, string> = {
-  int4: 'text-blue-400', int8: 'text-blue-400', integer: 'text-blue-400', bigint: 'text-blue-400',
-  smallint: 'text-blue-400', serial: 'text-blue-400', numeric: 'text-blue-300', decimal: 'text-blue-300',
-  float: 'text-blue-300', double: 'text-blue-300', real: 'text-blue-300',
-  text: 'text-green-400', varchar: 'text-green-400', char: 'text-green-400', name: 'text-green-400',
-  bool: 'text-yellow-400', boolean: 'text-yellow-400',
-  timestamp: 'text-orange-400', timestamptz: 'text-orange-400', date: 'text-orange-400',
-  time: 'text-orange-400', datetime: 'text-orange-400',
-  json: 'text-amber-400', jsonb: 'text-amber-400',
-  uuid: 'text-purple-400',
-}
+  int4: "text-blue-400",
+  int8: "text-blue-400",
+  integer: "text-blue-400",
+  bigint: "text-blue-400",
+  smallint: "text-blue-400",
+  serial: "text-blue-400",
+  numeric: "text-blue-300",
+  decimal: "text-blue-300",
+  float: "text-blue-300",
+  double: "text-blue-300",
+  real: "text-blue-300",
+  text: "text-green-400",
+  varchar: "text-green-400",
+  char: "text-green-400",
+  name: "text-green-400",
+  bool: "text-yellow-400",
+  boolean: "text-yellow-400",
+  timestamp: "text-orange-400",
+  timestamptz: "text-orange-400",
+  date: "text-orange-400",
+  time: "text-orange-400",
+  datetime: "text-orange-400",
+  json: "text-amber-400",
+  jsonb: "text-amber-400",
+  uuid: "text-purple-400",
+};
 
 const numericTypes = new Set([
-  'int4', 'int8', 'integer', 'bigint', 'smallint', 'serial', 'numeric', 'decimal',
-  'float', 'double', 'real', 'int', 'tinyint', 'mediumint', 'money',
-])
+  "int4",
+  "int8",
+  "integer",
+  "bigint",
+  "smallint",
+  "serial",
+  "numeric",
+  "decimal",
+  "float",
+  "double",
+  "real",
+  "int",
+  "tinyint",
+  "mediumint",
+  "money",
+]);
 
-const VIRTUALIZATION_THRESHOLD = 50
-const ROW_HEIGHT = 37
+const VIRTUALIZATION_THRESHOLD = 50;
+const ROW_HEIGHT = 37;
 
 interface ResultsTableProps {
-  rows: Record<string, unknown>[]
-  fields: QueryField[]
+  rows: Record<string, unknown>[];
+  fields: QueryField[];
 }
 
-const CellValue = memo(function CellValue({ value, dataType }: { value: unknown; dataType: string }) {
-  const [copied, setCopied] = useState(false)
+const CellValue = memo(function CellValue({
+  value,
+  dataType,
+}: {
+  value: unknown;
+  dataType: string;
+}) {
+  const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
-    const text = value === null ? 'NULL' : typeof value === 'object' ? JSON.stringify(value) : String(value)
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1500)
-  }, [value])
+    const text =
+      value === null
+        ? "NULL"
+        : typeof value === "object"
+          ? JSON.stringify(value)
+          : String(value);
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [value]);
 
   if (value === null || value === undefined) {
     return (
-      <button onClick={handleCopy} className="text-left text-muted-foreground/50 italic hover:bg-accent/50 px-1 -mx-1 rounded transition-colors">
+      <button
+        onClick={handleCopy}
+        className="text-left text-muted-foreground/50 italic hover:bg-accent/50 px-1 -mx-1 rounded transition-colors"
+      >
         NULL
       </button>
-    )
+    );
   }
 
-  if (typeof value === 'boolean' || dataType === 'bool' || dataType === 'boolean') {
+  if (
+    typeof value === "boolean" ||
+    dataType === "bool" ||
+    dataType === "boolean"
+  ) {
     return (
-      <button onClick={handleCopy} className={`text-left font-mono text-xs hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${value ? 'text-green-400' : 'text-red-400'}`}>
+      <button
+        onClick={handleCopy}
+        className={`text-left font-mono text-xs hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${value ? "text-green-400" : "text-red-400"}`}
+      >
         {String(value)}
       </button>
-    )
+    );
   }
 
-  if (typeof value === 'object') {
-    const json = JSON.stringify(value)
-    const preview = json.length > 50 ? json.slice(0, 50) + '...' : json
+  if (typeof value === "object") {
+    const json = JSON.stringify(value);
+    const preview = json.length > 50 ? json.slice(0, 50) + "..." : json;
     return (
-      <button onClick={handleCopy} className="text-left text-amber-400 hover:bg-accent/50 px-1 -mx-1 rounded transition-colors truncate max-w-[300px]" title={json.slice(0, 500)}>
+      <button
+        onClick={handleCopy}
+        className="text-left text-amber-400 hover:bg-accent/50 px-1 -mx-1 rounded transition-colors truncate max-w-[300px]"
+        title={json.slice(0, 500)}
+      >
         {preview}
       </button>
-    )
+    );
   }
 
-  const str = String(value)
-  const isLong = str.length > 50
+  const str = String(value);
+  const isLong = str.length > 50;
   const isMono =
-    dataType.includes('uuid') ||
-    dataType.includes('int') ||
-    dataType.includes('numeric') ||
-    dataType.includes('decimal') ||
-    dataType.includes('float') ||
-    dataType.includes('double') ||
-    dataType.includes('money')
+    dataType.includes("uuid") ||
+    dataType.includes("int") ||
+    dataType.includes("numeric") ||
+    dataType.includes("decimal") ||
+    dataType.includes("float") ||
+    dataType.includes("double") ||
+    dataType.includes("money");
 
   return (
     <button
       onClick={handleCopy}
-      className={`text-left truncate max-w-[300px] hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${isMono ? 'font-mono text-xs' : ''}`}
+      className={`text-left truncate max-w-[300px] hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${isMono ? "font-mono text-xs" : ""}`}
       title={isLong ? str.slice(0, 500) : undefined}
     >
       {copied ? (
         <span className="inline-flex items-center gap-1 text-success">
           <Check className="size-3" /> Copied!
         </span>
+      ) : isLong ? (
+        str.slice(0, 50) + "..."
       ) : (
-        isLong ? str.slice(0, 50) + '...' : str
+        str
       )}
     </button>
-  )
-})
+  );
+});
 
 function ActiveCellInput({
   initialValue,
   onCommit,
-  onCancel
+  onCancel,
 }: {
-  initialValue: string
-  onCommit: (value: string) => void
-  onCancel: () => void
+  initialValue: string;
+  onCommit: (value: string) => void;
+  onCancel: () => void;
 }) {
   // State is seeded once on mount via the initializer. The input is only
   // mounted while its cell is active, so a fresh edit always starts from the
   // current cell value without syncing through an effect.
-  const [editValue, setEditValue] = useState(() => initialValue)
+  const [editValue, setEditValue] = useState(() => initialValue);
 
   // A keyboard action (Enter/Escape) unmounts the focused input, which also
   // fires onBlur. Without this guard, Escape would still commit via the blur
   // and Enter would commit twice. Finalize exactly once.
-  const finalizedRef = useRef(false)
+  const finalizedRef = useRef(false);
   const commit = () => {
-    if (finalizedRef.current) return
-    finalizedRef.current = true
-    onCommit(editValue)
-  }
+    if (finalizedRef.current) return;
+    finalizedRef.current = true;
+    onCommit(editValue);
+  };
   const cancel = () => {
-    if (finalizedRef.current) return
-    finalizedRef.current = true
-    onCancel()
-  }
+    if (finalizedRef.current) return;
+    finalizedRef.current = true;
+    onCancel();
+  };
 
   return (
     <input
@@ -169,17 +233,17 @@ function ActiveCellInput({
       onChange={(e) => setEditValue(e.target.value)}
       onBlur={commit}
       onKeyDown={(e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault()
-          commit()
-        } else if (e.key === 'Escape') {
-          e.preventDefault()
-          cancel()
+        if (e.key === "Enter") {
+          e.preventDefault();
+          commit();
+        } else if (e.key === "Escape") {
+          e.preventDefault();
+          cancel();
         }
       }}
       className="w-full h-6 bg-background border border-accent/50 rounded px-1 text-xs outline-none focus:border-accent"
     />
-  )
+  );
 }
 
 function EditableCell({
@@ -190,75 +254,97 @@ function EditableCell({
   tabId,
   row,
 }: {
-  value: unknown
-  dataType: string
-  rowIndex: number
-  columnName: string
-  tabId: string
-  row: Record<string, unknown>
+  value: unknown;
+  dataType: string;
+  rowIndex: number;
+  columnName: string;
+  tabId: string;
+  row: Record<string, unknown>;
 }) {
-  const { isInEditMode, startCellEdit, cancelCellEdit, updateCellValue, isCellModified, getModifiedCellValue } = useEditStore()
-  const isEditing = isInEditMode(tabId)
-  const tabEdit = useEditStore((s) => s.tabEdits.get(tabId))
-  const isActiveCell = tabEdit?.editingCell?.rowIndex === rowIndex && tabEdit?.editingCell?.columnName === columnName
-  const isModified = isCellModified(tabId, rowIndex, columnName)
-  const displayValue = isModified ? getModifiedCellValue(tabId, rowIndex, columnName) : value
+  const {
+    isInEditMode,
+    startCellEdit,
+    cancelCellEdit,
+    updateCellValue,
+    isCellModified,
+    getModifiedCellValue,
+  } = useEditStore();
+  const isEditing = isInEditMode(tabId);
+  const tabEdit = useEditStore((s) => s.tabEdits.get(tabId));
+  const isActiveCell =
+    tabEdit?.editingCell?.rowIndex === rowIndex &&
+    tabEdit?.editingCell?.columnName === columnName;
+  const isModified = isCellModified(tabId, rowIndex, columnName);
+  const displayValue = isModified
+    ? getModifiedCellValue(tabId, rowIndex, columnName)
+    : value;
 
   if (!isEditing) {
-    return <CellValue value={value} dataType={dataType} />
+    return <CellValue value={value} dataType={dataType} />;
   }
 
   if (isActiveCell) {
     return (
       <ActiveCellInput
-        initialValue={displayValue === null || displayValue === undefined ? '' : String(displayValue)}
+        initialValue={
+          displayValue === null || displayValue === undefined
+            ? ""
+            : String(displayValue)
+        }
         onCommit={(editValue) => {
-          const newValue = editValue === '' ? null : editValue
-          updateCellValue(tabId, rowIndex, columnName, newValue, row)
+          const newValue = editValue === "" ? null : editValue;
+          updateCellValue(tabId, rowIndex, columnName, newValue, row);
         }}
         onCancel={() => cancelCellEdit(tabId)}
       />
-    )
+    );
   }
 
   return (
     <button
       className={`text-left w-full truncate px-1 -mx-1 rounded transition-colors cursor-text hover:bg-accent/20 ${
-        isModified ? 'bg-accent/10 text-accent ring-1 ring-accent/20' : ''
+        isModified ? "bg-accent/10 text-accent ring-1 ring-accent/20" : ""
       }`}
       onClick={() => startCellEdit(tabId, rowIndex, columnName)}
     >
       {displayValue === null || displayValue === undefined ? (
         <span className="text-muted-foreground/50 italic">NULL</span>
       ) : (
-        <span className={isModified ? 'text-accent' : ''}>{String(displayValue)}</span>
+        <span className={isModified ? "text-accent" : ""}>
+          {String(displayValue)}
+        </span>
       )}
     </button>
-  )
+  );
 }
 
 export function ResultsTable({ rows, fields }: ResultsTableProps) {
-  const [sorting, setSorting] = useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
-  const [showFilters, setShowFilters] = useState(false)
-  const tableContainerRef = useRef<HTMLDivElement>(null)
-  const headerRef = useRef<HTMLTableRowElement>(null)
-  const [columnWidths, setColumnWidths] = useState<number[]>([])
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const tableContainerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLTableRowElement>(null);
+  const [columnWidths, setColumnWidths] = useState<number[]>([]);
 
-  const { activeTabId } = useQueryTabs()
-  const { isInEditMode, isRowMarkedForDeletion, markRowForDeletion, unmarkRowForDeletion } = useEditStore()
-  const isEditing = isInEditMode(activeTabId)
+  const { activeTabId } = useQueryTabs();
+  const {
+    isInEditMode,
+    isRowMarkedForDeletion,
+    markRowForDeletion,
+    unmarkRowForDeletion,
+  } = useEditStore();
+  const isEditing = isInEditMode(activeTabId);
 
   const columns = useMemo<ColumnDef<Record<string, unknown>>[]>(() => {
-    const cols: ColumnDef<Record<string, unknown>>[] = []
+    const cols: ColumnDef<Record<string, unknown>>[] = [];
 
     if (isEditing) {
       cols.push({
-        id: '_actions',
+        id: "_actions",
         header: () => <span className="text-[10px]">Actions</span>,
         cell: ({ row }) => {
-          const rowIndex = row.index
-          const isDeleted = isRowMarkedForDeletion(activeTabId, rowIndex)
+          const rowIndex = row.index;
+          const isDeleted = isRowMarkedForDeletion(activeTabId, rowIndex);
           return (
             <div className="flex items-center gap-0.5">
               {isDeleted ? (
@@ -271,7 +357,9 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                 </button>
               ) : (
                 <button
-                  onClick={() => markRowForDeletion(activeTabId, rowIndex, row.original)}
+                  onClick={() =>
+                    markRowForDeletion(activeTabId, rowIndex, row.original)
+                  }
                   className="p-0.5 rounded hover:bg-destructive/20 text-muted-foreground hover:text-destructive"
                   title="Delete row"
                 >
@@ -279,46 +367,62 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                 </button>
               )}
             </div>
-          )
+          );
         },
         size: 50,
-      })
+      });
     }
 
     cols.push(
       ...fields.map((field, index) => {
-        const columnId = field.name || `_col_${index}`
-        const lowerType = field.dataType.toLowerCase()
-        const isNumeric = numericTypes.has(lowerType)
+        const columnId = field.name || `_col_${index}`;
+        const lowerType = field.dataType.toLowerCase();
+        const isNumeric = numericTypes.has(lowerType);
 
         return {
           id: columnId,
           accessorKey: field.name,
-          header: ({ column }: { column: Column<Record<string, unknown>, unknown> }) => {
-            const isSorted = column.getIsSorted()
-            const typeColor = typeColors[field.dataType] ?? 'text-muted-foreground'
+          header: ({
+            column,
+          }: {
+            column: Column<Record<string, unknown>, unknown>;
+          }) => {
+            const isSorted = column.getIsSorted();
+            const typeColor =
+              typeColors[field.dataType] ?? "text-muted-foreground";
             return (
               <div className="flex items-center">
                 <button
                   className="h-auto py-1 px-2 -mx-2 font-medium hover:bg-accent/50 rounded flex items-center gap-1 flex-1 transition-colors"
-                  onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
+                  onClick={() =>
+                    column.toggleSorting(column.getIsSorted() === "asc")
+                  }
                 >
                   <span>{field.name || `(column ${index + 1})`}</span>
-                  <Badge variant="outline" className={`text-[9px] px-1 py-0 font-mono border-current/20 ${typeColor}`}>
+                  <Badge
+                    variant="outline"
+                    className={`text-[9px] px-1 py-0 font-mono border-current/20 ${typeColor}`}
+                  >
                     {field.dataType}
                   </Badge>
-                  {isSorted === 'asc' ? (
+                  {isSorted === "asc" ? (
                     <ArrowUp className="ml-auto size-3 text-accent" />
-                  ) : isSorted === 'desc' ? (
+                  ) : isSorted === "desc" ? (
                     <ArrowDown className="ml-auto size-3 text-accent" />
                   ) : (
                     <ArrowUpDown className="ml-auto size-3 opacity-30" />
                   )}
                 </button>
               </div>
-            )
+            );
           },
-          cell: ({ getValue, row }: { getValue: () => unknown; row: Row<Record<string, unknown>> }) => {
+          cell: ({
+            getValue,
+            row,
+          }: {
+            getValue: () => unknown;
+            row: Row<Record<string, unknown>>;
+          }) => {
             if (isEditing) {
               return (
                 <EditableCell
@@ -329,31 +433,52 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                   tabId={activeTabId}
                   row={row.original}
                 />
-              )
+              );
             }
-            return <CellValue value={getValue()} dataType={field.dataType} />
+            return <CellValue value={getValue()} dataType={field.dataType} />;
           },
           filterFn: isNumeric
-            ? (row: Row<Record<string, unknown>>, columnId: string, filterValue: unknown) => {
-                const value = row.getValue(columnId)
-                if (value === null || value === undefined) return false
-                const numValue = Number(value)
-                const filterStr = String(filterValue).trim()
-                if (filterStr.startsWith('>=')) return numValue >= parseFloat(filterStr.slice(2))
-                if (filterStr.startsWith('<=')) return numValue <= parseFloat(filterStr.slice(2))
-                if (filterStr.startsWith('>')) return numValue > parseFloat(filterStr.slice(1))
-                if (filterStr.startsWith('<')) return numValue < parseFloat(filterStr.slice(1))
-                const rangeMatch = filterStr.match(/^(-?\d+(\.\d+)?)\s*-\s*(-?\d+(\.\d+)?)$/)
-                if (rangeMatch) return numValue >= parseFloat(rangeMatch[1]) && numValue <= parseFloat(rangeMatch[3])
-                return String(numValue).includes(filterStr)
+            ? (
+                row: Row<Record<string, unknown>>,
+                columnId: string,
+                filterValue: unknown,
+              ) => {
+                const value = row.getValue(columnId);
+                if (value === null || value === undefined) return false;
+                const numValue = Number(value);
+                const filterStr = String(filterValue).trim();
+                if (filterStr.startsWith(">="))
+                  return numValue >= parseFloat(filterStr.slice(2));
+                if (filterStr.startsWith("<="))
+                  return numValue <= parseFloat(filterStr.slice(2));
+                if (filterStr.startsWith(">"))
+                  return numValue > parseFloat(filterStr.slice(1));
+                if (filterStr.startsWith("<"))
+                  return numValue < parseFloat(filterStr.slice(1));
+                const rangeMatch = filterStr.match(
+                  /^(-?\d+(\.\d+)?)\s*-\s*(-?\d+(\.\d+)?)$/,
+                );
+                if (rangeMatch)
+                  return (
+                    numValue >= parseFloat(rangeMatch[1]) &&
+                    numValue <= parseFloat(rangeMatch[3])
+                  );
+                return String(numValue).includes(filterStr);
               }
-            : 'includesString',
-        } as ColumnDef<Record<string, unknown>>
-      })
-    )
+            : "includesString",
+        } as ColumnDef<Record<string, unknown>>;
+      }),
+    );
 
-    return cols
-  }, [fields, isEditing, activeTabId, isRowMarkedForDeletion, markRowForDeletion, unmarkRowForDeletion])
+    return cols;
+  }, [
+    fields,
+    isEditing,
+    activeTabId,
+    isRowMarkedForDeletion,
+    markRowForDeletion,
+    unmarkRowForDeletion,
+  ]);
 
   const table = useReactTable({
     data: rows,
@@ -366,46 +491,48 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
     onColumnFiltersChange: setColumnFilters,
     state: { sorting, columnFilters },
     initialState: { pagination: { pageSize: 100 } },
-  })
+  });
 
-  const activeFilterCount = columnFilters.filter((f) => f.value !== '').length
-  const tableRows = table.getRowModel().rows
-  const shouldVirtualize = tableRows.length > VIRTUALIZATION_THRESHOLD
+  const activeFilterCount = columnFilters.filter((f) => f.value !== "").length;
+  const tableRows = table.getRowModel().rows;
+  const shouldVirtualize = tableRows.length > VIRTUALIZATION_THRESHOLD;
 
   const virtualizer = useVirtualizer({
     count: tableRows.length,
     getScrollElement: () => tableContainerRef.current,
     estimateSize: () => ROW_HEIGHT,
     overscan: 10,
-  })
+  });
 
-  const columnKey = fields.map((c) => c.name).join(',')
-
-  useEffect(() => {
-    setColumnWidths([])
-  }, [columnKey])
+  const columnKey = fields.map((c) => c.name).join(",");
 
   useEffect(() => {
-    if (!shouldVirtualize || !headerRef.current) return
+    setColumnWidths([]);
+  }, [columnKey]);
+
+  useEffect(() => {
+    if (!shouldVirtualize || !headerRef.current) return;
 
     const measureWidths = () => {
-      const headerCells = headerRef.current?.querySelectorAll('th')
+      const headerCells = headerRef.current?.querySelectorAll("th");
       if (headerCells) {
-        setColumnWidths(Array.from(headerCells).map((cell) => cell.offsetWidth))
+        setColumnWidths(
+          Array.from(headerCells).map((cell) => cell.offsetWidth),
+        );
       }
-    }
+    };
 
-    const timeoutId = setTimeout(measureWidths, 0)
-    const resizeObserver = new ResizeObserver(measureWidths)
-    if (headerRef.current) resizeObserver.observe(headerRef.current)
+    const timeoutId = setTimeout(measureWidths, 0);
+    const resizeObserver = new ResizeObserver(measureWidths);
+    if (headerRef.current) resizeObserver.observe(headerRef.current);
 
     return () => {
-      clearTimeout(timeoutId)
-      resizeObserver.disconnect()
-    }
-  }, [shouldVirtualize, columnKey])
+      clearTimeout(timeoutId);
+      resizeObserver.disconnect();
+    };
+  }, [shouldVirtualize, columnKey]);
 
-  if (fields.length === 0) return null
+  if (fields.length === 0) return null;
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
@@ -417,13 +544,16 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
             size="sm"
             onClick={() => setShowFilters(!showFilters)}
             className={`gap-1.5 text-xs ${
-              showFilters ? 'bg-muted text-foreground' : 'text-muted-foreground'
+              showFilters ? "bg-muted text-foreground" : "text-muted-foreground"
             }`}
           >
             <Filter className="size-3" />
             Filter
             {activeFilterCount > 0 && (
-              <Badge variant="secondary" className="rounded-full bg-accent/20 px-1.5 text-[10px] text-accent ml-0.5">
+              <Badge
+                variant="secondary"
+                className="rounded-full bg-accent/20 px-1.5 text-[10px] text-accent ml-0.5"
+              >
                 {activeFilterCount}
               </Badge>
             )}
@@ -454,7 +584,10 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
             <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-sm z-10">
               {table.getHeaderGroups().map((headerGroup) => (
                 <Fragment key={headerGroup.id}>
-                  <TableRow ref={headerRef} className="border-b border-border/50">
+                  <TableRow
+                    ref={headerRef}
+                    className="border-b border-border/50"
+                  >
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
@@ -462,19 +595,33 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                       >
                         {header.isPlaceholder
                           ? null
-                          : flexRender(header.column.columnDef.header, header.getContext())}
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                       </TableHead>
                     ))}
                   </TableRow>
                   {showFilters && (
                     <TableRow className="border-b border-border/50 bg-muted/80 hover:bg-muted/80">
                       {headerGroup.headers.map((header) => (
-                        <TableHead key={`filter-${header.id}`} className="h-9 py-1 px-2 bg-muted/80">
+                        <TableHead
+                          key={`filter-${header.id}`}
+                          className="h-9 py-1 px-2 bg-muted/80"
+                        >
                           {header.column.getCanFilter() ? (
                             <Input
                               placeholder="Filter..."
-                              value={(header.column.getFilterValue() as string) ?? ''}
-                              onChange={(e: React.ChangeEvent<HTMLInputElement>) => header.column.setFilterValue(e.target.value || undefined)}
+                              value={
+                                (header.column.getFilterValue() as string) ?? ""
+                              }
+                              onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>,
+                              ) =>
+                                header.column.setFilterValue(
+                                  e.target.value || undefined,
+                                )
+                              }
                               className="h-7 text-xs bg-background/80 placeholder:text-muted-foreground/40"
                             />
                           ) : null}
@@ -492,20 +639,27 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                     <td colSpan={columns.length} style={{ padding: 0 }}>
                       <div
                         role="rowgroup"
-                        style={{ height: virtualizer.getTotalSize(), position: 'relative' }}
+                        style={{
+                          height: virtualizer.getTotalSize(),
+                          position: "relative",
+                        }}
                       >
                         {virtualizer.getVirtualItems().map((virtualRow) => {
-                          const row = tableRows[virtualRow.index]
-                          const isDeleted = isEditing && isRowMarkedForDeletion(activeTabId, row.index)
+                          const row = tableRows[virtualRow.index];
+                          const isDeleted =
+                            isEditing &&
+                            isRowMarkedForDeletion(activeTabId, row.index);
                           return (
                             <div
                               key={row.id}
                               role="row"
                               className={`hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center ${
-                                isDeleted ? 'bg-destructive/10 line-through opacity-50' : ''
+                                isDeleted
+                                  ? "bg-destructive/10 line-through opacity-50"
+                                  : ""
                               }`}
                               style={{
-                                position: 'absolute',
+                                position: "absolute",
                                 top: 0,
                                 left: 0,
                                 height: `${virtualRow.size}px`,
@@ -513,51 +667,78 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
                               }}
                             >
                               {row.getVisibleCells().map((cell, cellIndex) => {
-                                const meta = cell.column.columnDef.meta as { dataType?: string } | undefined
-                                const isNum = meta?.dataType ? numericTypes.has(meta.dataType) : false
+                                const meta = cell.column.columnDef.meta as
+                                  | { dataType?: string }
+                                  | undefined;
+                                const isNum = meta?.dataType
+                                  ? numericTypes.has(meta.dataType)
+                                  : false;
                                 return (
                                   <div
                                     key={cell.id}
                                     role="cell"
-                                    className={`py-2 px-4 text-sm whitespace-nowrap overflow-hidden ${isNum ? 'text-right' : ''}`}
-                                    style={{ width: columnWidths[cellIndex] || 'auto', flexShrink: 0 }}
+                                    className={`py-2 px-4 text-sm whitespace-nowrap overflow-hidden ${isNum ? "text-right" : ""}`}
+                                    style={{
+                                      width: columnWidths[cellIndex] || "auto",
+                                      flexShrink: 0,
+                                    }}
                                   >
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    {flexRender(
+                                      cell.column.columnDef.cell,
+                                      cell.getContext(),
+                                    )}
                                   </div>
-                                )
+                                );
                               })}
                             </div>
-                          )
+                          );
                         })}
                       </div>
                     </td>
                   </tr>
                 ) : (
                   tableRows.map((row) => {
-                    const isDeleted = isEditing && isRowMarkedForDeletion(activeTabId, row.index)
+                    const isDeleted =
+                      isEditing &&
+                      isRowMarkedForDeletion(activeTabId, row.index);
                     return (
                       <TableRow
                         key={row.id}
                         className={`hover:bg-accent/30 border-b border-border/30 ${
-                          isDeleted ? 'bg-destructive/10 line-through opacity-50' : ''
+                          isDeleted
+                            ? "bg-destructive/10 line-through opacity-50"
+                            : ""
                         }`}
                       >
                         {row.getVisibleCells().map((cell) => {
-                          const meta = cell.column.columnDef.meta as { dataType?: string } | undefined
-                          const isNum = meta?.dataType ? numericTypes.has(meta.dataType) : false
+                          const meta = cell.column.columnDef.meta as
+                            | { dataType?: string }
+                            | undefined;
+                          const isNum = meta?.dataType
+                            ? numericTypes.has(meta.dataType)
+                            : false;
                           return (
-                            <TableCell key={cell.id} className={`py-2 px-4 text-sm ${isNum ? 'text-right' : ''}`}>
-                              {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            <TableCell
+                              key={cell.id}
+                              className={`py-2 px-4 text-sm ${isNum ? "text-right" : ""}`}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
                             </TableCell>
-                          )
+                          );
                         })}
                       </TableRow>
-                    )
+                    );
                   })
                 )
               ) : (
                 <TableRow>
-                  <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                  <TableCell
+                    colSpan={columns.length}
+                    className="h-24 text-center text-muted-foreground"
+                  >
                     No results.
                   </TableCell>
                 </TableRow>
@@ -570,11 +751,16 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
       {/* Pagination */}
       <div className="flex items-center justify-between px-3 py-1.5 shrink-0 text-xs text-muted-foreground">
         <span>
-          Rows {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}-
+          Rows{" "}
+          {table.getState().pagination.pageIndex *
+            table.getState().pagination.pageSize +
+            1}
+          -
           {Math.min(
-            (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-            table.getFilteredRowModel().rows.length
-          )}{' '}
+            (table.getState().pagination.pageIndex + 1) *
+              table.getState().pagination.pageSize,
+            table.getFilteredRowModel().rows.length,
+          )}{" "}
           of {table.getFilteredRowModel().rows.length.toLocaleString()}
           {table.getFilteredRowModel().rows.length !== rows.length &&
             ` (filtered from ${rows.length.toLocaleString()})`}
@@ -587,29 +773,56 @@ export function ResultsTable({ rows, fields }: ResultsTableProps) {
             className="rounded-md border border-border bg-input px-2 py-0.5 text-xs text-foreground"
           >
             {[25, 50, 100, 250, 500].map((s) => (
-              <option key={s} value={s}>{s}</option>
+              <option key={s} value={s}>
+                {s}
+              </option>
             ))}
           </select>
 
           <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="size-7" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronsLeft className="size-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="size-7" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <ChevronLeft className="size-3.5" />
             </Button>
             <span className="px-2 tabular-nums">
-              {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
+              {table.getState().pagination.pageIndex + 1} /{" "}
+              {table.getPageCount()}
             </span>
-            <Button variant="ghost" size="icon" className="size-7" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronRight className="size-3.5" />
             </Button>
-            <Button variant="ghost" size="icon" className="size-7" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <ChevronsRight className="size-3.5" />
             </Button>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

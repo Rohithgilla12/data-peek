@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useState } from "react"
+import Link from "next/link";
+import { useState } from "react";
 
 const personal = {
   name: "Personal",
@@ -14,7 +14,7 @@ const personal = {
     "Unlimited connections & history",
     "All future updates",
   ],
-}
+};
 
 const pro = {
   name: "Pro",
@@ -30,7 +30,7 @@ const pro = {
     "Perpetual fallback license",
     "30-day money-back guarantee",
   ],
-}
+};
 
 function Check() {
   return (
@@ -41,26 +41,26 @@ function Check() {
     >
       ✓
     </span>
-  )
+  );
 }
 
 type TierShape = {
-  name: string
-  price: string
-  priceMeta?: string
-  oldPrice?: string
-  tagline: string
-  features: string[]
-}
+  name: string;
+  price: string;
+  priceMeta?: string;
+  oldPrice?: string;
+  tagline: string;
+  features: string[];
+};
 
 function Tier({
   tier,
   featured,
   children,
 }: {
-  tier: TierShape
-  featured?: boolean
-  children: React.ReactNode
+  tier: TierShape;
+  featured?: boolean;
+  children: React.ReactNode;
 }) {
   return (
     <div
@@ -78,7 +78,10 @@ function Tier({
           {featured && (
             <span
               className="text-[10px] uppercase tracking-[0.14em] h-5 px-1.5 inline-flex items-center"
-              style={{ background: "var(--n-accent)", color: "var(--n-accent-ink)" }}
+              style={{
+                background: "var(--n-accent)",
+                color: "var(--n-accent-ink)",
+              }}
             >
               70% off
             </span>
@@ -101,11 +104,16 @@ function Tier({
         </div>
       </div>
 
-      <p className="mt-3 text-[13px] text-[var(--n-fg-muted)]">{tier.tagline}</p>
+      <p className="mt-3 text-[13px] text-[var(--n-fg-muted)]">
+        {tier.tagline}
+      </p>
 
       <ul className="mt-6 space-y-2.5 flex-1">
         {tier.features.map((f) => (
-          <li key={f} className="flex items-start gap-3 text-[13px] text-[var(--n-fg)]">
+          <li
+            key={f}
+            className="flex items-start gap-3 text-[13px] text-[var(--n-fg)]"
+          >
             <Check />
             <span className="leading-[1.55]">{f}</span>
           </li>
@@ -114,23 +122,23 @@ function Tier({
 
       <div className="mt-8">{children}</div>
     </div>
-  )
+  );
 }
 
 function ProCheckoutButton() {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   const go = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
-      const res = await fetch("/api/checkout", { method: "POST" })
-      const data = await res.json()
-      if (data.checkout_url) window.location.href = data.checkout_url
-      else setLoading(false)
+      const res = await fetch("/api/checkout", { method: "POST" });
+      const data = await res.json();
+      if (data.checkout_url) window.location.href = data.checkout_url;
+      else setLoading(false);
     } catch {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <button
@@ -141,7 +149,7 @@ function ProCheckoutButton() {
     >
       {loading ? "Opening checkout…" : "Get Pro license →"}
     </button>
-  )
+  );
 }
 
 export function Pricing() {
@@ -156,7 +164,9 @@ export function Pricing() {
             <h2 className="mt-4 text-[36px] sm:text-[48px] leading-[1.02] tracking-[-0.02em] text-[var(--n-fg)] font-medium">
               Free for personal use.
               <br />
-              <span className="text-[var(--n-fg-muted)]">Pay once for work.</span>
+              <span className="text-[var(--n-fg-muted)]">
+                Pay once for work.
+              </span>
             </h2>
           </div>
           <div className="lg:col-span-5">
@@ -194,9 +204,13 @@ export function Pricing() {
             </div>
             <p className="mt-2 text-[13px] leading-[1.6] text-[var(--n-fg-muted)] max-w-[80ch]">
               No DRM, no license-server shakedowns. If you&apos;re a solo
-              founder, student, educator, or contributor to OSS — it&apos;s free,
-              no questions.{" "}
-              <Link href="https://x.com/gillarohith" target="_blank" className="text-[var(--n-fg)] underline underline-offset-4 decoration-[var(--n-line)]">
+              founder, student, educator, or contributor to OSS — it&apos;s
+              free, no questions.{" "}
+              <Link
+                href="https://x.com/gillarohith"
+                target="_blank"
+                className="text-[var(--n-fg)] underline underline-offset-4 decoration-[var(--n-line)]"
+              >
                 DM @gillarohith
               </Link>{" "}
               for a license.
@@ -223,5 +237,5 @@ export function Pricing() {
         </div>
       </div>
     </section>
-  )
+  );
 }

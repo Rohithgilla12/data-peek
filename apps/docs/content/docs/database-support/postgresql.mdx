@@ -20,16 +20,17 @@ postgresql://[user]:[password]@[host]:[port]/[database]?sslmode=[mode]
 
 ### SSL Modes
 
-| Mode | Description |
-|------|-------------|
-| `disable` | No SSL |
-| `require` | SSL required, no verification |
-| `verify-ca` | Verify server certificate |
+| Mode          | Description                     |
+| ------------- | ------------------------------- |
+| `disable`     | No SSL                          |
+| `require`     | SSL required, no verification   |
+| `verify-ca`   | Verify server certificate       |
 | `verify-full` | Verify certificate and hostname |
 
 ## Supported Data Types
 
 ### Numeric
+
 - `smallint`, `integer`, `bigint`
 - `serial`, `bigserial`, `smallserial`
 - `numeric(p,s)`, `decimal(p,s)`
@@ -37,31 +38,39 @@ postgresql://[user]:[password]@[host]:[port]/[database]?sslmode=[mode]
 - `money`
 
 ### Character
+
 - `char(n)`, `varchar(n)`, `text`
 - `bytea`
 
 ### Date/Time
+
 - `timestamp`, `timestamptz`
 - `date`, `time`, `timetz`
 - `interval`
 
 ### Boolean & UUID
+
 - `boolean`
 - `uuid`
 
 ### JSON
+
 - `json`, `jsonb`
 
 ### Arrays
+
 - All types support array notation (e.g., `integer[]`, `text[]`)
 
 ### Network
+
 - `cidr`, `inet`, `macaddr`
 
 ### Geometric
+
 - `point`, `line`, `box`, `path`, `polygon`, `circle`
 
 ### Range Types
+
 - `int4range`, `int8range`, `numrange`
 - `tsrange`, `tstzrange`, `daterange`
 
@@ -78,6 +87,7 @@ View and use sequences for auto-increment columns.
 ### Custom Types
 
 Full support for:
+
 - Enums (with value dropdowns in editor)
 - Composite types
 - Domains
@@ -85,6 +95,7 @@ Full support for:
 ### Table Designer
 
 All PostgreSQL features in table designer:
+
 - All index methods (btree, hash, gist, gin, spgist, brin)
 - Partial indexes
 - Covering indexes (INCLUDE)
@@ -96,6 +107,7 @@ All PostgreSQL features in table designer:
 ### Functions
 
 Use PostgreSQL functions in queries:
+
 - `now()`, `current_timestamp`
 - `gen_random_uuid()`
 - `array_agg()`, `json_agg()`

@@ -17,12 +17,12 @@ export const Route = createRootRoute({
         title: DOCS_CONFIG.title,
         description: DOCS_CONFIG.description,
         keywords: [
-          'data-peek documentation',
-          'PostgreSQL client docs',
-          'MySQL client docs',
-          'SQL client documentation',
-          'database client guide',
-          'SQL editor documentation',
+          "data-peek documentation",
+          "PostgreSQL client docs",
+          "MySQL client docs",
+          "SQL client documentation",
+          "database client guide",
+          "SQL editor documentation",
         ],
       }),
       links: [

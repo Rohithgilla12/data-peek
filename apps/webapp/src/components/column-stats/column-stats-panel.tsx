@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { X, Loader2 } from 'lucide-react'
-import { trpc } from '@/lib/trpc-client'
-import { useConnectionStore } from '@/stores/connection-store'
+import { X, Loader2 } from "lucide-react";
+import { trpc } from "@/lib/trpc-client";
+import { useConnectionStore } from "@/stores/connection-store";
 
 interface ColumnStatsPanelProps {
-  schema: string
-  table: string
-  column: string
-  dataType: string
-  onClose: () => void
+  schema: string;
+  table: string;
+  column: string;
+  dataType: string;
+  onClose: () => void;
 }
 
 function StatBox({ label, value }: { label: string; value: string | number }) {
@@ -20,7 +20,7 @@ function StatBox({ label, value }: { label: string; value: string | number }) {
       </span>
       <span className="text-sm font-mono font-semibold">{value}</span>
     </div>
-  )
+  );
 }
 
 export function ColumnStatsPanel({
@@ -30,7 +30,7 @@ export function ColumnStatsPanel({
   dataType,
   onClose,
 }: ColumnStatsPanelProps) {
-  const { activeConnectionId } = useConnectionStore()
+  const { activeConnectionId } = useConnectionStore();
 
   const { data, isLoading, error } = trpc.columnStats.get.useQuery(
     {
@@ -40,8 +40,8 @@ export function ColumnStatsPanel({
       column,
       dataType,
     },
-    { enabled: !!activeConnectionId }
-  )
+    { enabled: !!activeConnectionId },
+  );
 
   return (
     <div className="fixed inset-y-0 right-0 z-50 flex w-80 flex-col border-l border-border bg-background shadow-lg">
@@ -68,18 +68,35 @@ export function ColumnStatsPanel({
         )}
 
         {error && (
-          <div className="text-xs text-destructive px-2 py-4">{error.message}</div>
+          <div className="text-xs text-destructive px-2 py-4">
+            {error.message}
+          </div>
         )}
 
         {data && (
           <>
             <div className="grid grid-cols-2 gap-2">
-              <StatBox label="Total Rows" value={data.totalRows.toLocaleString()} />
-              <StatBox label="Distinct" value={`${data.distinctCount.toLocaleString()} (${data.distinctPercent}%)`} />
-              <StatBox label="Nulls" value={`${data.nullCount.toLocaleString()} (${data.nullPercent}%)`} />
-              {data.min !== undefined && <StatBox label="Min" value={data.min} />}
-              {data.max !== undefined && <StatBox label="Max" value={data.max} />}
-              {data.avg !== undefined && <StatBox label="Avg" value={data.avg} />}
+              <StatBox
+                label="Total Rows"
+                value={data.totalRows.toLocaleString()}
+              />
+              <StatBox
+                label="Distinct"
+                value={`${data.distinctCount.toLocaleString()} (${data.distinctPercent}%)`}
+              />
+              <StatBox
+                label="Nulls"
+                value={`${data.nullCount.toLocaleString()} (${data.nullPercent}%)`}
+              />
+              {data.min !== undefined && (
+                <StatBox label="Min" value={data.min} />
+              )}
+              {data.max !== undefined && (
+                <StatBox label="Max" value={data.max} />
+              )}
+              {data.avg !== undefined && (
+                <StatBox label="Avg" value={data.avg} />
+              )}
             </div>
 
             {data.topValues && data.topValues.length > 0 && (
@@ -91,7 +108,10 @@ export function ColumnStatsPanel({
                   {data.topValues.map((tv, i) => (
                     <div key={i} className="space-y-0.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-mono truncate max-w-[60%]" title={tv.value}>
+                        <span
+                          className="font-mono truncate max-w-[60%]"
+                          title={tv.value}
+                        >
                           {tv.value}
                         </span>
                         <span className="text-muted-foreground">
@@ -113,5 +133,5 @@ export function ColumnStatsPanel({
         )}
       </div>
     </div>
-  )
+  );
 }

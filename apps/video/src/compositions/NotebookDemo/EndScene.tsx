@@ -5,48 +5,66 @@ import {
   spring,
   interpolate,
   Sequence,
-} from 'remotion'
-import { brand } from '../../lib/colors'
-import { CyanGlow } from '../../components/CyanGlow'
-import { BookOpen } from 'lucide-react'
+} from "remotion";
+import { brand } from "../../lib/colors";
+import { CyanGlow } from "../../components/CyanGlow";
+import { BookOpen } from "lucide-react";
 
 export const EndScene: React.FC = () => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const fadeOut = interpolate(
+  const fadeOut = interpolate(frame, [100, 120], [1, 0], {
+    extrapolateLeft: "clamp",
+    extrapolateRight: "clamp",
+  });
+
+  const iconEntrance = spring({
     frame,
-    [100, 120],
-    [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  )
+    fps,
+    config: { damping: 12, stiffness: 100 },
+  });
+  const iconScale = interpolate(iconEntrance, [0, 1], [0, 1]);
+  const iconRotate = interpolate(iconEntrance, [0, 1], [-180, 0]);
 
-  const iconEntrance = spring({ frame, fps, config: { damping: 12, stiffness: 100 } })
-  const iconScale = interpolate(iconEntrance, [0, 1], [0, 1])
-  const iconRotate = interpolate(iconEntrance, [0, 1], [-180, 0])
+  const titleEntrance = spring({
+    frame: frame - 10,
+    fps,
+    config: { damping: 200 },
+  });
+  const titleOpacity = interpolate(titleEntrance, [0, 1], [0, 1]);
+  const titleY = interpolate(titleEntrance, [0, 1], [30, 0]);
 
-  const titleEntrance = spring({ frame: frame - 10, fps, config: { damping: 200 } })
-  const titleOpacity = interpolate(titleEntrance, [0, 1], [0, 1])
-  const titleY = interpolate(titleEntrance, [0, 1], [30, 0])
+  const versionEntrance = spring({
+    frame: frame - 25,
+    fps,
+    config: { damping: 200 },
+  });
+  const versionOpacity = interpolate(versionEntrance, [0, 1], [0, 1]);
+  const versionY = interpolate(versionEntrance, [0, 1], [20, 0]);
 
-  const versionEntrance = spring({ frame: frame - 25, fps, config: { damping: 200 } })
-  const versionOpacity = interpolate(versionEntrance, [0, 1], [0, 1])
-  const versionY = interpolate(versionEntrance, [0, 1], [20, 0])
+  const ctaEntrance = spring({
+    frame: frame - 45,
+    fps,
+    config: { damping: 200 },
+  });
+  const ctaOpacity = interpolate(ctaEntrance, [0, 1], [0, 1]);
+  const ctaY = interpolate(ctaEntrance, [0, 1], [20, 0]);
 
-  const ctaEntrance = spring({ frame: frame - 45, fps, config: { damping: 200 } })
-  const ctaOpacity = interpolate(ctaEntrance, [0, 1], [0, 1])
-  const ctaY = interpolate(ctaEntrance, [0, 1], [20, 0])
-
-  const taglineEntrance = spring({ frame: frame - 60, fps, config: { damping: 200 } })
-  const taglineOpacity = interpolate(taglineEntrance, [0, 1], [0, 1])
+  const taglineEntrance = spring({
+    frame: frame - 60,
+    fps,
+    config: { damping: 200 },
+  });
+  const taglineOpacity = interpolate(taglineEntrance, [0, 1], [0, 1]);
 
   return (
     <AbsoluteFill
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
         gap: 24,
         opacity: fadeOut,
       }}
@@ -66,11 +84,11 @@ export const EndScene: React.FC = () => {
         style={{
           opacity: titleOpacity,
           transform: `translateY(${titleY}px)`,
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 80,
           fontWeight: 700,
           color: brand.textPrimary,
-          letterSpacing: '-0.05em',
+          letterSpacing: "-0.05em",
         }}
       >
         SQL Notebooks
@@ -80,13 +98,13 @@ export const EndScene: React.FC = () => {
         style={{
           opacity: versionOpacity,
           transform: `translateY(${versionY}px)`,
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 22,
           color: brand.textMuted,
-          letterSpacing: '-0.01em',
+          letterSpacing: "-0.01em",
         }}
       >
-        in{' '}
+        in{" "}
         <span style={{ color: brand.accent, fontWeight: 600 }}>
           data-peek v0.20.0
         </span>
@@ -97,16 +115,16 @@ export const EndScene: React.FC = () => {
           style={{
             opacity: ctaOpacity,
             transform: `translateY(${ctaY}px)`,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
             gap: 8,
             marginTop: 12,
           }}
         >
           <div
             style={{
-              fontFamily: 'Geist Mono, monospace',
+              fontFamily: "Geist Mono, monospace",
               fontSize: 16,
               color: brand.textMuted,
             }}
@@ -115,13 +133,13 @@ export const EndScene: React.FC = () => {
           </div>
           <div
             style={{
-              fontFamily: 'Geist Mono, monospace',
+              fontFamily: "Geist Mono, monospace",
               fontSize: 36,
               fontWeight: 700,
               color: brand.accent,
               borderBottom: `2px solid ${brand.accent}60`,
               paddingBottom: 4,
-              letterSpacing: '-0.02em',
+              letterSpacing: "-0.02em",
             }}
           >
             datapeek.dev
@@ -133,7 +151,7 @@ export const EndScene: React.FC = () => {
         <div
           style={{
             opacity: taglineOpacity,
-            fontFamily: 'Geist Mono, monospace',
+            fontFamily: "Geist Mono, monospace",
             fontSize: 14,
             color: brand.textMuted,
             marginTop: 8,
@@ -143,5 +161,5 @@ export const EndScene: React.FC = () => {
         </div>
       </Sequence>
     </AbsoluteFill>
-  )
-}
+  );
+};

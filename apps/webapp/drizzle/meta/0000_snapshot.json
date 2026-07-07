@@ -61,23 +61,17 @@
         "customers_email_unique": {
           "name": "customers_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "customers_clerk_user_id_unique": {
           "name": "customers_clerk_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerk_user_id"
-          ]
+          "columns": ["clerk_user_id"]
         },
         "customers_dodo_customer_id_unique": {
           "name": "customers_dodo_customer_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "dodo_customer_id"
-          ]
+          "columns": ["dodo_customer_id"]
         }
       },
       "policies": {},
@@ -167,12 +161,8 @@
           "name": "dashboard_widgets_dashboard_id_dashboards_id_fk",
           "tableFrom": "dashboard_widgets",
           "tableTo": "dashboards",
-          "columnsFrom": [
-            "dashboard_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["dashboard_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -255,12 +245,8 @@
           "name": "dashboards_customer_id_customers_id_fk",
           "tableFrom": "dashboards",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -268,12 +254,8 @@
           "name": "dashboards_connection_id_user_connections_id_fk",
           "tableFrom": "dashboards",
           "tableTo": "user_connections",
-          "columnsFrom": [
-            "connection_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["connection_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -397,12 +379,8 @@
           "name": "query_history_customer_id_customers_id_fk",
           "tableFrom": "query_history",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -410,12 +388,8 @@
           "name": "query_history_connection_id_user_connections_id_fk",
           "tableFrom": "query_history",
           "tableTo": "user_connections",
-          "columnsFrom": [
-            "connection_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["connection_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -538,12 +512,8 @@
           "name": "saved_queries_web_customer_id_customers_id_fk",
           "tableFrom": "saved_queries_web",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -551,12 +521,8 @@
           "name": "saved_queries_web_connection_id_user_connections_id_fk",
           "tableFrom": "saved_queries_web",
           "tableTo": "user_connections",
-          "columnsFrom": [
-            "connection_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["connection_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -640,12 +606,8 @@
           "name": "usage_tracking_customer_id_customers_id_fk",
           "tableFrom": "usage_tracking",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -760,12 +722,8 @@
           "name": "user_connections_customer_id_customers_id_fk",
           "tableFrom": "user_connections",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -873,12 +831,8 @@
           "name": "user_settings_customer_id_customers_id_fk",
           "tableFrom": "user_settings",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }

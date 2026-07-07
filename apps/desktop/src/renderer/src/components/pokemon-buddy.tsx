@@ -410,10 +410,7 @@ export function PokemonBuddy() {
           <img
             src={currentSprite}
             alt={pokemon.name}
-            className={cn(
-              'size-16 drop-shadow-lg select-none',
-              !spriteError && 'pixelated'
-            )}
+            className={cn('size-16 drop-shadow-lg select-none', !spriteError && 'pixelated')}
             draggable={false}
             onError={handleSpriteError}
           />

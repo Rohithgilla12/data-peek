@@ -1,4 +1,4 @@
-import type { BaseLayoutProps } from 'fumadocs-ui/layouts/shared';
+import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 
 export function baseOptions(): BaseLayoutProps {
   return {
@@ -24,20 +24,20 @@ export function baseOptions(): BaseLayoutProps {
           <span>data-peek</span>
         </span>
       ),
-      transparentMode: 'top',
+      transparentMode: "top",
     },
     links: [
       {
-        text: 'Documentation',
-        url: '/docs',
-        active: 'nested-url',
+        text: "Documentation",
+        url: "/docs",
+        active: "nested-url",
       },
       {
-        text: 'GitHub',
-        url: 'https://github.com/Rohithgilla12/data-peek',
+        text: "GitHub",
+        url: "https://github.com/Rohithgilla12/data-peek",
         external: true,
       },
     ],
-    githubUrl: 'https://github.com/Rohithgilla12/data-peek',
+    githubUrl: "https://github.com/Rohithgilla12/data-peek",
   };
 }

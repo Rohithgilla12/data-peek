@@ -27,6 +27,7 @@ The Schema Explorer in the sidebar provides a hierarchical view of your database
 ### Search/Filter
 
 Use the search box at the top to filter:
+
 - Type a table name to find it quickly
 - Matches are highlighted
 - Filter works across all schemas
@@ -35,17 +36,18 @@ Use the search box at the top to filter:
 
 Right-click any table to see available actions:
 
-| Action | Description |
-|--------|-------------|
-| **Preview Data** | Open a tab with `SELECT * LIMIT 100` |
-| **Edit Data** | Open a tab and enable edit mode |
-| **View ERD** | Open the ER diagram tab |
+| Action           | Description                               |
+| ---------------- | ----------------------------------------- |
+| **Preview Data** | Open a tab with `SELECT * LIMIT 100`      |
+| **Edit Data**    | Open a tab and enable edit mode           |
+| **View ERD**     | Open the ER diagram tab                   |
 | **Design Table** | Open the table designer to edit structure |
-| **Copy Name** | Copy the fully-qualified table name |
-| **Drop Table** | Delete the table (with confirmation) |
+| **Copy Name**    | Copy the fully-qualified table name       |
+| **Drop Table**   | Delete the table (with confirmation)      |
 
 <Callout type="warning">
-  The **Drop Table** action is destructive and cannot be undone. Use with caution.
+  The **Drop Table** action is destructive and cannot be undone. Use with
+  caution.
 </Callout>
 
 ## Column Information
@@ -54,22 +56,22 @@ Expanding a table shows all columns with:
 
 ### Visual Indicators
 
-| Icon/Badge | Meaning |
-|------------|---------|
-| 🔑 Key icon | Primary key column |
-| 🔗 Link icon | Foreign key column |
-| Data type badge | Column data type |
+| Icon/Badge      | Meaning            |
+| --------------- | ------------------ |
+| 🔑 Key icon     | Primary key column |
+| 🔗 Link icon    | Foreign key column |
+| Data type badge | Column data type   |
 
 ### Data Type Colors
 
-| Color | Types |
-|-------|-------|
-| 🟣 Purple | UUID |
-| 🟢 Green | text, varchar, char |
-| 🔵 Blue | integer, bigint, numeric, serial |
-| 🟠 Orange | timestamp, date, time |
-| 🟡 Yellow | boolean |
-| ⚪ Gray | Other types |
+| Color     | Types                            |
+| --------- | -------------------------------- |
+| 🟣 Purple | UUID                             |
+| 🟢 Green  | text, varchar, char              |
+| 🔵 Blue   | integer, bigint, numeric, serial |
+| 🟠 Orange | timestamp, date, time            |
+| 🟡 Yellow | boolean                          |
+| ⚪ Gray   | Other types                      |
 
 ### Nullable Indicator
 
@@ -79,6 +81,7 @@ Expanding a table shows all columns with:
 ### Foreign Key Details
 
 Hovering over a foreign key column shows:
+
 - Referenced table
 - Referenced column
 - Relationship type
@@ -87,11 +90,11 @@ Hovering over a foreign key column shows:
 
 Right-click a schema to:
 
-| Action | Description |
-|--------|-------------|
+| Action        | Description                               |
+| ------------- | ----------------------------------------- |
 | **New Table** | Open table designer to create a new table |
-| **View ERD** | Open ER diagram for this schema |
-| **Refresh** | Reload schema information |
+| **View ERD**  | Open ER diagram for this schema           |
+| **Refresh**   | Reload schema information                 |
 
 ## Refreshing Schema
 
@@ -101,7 +104,8 @@ When you make changes to your database structure (outside or inside data-peek):
 2. Or right-click the connection and select **Refresh Schema**
 
 <Callout type="info">
-  Schema information is cached for performance. Always refresh after making DDL changes.
+  Schema information is cached for performance. Always refresh after making DDL
+  changes.
 </Callout>
 
 ## Custom Types

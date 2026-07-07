@@ -19,45 +19,45 @@ Smart Filters let you narrow down query results without rewriting SQL. Filters r
 
 ### Text Columns
 
-| Operator | Description |
-|----------|-------------|
-| contains | Substring match |
-| equals | Exact match |
-| starts with | Prefix match |
-| ends with | Suffix match |
-| is empty | NULL or empty string |
-| is not empty | Has a value |
+| Operator     | Description          |
+| ------------ | -------------------- |
+| contains     | Substring match      |
+| equals       | Exact match          |
+| starts with  | Prefix match         |
+| ends with    | Suffix match         |
+| is empty     | NULL or empty string |
+| is not empty | Has a value          |
 
 ### Numeric Columns
 
-| Operator | Description |
-|----------|-------------|
-| `=` | Equal to |
-| `!=` | Not equal to |
-| `>` | Greater than |
-| `>=` | Greater than or equal |
-| `<` | Less than |
-| `<=` | Less than or equal |
-| between | Range (two values) |
-| is empty | NULL |
+| Operator | Description           |
+| -------- | --------------------- |
+| `=`      | Equal to              |
+| `!=`     | Not equal to          |
+| `>`      | Greater than          |
+| `>=`     | Greater than or equal |
+| `<`      | Less than             |
+| `<=`     | Less than or equal    |
+| between  | Range (two values)    |
+| is empty | NULL                  |
 
 ### Date Columns
 
-| Operator | Description |
-|----------|-------------|
-| equals | Exact date match |
-| before | Earlier than date |
-| after | Later than date |
-| between | Date range |
-| is empty | NULL |
+| Operator | Description       |
+| -------- | ----------------- |
+| equals   | Exact date match  |
+| before   | Earlier than date |
+| after    | Later than date   |
+| between  | Date range        |
+| is empty | NULL              |
 
 ### Boolean Columns
 
-| Operator | Description |
-|----------|-------------|
-| is true | Value is true |
+| Operator | Description    |
+| -------- | -------------- |
+| is true  | Value is true  |
 | is false | Value is false |
-| is empty | NULL |
+| is empty | NULL           |
 
 ## Stacking Filters
 
@@ -68,5 +68,6 @@ Add multiple filter chips to narrow results further. All filters are combined wi
 Click the **X** on any filter chip to remove it, or click **Clear All** to remove all filters.
 
 <Callout type="tip">
-  Smart Filters are great for exploring a large result set without re-running queries. For server-side filtering, add a WHERE clause to your SQL instead.
+  Smart Filters are great for exploring a large result set without re-running
+  queries. For server-side filtering, add a WHERE clause to your SQL instead.
 </Callout>

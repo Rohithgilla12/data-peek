@@ -88,7 +88,7 @@ export function generateMetadata({
 
 export function generateStructuredData(
   type: "Organization" | "SoftwareApplication" | "Article",
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ) {
   const base = {
     "@context": "https://schema.org",
@@ -184,7 +184,7 @@ export function getArticleStructuredData({
 }
 
 export function getBreadcrumbStructuredData(
-  items: Array<{ name: string; url: string }>
+  items: Array<{ name: string; url: string }>,
 ) {
   return {
     "@context": "https://schema.org",
@@ -199,7 +199,7 @@ export function getBreadcrumbStructuredData(
 }
 
 export function getFAQStructuredData(
-  faqs: Array<{ question: string; answer: string }>
+  faqs: Array<{ question: string; answer: string }>,
 ) {
   return {
     "@context": "https://schema.org",

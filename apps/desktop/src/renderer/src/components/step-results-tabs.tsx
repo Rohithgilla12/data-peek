@@ -21,7 +21,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
   const selectedResult: StatementResult | null =
     selectedIndex === 'current'
       ? session.lastResult
-      : session.pinnedResults.find((p) => p.statementIndex === selectedIndex)?.result ?? null
+      : (session.pinnedResults.find((p) => p.statementIndex === selectedIndex)?.result ?? null)
 
   const currentIsPinned =
     session.lastResult &&

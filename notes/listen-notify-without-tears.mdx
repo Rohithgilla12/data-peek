@@ -11,12 +11,12 @@ I have written the same 40-line Node script to debug a Postgres `LISTEN`
 channel at least six times. You know the one:
 
 ```js
-const { Client } = require('pg')
-const c = new Client({ connectionString: process.env.DB })
-await c.connect()
-await c.query('LISTEN order_events')
-c.on('notification', (m) => console.log(new Date(), m.channel, m.payload))
-console.log('listening...')
+const { Client } = require("pg");
+const c = new Client({ connectionString: process.env.DB });
+await c.connect();
+await c.query("LISTEN order_events");
+c.on("notification", (m) => console.log(new Date(), m.channel, m.payload));
+console.log("listening...");
 ```
 
 Save it as `listen.js`, `node listen.js`, stare at the terminal, trigger the
@@ -37,7 +37,7 @@ the first time.
 
 - Subscribe to one or many channels on a connection with a single input.
 - See every event that arrives, live, with timestamp, channel, and payload.
-- Keep the last 10,000 events *per connection* in a local SQLite database,
+- Keep the last 10,000 events _per connection_ in a local SQLite database,
   so if you walk away and come back an hour later, the history is still
   there.
 - Survive a dropped connection. If the Postgres server restarts, or your
@@ -60,22 +60,22 @@ too aggressive and you hammer a recovering server. Here is the relevant slice
 from `src/main/pg-notification-listener.ts`:
 
 ```ts
-const MAX_BACKOFF_MS = 30_000
-const MAX_EVENTS_PER_CONNECTION = 10000
+const MAX_BACKOFF_MS = 30_000;
+const MAX_EVENTS_PER_CONNECTION = 10000;
 
 function scheduleReconnect(connectionId, config, channels, backoffMs) {
-  const entry = listeners.get(connectionId)
-  if (entry?.destroyed) return
+  const entry = listeners.get(connectionId);
+  if (entry?.destroyed) return;
 
-  const nextBackoff = Math.min(backoffMs * 2, MAX_BACKOFF_MS)
+  const nextBackoff = Math.min(backoffMs * 2, MAX_BACKOFF_MS);
 
   const timer = setTimeout(() => {
-    const current = listeners.get(connectionId)
-    if (current?.destroyed) return
-    connectListener(connectionId, config, channels, nextBackoff)
-  }, backoffMs)
+    const current = listeners.get(connectionId);
+    if (current?.destroyed) return;
+    connectListener(connectionId, config, channels, nextBackoff);
+  }, backoffMs);
 
-  if (entry) entry.reconnectTimer = timer
+  if (entry) entry.reconnectTimer = timer;
 }
 ```
 
@@ -89,12 +89,12 @@ The `destroyed` flag is the quiet hero. Every `ListenerEntry` has one:
 
 ```ts
 interface ListenerEntry {
-  client: Client
-  tunnelSession: TunnelSession | null
-  channels: Set<string>
-  connectedSince: number
-  reconnectTimer?: ReturnType<typeof setTimeout>
-  destroyed: boolean
+  client: Client;
+  tunnelSession: TunnelSession | null;
+  channels: Set<string>;
+  connectedSince: number;
+  reconnectTimer?: ReturnType<typeof setTimeout>;
+  destroyed: boolean;
 }
 ```
 
@@ -109,17 +109,19 @@ Both the `'error'` and `'end'` handlers route through the same reconnect
 path:
 
 ```ts
-client.on('error', (err) => {
-  if (entry.destroyed) return
-  log.error(`pg notification client error for ${connectionId}:`, err)
-  scheduleReconnect(connectionId, config, entry.channels, backoffMs)
-})
+client.on("error", (err) => {
+  if (entry.destroyed) return;
+  log.error(`pg notification client error for ${connectionId}:`, err);
+  scheduleReconnect(connectionId, config, entry.channels, backoffMs);
+});
 
-client.on('end', () => {
-  if (entry.destroyed) return
-  log.warn(`pg notification client disconnected for ${connectionId}, reconnecting...`)
-  scheduleReconnect(connectionId, config, entry.channels, backoffMs)
-})
+client.on("end", () => {
+  if (entry.destroyed) return;
+  log.warn(
+    `pg notification client disconnected for ${connectionId}, reconnecting...`,
+  );
+  scheduleReconnect(connectionId, config, entry.channels, backoffMs);
+});
 ```
 
 Note that I re-subscribe to `entry.channels`, not to the original `channels`
@@ -141,12 +143,12 @@ sqliteDb.exec(`
     payload TEXT NOT NULL,
     received_at INTEGER NOT NULL
   )
-`)
+`);
 
 sqliteDb.exec(`
   CREATE INDEX IF NOT EXISTS idx_pne_connection_received
   ON pg_notification_events (connection_id, received_at DESC)
-`)
+`);
 ```
 
 Three reasons this matters:
@@ -167,8 +169,9 @@ The trim query is worth sharing because it is the one where I almost used a
 
 ```ts
 if (count > MAX_EVENTS_PER_CONNECTION) {
-  const excess = count - MAX_EVENTS_PER_CONNECTION
-  db.prepare(`
+  const excess = count - MAX_EVENTS_PER_CONNECTION;
+  db.prepare(
+    `
     DELETE FROM pg_notification_events
     WHERE id IN (
       SELECT id FROM pg_notification_events
@@ -176,12 +179,13 @@ if (count > MAX_EVENTS_PER_CONNECTION) {
       ORDER BY received_at ASC
       LIMIT ?
     )
-  `).run(event.connectionId, excess)
+  `,
+  ).run(event.connectionId, excess);
 }
 ```
 
-The subquery guarantees we delete the oldest `excess` rows for *this
-connection*, not the oldest rows overall. On a laptop with two databases
+The subquery guarantees we delete the oldest `excess` rows for _this
+connection_, not the oldest rows overall. On a laptop with two databases
 open, the global ordering would let one chatty channel evict events from
 the quiet one.
 
@@ -193,10 +197,10 @@ so you cannot parameterize it with a `$1` placeholder. You have to interpolate
 
 ```ts
 function quoteIdent(name: string): string {
-  return `"${name.replace(/"/g, '""')}"`
+  return `"${name.replace(/"/g, '""')}"`;
 }
 
-await client.query(`LISTEN ${quoteIdent(channel)}`)
+await client.query(`LISTEN ${quoteIdent(channel)}`);
 ```
 
 Postgres identifier quoting uses `""` to escape a literal double-quote inside
@@ -215,7 +219,7 @@ nobody has hit the limit in practice yet.
 
 **I should persist subscriptions across app restarts.** Today, if you close
 data-peek and re-open it, your subscribed channels are gone. The SQLite DB
-has the *events* but not the *subscriptions*. A small `pg_subscriptions`
+has the _events_ but not the _subscriptions_. A small `pg_subscriptions`
 table keyed by connection_id would let the app restore on startup. It is
 on the list.
 

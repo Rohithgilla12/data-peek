@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Play, Square, Eye, Loader2, AlertCircle, CheckCircle2, Shuffle } from 'lucide-react'
-import { Button, Input, Checkbox, ScrollArea, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Checkbox,
+  ScrollArea,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useTabStore, useConnectionStore, useDataGenStore } from '@/stores'
 import type { DataGeneratorTab } from '@/stores/tab-store'

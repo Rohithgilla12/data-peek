@@ -1,23 +1,23 @@
-import { format } from 'sql-formatter'
+import { format } from "sql-formatter";
 
 export interface FormatOptions {
-  language?: 'sql' | 'postgresql' | 'mysql' | 'sqlite'
-  tabWidth?: number
-  useTabs?: boolean
-  keywordCase?: 'upper' | 'lower' | 'preserve'
-  linesBetweenQueries?: number
+  language?: "sql" | "postgresql" | "mysql" | "sqlite";
+  tabWidth?: number;
+  useTabs?: boolean;
+  keywordCase?: "upper" | "lower" | "preserve";
+  linesBetweenQueries?: number;
 }
 
 const defaultOptions: FormatOptions = {
-  language: 'postgresql',
+  language: "postgresql",
   tabWidth: 2,
   useTabs: false,
-  keywordCase: 'upper',
+  keywordCase: "upper",
   linesBetweenQueries: 2,
-}
+};
 
 export function formatSQL(query: string, options: FormatOptions = {}): string {
-  const mergedOptions = { ...defaultOptions, ...options }
+  const mergedOptions = { ...defaultOptions, ...options };
 
   try {
     return format(query, {
@@ -26,8 +26,8 @@ export function formatSQL(query: string, options: FormatOptions = {}): string {
       useTabs: mergedOptions.useTabs,
       keywordCase: mergedOptions.keywordCase,
       linesBetweenQueries: mergedOptions.linesBetweenQueries,
-    })
+    });
   } catch {
-    return query
+    return query;
   }
 }

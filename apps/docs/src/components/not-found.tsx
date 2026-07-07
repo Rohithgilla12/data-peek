@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router"
-import { HomeLayout } from "fumadocs-ui/layouts/home"
-import { baseOptions } from "@/lib/layout.shared"
+import { Link } from "@tanstack/react-router";
+import { HomeLayout } from "fumadocs-ui/layouts/home";
+import { baseOptions } from "@/lib/layout.shared";
 
 export function NotFound() {
   return (
@@ -35,14 +35,17 @@ export function NotFound() {
           <span style={{ color: "var(--n-accent)" }}>{"<that-url>"}</span>
           {"\n"}
           <span style={{ color: "var(--n-err)" }}>ENOENT</span>
-          <span>{" "}no such page or directory</span>
+          <span> no such page or directory</span>
         </pre>
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Link
             to="/"
             className="inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium"
-            style={{ background: "var(--n-accent)", color: "var(--n-accent-ink)" }}
+            style={{
+              background: "var(--n-accent)",
+              color: "var(--n-accent-ink)",
+            }}
           >
             <span aria-hidden>←</span> Back to docs
           </Link>
@@ -56,5 +59,5 @@ export function NotFound() {
         </div>
       </div>
     </HomeLayout>
-  )
+  );
 }

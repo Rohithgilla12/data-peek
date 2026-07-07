@@ -1,7 +1,19 @@
 import * as React from 'react'
 import { ChevronDown, Plus } from 'lucide-react'
 
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, keys, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  keys,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 export function TeamSwitcher({
   teams

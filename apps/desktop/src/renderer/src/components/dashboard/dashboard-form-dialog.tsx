@@ -1,7 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { X, Download, Upload } from 'lucide-react'
 
-import { Button, Input, Label, Textarea, Badge, Separator, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Label,
+  Textarea,
+  Badge,
+  Separator,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@data-peek/ui'
 
 import { useDashboardStore } from '@/stores'
 import type { Dashboard, CreateDashboardInput } from '@shared/index'

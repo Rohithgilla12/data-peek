@@ -1,6 +1,19 @@
 import * as React from 'react'
 import { Check, X, RotateCcw, Braces, FileText, Copy, Expand } from 'lucide-react'
-import { Input, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@data-peek/ui'
+import {
+  Input,
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  cn,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription
+} from '@data-peek/ui'
 
 import { JsonCellEditor } from '@/components/json-cell-value'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'

@@ -144,12 +144,12 @@ Internally, each check is an object:
 
 ```ts
 interface SchemaIntelCheck {
-  id: string
-  title: string
-  description: string
-  severity: 'info' | 'warn' | 'critical'
-  dialects: Array<'postgres' | 'mysql' | 'mssql' | 'sqlite'>
-  run(adapter: DatabaseAdapter): Promise<SchemaIntelResult>
+  id: string;
+  title: string;
+  description: string;
+  severity: "info" | "warn" | "critical";
+  dialects: Array<"postgres" | "mysql" | "mssql" | "sqlite">;
+  run(adapter: DatabaseAdapter): Promise<SchemaIntelResult>;
 }
 ```
 

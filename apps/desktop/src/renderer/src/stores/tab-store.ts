@@ -11,6 +11,10 @@ import {
 import { useConnectionStore } from './connection-store'
 import { useSettingsStore } from './settings-store'
 import { useEditStore } from './edit-store'
+import { useWatchStore } from './watch-store'
+import { useTimeMachineStore } from './time-machine-store'
+import { usePerfIndicatorStore } from './perf-indicator-store'
+import { useDataGenStore } from './data-gen-store'
 import { validateRefName } from '@/lib/cross-tab-name-validation'
 import type { SetTabNameResult } from '@/lib/cross-tab-types'
 import { isNamedQueryTab } from '@/lib/cross-tab-integration'
@@ -156,6 +160,13 @@ function cancelInFlightQueries(tabs: Tab[]): void {
         // Cancellation is best-effort — main will time out the orphan eventually.
       })
     }
+    
+    // Clear out dependent state to prevent memory leaks
+    useWatchStore.getState().stop(tab.id)
+    useTimeMachineStore.getState().stop(tab.id)
+    usePerfIndicatorStore.getState().clearTabAnalysis(tab.id)
+    useDataGenStore.getState().removeTab(tab.id)
+    useEditStore.getState().clearPendingChanges(tab.id)
   }
 }
 
@@ -1110,7 +1121,12 @@ export const useTabStore = create<TabState>()(
     }),
     {
       name: 'data-peek-tabs',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => {
+        if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+          return { getItem: () => null, setItem: () => {}, removeItem: () => {} }
+        }
+        return typeof localStorage !== 'undefined' ? localStorage : ({} as any)
+      }),
       partialize: (state) => ({
         // Only persist pinned tabs
         tabs: state.tabs

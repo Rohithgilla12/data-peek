@@ -11,7 +11,22 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react'
-import { Button, Input, Textarea, Badge, ScrollArea, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Textarea,
+  Badge,
+  ScrollArea,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import {
   useTabStore,
@@ -361,7 +376,9 @@ export function PgNotificationsPanel({ tabId }: Props) {
               <EventRow
                 key={event.id}
                 event={event}
-                isFresh={event.receivedAt > mountedAtRef.current && Date.now() - event.receivedAt < 1500}
+                isFresh={
+                  event.receivedAt > mountedAtRef.current && Date.now() - event.receivedAt < 1500
+                }
               />
             ))
           )}

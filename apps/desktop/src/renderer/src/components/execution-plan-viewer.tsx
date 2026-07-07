@@ -16,7 +16,15 @@ import {
   Filter,
   Database
 } from 'lucide-react'
-import { Button, Badge, Progress, Collapsible, CollapsibleContent, CollapsibleTrigger, cn } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  Progress,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  cn
+} from '@data-peek/ui'
 
 // PostgreSQL EXPLAIN JSON plan node structure
 interface PlanNode {

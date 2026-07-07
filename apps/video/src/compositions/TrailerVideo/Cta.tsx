@@ -5,40 +5,44 @@ import {
   spring,
   interpolate,
   Sequence,
-} from 'remotion'
-import { brand } from '../../lib/colors'
-import { CyanGlow } from '../../components/CyanGlow'
-import { Star, ArrowRight, Database } from 'lucide-react'
+} from "remotion";
+import { brand } from "../../lib/colors";
+import { CyanGlow } from "../../components/CyanGlow";
+import { Star, ArrowRight, Database } from "lucide-react";
 
 export const Cta: React.FC = () => {
-  const frame = useCurrentFrame()
-  const { fps, durationInFrames } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps, durationInFrames } = useVideoConfig();
 
   const fadeOut = interpolate(
     frame,
     [durationInFrames - 20, durationInFrames],
     [1, 0],
-    { extrapolateLeft: 'clamp', extrapolateRight: 'clamp' }
-  )
+    { extrapolateLeft: "clamp", extrapolateRight: "clamp" },
+  );
 
-  const iconEntrance = spring({ frame, fps, config: { damping: 12, stiffness: 100 } })
-  const iconScale = interpolate(iconEntrance, [0, 1], [0.5, 1])
+  const iconEntrance = spring({
+    frame,
+    fps,
+    config: { damping: 12, stiffness: 100 },
+  });
+  const iconScale = interpolate(iconEntrance, [0, 1], [0.5, 1]);
 
   const wordmarkEntrance = spring({
     frame: frame - 8,
     fps,
     config: { damping: 15, stiffness: 80 },
-  })
-  const wordmarkOpacity = interpolate(wordmarkEntrance, [0, 1], [0, 1])
-  const wordmarkScale = interpolate(wordmarkEntrance, [0, 1], [0.94, 1])
+  });
+  const wordmarkOpacity = interpolate(wordmarkEntrance, [0, 1], [0, 1]);
+  const wordmarkScale = interpolate(wordmarkEntrance, [0, 1], [0.94, 1]);
 
   return (
     <AbsoluteFill
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
         gap: 28,
         opacity: fadeOut,
       }}
@@ -53,11 +57,11 @@ export const Cta: React.FC = () => {
         style={{
           opacity: wordmarkOpacity,
           transform: `scale(${wordmarkScale})`,
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 88,
           fontWeight: 700,
           color: brand.textPrimary,
-          letterSpacing: '-0.05em',
+          letterSpacing: "-0.05em",
         }}
       >
         data-peek
@@ -75,24 +79,28 @@ export const Cta: React.FC = () => {
         <Sub />
       </Sequence>
     </AbsoluteFill>
-  )
-}
+  );
+};
 
 const UrlPill: React.FC = () => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const entrance = spring({ frame, fps, config: { damping: 14, stiffness: 90 } })
-  const opacity = interpolate(entrance, [0, 1], [0, 1])
-  const scale = interpolate(entrance, [0, 1], [0.9, 1])
+  const entrance = spring({
+    frame,
+    fps,
+    config: { damping: 14, stiffness: 90 },
+  });
+  const opacity = interpolate(entrance, [0, 1], [0, 1]);
+  const scale = interpolate(entrance, [0, 1], [0.9, 1]);
 
   return (
     <AbsoluteFill
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        pointerEvents: 'none',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
       }}
     >
       <div
@@ -100,10 +108,10 @@ const UrlPill: React.FC = () => {
           marginTop: 240,
           opacity,
           transform: `scale(${scale})`,
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           gap: 14,
-          padding: '14px 26px',
+          padding: "14px 26px",
           backgroundColor: brand.surface,
           borderRadius: 999,
           border: `1px solid ${brand.accent}40`,
@@ -112,11 +120,11 @@ const UrlPill: React.FC = () => {
       >
         <span
           style={{
-            fontFamily: 'Geist Mono, monospace',
+            fontFamily: "Geist Mono, monospace",
             fontSize: 34,
             fontWeight: 500,
             color: brand.accent,
-            letterSpacing: '-0.02em',
+            letterSpacing: "-0.02em",
           }}
         >
           datapeek.dev
@@ -124,26 +132,26 @@ const UrlPill: React.FC = () => {
         <ArrowRight size={26} color={brand.accent} strokeWidth={2} />
       </div>
     </AbsoluteFill>
-  )
-}
+  );
+};
 
 const GithubCta: React.FC = () => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const entrance = spring({ frame, fps, config: { damping: 200 } })
-  const opacity = interpolate(entrance, [0, 1], [0, 1])
-  const translateY = interpolate(entrance, [0, 1], [10, 0])
+  const entrance = spring({ frame, fps, config: { damping: 200 } });
+  const opacity = interpolate(entrance, [0, 1], [0, 1]);
+  const translateY = interpolate(entrance, [0, 1], [10, 0]);
 
-  const starPulse = Math.sin(frame * 0.08) * 0.06 + 1
+  const starPulse = Math.sin(frame * 0.08) * 0.06 + 1;
 
   return (
     <AbsoluteFill
       style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        pointerEvents: 'none',
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        pointerEvents: "none",
       }}
     >
       <div
@@ -151,10 +159,10 @@ const GithubCta: React.FC = () => {
           marginTop: 360,
           opacity,
           transform: `translateY(${translateY}px)`,
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           gap: 12,
-          padding: '12px 22px',
+          padding: "12px 22px",
           borderRadius: 12,
           backgroundColor: brand.surfaceElevated,
           border: `1px solid ${brand.border}`,
@@ -165,7 +173,7 @@ const GithubCta: React.FC = () => {
         </span>
         <span
           style={{
-            fontFamily: 'Geist Mono, monospace',
+            fontFamily: "Geist Mono, monospace",
             fontSize: 22,
             color: brand.textPrimary,
             fontWeight: 500,
@@ -175,7 +183,7 @@ const GithubCta: React.FC = () => {
         </span>
         <span
           style={{
-            fontFamily: 'Geist Mono, monospace',
+            fontFamily: "Geist Mono, monospace",
             fontSize: 16,
             color: brand.textMuted,
           }}
@@ -184,37 +192,37 @@ const GithubCta: React.FC = () => {
         </span>
       </div>
     </AbsoluteFill>
-  )
-}
+  );
+};
 
 const Sub: React.FC = () => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const entrance = spring({ frame, fps, config: { damping: 200 } })
-  const opacity = interpolate(entrance, [0, 1], [0, 1])
+  const entrance = spring({ frame, fps, config: { damping: 200 } });
+  const opacity = interpolate(entrance, [0, 1], [0, 1]);
 
   return (
     <AbsoluteFill
       style={{
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        pointerEvents: 'none',
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "center",
+        pointerEvents: "none",
         paddingBottom: 120,
       }}
     >
       <div
         style={{
           opacity,
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 18,
           color: brand.textMuted,
-          letterSpacing: '-0.01em',
+          letterSpacing: "-0.01em",
         }}
       >
         macOS · Windows · Linux
       </div>
     </AbsoluteFill>
-  )
-}
+  );
+};

@@ -1,12 +1,12 @@
-import Link from 'next/link'
-import type { ReactNode } from 'react'
+import Link from "next/link";
+import type { ReactNode } from "react";
 
 interface InternalLinkProps {
-  href: string
-  children: ReactNode
-  className?: string
-  title?: string
-  'aria-label'?: string
+  href: string;
+  children: ReactNode;
+  className?: string;
+  title?: string;
+  "aria-label"?: string;
 }
 
 /**
@@ -18,7 +18,7 @@ export function InternalLink({
   children,
   className,
   title,
-  'aria-label': ariaLabel,
+  "aria-label": ariaLabel,
 }: InternalLinkProps) {
   return (
     <Link
@@ -30,6 +30,5 @@ export function InternalLink({
     >
       {children}
     </Link>
-  )
+  );
 }
-

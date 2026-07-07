@@ -1,6 +1,12 @@
 import { Moon, Sun } from 'lucide-react'
 
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 import { useTheme } from '@/components/theme-provider'
 

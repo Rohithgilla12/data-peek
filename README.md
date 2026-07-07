@@ -1,13 +1,8 @@
 # data-peek
 
-
 ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Rohithgilla12/data-peek/total?style=for-the-badge)
 
-
-
 A minimal, fast SQL client desktop application with AI-powered querying. Built for developers who want to quickly peek at their data without the bloat. Supports PostgreSQL, MySQL, Microsoft SQL Server, and SQLite.
-
-
 
 <p align="center">
   <img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/hero.png" alt="Data Peek - SQL Client" width="100%" />
@@ -40,22 +35,24 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 <img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/light-mode.png" alt="Light Mode" width="100%" />
 </details>
 
-
 ## Features
 
 ### Core
+
 - **Fast** - Opens in under 2 seconds, low memory footprint
 - **Multi-Database** - PostgreSQL, MySQL, Microsoft SQL Server, SQLite
 - **SSH Tunnels** - Connect securely through bastion hosts with password or key auth
 - **Secure** - Connection credentials encrypted locally using OS keychain, no telemetry
 
 ### AI Assistant
+
 - **Natural Language Queries** - Ask questions in plain English, get SQL
 - **Multi-Provider** - OpenAI, Anthropic, Google, Groq, and local Ollama models (BYOK)
 - **Charts & Insights** - Generate visualizations and metrics from query results
 - **Schema-Aware** - AI understands your database structure for accurate queries
 
 ### Query Editor
+
 - **Monaco Editor** - SQL syntax highlighting with smart autocomplete
 - **Table Aliases** - Autocomplete understands aliases for complex queries
 - **Multi-tab & Multi-window** - Work with multiple queries and databases simultaneously
@@ -63,6 +60,7 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Command Palette** - `Cmd+K` to access everything instantly
 
 ### Performance Analysis
+
 - **Query Telemetry** - Detailed timing breakdown with waterfall visualization
 - **Benchmark Mode** - Run queries multiple times, get p50/p90/p99 statistics
 - **EXPLAIN Viewer** - Analyze query plans with interactive node breakdown
@@ -70,6 +68,7 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Cancel Queries** - Stop long-running queries mid-execution
 
 ### Watch Mode
+
 - **Pin a SELECT, see it move** - Re-run any read-only query on a cadence (500ms → 5min) with live diff highlights
 - **Cell-level change detection** - Changed cells flash amber, new rows enter with a green band, fades over a configurable window
 - **Smart row keying** - Diffs survive sorting / pagination by keying on explicit primary keys, then a heuristic `id`/`uuid`/`*_id` column, then row position
@@ -78,12 +77,14 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Tab-bar pulse indicator** - Switch tabs and the amber dot keeps pulsing on watched ones
 
 ### Time Machine
+
 - **Every query gets a memory** - Successful SELECT results are snapshotted locally; a timeline strip (`Cmd/Ctrl+Shift+H`) scrubs back through past runs
 - **View any past run read-only** - Load an old result into the grid with a clear "viewing the past" banner and row-count sparkline
 - **Diff any two runs** - Cell-level highlights show what changed between runs, plus added/removed row counts, keyed the same way Watch Mode diffs
 - **Privacy-aware by construction** - Masked columns are stored redacted, storage is capped (50 runs per query, 512 MB global budget), and Settings has a one-click wipe
 
 ### Data Management
+
 - **Schema Explorer** - Browse tables, views, stored procedures, and functions
 - **Inline Editing** - Edit table data directly with INSERT/UPDATE/DELETE
 - **Table Designer** - Create and alter tables with full DDL support (columns, indexes, constraints, partitions)
@@ -95,15 +96,18 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Data Masking** - Blur sensitive columns for demos and screenshots with auto-mask rules
 
 ### Visualization
+
 - **ERD Diagrams** - See table relationships with interactive entity-relationship diagrams
 - **Foreign Key Navigation** - Jump to related records with one click
 
 ### Database Monitoring
+
 - **Connection Health Monitor** - Dashboard with active queries, table sizes, cache hit ratios, and lock detection
 - **PostgreSQL Notifications** - Subscribe to LISTEN/NOTIFY channels with real-time event log
 - **Kill Queries** - Terminate long-running or blocking queries from the health dashboard
 
 ### User Experience
+
 - **Dark/Light Mode** - Easy on the eyes, follows system preference
 - **Keyboard-First** - Power users shouldn't need a mouse
 - **Auto-Updates** - Automatic updates with toast notifications
@@ -156,11 +160,13 @@ If you install with the quick installer, it already runs the `xattr` cleanup for
 If you're using an older version or a manual install and see an "App is damaged" warning:
 
 **Option 1: Terminal command**
+
 ```bash
 xattr -cr "/Applications/Data Peek.app"
 ```
 
 **Option 2: Right-click to open**
+
 1. Right-click (or Control+click) on `Data Peek.app`
 2. Select "Open" from the menu
 3. Click "Open" in the dialog
@@ -169,11 +175,11 @@ xattr -cr "/Applications/Data Peek.app"
 
 Auto-updates only work with the **AppImage** format. If you installed via `.deb` or `.tar.gz`, you'll need to manually download new releases from the [Releases page](https://github.com/Rohithgilla12/data-peek/releases).
 
-| Format | Auto-Update |
-|--------|-------------|
-| AppImage | Yes |
-| .deb | No (manual update) |
-| .tar.gz | No (manual update) |
+| Format   | Auto-Update        |
+| -------- | ------------------ |
+| AppImage | Yes                |
+| .deb     | No (manual update) |
+| .tar.gz  | No (manual update) |
 
 For the best experience with automatic updates, we recommend using the AppImage.
 
@@ -215,14 +221,14 @@ This can happen when pnpm's cache skips Electron's postinstall script that downl
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|------------|
-| Desktop | Electron |
-| Frontend | React 19 + TypeScript |
-| UI | shadcn/ui + Tailwind CSS |
-| State | Zustand |
-| Query Editor | Monaco |
-| Database | pg (PostgreSQL), mysql2 (MySQL), mssql (SQL Server), better-sqlite3 (SQLite) |
+| Layer        | Technology                                                                   |
+| ------------ | ---------------------------------------------------------------------------- |
+| Desktop      | Electron                                                                     |
+| Frontend     | React 19 + TypeScript                                                        |
+| UI           | shadcn/ui + Tailwind CSS                                                     |
+| State        | Zustand                                                                      |
+| Query Editor | Monaco                                                                       |
+| Database     | pg (PostgreSQL), mysql2 (MySQL), mssql (SQL Server), better-sqlite3 (SQLite) |
 
 ## Project Structure
 

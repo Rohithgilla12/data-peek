@@ -24,13 +24,13 @@ Don't close the tab. This stuff is actually readable once you know what you're l
 
 These two commands look similar but do fundamentally different things.
 
-**EXPLAIN** asks the query planner: "Hey, what *would* you do if I ran this query?" It returns a plan based on table statistics, without actually touching any data. It's fast, safe, and gives you estimates.
+**EXPLAIN** asks the query planner: "Hey, what _would_ you do if I ran this query?" It returns a plan based on table statistics, without actually touching any data. It's fast, safe, and gives you estimates.
 
 ```sql
 EXPLAIN SELECT * FROM orders WHERE customer_id = 42;
 ```
 
-**EXPLAIN ANALYZE** says: "Actually run the query and tell me what *really* happened." It executes the query, measures real timings, and compares the planner's estimates to reality.
+**EXPLAIN ANALYZE** says: "Actually run the query and tell me what _really_ happened." It executes the query, measures real timings, and compares the planner's estimates to reality.
 
 ```sql
 EXPLAIN ANALYZE SELECT * FROM orders WHERE customer_id = 42;
@@ -155,7 +155,7 @@ The planner expected 1 row, got 85,000. When estimates are this far off, the pla
 ->  Index Scan using idx_products_id on products  (cost=0.43..8.45 rows=1 width=32) (actual time=0.015..0.018 rows=1 loops=85000)
 ```
 
-Each individual execution is fast (0.018ms), but multiply by 85,000 loops and you've spent 1.5 seconds on this one node. The `actual time` values are *per loop*. Total time is `actual time * loops`.
+Each individual execution is fast (0.018ms), but multiply by 85,000 loops and you've spent 1.5 seconds on this one node. The `actual time` values are _per loop_. Total time is `actual time * loops`.
 
 ## Before and After: Adding an Index
 

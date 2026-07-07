@@ -10,6 +10,7 @@ SSH tunnels let you securely connect to databases that aren't directly accessibl
 ## When to Use SSH Tunnels
 
 Use an SSH tunnel when:
+
 - Your database is in a private network (VPC, internal network)
 - You need to connect through a bastion/jump host
 - Direct database connections are blocked by firewall
@@ -23,12 +24,12 @@ When creating or editing a connection, enable the SSH tunnel option.
 
 ### 2. Configure SSH Settings
 
-| Setting | Description |
-|---------|-------------|
-| **SSH Host** | The hostname or IP of your SSH server (bastion host) |
-| **SSH Port** | Usually `22` |
-| **SSH Username** | Your username on the SSH server |
-| **Authentication** | Password or Private Key |
+| Setting            | Description                                          |
+| ------------------ | ---------------------------------------------------- |
+| **SSH Host**       | The hostname or IP of your SSH server (bastion host) |
+| **SSH Port**       | Usually `22`                                         |
+| **SSH Username**   | Your username on the SSH server                      |
+| **Authentication** | Password or Private Key                              |
 
 ### 3. Authentication Methods
 
@@ -61,12 +62,14 @@ Your Computer  →  SSH Server (Bastion)  →  Database Server
 To connect to an RDS database in a private subnet:
 
 **SSH Configuration:**
+
 - SSH Host: `bastion.yourcompany.com`
 - SSH Port: `22`
 - SSH Username: `ec2-user`
 - Authentication: Public Key (`~/.ssh/aws-key.pem`)
 
 **Database Configuration:**
+
 - Host: `mydb.abc123.us-east-1.rds.amazonaws.com`
 - Port: `5432`
 - Database: `myapp`
@@ -74,6 +77,7 @@ To connect to an RDS database in a private subnet:
 ## Supported Databases
 
 SSH tunnels work with:
+
 - PostgreSQL
 - MySQL
 - Microsoft SQL Server
@@ -103,11 +107,13 @@ SQLite doesn't need SSH tunnels since it's file-based.
 ### Key Format Issues
 
 data-peek supports:
+
 - RSA keys
 - Ed25519 keys
 - ECDSA keys
 
 If you have a `.ppk` file (PuTTY format), convert it using `puttygen`:
+
 ```bash
 puttygen key.ppk -O private-openssh -o key.pem
 ```

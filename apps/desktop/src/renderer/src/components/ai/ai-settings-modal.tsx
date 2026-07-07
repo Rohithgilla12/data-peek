@@ -11,7 +11,23 @@ import {
   Key,
   CheckCircle2
 } from 'lucide-react'
-import { Button, Input, Label, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Label,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@data-peek/ui'
 
 import type { AIProvider, AIMultiProviderConfig, AIProviderConfig } from '@shared/index'
 import { AI_PROVIDERS } from '@shared/index'

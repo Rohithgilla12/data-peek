@@ -1,6 +1,19 @@
 import { useState } from 'react'
 import { Plus, Trash2, ChevronDown, ChevronRight, AlertCircle, Database } from 'lucide-react'
-import { Button, Input, Checkbox, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Checkbox,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import type { IndexDefinition, IndexColumn, IndexMethod, ColumnDefinition } from '@data-peek/shared'
 import type { ValidationError } from '@/stores/ddl-store'

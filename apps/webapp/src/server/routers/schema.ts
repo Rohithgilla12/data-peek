@@ -1,9 +1,9 @@
-import { z } from 'zod'
-import { eq, and } from 'drizzle-orm'
-import { TRPCError } from '@trpc/server'
-import { createRouter, protectedProcedure } from '../trpc'
-import { userConnections } from '@/db/schema'
-import { getAdapter } from '@/lib/db-connect'
+import { z } from "zod";
+import { eq, and } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { createRouter, protectedProcedure } from "../trpc";
+import { userConnections } from "@/db/schema";
+import { getAdapter } from "@/lib/db-connect";
 
 export const schemaRouter = createRouter({
   getSchemas: protectedProcedure
@@ -12,12 +12,15 @@ export const schemaRouter = createRouter({
       const connection = await ctx.db.query.userConnections.findFirst({
         where: and(
           eq(userConnections.id, input.connectionId),
-          eq(userConnections.customerId, ctx.customerId)
+          eq(userConnections.customerId, ctx.customerId),
         ),
-      })
+      });
 
       if (!connection) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Connection not found' })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Connection not found",
+        });
       }
 
       const adapter = await getAdapter(
@@ -26,9 +29,9 @@ export const schemaRouter = createRouter({
         connection.encryptedCredentials,
         connection.iv,
         connection.authTag,
-        ctx.userId
-      )
+        ctx.userId,
+      );
 
-      return adapter.getSchemas()
+      return adapter.getSchemas();
     }),
-})
+});

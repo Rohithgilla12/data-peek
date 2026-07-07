@@ -52,11 +52,7 @@ export function WatchDecorationOverlay({
   const [, force] = React.useState(0)
   React.useEffect(() => {
     if (!diff) return
-    if (
-      diff.cells.size === 0 &&
-      diff.addedRowKeys.size === 0 &&
-      diff.removedRowKeys.size === 0
-    ) {
+    if (diff.cells.size === 0 && diff.addedRowKeys.size === 0 && diff.removedRowKeys.size === 0) {
       return
     }
     const id = setInterval(() => force((n) => n + 1), 200)

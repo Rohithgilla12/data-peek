@@ -48,9 +48,9 @@ test.beforeEach(async ({ window }) => {
   await expect(connectionItem).toBeVisible({ timeout: 8000 })
   await connectionItem.click()
 
-  await expect(
-    window.locator('[role="menuitem"]').filter({ hasText: pg.config.name })
-  ).toBeHidden({ timeout: 5000 })
+  await expect(window.locator('[role="menuitem"]').filter({ hasText: pg.config.name })).toBeHidden({
+    timeout: 5000
+  })
   await expect(window.locator('header').getByText(pg.config.name)).toBeVisible({ timeout: 5000 })
 })
 
@@ -105,7 +105,9 @@ ORDER BY i
 `.trim()
 
 /** Reads the transform translate3d(x, y, 0) values from an element's style. */
-async function readTransformOffsets(locator: ReturnType<Page['locator']>): Promise<{ x: number; y: number }> {
+async function readTransformOffsets(
+  locator: ReturnType<Page['locator']>
+): Promise<{ x: number; y: number }> {
   const style = await locator.getAttribute('style')
   if (!style) return { x: NaN, y: NaN }
   const match = style.match(/translate3d\(\s*(-?\d+(?:\.\d+)?)px\s*,\s*(-?\d+(?:\.\d+)?)px/)

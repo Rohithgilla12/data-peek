@@ -1,6 +1,22 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Clock, AlertCircle } from 'lucide-react'
-import { Button, Input, Label, Textarea, Switch, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Label,
+  Textarea,
+  Switch,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useScheduledQueryStore, useConnectionStore } from '@/stores'
 import type { ScheduledQuery, SchedulePreset, CreateScheduledQueryInput } from '@shared/index'

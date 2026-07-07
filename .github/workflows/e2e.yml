@@ -67,7 +67,7 @@ jobs:
           # Skip the Ryuk reaper sidecar that testcontainers normally launches —
           # GitHub-hosted runners can't always reach Docker Hub for the image, and the
           # runner is torn down per job anyway so leaked containers aren't an issue.
-          TESTCONTAINERS_RYUK_DISABLED: 'true'
+          TESTCONTAINERS_RYUK_DISABLED: "true"
 
       - name: Upload Playwright report on failure
         if: failure()

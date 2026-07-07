@@ -11,11 +11,11 @@ After executing a query, data-peek automatically analyzes the execution plan and
 
 A performance indicator panel appears below query results when issues are detected. Each issue has a severity level:
 
-| Severity | Meaning |
-|----------|---------|
+| Severity | Meaning                           |
+| -------- | --------------------------------- |
 | Critical | Likely to cause problems at scale |
-| Warning | May impact performance |
-| Info | Optimization opportunity |
+| Warning  | May impact performance            |
+| Info     | Optimization opportunity          |
 
 ## Detected Issues
 
@@ -34,6 +34,7 @@ Detects when the same query pattern is executed repeatedly with different parame
 ## Recommendations
 
 Each issue includes a specific recommendation, such as:
+
 - Suggested index creation SQL
 - Query rewrite suggestions
 - Batch query alternatives
@@ -47,5 +48,6 @@ Click **Reanalyze** after making changes (like adding an index) to re-evaluate t
 Filter issues by severity badge to focus on critical problems first.
 
 <Callout type="info">
-  Performance analysis uses the query's EXPLAIN plan. It works best with PostgreSQL, which provides the most detailed execution plans.
+  Performance analysis uses the query's EXPLAIN plan. It works best with
+  PostgreSQL, which provides the most detailed execution plans.
 </Callout>

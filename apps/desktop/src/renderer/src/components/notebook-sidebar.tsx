@@ -1,5 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
-import { BookOpen, ChevronRight, Plus, MoreHorizontal, Trash2, FolderOpen, Upload } from 'lucide-react'
+import {
+  BookOpen,
+  ChevronRight,
+  Plus,
+  MoreHorizontal,
+  Trash2,
+  FolderOpen,
+  Upload
+} from 'lucide-react'
 
 import {
   Collapsible,

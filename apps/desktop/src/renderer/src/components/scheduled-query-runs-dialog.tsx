@@ -1,6 +1,20 @@
 import { useEffect, useCallback } from 'react'
 import { History, CheckCircle, XCircle, Clock, Trash2, RefreshCw } from 'lucide-react'
-import { Button, Badge, ScrollArea, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  ScrollArea,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  cn,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from '@data-peek/ui'
 
 import { useScheduledQueryStore } from '@/stores'
 import type { ScheduledQuery, ScheduledQueryRun } from '@shared/index'

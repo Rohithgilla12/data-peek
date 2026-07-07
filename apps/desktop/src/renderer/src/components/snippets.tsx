@@ -1,7 +1,30 @@
 import { useState, useMemo, useEffect } from 'react'
 import { ChevronRight, Code2, Copy, MoreHorizontal, Play, Plus, Search, X } from 'lucide-react'
 
-import { Badge, Input, Collapsible, CollapsibleContent, CollapsibleTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, SidebarGroup, SidebarGroupAction, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@data-peek/ui'
+import {
+  Badge,
+  Input,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar
+} from '@data-peek/ui'
 
 import { useSnippetStore, useConnectionStore, useTabStore } from '@/stores'
 import { getSnippetCategoryColor, cleanSnippetTemplate } from '@/lib/built-in-snippets'

@@ -11,9 +11,8 @@ vi.mock('../src/main/lib/logger', () => ({
   createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }))
 
-const { withPgClient, withPgTransaction, closePgPool, closeAllPgPools } = await import(
-  '../src/main/adapters/pg-pool-manager'
-)
+const { withPgClient, withPgTransaction, closePgPool, closeAllPgPools } =
+  await import('../src/main/adapters/pg-pool-manager')
 const { registerQuery, cancelQuery } = await import('../src/main/query-tracker')
 
 const config: ConnectionConfig = {
@@ -59,7 +58,6 @@ describe('pool latency', () => {
     }
     const warmAvgMs = (Date.now() - warmStart) / 5
 
-    // eslint-disable-next-line no-console
     console.log(`cold=${coldMs}ms warm-avg=${warmAvgMs.toFixed(2)}ms`)
     expect(coldMs).toBeGreaterThan(warmAvgMs)
     // On loopback the absolute number is small; we still expect ~order-of-magnitude.
@@ -83,7 +81,7 @@ describe('concurrent first-use sharing', () => {
     const distinct = new Set(results).size
     expect(distinct).toBeGreaterThan(0)
     expect(distinct).toBeLessThanOrEqual(5)
-    // eslint-disable-next-line no-console
+
     console.log(`10 concurrent acquires used ${distinct} distinct backends`)
   })
 })
@@ -154,7 +152,7 @@ describe('query cancellation', () => {
 
     await expect(queryPromise).rejects.toBeTruthy()
     const elapsed = Date.now() - start
-    // eslint-disable-next-line no-console
+
     console.log(`cancel aborted 30s sleep after ${elapsed}ms`)
     expect(elapsed).toBeLessThan(5_000)
 
@@ -180,7 +178,7 @@ describe('closePgPool', () => {
       return Number(r.rows[0].pid)
     })
     expect(pidAfter).not.toBe(pidBefore)
-    // eslint-disable-next-line no-console
+
     console.log(`pid before=${pidBefore} after-close=${pidAfter}`)
   })
 })
@@ -193,7 +191,7 @@ describe('schema introspection on real DB', () => {
     const pub = schemas.find((s) => s.name === 'public')
     expect(pub).toBeDefined()
     expect((pub?.tables ?? []).length).toBeGreaterThanOrEqual(9)
-    // eslint-disable-next-line no-console
+
     console.log(
       `getSchemas saw ${pub?.tables.length} tables in public:`,
       pub?.tables.map((t) => t.name).join(', ')

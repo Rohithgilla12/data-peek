@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
-import { trpc } from '@/lib/trpc-client'
-import { ConnectionCard } from '@/components/connections/connection-card'
-import { AddConnectionDialog } from '@/components/connections/add-connection-dialog'
+import { trpc } from "@/lib/trpc-client";
+import { ConnectionCard } from "@/components/connections/connection-card";
+import { AddConnectionDialog } from "@/components/connections/add-connection-dialog";
 
 export default function ConnectionsPage() {
-  const { data: connections, isLoading } = trpc.connections.list.useQuery()
+  const { data: connections, isLoading } = trpc.connections.list.useQuery();
 
   return (
     <div className="p-6 max-w-2xl animate-fade-in">
@@ -20,7 +20,10 @@ export default function ConnectionsPage() {
         {isLoading && (
           <div className="space-y-3">
             {[1, 2].map((i) => (
-              <div key={i} className="h-20 rounded-lg bg-muted animate-shimmer" />
+              <div
+                key={i}
+                className="h-20 rounded-lg bg-muted animate-shimmer"
+              />
             ))}
           </div>
         )}
@@ -36,5 +39,5 @@ export default function ConnectionsPage() {
         )}
       </div>
     </div>
-  )
+  );
 }

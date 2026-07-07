@@ -1,4 +1,13 @@
-import { Badge, Button, Input, Popover, PopoverContent, PopoverTrigger, ScrollArea, cn } from '@data-peek/ui'
+import {
+  Badge,
+  Button,
+  Input,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  ScrollArea,
+  cn
+} from '@data-peek/ui'
 import type { ColumnInfo, SchemaInfo } from '@shared/index'
 import {
   Background,

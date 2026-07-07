@@ -5,46 +5,46 @@ import {
   spring,
   interpolate,
   Sequence,
-} from 'remotion'
-import { brand } from '../../lib/colors'
-import { VersionBadge } from '../../components/VersionBadge'
-import { TypewriterText } from '../../components/TypewriterText'
-import { CyanGlow } from '../../components/CyanGlow'
-import { History } from 'lucide-react'
+} from "remotion";
+import { brand } from "../../lib/colors";
+import { VersionBadge } from "../../components/VersionBadge";
+import { TypewriterText } from "../../components/TypewriterText";
+import { CyanGlow } from "../../components/CyanGlow";
+import { History } from "lucide-react";
 
 type IntroProps = {
-  version: string
-}
+  version: string;
+};
 
 export const Intro: React.FC<IntroProps> = ({ version }) => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
   const iconScale = spring({
     frame,
     fps,
     config: { damping: 12, stiffness: 100 },
-  })
+  });
 
   // The clock ring ticks backwards — it's a time machine.
-  const ringRotation = -frame * 0.8
+  const ringRotation = -frame * 0.8;
 
   const titleScale = spring({
     frame: frame - 8,
     fps,
     config: { damping: 15, stiffness: 80 },
-  })
+  });
   const titleOpacity = interpolate(frame, [5, 25], [0, 1], {
-    extrapolateRight: 'clamp',
-  })
+    extrapolateRight: "clamp",
+  });
 
   return (
     <AbsoluteFill
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
         gap: 24,
       }}
     >
@@ -54,14 +54,14 @@ export const Intro: React.FC<IntroProps> = ({ version }) => {
         style={{
           transform: `scale(${iconScale})`,
           marginBottom: 8,
-          position: 'relative',
+          position: "relative",
         }}
       >
         <div
           style={{
-            position: 'absolute',
+            position: "absolute",
             inset: -18,
-            borderRadius: '50%',
+            borderRadius: "50%",
             border: `2px dashed ${brand.accent}55`,
             transform: `rotate(${ringRotation}deg)`,
           }}
@@ -73,11 +73,11 @@ export const Intro: React.FC<IntroProps> = ({ version }) => {
         style={{
           opacity: titleOpacity,
           transform: `scale(${titleScale})`,
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 88,
           fontWeight: 700,
           color: brand.textPrimary,
-          letterSpacing: '-0.05em',
+          letterSpacing: "-0.05em",
         }}
       >
         data-peek
@@ -92,7 +92,7 @@ export const Intro: React.FC<IntroProps> = ({ version }) => {
           text="Every query gets a memory."
           charsPerSecond={26}
           style={{
-            fontFamily: 'Geist Mono, monospace',
+            fontFamily: "Geist Mono, monospace",
             fontSize: 30,
             fontWeight: 400,
             color: brand.textMuted,
@@ -100,5 +100,5 @@ export const Intro: React.FC<IntroProps> = ({ version }) => {
         />
       </Sequence>
     </AbsoluteFill>
-  )
-}
+  );
+};

@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Lock } from 'lucide-react'
-import { UpgradeDialog } from './upgrade-dialog'
+import { useState } from "react";
+import { Lock } from "lucide-react";
+import { UpgradeDialog } from "./upgrade-dialog";
 
 interface ProBadgeProps {
-  feature?: string
+  feature?: string;
 }
 
 export function ProBadge({ feature }: ProBadgeProps) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   return (
     <>
@@ -20,7 +20,11 @@ export function ProBadge({ feature }: ProBadgeProps) {
         <Lock className="h-2.5 w-2.5" />
         Pro
       </button>
-      <UpgradeDialog open={open} onClose={() => setOpen(false)} feature={feature} />
+      <UpgradeDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        feature={feature}
+      />
     </>
-  )
+  );
 }

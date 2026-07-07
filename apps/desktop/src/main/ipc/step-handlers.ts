@@ -76,10 +76,7 @@ export function registerStepHandlers(registry: StepSessionRegistry): void {
 
   ipcMain.handle(
     'step:set-breakpoints',
-    async (
-      _event,
-      { sessionId, breakpoints }: { sessionId: string; breakpoints: number[] }
-    ) => {
+    async (_event, { sessionId, breakpoints }: { sessionId: string; breakpoints: number[] }) => {
       try {
         await registry.setBreakpoints(sessionId, breakpoints)
         return { success: true }

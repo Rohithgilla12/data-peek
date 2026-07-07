@@ -44,7 +44,9 @@ class MockClient {
       rowCount: response.rowCount ?? 0
     }
   }
-  async end() { this.ended = true }
+  async end() {
+    this.ended = true
+  }
 }
 
 const mockConfig: ConnectionConfig = {
@@ -114,7 +116,9 @@ describe('StepSessionRegistry', () => {
       const failingRegistry = new StepSessionRegistry({
         createClient: (() => {
           const c = new MockClient()
-          c.connect = async () => { throw new Error('connection refused') }
+          c.connect = async () => {
+            throw new Error('connection refused')
+          }
           mockClients.push(c)
           return c
         }) as never
@@ -352,10 +356,7 @@ describe('StepSessionRegistry', () => {
         sql: 'SELECT 1; SELECT 2; SELECT 3;',
         inTransaction: false
       })
-      mockClients[0].responses.push(
-        { rowCount: 1 },
-        { error: new Error('boom') }
-      )
+      mockClients[0].responses.push({ rowCount: 1 }, { error: new Error('boom') })
 
       const response = await registry.continue(sessionId)
       expect(response.executedIndices).toEqual([0, 1])

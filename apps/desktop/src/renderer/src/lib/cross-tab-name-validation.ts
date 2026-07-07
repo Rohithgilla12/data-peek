@@ -129,8 +129,7 @@ export function validateRefName(
       ok: false,
       error: {
         kind: 'invalid_chars',
-        detail:
-          'Use lowercase letters, digits, underscores. Must start with a letter.'
+        detail: 'Use lowercase letters, digits, underscores. Must start with a letter.'
       }
     }
   }

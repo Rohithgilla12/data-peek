@@ -78,21 +78,17 @@ test('db.alter-table handler invalidates the schema cache (no forceRefresh neede
     // Non-force read MUST refetch (fromCache: false) — this is the regression
     // signal. If the handler stops invalidating, this returns the cached pre-DDL
     // schema and we never see audit_marker.
-    const afterAlter = await window.evaluate(
-      (cfg) => window.api.db.schemas(cfg, false),
-      pg.config
-    )
+    const afterAlter = await window.evaluate((cfg) => window.api.db.schemas(cfg, false), pg.config)
     expect(afterAlter.data?.fromCache).toBe(false)
-    const usersAfter = afterAlter.data!.schemas
-      .find((s) => s.name === 'public')!
+    const usersAfter = afterAlter
+      .data!.schemas.find((s) => s.name === 'public')!
       .tables.find((t) => t.name === 'users')!
     expect(usersAfter.columns.map((c) => c.name)).toContain('audit_marker')
   } finally {
     // Always restore the schema, even if assertions above failed — otherwise CI
     // retries and later tests in this file see a polluted column set.
     await window.evaluate(
-      (cfg) =>
-        window.api.db.query(cfg, 'ALTER TABLE users DROP COLUMN IF EXISTS audit_marker'),
+      (cfg) => window.api.db.query(cfg, 'ALTER TABLE users DROP COLUMN IF EXISTS audit_marker'),
       pg.config
     )
   }
@@ -102,27 +98,18 @@ test('db:invalidate-schema-cache IPC drops the cache so the next read refetches'
   window
 }) => {
   // Prime cache via forceRefresh.
-  const primed = await window.evaluate(
-    (cfg) => window.api.db.schemas(cfg, true),
-    pg.config
-  )
+  const primed = await window.evaluate((cfg) => window.api.db.schemas(cfg, true), pg.config)
   expect(primed.success).toBe(true)
   expect(primed.data?.fromCache).toBe(false)
 
   // Confirm a non-force read hits cache.
-  const cached = await window.evaluate(
-    (cfg) => window.api.db.schemas(cfg, false),
-    pg.config
-  )
+  const cached = await window.evaluate((cfg) => window.api.db.schemas(cfg, false), pg.config)
   expect(cached.data?.fromCache).toBe(true)
 
   // Drop the cache through the IPC the DDL handlers use after the audit fix.
   // (Table Designer's create/alter/drop handlers call invalidateSchemaCache(config)
   // at the end of their success paths; this exercises the same code path directly.)
-  const inv = await window.evaluate(
-    (cfg) => window.api.db.invalidateSchemaCache(cfg),
-    pg.config
-  )
+  const inv = await window.evaluate((cfg) => window.api.db.invalidateSchemaCache(cfg), pg.config)
   expect(inv.success).toBe(true)
 
   // Next non-force read must refetch — proves the invalidation actually dropped
@@ -130,10 +117,7 @@ test('db:invalidate-schema-cache IPC drops the cache so the next read refetches'
   // invalidateSchemaCache always worked); the regression risk is on the *callers*
   // of invalidateSchemaCache being wired up correctly. The unit-test in
   // src/main/__tests__/schema-cache.test.ts pins those callers.
-  const refetched = await window.evaluate(
-    (cfg) => window.api.db.schemas(cfg, false),
-    pg.config
-  )
+  const refetched = await window.evaluate((cfg) => window.api.db.schemas(cfg, false), pg.config)
   expect(refetched.success).toBe(true)
   expect(refetched.data?.fromCache).toBe(false)
 })
@@ -208,8 +192,7 @@ test('db.execute applies an UPDATE against the row identified by primary key', a
     expect(updateResult.success).toBe(true)
 
     const verify = await window.evaluate(
-      ({ cfg, id }) =>
-        window.api.db.query(cfg, `SELECT id, name FROM users WHERE id = '${id}'`),
+      ({ cfg, id }) => window.api.db.query(cfg, `SELECT id, name FROM users WHERE id = '${id}'`),
       { cfg: pg.config, id: target.id }
     )
     expect(verify.success).toBe(true)
@@ -248,9 +231,7 @@ test('db.execute rolls back the whole batch when one operation fails', async ({ 
     (cfg) => window.api.db.query(cfg, 'SELECT id, name, email FROM users ORDER BY email LIMIT 2'),
     pg.config
   )
-  const [a, b] = (
-    rows.data as { rows: Array<{ id: string; name: string; email: string }> }
-  ).rows
+  const [a, b] = (rows.data as { rows: Array<{ id: string; name: string; email: string }> }).rows
   expect(a).toBeDefined()
   expect(b).toBeDefined()
 
@@ -323,8 +304,7 @@ test('db.execute rolls back the whole batch when one operation fails', async ({ 
 
   // And row A's email should be UNCHANGED — proving transactional rollback.
   const verify = await window.evaluate(
-    ({ cfg, id }) =>
-      window.api.db.query(cfg, `SELECT email FROM users WHERE id = '${id}'`),
+    ({ cfg, id }) => window.api.db.query(cfg, `SELECT email FROM users WHERE id = '${id}'`),
     { cfg: pg.config, id: a.id }
   )
   const after = (verify.data as { rows: Array<{ email: string }> }).rows[0]

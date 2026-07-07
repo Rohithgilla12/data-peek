@@ -14,7 +14,26 @@ import {
   History,
   RefreshCw
 } from 'lucide-react'
-import { Button, Badge, Input, Dialog, DialogContent, DialogHeader, DialogTitle, ScrollArea, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  Input,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  ScrollArea,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useScheduledQueryStore, useConnectionStore } from '@/stores'
 import type { ScheduledQuery, ScheduledQueryStatus } from '@shared/index'

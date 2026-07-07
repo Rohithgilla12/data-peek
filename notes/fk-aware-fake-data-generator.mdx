@@ -54,21 +54,56 @@ The whole "it just works" impression comes from one lookup table in
 
 ```ts
 const HEURISTICS: Heuristic[] = [
-  { pattern: /^email$/i,                    generator: { generatorType: 'faker', fakerMethod: 'internet.email' } },
-  { pattern: /^(first_?name|fname)$/i,      generator: { generatorType: 'faker', fakerMethod: 'person.firstName' } },
-  { pattern: /^(last_?name|lname|surname)$/i, generator: { generatorType: 'faker', fakerMethod: 'person.lastName' } },
-  { pattern: /^(name|full_?name)$/i,        generator: { generatorType: 'faker', fakerMethod: 'person.fullName' } },
-  { pattern: /^(phone|mobile|cell)$/i,      generator: { generatorType: 'faker', fakerMethod: 'phone.number' } },
-  { pattern: /^(city)$/i,                   generator: { generatorType: 'faker', fakerMethod: 'location.city' } },
-  { pattern: /^(country)$/i,                generator: { generatorType: 'faker', fakerMethod: 'location.country' } },
-  { pattern: /^(url|website)$/i,            generator: { generatorType: 'faker', fakerMethod: 'internet.url' } },
-  { pattern: /^(bio|description|about)$/i,  generator: { generatorType: 'faker', fakerMethod: 'lorem.paragraph' } },
-  { pattern: /^(title|subject)$/i,          generator: { generatorType: 'faker', fakerMethod: 'lorem.sentence' } },
-  { pattern: /^(company|organization)$/i,   generator: { generatorType: 'faker', fakerMethod: 'company.name' } },
-  { pattern: /^(created|updated|deleted)_?(at|on|date)?$/i,
-                                            generator: { generatorType: 'faker', fakerMethod: 'date.recent' } },
-  { pattern: /^(uuid|guid)$/i,              generator: { generatorType: 'uuid' } }
-]
+  {
+    pattern: /^email$/i,
+    generator: { generatorType: "faker", fakerMethod: "internet.email" },
+  },
+  {
+    pattern: /^(first_?name|fname)$/i,
+    generator: { generatorType: "faker", fakerMethod: "person.firstName" },
+  },
+  {
+    pattern: /^(last_?name|lname|surname)$/i,
+    generator: { generatorType: "faker", fakerMethod: "person.lastName" },
+  },
+  {
+    pattern: /^(name|full_?name)$/i,
+    generator: { generatorType: "faker", fakerMethod: "person.fullName" },
+  },
+  {
+    pattern: /^(phone|mobile|cell)$/i,
+    generator: { generatorType: "faker", fakerMethod: "phone.number" },
+  },
+  {
+    pattern: /^(city)$/i,
+    generator: { generatorType: "faker", fakerMethod: "location.city" },
+  },
+  {
+    pattern: /^(country)$/i,
+    generator: { generatorType: "faker", fakerMethod: "location.country" },
+  },
+  {
+    pattern: /^(url|website)$/i,
+    generator: { generatorType: "faker", fakerMethod: "internet.url" },
+  },
+  {
+    pattern: /^(bio|description|about)$/i,
+    generator: { generatorType: "faker", fakerMethod: "lorem.paragraph" },
+  },
+  {
+    pattern: /^(title|subject)$/i,
+    generator: { generatorType: "faker", fakerMethod: "lorem.sentence" },
+  },
+  {
+    pattern: /^(company|organization)$/i,
+    generator: { generatorType: "faker", fakerMethod: "company.name" },
+  },
+  {
+    pattern: /^(created|updated|deleted)_?(at|on|date)?$/i,
+    generator: { generatorType: "faker", fakerMethod: "date.recent" },
+  },
+  { pattern: /^(uuid|guid)$/i, generator: { generatorType: "uuid" } },
+];
 ```
 
 This is boring and I am proud of it. Every single entry was added the
@@ -94,27 +129,31 @@ and column. Before any rows are generated, the main process samples up to
 
 ```ts
 export async function resolveFK(
-  adapter, connectionConfig, schema, fkTable, fkColumn
+  adapter,
+  connectionConfig,
+  schema,
+  fkTable,
+  fkColumn,
 ): Promise<unknown[]> {
-  const dbType = connectionConfig.dbType
-  const quotedTable = quoteId(fkTable, dbType)
+  const dbType = connectionConfig.dbType;
+  const quotedTable = quoteId(fkTable, dbType);
   const tableRef =
-    schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo'
+    schema && schema !== "public" && schema !== "main" && schema !== "dbo"
       ? `${quoteId(schema, dbType)}.${quotedTable}`
-      : quotedTable
+      : quotedTable;
   const sql =
-    dbType === 'mssql'
+    dbType === "mssql"
       ? `SELECT TOP 1000 ${quoteId(fkColumn, dbType)} FROM ${tableRef}`
-      : `SELECT ${quoteId(fkColumn, dbType)} FROM ${tableRef} LIMIT 1000`
+      : `SELECT ${quoteId(fkColumn, dbType)} FROM ${tableRef} LIMIT 1000`;
 
   try {
-    const result = await adapter.query(connectionConfig, sql)
+    const result = await adapter.query(connectionConfig, sql);
     return result.rows.map((row) => {
-      const r = row as Record<string, unknown>
-      return r[fkColumn]
-    })
+      const r = row as Record<string, unknown>;
+      return r[fkColumn];
+    });
   } catch {
-    return []
+    return [];
   }
 }
 ```
@@ -162,21 +201,23 @@ dynamically:
 
 ```ts
 function callFakerMethod(method: string): unknown {
-  const parts = method.split('.')
-  if (parts.length !== 2) return faker.lorem.word()
+  const parts = method.split(".");
+  if (parts.length !== 2) return faker.lorem.word();
 
-  const [ns, fn] = parts
-  if (ns === '__proto__' || ns === 'constructor' || ns === 'prototype') return faker.lorem.word()
-  if (fn === '__proto__' || fn === 'constructor' || fn === 'prototype') return faker.lorem.word()
+  const [ns, fn] = parts;
+  if (ns === "__proto__" || ns === "constructor" || ns === "prototype")
+    return faker.lorem.word();
+  if (fn === "__proto__" || fn === "constructor" || fn === "prototype")
+    return faker.lorem.word();
 
-  const fakerAny = faker as unknown as Record<string, unknown>
-  const namespace = fakerAny[ns]
-  if (!namespace || typeof namespace !== 'object') return faker.lorem.word()
+  const fakerAny = faker as unknown as Record<string, unknown>;
+  const namespace = fakerAny[ns];
+  if (!namespace || typeof namespace !== "object") return faker.lorem.word();
 
-  const func = (namespace as Record<string, unknown>)[fn]
-  if (typeof func !== 'function') return faker.lorem.word()
+  const func = (namespace as Record<string, unknown>)[fn];
+  if (typeof func !== "function") return faker.lorem.word();
 
-  const result = (func as () => unknown).call(namespace)
+  const result = (func as () => unknown).call(namespace);
   // ...
 }
 ```
@@ -198,11 +239,11 @@ batches the user configures, sends progress back over IPC after each
 batch, and honors a cancel flag:
 
 ```ts
-ipcMain.handle('db:generate-cancel', async () => {
-  cancelDataGen = true
-  requestCancelBatchInsert()
-  return { success: true }
-})
+ipcMain.handle("db:generate-cancel", async () => {
+  cancelDataGen = true;
+  requestCancelBatchInsert();
+  return { success: true };
+});
 ```
 
 The progress callback (`sendProgress`) updates a progress bar in the
@@ -217,9 +258,9 @@ Before committing, the same pipeline runs with `rowCount: 5` and returns
 the preview rows instead of inserting:
 
 ```ts
-const previewConfig = { ...genConfig, rowCount: 5 }
-const rows = generateRows(previewConfig, fkData)
-return { success: true, data: { rows } }
+const previewConfig = { ...genConfig, rowCount: 5 };
+const rows = generateRows(previewConfig, fkData);
+return { success: true, data: { rows } };
 ```
 
 This alone has saved me from maybe twenty bad seed runs. "Oh, the email

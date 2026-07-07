@@ -1,7 +1,23 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Clock, Calendar, Info } from 'lucide-react'
 
-import { Button, Label, Input, Switch, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Label,
+  Input,
+  Switch,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useDashboardStore } from '@/stores'
 import type { Dashboard, SchedulePreset } from '@shared/index'

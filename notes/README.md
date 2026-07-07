@@ -4,22 +4,22 @@ This folder is the single source of truth for technical notes and blog posts. Fi
 
 ## Published Posts
 
-| File | Topic |
-|------|-------|
-| [building-ai-sql-assistant.mdx](./building-ai-sql-assistant.mdx) | Building the AI SQL Assistant |
-| [ai-assistant-deep-dive.mdx](./ai-assistant-deep-dive.mdx) | Technical deep dive into AI components |
-| [query-performance-analyzer.mdx](./query-performance-analyzer.mdx) | Query Performance Analyzer with EXPLAIN |
-| [connection-health-monitor-in-a-sql-client.mdx](./connection-health-monitor-in-a-sql-client.mdx) | pg_stat_activity dashboard with one-click kill |
-| [blurring-pii-in-your-sql-client.mdx](./blurring-pii-in-your-sql-client.mdx) | Data masking toolbar for screen-shares and demos |
-| [listen-notify-without-tears.mdx](./listen-notify-without-tears.mdx) | Postgres LISTEN/NOTIFY debugger with SQLite history |
-| [benchmark-mode-p50-p90-p99.mdx](./benchmark-mode-p50-p90-p99.mdx) | Benchmark mode with p90/p95/p99 percentiles |
-| [fk-aware-fake-data-generator.mdx](./fk-aware-fake-data-generator.mdx) | FK-aware fake data generator with Faker.js |
-| [smart-sort-bar.mdx](./smart-sort-bar.mdx) | Multi-column chip-based sorting with type-aware modes |
-| [multi-statement-step-through.mdx](./multi-statement-step-through.mdx) | Step-through debugging for multi-statement SQL scripts |
-| [schema-intel-diagnostics.mdx](./schema-intel-diagnostics.mdx) | One-click schema diagnostics for Postgres / MySQL / MSSQL |
-| [ssl-defaults-for-cloud-dbs.mdx](./ssl-defaults-for-cloud-dbs.mdx) | v0.21.3 — opt-in strict cert verification for cloud DBs |
-| [end-to-end-testing-an-electron-sql-client.mdx](./end-to-end-testing-an-electron-sql-client.mdx) | From 4 to 25 e2e tests with Playwright + Electron |
-| [v0.22.0-hardened-edges.mdx](./v0.22.0-hardened-edges.mdx) | v0.22.0 release notes — silent-corruption hunt, lifecycle hardening |
+| File                                                                                             | Topic                                                               |
+| ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| [building-ai-sql-assistant.mdx](./building-ai-sql-assistant.mdx)                                 | Building the AI SQL Assistant                                       |
+| [ai-assistant-deep-dive.mdx](./ai-assistant-deep-dive.mdx)                                       | Technical deep dive into AI components                              |
+| [query-performance-analyzer.mdx](./query-performance-analyzer.mdx)                               | Query Performance Analyzer with EXPLAIN                             |
+| [connection-health-monitor-in-a-sql-client.mdx](./connection-health-monitor-in-a-sql-client.mdx) | pg_stat_activity dashboard with one-click kill                      |
+| [blurring-pii-in-your-sql-client.mdx](./blurring-pii-in-your-sql-client.mdx)                     | Data masking toolbar for screen-shares and demos                    |
+| [listen-notify-without-tears.mdx](./listen-notify-without-tears.mdx)                             | Postgres LISTEN/NOTIFY debugger with SQLite history                 |
+| [benchmark-mode-p50-p90-p99.mdx](./benchmark-mode-p50-p90-p99.mdx)                               | Benchmark mode with p90/p95/p99 percentiles                         |
+| [fk-aware-fake-data-generator.mdx](./fk-aware-fake-data-generator.mdx)                           | FK-aware fake data generator with Faker.js                          |
+| [smart-sort-bar.mdx](./smart-sort-bar.mdx)                                                       | Multi-column chip-based sorting with type-aware modes               |
+| [multi-statement-step-through.mdx](./multi-statement-step-through.mdx)                           | Step-through debugging for multi-statement SQL scripts              |
+| [schema-intel-diagnostics.mdx](./schema-intel-diagnostics.mdx)                                   | One-click schema diagnostics for Postgres / MySQL / MSSQL           |
+| [ssl-defaults-for-cloud-dbs.mdx](./ssl-defaults-for-cloud-dbs.mdx)                               | v0.21.3 — opt-in strict cert verification for cloud DBs             |
+| [end-to-end-testing-an-electron-sql-client.mdx](./end-to-end-testing-an-electron-sql-client.mdx) | From 4 to 25 e2e tests with Playwright + Electron                   |
+| [v0.22.0-hardened-edges.mdx](./v0.22.0-hardened-edges.mdx)                                       | v0.22.0 release notes — silent-corruption hunt, lifecycle hardening |
 
 ## Creating a New Post
 
@@ -33,7 +33,7 @@ description: "Brief description for SEO and previews"
 date: "YYYY-MM-DD"
 author: "Rohith Gilla"
 tags: ["Tag1", "Tag2"]
-published: true  # Set to false to keep as draft
+published: true # Set to false to keep as draft
 ---
 ```
 

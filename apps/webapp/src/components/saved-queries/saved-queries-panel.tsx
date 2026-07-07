@@ -1,24 +1,26 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Play, Trash2, Search } from 'lucide-react'
-import { useSavedQueries } from '@/hooks/use-saved-queries'
-import { useConnectionStore } from '@/stores/connection-store'
-import { useQueryTabs } from '@/hooks/use-query-tabs'
+import { useState } from "react";
+import { Play, Trash2, Search } from "lucide-react";
+import { useSavedQueries } from "@/hooks/use-saved-queries";
+import { useConnectionStore } from "@/stores/connection-store";
+import { useQueryTabs } from "@/hooks/use-query-tabs";
 
 export function SavedQueriesPanel() {
-  const [search, setSearch] = useState('')
-  const { activeConnectionId } = useConnectionStore()
-  const { activeTabId, updateSql } = useQueryTabs()
+  const [search, setSearch] = useState("");
+  const { activeConnectionId } = useConnectionStore();
+  const { activeTabId, updateSql } = useQueryTabs();
   const { queries, remove, incrementUsage } = useSavedQueries(
     activeConnectionId ?? undefined,
-    search || undefined
-  )
+    search || undefined,
+  );
 
   if (!activeConnectionId) {
     return (
-      <div className="px-3 py-4 text-xs text-muted-foreground">Select a connection first</div>
-    )
+      <div className="px-3 py-4 text-xs text-muted-foreground">
+        Select a connection first
+      </div>
+    );
   }
 
   return (
@@ -42,14 +44,19 @@ export function SavedQueriesPanel() {
           </div>
         )}
         {queries.map((q) => (
-          <div key={q.id} className="group px-3 py-2 border-b border-border/30 hover:bg-muted/30">
+          <div
+            key={q.id}
+            className="group px-3 py-2 border-b border-border/30 hover:bg-muted/30"
+          >
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-foreground truncate">{q.name}</span>
+              <span className="text-xs font-medium text-foreground truncate">
+                {q.name}
+              </span>
               <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button
                   onClick={() => {
-                    updateSql(activeTabId, q.query)
-                    incrementUsage(q.id)
+                    updateSql(activeTabId, q.query);
+                    incrementUsage(q.id);
                   }}
                   className="p-1 rounded text-muted-foreground hover:text-accent"
                   title="Load into editor"
@@ -69,11 +76,13 @@ export function SavedQueriesPanel() {
               {q.query}
             </pre>
             {q.description && (
-              <p className="mt-0.5 text-[10px] text-muted-foreground/70">{q.description}</p>
+              <p className="mt-0.5 text-[10px] text-muted-foreground/70">
+                {q.description}
+              </p>
             )}
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
