@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Database } from 'lucide-react'
-import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
 import { usePanelCollapse } from '@/hooks/use-panel-collapse'
 
 import {
@@ -8,10 +7,7 @@ import {
   useConnectionStore,
   useQueryStore,
   useSettingsStore,
-  useTabTelemetry,
-  useTabPerfIndicator,
-  useSnippetStore,
-  notify
+  useSnippetStore
 } from '@/stores'
 import { isExecutableTab, type Tab, type MultiQueryResult } from '@/stores/tab-store'
 import type { StatementResult } from '@data-peek/shared'
@@ -27,22 +23,11 @@ import type { ResolveForRunSummary } from '@/lib/cross-tab-integration'
 import { CrossTabSubmitDialog } from '@/components/cross-tab/cross-tab-submit-dialog'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
-import {
-  copyExportToClipboard,
-  downloadExport,
-  generateExportFilename,
-  maskExportData
-} from '@/lib/export'
-import {
-  buildQualifiedTableRef,
-  buildFullyQualifiedTableRef,
-  buildSelectQuery,
-  buildCountQuery,
-  quoteIdentifier
-} from '@/lib/sql-helpers'
+import { generateExportFilename } from '@/lib/export'
+import { buildQualifiedTableRef, buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
 import { buildQueryWithFilters } from '@/lib/table-query-builder'
-import type { QueryResult as IpcQueryResult, ForeignKeyInfo, ColumnInfo } from '@data-peek/shared'
-import { FKPanelStack, type FKPanelItem } from '@/components/fk-panel-stack'
+import type { QueryResult as IpcQueryResult } from '@data-peek/shared'
+import { FKPanelStack } from '@/components/fk-panel-stack'
 import { ERDVisualization } from '@/components/erd-visualization'
 import { ExecutionPlanViewer } from '@/components/execution-plan-viewer'
 import { TableDesigner } from '@/components/table-designer'
@@ -53,10 +38,6 @@ import { SchemaIntelPanel } from '@/components/schema-intel'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
 import { ShareQueryDialog } from '@/components/share-query-dialog'
 import { ColumnStatsPanel } from '@/components/column-stats-panel'
-import { useColumnStatsStore } from '@/stores/column-stats-store'
-import type { DataTableColumn as DtColumn } from '@/components/data-table'
-import { useMaskingStore } from '@/stores/masking-store'
-import type { ExportData, ExportDestination, ExportFormat, SQLExportOptions } from '@/lib/export'
 import { StepRibbon } from './step-ribbon'
 import { StepResultsTabs } from './step-results-tabs'
 import { EditorToolbar } from './query-editor/editor-toolbar'
@@ -64,14 +45,17 @@ import { QueryResults } from './query-editor/query-results'
 import { MaskedExportDialog } from './query-editor/masked-export-dialog'
 import { ShareResultsImage } from './query-editor/share-results-image'
 import { useEditableResult } from './query-editor/use-editable-result'
+import { useFkPanels } from './query-editor/use-fk-panels'
+import { useColumnStatsPanel } from './query-editor/use-column-stats-panel'
+import { useQueryAnalysis } from './query-editor/use-query-analysis'
+import { useManualTransaction } from './query-editor/use-manual-transaction'
+import { useResultExport } from './query-editor/use-result-export'
+import { useWatchRunner } from './query-editor/use-watch-runner'
 import { WatchButton } from '@/components/watch-button'
-import type { WatchRunner } from '@/lib/watch-scheduler'
-import { watchScheduler } from '@/lib/watch-scheduler'
-import { useWatchStore } from '@/stores/watch-store'
-import { gateForWatch } from '@/lib/watch-sql-gate'
 import { TimeMachineButton } from '@/components/time-machine/time-machine-button'
 import { captureRun } from '@/lib/time-machine-capture'
 import { resolveSelectKeyColumns } from '@/lib/result-key-columns'
+import { useMaskingStore } from '@/stores/masking-store'
 import { useTimeMachineStore } from '@/stores/time-machine-store'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
@@ -116,8 +100,6 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const startStep = useStepStore((s) => s.startStep)
   const toggleBreakpoint = useStepStore((s) => s.toggleBreakpoint)
   const [inTransactionMode, setInTransactionMode] = useState(false)
-  const [autoCommit, setAutoCommit] = useState(true)
-  const [hasActiveTransaction, setHasActiveTransaction] = useState(false)
 
   const tabQuery = tab && 'query' in tab ? tab.query : ''
   const tabType = tab?.type
@@ -133,7 +115,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     initializeSnippets()
   }, [initializeSnippets])
 
-  // Telemetry state
+  // Get the connection for this tab
+  const tabConnection = tab?.connectionId
+    ? connections.find((c) => c.id === tab.connectionId)
+    : null
+
+  // Telemetry, benchmark, EXPLAIN, and performance-analysis state (extracted to hook)
   const {
     telemetry,
     benchmark,
@@ -148,10 +135,16 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     setShowConnectionOverhead,
     setSelectedPercentile,
     setViewMode,
-    setRunningBenchmark
-  } = useTabTelemetry(tabId)
-
-  // Performance indicator state
+    perf,
+    executionPlan,
+    setExecutionPlan,
+    isExplaining,
+    executionPlanWidth,
+    startResizing,
+    handleBenchmark,
+    handleExplainQuery,
+    handleAnalyzePerformance
+  } = useQueryAnalysis(tabId, tab, tabConnection, updateTabResult)
   const {
     analysis: perfAnalysis,
     isAnalyzing: isPerfAnalyzing,
@@ -159,16 +152,19 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     showCritical,
     showWarning,
     showInfo,
-    setAnalysis: setPerfAnalysis,
     setShowPerfPanel,
-    setAnalyzing: setPerfAnalyzing,
     toggleSeverityFilter
-  } = useTabPerfIndicator(tabId)
+  } = perf
 
-  // Get the connection for this tab
-  const tabConnection = tab?.connectionId
-    ? connections.find((c) => c.id === tab.connectionId)
-    : null
+  // Manual transaction mode (auto-commit off) — extracted to hook
+  const {
+    autoCommit,
+    setAutoCommit,
+    hasActiveTransaction,
+    setHasActiveTransaction,
+    handleCommit,
+    handleRollback
+  } = useManualTransaction(tabId, tabConnection)
 
   // Track if we've already attempted auto-run for this tab
   const hasAutoRun = useRef(false)
@@ -190,28 +186,19 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const [tableFilters, setTableFilters] = useState<DataTableFilter[]>([])
   const [tableSorting, setTableSorting] = useState<DataTableSort[]>([])
 
-  // FK Panel stack state
-  const [fkPanels, setFkPanels] = useState<FKPanelItem[]>([])
+  // FK panel stack (extracted to hook)
+  const { fkPanels, handleFKClick, handleFKOpenTab, handleCloseFKPanel, handleCloseAllFKPanels } =
+    useFkPanels(tabConnection)
 
-  // Column stats panel state
+  // Column stats panel (extracted to hook)
   const {
-    stats: columnStatsMap,
-    isLoading: columnStatsLoading,
-    error: columnStatsError,
-    selectedColumn: columnStatsSelected,
-    isPanelOpen: columnStatsPanelOpen,
-    fetchStats: fetchColumnStats,
-    selectColumn: selectStatsColumn,
-    closePanel: closeColumnStatsPanel
-  } = useColumnStatsStore()
-
-  // Execution plan state (resize logic extracted to hook)
-  const [executionPlan, setExecutionPlan] = useState<{
-    plan: unknown[]
-    durationMs: number
-  } | null>(null)
-  const [isExplaining, setIsExplaining] = useState(false)
-  const { executionPlanWidth, startResizing } = useExecutionPlanResize()
+    columnStatsData,
+    columnStatsLoading,
+    columnStatsError,
+    columnStatsPanelOpen,
+    handleColumnStatsClick,
+    closeColumnStatsPanel
+  } = useColumnStatsPanel(tab, tabConnection)
 
   // Save query dialog state
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
@@ -231,88 +218,15 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   } | null>(null)
   const skipHeavyConfirmRef = useRef(false)
 
-  // Export with masked columns confirmation
-  const [pendingExport, setPendingExport] = useState<null | {
-    format: ExportFormat
-    destination: ExportDestination
-    data: ExportData
-    filename: string
-  }>(null)
-
-  const getEffectiveMaskedColumns = useMaskingStore((s) => s.getEffectiveMaskedColumns)
-
-  // Get the createForeignKeyTab action
-  const createForeignKeyTab = useTabStore((s) => s.createForeignKeyTab)
-
-  const buildMaskedExportData = (data: ExportData): ExportData => {
-    const masked = getEffectiveMaskedColumns(
-      tabId,
-      data.columns.map((c) => c.name)
-    )
-    if (masked.size === 0) return data
-    return maskExportData(data, masked)
-  }
-
-  // Export data for the currently visible result set. For multi-statement queries this
-  // follows the active statement tab instead of always exporting the first result.
-  const getCurrentExportData = (): ExportData | null => {
-    if (!tab || !('result' in tab)) return null
-    const idx = tab.activeResultIndex ?? 0
-    const stmt = tab.multiResult?.statements?.[idx]
-    if (stmt) {
-      return {
-        columns: stmt.fields.map((f) => ({ name: f.name, dataType: f.dataType })),
-        rows: stmt.rows as Record<string, unknown>[]
-      }
-    }
-    return tab.result ?? null
-  }
-
-  const handleExport = (
-    format: ExportFormat,
-    destination: ExportDestination,
-    data: ExportData,
-    filename: string
-  ) => {
-    const masked = getEffectiveMaskedColumns(
-      tabId,
-      data.columns.map((c) => c.name)
-    )
-    if (masked.size > 0) {
-      setPendingExport({ format, destination, data, filename })
-      return
-    }
-    void doExport(format, destination, data, filename)
-  }
-
-  const getSQLExportOptions = (): SQLExportOptions => ({
-    tableName: tab && tab.type === 'table-preview' ? tab.tableName : 'query_result',
-    schemaName: tab && tab.type === 'table-preview' ? tab.schemaName : undefined
-  })
-
-  const doExport = async (
-    format: ExportFormat,
-    destination: ExportDestination,
-    data: ExportData,
-    filename: string
-  ) => {
-    const options = format === 'sql' ? getSQLExportOptions() : undefined
-
-    try {
-      if (destination === 'clipboard') {
-        await copyExportToClipboard(data, format, options)
-        notify.success(`Copied ${format.toUpperCase()} export to clipboard`)
-      } else {
-        downloadExport(data, format, filename, options)
-      }
-    } catch (error) {
-      const action = destination === 'clipboard' ? 'Copy' : 'Export'
-      notify.error(
-        `${action} failed`,
-        error instanceof Error ? error.message : 'An unexpected error occurred'
-      )
-    }
-  }
+  // Result-set export with masked-column confirmation (extracted to hook)
+  const {
+    pendingExport,
+    setPendingExport,
+    buildMaskedExportData,
+    getCurrentExportData,
+    doExport,
+    handleExport
+  } = useResultExport(tabId, tab)
 
   // Execution body for a query run. `sqlToExecute` is the resolved SQL actually sent to
   // the database (with cross-tab @name references inlined). `originalQuery` is the user's
@@ -536,7 +450,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       setTablePreviewTotalCount,
       autoCommit,
       hasActiveTransaction,
-      tab?.id
+      tab?.id,
+      setHasActiveTransaction
     ]
   )
 
@@ -656,145 +571,6 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     const formatted = formatSQL(tab.query)
     updateTabQuery(tabId, formatted)
   }
-
-  // Handle benchmark execution
-  const handleBenchmark = useCallback(
-    async (runCount: number) => {
-      if (
-        !tab ||
-        !isExecutableTab(tab) ||
-        !tabConnection ||
-        tab.isExecuting ||
-        isRunningBenchmark ||
-        !tab.query.trim()
-      ) {
-        return
-      }
-
-      setRunningBenchmark(true)
-      // Clear previous telemetry and show panel
-      setTelemetry(null)
-      setBenchmark(null)
-      setShowTelemetryPanel(true)
-
-      try {
-        const response = await window.api.db.benchmark(tabConnection, tab.query, runCount)
-
-        if (response.success && response.data) {
-          setBenchmark(response.data)
-          // Also set the first run's telemetry for display
-          if (response.data.telemetryRuns.length > 0) {
-            setTelemetry(response.data.telemetryRuns[0])
-          }
-        } else {
-          // Show error notification to user
-          notify.error('Benchmark failed', response.error || 'An unexpected error occurred')
-        }
-      } catch (error) {
-        notify.error(
-          'Benchmark failed',
-          error instanceof Error ? error.message : 'An unexpected error occurred'
-        )
-      } finally {
-        setRunningBenchmark(false)
-      }
-    },
-    [
-      tab,
-      tabConnection,
-      isRunningBenchmark,
-      setRunningBenchmark,
-      setTelemetry,
-      setBenchmark,
-      setShowTelemetryPanel
-    ]
-  )
-
-  const handleExplainQuery = useCallback(async () => {
-    if (!tab || !isExecutableTab(tab) || !tabConnection || isExplaining || !tab.query.trim()) {
-      return
-    }
-
-    setIsExplaining(true)
-    setExecutionPlan(null)
-
-    try {
-      const response = await window.api.db.explain(tabConnection, tab.query, true)
-
-      if (response.success && response.data) {
-        setExecutionPlan({
-          plan: response.data.plan as unknown[],
-          durationMs: response.data.durationMs
-        })
-      } else {
-        // Show error in the existing error display
-        updateTabResult(tabId, null, response.error ?? 'Failed to get execution plan')
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      updateTabResult(tabId, null, errorMessage)
-    } finally {
-      setIsExplaining(false)
-    }
-  }, [tab, tabConnection, tabId, isExplaining, updateTabResult])
-
-  // Get query history for performance analysis
-  const queryHistory = useQueryStore((s) => s.history)
-
-  const handleAnalyzePerformance = useCallback(async () => {
-    if (!tab || !isExecutableTab(tab) || !tabConnection || isPerfAnalyzing || !tab.query.trim()) {
-      return
-    }
-
-    // Only support PostgreSQL for now
-    if (tabConnection.dbType && tabConnection.dbType !== 'postgresql') {
-      notify.info(
-        'Not Supported',
-        'Performance analysis is currently only available for PostgreSQL databases.'
-      )
-      return
-    }
-
-    setPerfAnalyzing(true)
-
-    try {
-      // Convert query history to the format expected by the API
-      const historyForAnalysis = queryHistory
-        .filter((h) => h.connectionId === tabConnection.id)
-        .slice(0, 50)
-        .map((h) => ({
-          query: h.query,
-          timestamp: h.timestamp instanceof Date ? h.timestamp.getTime() : h.timestamp,
-          connectionId: h.connectionId
-        }))
-
-      const response = await window.api.db.analyzePerformance(
-        tabConnection,
-        tab.query,
-        historyForAnalysis
-      )
-
-      if (response.success && response.data) {
-        setPerfAnalysis(response.data)
-        setShowPerfPanel(true)
-      } else {
-        notify.error('Analysis Failed', response.error ?? 'Failed to analyze query performance')
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      notify.error('Analysis Error', errorMessage)
-    } finally {
-      setPerfAnalyzing(false)
-    }
-  }, [
-    tab,
-    tabConnection,
-    isPerfAnalyzing,
-    queryHistory,
-    setPerfAnalyzing,
-    setPerfAnalysis,
-    setShowPerfPanel
-  ])
 
   const handleQueryChange = (value: string) => {
     updateTabQuery(tabId, value)
@@ -951,192 +727,6 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     getEnumValues
   })
 
-  // FK Panel: Fetch data for a referenced row
-  const fetchFKData = useCallback(
-    async (
-      fk: ForeignKeyInfo,
-      value: unknown
-    ): Promise<{ data?: Record<string, unknown>; columns?: ColumnInfo[]; error?: string }> => {
-      if (!tabConnection) return { error: 'No connection' }
-
-      const tableRef = buildFullyQualifiedTableRef(
-        fk.referencedSchema,
-        fk.referencedTable,
-        tabConnection.dbType
-      )
-
-      // Format value for SQL
-      let formattedValue: string
-      if (value === null || value === undefined) {
-        formattedValue = 'NULL'
-      } else if (typeof value === 'string') {
-        formattedValue = `'${value.replace(/'/g, "''")}'`
-      } else {
-        formattedValue = String(value)
-      }
-
-      const quotedCol = quoteIdentifier(fk.referencedColumn, tabConnection.dbType)
-      const whereClause = `WHERE ${quotedCol} = ${formattedValue}`
-      const query = buildSelectQuery(tableRef, tabConnection.dbType, {
-        where: whereClause,
-        limit: 1
-      })
-
-      try {
-        const response = await window.api.db.query(tabConnection, query)
-        if (response.success && response.data) {
-          const data = response.data as IpcQueryResult
-          const row = data.rows[0] as Record<string, unknown> | undefined
-
-          // Get column info with FK from schema
-          const schema = schemas.find((s) => s.name === fk.referencedSchema)
-          const tableInfo = schema?.tables.find((t) => t.name === fk.referencedTable)
-          const columns = tableInfo?.columns
-
-          return { data: row, columns }
-        }
-        return { error: response.error ?? 'Query failed' }
-      } catch (err) {
-        return { error: err instanceof Error ? err.message : String(err) }
-      }
-    },
-    [tabConnection, schemas]
-  )
-
-  // FK Panel: Handle click to open panel
-  const handleFKClick = useCallback(
-    async (fk: ForeignKeyInfo, value: unknown) => {
-      const panelId = crypto.randomUUID()
-
-      // Add loading panel
-      setFkPanels((prev) => [
-        ...prev,
-        {
-          id: panelId,
-          foreignKey: fk,
-          value,
-          isLoading: true
-        }
-      ])
-
-      // Fetch data
-      const result = await fetchFKData(fk, value)
-
-      // Update panel with result
-      setFkPanels((prev) =>
-        prev.map((p) =>
-          p.id === panelId
-            ? {
-                ...p,
-                isLoading: false,
-                data: result.data,
-                columns: result.columns,
-                error: result.error
-              }
-            : p
-        )
-      )
-    },
-    [fetchFKData]
-  )
-
-  // FK Panel: Handle Cmd+Click to open in new tab
-  const handleFKOpenTab = useCallback(
-    (fk: ForeignKeyInfo, value: unknown) => {
-      if (!tabConnection) return
-      createForeignKeyTab(
-        tabConnection.id,
-        fk.referencedSchema,
-        fk.referencedTable,
-        fk.referencedColumn,
-        value
-      )
-    },
-    [tabConnection, createForeignKeyTab]
-  )
-
-  // FK Panel: Close a specific panel
-  const handleCloseFKPanel = useCallback((panelId: string) => {
-    setFkPanels((prev) => {
-      const index = prev.findIndex((p) => p.id === panelId)
-      if (index === -1) return prev
-      // Close this panel and all panels after it
-      return prev.slice(0, index)
-    })
-  }, [])
-
-  // FK Panel: Close all panels
-  const handleCloseAllFKPanels = useCallback(() => {
-    setFkPanels([])
-  }, [])
-
-  // Column Stats: Handle column header stats click
-  const handleColumnStatsClick = useCallback(
-    (col: DtColumn) => {
-      if (!tabConnection || !tab || !isExecutableTab(tab)) return
-
-      const connectionId = tabConnection.id
-      const config = tabConnection as Parameters<typeof fetchColumnStats>[1]
-
-      let schema = 'public'
-      let table = ''
-
-      if (tab.type === 'table-preview') {
-        schema = tab.schemaName
-        table = tab.tableName
-      } else {
-        // For query tabs, try to find the column in schemas
-        for (const s of schemas) {
-          for (const t of s.tables) {
-            if (t.columns.some((c) => c.name === col.name)) {
-              schema = s.name
-              table = t.name
-              break
-            }
-          }
-          if (table) break
-        }
-      }
-
-      if (!table) {
-        // No table context available, still open panel with just column info
-        selectStatsColumn({
-          connectionId,
-          schema,
-          table: '',
-          column: col.name,
-          dataType: col.dataType,
-          config
-        })
-        return
-      }
-
-      selectStatsColumn({
-        connectionId,
-        schema,
-        table,
-        column: col.name,
-        dataType: col.dataType,
-        config
-      })
-
-      fetchColumnStats(connectionId, config, {
-        schema,
-        table,
-        column: col.name,
-        dataType: col.dataType
-      })
-    },
-    [tabConnection, tab, schemas, fetchColumnStats, selectStatsColumn]
-  )
-
-  const columnStatsData =
-    columnStatsSelected && columnStatsPanelOpen
-      ? (columnStatsMap.get(
-          `${columnStatsSelected.connectionId}:${columnStatsSelected.schema}:${columnStatsSelected.table}:${columnStatsSelected.column}`
-        ) ?? null)
-      : null
-
   // Generate SQL WHERE clause from filters
   const handleApplyToQuery = () => {
     if (!tab || (tableFilters.length === 0 && tableSorting.length === 0)) return
@@ -1170,97 +760,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     }
   }, [handleRunQuery, tab, tabConnection])
 
-  // Watch Mode runner. The scheduler holds runnerRef from this object across
-  // ticks. We read the latest query/connection from the store at runQuery time
-  // so that an in-flight watch never sees stale closures.
-  const watchRunner = useMemo<WatchRunner>(
-    () => ({
-      runQuery: async () => {
-        const live = useTabStore.getState().getTab(tabId)
-        const liveConn = live?.connectionId
-          ? useConnectionStore.getState().connections.find((c) => c.id === live.connectionId)
-          : null
-        if (!live || !isExecutableTab(live) || !liveConn) {
-          return { rows: [], fields: [], durationMs: 0, error: 'No active connection.' }
-        }
-        const sql = live.query.trim()
-        if (!sql) return { rows: [], fields: [], durationMs: 0, error: 'Empty query.' }
-        try {
-          const response = await window.api.db.query(liveConn, sql)
-          if (!response.success || !response.data) {
-            return {
-              rows: [],
-              fields: [],
-              durationMs: 0,
-              error: response.error ?? 'Query failed.'
-            }
-          }
-          const data = response.data as IpcQueryResult
-          return {
-            rows: data.rows as Record<string, unknown>[],
-            fields: data.fields,
-            durationMs: data.durationMs,
-            error: null
-          }
-        } catch (err) {
-          return {
-            rows: [],
-            fields: [],
-            durationMs: 0,
-            error: err instanceof Error ? err.message : String(err)
-          }
-        }
-      },
-      getKeyColumns: () => {
-        const live = useTabStore.getState().getTab(tabId)
-        if (!live) return undefined
-        const allSchemas = useConnectionStore.getState().schemas
-
-        // Table-preview tabs know their table directly.
-        if (live.type === 'table-preview') {
-          const schemaInfo = allSchemas.find((s) => s.name === live.schemaName)
-          const tableInfo = schemaInfo?.tables.find((t) => t.name === live.tableName)
-          const pks = tableInfo?.columns.filter((c) => c.isPrimaryKey).map((c) => c.name)
-          return pks && pks.length > 0 ? pks : undefined
-        }
-
-        // Query tabs: single-table SELECTs resolve their PK from the schema
-        // cache (shared with Time Machine capture so both key rows the same
-        // way); pickKeyingPlan's heuristic covers everything else.
-        if (live.type === 'query' && tabConnection) {
-          return resolveSelectKeyColumns(live.query, tabConnection.dbType, allSchemas)
-        }
-        return undefined
-      }
-    }),
-    [tabId, tabConnection]
-  )
-
-  // Cmd+Shift+W is wired via the native menu (see main/menu.ts → 'Toggle
-  // Watch Mode'). Menu accelerators win over renderer keybindings on
-  // Electron, so we subscribe to the menu IPC here rather than using
-  // useHotkeys. Scoped to the currently-mounted query editor so multi-window
-  // setups toggle the focused tab.
-  const handleToggleWatch = useCallback(() => {
-    const t = useTabStore.getState().getTab(tabId)
-    if (!t || !isExecutableTab(t) || !tabConnection) return
-    const st = useWatchStore.getState()
-    if (st.isWatching(tabId)) {
-      st.stop(tabId)
-      watchScheduler.unregister(tabId)
-      return
-    }
-    const sql = ('query' in t ? t.query : '').trim()
-    if (!sql) return
-    if (!gateForWatch(sql).ok) return
-    st.start(tabId)
-    watchScheduler.register(tabId, {
-      runQuery: () => watchRunner.runQuery(),
-      getKeyColumns: () => watchRunner.getKeyColumns?.()
-    })
-  }, [tabId, tabConnection, watchRunner])
-
-  useEffect(() => window.api.menu.onToggleWatch(handleToggleWatch), [handleToggleWatch])
+  // Watch Mode runner + toggle (extracted to hook; the hook also subscribes
+  // the native-menu accelerator)
+  const { watchRunner } = useWatchRunner(tabId, tabConnection)
 
   // ⌘⇧H — same menu-accelerator wiring as Watch Mode (menu wins over
   // renderer keybindings on Electron).
@@ -1281,63 +783,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     [handleToggleTimeMachine]
   )
 
-  // Roll back any open transaction when the tab unmounts. Refs keep the
-  // cleanup unmount-only without re-running on state changes.
-  const transactionCleanupRef = useRef({ hasActiveTransaction, tabConnection })
-  useEffect(() => {
-    transactionCleanupRef.current = { hasActiveTransaction, tabConnection }
-  }, [hasActiveTransaction, tabConnection])
-  useEffect(() => {
-    return () => {
-      const { hasActiveTransaction: active, tabConnection: conn } = transactionCleanupRef.current
-      if (active && conn) {
-        window.api.db.rollbackTransaction(conn, tabId).catch(() => {})
-      }
-    }
-  }, [tabId])
-
-  // If the tab's connection changes while a transaction is open, roll it back on
-  // the previous connection — commit/rollback must never target the wrong database.
-  const prevConnectionRef = useRef(tabConnection)
-  useEffect(() => {
-    const prev = prevConnectionRef.current
-    prevConnectionRef.current = tabConnection
-    if (prev && tabConnection && prev.id !== tabConnection.id) {
-      if (transactionCleanupRef.current.hasActiveTransaction) {
-        window.api.db.rollbackTransaction(prev, tabId).catch(() => {})
-        setHasActiveTransaction(false)
-        notify.info('Open transaction rolled back — connection changed')
-      }
-    }
-  }, [tabConnection, tabId])
-
   if (!tab || tab.type === 'notebook') {
     return null
-  }
-
-  // Handle explicit Commit and Rollback
-  const handleCommit = async (): Promise<void> => {
-    if (!tabConnection) return
-    const res = await window.api.db.commitTransaction(tabConnection, tab.id)
-    if (res.success) {
-      setHasActiveTransaction(false)
-      notify.success('Transaction committed')
-    } else {
-      // The adapter discards the client on COMMIT failure, so the session is gone.
-      setHasActiveTransaction(false)
-      notify.error('Commit failed', res.error || 'Transaction was not committed')
-    }
-  }
-
-  const handleRollback = async (): Promise<void> => {
-    if (!tabConnection) return
-    const res = await window.api.db.rollbackTransaction(tabConnection, tab.id)
-    setHasActiveTransaction(false)
-    if (res.success) {
-      notify.success('Transaction rolled back')
-    } else {
-      notify.error('Rollback failed', res.error || 'Transaction may still be open')
-    }
   }
 
   if (!tabConnection) {
