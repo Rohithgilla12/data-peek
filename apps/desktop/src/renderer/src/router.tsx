@@ -371,6 +371,7 @@ function ThemeOption({
 
   return (
     <button
+      type="button"
       onClick={() => onSelect(value)}
       className={cn(
         'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all',
@@ -473,6 +474,7 @@ function SettingsPage() {
               )}
             </div>
             <button
+              type="button"
               onClick={() =>
                 licenseStatus?.type === 'personal' ? openActivationModal() : openSettingsModal()
               }

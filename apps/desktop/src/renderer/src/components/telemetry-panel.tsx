@@ -258,6 +258,8 @@ function generateTimeMarkers(totalMs: number): { position: number; label: string
   return markers
 }
 
+const percentiles = ['avg', 'p90', 'p95', 'p99'] as const
+
 export function TelemetryPanel({
   telemetry,
   benchmark,
@@ -339,8 +341,6 @@ export function TelemetryPanel({
   const totalDuration = getTotalDuration()
   const timeMarkers = generateTimeMarkers(totalDuration)
 
-  const percentiles = ['avg', 'p90', 'p95', 'p99'] as const
-
   return (
     <div
       className={cn(
@@ -406,6 +406,7 @@ export function TelemetryPanel({
             <div className="flex items-center p-0.5 bg-muted/50 rounded-md border border-border/50">
               {percentiles.map((p) => (
                 <button
+                  type="button"
                   key={p}
                   onClick={() => onSelectPercentile(p)}
                   className={cn(
@@ -424,6 +425,7 @@ export function TelemetryPanel({
           {/* View mode toggle */}
           <div className="flex items-center p-0.5 bg-muted/50 rounded-md border border-border/50">
             <button
+              type="button"
               onClick={() => onViewModeChange('bars')}
               className={cn(
                 'p-1.5 rounded transition-all duration-150',
@@ -436,6 +438,7 @@ export function TelemetryPanel({
               <BarChart3 className="size-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => onViewModeChange('timeline')}
               className={cn(
                 'p-1.5 rounded transition-all duration-150',

@@ -44,6 +44,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
             <Pin className="size-2.5 text-amber-500" />
             <span>#{p.statementIndex + 1}</span>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation()
                 unpinResult(tabId, p.statementIndex)

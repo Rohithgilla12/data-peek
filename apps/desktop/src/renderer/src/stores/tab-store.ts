@@ -160,7 +160,7 @@ function cancelInFlightQueries(tabs: Tab[]): void {
         // Cancellation is best-effort — main will time out the orphan eventually.
       })
     }
-    
+
     // Clear out dependent state to prevent memory leaks
     useWatchStore.getState().stop(tab.id)
     useTimeMachineStore.getState().stop(tab.id)

@@ -63,6 +63,7 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
     >
       {/* Header */}
       <button
+        type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         className="w-full flex items-center justify-between px-3 py-2 border-b border-zinc-800/30 bg-zinc-900/40 hover:bg-zinc-800/30 transition-colors"
       >

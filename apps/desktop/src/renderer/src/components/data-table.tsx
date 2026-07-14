@@ -138,6 +138,7 @@ const CellValue = React.memo(function CellValue({
     const boolVal = value === true || value === 'true' || value === 't' || value === 1
     return (
       <button
+        type="button"
         onClick={() => copy(String(value))}
         className={`text-xs font-mono px-1.5 py-0.5 -mx-1 rounded hover:bg-accent/50 transition-colors ${
           boolVal ? 'text-green-500' : 'text-red-400'
@@ -164,6 +165,7 @@ const CellValue = React.memo(function CellValue({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
             onClick={() => copy(stringValue)}
             className={`text-left truncate max-w-[300px] hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${isMono ? 'font-mono text-xs' : ''}`}
           >

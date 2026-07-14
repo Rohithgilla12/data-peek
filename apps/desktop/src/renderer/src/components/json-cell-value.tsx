@@ -73,6 +73,7 @@ function JsonTreeNode({
       <div className="flex items-center gap-1">
         {hasChildren && (
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-0.5 hover:bg-accent/50 rounded shrink-0"
           >
@@ -314,6 +315,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation()
                 setIsOpen(true)

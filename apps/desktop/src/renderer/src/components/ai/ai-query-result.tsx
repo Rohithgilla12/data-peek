@@ -61,6 +61,7 @@ export function AIQueryResult({
         <div className="flex items-center gap-2">
           {displayRows.length > 3 && (
             <button
+              type="button"
               onClick={() => setIsExpanded(!isExpanded)}
               className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
             >

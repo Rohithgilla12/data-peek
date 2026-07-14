@@ -122,6 +122,7 @@ function FKPanel({
                         <span className="text-sm text-muted-foreground/50 italic">NULL</span>
                       ) : hasFK ? (
                         <button
+                          type="button"
                           onClick={(e) => {
                             if (e.metaKey || e.ctrlKey) {
                               onOpenInTab(columnInfo!.foreignKey!, value)

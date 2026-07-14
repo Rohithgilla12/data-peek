@@ -205,7 +205,10 @@ function PlanNodeView({
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="py-1.5">
           <CollapsibleTrigger asChild>
-            <button className="group flex items-start gap-2 w-full text-left hover:bg-muted/50 rounded p-1.5 -ml-1.5 transition-colors">
+            <button
+              type="button"
+              className="group flex items-start gap-2 w-full text-left hover:bg-muted/50 rounded p-1.5 -ml-1.5 transition-colors"
+            >
               {hasChildren ? (
                 <ChevronRight
                   className={cn(

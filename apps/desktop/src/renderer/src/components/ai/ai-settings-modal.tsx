@@ -213,6 +213,7 @@ export function AISettingsModal({
                 const isActive = activeProvider === p.id
                 return (
                   <button
+                    type="button"
                     key={p.id}
                     onClick={() => setSelectedProvider(p.id)}
                     className={cn(

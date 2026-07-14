@@ -403,6 +403,7 @@ export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AI
             {/* Copy button */}
             {!isUser && message.content.length > 20 && (
               <button
+                type="button"
                 onClick={handleCopyContent}
                 className="absolute -right-1 -top-1 opacity-0 group-hover/content:opacity-100 transition-opacity p-1 rounded bg-muted hover:bg-muted/80"
               >

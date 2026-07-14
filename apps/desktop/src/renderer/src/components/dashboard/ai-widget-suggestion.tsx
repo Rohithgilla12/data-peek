@@ -243,6 +243,7 @@ export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidget
 
             return (
               <button
+                type="button"
                 key={index}
                 className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary/60 hover:bg-accent/50 transition-all text-left group"
                 onClick={() => onSuggestionSelect(suggestion)}

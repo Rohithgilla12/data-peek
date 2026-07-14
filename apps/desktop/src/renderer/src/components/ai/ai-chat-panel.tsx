@@ -506,6 +506,7 @@ export function AIChatPanel({
               ) : (
                 <>
                   <button
+                    type="button"
                     onClick={() => connection && setShowSessionsList(true)}
                     className="font-semibold text-sm hover:text-blue-400 transition-colors flex items-center gap-1.5 truncate max-w-[200px]"
                     disabled={!connection}

@@ -116,7 +116,9 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
   const [selectedFolder, setSelectedFolder] = useState<string>('all')
   const [selectedTag, setSelectedTag] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortOption>('lastUsed')
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['(ungrouped)']))
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    () => new Set(['(ungrouped)'])
+  )
 
   // Initialize on open
   useEffect(() => {

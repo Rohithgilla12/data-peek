@@ -491,6 +491,7 @@ export function EditableCell({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               onClick={onStartEdit}
               disabled={isDeleted}
               className={cn(

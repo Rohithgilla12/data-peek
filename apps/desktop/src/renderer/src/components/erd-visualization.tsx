@@ -724,6 +724,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                             {schemaName}
                           </span>
                           <button
+                            type="button"
                             onClick={() => selectSchema(schemaName)}
                             className="text-[10px] text-primary hover:underline"
                           >
@@ -733,6 +734,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                         <div className="space-y-0.5">
                           {schemaTables.map((table) => (
                             <button
+                              type="button"
                               key={table.key}
                               onClick={() => toggleTable(table.key)}
                               className="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-accent transition-colors"

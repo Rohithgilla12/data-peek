@@ -163,6 +163,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
 
                       return (
                         <button
+                          type="button"
                           key={connection.id}
                           onClick={() => handleSelectConnection(connection.id)}
                           className={cn(
@@ -210,6 +211,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
 
             <div className="border-t p-2">
               <button
+                type="button"
                 onClick={() => {
                   onOpenChange(false)
                   setIsAddDialogOpen(true)

@@ -146,6 +146,7 @@ export function PerfIndicatorPanel({
         {analysis.nplusOnePatterns.length > 0 && (
           <div className="border-t border-border/40">
             <button
+              type="button"
               className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-muted/30 transition-colors"
               onClick={() => setShowNplusOne(!showNplusOne)}
             >
@@ -211,6 +212,7 @@ function NplusOneCard({ pattern }: NplusOneCardProps) {
   return (
     <div className="border border-yellow-500/30 bg-yellow-500/5 rounded-md overflow-hidden">
       <button
+        type="button"
         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-muted/30 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
