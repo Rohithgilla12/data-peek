@@ -63,8 +63,10 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
     if (open) {
       setSearch('')
       setSelectedIndex(0)
-      setTimeout(() => inputRef.current?.focus(), 0)
+      const timer = setTimeout(() => inputRef.current?.focus(), 0)
+      return () => clearTimeout(timer)
     }
+    return undefined
   }, [open])
 
   const handleSelectConnection = useCallback(
@@ -161,6 +163,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
 
                       return (
                         <button
+                          type="button"
                           key={connection.id}
                           onClick={() => handleSelectConnection(connection.id)}
                           className={cn(
@@ -208,6 +211,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
 
             <div className="border-t p-2">
               <button
+                type="button"
                 onClick={() => {
                   onOpenChange(false)
                   setIsAddDialogOpen(true)

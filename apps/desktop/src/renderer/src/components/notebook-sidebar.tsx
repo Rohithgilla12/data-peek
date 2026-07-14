@@ -227,6 +227,7 @@ export function NotebookSidebar() {
               {notebooks.length === 0 ? (
                 <div className="px-2 py-4 text-xs text-muted-foreground text-center">
                   <button
+                    type="button"
                     onClick={handleCreate}
                     className="underline underline-offset-2 hover:text-foreground transition-colors"
                   >

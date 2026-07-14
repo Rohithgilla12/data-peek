@@ -201,7 +201,7 @@ export function resolveReferences(
   // through escapeSQLIdentifier handles any name that happens to need it
   // (capitals / mixed case / future relaxation of the reserved-word
   // check above).
-  const sortedRefs = [...parsed.references].sort((a, b) => b.start - a.start)
+  const sortedRefs = parsed.references.toSorted((a, b) => b.start - a.start)
   let rewritten = source
   for (const ref of sortedRefs) {
     rewritten =

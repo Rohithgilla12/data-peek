@@ -357,7 +357,9 @@ function defaultClientFactory(config: ConnectionConfig): MinimalDbClient {
     ssl: config.ssl ? { rejectUnauthorized: false } : undefined
   })
   return {
-    connect: async () => { await client.connect() },
+    connect: async () => {
+      await client.connect()
+    },
     query: async (sql: string) => {
       const res = await client.query(sql)
       return {

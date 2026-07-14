@@ -289,8 +289,10 @@ export function EditableCell({
       }
       setEditValue(formatForInput(value, dataType))
       // Focus input after render
-      setTimeout(() => inputRef.current?.focus(), 0)
+      const timer = setTimeout(() => inputRef.current?.focus(), 0)
+      return () => clearTimeout(timer)
     }
+    return undefined
   }, [isEditing, value, dataType, isJson, shouldUseTextEditor])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -370,6 +372,7 @@ export function EditableCell({
         {isBoolean ? (
           <select
             ref={inputRef as unknown as React.RefObject<HTMLSelectElement>}
+            aria-label="Edit value"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -383,6 +386,7 @@ export function EditableCell({
         ) : isEnum ? (
           <select
             ref={inputRef as unknown as React.RefObject<HTMLSelectElement>}
+            aria-label="Edit value"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -489,6 +493,7 @@ export function EditableCell({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               onClick={onStartEdit}
               disabled={isDeleted}
               className={cn(

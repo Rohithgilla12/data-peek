@@ -166,7 +166,7 @@ export function CommandPalette({
 
   // Sort saved queries: pinned first, then by last used
   const sortedQueries = React.useMemo(() => {
-    return [...savedQueries].sort((a, b) => {
+    return savedQueries.toSorted((a, b) => {
       // Pinned first
       if (a.isPinned && !b.isPinned) return -1
       if (!a.isPinned && b.isPinned) return 1
@@ -256,6 +256,7 @@ export function CommandPalette({
         {activePage !== 'home' && (
           <div className="flex items-center gap-2 px-3 py-2 border-b text-xs text-muted-foreground">
             <button
+              type="button"
               onClick={popPage}
               className="flex items-center gap-1 hover:text-foreground transition-colors"
             >
@@ -669,6 +670,7 @@ export function CommandPalette({
                         </div>
                         {/* Pin/Unpin button */}
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation()
                             togglePin(query.id)

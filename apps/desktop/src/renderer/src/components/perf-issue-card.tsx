@@ -38,20 +38,20 @@ const ISSUE_TYPE_ICONS: Record<PerformanceIssueType, React.ElementType> = {
   disk_spill: AlertCircle
 }
 
+const severityClasses = {
+  critical: 'border-red-500/30 bg-red-500/5',
+  warning: 'border-yellow-500/30 bg-yellow-500/5',
+  info: 'border-blue-500/30 bg-blue-500/5'
+}
+
+const severityIconClasses = {
+  critical: 'text-red-500',
+  warning: 'text-yellow-500',
+  info: 'text-blue-500'
+}
+
 export function PerfIssueCard({ issue, isExpanded = false, onToggle }: PerfIssueCardProps) {
   const [copied, setCopied] = useState(false)
-
-  const severityClasses = {
-    critical: 'border-red-500/30 bg-red-500/5',
-    warning: 'border-yellow-500/30 bg-yellow-500/5',
-    info: 'border-blue-500/30 bg-blue-500/5'
-  }
-
-  const severityIconClasses = {
-    critical: 'text-red-500',
-    warning: 'text-yellow-500',
-    info: 'text-blue-500'
-  }
 
   const SeverityIcon =
     issue.severity === 'critical'
@@ -78,6 +78,7 @@ export function PerfIssueCard({ issue, isExpanded = false, onToggle }: PerfIssue
       )}
     >
       <button
+        type="button"
         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-muted/30 transition-colors"
         onClick={onToggle}
       >

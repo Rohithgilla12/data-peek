@@ -7,6 +7,25 @@ interface WidgetKPIProps {
   data: Record<string, unknown>[]
 }
 
+// Intl formatters are expensive to construct — build once at module scope.
+const currencyFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+})
+const percentFormat = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1
+})
+const compactNumberFormat = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  compactDisplay: 'short',
+  maximumFractionDigits: 1
+})
+const numberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+
 /**
  * Format a KPI value for display according to the widget's format, with optional prefix/suffix.
  *
@@ -34,20 +53,11 @@ function formatKPIValue(
 
   switch (format) {
     case 'currency':
-      formatted = new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }).format(numValue)
+      formatted = currencyFormat.format(numValue)
       break
 
     case 'percent':
-      formatted = new Intl.NumberFormat('en-US', {
-        style: 'percent',
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1
-      }).format(numValue / 100)
+      formatted = percentFormat.format(numValue / 100)
       break
 
     case 'duration':
@@ -63,15 +73,9 @@ function formatKPIValue(
     case 'number':
     default:
       if (Math.abs(numValue) >= 1000000) {
-        formatted = new Intl.NumberFormat('en-US', {
-          notation: 'compact',
-          compactDisplay: 'short',
-          maximumFractionDigits: 1
-        }).format(numValue)
+        formatted = compactNumberFormat.format(numValue)
       } else {
-        formatted = new Intl.NumberFormat('en-US', {
-          maximumFractionDigits: 2
-        }).format(numValue)
+        formatted = numberFormat.format(numValue)
       }
   }
 

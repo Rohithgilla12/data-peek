@@ -520,7 +520,7 @@ export function SchemaExplorer() {
   const createDataGeneratorTab = useTabStore((s) => s.createDataGeneratorTab)
 
   const [expandedSchemas, setExpandedSchemas] = React.useState<Set<string>>(
-    new Set(schemas.map((s) => s.name))
+    () => new Set(schemas.map((s) => s.name))
   )
   const [expandedTables, setExpandedTables] = React.useState<Set<string>>(new Set())
   const [expandedRoutines, setExpandedRoutines] = React.useState<Set<string>>(new Set())
@@ -1077,20 +1077,16 @@ export function SchemaExplorer() {
                       if (shouldVirtualize) {
                         // Build unified items list for virtualization
                         const items: SchemaItem[] = [
-                          ...schema.tables.map(
-                            (table): SchemaItem => ({
-                              type: 'table',
-                              data: table,
-                              schemaName: schema.name
-                            })
-                          ),
-                          ...(schema.routines ?? []).map(
-                            (routine): SchemaItem => ({
-                              type: 'routine',
-                              data: routine,
-                              schemaName: schema.name
-                            })
-                          )
+                          ...schema.tables.map((table): SchemaItem => ({
+                            type: 'table',
+                            data: table,
+                            schemaName: schema.name
+                          })),
+                          ...(schema.routines ?? []).map((routine): SchemaItem => ({
+                            type: 'routine',
+                            data: routine,
+                            schemaName: schema.name
+                          }))
                         ]
 
                         return (

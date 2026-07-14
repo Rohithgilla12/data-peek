@@ -20,10 +20,16 @@ export function useExecutionPlanResize(): UseExecutionPlanResizeReturn {
 
   const isResizingRef = useRef(false)
   const [isResizing, setIsResizing] = useState(false)
+  // Latest width, readable from event handlers without an impure state updater.
+  const widthRef = useRef(executionPlanWidth)
+  useEffect(() => {
+    widthRef.current = executionPlanWidth
+  }, [executionPlanWidth])
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!isResizingRef.current) return
     const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, window.innerWidth - e.clientX))
+    widthRef.current = newWidth
     setExecutionPlanWidth(newWidth)
   }, [])
 
@@ -33,11 +39,7 @@ export function useExecutionPlanResize(): UseExecutionPlanResizeReturn {
       setIsResizing(false)
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
-      // Save current width to localStorage
-      setExecutionPlanWidth((currentWidth) => {
-        localStorage.setItem(STORAGE_KEY, String(currentWidth))
-        return currentWidth
-      })
+      localStorage.setItem(STORAGE_KEY, String(widthRef.current))
     }
   }, [])
 

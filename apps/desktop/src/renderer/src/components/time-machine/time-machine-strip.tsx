@@ -125,6 +125,7 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
+                      type="button"
                       onClick={(e) => handleChipClick(run, e)}
                       disabled={!run.hasRows}
                       className={cn(
@@ -161,6 +162,7 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
             )
           })}
           <button
+            type="button"
             onClick={() => void useTimeMachineStore.getState().selectRun(tabId, null)}
             className={cn(
               'flex items-center gap-1.5 rounded-md px-2 py-1 text-xs whitespace-nowrap transition-colors sticky right-0',

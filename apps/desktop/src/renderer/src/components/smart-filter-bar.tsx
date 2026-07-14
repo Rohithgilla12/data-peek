@@ -203,6 +203,7 @@ function FilterChipButton({
 
   return (
     <button
+      type="button"
       onClick={onClick}
       onDoubleClick={handleDoubleClick}
       className={cn(
@@ -805,6 +806,7 @@ export function SmartFilterBar({
               ) : (
                 (dropdownItems as FilterColumn[]).map((col, i) => (
                   <button
+                    type="button"
                     key={col.name}
                     data-highlighted={i === highlightedIndex}
                     className={cn(
@@ -829,6 +831,7 @@ export function SmartFilterBar({
                 <>
                   <div className="border-t border-border/30" />
                   <button
+                    type="button"
                     className={cn(
                       'w-full flex items-center gap-2 px-2.5 py-1.5 text-xs',
                       'cursor-pointer transition-colors duration-75',
@@ -861,6 +864,7 @@ export function SmartFilterBar({
               </div>
               {(dropdownItems as FilterOperator[]).map((op, i) => (
                 <button
+                  type="button"
                   key={op.value}
                   data-highlighted={i === highlightedIndex}
                   className={cn(

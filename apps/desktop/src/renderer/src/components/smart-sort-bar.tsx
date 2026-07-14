@@ -32,14 +32,7 @@ export type SortDirection = 'asc' | 'desc'
 export type NullsPosition = 'first' | 'last'
 
 export type SortMode =
-  | 'default'
-  | 'natural'
-  | 'length'
-  | 'absolute'
-  | 'byMonth'
-  | 'byDayOfWeek'
-  | 'byTime'
-  | 'random'
+  'default' | 'natural' | 'length' | 'absolute' | 'byMonth' | 'byDayOfWeek' | 'byTime' | 'random'
 
 interface SortChipBase {
   id: string
@@ -1160,6 +1153,7 @@ export function SmartSortBar({
                 const isHi = i === highlighted
                 return (
                   <button
+                    type="button"
                     key={preset.id}
                     data-highlighted={isHi}
                     className={cn(
@@ -1193,6 +1187,7 @@ export function SmartSortBar({
                 const isHi = idx === highlighted
                 return (
                   <button
+                    type="button"
                     key={col.name}
                     data-highlighted={isHi}
                     className={cn(

@@ -124,6 +124,8 @@ export function Snippets() {
                 />
                 {searchQuery && (
                   <button
+                    type="button"
+                    aria-label="Clear search"
                     onClick={() => setSearchQuery('')}
                     className="absolute right-1.5 top-1/2 -translate-y-1/2 size-4 flex items-center justify-center text-muted-foreground hover:text-foreground"
                   >

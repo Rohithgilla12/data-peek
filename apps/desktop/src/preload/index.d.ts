@@ -81,15 +81,7 @@ import type {
 
 // AI Types
 type AIProvider =
-  | 'openai'
-  | 'anthropic'
-  | 'google'
-  | 'groq'
-  | 'deepseek'
-  | 'mistral'
-  | 'xai'
-  | 'glm'
-  | 'ollama'
+  'openai' | 'anthropic' | 'google' | 'groq' | 'deepseek' | 'mistral' | 'xai' | 'glm' | 'ollama'
 
 interface AIConfig {
   provider: AIProvider
@@ -173,11 +165,7 @@ interface StoredSchemaData {
 }
 
 type StoredResponseData =
-  | StoredQueryData
-  | StoredChartData
-  | StoredMetricData
-  | StoredSchemaData
-  | null
+  StoredQueryData | StoredChartData | StoredMetricData | StoredSchemaData | null
 
 // Stored chat message type (for persistence)
 interface StoredChatMessage {

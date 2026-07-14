@@ -21,6 +21,25 @@ interface AIMetricCardProps {
   className?: string
 }
 
+// Intl formatters are expensive to construct — build once at module scope.
+const currencyFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 2
+})
+const percentFormat = new Intl.NumberFormat('en-US', {
+  style: 'percent',
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1
+})
+const compactNumberFormat = new Intl.NumberFormat('en-US', {
+  notation: 'compact',
+  compactDisplay: 'short',
+  maximumFractionDigits: 1
+})
+const numberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 })
+
 // Format value based on type
 function formatMetricValue(value: number | string | null, format: MetricFormat): string {
   if (value === null || value === undefined) return 'N/A'
@@ -31,19 +50,10 @@ function formatMetricValue(value: number | string | null, format: MetricFormat):
 
   switch (format) {
     case 'currency':
-      return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-      }).format(numValue)
+      return currencyFormat.format(numValue)
 
     case 'percent':
-      return new Intl.NumberFormat('en-US', {
-        style: 'percent',
-        minimumFractionDigits: 1,
-        maximumFractionDigits: 1
-      }).format(numValue / 100)
+      return percentFormat.format(numValue / 100)
 
     case 'duration':
       // Format as hours/minutes/seconds
@@ -55,15 +65,9 @@ function formatMetricValue(value: number | string | null, format: MetricFormat):
     default:
       // Use compact notation for large numbers
       if (Math.abs(numValue) >= 1000000) {
-        return new Intl.NumberFormat('en-US', {
-          notation: 'compact',
-          compactDisplay: 'short',
-          maximumFractionDigits: 1
-        }).format(numValue)
+        return compactNumberFormat.format(numValue)
       }
-      return new Intl.NumberFormat('en-US', {
-        maximumFractionDigits: 2
-      }).format(numValue)
+      return numberFormat.format(numValue)
   }
 }
 

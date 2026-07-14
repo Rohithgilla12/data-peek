@@ -213,6 +213,7 @@ export function AISettingsModal({
                 const isActive = activeProvider === p.id
                 return (
                   <button
+                    type="button"
                     key={p.id}
                     onClick={() => setSelectedProvider(p.id)}
                     className={cn(
@@ -280,6 +281,7 @@ export function AISettingsModal({
                   />
                   <button
                     type="button"
+                    aria-label={showKey ? 'Hide API key' : 'Show API key'}
                     onClick={() => setShowKey(!showKey)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >

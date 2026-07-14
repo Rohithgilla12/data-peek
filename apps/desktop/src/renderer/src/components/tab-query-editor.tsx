@@ -1284,7 +1284,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Roll back any open transaction when the tab unmounts. Refs keep the
   // cleanup unmount-only without re-running on state changes.
   const transactionCleanupRef = useRef({ hasActiveTransaction, tabConnection })
-  transactionCleanupRef.current = { hasActiveTransaction, tabConnection }
+  useEffect(() => {
+    transactionCleanupRef.current = { hasActiveTransaction, tabConnection }
+  }, [hasActiveTransaction, tabConnection])
   useEffect(() => {
     return () => {
       const { hasActiveTransaction: active, tabConnection: conn } = transactionCleanupRef.current
@@ -1592,13 +1594,20 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       {executionPlan && (
         <>
           {/* Backdrop overlay */}
-          <div className="fixed inset-0 z-40 bg-black/30" onClick={() => setExecutionPlan(null)} />
+          <div
+            role="presentation"
+            className="fixed inset-0 z-40 bg-black/30"
+            onClick={() => setExecutionPlan(null)}
+          />
           <div
             className="fixed top-0 bottom-0 right-0 z-50 shadow-xl bg-background"
             style={{ width: executionPlanWidth }}
           >
             {/* Resize handle */}
             <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize execution plan panel"
               className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary/50 transition-colors z-10"
               onMouseDown={(e) => {
                 e.preventDefault()
@@ -1617,7 +1626,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       {/* Column Stats Panel */}
       {columnStatsPanelOpen && (
         <>
-          <div className="fixed inset-0 z-40" onClick={closeColumnStatsPanel} />
+          <div role="presentation" className="fixed inset-0 z-40" onClick={closeColumnStatsPanel} />
           <div className="fixed top-0 bottom-0 right-0 z-50 shadow-xl flex flex-col">
             <ColumnStatsPanel
               stats={columnStatsData}

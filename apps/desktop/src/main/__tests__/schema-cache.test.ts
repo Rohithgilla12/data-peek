@@ -56,8 +56,7 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     invalidateSchemaCache(config)
 
     let resolveFetcher:
-      | ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void)
-      | null = null
+      ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
     const fetcher = vi.fn(
       () =>
         new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((resolve) => {
@@ -116,8 +115,7 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     invalidateSchemaCache(config)
 
     let resolveFetcher:
-      | ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void)
-      | null = null
+      ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
     const fetcher = vi.fn(
       () =>
         new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((resolve) => {
@@ -146,8 +144,7 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     invalidateSchemaCache(config)
 
     let resolveA:
-      | ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void)
-      | null = null
+      ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
     const fetcherA = vi.fn(
       () =>
         new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((r) => {
@@ -159,8 +156,7 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     invalidateSchemaCache(config)
 
     let resolveC:
-      | ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void)
-      | null = null
+      ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
     const fetcherC = vi.fn(
       () =>
         new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((r) => {

@@ -125,6 +125,7 @@ export function AISQLPreview({
           <span className="text-[11px] font-medium text-zinc-400">Generated SQL</span>
           {lines.length > 3 && (
             <button
+              type="button"
               onClick={() => setIsExpanded(!isExpanded)}
               className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
             >
@@ -144,6 +145,7 @@ export function AISQLPreview({
         </div>
 
         <button
+          type="button"
           onClick={() => copy(sql)}
           className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
         >

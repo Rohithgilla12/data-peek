@@ -101,8 +101,11 @@ export function useCellNavigation({
     [rowCount, colCount]
   )
 
+  // Only read from event-time hotkey callbacks, so a commit-time write is safe.
   const focusRef = React.useRef(focus)
-  focusRef.current = focus
+  React.useEffect(() => {
+    focusRef.current = focus
+  }, [focus])
 
   const handlers = React.useMemo<UseHotkeyDefinition[]>(() => {
     const opt = { enabled, preventDefault: true, target, ignoreInputs: true } as const

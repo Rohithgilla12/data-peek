@@ -264,6 +264,7 @@ export function QueryResults({
 
                     return (
                       <button
+                        type="button"
                         key={stmt.statementIndex}
                         onClick={() => setActiveResultIndex(tabId, idx)}
                         className={`flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-md transition-colors whitespace-nowrap ${
