@@ -314,7 +314,7 @@ export const useDDLStore = create<DDLStoreState>()((set, get) => ({
         newStates.set(tabId, {
           ...existing,
           definition: { ...definition },
-          originalDefinition: JSON.parse(JSON.stringify(definition)),
+          originalDefinition: structuredClone(definition),
           isLoading: false,
           error: null
         })
@@ -716,7 +716,7 @@ export const useDDLStore = create<DDLStoreState>()((set, get) => ({
       if (existing && existing.originalDefinition) {
         newStates.set(tabId, {
           ...existing,
-          definition: JSON.parse(JSON.stringify(existing.originalDefinition)),
+          definition: structuredClone(existing.originalDefinition),
           sqlPreview: null,
           validationErrors: []
         })

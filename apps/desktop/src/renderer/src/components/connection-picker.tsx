@@ -63,8 +63,10 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
     if (open) {
       setSearch('')
       setSelectedIndex(0)
-      setTimeout(() => inputRef.current?.focus(), 0)
+      const timer = setTimeout(() => inputRef.current?.focus(), 0)
+      return () => clearTimeout(timer)
     }
+    return undefined
   }, [open])
 
   const handleSelectConnection = useCallback(

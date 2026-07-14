@@ -233,8 +233,10 @@ export function AIChatPanel({
   // Focus input when panel opens
   React.useEffect(() => {
     if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100)
+      const timer = setTimeout(() => inputRef.current?.focus(), 100)
+      return () => clearTimeout(timer)
     }
+    return undefined
   }, [isOpen])
 
   const handleSendMessage = async () => {

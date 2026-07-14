@@ -289,8 +289,10 @@ export function EditableCell({
       }
       setEditValue(formatForInput(value, dataType))
       // Focus input after render
-      setTimeout(() => inputRef.current?.focus(), 0)
+      const timer = setTimeout(() => inputRef.current?.focus(), 0)
+      return () => clearTimeout(timer)
     }
+    return undefined
   }, [isEditing, value, dataType, isJson, shouldUseTextEditor])
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

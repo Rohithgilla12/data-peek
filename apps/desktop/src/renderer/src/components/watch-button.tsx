@@ -120,7 +120,9 @@ export function WatchButton({
   // every render. The scheduler only reads runner.runQuery + getKeyColumns,
   // so a stable wrapper is enough.
   const runnerRef = useRef(runner)
-  runnerRef.current = runner
+  useEffect(() => {
+    runnerRef.current = runner
+  }, [runner])
 
   const handleToggle = useCallback(() => {
     if (enabled) {

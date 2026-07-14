@@ -1284,7 +1284,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Roll back any open transaction when the tab unmounts. Refs keep the
   // cleanup unmount-only without re-running on state changes.
   const transactionCleanupRef = useRef({ hasActiveTransaction, tabConnection })
-  transactionCleanupRef.current = { hasActiveTransaction, tabConnection }
+  useEffect(() => {
+    transactionCleanupRef.current = { hasActiveTransaction, tabConnection }
+  }, [hasActiveTransaction, tabConnection])
   useEffect(() => {
     return () => {
       const { hasActiveTransaction: active, tabConnection: conn } = transactionCleanupRef.current
