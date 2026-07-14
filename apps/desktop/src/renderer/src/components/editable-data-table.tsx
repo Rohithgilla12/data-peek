@@ -116,7 +116,6 @@ interface EditableDataTableProps<TData> {
   onColumnStatsClick?: (column: DataTableColumn) => void
   /** Called after changes are successfully committed */
   onChangesCommitted?: () => void
-  onToggleTimeMachine?: () => void
   autoCommit?: boolean
   hasActiveTransaction?: boolean
   onTransactionStart?: () => void
@@ -225,7 +224,6 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   onForeignKeyOpenTab,
   onColumnStatsClick,
   onChangesCommitted,
-  onToggleTimeMachine: _onToggleTimeMachine,
   autoCommit = true,
   hasActiveTransaction = false,
   onTransactionStart,

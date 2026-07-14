@@ -67,17 +67,20 @@ test('run queries, open time machine strip, select past run', async ({ window })
   await expect(timeMachineBtn).toBeVisible({ timeout: 5000 })
   await timeMachineBtn.click()
 
-  // 4. Verify the Time Machine strip shows up
-  // The strip should show chips containing snippets of the query
-  await expect(window.getByText('LIMIT 3')).toBeVisible({ timeout: 5000 })
-  await expect(window.getByText('LIMIT 2')).toBeVisible({ timeout: 5000 })
+  // 4. Verify the Time Machine strip shows up with a chip per captured run.
+  // Chips show capture time + row count (not SQL), and are the strip's only
+  // font-mono buttons — the Live/close buttons aren't.
+  const strip = window.getByTestId('time-machine-strip')
+  await expect(strip).toBeVisible({ timeout: 5000 })
+  const chips = strip.locator('button.font-mono')
+  await expect(chips).toHaveCount(2, { timeout: 5000 })
 
-  // 5. Click the past run (LIMIT 3)
-  await window.getByText('LIMIT 3').click()
+  // 5. Click the past run — chips are chronological, so the first is LIMIT 3.
+  await chips.first().click()
 
   // 6. Verify that it restores the old results table (3 rows)
   await expect(window.locator('tbody tr')).toHaveCount(3, { timeout: 5000 })
-  
+
   // Verify it says Read-only
   await expect(window.getByText(/Read-only/i)).toBeVisible({ timeout: 5000 })
 })

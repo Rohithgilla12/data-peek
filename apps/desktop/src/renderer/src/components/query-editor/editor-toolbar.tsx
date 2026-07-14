@@ -164,17 +164,22 @@ export function EditorToolbar({
           <div className="flex items-center gap-2 border-l border-border/60 pl-2 ml-1">
             <label
               className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer"
-              title="Automatically commit queries"
+              title={
+                hasActiveTransaction
+                  ? 'Commit or roll back the open transaction first'
+                  : 'Automatically commit queries'
+              }
             >
               <input
                 type="checkbox"
                 checked={autoCommit}
+                disabled={hasActiveTransaction}
                 onChange={(e) => setAutoCommit(e.target.checked)}
                 className="size-3"
               />
               <span>Auto-commit</span>
             </label>
-            {!autoCommit && (
+            {(!autoCommit || hasActiveTransaction) && (
               <>
                 <Button
                   size="sm"

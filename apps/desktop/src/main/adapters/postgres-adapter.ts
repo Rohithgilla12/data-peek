@@ -92,6 +92,7 @@ export function isDataReturningStatement(sql: string): boolean {
 export class PostgresAdapter implements DatabaseAdapter {
   readonly dbType = 'postgresql' as const
   private sessions = new Map<string, import('pg').PoolClient>()
+  private pendingSessions = new Set<string>()
 
   async connect(config: ConnectionConfig): Promise<void> {
     // Warm the pool AND verify the socket end-to-end. An empty callback would only
@@ -294,17 +295,24 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async beginTransaction(_config: ConnectionConfig, sessionId: string): Promise<void> {
-    if (this.sessions.has(sessionId)) {
+    // Reserve the slot before any await so two concurrent begins for the same
+    // session can't both pass the guard and orphan a checked-out client.
+    if (this.sessions.has(sessionId) || this.pendingSessions.has(sessionId)) {
       throw new Error(`Session ${sessionId} already has an active transaction`)
     }
-    const poolEntry = await getOrCreatePool(_config)
-    const client = await poolEntry.pool.connect()
+    this.pendingSessions.add(sessionId)
     try {
-      await client.query('BEGIN')
-      this.sessions.set(sessionId, client)
-    } catch (error) {
-      client.release(true)
-      throw error
+      const poolEntry = await getOrCreatePool(_config)
+      const client = await poolEntry.pool.connect()
+      try {
+        await client.query('BEGIN')
+        this.sessions.set(sessionId, client)
+      } catch (error) {
+        client.release(true)
+        throw error
+      }
+    } finally {
+      this.pendingSessions.delete(sessionId)
     }
   }
 
@@ -337,9 +345,23 @@ export class PostgresAdapter implements DatabaseAdapter {
     this.sessions.delete(sessionId)
     try {
       await client.query('COMMIT')
-    } finally {
-      client.release()
+    } catch (error) {
+      // A failed COMMIT leaves the connection in an unknown state — discard it.
+      client.release(true)
+      throw error
     }
+    client.release()
+  }
+
+  /**
+   * Roll back every open session. Called on app quit so checked-out clients
+   * don't block pool.end() and open transactions don't linger server-side.
+   */
+  async rollbackAllTransactions(): Promise<void> {
+    const sessionIds = [...this.sessions.keys()]
+    await Promise.allSettled(
+      sessionIds.map((id) => this.rollbackTransaction(undefined as never, id))
+    )
   }
 
   async rollbackTransaction(_config: ConnectionConfig, sessionId: string): Promise<void> {
