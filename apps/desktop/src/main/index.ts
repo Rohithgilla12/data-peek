@@ -27,6 +27,8 @@ import { initSchedulerService, stopAllSchedules } from './scheduler-service'
 import { initDashboardService } from './dashboard-service'
 import { cleanup as cleanupPgNotify } from './pg-notification-listener'
 import { closeAllPgPools } from './adapters/pg-pool-manager'
+import { PostgresAdapter } from './adapters/postgres-adapter'
+import { getAdapterByType } from './db-adapter'
 import { StepSessionRegistry } from './step-session'
 import { createLogger } from './lib/logger'
 
@@ -276,8 +278,20 @@ app.on('before-quit', (event) => {
   stopAllSchedules()
   cleanupPgNotify()
 
+  // Roll back any open manual transactions first — their checked-out clients
+  // would otherwise block pool.end() and leave transactions open server-side.
+  const drainPgSessions = async (): Promise<void> => {
+    const pg = getAdapterByType('postgresql')
+    if (pg instanceof PostgresAdapter) {
+      await pg.rollbackAllTransactions()
+    }
+  }
+
   Promise.race([
-    Promise.all([stepSessionRegistry.cleanupAll(), closeAllPgPools()]),
+    Promise.all([
+      stepSessionRegistry.cleanupAll(),
+      drainPgSessions().then(() => closeAllPgPools())
+    ]),
     new Promise((resolve) => setTimeout(resolve, 3000))
   ])
     .catch((err) => log.error('cleanupAll failed during quit:', err))

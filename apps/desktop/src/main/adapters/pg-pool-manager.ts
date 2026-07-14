@@ -93,7 +93,7 @@ async function createPoolEntry(config: ConnectionConfig, key: string): Promise<P
   }
 }
 
-async function getOrCreatePool(config: ConnectionConfig): Promise<PoolEntry> {
+export async function getOrCreatePool(config: ConnectionConfig): Promise<PoolEntry> {
   if (shuttingDown) {
     throw new Error('Pool manager is shutting down')
   }

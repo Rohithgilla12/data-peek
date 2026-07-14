@@ -47,6 +47,8 @@ export interface QueryOptions {
   collectTelemetry?: boolean
   /** Query timeout in milliseconds (0 = no timeout) */
   queryTimeoutMs?: number
+  /** Execute query in this specific stateful transaction session */
+  sessionId?: string
 }
 
 /**
@@ -89,6 +91,23 @@ export interface DatabaseAdapter {
     config: ConnectionConfig,
     statements: Array<{ sql: string; params: unknown[] }>
   ): Promise<{ rowsAffected: number; results: Array<{ rowCount: number | null }> }>
+
+  /** Begin a stateful transaction for a specific session */
+  beginTransaction?(config: ConnectionConfig, sessionId: string): Promise<void>
+
+  /** Execute a query within a stateful transaction */
+  queryInTransaction?(
+    config: ConnectionConfig,
+    sessionId: string,
+    sql: string,
+    params?: unknown[]
+  ): Promise<AdapterQueryResult>
+
+  /** Commit a stateful transaction */
+  commitTransaction?(config: ConnectionConfig, sessionId: string): Promise<void>
+
+  /** Rollback a stateful transaction */
+  rollbackTransaction?(config: ConnectionConfig, sessionId: string): Promise<void>
 
   /** Fetch database schemas, tables, and columns */
   getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]>

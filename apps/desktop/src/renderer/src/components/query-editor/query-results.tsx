@@ -78,6 +78,9 @@ interface QueryResultsProps {
   getAllRows: () => Record<string, unknown>[]
   telemetry: QueryTelemetry | null | undefined
   benchmark: BenchmarkResult | null | undefined
+  autoCommit?: boolean
+  hasActiveTransaction?: boolean
+  onTransactionStart?: () => void
   showTelemetryPanel: boolean
   setShowTelemetryPanel: (v: boolean) => void
   showConnectionOverhead: boolean
@@ -134,6 +137,9 @@ export function QueryResults({
   getAllRows,
   telemetry,
   benchmark,
+  autoCommit,
+  hasActiveTransaction,
+  onTransactionStart,
   showTelemetryPanel,
   setShowTelemetryPanel,
   showConnectionOverhead,
@@ -308,6 +314,9 @@ export function QueryResults({
                         onForeignKeyOpenTab={handleFKOpenTab}
                         onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
                         onChangesCommitted={handleRunQuery}
+                        autoCommit={autoCommit}
+                        hasActiveTransaction={hasActiveTransaction}
+                        onTransactionStart={onTransactionStart}
                         serverCurrentPage={isTablePreview ? tab.currentPage : undefined}
                         serverTotalRowCount={isTablePreview ? tab.totalRowCount : undefined}
                         onServerPaginationChange={

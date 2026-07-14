@@ -91,7 +91,10 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
   }
 
   return (
-    <div className="flex items-center gap-2 border-b border-border/40 bg-muted/10 px-3 py-1.5 shrink-0">
+    <div
+      data-testid="time-machine-strip"
+      className="flex items-center gap-2 border-b border-border/40 bg-muted/10 px-3 py-1.5 shrink-0"
+    >
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
         <History className="size-3.5" />
         <span className="font-medium">Time Machine</span>

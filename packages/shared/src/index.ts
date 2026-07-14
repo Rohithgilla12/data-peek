@@ -852,6 +852,7 @@ export interface EditContext {
 export interface EditBatch {
   context: EditContext;
   operations: EditOperation[];
+  sessionId?: string;
 }
 
 /**

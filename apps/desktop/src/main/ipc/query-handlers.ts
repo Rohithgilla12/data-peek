@@ -50,23 +50,32 @@ export function registerQueryHandlers(): void {
         config,
         query,
         executionId,
-        queryTimeoutMs
-      }: { config: ConnectionConfig; query: string; executionId?: string; queryTimeoutMs?: number }
+        queryTimeoutMs,
+        sessionId
+      }: {
+        config: ConnectionConfig
+        query: string
+        executionId?: string
+        queryTimeoutMs?: number
+        sessionId?: string
+      }
     ) => {
       log.debug('Received query request', { ...config, password: '***' })
       log.debug('Query:', query)
       log.debug('Execution ID:', executionId)
       log.debug('Query timeout:', queryTimeoutMs)
+      log.debug('Session ID:', sessionId)
 
       try {
         const adapter = getAdapter(config)
         log.debug('Connecting...')
 
         // Use queryMultiple to support multiple statements
-        // Pass executionId for cancellation support and queryTimeoutMs for timeout
+        // Pass executionId for cancellation support, queryTimeoutMs for timeout, and sessionId for transactions
         const multiResult = await adapter.queryMultiple(config, query, {
           executionId,
-          queryTimeoutMs
+          queryTimeoutMs,
+          sessionId
         })
 
         log.debug('Query completed in', multiResult.totalDurationMs, 'ms')
@@ -260,6 +269,29 @@ export function registerQueryHandlers(): void {
       }
 
       try {
+        if (batch.sessionId && adapter.queryInTransaction) {
+          for (const op of validOperations) {
+            try {
+              const res = await adapter.queryInTransaction(
+                config,
+                batch.sessionId,
+                op.sql,
+                op.params
+              )
+              result.rowsAffected += res.rowCount ?? 0
+              result.executedSql.push(op.preview)
+            } catch (error) {
+              result.errors!.push({
+                operationId: op.opId,
+                message: error instanceof Error ? error.message : String(error)
+              })
+              break // Stop executing further ops in this transaction
+            }
+          }
+          result.success = result.errors!.length === 0
+          return { success: true, data: result }
+        }
+
         const statements = validOperations.map((op) => ({ sql: op.sql, params: op.params }))
         const txResult = await adapter.executeTransaction(config, statements)
 
@@ -336,8 +368,15 @@ export function registerQueryHandlers(): void {
         config,
         query,
         executionId,
-        queryTimeoutMs
-      }: { config: ConnectionConfig; query: string; executionId?: string; queryTimeoutMs?: number }
+        queryTimeoutMs,
+        sessionId
+      }: {
+        config: ConnectionConfig
+        query: string
+        executionId?: string
+        queryTimeoutMs?: number
+        sessionId?: string
+      }
     ) => {
       log.debug('Received query with telemetry request', { ...config, password: '***' })
       log.debug('Query:', query)
@@ -352,7 +391,8 @@ export function registerQueryHandlers(): void {
         const multiResult = await adapter.queryMultiple(config, query, {
           executionId,
           collectTelemetry: true,
-          queryTimeoutMs
+          queryTimeoutMs,
+          sessionId
         })
 
         log.debug('Query completed in', multiResult.totalDurationMs, 'ms')
@@ -498,6 +538,55 @@ export function registerQueryHandlers(): void {
         log.error('Performance analysis error:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
         return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'db:begin-transaction',
+    async (_, { config, sessionId }: { config: ConnectionConfig; sessionId: string }) => {
+      try {
+        const adapter = getAdapter(config)
+        if (adapter.beginTransaction) {
+          await adapter.beginTransaction(config, sessionId)
+          return { success: true }
+        } else {
+          return { success: false, error: 'Transactions not supported for this database type.' }
+        }
+      } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'db:commit-transaction',
+    async (_, { config, sessionId }: { config: ConnectionConfig; sessionId: string }) => {
+      try {
+        const adapter = getAdapter(config)
+        if (adapter.commitTransaction) {
+          await adapter.commitTransaction(config, sessionId)
+          return { success: true }
+        }
+        return { success: false, error: 'Transactions not supported.' }
+      } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
+    }
+  )
+
+  ipcMain.handle(
+    'db:rollback-transaction',
+    async (_, { config, sessionId }: { config: ConnectionConfig; sessionId: string }) => {
+      try {
+        const adapter = getAdapter(config)
+        if (adapter.rollbackTransaction) {
+          await adapter.rollbackTransaction(config, sessionId)
+          return { success: true }
+        }
+        return { success: false, error: 'Transactions not supported.' }
+      } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
       }
     }
   )
