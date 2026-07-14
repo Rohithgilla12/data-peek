@@ -299,8 +299,8 @@ export function ScheduledQueryFormDialog({
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Next runs:</Label>
               <div className="text-xs text-muted-foreground space-y-0.5">
-                {nextRuns.map((time, i) => (
-                  <div key={i}>
+                {nextRuns.map((time) => (
+                  <div key={String(time)}>
                     {new Date(time).toLocaleString(undefined, {
                       weekday: 'short',
                       month: 'short',

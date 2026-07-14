@@ -74,6 +74,7 @@ function JsonTreeNode({
         {hasChildren && (
           <button
             type="button"
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-0.5 hover:bg-accent/50 rounded shrink-0"
           >

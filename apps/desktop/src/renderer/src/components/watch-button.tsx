@@ -278,9 +278,9 @@ export function WatchButton({
         </div>
 
         <div className="px-3 py-2 space-y-2">
-          <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             Cadence
-          </label>
+          </span>
           <div className="grid grid-cols-3 gap-1">
             {CADENCE_PRESETS_MS.map((ms) => (
               <button
@@ -316,16 +316,16 @@ export function WatchButton({
         </div>
 
         <div className="border-t px-3 py-2 space-y-1">
-          <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             Row count
-          </label>
+          </span>
           <WatchSparkline points={watchState?.metrics ?? []} />
         </div>
 
         <div className="border-t px-3 py-2 space-y-1.5">
-          <label className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
             Alerts
-          </label>
+          </span>
           {alerts.length > 0 && (
             <ul className="space-y-1">
               {alerts.map((alert) => (

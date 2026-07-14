@@ -182,6 +182,7 @@ export function Tab({
           {!tab.isPinned && (
             <button
               type="button"
+              aria-label="Close tab"
               onClick={(e) => {
                 e.stopPropagation()
                 onClose()

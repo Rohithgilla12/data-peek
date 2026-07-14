@@ -71,6 +71,7 @@ export function Notifications() {
             {notification.dismissible && (
               <button
                 type="button"
+                aria-label="Dismiss notification"
                 onClick={() => removeNotification(notification.id)}
                 className="shrink-0 p-0.5 hover:bg-accent rounded transition-colors"
               >

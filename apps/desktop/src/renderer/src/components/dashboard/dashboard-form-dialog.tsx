@@ -217,6 +217,7 @@ export function DashboardFormDialog({
                     {tag}
                     <button
                       type="button"
+                      aria-label={`Remove tag ${tag}`}
                       onClick={() => handleRemoveTag(tag)}
                       className="ml-1 hover:text-destructive"
                     >

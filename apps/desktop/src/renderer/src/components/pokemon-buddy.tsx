@@ -80,6 +80,7 @@ function PokemonSelector({
         <span className="text-xs font-semibold text-foreground">Choose Your Buddy</span>
         <button
           type="button"
+          aria-label="Close"
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
@@ -130,6 +131,7 @@ function MovesPanel({
         <span className="text-xs font-semibold text-foreground">Moves</span>
         <button
           type="button"
+          aria-label="Close"
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >

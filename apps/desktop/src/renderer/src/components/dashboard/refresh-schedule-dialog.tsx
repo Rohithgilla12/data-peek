@@ -219,8 +219,8 @@ export function RefreshScheduleDialog({
                     Next scheduled refreshes
                   </div>
                   <ul className="space-y-1 text-xs text-muted-foreground">
-                    {nextRuns.slice(0, 3).map((time, i) => (
-                      <li key={i}>{formatNextRunTime(time)}</li>
+                    {nextRuns.slice(0, 3).map((time) => (
+                      <li key={String(time)}>{formatNextRunTime(time)}</li>
                     ))}
                   </ul>
                 </div>

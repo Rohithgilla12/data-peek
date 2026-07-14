@@ -233,7 +233,7 @@ export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidget
 
       {suggestions.length > 0 && (
         <div className="grid gap-2">
-          {suggestions.map((suggestion, index) => {
+          {suggestions.map((suggestion) => {
             const Icon =
               suggestion.type === 'chart' && suggestion.chartType
                 ? CHART_ICONS[suggestion.chartType]
@@ -244,7 +244,7 @@ export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidget
             return (
               <button
                 type="button"
-                key={index}
+                key={suggestion.name}
                 className="flex items-start gap-3 p-3 rounded-lg border border-border hover:border-primary/60 hover:bg-accent/50 transition-all text-left group"
                 onClick={() => onSuggestionSelect(suggestion)}
               >

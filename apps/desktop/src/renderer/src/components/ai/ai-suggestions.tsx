@@ -93,7 +93,7 @@ export function AISuggestions({ schemas, onSelect }: AISuggestionsProps) {
       {suggestions.map((suggestion, index) => (
         <button
           type="button"
-          key={index}
+          key={suggestion.query}
           onClick={() => onSelect(suggestion.query)}
           className={cn(
             'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',

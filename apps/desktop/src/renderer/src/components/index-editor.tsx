@@ -169,8 +169,14 @@ export function IndexEditor({
                     <div className="border-t border-border/40 p-3 space-y-3">
                       {/* Index Name */}
                       <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-                        <label className="text-sm text-muted-foreground">Name</label>
+                        <label
+                          htmlFor={`index-name-${index.id}`}
+                          className="text-sm text-muted-foreground"
+                        >
+                          Name
+                        </label>
                         <Input
+                          id={`index-name-${index.id}`}
                           value={index.name ?? ''}
                           onChange={(e) =>
                             onUpdate(index.id, { name: e.target.value || undefined })
@@ -182,7 +188,7 @@ export function IndexEditor({
 
                       {/* Index Method */}
                       <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-                        <label className="text-sm text-muted-foreground">Method</label>
+                        <span className="text-sm text-muted-foreground">Method</span>
                         <Select
                           value={index.method ?? 'btree'}
                           onValueChange={(v) => onUpdate(index.id, { method: v as IndexMethod })}
@@ -207,7 +213,7 @@ export function IndexEditor({
 
                       {/* Unique */}
                       <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-                        <label className="text-sm text-muted-foreground">Unique</label>
+                        <span className="text-sm text-muted-foreground">Unique</span>
                         <div className="flex items-center gap-2">
                           <Checkbox
                             checked={index.isUnique}
@@ -223,7 +229,7 @@ export function IndexEditor({
 
                       {/* Columns */}
                       <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
-                        <label className="text-sm text-muted-foreground pt-2">Columns</label>
+                        <span className="text-sm text-muted-foreground pt-2">Columns</span>
                         <div className="space-y-2">
                           {index.columns.length === 0 ? (
                             <p className="text-xs text-destructive">Add at least one column</p>
@@ -308,8 +314,14 @@ export function IndexEditor({
 
                       {/* WHERE clause (partial index) */}
                       <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-                        <label className="text-sm text-muted-foreground">WHERE</label>
+                        <label
+                          htmlFor={`index-where-${index.id}`}
+                          className="text-sm text-muted-foreground"
+                        >
+                          WHERE
+                        </label>
                         <Input
+                          id={`index-where-${index.id}`}
                           value={index.where ?? ''}
                           onChange={(e) =>
                             onUpdate(index.id, { where: e.target.value || undefined })
@@ -321,7 +333,7 @@ export function IndexEditor({
 
                       {/* INCLUDE columns */}
                       <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
-                        <label className="text-sm text-muted-foreground pt-2">Include</label>
+                        <span className="text-sm text-muted-foreground pt-2">Include</span>
                         <div className="space-y-2">
                           <p className="text-xs text-muted-foreground">
                             Additional columns stored in index (covering index)
@@ -357,7 +369,7 @@ export function IndexEditor({
 
                       {/* Concurrent */}
                       <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-                        <label className="text-sm text-muted-foreground">Concurrent</label>
+                        <span className="text-sm text-muted-foreground">Concurrent</span>
                         <div className="flex items-center gap-2">
                           <Checkbox
                             checked={index.concurrent ?? false}

@@ -165,8 +165,8 @@ export function PerfIndicatorPanel({
 
             {showNplusOne && (
               <div className="px-4 pb-3 space-y-2">
-                {analysis.nplusOnePatterns.map((pattern, i) => (
-                  <NplusOneCard key={i} pattern={pattern} />
+                {analysis.nplusOnePatterns.map((pattern) => (
+                  <NplusOneCard key={pattern.fingerprint} pattern={pattern} />
                 ))}
               </div>
             )}

@@ -45,6 +45,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
             <span>#{p.statementIndex + 1}</span>
             <button
               type="button"
+              aria-label="Unpin result"
               onClick={(e) => {
                 e.stopPropagation()
                 unpinResult(tabId, p.statementIndex)

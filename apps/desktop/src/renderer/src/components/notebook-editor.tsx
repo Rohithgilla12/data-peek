@@ -193,6 +193,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
         {isEditingTitle ? (
           <input
             ref={titleInputRef}
+            aria-label="Notebook title"
             value={titleValue}
             onChange={(e) => setTitleValue(e.target.value)}
             onBlur={handleTitleSave}

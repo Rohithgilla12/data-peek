@@ -656,6 +656,7 @@ export function AIChatPanel({
                           <div className="flex items-center gap-1">
                             <input
                               type="text"
+                              aria-label="Session title"
                               value={editingTitle}
                               onChange={(e) => setEditingTitle(e.target.value)}
                               onKeyDown={(e) => {

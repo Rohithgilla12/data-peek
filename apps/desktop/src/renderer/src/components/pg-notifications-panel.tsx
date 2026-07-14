@@ -381,9 +381,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
               <EventRow
                 key={event.id}
                 event={event}
-                isFresh={
-                  event.receivedAt > mountedAt && Date.now() - event.receivedAt < 1500
-                }
+                isFresh={event.receivedAt > mountedAt && Date.now() - event.receivedAt < 1500}
               />
             ))
           )}

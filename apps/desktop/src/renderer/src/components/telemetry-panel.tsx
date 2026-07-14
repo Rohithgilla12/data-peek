@@ -586,9 +586,9 @@ export function TelemetryPanel({
             <div className="absolute bottom-0 left-28 right-0 h-px bg-border/60" />
 
             {/* Time markers */}
-            {timeMarkers.map((marker, idx) => (
+            {timeMarkers.map((marker) => (
               <div
-                key={idx}
+                key={marker.position}
                 className="absolute bottom-0 flex flex-col items-center"
                 style={{ left: `calc(112px + ${marker.position}% * (100% - 112px) / 100)` }}
               >

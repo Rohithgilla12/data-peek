@@ -372,6 +372,7 @@ export function EditableCell({
         {isBoolean ? (
           <select
             ref={inputRef as unknown as React.RefObject<HTMLSelectElement>}
+            aria-label="Edit value"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -385,6 +386,7 @@ export function EditableCell({
         ) : isEnum ? (
           <select
             ref={inputRef as unknown as React.RefObject<HTMLSelectElement>}
+            aria-label="Edit value"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}

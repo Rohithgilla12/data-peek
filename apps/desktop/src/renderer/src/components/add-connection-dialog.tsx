@@ -467,7 +467,7 @@ export function AddConnectionDialog({
         <div className="flex flex-col gap-4 py-4 px-4 flex-1 overflow-y-auto">
           {/* Database Type Selector */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Database Type</label>
+            <span className="text-sm font-medium">Database Type</span>
             <div className="grid grid-cols-4 rounded-lg border bg-muted p-1">
               <button
                 type="button"
@@ -567,7 +567,7 @@ export function AddConnectionDialog({
 
           {/* Environment Tag */}
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Environment</label>
+            <span className="text-sm font-medium">Environment</span>
             <p className="text-xs text-muted-foreground">
               Optional. Adds a visual indicator to help identify this connection.
             </p>
@@ -624,8 +624,11 @@ export function AddConnectionDialog({
             {showCustomEnv && (
               <div className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium">Label</label>
+                  <label htmlFor="custom-env-label" className="text-xs font-medium">
+                    Label
+                  </label>
                   <Input
+                    id="custom-env-label"
                     value={customEnvLabel}
                     onChange={(e) => handleCustomLabelChange(e.target.value)}
                     placeholder="CUSTOM"
@@ -634,7 +637,7 @@ export function AddConnectionDialog({
                   />
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-medium">Color</label>
+                  <span className="text-xs font-medium">Color</span>
                   <div className="flex gap-1.5">
                     {CUSTOM_COLOR_PALETTE.map((color) => (
                       <button
