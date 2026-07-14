@@ -39,7 +39,15 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
                 ? 'bg-card text-foreground border border-border'
                 : 'text-muted-foreground hover:bg-card/50'
             )}
+            role="button"
+            tabIndex={0}
             onClick={() => setSelectedIndex(p.statementIndex)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setSelectedIndex(p.statementIndex)
+              }
+            }}
           >
             <Pin className="size-2.5 text-amber-500" />
             <span>#{p.statementIndex + 1}</span>
@@ -65,7 +73,15 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
                 ? 'bg-card text-foreground border border-primary/40'
                 : 'text-muted-foreground hover:bg-card/50'
             )}
+            role="button"
+            tabIndex={0}
             onClick={() => setSelectedIndex('current')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setSelectedIndex('current')
+              }
+            }}
           >
             <span>Current · #{session.lastResult.statementIndex + 1}</span>
           </div>

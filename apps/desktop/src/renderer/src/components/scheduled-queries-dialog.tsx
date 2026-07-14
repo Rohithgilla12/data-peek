@@ -197,7 +197,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
     }
 
     // Sort by next run time (active first), then by name
-    return [...result].sort((a, b) => {
+    return result.toSorted((a, b) => {
       if (a.status === 'active' && b.status !== 'active') return -1
       if (a.status !== 'active' && b.status === 'active') return 1
       return a.name.localeCompare(b.name)

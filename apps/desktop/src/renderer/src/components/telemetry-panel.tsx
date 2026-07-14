@@ -283,7 +283,7 @@ export function TelemetryPanel({
   })
 
   // Sort phases by startOffset for timeline view
-  const sortedPhases = [...visiblePhases].sort((a, b) => a.startOffset - b.startOffset)
+  const sortedPhases = visiblePhases.toSorted((a, b) => a.startOffset - b.startOffset)
 
   const getDisplayValue = (phaseName: string): number => {
     if (benchmark?.phaseStats[phaseName]) {

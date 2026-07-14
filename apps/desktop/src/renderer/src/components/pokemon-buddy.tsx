@@ -206,15 +206,19 @@ export function PokemonBuddy() {
     setSpriteError(false)
   }, [activePokemonId])
 
-  // Walking animation — uses chained setTimeout so each tick gets a fresh random delay
+  // Walking animation — uses chained setTimeout so each tick gets a fresh random
+  // delay. The cancelled flag guards the tick that may already be dispatched when
+  // cleanup clears the current timer.
   useEffect(() => {
     if (mood !== 'idle' || isDragging) return
 
     let timerId: ReturnType<typeof setTimeout>
+    let cancelled = false
 
     const scheduleWalk = () => {
       timerId = setTimeout(
         () => {
+          if (cancelled) return
           const store = usePokemonBuddyStore.getState()
           const direction = Math.random() > 0.5 ? 1 : -1
           const distance = Math.random() * 8 + 2
@@ -228,7 +232,10 @@ export function PokemonBuddy() {
 
     scheduleWalk()
 
-    return () => clearTimeout(timerId)
+    return () => {
+      cancelled = true
+      clearTimeout(timerId)
+    }
   }, [mood, isDragging])
 
   const handleSpriteError = useCallback(() => {

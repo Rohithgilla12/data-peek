@@ -161,7 +161,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
     }
 
     // Sort
-    result = [...result].sort((a, b) => {
+    result = result.toSorted((a, b) => {
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name)

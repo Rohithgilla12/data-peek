@@ -85,7 +85,7 @@ export function Dashboards() {
     }
   }, [isInitialized, initialize])
 
-  const sortedDashboards = [...dashboards].sort((a, b) => b.updatedAt - a.updatedAt)
+  const sortedDashboards = dashboards.toSorted((a, b) => b.updatedAt - a.updatedAt)
 
   const handleOpenDashboard = (dashboard: Dashboard) => {
     setActiveDashboard(dashboard.id)

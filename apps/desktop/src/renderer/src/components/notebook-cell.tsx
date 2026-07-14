@@ -368,10 +368,19 @@ export const NotebookCell = memo(function NotebookCell({
               'prose prose-sm dark:prose-invert max-w-none cursor-text min-h-[1.5rem]',
               !cell.content && 'text-muted-foreground/40 italic text-sm'
             )}
+            role="button"
+            tabIndex={0}
             onClick={(e) => {
               e.stopPropagation()
               onFocus()
               setIsEditing(true)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onFocus()
+                setIsEditing(true)
+              }
             }}
           >
             {cell.content ? (

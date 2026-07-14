@@ -461,6 +461,7 @@ export function AIChatPanel({
     <>
       {/* Backdrop with gradient */}
       <div
+        role="presentation"
         className="fixed inset-0 z-40 bg-gradient-to-r from-transparent via-black/20 to-black/40 transition-opacity duration-300"
         onClick={onClose}
       />
@@ -641,7 +642,15 @@ export function AIChatPanel({
                           ? 'bg-blue-500/10 border border-blue-500/20'
                           : 'hover:bg-muted/50'
                       )}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleSwitchSession(session.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleSwitchSession(session.id)
+                        }
+                      }}
                     >
                       <MessageSquare
                         className={cn(

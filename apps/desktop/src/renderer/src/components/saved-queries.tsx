@@ -100,7 +100,7 @@ export function SavedQueries() {
   }, [])
 
   // Sort by last used, then by usage count
-  const sortedQueries = [...savedQueries].sort((a, b) => {
+  const sortedQueries = savedQueries.toSorted((a, b) => {
     if (a.lastUsedAt && b.lastUsedAt) {
       return b.lastUsedAt - a.lastUsedAt
     }

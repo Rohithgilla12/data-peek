@@ -125,7 +125,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
     await useHealthStore.getState().fetchLocks(connection)
   }
 
-  const sortedTableSizes = [...tableSizes].sort((a, b) => {
+  const sortedTableSizes = tableSizes.toSorted((a, b) => {
     switch (sizeSort) {
       case 'data':
         return b.dataSizeBytes - a.dataSizeBytes

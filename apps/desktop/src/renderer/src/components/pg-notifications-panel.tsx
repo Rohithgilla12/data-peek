@@ -79,7 +79,15 @@ function EventRow({ event, isFresh }: { event: PgNotificationEvent; isFresh: boo
         'relative border-b border-border/50 last:border-0 px-3 py-2 hover:bg-muted/30 cursor-pointer transition-colors',
         isFresh && 'motion-safe:animate-[pgnotify-flash_600ms_ease-out]'
       )}
+      role="button"
+      tabIndex={0}
       onClick={() => setExpanded((v) => !v)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          setExpanded((v) => !v)
+        }
+      }}
     >
       {isFresh && (
         <span

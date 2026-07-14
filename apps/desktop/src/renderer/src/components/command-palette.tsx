@@ -166,7 +166,7 @@ export function CommandPalette({
 
   // Sort saved queries: pinned first, then by last used
   const sortedQueries = React.useMemo(() => {
-    return [...savedQueries].sort((a, b) => {
+    return savedQueries.toSorted((a, b) => {
       // Pinned first
       if (a.isPinned && !b.isPinned) return -1
       if (!a.isPinned && b.isPinned) return 1
