@@ -116,6 +116,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const startStep = useStepStore((s) => s.startStep)
   const toggleBreakpoint = useStepStore((s) => s.toggleBreakpoint)
   const [inTransactionMode, setInTransactionMode] = useState(false)
+  const [autoCommit, setAutoCommit] = useState(true)
+  const [hasActiveTransaction, setHasActiveTransaction] = useState(false)
 
   const tabQuery = tab && 'query' in tab ? tab.query : ''
   const tabType = tab?.type
@@ -342,13 +344,25 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       // Clear previous benchmark when running a new query
       setBenchmark(null)
 
+      const targetSessionId = !autoCommit && tab?.id ? tab.id : undefined
+
       try {
+        if (!autoCommit && !hasActiveTransaction && tab?.id) {
+          const beginRes = await window.api.db.beginTransaction(tabConnection, tab.id)
+          if (beginRes.success) {
+            setHasActiveTransaction(true)
+          } else {
+            console.error('Failed to begin transaction', beginRes.error)
+          }
+        }
+
         // Use telemetry-enabled query API with timeout from settings
         const response = await window.api.db.queryWithTelemetry(
           tabConnection,
           sqlToExecute,
           executionId,
-          queryTimeoutMs
+          queryTimeoutMs,
+          targetSessionId
         )
 
         if (!isStillCurrent()) return
@@ -517,7 +531,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       setTelemetry,
       setBenchmark,
       queryTimeoutMs,
-      setTablePreviewTotalCount
+      setTablePreviewTotalCount,
+      autoCommit,
+      hasActiveTransaction,
+      tab?.id
     ]
   )
 
@@ -1214,7 +1231,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         return undefined
       }
     }),
-    [tabId]
+    [tabId, tabConnection]
   )
 
   // Cmd+Shift+W is wired via the native menu (see main/menu.ts → 'Toggle
@@ -1262,8 +1279,38 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     [handleToggleTimeMachine]
   )
 
+  // Roll back any open transaction when the tab unmounts. Refs keep the
+  // cleanup unmount-only without re-running on state changes.
+  const transactionCleanupRef = useRef({ hasActiveTransaction, tabConnection })
+  transactionCleanupRef.current = { hasActiveTransaction, tabConnection }
+  useEffect(() => {
+    return () => {
+      const { hasActiveTransaction: active, tabConnection: conn } = transactionCleanupRef.current
+      if (active && conn) {
+        window.api.db.rollbackTransaction(conn, tabId).catch(() => {})
+      }
+    }
+  }, [tabId])
+
   if (!tab || tab.type === 'notebook') {
     return null
+  }
+
+  // Handle explicit Commit and Rollback
+  const handleCommit = async (): Promise<void> => {
+    if (!tabConnection) return
+    const res = await window.api.db.commitTransaction(tabConnection, tab.id)
+    if (res.success) {
+      setHasActiveTransaction(false)
+    }
+  }
+
+  const handleRollback = async (): Promise<void> => {
+    if (!tabConnection) return
+    const res = await window.api.db.rollbackTransaction(tabConnection, tab.id)
+    if (res.success) {
+      setHasActiveTransaction(false)
+    }
   }
 
   if (!tabConnection) {
@@ -1412,6 +1459,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           inTransactionMode={inTransactionMode}
           setInTransactionMode={setInTransactionMode}
           stepSession={stepSession}
+          autoCommit={autoCommit}
+          setAutoCommit={setAutoCommit}
+          hasActiveTransaction={hasActiveTransaction}
+          handleCommit={handleCommit}
+          handleRollback={handleRollback}
           handleExplainQuery={handleExplainQuery}
           isExplaining={isExplaining}
           handleBenchmark={handleBenchmark}
@@ -1471,6 +1523,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         getAllRows={getAllRows}
         telemetry={telemetry}
         benchmark={benchmark}
+        autoCommit={autoCommit}
+        hasActiveTransaction={hasActiveTransaction}
+        onTransactionStart={() => setHasActiveTransaction(true)}
         showTelemetryPanel={showTelemetryPanel}
         setShowTelemetryPanel={setShowTelemetryPanel}
         showConnectionOverhead={showConnectionOverhead}

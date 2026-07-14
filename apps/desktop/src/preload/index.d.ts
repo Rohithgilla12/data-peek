@@ -212,7 +212,8 @@ interface DataPeekApi {
       config: ConnectionConfig,
       query: string,
       executionId?: string,
-      queryTimeoutMs?: number
+      queryTimeoutMs?: number,
+      sessionId?: string
     ) => Promise<IpcResponse<unknown>>
     cancelQuery: (executionId: string) => Promise<IpcResponse<{ cancelled: boolean }>>
     schemas: (
@@ -220,6 +221,9 @@ interface DataPeekApi {
       forceRefresh?: boolean
     ) => Promise<IpcResponse<DatabaseSchemaResponse>>
     invalidateSchemaCache: (config: ConnectionConfig) => Promise<IpcResponse<void>>
+    beginTransaction: (config: ConnectionConfig, sessionId: string) => Promise<IpcResponse<void>>
+    commitTransaction: (config: ConnectionConfig, sessionId: string) => Promise<IpcResponse<void>>
+    rollbackTransaction: (config: ConnectionConfig, sessionId: string) => Promise<IpcResponse<void>>
     execute: (config: ConnectionConfig, batch: EditBatch) => Promise<IpcResponse<EditResult>>
     previewSql: (
       batch: EditBatch
@@ -233,7 +237,8 @@ interface DataPeekApi {
       config: ConnectionConfig,
       query: string,
       executionId?: string,
-      queryTimeoutMs?: number
+      queryTimeoutMs?: number,
+      sessionId?: string
     ) => Promise<IpcResponse<MultiStatementResultWithTelemetry & { results: unknown[] }>>
     benchmark: (
       config: ConnectionConfig,

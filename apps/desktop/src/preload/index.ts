@@ -27,7 +27,6 @@ import type {
   AIMultiProviderConfig,
   AIProviderConfig,
   BenchmarkResult,
-  MultiStatementResultWithTelemetry,
   PerformanceAnalysisResult,
   PerformanceAnalysisConfig,
   QueryHistoryItemForAnalysis,
@@ -126,9 +125,9 @@ const api = {
       config: ConnectionConfig,
       query: string,
       executionId?: string,
-      queryTimeoutMs?: number
-    ): Promise<IpcResponse<unknown>> =>
-      ipcRenderer.invoke('db:query', { config, query, executionId, queryTimeoutMs }),
+      queryTimeoutMs?: number,
+      sessionId?: string
+    ) => ipcRenderer.invoke('db:query', { config, query, executionId, queryTimeoutMs, sessionId }),
     cancelQuery: (executionId: string): Promise<IpcResponse<{ cancelled: boolean }>> =>
       ipcRenderer.invoke('db:cancel-query', executionId),
     schemas: (
@@ -136,8 +135,15 @@ const api = {
       forceRefresh?: boolean
     ): Promise<IpcResponse<DatabaseSchemaResponse>> =>
       ipcRenderer.invoke('db:schemas', { config, forceRefresh }),
-    invalidateSchemaCache: (config: ConnectionConfig): Promise<IpcResponse<void>> =>
+    invalidateSchemaCache: (config: ConnectionConfig) =>
       ipcRenderer.invoke('db:invalidate-schema-cache', config),
+    // Transactions
+    beginTransaction: (config: ConnectionConfig, sessionId: string) =>
+      ipcRenderer.invoke('db:begin-transaction', { config, sessionId }),
+    commitTransaction: (config: ConnectionConfig, sessionId: string) =>
+      ipcRenderer.invoke('db:commit-transaction', { config, sessionId }),
+    rollbackTransaction: (config: ConnectionConfig, sessionId: string) =>
+      ipcRenderer.invoke('db:rollback-transaction', { config, sessionId }),
     execute: (config: ConnectionConfig, batch: EditBatch): Promise<IpcResponse<EditResult>> =>
       ipcRenderer.invoke('db:execute', { config, batch }),
     previewSql: (
@@ -155,9 +161,16 @@ const api = {
       config: ConnectionConfig,
       query: string,
       executionId?: string,
-      queryTimeoutMs?: number
-    ): Promise<IpcResponse<MultiStatementResultWithTelemetry & { results: unknown[] }>> =>
-      ipcRenderer.invoke('db:query-with-telemetry', { config, query, executionId, queryTimeoutMs }),
+      queryTimeoutMs?: number,
+      sessionId?: string
+    ) =>
+      ipcRenderer.invoke('db:query-with-telemetry', {
+        config,
+        query,
+        executionId,
+        queryTimeoutMs,
+        sessionId
+      }),
     // Benchmark query with multiple runs
     benchmark: (
       config: ConnectionConfig,

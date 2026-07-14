@@ -9,7 +9,9 @@ import {
   Share2,
   Maximize2,
   PanelTop,
-  PanelTopClose
+  PanelTopClose,
+  CheckCircle2,
+  Undo2
 } from 'lucide-react'
 import {
   Button,
@@ -38,6 +40,11 @@ interface EditorToolbarProps {
   inTransactionMode: boolean
   setInTransactionMode: (v: boolean) => void
   stepSession: StepSessionState | null | undefined
+  autoCommit: boolean
+  setAutoCommit: (v: boolean) => void
+  hasActiveTransaction: boolean
+  handleCommit: () => void
+  handleRollback: () => void
   handleExplainQuery: () => void
   isExplaining: boolean
   handleBenchmark: (runCount: number) => Promise<void>
@@ -66,6 +73,11 @@ export function EditorToolbar({
   inTransactionMode,
   setInTransactionMode,
   stepSession,
+  autoCommit,
+  setAutoCommit,
+  hasActiveTransaction,
+  handleCommit,
+  handleRollback,
   handleExplainQuery,
   isExplaining,
   handleBenchmark,
@@ -144,9 +156,49 @@ export function EditorToolbar({
                 disabled={!!stepSession}
                 className="size-3"
               />
-              <span>Run in transaction</span>
+              <span>Debug in transaction</span>
             </label>
           </>
+        )}
+        {tab.type === 'query' && tabConnection?.dbType === 'postgresql' && !stepSession && (
+          <div className="flex items-center gap-2 border-l border-border/60 pl-2 ml-1">
+            <label
+              className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer"
+              title="Automatically commit queries"
+            >
+              <input
+                type="checkbox"
+                checked={autoCommit}
+                onChange={(e) => setAutoCommit(e.target.checked)}
+                className="size-3"
+              />
+              <span>Auto-commit</span>
+            </label>
+            {!autoCommit && (
+              <>
+                <Button
+                  size="sm"
+                  variant={hasActiveTransaction ? 'default' : 'outline'}
+                  className="h-7 text-xs gap-1.5"
+                  disabled={!hasActiveTransaction}
+                  onClick={handleCommit}
+                >
+                  <CheckCircle2 className="size-3" />
+                  Commit
+                </Button>
+                <Button
+                  size="sm"
+                  variant={hasActiveTransaction ? 'destructive' : 'outline'}
+                  className="h-7 text-xs gap-1.5"
+                  disabled={!hasActiveTransaction}
+                  onClick={handleRollback}
+                >
+                  <Undo2 className="size-3" />
+                  Rollback
+                </Button>
+              </>
+            )}
+          </div>
         )}
         <TooltipProvider>
           <Tooltip>
