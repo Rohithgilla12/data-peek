@@ -48,16 +48,20 @@ export function useColumnStatsPanel(
         schema = tab.schemaName
         table = tab.tableName
       } else {
-        // For query tabs, try to find the column in schemas
+        // For query tabs, resolve the table from the schema cache — but only when
+        // the column name maps to exactly one table. Guessing the first match
+        // would compute stats against the wrong table.
+        const matches: Array<{ schema: string; table: string }> = []
         for (const s of schemas) {
           for (const t of s.tables) {
             if (t.columns.some((c) => c.name === col.name)) {
-              schema = s.name
-              table = t.name
-              break
+              matches.push({ schema: s.name, table: t.name })
             }
           }
-          if (table) break
+        }
+        if (matches.length === 1) {
+          schema = matches[0].schema
+          table = matches[0].table
         }
       }
 

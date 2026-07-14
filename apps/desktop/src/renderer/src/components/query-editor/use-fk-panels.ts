@@ -34,18 +34,24 @@ export function useFkPanels(tabConnection: ConnectionWithStatus | null | undefin
         tabConnection.dbType
       )
 
-      // Format value for SQL
-      let formattedValue: string
-      if (value === null || value === undefined) {
-        formattedValue = 'NULL'
-      } else if (typeof value === 'string') {
-        formattedValue = `'${value.replace(/'/g, "''")}'`
-      } else {
-        formattedValue = String(value)
-      }
-
       const quotedCol = quoteIdentifier(fk.referencedColumn, tabConnection.dbType)
-      const whereClause = `WHERE ${quotedCol} = ${formattedValue}`
+
+      // Format value for SQL — `= NULL` never matches, and non-primitive values
+      // would stringify into invalid SQL.
+      let whereClause: string
+      if (value === null || value === undefined) {
+        whereClause = `WHERE ${quotedCol} IS NULL`
+      } else if (typeof value === 'string') {
+        whereClause = `WHERE ${quotedCol} = '${value.replace(/'/g, "''")}'`
+      } else if (
+        typeof value === 'number' ||
+        typeof value === 'boolean' ||
+        typeof value === 'bigint'
+      ) {
+        whereClause = `WHERE ${quotedCol} = ${String(value)}`
+      } else {
+        return { error: 'Unsupported FK value type' }
+      }
       const query = buildSelectQuery(tableRef, tabConnection.dbType, {
         where: whereClause,
         limit: 1
@@ -61,6 +67,8 @@ export function useFkPanels(tabConnection: ConnectionWithStatus | null | undefin
           const schema = schemas.find((s) => s.name === fk.referencedSchema)
           const tableInfo = schema?.tables.find((t) => t.name === fk.referencedTable)
           const columns = tableInfo?.columns
+
+          if (!row) return { columns, error: 'Referenced row not found' }
 
           return { data: row, columns }
         }
