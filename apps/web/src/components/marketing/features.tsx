@@ -99,6 +99,10 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
         body: "Interactive schema map. Filter to a table and see its graph of relationships.",
       },
       {
+        title: "Triggers",
+        body: "View definitions, alter, enable/disable, or drop — right from the schema sidebar.",
+      },
+      {
         title: "CSV import",
         body: "Auto column mapping, type inference, batch insert, conflict handling.",
       },
