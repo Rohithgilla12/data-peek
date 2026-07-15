@@ -85,7 +85,7 @@ For reference, here's what's already implemented:
 - Query cancellation
 
 ### Data Management
-- Schema explorer (tables, views, stored procedures, functions)
+- Schema explorer (tables, views, stored procedures, functions, triggers)
 - Inline editing (INSERT/UPDATE/DELETE)
 - Table designer with full DDL support
 - JSON editor for JSON/JSONB columns

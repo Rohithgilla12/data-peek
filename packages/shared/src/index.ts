@@ -734,6 +734,31 @@ export interface RoutineInfo {
 }
 
 /**
+ * Database trigger metadata
+ */
+export interface TriggerInfo {
+  name: string;
+  /** Schema of the table the trigger belongs to */
+  schema: string;
+  /** Table the trigger is attached to */
+  table: string;
+  /** When the trigger fires relative to the event */
+  timing: "BEFORE" | "AFTER" | "INSTEAD OF";
+  /** Events that fire the trigger (INSERT, UPDATE, DELETE, TRUNCATE) */
+  events: string[];
+  /** Whether the trigger fires per row or per statement */
+  orientation?: "ROW" | "STATEMENT";
+  /** Whether the trigger is currently enabled */
+  enabled: boolean;
+  /** Function/procedure invoked by the trigger (PostgreSQL) */
+  functionName?: string;
+  /** Optional WHEN condition that gates the trigger */
+  condition?: string;
+  /** Full CREATE TRIGGER definition (for viewing and altering) */
+  definition: string;
+}
+
+/**
  * Schema/namespace metadata
  * Note: SQLite doesn't have schemas, will use 'main' as default
  */
@@ -742,6 +767,8 @@ export interface SchemaInfo {
   tables: TableInfo[];
   /** Stored procedures and functions */
   routines?: RoutineInfo[];
+  /** Table triggers */
+  triggers?: TriggerInfo[];
 }
 
 /**

@@ -24,7 +24,11 @@ import {
   Upload,
   Download,
   Shuffle,
-  Link2
+  Link2,
+  Zap,
+  FileText,
+  Power,
+  Trash2
 } from 'lucide-react'
 import { CsvImportDialog } from '@/components/csv-import-dialog'
 import { PgExportDialog } from '@/components/pg-export-dialog'
@@ -62,7 +66,12 @@ import {
 } from '@data-peek/ui'
 
 import { useConnectionStore, useTabStore, notify } from '@/stores'
-import type { TableInfo, RoutineInfo, QueryResult as IpcQueryResult } from '@shared/index'
+import type {
+  TableInfo,
+  RoutineInfo,
+  TriggerInfo,
+  QueryResult as IpcQueryResult
+} from '@shared/index'
 import {
   copyExportToClipboard,
   downloadExport,
@@ -107,14 +116,162 @@ function DataTypeBadge({ type }: { type: string }) {
 type SchemaItem =
   | { type: 'table'; data: TableInfo; schemaName: string }
   | { type: 'routine'; data: RoutineInfo; schemaName: string }
+  | { type: 'trigger'; data: TriggerInfo; schemaName: string }
+
+// Actions available on a trigger row (open prefilled query tabs)
+interface TriggerActions {
+  onViewDefinition: (trigger: TriggerInfo) => void
+  onAlter: (trigger: TriggerInfo) => void
+  onToggleEnabled: (trigger: TriggerInfo) => void
+  onDrop: (trigger: TriggerInfo) => void
+  /** Whether the active database supports enabling/disabling triggers */
+  supportsEnableDisable: boolean
+}
+
+// Number of detail rows shown when a trigger is expanded (kept in sync with
+// TriggerSubItem so the virtualizer can estimate row height accurately).
+function triggerDetailCount(trigger: TriggerInfo): number {
+  let count = 3 // table, timing, level (orientation)
+  if (trigger.functionName) count += 1
+  if (trigger.condition) count += 1
+  if (!trigger.enabled) count += 1
+  return count
+}
+
+// Renders a single trigger row (used by both virtualized and plain lists)
+function TriggerSubItem({
+  trigger,
+  isExpanded,
+  onToggle,
+  actions,
+  className,
+  style
+}: {
+  trigger: TriggerInfo
+  isExpanded: boolean
+  onToggle: () => void
+  actions: TriggerActions
+  className?: string
+  style?: React.CSSProperties
+}) {
+  return (
+    <SidebarMenuSubItem className={className} style={style}>
+      <div className="flex items-center group/trigger">
+        <Button variant="ghost" size="icon" className="size-5 p-0 mr-1" onClick={onToggle}>
+          <ChevronRight
+            className={`size-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+          />
+        </Button>
+        <SidebarMenuSubButton className="flex-1 cursor-default" onClick={onToggle}>
+          <Zap
+            className={`size-3.5 ${trigger.enabled ? 'text-amber-500' : 'text-muted-foreground'}`}
+          />
+          <span
+            className={`flex-1 truncate ${trigger.enabled ? '' : 'text-muted-foreground line-through'}`}
+          >
+            {trigger.name}
+          </span>
+          <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-amber-500">
+            trig
+          </Badge>
+        </SidebarMenuSubButton>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-5 p-0 opacity-0 group-hover/trigger:opacity-100 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreHorizontal className="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuItem onClick={() => actions.onViewDefinition(trigger)}>
+              <FileText className="size-4 mr-2" />
+              View Definition
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => actions.onAlter(trigger)}>
+              <Pencil className="size-4 mr-2" />
+              Alter Trigger
+            </DropdownMenuItem>
+            {actions.supportsEnableDisable && (
+              <DropdownMenuItem onClick={() => actions.onToggleEnabled(trigger)}>
+                <Power className="size-4 mr-2" />
+                {trigger.enabled ? 'Disable' : 'Enable'}
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={() => actions.onDrop(trigger)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="size-4 mr-2" />
+              Drop Trigger
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      {isExpanded && (
+        <div className="ml-6 border-l border-border/50 pl-2 py-1 space-y-0.5">
+          <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
+            <Table2 className="size-3 text-muted-foreground" />
+            <span className="text-muted-foreground">on</span>
+            <span className="text-foreground truncate">{trigger.table}</span>
+          </div>
+          <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
+            <ArrowRight className="size-3 text-amber-500" />
+            <span>{trigger.timing}</span>
+            <span className="flex flex-wrap gap-1">
+              {trigger.events.map((event) => (
+                <Badge
+                  key={event}
+                  variant="outline"
+                  className="text-[10px] px-1 py-0 text-amber-500"
+                >
+                  {event}
+                </Badge>
+              ))}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
+            <Columns3 className="size-3" />
+            <span>FOR EACH {trigger.orientation ?? 'ROW'}</span>
+          </div>
+          {trigger.functionName && (
+            <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
+              <FunctionSquare className="size-3 text-cyan-500" />
+              <span className="truncate">{trigger.functionName}</span>
+            </div>
+          )}
+          {trigger.condition && (
+            <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
+              <Filter className="size-3" />
+              <span className="truncate font-mono">WHEN {trigger.condition}</span>
+            </div>
+          )}
+          {!trigger.enabled && (
+            <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
+              <Power className="size-3 text-red-400" />
+              <span className="text-red-400">disabled</span>
+            </div>
+          )}
+        </div>
+      )}
+    </SidebarMenuSubItem>
+  )
+}
 
 interface VirtualizedSchemaItemsProps {
   items: SchemaItem[]
   schemaName: string
   expandedTables: Set<string>
   expandedRoutines: Set<string>
+  expandedTriggers: Set<string>
   onToggleTable: (tableKey: string) => void
   onToggleRoutine: (routineKey: string) => void
+  onToggleTrigger: (triggerKey: string) => void
+  triggerActions: TriggerActions
   onTableClick: (schemaName: string, table: TableInfo) => void
   onEditTable: (schemaName: string, tableName: string) => void
   onExportTable: (
@@ -138,8 +295,11 @@ function VirtualizedSchemaItems({
   schemaName,
   expandedTables,
   expandedRoutines,
+  expandedTriggers,
   onToggleTable,
   onToggleRoutine,
+  onToggleTrigger,
+  triggerActions,
   onTableClick,
   onEditTable,
   onExportTable,
@@ -157,6 +317,9 @@ function VirtualizedSchemaItems({
       if (item.type === 'table') {
         const tableKey = `${schemaName}.${item.data.name}`
         return expandedTables.has(tableKey) ? 28 + item.data.columns.length * 24 : 28
+      } else if (item.type === 'trigger') {
+        const triggerKey = `${schemaName}.${item.data.table}.${item.data.name}`
+        return expandedTriggers.has(triggerKey) ? 28 + triggerDetailCount(item.data) * 24 : 28
       } else {
         const routineKey = `${schemaName}.${item.data.name}`
         const paramCount = item.data.parameters.length + (item.data.returnType ? 1 : 0)
@@ -172,7 +335,7 @@ function VirtualizedSchemaItems({
   // Recalculate sizes when expanded state changes
   React.useEffect(() => {
     virtualizer.measure()
-  }, [expandedTables, expandedRoutines, virtualizer])
+  }, [expandedTables, expandedRoutines, expandedTriggers, virtualizer])
 
   const virtualItems = virtualizer.getVirtualItems()
 
@@ -362,6 +525,25 @@ function VirtualizedSchemaItems({
                 )}
               </SidebarMenuSubItem>
             )
+          } else if (item.type === 'trigger') {
+            const trigger = item.data
+            const triggerKey = `${schemaName}.${trigger.table}.${trigger.name}`
+            return (
+              <TriggerSubItem
+                key={triggerKey}
+                trigger={trigger}
+                isExpanded={expandedTriggers.has(triggerKey)}
+                onToggle={() => onToggleTrigger(triggerKey)}
+                actions={triggerActions}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  transform: `translateY(${virtualRow.start}px)`
+                }}
+              />
+            )
           } else {
             const routine = item.data
             const routineKey = `${schemaName}.${routine.name}`
@@ -524,6 +706,7 @@ export function SchemaExplorer() {
   )
   const [expandedTables, setExpandedTables] = React.useState<Set<string>>(new Set())
   const [expandedRoutines, setExpandedRoutines] = React.useState<Set<string>>(new Set())
+  const [expandedTriggers, setExpandedTriggers] = React.useState<Set<string>>(new Set())
   // Only animate stagger on schema data changes, not on every re-render
   const animatedSchemasRef = React.useRef<typeof schemas>(null)
   const shouldAnimateStagger = animatedSchemasRef.current !== schemas
@@ -540,6 +723,7 @@ export function SchemaExplorer() {
   const [showMaterializedViews, setShowMaterializedViews] = React.useState(true)
   const [showFunctions, setShowFunctions] = React.useState(false)
   const [showProcedures, setShowProcedures] = React.useState(true)
+  const [showTriggers, setShowTriggers] = React.useState(true)
 
   const createQueryTab = useTabStore((s) => s.createQueryTab)
 
@@ -563,13 +747,21 @@ export function SchemaExplorer() {
           return true
         })
 
+        const filteredTriggers = showTriggers ? schema.triggers : []
+
         return {
           ...schema,
           tables: filteredTables,
-          routines: filteredRoutines
+          routines: filteredRoutines,
+          triggers: filteredTriggers
         }
       })
-      .filter((schema) => schema.tables.length > 0 || (schema.routines?.length ?? 0) > 0)
+      .filter(
+        (schema) =>
+          schema.tables.length > 0 ||
+          (schema.routines?.length ?? 0) > 0 ||
+          (schema.triggers?.length ?? 0) > 0
+      )
   }, [
     schemas,
     showTables,
@@ -577,6 +769,7 @@ export function SchemaExplorer() {
     showMaterializedViews,
     showFunctions,
     showProcedures,
+    showTriggers,
     focusedSchema
   ])
 
@@ -585,6 +778,7 @@ export function SchemaExplorer() {
     setExpandedSchemas(new Set(schemas.map((s) => s.name)))
     setExpandedTables(new Set())
     setExpandedRoutines(new Set())
+    setExpandedTriggers(new Set())
     // Reset focused schema if it no longer exists
     if (focusedSchema && !schemas.some((s) => s.name === focusedSchema)) {
       setFocusedSchema(null)
@@ -622,6 +816,18 @@ export function SchemaExplorer() {
         next.delete(routineKey)
       } else {
         next.add(routineKey)
+      }
+      return next
+    })
+  }
+
+  const toggleTrigger = (triggerKey: string) => {
+    setExpandedTriggers((prev) => {
+      const next = new Set(prev)
+      if (next.has(triggerKey)) {
+        next.delete(triggerKey)
+      } else {
+        next.add(triggerKey)
       }
       return next
     })
@@ -805,9 +1011,112 @@ export function SchemaExplorer() {
     createQueryTab(connection.id, sql)
   }
 
+  // --- Trigger actions -------------------------------------------------------
+
+  const withSemicolon = (sql: string): string => {
+    const trimmed = sql.trim()
+    return trimmed.endsWith(';') ? trimmed : `${trimmed};`
+  }
+
+  // Always quote so names with special characters or reserved words stay intact
+  const quoteTriggerIdent = (name: string, dbType: string): string => {
+    switch (dbType) {
+      case 'mysql':
+        return `\`${name.replace(/`/g, '``')}\``
+      case 'mssql':
+        return `[${name.replace(/\]/g, ']]')}]`
+      default:
+        return `"${name.replace(/"/g, '""')}"`
+    }
+  }
+
+  const buildDropTriggerSql = (dbType: string, trigger: TriggerInfo): string => {
+    const name = quoteTriggerIdent(trigger.name, dbType)
+    const schema = quoteTriggerIdent(trigger.schema, dbType)
+    const table = quoteTriggerIdent(trigger.table, dbType)
+    switch (dbType) {
+      case 'postgresql':
+        return `DROP TRIGGER IF EXISTS ${name} ON ${schema}.${table};`
+      case 'mysql':
+        return `DROP TRIGGER IF EXISTS ${schema}.${name};`
+      case 'mssql':
+        return `DROP TRIGGER ${schema}.${name};`
+      case 'sqlite':
+        return `DROP TRIGGER IF EXISTS ${name};`
+      default:
+        return `DROP TRIGGER ${trigger.name};`
+    }
+  }
+
+  const buildToggleTriggerSql = (dbType: string, trigger: TriggerInfo): string => {
+    const action = trigger.enabled ? 'DISABLE' : 'ENABLE'
+    const name = quoteTriggerIdent(trigger.name, dbType)
+    const schema = quoteTriggerIdent(trigger.schema, dbType)
+    const table = quoteTriggerIdent(trigger.table, dbType)
+    switch (dbType) {
+      case 'postgresql':
+        return `ALTER TABLE ${schema}.${table} ${action} TRIGGER ${name};`
+      case 'mssql':
+        return `${action} TRIGGER ${schema}.${name} ON ${schema}.${table};`
+      default:
+        return ''
+    }
+  }
+
+  const openTriggerQuery = (sql: string) => {
+    const connection = getActiveConnection()
+    if (!connection) return
+    createQueryTab(connection.id, sql)
+  }
+
+  const handleViewTriggerDefinition = (trigger: TriggerInfo) => {
+    openTriggerQuery(
+      `-- Trigger: ${trigger.schema}.${trigger.name} on ${trigger.table}\n` +
+        withSemicolon(trigger.definition)
+    )
+  }
+
+  const handleAlterTrigger = (trigger: TriggerInfo) => {
+    const connection = getActiveConnection()
+    if (!connection) return
+    const dropSql = buildDropTriggerSql(connection.dbType, trigger)
+    openTriggerQuery(
+      `-- Alter trigger ${trigger.name}: most engines require dropping and\n` +
+        `-- recreating the trigger. Edit the definition below, then run.\n` +
+        `${dropSql}\n\n${withSemicolon(trigger.definition)}`
+    )
+  }
+
+  const handleToggleTrigger = (trigger: TriggerInfo) => {
+    const connection = getActiveConnection()
+    if (!connection) return
+    const sql = buildToggleTriggerSql(connection.dbType, trigger)
+    if (sql) openTriggerQuery(sql)
+  }
+
+  const handleDropTrigger = (trigger: TriggerInfo) => {
+    const connection = getActiveConnection()
+    if (!connection) return
+    openTriggerQuery(buildDropTriggerSql(connection.dbType, trigger))
+  }
+
+  const triggerActions: TriggerActions = {
+    onViewDefinition: handleViewTriggerDefinition,
+    onAlter: handleAlterTrigger,
+    onToggleEnabled: handleToggleTrigger,
+    onDrop: handleDropTrigger,
+    supportsEnableDisable:
+      getActiveConnection()?.dbType === 'postgresql' || getActiveConnection()?.dbType === 'mssql'
+  }
+
   // Check if any filter is active (not all enabled)
   const isFilterActive =
-    !showTables || !showViews || !showMaterializedViews || !showFunctions || !showProcedures
+    !showTables ||
+    !showViews ||
+    !showMaterializedViews ||
+    !showFunctions ||
+    !showProcedures ||
+    !showTriggers
 
   // Clear focused schema
   const handleClearFocus = () => {
@@ -964,6 +1273,14 @@ export function SchemaExplorer() {
                 <Workflow className="size-3.5 mr-2 text-orange-500" />
                 Procedures
               </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem
+                checked={showTriggers}
+                onCheckedChange={setShowTriggers}
+                className="text-xs"
+              >
+                <Zap className="size-3.5 mr-2 text-amber-500" />
+                Triggers
+              </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
           <DropdownMenu>
@@ -1065,28 +1382,44 @@ export function SchemaExplorer() {
                       <SchemaIcon className="size-4 text-muted-foreground" />
                       <span>{schema.name}</span>
                       <Badge variant="outline" className="ml-auto text-[11px] px-1.5 py-0">
-                        {schema.tables.length + (schema.routines?.length ?? 0)}
+                        {schema.tables.length +
+                          (schema.routines?.length ?? 0) +
+                          (schema.triggers?.length ?? 0)}
                       </Badge>
                     </SidebarMenuButton>
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     {(() => {
-                      const itemCount = schema.tables.length + (schema.routines?.length ?? 0)
+                      const itemCount =
+                        schema.tables.length +
+                        (schema.routines?.length ?? 0) +
+                        (schema.triggers?.length ?? 0)
                       const shouldVirtualize = itemCount > VIRTUALIZATION_THRESHOLD
 
                       if (shouldVirtualize) {
                         // Build unified items list for virtualization
                         const items: SchemaItem[] = [
-                          ...schema.tables.map((table): SchemaItem => ({
-                            type: 'table',
-                            data: table,
-                            schemaName: schema.name
-                          })),
-                          ...(schema.routines ?? []).map((routine): SchemaItem => ({
-                            type: 'routine',
-                            data: routine,
-                            schemaName: schema.name
-                          }))
+                          ...schema.tables.map(
+                            (table): SchemaItem => ({
+                              type: 'table',
+                              data: table,
+                              schemaName: schema.name
+                            })
+                          ),
+                          ...(schema.routines ?? []).map(
+                            (routine): SchemaItem => ({
+                              type: 'routine',
+                              data: routine,
+                              schemaName: schema.name
+                            })
+                          ),
+                          ...(schema.triggers ?? []).map(
+                            (trigger): SchemaItem => ({
+                              type: 'trigger',
+                              data: trigger,
+                              schemaName: schema.name
+                            })
+                          )
                         ]
 
                         return (
@@ -1095,8 +1428,11 @@ export function SchemaExplorer() {
                             schemaName={schema.name}
                             expandedTables={expandedTables}
                             expandedRoutines={expandedRoutines}
+                            expandedTriggers={expandedTriggers}
                             onToggleTable={toggleTable}
                             onToggleRoutine={toggleRoutine}
+                            onToggleTrigger={toggleTrigger}
+                            triggerActions={triggerActions}
                             onTableClick={handleTableClick}
                             onEditTable={handleEditTable}
                             onExportTable={handleExportTable}
@@ -1466,6 +1802,19 @@ export function SchemaExplorer() {
                                   </CollapsibleContent>
                                 </SidebarMenuSubItem>
                               </Collapsible>
+                            )
+                          })}
+                          {/* Triggers */}
+                          {schema.triggers?.map((trigger) => {
+                            const triggerKey = `${schema.name}.${trigger.table}.${trigger.name}`
+                            return (
+                              <TriggerSubItem
+                                key={triggerKey}
+                                trigger={trigger}
+                                isExpanded={expandedTriggers.has(triggerKey)}
+                                onToggle={() => toggleTrigger(triggerKey)}
+                                actions={triggerActions}
+                              />
                             )
                           })}
                         </SidebarMenuSub>

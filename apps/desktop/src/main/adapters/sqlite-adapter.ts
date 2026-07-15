@@ -14,6 +14,7 @@ import type {
   SequenceInfo,
   CustomTypeInfo,
   StatementResult,
+  TriggerInfo,
   ColumnStats,
   ActiveQuery,
   TableSizeInfo,
@@ -36,6 +37,12 @@ import { splitStatements } from '../lib/sql-parser'
 // casting) means a SQLite version that returns an unexpected shape fails loudly at
 // the boundary instead of silently flowing `undefined` into the schema model.
 const SqliteMasterRow = z.object({ name: z.string(), type: z.string() })
+
+const SqliteTriggerRow = z.object({
+  name: z.string(),
+  tbl_name: z.string(),
+  sql: z.string().nullable()
+})
 
 const PragmaTableInfo = z.object({
   cid: z.number(),
@@ -114,6 +121,27 @@ function normalizeSqliteType(type: string): string {
   }
 
   return type.toLowerCase() || 'text'
+}
+
+/**
+ * Best-effort extraction of timing/events/orientation from a SQLite
+ * `CREATE TRIGGER` statement, which stores this metadata only as SQL text.
+ */
+function parseSqliteTriggerSql(
+  sql: string | null
+): Pick<TriggerInfo, 'timing' | 'events' | 'orientation'> {
+  const text = (sql || '').toUpperCase()
+
+  let timing: TriggerInfo['timing'] = 'AFTER'
+  if (/\bINSTEAD\s+OF\b/.test(text)) timing = 'INSTEAD OF'
+  else if (/\bBEFORE\b/.test(text)) timing = 'BEFORE'
+
+  const events: string[] = []
+  if (/\bINSERT\b/.test(text)) events.push('INSERT')
+  if (/\bUPDATE\b/.test(text)) events.push('UPDATE')
+  if (/\bDELETE\b/.test(text)) events.push('DELETE')
+
+  return { timing, events, orientation: 'ROW' }
 }
 
 /**
@@ -349,11 +377,36 @@ export class SQLiteAdapter implements DatabaseAdapter {
         })
       }
 
+      // Get triggers. SQLite stores the full CREATE TRIGGER text in sqlite_master.
+      const triggersResult = db
+        .prepare(
+          `SELECT name, tbl_name, sql
+           FROM sqlite_master
+           WHERE type = 'trigger'
+             AND name NOT LIKE 'sqlite_%'
+           ORDER BY name`
+        )
+        .all()
+
+      const triggers: TriggerInfo[] = z
+        .array(SqliteTriggerRow)
+        .parse(triggersResult)
+        .map((row) => ({
+          name: row.name,
+          schema: 'main',
+          table: row.tbl_name,
+          ...parseSqliteTriggerSql(row.sql),
+          // SQLite has no notion of disabled triggers
+          enabled: true,
+          definition: row.sql || ''
+        }))
+
       return [
         {
           name: 'main',
           tables,
-          routines: [] // SQLite doesn't have stored procedures/functions
+          routines: [], // SQLite doesn't have stored procedures/functions
+          triggers
         }
       ]
     } finally {

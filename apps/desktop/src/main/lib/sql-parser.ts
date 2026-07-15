@@ -28,6 +28,13 @@ export interface SqlParserConfig {
   hashLineComment: boolean
   /** Support bracket-quoted identifiers like [...] (MSSQL) */
   bracketIdentifiers: boolean
+  /**
+   * Keep BEGIN...END routine bodies intact when the statement starts with
+   * CREATE ... TRIGGER/PROCEDURE/FUNCTION/EVENT (MySQL, MSSQL, SQLite).
+   * These dialects have no dollar-quoting, so trigger/procedure bodies
+   * contain bare semicolons that must not split the statement.
+   */
+  routineBodyBlocks: boolean
 }
 
 /**
@@ -40,7 +47,8 @@ export const SQL_PARSER_CONFIGS: Record<DatabaseType, SqlParserConfig> = {
     backtickIdentifiers: false,
     backslashEscape: false,
     hashLineComment: false,
-    bracketIdentifiers: false
+    bracketIdentifiers: false,
+    routineBodyBlocks: false
   },
   mysql: {
     dollarQuotes: false,
@@ -48,7 +56,8 @@ export const SQL_PARSER_CONFIGS: Record<DatabaseType, SqlParserConfig> = {
     backtickIdentifiers: true,
     backslashEscape: true,
     hashLineComment: true,
-    bracketIdentifiers: false
+    bracketIdentifiers: false,
+    routineBodyBlocks: true
   },
   mssql: {
     dollarQuotes: false,
@@ -56,7 +65,8 @@ export const SQL_PARSER_CONFIGS: Record<DatabaseType, SqlParserConfig> = {
     backtickIdentifiers: false,
     backslashEscape: false,
     hashLineComment: false,
-    bracketIdentifiers: true
+    bracketIdentifiers: true,
+    routineBodyBlocks: true
   },
   sqlite: {
     dollarQuotes: false,
@@ -64,8 +74,30 @@ export const SQL_PARSER_CONFIGS: Record<DatabaseType, SqlParserConfig> = {
     backtickIdentifiers: true,
     backslashEscape: false,
     hashLineComment: false,
-    bracketIdentifiers: true
+    bracketIdentifiers: true,
+    routineBodyBlocks: true
   }
+}
+
+const ROUTINE_KEYWORDS = new Set(['TRIGGER', 'PROCEDURE', 'FUNCTION', 'EVENT'])
+// Constructs closed by a two-word END (END IF, END LOOP, ...) are never
+// counted as openers, so their closing END must not decrement the depth.
+const END_SUFFIXES = new Set(['IF', 'LOOP', 'WHILE', 'REPEAT'])
+// BEGIN TRAN / BEGIN TRANSACTION starts a transaction, not a block
+const BEGIN_SUFFIXES = new Set(['TRAN', 'TRANSACTION'])
+
+const isWordStart = (char: string): boolean => /[A-Za-z_]/.test(char)
+const isWordChar = (char: string): boolean => /[A-Za-z0-9_$]/.test(char)
+
+/** Read the next bare word after position `i`, skipping whitespace (no consuming) */
+function peekWord(sql: string, i: number): string {
+  while (i < sql.length && /\s/.test(sql[i])) i++
+  let word = ''
+  while (i < sql.length && isWordChar(sql[i])) {
+    word += sql[i]
+    i++
+  }
+  return word.toUpperCase()
 }
 
 /**
@@ -80,6 +112,17 @@ export function splitStatements(sql: string, dbType: DatabaseType): string[] {
   const statements: string[] = []
   let current = ''
   let i = 0
+
+  // Routine-body tracking (see routineBodyBlocks)
+  let leadingWords: string[] = []
+  let inRoutine = false
+  let blockDepth = 0
+
+  const resetStatementState = (): void => {
+    leadingWords = []
+    inRoutine = false
+    blockDepth = 0
+  }
 
   while (i < sql.length) {
     const char = sql[i]
@@ -261,13 +304,47 @@ export function splitStatements(sql: string, dbType: DatabaseType): string[] {
       continue
     }
 
+    // Track bare words for routine-body detection and BEGIN/END depth
+    if (config.routineBodyBlocks && isWordStart(char)) {
+      let word = ''
+      while (i < sql.length && isWordChar(sql[i])) {
+        word += sql[i]
+        i++
+      }
+      current += word
+      const upper = word.toUpperCase()
+
+      if (!inRoutine && leadingWords.length < 8) {
+        leadingWords.push(upper)
+        if (leadingWords[0] === 'CREATE' && ROUTINE_KEYWORDS.has(upper)) {
+          inRoutine = true
+        }
+      } else if (inRoutine) {
+        if (upper === 'BEGIN' && !BEGIN_SUFFIXES.has(peekWord(sql, i))) {
+          blockDepth++
+        } else if (upper === 'CASE') {
+          blockDepth++
+        } else if (upper === 'END' && !END_SUFFIXES.has(peekWord(sql, i))) {
+          blockDepth = Math.max(0, blockDepth - 1)
+        }
+      }
+      continue
+    }
+
     // Statement separator
     if (char === ';') {
+      if (blockDepth > 0) {
+        // Inside a trigger/procedure body — not a statement boundary
+        current += char
+        i++
+        continue
+      }
       const stmt = current.trim()
       if (stmt) {
         statements.push(stmt)
       }
       current = ''
+      resetStatementState()
       i++
       continue
     }

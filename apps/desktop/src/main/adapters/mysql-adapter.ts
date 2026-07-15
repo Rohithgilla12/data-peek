@@ -17,6 +17,7 @@ import type {
   StatementResult,
   RoutineInfo,
   RoutineParameterInfo,
+  TriggerInfo,
   ColumnStats,
   ColumnStatsType,
   CommonValue,
@@ -631,6 +632,62 @@ export class MySQLAdapter implements DatabaseAdapter {
         })
       }
 
+      // Get all triggers
+      const [triggersRows] = await connection.query(`
+        SELECT
+          trigger_schema,
+          trigger_name,
+          event_object_table AS table_name,
+          action_timing,
+          event_manipulation,
+          action_orientation,
+          action_statement,
+          action_condition
+        FROM information_schema.triggers
+        WHERE trigger_schema NOT IN ('mysql', 'performance_schema', 'information_schema', 'sys')
+        ORDER BY trigger_schema, event_object_table, trigger_name
+      `)
+
+      const triggersRaw = triggersRows as Array<Record<string, unknown>>
+      const triggers = triggersRaw.map((row) =>
+        normalizeRow<{
+          trigger_schema: string
+          trigger_name: string
+          table_name: string
+          action_timing: string
+          event_manipulation: string
+          action_orientation: string | null
+          action_statement: string
+          action_condition: string | null
+        }>(row)
+      )
+
+      // Build triggers lookup map. Each MySQL trigger fires on a single event.
+      const triggersMap = new Map<string, TriggerInfo[]>()
+      for (const row of triggers) {
+        if (!triggersMap.has(row.trigger_schema)) {
+          triggersMap.set(row.trigger_schema, [])
+        }
+        const timing = (row.action_timing?.toUpperCase() || 'BEFORE') as TriggerInfo['timing']
+        const event = row.event_manipulation?.toUpperCase() || ''
+        const definition =
+          `CREATE TRIGGER \`${row.trigger_name}\` ${timing} ${event} ` +
+          `ON \`${row.table_name}\`\nFOR EACH ROW ${row.action_statement}`
+
+        triggersMap.get(row.trigger_schema)!.push({
+          name: row.trigger_name,
+          schema: row.trigger_schema,
+          table: row.table_name,
+          timing,
+          events: event ? [event] : [],
+          orientation: (row.action_orientation?.toUpperCase() as 'ROW' | 'STATEMENT') || 'ROW',
+          // MySQL has no notion of disabled triggers
+          enabled: true,
+          condition: row.action_condition || undefined,
+          definition
+        })
+      }
+
       // Build routines lookup map
       const routinesMap = new Map<string, RoutineInfo[]>()
       for (const row of routines) {
@@ -656,7 +713,8 @@ export class MySQLAdapter implements DatabaseAdapter {
         schemaMap.set(row.schema_name, {
           name: row.schema_name,
           tables: [],
-          routines: routinesMap.get(row.schema_name) || []
+          routines: routinesMap.get(row.schema_name) || [],
+          triggers: triggersMap.get(row.schema_name) || []
         })
       }
 
