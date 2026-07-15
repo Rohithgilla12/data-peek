@@ -281,7 +281,10 @@ describe('NotebookStorage', () => {
 
       const pinnedResult = {
         columns: ['id', 'name'],
-        rows: [[1, 'Alice'], [2, 'Bob']],
+        rows: [
+          [1, 'Alice'],
+          [2, 'Bob']
+        ],
         rowCount: 2,
         executedAt: Date.now(),
         durationMs: 42,

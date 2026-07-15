@@ -12,7 +12,27 @@ import {
   ChevronDown,
   ChevronRight
 } from 'lucide-react'
-import { Button, Input, Checkbox, Collapsible, CollapsibleContent, CollapsibleTrigger, ScrollArea, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Checkbox,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  ScrollArea,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@data-peek/ui'
 
 import { useTabStore, useConnectionStore } from '@/stores'
 import { useDDLStore, type ValidationError } from '@/stores/ddl-store'

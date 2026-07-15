@@ -11,7 +11,22 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react'
-import { Button, Input, Textarea, Badge, ScrollArea, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Textarea,
+  Badge,
+  ScrollArea,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import {
   useTabStore,
@@ -64,7 +79,15 @@ function EventRow({ event, isFresh }: { event: PgNotificationEvent; isFresh: boo
         'relative border-b border-border/50 last:border-0 px-3 py-2 hover:bg-muted/30 cursor-pointer transition-colors',
         isFresh && 'motion-safe:animate-[pgnotify-flash_600ms_ease-out]'
       )}
+      role="button"
+      tabIndex={0}
       onClick={() => setExpanded((v) => !v)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          setExpanded((v) => !v)
+        }
+      }}
     >
       {isFresh && (
         <span
@@ -140,7 +163,11 @@ export function PgNotificationsPanel({ tabId }: Props) {
   const [isSending, setIsSending] = useState(false)
   const [subscribeError, setSubscribeError] = useState<string | null>(null)
   const [sendError, setSendError] = useState<string | null>(null)
-  const mountedAtRef = useRef<number>(Date.now())
+  // Null-guarded lazy init — Date.now() shouldn't run on every render just to
+  // feed useRef's argument.
+  const mountedAtRef = useRef<number | null>(null)
+  if (mountedAtRef.current === null) mountedAtRef.current = Date.now()
+  const mountedAt = mountedAtRef.current
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const autoScrollRef = useRef(true)
@@ -296,6 +323,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
                   <span className="text-muted-foreground text-[10px]">({ch.eventCount})</span>
                 )}
                 <button
+                  type="button"
                   onClick={() => handleUnsubscribe(ch.name)}
                   className="ml-0.5 hover:text-destructive transition-colors"
                   title="Unsubscribe"
@@ -361,7 +389,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
               <EventRow
                 key={event.id}
                 event={event}
-                isFresh={event.receivedAt > mountedAtRef.current && Date.now() - event.receivedAt < 1500}
+                isFresh={event.receivedAt > mountedAt && Date.now() - event.receivedAt < 1500}
               />
             ))
           )}
@@ -371,7 +399,10 @@ export function PgNotificationsPanel({ tabId }: Props) {
       <div className="border-t border-border shrink-0">
         <Collapsible open={isSendOpen} onOpenChange={setIsSendOpen}>
           <CollapsibleTrigger asChild>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full">
+            <button
+              type="button"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
+            >
               <Send className="size-3" />
               <span>Send notification</span>
               {isSendOpen ? (

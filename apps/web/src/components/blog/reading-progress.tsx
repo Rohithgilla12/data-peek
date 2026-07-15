@@ -1,29 +1,30 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { ChevronUp } from 'lucide-react'
+import { useEffect, useState } from "react";
+import { ChevronUp } from "lucide-react";
 
 export function ReadingProgress() {
-  const [progress, setProgress] = useState(0)
-  const [showBackToTop, setShowBackToTop] = useState(false)
+  const [progress, setProgress] = useState(0);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     const updateProgress = () => {
-      const scrollTop = window.scrollY
-      const docHeight = document.documentElement.scrollHeight - window.innerHeight
-      const readProgress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0
-      setProgress(Math.min(100, Math.max(0, readProgress)))
-      setShowBackToTop(scrollTop > 500)
-    }
+      const scrollTop = window.scrollY;
+      const docHeight =
+        document.documentElement.scrollHeight - window.innerHeight;
+      const readProgress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      setProgress(Math.min(100, Math.max(0, readProgress)));
+      setShowBackToTop(scrollTop > 500);
+    };
 
-    window.addEventListener('scroll', updateProgress)
-    updateProgress()
-    return () => window.removeEventListener('scroll', updateProgress)
-  }, [])
+    window.addEventListener("scroll", updateProgress);
+    updateProgress();
+    return () => window.removeEventListener("scroll", updateProgress);
+  }, []);
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   return (
     <>
@@ -44,5 +45,5 @@ export function ReadingProgress() {
         </button>
       )}
     </>
-  )
+  );
 }

@@ -125,12 +125,8 @@
           "name": "activations_license_id_licenses_id_fk",
           "tableFrom": "activations",
           "tableTo": "licenses",
-          "columnsFrom": [
-            "license_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["license_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -140,9 +136,7 @@
         "activations_instance_id_unique": {
           "name": "activations_instance_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "instance_id"
-          ]
+          "columns": ["instance_id"]
         }
       },
       "policies": {},
@@ -237,23 +231,17 @@
         "customers_email_unique": {
           "name": "customers_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "customers_clerk_user_id_unique": {
           "name": "customers_clerk_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "clerk_user_id"
-          ]
+          "columns": ["clerk_user_id"]
         },
         "customers_dodo_customer_id_unique": {
           "name": "customers_dodo_customer_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "dodo_customer_id"
-          ]
+          "columns": ["dodo_customer_id"]
         }
       },
       "policies": {},
@@ -389,12 +377,8 @@
           "name": "licenses_customer_id_customers_id_fk",
           "tableFrom": "licenses",
           "tableTo": "customers",
-          "columnsFrom": [
-            "customer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["customer_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -404,16 +388,12 @@
         "licenses_license_key_unique": {
           "name": "licenses_license_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "license_key"
-          ]
+          "columns": ["license_key"]
         },
         "licenses_dodo_payment_id_unique": {
           "name": "licenses_dodo_payment_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "dodo_payment_id"
-          ]
+          "columns": ["dodo_payment_id"]
         }
       },
       "policies": {},
@@ -511,9 +491,7 @@
         "releases_version_unique": {
           "name": "releases_version_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "version"
-          ]
+          "columns": ["version"]
         }
       },
       "policies": {},

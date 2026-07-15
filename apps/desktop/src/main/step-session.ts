@@ -307,7 +307,7 @@ export class StepSessionRegistry {
         statementIndex,
         rows: (res.rows ?? []) as Record<string, unknown>[],
         fields,
-        rowCount: res.rowCount ?? (res.rows?.length ?? 0),
+        rowCount: res.rowCount ?? res.rows?.length ?? 0,
         durationMs,
         isDataReturning: (res.rows ?? []).length > 0 || Array.isArray(res.fields)
       }
@@ -357,7 +357,9 @@ function defaultClientFactory(config: ConnectionConfig): MinimalDbClient {
     ssl: config.ssl ? { rejectUnauthorized: false } : undefined
   })
   return {
-    connect: () => client.connect(),
+    connect: async () => {
+      await client.connect()
+    },
     query: async (sql: string) => {
       const res = await client.query(sql)
       return {

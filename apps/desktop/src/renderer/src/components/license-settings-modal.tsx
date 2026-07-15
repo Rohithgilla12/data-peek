@@ -7,7 +7,15 @@ import {
   Monitor,
   CreditCard
 } from 'lucide-react'
-import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@data-peek/ui'
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@data-peek/ui'
 
 import { useLicenseStore } from '@/stores/license-store'
 import { buildTrackingUrl } from '@shared/index'

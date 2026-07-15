@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useState } from "react"
-import { StructuredData } from "@/components/seo/structured-data"
+import Link from "next/link";
+import { useState } from "react";
+import { StructuredData } from "@/components/seo/structured-data";
 
 const faqs = [
   {
@@ -37,16 +37,16 @@ const faqs = [
     q: "Is my data safe?",
     a: "Queries run directly from your machine to your database. Credentials live in the OS keychain. There is no telemetry, no usage tracking, no remote logging. For AI, use Ollama locally if you want nothing to leave the box.",
   },
-]
+];
 
 function Row({
   faq,
   open,
   onToggle,
 }: {
-  faq: (typeof faqs)[number]
-  open: boolean
-  onToggle: () => void
+  faq: (typeof faqs)[number];
+  open: boolean;
+  onToggle: () => void;
 }) {
   return (
     <div style={{ borderTop: "1px solid var(--n-line-soft)" }}>
@@ -77,11 +77,11 @@ function Row({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export function Faq() {
-  const [open, setOpen] = useState<number | null>(0)
+  const [open, setOpen] = useState<number | null>(0);
 
   return (
     <section id="faq" className="relative">
@@ -128,5 +128,5 @@ export function Faq() {
         </div>
       </div>
     </section>
-  )
+  );
 }

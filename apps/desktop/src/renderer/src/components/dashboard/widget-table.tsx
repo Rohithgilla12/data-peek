@@ -67,7 +67,7 @@ export function WidgetTable({ config, data }: WidgetTableProps) {
   const sortedData = useMemo(() => {
     if (!sortColumn) return data
 
-    return [...data].sort((a, b) => {
+    return data.toSorted((a, b) => {
       const aVal = a[sortColumn]
       const bVal = b[sortColumn]
 

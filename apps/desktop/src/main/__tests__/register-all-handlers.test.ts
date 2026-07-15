@@ -171,7 +171,7 @@ describe('registerAllHandlers', () => {
     const stores = makeStores()
     const fakeNotebookStorage = {} as NotebookStorage
 
-    registerAllHandlers(stores, fakeNotebookStorage, stubStepSessionRegistry)
+    registerAllHandlers(stores, fakeNotebookStorage, null, stubStepSessionRegistry)
 
     expect(hoisted.registerQueryHandlers).toHaveBeenCalledTimes(1)
     expect(hoisted.registerConnectionHandlers).toHaveBeenCalledWith(stores.connections)
@@ -185,9 +185,7 @@ describe('registerAllHandlers', () => {
     // whole handler registration sequence.
     const stores = makeStores()
 
-    expect(() =>
-      registerAllHandlers(stores, null, stubStepSessionRegistry)
-    ).not.toThrow()
+    expect(() => registerAllHandlers(stores, null, null, stubStepSessionRegistry)).not.toThrow()
 
     expect(hoisted.registerQueryHandlers).toHaveBeenCalledTimes(1)
     expect(hoisted.registerConnectionHandlers).toHaveBeenCalledTimes(1)
@@ -205,7 +203,7 @@ describe('registerAllHandlers', () => {
   it('registers every non-notebook handler regardless of notebookStorage availability', () => {
     const stores = makeStores()
 
-    registerAllHandlers(stores, null, stubStepSessionRegistry)
+    registerAllHandlers(stores, null, null, stubStepSessionRegistry)
 
     expect(hoisted.registerConnectionHandlers).toHaveBeenCalled()
     expect(hoisted.registerQueryHandlers).toHaveBeenCalled()

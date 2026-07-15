@@ -5,10 +5,10 @@ import {
   spring,
   interpolate,
   Sequence,
-} from 'remotion'
-import { brand } from '../../lib/colors'
-import { CyanGlow } from '../../components/CyanGlow'
-import { ShieldCheck, X, Check } from 'lucide-react'
+} from "remotion";
+import { brand } from "../../lib/colors";
+import { CyanGlow } from "../../components/CyanGlow";
+import { ShieldCheck, X, Check } from "lucide-react";
 
 /**
  * "It refuses to poll mutations." Lists allowed leading keywords on the left
@@ -17,35 +17,35 @@ import { ShieldCheck, X, Check } from 'lucide-react'
  */
 
 const accepted: Array<{ kw: string; example: string }> = [
-  { kw: 'SELECT', example: 'SELECT * FROM jobs' },
-  { kw: 'WITH', example: 'WITH t AS (SELECT…)' },
-  { kw: 'VALUES', example: 'VALUES (1, 2), (3, 4)' },
-]
+  { kw: "SELECT", example: "SELECT * FROM jobs" },
+  { kw: "WITH", example: "WITH t AS (SELECT…)" },
+  { kw: "VALUES", example: "VALUES (1, 2), (3, 4)" },
+];
 
 const refused: Array<{ kw: string; reason: string }> = [
-  { kw: 'UPDATE', reason: 'destructive' },
-  { kw: 'DELETE', reason: 'destructive' },
-  { kw: 'INSERT', reason: 'destructive' },
-  { kw: 'DROP', reason: 'DDL' },
-  { kw: 'ALTER', reason: 'DDL' },
-  { kw: 'TRUNCATE', reason: 'destructive' },
-]
+  { kw: "UPDATE", reason: "destructive" },
+  { kw: "DELETE", reason: "destructive" },
+  { kw: "INSERT", reason: "destructive" },
+  { kw: "DROP", reason: "DDL" },
+  { kw: "ALTER", reason: "DDL" },
+  { kw: "TRUNCATE", reason: "destructive" },
+];
 
 export const SafetyGate: React.FC = () => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const headerEntrance = spring({ frame, fps, config: { damping: 200 } })
-  const headerOp = interpolate(headerEntrance, [0, 1], [0, 1])
+  const headerEntrance = spring({ frame, fps, config: { damping: 200 } });
+  const headerOp = interpolate(headerEntrance, [0, 1], [0, 1]);
 
   return (
     <AbsoluteFill
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0 80px',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "0 80px",
         gap: 24,
       }}
     >
@@ -54,20 +54,20 @@ export const SafetyGate: React.FC = () => {
       <div
         style={{
           opacity: headerOp,
-          display: 'flex',
-          alignItems: 'center',
+          display: "flex",
+          alignItems: "center",
           gap: 12,
         }}
       >
         <ShieldCheck size={26} color={brand.accent} strokeWidth={1.5} />
         <h2
           style={{
-            fontFamily: 'Geist, system-ui, sans-serif',
+            fontFamily: "Geist, system-ui, sans-serif",
             fontSize: 36,
             fontWeight: 700,
             color: brand.textPrimary,
             margin: 0,
-            letterSpacing: '-0.03em',
+            letterSpacing: "-0.03em",
           }}
         >
           Refuses to poll mutations.
@@ -77,8 +77,8 @@ export const SafetyGate: React.FC = () => {
       <Sequence from={10} layout="none">
         <div
           style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
             gap: 32,
             width: 1000,
             marginTop: 16,
@@ -105,13 +105,13 @@ export const SafetyGate: React.FC = () => {
         </div>
       </Sequence>
     </AbsoluteFill>
-  )
-}
+  );
+};
 
 interface ColumnProps {
-  heading: string
-  color: string
-  items: Array<{ kw: string; detail: string; icon: React.ReactNode }>
+  heading: string;
+  color: string;
+  items: Array<{ kw: string; detail: string; icon: React.ReactNode }>;
 }
 
 const Column: React.FC<ColumnProps> = ({ heading, color, items }) => {
@@ -122,18 +122,18 @@ const Column: React.FC<ColumnProps> = ({ heading, color, items }) => {
         border: `1px solid ${brand.border}`,
         borderRadius: 14,
         padding: 20,
-        display: 'flex',
-        flexDirection: 'column',
+        display: "flex",
+        flexDirection: "column",
         gap: 10,
       }}
     >
       <div
         style={{
-          fontFamily: 'Geist Mono, monospace',
+          fontFamily: "Geist Mono, monospace",
           fontSize: 11,
           color,
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
           marginBottom: 4,
         }}
       >
@@ -145,44 +145,44 @@ const Column: React.FC<ColumnProps> = ({ heading, color, items }) => {
         </Sequence>
       ))}
     </div>
-  )
-}
+  );
+};
 
 const ItemRow: React.FC<{
-  kw: string
-  detail: string
-  icon: React.ReactNode
-  accent: string
+  kw: string;
+  detail: string;
+  icon: React.ReactNode;
+  accent: string;
 }> = ({ kw, detail, icon, accent }) => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
-  const e = spring({ frame, fps, config: { damping: 200 } })
-  const op = interpolate(e, [0, 1], [0, 1])
-  const tx = interpolate(e, [0, 1], [12, 0])
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const e = spring({ frame, fps, config: { damping: 200 } });
+  const op = interpolate(e, [0, 1], [0, 1]);
+  const tx = interpolate(e, [0, 1], [12, 0]);
   return (
     <div
       style={{
         opacity: op,
         transform: `translateX(${tx}px)`,
-        display: 'flex',
-        alignItems: 'center',
+        display: "flex",
+        alignItems: "center",
         gap: 12,
-        padding: '10px 12px',
+        padding: "10px 12px",
         backgroundColor: brand.surfaceElevated,
         borderRadius: 8,
         border: `1px solid ${accent}22`,
         borderLeft: `3px solid ${accent}90`,
-        fontFamily: 'Geist Mono, monospace',
+        fontFamily: "Geist Mono, monospace",
       }}
     >
       <div
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           width: 18,
           height: 18,
-          borderRadius: '50%',
+          borderRadius: "50%",
           backgroundColor: `${accent}22`,
         }}
       >
@@ -191,9 +191,11 @@ const ItemRow: React.FC<{
       <span style={{ fontSize: 18, fontWeight: 600, color: brand.textPrimary }}>
         {kw}
       </span>
-      <span style={{ fontSize: 14, color: brand.textMuted, marginLeft: 'auto' }}>
+      <span
+        style={{ fontSize: 14, color: brand.textMuted, marginLeft: "auto" }}
+      >
         {detail}
       </span>
     </div>
-  )
-}
+  );
+};

@@ -70,8 +70,8 @@ function CommonValuesList({ values }: CommonValuesProps) {
   const maxCount = Math.max(...values.map((v) => v.count), 1)
   return (
     <div className="space-y-1.5">
-      {values.map((item, i) => (
-        <div key={i} className="space-y-0.5">
+      {values.map((item) => (
+        <div key={item.value ?? '∅null∅'} className="space-y-0.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono truncate max-w-[160px]">
               {item.value === null ? (

@@ -146,9 +146,7 @@ describe('resolveReferences', () => {
     it('empty result emits a defensible WHERE FALSE CTE (PG)', () => {
       const sql = 'SELECT * FROM @empty'
       const r = resolveReferences(sql, parse(sql), {
-        lookup: makeLookup([
-          successTab('empty', [], [{ name: 'id', dataType: 'integer' }])
-        ]),
+        lookup: makeLookup([successTab('empty', [], [{ name: 'id', dataType: 'integer' }])]),
         currentTabId: 'main',
         dialect: 'postgresql'
       })
@@ -206,11 +204,7 @@ describe('resolveReferences', () => {
       const sql = 'SELECT * FROM @t'
       const r = resolveReferences(sql, parse(sql, 'mssql'), {
         lookup: makeLookup([
-          successTab(
-            't',
-            [{ id: 1 }, { id: 2 }],
-            [{ name: 'id', dataType: 'int' }]
-          )
+          successTab('t', [{ id: 1 }, { id: 2 }], [{ name: 'id', dataType: 'int' }])
         ]),
         currentTabId: 'main',
         dialect: 'mssql'
@@ -238,9 +232,7 @@ describe('resolveReferences', () => {
     it('MySQL empty CTE uses WHERE FALSE inside a SELECT subquery', () => {
       const sql = 'SELECT * FROM @empty'
       const r = resolveReferences(sql, parse(sql, 'mysql'), {
-        lookup: makeLookup([
-          successTab('empty', [], [{ name: 'id', dataType: 'integer' }])
-        ]),
+        lookup: makeLookup([successTab('empty', [], [{ name: 'id', dataType: 'integer' }])]),
         currentTabId: 'main',
         dialect: 'mysql'
       })
@@ -253,11 +245,7 @@ describe('resolveReferences', () => {
       const sql = 'SELECT * FROM @select_data'
       const r = resolveReferences(sql, parse(sql, 'mysql'), {
         lookup: makeLookup([
-          successTab(
-            'select_data',
-            [{ order: 1 }],
-            [{ name: 'order', dataType: 'integer' }]
-          )
+          successTab('select_data', [{ order: 1 }], [{ name: 'order', dataType: 'integer' }])
         ]),
         currentTabId: 'main',
         dialect: 'mysql'
@@ -331,11 +319,7 @@ describe('resolveReferences', () => {
       const sql = 'SELECT * FROM @t'
       const r = resolveReferences(sql, parse(sql), {
         lookup: makeLookup([
-          successTab(
-            't',
-            [{ x: Number.POSITIVE_INFINITY }],
-            [{ name: 'x', dataType: 'integer' }]
-          )
+          successTab('t', [{ x: Number.POSITIVE_INFINITY }], [{ name: 'x', dataType: 'integer' }])
         ]),
         currentTabId: 'main',
         dialect: 'postgresql'
@@ -349,11 +333,7 @@ describe('resolveReferences', () => {
       const sql = 'SELECT * FROM @t'
       const r = resolveReferences(sql, parse(sql), {
         lookup: makeLookup([
-          successTab(
-            't',
-            [{ id: null }, { id: 1 }],
-            [{ name: 'id', dataType: 'integer' }]
-          )
+          successTab('t', [{ id: null }, { id: 1 }], [{ name: 'id', dataType: 'integer' }])
         ]),
         currentTabId: 'main',
         dialect: 'postgresql'
@@ -475,16 +455,8 @@ describe('resolveReferences', () => {
       const sql = 'SELECT * FROM @alpha, @beta'
       const r = resolveReferences(sql, parse(sql), {
         lookup: makeLookup([
-          successTab(
-            'alpha',
-            [{ note: 'x'.repeat(60) }],
-            [{ name: 'note', dataType: 'text' }]
-          ),
-          successTab(
-            'beta',
-            [{ note: 'y'.repeat(60) }],
-            [{ name: 'note', dataType: 'text' }]
-          )
+          successTab('alpha', [{ note: 'x'.repeat(60) }], [{ name: 'note', dataType: 'text' }]),
+          successTab('beta', [{ note: 'y'.repeat(60) }], [{ name: 'note', dataType: 'text' }])
         ]),
         currentTabId: 'main',
         dialect: 'postgresql',

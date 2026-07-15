@@ -146,10 +146,10 @@ function StatusDot({ state }: { state: SessionState }) {
     state === 'running'
       ? 'bg-amber-500 animate-pulse'
       : state === 'paused' || state === 'idle'
-      ? 'bg-primary'
-      : state === 'errored'
-      ? 'bg-destructive'
-      : 'bg-green-500'
+        ? 'bg-primary'
+        : state === 'errored'
+          ? 'bg-destructive'
+          : 'bg-green-500'
   return <div className={cn('size-2 rounded-full', color)} />
 }
 

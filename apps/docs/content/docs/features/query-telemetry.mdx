@@ -17,15 +17,15 @@ After running a query, click the **Telemetry** button in the results toolbar to 
 
 Each query is broken down into these phases:
 
-| Phase | Description |
-|-------|-------------|
-| **TCP Handshake** | Time to establish TCP connection |
-| **DB Handshake** | Database authentication and protocol setup |
-| **Network Latency** | Round-trip time to the server |
-| **Query Planning** | Time for the database to plan the query |
-| **Execution** | Server-side query execution time |
-| **Data Transfer** | Time to transfer results from server |
-| **Parse & Decode** | Client-side result parsing |
+| Phase               | Description                                |
+| ------------------- | ------------------------------------------ |
+| **TCP Handshake**   | Time to establish TCP connection           |
+| **DB Handshake**    | Database authentication and protocol setup |
+| **Network Latency** | Round-trip time to the server              |
+| **Query Planning**  | Time for the database to plan the query    |
+| **Execution**       | Server-side query execution time           |
+| **Data Transfer**   | Time to transfer results from server       |
+| **Parse & Decode**  | Client-side result parsing                 |
 
 ## View Modes
 
@@ -53,15 +53,15 @@ For more accurate performance analysis, use **Benchmark Mode**:
 
 ### Benchmark Statistics
 
-| Metric | Description |
-|--------|-------------|
-| **Min** | Fastest execution time |
-| **Max** | Slowest execution time |
-| **Avg** | Average execution time |
-| **P90** | 90th percentile (90% of queries were faster) |
-| **P95** | 95th percentile |
-| **P99** | 99th percentile |
-| **σ (Std Dev)** | Standard deviation |
+| Metric          | Description                                  |
+| --------------- | -------------------------------------------- |
+| **Min**         | Fastest execution time                       |
+| **Max**         | Slowest execution time                       |
+| **Avg**         | Average execution time                       |
+| **P90**         | 90th percentile (90% of queries were faster) |
+| **P95**         | 95th percentile                              |
+| **P99**         | 99th percentile                              |
+| **σ (Std Dev)** | Standard deviation                           |
 
 ### Percentile Selector
 
@@ -72,16 +72,19 @@ Switch between viewing Avg, P90, P95, or P99 values in the phase breakdown.
 ### Identifying Slow Phases
 
 If **Execution** is slow:
+
 - Check your query plan (`EXPLAIN ANALYZE`)
 - Add indexes for frequently filtered columns
 - Optimize joins
 
 If **Data Transfer** is slow:
+
 - Reduce result set size with `LIMIT`
 - Select only needed columns instead of `SELECT *`
 - Consider pagination
 
 If **Network Latency** is high:
+
 - Database server may be geographically distant
 - Network congestion issues
 - Consider a closer database region
@@ -89,6 +92,7 @@ If **Network Latency** is high:
 ### Comparing Query Performance
 
 Use benchmark mode to compare:
+
 - Different query approaches
 - Before and after index changes
 - Impact of query optimizations
@@ -96,6 +100,7 @@ Use benchmark mode to compare:
 ### Detecting Connection Issues
 
 High **TCP Handshake** or **DB Handshake** times may indicate:
+
 - Network issues
 - SSL/TLS overhead
 - Authentication delays

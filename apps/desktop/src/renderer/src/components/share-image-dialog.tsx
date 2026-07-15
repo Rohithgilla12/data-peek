@@ -1,7 +1,22 @@
 import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react'
 import { toBlob } from 'html-to-image'
 
-import { Button, Label, Switch, cn, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Label,
+  Switch,
+  cn,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 import { Copy, Download, Check, Loader2 } from 'lucide-react'
 
 type BackgroundStyle =

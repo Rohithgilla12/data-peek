@@ -16,7 +16,8 @@ To use inline editing:
 3. **Active Connection** - Must be connected to execute changes
 
 <Callout type="warning">
-  Tables without primary keys cannot be edited inline. This is a safety feature to prevent accidental bulk updates.
+  Tables without primary keys cannot be edited inline. This is a safety feature
+  to prevent accidental bulk updates.
 </Callout>
 
 ## Enabling Edit Mode
@@ -38,15 +39,15 @@ To use inline editing:
 
 data-peek provides type-appropriate inputs:
 
-| Data Type | Input Type |
-|-----------|------------|
-| text, varchar | Text input / textarea |
-| integer, numeric | Number input |
-| boolean | Checkbox |
-| date | Date picker |
-| timestamp | Date-time picker |
-| enum | Dropdown with valid values |
-| json, jsonb | JSON editor |
+| Data Type        | Input Type                 |
+| ---------------- | -------------------------- |
+| text, varchar    | Text input / textarea      |
+| integer, numeric | Number input               |
+| boolean          | Checkbox                   |
+| date             | Date picker                |
+| timestamp        | Date-time picker           |
+| enum             | Dropdown with valid values |
+| json, jsonb      | JSON editor                |
 
 ### Setting NULL
 
@@ -77,6 +78,7 @@ Before saving, review your changes:
 ### Pending Changes Count
 
 The toolbar shows:
+
 - **X updates** - Modified cells
 - **X inserts** - New rows
 - **X deletes** - Rows to delete
@@ -107,6 +109,7 @@ Click **Save Changes** to execute:
 ## Discarding Changes
 
 Click **Discard Changes** to:
+
 - Revert all modified cells to original values
 - Remove all new rows
 - Unmark deleted rows
@@ -149,15 +152,15 @@ Destructive actions (delete, discard) require confirmation.
 
 ## Keyboard Shortcuts
 
-| Action | macOS | Windows/Linux |
-|--------|-------|---------------|
-| Save pending changes | `Cmd+S` | `Ctrl+S` |
-| Discard all changes | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |
-| Add new row | `Cmd+Shift+A` | `Ctrl+Shift+A` |
-| Exit edit mode | `Escape` | `Escape` |
-| Confirm cell edit | `Enter` | `Enter` |
-| Cancel cell edit | `Escape` | `Escape` |
-| Move to next cell | `Tab` | `Tab` |
+| Action               | macOS         | Windows/Linux  |
+| -------------------- | ------------- | -------------- |
+| Save pending changes | `Cmd+S`       | `Ctrl+S`       |
+| Discard all changes  | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |
+| Add new row          | `Cmd+Shift+A` | `Ctrl+Shift+A` |
+| Exit edit mode       | `Escape`      | `Escape`       |
+| Confirm cell edit    | `Enter`       | `Enter`        |
+| Cancel cell edit     | `Escape`      | `Escape`       |
+| Move to next cell    | `Tab`         | `Tab`          |
 
 ## Limitations
 

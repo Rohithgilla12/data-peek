@@ -1,6 +1,22 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Clock, AlertCircle } from 'lucide-react'
-import { Button, Input, Label, Textarea, Switch, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Label,
+  Textarea,
+  Switch,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useScheduledQueryStore, useConnectionStore } from '@/stores'
 import type { ScheduledQuery, SchedulePreset, CreateScheduledQueryInput } from '@shared/index'
@@ -283,8 +299,8 @@ export function ScheduledQueryFormDialog({
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">Next runs:</Label>
               <div className="text-xs text-muted-foreground space-y-0.5">
-                {nextRuns.map((time, i) => (
-                  <div key={i}>
+                {nextRuns.map((time) => (
+                  <div key={String(time)}>
                     {new Date(time).toLocaleString(undefined, {
                       weekday: 'short',
                       month: 'short',

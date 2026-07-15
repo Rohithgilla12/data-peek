@@ -78,8 +78,8 @@ I started with a loop. Something like:
 
 ```ts
 for (const stmt of statements) {
-  const result = await runOne(stmt)
-  await waitForUserToHitNext()
+  const result = await runOne(stmt);
+  await waitForUserToHitNext();
 }
 ```
 
@@ -115,12 +115,12 @@ The fix is registering the shortcut as a Monaco action:
 
 ```ts
 editor.addAction({
-  id: 'data-peek.step.next',
-  label: 'Step: Next statement',
+  id: "data-peek.step.next",
+  label: "Step: Next statement",
   keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
-  precondition: 'data-peek.step.active',
+  precondition: "data-peek.step.active",
   run: () => stepNext(),
-})
+});
 ```
 
 The `precondition` context is set only while a step session is running,
@@ -159,7 +159,7 @@ tied to one open connection.
 
 `psql` has `\set ON_ERROR_STOP on` and you can paste a script and it
 will halt on the first error. That is fine for scripted use. It is not
-fine for iterative debugging because you cannot *continue past* the
+fine for iterative debugging because you cannot _continue past_ the
 error without rerunning everything, and you cannot inspect between
 statements that succeed — `psql` races to the next prompt.
 

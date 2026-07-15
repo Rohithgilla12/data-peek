@@ -1,48 +1,51 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
-import { useQueryState } from 'nuqs'
-import { parseAsString } from 'nuqs'
-import { useConnectionStore } from '@/stores/connection-store'
-import { useQueryTabs } from '@/hooks/use-query-tabs'
+import { useEffect } from "react";
+import { useQueryState } from "nuqs";
+import { parseAsString } from "nuqs";
+import { useConnectionStore } from "@/stores/connection-store";
+import { useQueryTabs } from "@/hooks/use-query-tabs";
 
 export function useSyncUrl() {
-  const [connectionParam, setConnectionParam] = useQueryState('connection', parseAsString)
-  const [sqlParam, setSqlParam] = useQueryState('sql', parseAsString)
+  const [connectionParam, setConnectionParam] = useQueryState(
+    "connection",
+    parseAsString,
+  );
+  const [sqlParam, setSqlParam] = useQueryState("sql", parseAsString);
 
-  const { activeConnectionId, setActiveConnection } = useConnectionStore()
-  const { tabs, activeTabId, updateSql } = useQueryTabs()
-  const activeTab = tabs.find((t) => t.id === activeTabId)
+  const { activeConnectionId, setActiveConnection } = useConnectionStore();
+  const { tabs, activeTabId, updateSql } = useQueryTabs();
+  const activeTab = tabs.find((t) => t.id === activeTabId);
 
   // URL -> Store: on mount, restore from URL
   useEffect(() => {
     if (connectionParam && connectionParam !== activeConnectionId) {
-      setActiveConnection(connectionParam)
+      setActiveConnection(connectionParam);
     }
-  }, [])
+  }, []);
 
   // URL -> Store: restore SQL from URL on mount
   useEffect(() => {
     if (sqlParam && activeTab && !activeTab.sql) {
-      updateSql(activeTabId, sqlParam)
+      updateSql(activeTabId, sqlParam);
     }
-  }, [])
+  }, []);
 
   // Store -> URL: sync connection changes to URL
   useEffect(() => {
     if (activeConnectionId !== connectionParam) {
-      setConnectionParam(activeConnectionId)
+      setConnectionParam(activeConnectionId);
     }
-  }, [activeConnectionId])
+  }, [activeConnectionId]);
 
   // Store -> URL: sync SQL changes to URL (debounced)
   useEffect(() => {
     const timeout = setTimeout(() => {
-      const sql = activeTab?.sql || null
+      const sql = activeTab?.sql || null;
       if (sql !== sqlParam) {
-        setSqlParam(sql || null)
+        setSqlParam(sql || null);
       }
-    }, 500)
-    return () => clearTimeout(timeout)
-  }, [activeTab?.sql])
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [activeTab?.sql]);
 }

@@ -59,13 +59,13 @@ further: each chip's **mode** decides how its column gets compared.
 
 ```ts
 type SortMode =
-  | 'natural'    // default, dispatches on declared column type
-  | 'length'     // sort strings by character length
-  | 'absolute'   // sort numbers by magnitude, ignoring sign
-  | 'byMonth'    // pull the month out of a date and sort 1..12
-  | 'byDayOfWeek'// pull the weekday out of a date
-  | 'byTime'     // pull the time-of-day out of a timestamp
-  | 'random'     // seeded shuffle
+  | "natural" // default, dispatches on declared column type
+  | "length" // sort strings by character length
+  | "absolute" // sort numbers by magnitude, ignoring sign
+  | "byMonth" // pull the month out of a date and sort 1..12
+  | "byDayOfWeek" // pull the weekday out of a date
+  | "byTime" // pull the time-of-day out of a timestamp
+  | "random"; // seeded shuffle
 ```
 
 `natural` is the important one. It dispatches **strictly by declared

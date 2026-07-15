@@ -219,10 +219,7 @@ export const useStepStore = create<StepState>((set, get) => ({
     set((s) =>
       updateSession(s, tabId, (sess) => ({
         ...sess,
-        pinnedResults: [
-          ...sess.pinnedResults,
-          { statementIndex, result: sess.lastResult! }
-        ]
+        pinnedResults: [...sess.pinnedResults, { statementIndex, result: sess.lastResult! }]
       }))
     )
   },

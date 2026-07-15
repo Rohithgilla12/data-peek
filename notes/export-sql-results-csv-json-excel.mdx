@@ -159,21 +159,21 @@ Three lines. Handles types correctly. Dates stay as dates. Numbers stay as numbe
 If Python isn't your thing:
 
 ```javascript
-import pg from 'pg'
-import ExcelJS from 'exceljs'
+import pg from "pg";
+import ExcelJS from "exceljs";
 
-const client = new pg.Client({ connectionString: process.env.DATABASE_URL })
-await client.connect()
+const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+await client.connect();
 
-const { rows } = await client.query('SELECT * FROM orders WHERE total > 100')
-const workbook = new ExcelJS.Workbook()
-const sheet = workbook.addWorksheet('Orders')
+const { rows } = await client.query("SELECT * FROM orders WHERE total > 100");
+const workbook = new ExcelJS.Workbook();
+const sheet = workbook.addWorksheet("Orders");
 
-sheet.columns = Object.keys(rows[0]).map(key => ({ header: key, key }))
-rows.forEach(row => sheet.addRow(row))
+sheet.columns = Object.keys(rows[0]).map((key) => ({ header: key, key }));
+rows.forEach((row) => sheet.addRow(row));
 
-await workbook.xlsx.writeFile('orders.xlsx')
-await client.end()
+await workbook.xlsx.writeFile("orders.xlsx");
+await client.end();
 ```
 
 A few more lines, but you get full control over formatting, column widths, and multiple sheets.

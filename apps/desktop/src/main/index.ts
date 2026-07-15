@@ -18,6 +18,7 @@ import {
   type PersistentStore
 } from './storage'
 import { NotebookStorage } from './notebook-storage'
+import { TimeMachineStorage } from './time-machine-storage'
 import { initSchemaCache } from './schema-cache'
 import { registerAllHandlers } from './ipc'
 import { setForceQuit } from './app-state'
@@ -26,6 +27,8 @@ import { initSchedulerService, stopAllSchedules } from './scheduler-service'
 import { initDashboardService } from './dashboard-service'
 import { cleanup as cleanupPgNotify } from './pg-notification-listener'
 import { closeAllPgPools } from './adapters/pg-pool-manager'
+import { PostgresAdapter } from './adapters/postgres-adapter'
+import { getAdapterByType } from './db-adapter'
 import { StepSessionRegistry } from './step-session'
 import { createLogger } from './lib/logger'
 
@@ -36,6 +39,7 @@ let store: PersistentStore<{ connections: ConnectionConfig[] }>
 let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 let snippetsStore: DpStorage<{ snippets: Snippet[] }>
 let queryHistoryStore: DpStorage<{ queryHistory: QueryHistoryEntry[] }>
+let timeMachineStorage: TimeMachineStorage | null = null
 
 const stepSessionRegistry = new StepSessionRegistry()
 
@@ -210,6 +214,14 @@ app.whenReady().then(async () => {
     console.error('Failed to initialize NotebookStorage:', error)
   }
 
+  // Same native-module caveat as NotebookStorage — degrade to null so handler
+  // registration below is always reached.
+  try {
+    timeMachineStorage = new TimeMachineStorage(app.getPath('userData'))
+  } catch (error) {
+    log.warn('Failed to initialize TimeMachineStorage:', error)
+  }
+
   try {
     stepSessionRegistry.startCleanupTimer()
   } catch (error) {
@@ -226,6 +238,7 @@ app.whenReady().then(async () => {
       queryHistory: queryHistoryStore
     },
     notebookStorage,
+    timeMachineStorage,
     stepSessionRegistry
   )
 
@@ -265,13 +278,30 @@ app.on('before-quit', (event) => {
   stopAllSchedules()
   cleanupPgNotify()
 
+  // Roll back any open manual transactions first — their checked-out clients
+  // would otherwise block pool.end() and leave transactions open server-side.
+  const drainPgSessions = async (): Promise<void> => {
+    const pg = getAdapterByType('postgresql')
+    if (pg instanceof PostgresAdapter) {
+      await pg.rollbackAllTransactions()
+    }
+  }
+
   Promise.race([
-    Promise.all([stepSessionRegistry.cleanupAll(), closeAllPgPools()]),
+    Promise.all([
+      stepSessionRegistry.cleanupAll(),
+      drainPgSessions().then(() => closeAllPgPools())
+    ]),
     new Promise((resolve) => setTimeout(resolve, 3000))
   ])
     .catch((err) => log.error('cleanupAll failed during quit:', err))
     .finally(() => {
       stepSessionRegistry.stopCleanupTimer()
+      try {
+        timeMachineStorage?.close()
+      } catch (err) {
+        log.warn('TimeMachineStorage close failed during quit:', err)
+      }
       app.quit()
     })
 })

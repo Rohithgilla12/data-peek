@@ -21,7 +21,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
   const selectedResult: StatementResult | null =
     selectedIndex === 'current'
       ? session.lastResult
-      : session.pinnedResults.find((p) => p.statementIndex === selectedIndex)?.result ?? null
+      : (session.pinnedResults.find((p) => p.statementIndex === selectedIndex)?.result ?? null)
 
   const currentIsPinned =
     session.lastResult &&
@@ -39,11 +39,21 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
                 ? 'bg-card text-foreground border border-border'
                 : 'text-muted-foreground hover:bg-card/50'
             )}
+            role="button"
+            tabIndex={0}
             onClick={() => setSelectedIndex(p.statementIndex)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setSelectedIndex(p.statementIndex)
+              }
+            }}
           >
             <Pin className="size-2.5 text-amber-500" />
             <span>#{p.statementIndex + 1}</span>
             <button
+              type="button"
+              aria-label="Unpin result"
               onClick={(e) => {
                 e.stopPropagation()
                 unpinResult(tabId, p.statementIndex)
@@ -63,7 +73,15 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
                 ? 'bg-card text-foreground border border-primary/40'
                 : 'text-muted-foreground hover:bg-card/50'
             )}
+            role="button"
+            tabIndex={0}
             onClick={() => setSelectedIndex('current')}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                setSelectedIndex('current')
+              }
+            }}
           >
             <span>Current · #{session.lastResult.statementIndex + 1}</span>
           </div>

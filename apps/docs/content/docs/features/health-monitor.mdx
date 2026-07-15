@@ -16,6 +16,7 @@ Click **Health Monitor** in the sidebar to open it as a dedicated tab.
 ### Active Queries
 
 See all currently running queries with:
+
 - Query text
 - Duration
 - State (active, idle, waiting)
@@ -24,6 +25,7 @@ See all currently running queries with:
 ### Table Sizes
 
 A sortable table showing:
+
 - Table name
 - Total size (data + indexes)
 - Data size
@@ -44,18 +46,19 @@ Shows current lock activity and any blocking queries, helping you identify and r
 
 Configure automatic polling:
 
-| Interval | Use Case |
-|----------|----------|
-| 2s | Active debugging |
-| 5s | General monitoring |
-| 10s | Background monitoring |
-| 30s | Low-frequency checks |
-| Off | Manual refresh only |
+| Interval | Use Case              |
+| -------- | --------------------- |
+| 2s       | Active debugging      |
+| 5s       | General monitoring    |
+| 10s      | Background monitoring |
+| 30s      | Low-frequency checks  |
+| Off      | Manual refresh only   |
 
 ## Share as Image
 
 Each panel has a **Share** button that exports the data as a styled PNG image with your choice of background theme, perfect for sharing in Slack or documentation.
 
 <Callout type="info">
-  The Health Monitor currently supports PostgreSQL. MySQL and MSSQL support is planned.
+  The Health Monitor currently supports PostgreSQL. MySQL and MSSQL support is
+  planned.
 </Callout>

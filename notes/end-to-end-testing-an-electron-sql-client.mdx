@@ -16,21 +16,30 @@ Playwright to the main process, started a seeded Postgres container with
 testcontainers, and verified the IPC contract end-to-end:
 
 ```ts
-test('db.query against `users` returns rows with the expected shape', async ({ window }) => {
+test("db.query against `users` returns rows with the expected shape", async ({
+  window,
+}) => {
   const result = await window.evaluate(async (cfg) => {
-    return window.api.db.query(cfg, 'SELECT id, email, name FROM users ORDER BY email LIMIT 5')
-  }, pg.config)
+    return window.api.db.query(
+      cfg,
+      "SELECT id, email, name FROM users ORDER BY email LIMIT 5",
+    );
+  }, pg.config);
 
-  expect(result.success).toBe(true)
-  expect(result.data.fields.map((f) => f.name)).toEqual(['id', 'email', 'name'])
-})
+  expect(result.success).toBe(true);
+  expect(result.data.fields.map((f) => f.name)).toEqual([
+    "id",
+    "email",
+    "name",
+  ]);
+});
 ```
 
 You can see what's happening: a real Electron process, a real preload bridge,
 a real `pg` adapter, a real Docker container running Postgres 16. That's a lot
 of real for one assertion.
 
-But the *renderer* never participated. No clicks. No typing into Monaco. No
+But the _renderer_ never participated. No clicks. No typing into Monaco. No
 double-clicking a cell to edit it. The button that says "Test Connection"
 might as well have been a sticker on the screen.
 
@@ -94,12 +103,12 @@ pnpm test:e2e
 pnpm exec playwright test connection-form.spec.ts
 ```
 
-The `out/` directory had been built *before* I added the testids. Playwright
+The `out/` directory had been built _before_ I added the testids. Playwright
 was launching `out/main/index.js` — a perfectly happy Electron app, just one
 that didn't know about the changes I had made fifteen minutes earlier.
 
 I felt this most acutely when the second implementation pass on a separate
-spec hit the *exact same trap*. It is genuinely the kind of thing that needs
+spec hit the _exact same trap_. It is genuinely the kind of thing that needs
 a banner.
 
 The fix in the test code is to lean on selectors that don't depend on a
@@ -108,19 +117,21 @@ form inputs (which the dialog already had), and accessible names:
 
 ```ts
 async function openAddDialog(window: Page) {
-  await expect(window.getByText('Loading...')).toBeHidden({ timeout: 5000 })
+  await expect(window.getByText("Loading...")).toBeHidden({ timeout: 5000 });
   // ... open the dropdown/button ...
-  await expect(window.locator('[data-slot="sheet-content"]')).toBeVisible({ timeout: 5000 })
+  await expect(window.locator('[data-slot="sheet-content"]')).toBeVisible({
+    timeout: 5000,
+  });
 }
 
 function dialog(window: Page) {
-  return window.locator('[data-slot="sheet-content"]')
+  return window.locator('[data-slot="sheet-content"]');
 }
 
 // Then everywhere:
-await dialog(window).locator('#name').fill(cfg.name)
-await dialog(window).locator('#host').fill(cfg.host)
-await dialog(window).locator('#port').fill(String(cfg.port))
+await dialog(window).locator("#name").fill(cfg.name);
+await dialog(window).locator("#host").fill(cfg.host);
+await dialog(window).locator("#port").fill(String(cfg.port));
 ```
 
 The real fix is to remember to run the script that builds. But the spec is
@@ -131,10 +142,10 @@ stronger now too: it stops depending on attributes I might forget to bake in.
 Here is the naive approach that I tried first:
 
 ```ts
-const editor = window.locator('[data-testid=query-tab-monaco]')
-await editor.click()
-await window.keyboard.type('SELECT id FROM users LIMIT 1')
-await window.keyboard.press('Meta+Enter')
+const editor = window.locator("[data-testid=query-tab-monaco]");
+await editor.click();
+await window.keyboard.type("SELECT id FROM users LIMIT 1");
+await window.keyboard.press("Meta+Enter");
 ```
 
 What happens: Monaco eats half the characters. The `<` part of `SELECT` lands
@@ -142,21 +153,24 @@ in the editor, the `S` lands in the document because focus never quite
 transferred, and `Meta+Enter` opens... I have no idea, honestly. Possibly
 the command palette. The query doesn't run.
 
-What you actually need is to coax Monaco into a known state and *then* type:
+What you actually need is to coax Monaco into a known state and _then_ type:
 
 ```ts
 // Click the editor wrapper to focus it.
-await window.locator('.monaco-editor').first().click()
+await window.locator(".monaco-editor").first().click();
 
 // Select-all to clear any pre-populated text from the tab's template.
-await window.keyboard.press(`${modifier}+a`)
+await window.keyboard.press(`${modifier}+a`);
 
 // Now type.
-await window.keyboard.type('SELECT id, email, name FROM users ORDER BY email LIMIT 3')
+await window.keyboard.type(
+  "SELECT id, email, name FROM users ORDER BY email LIMIT 3",
+);
 
 // Cmd+Enter on darwin, Ctrl+Enter elsewhere.
-const runShortcut = process.platform === 'darwin' ? 'Meta+Enter' : 'Control+Enter'
-await window.keyboard.press(runShortcut)
+const runShortcut =
+  process.platform === "darwin" ? "Meta+Enter" : "Control+Enter";
+await window.keyboard.press(runShortcut);
 ```
 
 `Cmd+A` is the magic. It forces Monaco's input handler to be the active one
@@ -188,19 +202,24 @@ the wrong row" at 2 AM. The test had to learn the same lesson:
 
 ```ts
 // Step 5: click the visible commit affordance.
-await window.getByRole('button', { name: /apply|commit|save changes/i }).first().click()
+await window
+  .getByRole("button", { name: /apply|commit|save changes/i })
+  .first()
+  .click();
 
 // Step 6-7: the preview dialog appears. Click through it.
-await window.getByRole('button', { name: /execute \d+ statement/i }).click()
+await window.getByRole("button", { name: /execute \d+ statement/i }).click();
 
 // Step 8: verify via IPC, because asserting against the just-rendered
 // results table would prove that React re-rendered, not that the DB changed.
 const verify = await window.evaluate(
   ({ cfg, id }) =>
     window.api.db.query(cfg, `SELECT name FROM users WHERE id = '${id}'`),
-  { cfg: pg.config, id: target.id }
-)
-expect((verify.data as { rows: Array<{ name: string }> }).rows[0].name).toBe('UI Edit Marker')
+  { cfg: pg.config, id: target.id },
+);
+expect((verify.data as { rows: Array<{ name: string }> }).rows[0].name).toBe(
+  "UI Edit Marker",
+);
 ```
 
 That last point is worth dwelling on. When you write a UI test, it is very
@@ -213,13 +232,19 @@ Same test, with the cleanup contract that any test mutating shared state
 must honor:
 
 ```ts
-test('double-click cell → edit, commit → DB row updated', async ({ window }) => {
+test("double-click cell → edit, commit → DB row updated", async ({
+  window,
+}) => {
   // Snapshot the target row up front.
   const baseline = await window.evaluate(
-    (cfg) => window.api.db.query(cfg, 'SELECT id, name FROM users ORDER BY email LIMIT 1'),
-    pg.config
-  )
-  const target = baseline.data.rows[0]
+    (cfg) =>
+      window.api.db.query(
+        cfg,
+        "SELECT id, name FROM users ORDER BY email LIMIT 1",
+      ),
+    pg.config,
+  );
+  const target = baseline.data.rows[0];
 
   try {
     // ... open tab, type query, double-click, type, commit, verify ...
@@ -230,12 +255,12 @@ test('double-click cell → edit, commit → DB row updated', async ({ window })
       ({ cfg, id, original }) =>
         window.api.db.query(
           cfg,
-          `UPDATE users SET name = '${original.replace(/'/g, "''")}' WHERE id = '${id}'`
+          `UPDATE users SET name = '${original.replace(/'/g, "''")}' WHERE id = '${id}'`,
         ),
-      { cfg: pg.config, id: target.id, original: target.name }
-    )
+      { cfg: pg.config, id: target.id, original: target.name },
+    );
   }
-})
+});
 ```
 
 The `try/finally` is non-negotiable. The Postgres container survives across
@@ -269,8 +294,8 @@ db.explain(config: ConnectionConfig, query: string, analyze: boolean): Promise<.
 Not optional. The test threads `false` for cost-only mode. EXPLAIN ANALYZE
 coverage is a separate test that I haven't written yet.
 
-The lesson: when you're writing a plan that references an IPC method, *grep
-the actual exports first*. Plans are a hypothesis; the preload file is the
+The lesson: when you're writing a plan that references an IPC method, _grep
+the actual exports first_. Plans are a hypothesis; the preload file is the
 truth.
 
 ## What the numbers look like
@@ -314,7 +339,7 @@ Plenty:
 ## What I would tell past me
 
 1. **Run the build before you assume your testid doesn't work.** `pnpm
-   test:e2e` rebuilds, `pnpm exec playwright test` doesn't, and you will get
+test:e2e` rebuilds, `pnpm exec playwright test` doesn't, and you will get
    this wrong at least once.
 2. **Read the actual IPC exports** instead of guessing signatures from
    memory. The preload file is the contract.
@@ -331,8 +356,8 @@ That's the bar.
 
 ---
 
-*data-peek is an open-source SQL client built with Electron, React, and
+_data-peek is an open-source SQL client built with Electron, React, and
 TypeScript. It's keyboard-first, fast, and supports PostgreSQL, MySQL, and
 Microsoft SQL Server. If you've been searching for a SQL client that feels
 like Linear or Raycast instead of a configuration wizard from 2008, give it
-a try.*
+a try._

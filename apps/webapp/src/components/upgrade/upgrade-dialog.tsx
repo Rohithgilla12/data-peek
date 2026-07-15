@@ -1,30 +1,30 @@
-'use client'
+"use client";
 
-import { Check, X, Zap } from 'lucide-react'
-import Link from 'next/link'
+import { Check, X, Zap } from "lucide-react";
+import Link from "next/link";
 
 const proFeatures = [
-  'Unlimited connections',
-  'Unlimited queries per day',
-  'Unlimited saved queries',
-  '90-day query history',
-  'Unlimited dashboards',
-  'Inline editing',
-  'AI chat assistant',
-  'Full health monitor',
-  'Column statistics',
-  'EXPLAIN plans',
-  'Clean share cards',
-]
+  "Unlimited connections",
+  "Unlimited queries per day",
+  "Unlimited saved queries",
+  "90-day query history",
+  "Unlimited dashboards",
+  "Inline editing",
+  "AI chat assistant",
+  "Full health monitor",
+  "Column statistics",
+  "EXPLAIN plans",
+  "Clean share cards",
+];
 
 interface UpgradeDialogProps {
-  open: boolean
-  onClose: () => void
-  feature?: string
+  open: boolean;
+  onClose: () => void;
+  feature?: string;
 }
 
 export function UpgradeDialog({ open, onClose, feature }: UpgradeDialogProps) {
-  if (!open) return null
+  if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -44,7 +44,8 @@ export function UpgradeDialog({ open, onClose, feature }: UpgradeDialogProps) {
 
         {feature && (
           <p className="text-sm text-muted-foreground mb-4">
-            <span className="font-medium text-foreground">{feature}</span> requires a Pro plan.
+            <span className="font-medium text-foreground">{feature}</span>{" "}
+            requires a Pro plan.
           </p>
         )}
 
@@ -77,5 +78,5 @@ export function UpgradeDialog({ open, onClose, feature }: UpgradeDialogProps) {
         </Link>
       </div>
     </div>
-  )
+  );
 }

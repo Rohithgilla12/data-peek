@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     if (!license_key || !instance_id) {
       return NextResponse.json(
         { error: "License key and instance_id are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       .where(eq(activations.instanceId, instance_id));
 
     console.log(
-      `[deactivate] Deactivated ${license_key} instance ${instance_id}`
+      `[deactivate] Deactivated ${license_key} instance ${instance_id}`,
     );
 
     return NextResponse.json({
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     console.error("License deactivation error:", error);
     return NextResponse.json(
       { error: "Failed to deactivate license" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

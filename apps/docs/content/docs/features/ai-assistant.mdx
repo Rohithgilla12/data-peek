@@ -30,12 +30,12 @@ Your API key is stored securely using your operating system's keychain.
 
 ## Supported Providers
 
-| Provider | Models (examples) |
-|----------|-------------------|
-| OpenAI | GPT-4o, GPT-4, GPT-3.5 Turbo |
+| Provider  | Models (examples)                |
+| --------- | -------------------------------- |
+| OpenAI    | GPT-4o, GPT-4, GPT-3.5 Turbo     |
 | Anthropic | Claude 3.5 Sonnet, Claude 3 Opus |
 
-*Note: Available models may change as providers release updates. Check your provider's documentation for the latest model offerings.*
+_Note: Available models may change as providers release updates. Check your provider's documentation for the latest model offerings._
 
 ## Features
 
@@ -46,6 +46,7 @@ Ask questions in plain English and get SQL queries:
 > "Show me all users who signed up in the last 30 days"
 
 The AI generates:
+
 ```sql
 SELECT * FROM users
 WHERE created_at >= NOW() - INTERVAL '30 days'
@@ -55,6 +56,7 @@ ORDER BY created_at DESC;
 ### Schema-Aware Queries
 
 The AI assistant understands your database schema. It knows your:
+
 - Table names and structures
 - Column names and types
 - Relationships between tables
@@ -70,6 +72,7 @@ Generate visualizations directly from your queries:
 > "Show me a bar chart of monthly revenue for 2024"
 
 The AI will:
+
 1. Generate the appropriate SQL query
 2. Execute it against your database
 3. Create an interactive chart
@@ -77,6 +80,7 @@ The AI will:
 ![AI generating charts and metrics](/images/ai-assistant.png)
 
 Supported chart types:
+
 - Bar charts
 - Line charts
 - Pie charts
@@ -89,6 +93,7 @@ Get explanations for complex queries:
 > "Explain what this query does"
 
 Paste any SQL and the AI will break down:
+
 - What each part does
 - How the joins work
 - What the result will look like
@@ -96,6 +101,7 @@ Paste any SQL and the AI will break down:
 ### Safety Guardrails
 
 The AI assistant includes safety features:
+
 - **Destructive query warnings**: DELETE, DROP, TRUNCATE queries show a confirmation dialog
 - **Read-only by default**: Queries are analyzed before execution
 - **Schema access only**: The AI can see schema structure but not your actual data
@@ -106,10 +112,10 @@ The AI assistant includes safety features:
 
 More specific questions get better results:
 
-| Less specific | More specific |
-|--------------|---------------|
-| "Show me users" | "Show me the top 10 users by order count" |
-| "Get orders" | "Get orders from the last week with total > $100" |
+| Less specific   | More specific                                     |
+| --------------- | ------------------------------------------------- |
+| "Show me users" | "Show me the top 10 users by order count"         |
+| "Get orders"    | "Get orders from the last week with total > $100" |
 
 ### Reference Tables by Name
 
@@ -127,10 +133,10 @@ You can refine queries in conversation:
 
 ## Keyboard Shortcuts
 
-| Action | macOS | Windows/Linux |
-|--------|-------|---------------|
-| Open AI panel | `Cmd+I` | `Ctrl+I` |
-| Send message | `Enter` | `Enter` |
+| Action              | macOS         | Windows/Linux |
+| ------------------- | ------------- | ------------- |
+| Open AI panel       | `Cmd+I`       | `Ctrl+I`      |
+| Send message        | `Enter`       | `Enter`       |
 | New line in message | `Shift+Enter` | `Shift+Enter` |
 
 ## Privacy & Security

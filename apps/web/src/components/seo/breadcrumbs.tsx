@@ -1,26 +1,35 @@
-import Link from 'next/link'
-import { ChevronRight, Home } from 'lucide-react'
-import { StructuredData } from './structured-data'
+import Link from "next/link";
+import { ChevronRight, Home } from "lucide-react";
+import { StructuredData } from "./structured-data";
 
 interface BreadcrumbItem {
-  label: string
-  href: string
+  label: string;
+  href: string;
 }
 
 interface BreadcrumbsProps {
-  items: BreadcrumbItem[]
+  items: BreadcrumbItem[];
 }
 
 export function Breadcrumbs({ items }: BreadcrumbsProps) {
   const breadcrumbItems = [
-    { name: 'Home', url: 'https://www.datapeek.dev' },
-    ...items.map((item) => ({ name: item.label, url: `https://www.datapeek.dev${item.href}` })),
-  ]
+    { name: "Home", url: "https://www.datapeek.dev" },
+    ...items.map((item) => ({
+      name: item.label,
+      url: `https://www.datapeek.dev${item.href}`,
+    })),
+  ];
 
   return (
     <>
-      <StructuredData type="breadcrumb" data={{ breadcrumb: breadcrumbItems }} />
-      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-sm text-(--color-text-muted) mb-6">
+      <StructuredData
+        type="breadcrumb"
+        data={{ breadcrumb: breadcrumbItems }}
+      />
+      <nav
+        aria-label="Breadcrumb"
+        className="flex items-center gap-2 text-sm text-(--color-text-muted) mb-6"
+      >
         <Link
           href="/"
           className="flex items-center gap-1 hover:text-(--color-text-primary) transition-colors"
@@ -47,6 +56,5 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
         ))}
       </nav>
     </>
-  )
+  );
 }
-

@@ -56,8 +56,7 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     invalidateSchemaCache(config)
 
     let resolveFetcher:
-      | ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void)
-      | null = null
+      ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
     const fetcher = vi.fn(
       () =>
         new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((resolve) => {
@@ -115,15 +114,13 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     const config = makeConfig('mid-fetch')
     invalidateSchemaCache(config)
 
-    let resolveFetcher: ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null =
-      null
+    let resolveFetcher:
+      ((value: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
     const fetcher = vi.fn(
       () =>
-        new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>(
-          (resolve) => {
-            resolveFetcher = resolve
-          }
-        )
+        new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((resolve) => {
+          resolveFetcher = resolve
+        })
     )
 
     const inFlight = getOrFetchCachedSchema(config, fetcher)
@@ -146,21 +143,25 @@ describe('getOrFetchCachedSchema dogpile guard', () => {
     const config = makeConfig('ownership')
     invalidateSchemaCache(config)
 
-    let resolveA: ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
+    let resolveA:
+      ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
     const fetcherA = vi.fn(
-      () => new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((r) => {
-        resolveA = r
-      })
+      () =>
+        new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((r) => {
+          resolveA = r
+        })
     )
     const fetchA = getOrFetchCachedSchema(config, fetcherA)
 
     invalidateSchemaCache(config)
 
-    let resolveC: ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
+    let resolveC:
+      ((v: { schemas: SchemaInfo[]; customTypes: []; timestamp: number }) => void) | null = null
     const fetcherC = vi.fn(
-      () => new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((r) => {
-        resolveC = r
-      })
+      () =>
+        new Promise<{ schemas: SchemaInfo[]; customTypes: []; timestamp: number }>((r) => {
+          resolveC = r
+        })
     )
     const fetchC = getOrFetchCachedSchema(config, fetcherC)
 

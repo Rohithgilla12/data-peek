@@ -1,6 +1,15 @@
 import * as React from 'react'
 import { Play, ChevronDown } from 'lucide-react'
-import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, SidebarGroup, SidebarGroupContent, SidebarGroupLabel } from '@data-peek/ui'
+import {
+  Button,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  cn,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel
+} from '@data-peek/ui'
 
 import { SQLEditor } from '@/components/sql-editor'
 import { useConnectionStore, useTabStore, useSettingsStore } from '@/stores'

@@ -1,6 +1,17 @@
 import * as React from 'react'
 import { Eye, EyeOff, Lock, Plus, Trash2, X } from 'lucide-react'
-import { Button, Badge, Input, Switch, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  Input,
+  Switch,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 import { useMaskingStore } from '@/stores/masking-store'
 

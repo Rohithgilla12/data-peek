@@ -71,20 +71,17 @@ import type {
   SkipStepResponse,
   ContinueStepResponse,
   RetryStepResponse,
-  StopStepResponse
+  StopStepResponse,
+  TimeMachineCapturePayload,
+  TimeMachineRunMeta,
+  TimeMachineSnapshot,
+  TimeMachineListResult,
+  TimeMachineStats
 } from '@shared/index'
 
 // AI Types
 type AIProvider =
-  | 'openai'
-  | 'anthropic'
-  | 'google'
-  | 'groq'
-  | 'deepseek'
-  | 'mistral'
-  | 'xai'
-  | 'glm'
-  | 'ollama'
+  'openai' | 'anthropic' | 'google' | 'groq' | 'deepseek' | 'mistral' | 'xai' | 'glm' | 'ollama'
 
 interface AIConfig {
   provider: AIProvider
@@ -168,11 +165,7 @@ interface StoredSchemaData {
 }
 
 type StoredResponseData =
-  | StoredQueryData
-  | StoredChartData
-  | StoredMetricData
-  | StoredSchemaData
-  | null
+  StoredQueryData | StoredChartData | StoredMetricData | StoredSchemaData | null
 
 // Stored chat message type (for persistence)
 interface StoredChatMessage {
@@ -207,7 +200,8 @@ interface DataPeekApi {
       config: ConnectionConfig,
       query: string,
       executionId?: string,
-      queryTimeoutMs?: number
+      queryTimeoutMs?: number,
+      sessionId?: string
     ) => Promise<IpcResponse<unknown>>
     cancelQuery: (executionId: string) => Promise<IpcResponse<{ cancelled: boolean }>>
     schemas: (
@@ -215,6 +209,9 @@ interface DataPeekApi {
       forceRefresh?: boolean
     ) => Promise<IpcResponse<DatabaseSchemaResponse>>
     invalidateSchemaCache: (config: ConnectionConfig) => Promise<IpcResponse<void>>
+    beginTransaction: (config: ConnectionConfig, sessionId: string) => Promise<IpcResponse<void>>
+    commitTransaction: (config: ConnectionConfig, sessionId: string) => Promise<IpcResponse<void>>
+    rollbackTransaction: (config: ConnectionConfig, sessionId: string) => Promise<IpcResponse<void>>
     execute: (config: ConnectionConfig, batch: EditBatch) => Promise<IpcResponse<EditResult>>
     previewSql: (
       batch: EditBatch
@@ -228,7 +225,8 @@ interface DataPeekApi {
       config: ConnectionConfig,
       query: string,
       executionId?: string,
-      queryTimeoutMs?: number
+      queryTimeoutMs?: number,
+      sessionId?: string
     ) => Promise<IpcResponse<MultiStatementResultWithTelemetry & { results: unknown[] }>>
     benchmark: (
       config: ConnectionConfig,
@@ -294,6 +292,7 @@ interface DataPeekApi {
     onFormatSql: (callback: () => void) => () => void
     onClearResults: (callback: () => void) => () => void
     onToggleWatch: (callback: () => void) => () => void
+    onToggleTimeMachine: (callback: () => void) => () => void
     onToggleSidebar: (callback: () => void) => () => void
     onOpenSettings: (callback: () => void) => () => void
     onSaveChanges: (callback: () => void) => () => void
@@ -503,6 +502,15 @@ interface DataPeekApi {
     updateCell: (cellId: string, updates: UpdateCellInput) => Promise<IpcResponse<NotebookCell>>
     deleteCell: (cellId: string) => Promise<IpcResponse<void>>
     reorderCells: (notebookId: string, cellIds: string[]) => Promise<IpcResponse<void>>
+  }
+  timeMachine: {
+    capture: (payload: TimeMachineCapturePayload) => Promise<IpcResponse<TimeMachineRunMeta>>
+    listRuns: (connectionId: string, sql: string) => Promise<IpcResponse<TimeMachineListResult>>
+    getSnapshot: (id: string) => Promise<IpcResponse<TimeMachineSnapshot>>
+    deleteRun: (id: string) => Promise<IpcResponse<void>>
+    clearQuery: (connectionId: string, sql: string) => Promise<IpcResponse<void>>
+    clearAll: (connectionId?: string) => Promise<IpcResponse<void>>
+    stats: () => Promise<IpcResponse<TimeMachineStats>>
   }
   step: {
     start: (

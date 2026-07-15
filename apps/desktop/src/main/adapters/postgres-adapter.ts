@@ -40,7 +40,7 @@ import type {
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { splitStatements } from '../lib/sql-parser'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
-import { withPgClient, withPgTransaction } from './pg-pool-manager'
+import { withPgClient, withPgTransaction, getOrCreatePool } from './pg-pool-manager'
 
 export { buildClientConfig } from './pg-client-config'
 
@@ -123,6 +123,8 @@ export function isDataReturningStatement(sql: string): boolean {
  */
 export class PostgresAdapter implements DatabaseAdapter {
   readonly dbType = 'postgresql' as const
+  private sessions = new Map<string, import('pg').PoolClient>()
+  private pendingSessions = new Set<string>()
 
   async connect(config: ConnectionConfig): Promise<void> {
     // Warm the pool AND verify the socket end-to-end. An empty callback would only
@@ -162,7 +164,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
     }
 
-    return withPgClient(config, async (client) => {
+    const runWithClient = async (client: import('pg').PoolClient) => {
       if (collectTelemetry) {
         telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
         telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
@@ -287,7 +289,14 @@ export class PostgresAdapter implements DatabaseAdapter {
           unregisterQuery(options.executionId)
         }
       }
-    })
+    }
+
+    if (options?.sessionId && this.sessions.has(options.sessionId)) {
+      const client = this.sessions.get(options.sessionId)!
+      return runWithClient(client)
+    } else {
+      return withPgClient(config, runWithClient)
+    }
   }
 
   async execute(
@@ -315,6 +324,90 @@ export class PostgresAdapter implements DatabaseAdapter {
       }
       return { rowsAffected, results }
     })
+  }
+
+  async beginTransaction(_config: ConnectionConfig, sessionId: string): Promise<void> {
+    // Reserve the slot before any await so two concurrent begins for the same
+    // session can't both pass the guard and orphan a checked-out client.
+    if (this.sessions.has(sessionId) || this.pendingSessions.has(sessionId)) {
+      throw new Error(`Session ${sessionId} already has an active transaction`)
+    }
+    this.pendingSessions.add(sessionId)
+    try {
+      const poolEntry = await getOrCreatePool(_config)
+      const client = await poolEntry.pool.connect()
+      try {
+        await client.query('BEGIN')
+        this.sessions.set(sessionId, client)
+      } catch (error) {
+        client.release(true)
+        throw error
+      }
+    } finally {
+      this.pendingSessions.delete(sessionId)
+    }
+  }
+
+  async queryInTransaction(
+    _config: ConnectionConfig,
+    sessionId: string,
+    sql: string,
+    params?: unknown[]
+  ): Promise<AdapterQueryResult> {
+    const client = this.sessions.get(sessionId)
+    if (!client) {
+      throw new Error(`Session ${sessionId} does not have an active transaction`)
+    }
+    const res = await client.query(sql, params)
+    const fields: QueryField[] = res.fields.map((f) => ({
+      name: f.name,
+      dataType: resolvePostgresType(f.dataTypeID),
+      dataTypeID: f.dataTypeID
+    }))
+    return {
+      rows: res.rows,
+      fields,
+      rowCount: res.rowCount
+    }
+  }
+
+  async commitTransaction(_config: ConnectionConfig, sessionId: string): Promise<void> {
+    const client = this.sessions.get(sessionId)
+    if (!client) return
+    this.sessions.delete(sessionId)
+    try {
+      await client.query('COMMIT')
+    } catch (error) {
+      // A failed COMMIT leaves the connection in an unknown state — discard it.
+      client.release(true)
+      throw error
+    }
+    client.release()
+  }
+
+  /**
+   * Roll back every open session. Called on app quit so checked-out clients
+   * don't block pool.end() and open transactions don't linger server-side.
+   */
+  async rollbackAllTransactions(): Promise<void> {
+    const sessionIds = [...this.sessions.keys()]
+    await Promise.allSettled(
+      sessionIds.map((id) => this.rollbackTransaction(undefined as never, id))
+    )
+  }
+
+  async rollbackTransaction(_config: ConnectionConfig, sessionId: string): Promise<void> {
+    const client = this.sessions.get(sessionId)
+    if (!client) return
+    this.sessions.delete(sessionId)
+    let poisoned = false
+    try {
+      await client.query('ROLLBACK')
+    } catch {
+      poisoned = true
+    } finally {
+      client.release(poisoned ? true : undefined)
+    }
   }
 
   async getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]> {

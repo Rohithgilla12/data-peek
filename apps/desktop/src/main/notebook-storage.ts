@@ -121,8 +121,7 @@ export class NotebookStorage {
 
   getNotebook(id: string): NotebookWithCells | null {
     const notebookRow = this.db.prepare('SELECT * FROM notebooks WHERE id = ?').get(id) as
-      | NotebookRow
-      | undefined
+      NotebookRow | undefined
 
     if (!notebookRow) return null
 
@@ -152,8 +151,7 @@ export class NotebookStorage {
 
   updateNotebook(id: string, input: UpdateNotebookInput): Notebook | null {
     const existing = this.db.prepare('SELECT * FROM notebooks WHERE id = ?').get(id) as
-      | NotebookRow
-      | undefined
+      NotebookRow | undefined
     if (!existing) return null
 
     const now = Date.now()
@@ -233,8 +231,7 @@ export class NotebookStorage {
 
   updateCell(id: string, input: UpdateCellInput): NotebookCell | null {
     const existing = this.db.prepare('SELECT * FROM notebook_cells WHERE id = ?').get(id) as
-      | CellRow
-      | undefined
+      CellRow | undefined
     if (!existing) return null
 
     const now = Date.now()
@@ -260,8 +257,7 @@ export class NotebookStorage {
 
   deleteCell(id: string): void {
     const cell = this.db.prepare('SELECT * FROM notebook_cells WHERE id = ?').get(id) as
-      | CellRow
-      | undefined
+      CellRow | undefined
     if (!cell) return
     this.db.prepare('DELETE FROM notebook_cells WHERE id = ?').run(id)
     this.touchNotebook(cell.notebook_id)

@@ -54,7 +54,7 @@ async function sendWelcomeEmail(
   email: string,
   name: string | undefined,
   licenseKey: string,
-  updatesUntil: Date
+  updatesUntil: Date,
 ) {
   console.log(`Attempting to send welcome email to: ${email}`);
 
@@ -63,7 +63,9 @@ async function sendWelcomeEmail(
     return;
   }
 
-  console.log(`RESEND_API_KEY is configured (length: ${process.env.RESEND_API_KEY.length})`);
+  console.log(
+    `RESEND_API_KEY is configured (length: ${process.env.RESEND_API_KEY.length})`,
+  );
 
   try {
     const result = await resend.emails.send({
@@ -103,7 +105,9 @@ async function sendWelcomeEmail(
         </div>
       `,
     });
-    console.log(`Welcome email sent successfully to ${email}. Resend ID: ${result.data?.id}`);
+    console.log(
+      `Welcome email sent successfully to ${email}. Resend ID: ${result.data?.id}`,
+    );
   } catch (error) {
     console.error("Failed to send welcome email:", error);
   }
@@ -127,14 +131,13 @@ export async function POST(request: NextRequest) {
     // Verify signature using Dodo Payments SDK (follows Standard Webhooks spec)
     try {
       // unwrap() verifies the signature and returns the parsed payload
-      const unwrapped = dodo.webhooks.unwrap(payload, { headers: webhookHeaders });
+      const unwrapped = dodo.webhooks.unwrap(payload, {
+        headers: webhookHeaders,
+      });
       event = unwrapped as unknown as DodoWebhookPayload;
     } catch (verifyError) {
       console.error("Webhook signature verification failed:", verifyError);
-      return NextResponse.json(
-        { error: "Invalid signature" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
     }
 
     // Use webhook-id header for idempotency (as per Standard Webhooks spec)
@@ -246,10 +249,12 @@ export async function POST(request: NextRequest) {
           customer.email,
           customer.name || undefined,
           licenseKey,
-          updatesUntil
+          updatesUntil,
         );
 
-        console.log(`Payment succeeded for ${data.customer.email}: ${data.payment_id}, license: ${licenseKey}`);
+        console.log(
+          `Payment succeeded for ${data.customer.email}: ${data.payment_id}, license: ${licenseKey}`,
+        );
         break;
       }
 
@@ -327,7 +332,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       { error: "Webhook processing failed" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

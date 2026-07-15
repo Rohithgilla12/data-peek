@@ -13,15 +13,9 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/renderer/src/*"],
-      "@renderer/*": [
-        "src/renderer/src/*"
-      ],
-      "@shared/*": [
-        "../../packages/shared/src/*"
-      ],
-      "@data-peek/shared": [
-        "../../packages/shared/src/index.ts"
-      ]
+      "@renderer/*": ["src/renderer/src/*"],
+      "@shared/*": ["../../packages/shared/src/*"],
+      "@data-peek/shared": ["../../packages/shared/src/index.ts"]
     }
   }
 }

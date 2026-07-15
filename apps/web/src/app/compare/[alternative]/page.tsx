@@ -7,7 +7,12 @@ import { Check, Download, ArrowRight, BarChart3 } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { FadeIn, StaggerContainer, StaggerItem, ScaleIn } from "@/components/ui/motion-wrapper";
+import {
+  FadeIn,
+  StaggerContainer,
+  StaggerItem,
+  ScaleIn,
+} from "@/components/ui/motion-wrapper";
 import { DataSubstrate } from "@/components/marketing/data-substrate";
 import React from "react";
 
@@ -222,19 +227,23 @@ export default async function CompareDetailPage({ params }: ComparePageProps) {
                 </div>
               </div>
 
-              <h1
-                className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-10 text-white font-mono uppercase"
-              >
+              <h1 className="text-5xl sm:text-7xl md:text-8xl font-bold tracking-tighter leading-[0.9] mb-10 text-white font-mono uppercase">
                 vs
                 <br />
-                <span className="text-(--color-text-secondary)">{altInfo.name}.</span>
+                <span className="text-(--color-text-secondary)">
+                  {altInfo.name}.
+                </span>
               </h1>
               <p className="text-base sm:text-xl text-(--color-text-muted) max-w-2xl mx-auto mb-12 font-mono leading-relaxed">
                 {altInfo.description}
               </p>
-              
+
               <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                <Button size="xl" className="group rounded-full px-10 shadow-2xl shadow-(--color-accent)/20 hover:shadow-(--color-accent)/40 transition-all duration-500" asChild>
+                <Button
+                  size="xl"
+                  className="group rounded-full px-10 shadow-2xl shadow-(--color-accent)/20 hover:shadow-(--color-accent)/40 transition-all duration-500"
+                  asChild
+                >
                   <Link href="/download">
                     <Download className="w-5 h-5 group-hover:animate-bounce" />
                     <span>Switch to data-peek</span>
@@ -274,7 +283,11 @@ export default async function CompareDetailPage({ params }: ComparePageProps) {
                           </td>
                           <td className="p-6 sm:p-8">
                             <div className="flex items-center gap-3">
-                              <span className={`text-sm ${row.datapeekWins ? 'text-white' : 'text-(--color-text-secondary)'}`}>{row.datapeek}</span>
+                              <span
+                                className={`text-sm ${row.datapeekWins ? "text-white" : "text-(--color-text-secondary)"}`}
+                              >
+                                {row.datapeek}
+                              </span>
                               {row.datapeekWins && (
                                 <div className="p-1 rounded-full bg-(--color-success)/10 border border-(--color-success)/20">
                                   <Check className="w-3.5 h-3.5 text-(--color-success)" />
@@ -301,21 +314,24 @@ export default async function CompareDetailPage({ params }: ComparePageProps) {
             <section className="relative rounded-[3rem] bg-white/[0.02] border border-white/10 p-8 sm:p-16 text-center overflow-hidden">
               <div className="absolute inset-0 grid-pattern opacity-10" />
               <div className="absolute inset-0 bg-gradient-to-br from-(--color-accent)/5 to-purple-600/5" />
-              
+
               <div className="relative z-10">
                 <div className="w-16 h-16 rounded-2xl bg-(--color-accent)/10 flex items-center justify-center mx-auto mb-8 border border-(--color-accent)/20">
                   <BarChart3 className="w-8 h-8 text-(--color-accent)" />
                 </div>
-                <h2
-                  className="text-3xl sm:text-5xl font-bold mb-6 font-mono uppercase tracking-widest text-white"
-                >
+                <h2 className="text-3xl sm:text-5xl font-bold mb-6 font-mono uppercase tracking-widest text-white">
                   See the difference.
                 </h2>
                 <p className="text-base sm:text-lg text-(--color-text-muted) mb-10 font-mono max-w-xl mx-auto leading-relaxed">
-                  Experience why thousands of developers are making the switch from {altInfo.name} to a modern, AI-powered workflow.
+                  Experience why thousands of developers are making the switch
+                  from {altInfo.name} to a modern, AI-powered workflow.
                 </p>
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-                  <Button size="xl" className="group rounded-2xl px-12 bg-(--color-accent) text-(--color-background) hover:bg-(--color-accent)/90 shadow-2xl shadow-(--color-accent)/20 font-mono uppercase tracking-widest font-bold" asChild>
+                  <Button
+                    size="xl"
+                    className="group rounded-2xl px-12 bg-(--color-accent) text-(--color-background) hover:bg-(--color-accent)/90 shadow-2xl shadow-(--color-accent)/20 font-mono uppercase tracking-widest font-bold"
+                    asChild
+                  >
                     <Link href="/download">
                       Download data-peek
                       <ArrowRight className="w-5 h-5 ml-2" />

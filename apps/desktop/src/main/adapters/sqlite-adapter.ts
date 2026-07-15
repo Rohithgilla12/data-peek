@@ -198,7 +198,7 @@ export class SQLiteAdapter implements DatabaseAdapter {
   async queryMultiple(
     config: ConnectionConfig,
     sql: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     _options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
     const db = this.getDb(config)
@@ -601,68 +601,59 @@ export class SQLiteAdapter implements DatabaseAdapter {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getSequences(_config: ConnectionConfig): Promise<SequenceInfo[]> {
     // SQLite doesn't have sequences - it uses AUTOINCREMENT on INTEGER PRIMARY KEY
     return []
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getTypes(_config: ConnectionConfig): Promise<CustomTypeInfo[]> {
     // SQLite doesn't have custom types
     return []
   }
 
   async getColumnStats(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _config: ConnectionConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     _schema: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     _table: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     _column: string,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     _dataType: string
   ): Promise<ColumnStats> {
     throw new Error('getColumnStats not implemented for SQLite')
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getActiveQueries(_config: ConnectionConfig): Promise<ActiveQuery[]> {
     throw new Error('getActiveQueries not implemented for SQLite')
   }
 
   async getTableSizes(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _config: ConnectionConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     _schema?: string
   ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }> {
     throw new Error('getTableSizes not implemented for SQLite')
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getCacheStats(_config: ConnectionConfig): Promise<CacheStats> {
     throw new Error('getCacheStats not implemented for SQLite')
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getLocks(_config: ConnectionConfig): Promise<LockInfo[]> {
     throw new Error('getLocks not implemented for SQLite')
   }
 
   async killQuery(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _config: ConnectionConfig,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+
     _pid: number
   ): Promise<{ success: boolean; error?: string }> {
     throw new Error('killQuery not implemented for SQLite')
   }
 
   async runSchemaIntel(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _config: ConnectionConfig,
     requested?: SchemaIntelCheckId[]
   ): Promise<SchemaIntelReport> {

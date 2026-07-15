@@ -1,7 +1,26 @@
 import { useEffect, useState } from 'react'
 import { ChevronDown, Plus, Settings, Loader2, Pencil, Trash2, Copy } from 'lucide-react'
 
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@data-peek/ui'
+import {
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@data-peek/ui'
 import { useConnectionStore, type Connection } from '@/stores'
 import { useNavigate } from '@tanstack/react-router'
 import { AddConnectionDialog } from './add-connection-dialog'
@@ -214,6 +233,7 @@ export function ConnectionSwitcher() {
                 </div>
                 <div className="flex shrink-0 items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
+                    type="button"
                     onClick={(e) => handleDuplicateConnection(e, connection)}
                     className="p-1 hover:bg-muted rounded"
                     title="Duplicate connection"
@@ -221,6 +241,7 @@ export function ConnectionSwitcher() {
                     <Copy className="size-3.5" />
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => handleEditConnection(e, connection)}
                     className="p-1 hover:bg-muted rounded"
                     title="Edit connection"
@@ -228,6 +249,7 @@ export function ConnectionSwitcher() {
                     <Pencil className="size-3.5" />
                   </button>
                   <button
+                    type="button"
                     onClick={(e) => handleDeleteConnection(e, connection)}
                     className="p-1 hover:bg-destructive/10 hover:text-destructive rounded"
                     title="Delete connection"

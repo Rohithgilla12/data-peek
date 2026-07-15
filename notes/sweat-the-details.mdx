@@ -1,0 +1,80 @@
+---
+title: "Sweat the details: data-peek 0.24.0"
+description: "A database client either tells you the truth or it quietly lies. 0.24.0 is a reliability release: JSON cells that save what you typed, timestamps shown as stored, windows that go where you point, history that survives a restart — plus Watch Mode alerts that ping you the moment something trips."
+date: "2026-06-30"
+author: "Rohith Gilla"
+tags: ["release-notes", "reliability", "data-integrity", "watch-mode", "ux"]
+published: true
+---
+
+A database client lives or dies on one thing: do you trust what it shows you?
+
+You're mid-task — checking a migration, verifying a row, editing a value
+before a deploy. You don't have spare attention to wonder whether the
+timestamp on screen is the real one, or whether the cell you just edited
+actually saved the value you typed. The tool either tells you the truth or it
+quietly lies, and a quiet lie in a data tool is the worst kind.
+
+0.24.0 is about closing those gaps. It's a reliability release — the kind where
+the changelog reads small but the trust it buys is large.
+
+## Edits that save what you typed
+
+Inline-editing a `json` / `jsonb` cell that held a scalar — a bare string,
+number, or boolean — used to fail. The editor handed back a parsed value, but
+only objects were re-serialized to JSON text on the way to the database, so a
+scalar like `"hello"` got bound as the bare word `hello` and Postgres rejected
+it: _invalid input syntax for type json_.
+
+Now every json/jsonb value is serialized as proper JSON text. Objects, arrays,
+and scalars all save. We verified it end to end against a real Postgres, and
+added a test that proves the old behaviour failed — so it can't quietly come
+back.
+
+## Timestamps that mean what they say
+
+`timestamp without time zone` is a trap. The default Postgres driver parses it
+in the running process's local timezone, so a value stored as UTC silently
+picks up an offset — and then the grid and the cell inspector would even
+disagree on what time it was.
+
+0.24.0 shows the timestamp **as stored**. No reinterpretation, no phantom
+offset. What's in the column is what you see. (`timestamptz` still resolves to
+an absolute instant, as it should — it genuinely carries a zone.)
+
+## Windows that go where you point
+
+Open two windows, switch to the second, click the dock or taskbar icon — and
+the _first_ window used to jump to the front. 0.24.0 tracks which window you
+actually used last and raises that one, and gives each window its own title so
+two connections are never a guessing game.
+
+## History that survives a restart
+
+Query history lived in the renderer and was evicted between launches, so
+quitting the app wiped where you'd been. It now persists on disk, per
+connection. Close the laptop, come back tomorrow, your history is still there.
+
+## Watch Mode learned to shout
+
+The one genuinely new feature, and it's a good one. [Watch Mode](/blog) lets
+you pin a `SELECT` and watch it re-run on a cadence with live cell-level diffs.
+In 0.24.0 you can attach an **alert condition** — and when it trips, you get a
+native OS notification, even when data-peek is in the background. A row-count
+sparkline in the toolbar shows the trend at a glance.
+
+Pin "open incidents," set the alert, and get on with your day. data-peek taps
+you on the shoulder when the number moves.
+
+## The boring stuff that matters
+
+Under the hood: hardened credential storage, a fixed Watch Mode crash that
+could trip when switching tab types, and a repaired lint/CI pipeline so
+regressions get caught before they ship.
+
+---
+
+data-peek is **free for personal use**, no account, no telemetry, your data
+stays on your machine. Grab 0.24.0 from the
+[releases page](https://github.com/Rohithgilla12/data-peek/releases) or let the
+app auto-update.

@@ -1,25 +1,31 @@
-'use client'
+"use client";
 
-import { Play, FileSearch, Wand2, Square } from 'lucide-react'
-import { Button } from '@data-peek/ui'
-import { trpc } from '@/lib/trpc-client'
-import { ProBadge } from '@/components/upgrade/pro-badge'
-import { SaveQueryDialog } from '@/components/query/save-query-dialog'
-import { useConnectionStore } from '@/stores/connection-store'
+import { Play, FileSearch, Wand2, Square } from "lucide-react";
+import { Button } from "@data-peek/ui";
+import { trpc } from "@/lib/trpc-client";
+import { ProBadge } from "@/components/upgrade/pro-badge";
+import { SaveQueryDialog } from "@/components/query/save-query-dialog";
+import { useConnectionStore } from "@/stores/connection-store";
 
 interface QueryToolbarProps {
-  onExecute: () => void
-  onExplain: () => void
-  onFormat: () => void
-  onCancel: () => void
-  isExecuting: boolean
+  onExecute: () => void;
+  onExplain: () => void;
+  onFormat: () => void;
+  onCancel: () => void;
+  isExecuting: boolean;
 }
 
-export function QueryToolbar({ onExecute, onExplain, onFormat, onCancel, isExecuting }: QueryToolbarProps) {
-  const { data: usage } = trpc.usage.current.useQuery()
-  const { data: connections } = trpc.connections.list.useQuery()
-  const { activeConnectionId } = useConnectionStore()
-  const activeConn = connections?.find((c) => c.id === activeConnectionId)
+export function QueryToolbar({
+  onExecute,
+  onExplain,
+  onFormat,
+  onCancel,
+  isExecuting,
+}: QueryToolbarProps) {
+  const { data: usage } = trpc.usage.current.useQuery();
+  const { data: connections } = trpc.connections.list.useQuery();
+  const { activeConnectionId } = useConnectionStore();
+  const activeConn = connections?.find((c) => c.id === activeConnectionId);
 
   return (
     <div className="flex items-center gap-1.5 px-3 py-1.5 border-t border-border bg-muted/30 shrink-0">
@@ -46,7 +52,7 @@ export function QueryToolbar({ onExecute, onExplain, onFormat, onCancel, isExecu
       )}
 
       {/* Explain */}
-      {usage?.plan === 'free' ? (
+      {usage?.plan === "free" ? (
         <div className="flex items-center gap-1.5 px-2 py-1.5">
           <span className="text-xs text-muted-foreground">Explain</span>
           <ProBadge feature="EXPLAIN Plans" />
@@ -91,5 +97,5 @@ export function QueryToolbar({ onExecute, onExplain, onFormat, onCancel, isExecu
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -10,7 +10,23 @@ import {
   ChevronRight,
   AlertCircle
 } from 'lucide-react'
-import { Button, Input, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 import type {
   ConstraintDefinition,
@@ -182,8 +198,14 @@ export function ConstraintEditor({
                     <div className="border-t border-border/40 p-3 space-y-3">
                       {/* Constraint Name */}
                       <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-                        <label className="text-sm text-muted-foreground">Name</label>
+                        <label
+                          htmlFor={`constraint-name-${constraint.id}`}
+                          className="text-sm text-muted-foreground"
+                        >
+                          Name
+                        </label>
                         <Input
+                          id={`constraint-name-${constraint.id}`}
                           value={constraint.name ?? ''}
                           onChange={(e) =>
                             onUpdate(constraint.id, { name: e.target.value || undefined })
@@ -195,7 +217,7 @@ export function ConstraintEditor({
 
                       {/* Columns */}
                       <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
-                        <label className="text-sm text-muted-foreground pt-2">Columns</label>
+                        <span className="text-sm text-muted-foreground pt-2">Columns</span>
                         <div className="space-y-2">
                           <div className="flex flex-wrap gap-2">
                             {columns.map((col) => {
@@ -236,8 +258,14 @@ export function ConstraintEditor({
                       {/* Check constraint expression */}
                       {constraint.type === 'check' && (
                         <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-                          <label className="text-sm text-muted-foreground">Expression</label>
+                          <label
+                            htmlFor={`constraint-check-${constraint.id}`}
+                            className="text-sm text-muted-foreground"
+                          >
+                            Expression
+                          </label>
                           <Input
+                            id={`constraint-check-${constraint.id}`}
                             value={constraint.checkExpression ?? ''}
                             onChange={(e) =>
                               onUpdate(constraint.id, { checkExpression: e.target.value })
@@ -320,7 +348,7 @@ function ForeignKeyFields({ constraint, allTables, onUpdate }: ForeignKeyFieldsP
     <>
       {/* Referenced Table */}
       <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-        <label className="text-sm text-muted-foreground">References</label>
+        <span className="text-sm text-muted-foreground">References</span>
         <Select
           value={
             constraint.referencedSchema && constraint.referencedTable
@@ -345,7 +373,7 @@ function ForeignKeyFields({ constraint, allTables, onUpdate }: ForeignKeyFieldsP
       {/* Referenced Columns */}
       {selectedTable && (
         <div className="grid grid-cols-[120px_1fr] gap-2 items-start">
-          <label className="text-sm text-muted-foreground pt-2">Ref. Columns</label>
+          <span className="text-sm text-muted-foreground pt-2">Ref. Columns</span>
           <div className="flex flex-wrap gap-2">
             {selectedTable.columns.map((col) => {
               const isSelected = constraint.referencedColumns?.includes(col.name) ?? false
@@ -373,7 +401,7 @@ function ForeignKeyFields({ constraint, allTables, onUpdate }: ForeignKeyFieldsP
 
       {/* ON UPDATE */}
       <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-        <label className="text-sm text-muted-foreground">On Update</label>
+        <span className="text-sm text-muted-foreground">On Update</span>
         <Select
           value={constraint.onUpdate ?? 'NO ACTION'}
           onValueChange={(v) => onUpdate({ onUpdate: v as ReferentialAction })}
@@ -393,7 +421,7 @@ function ForeignKeyFields({ constraint, allTables, onUpdate }: ForeignKeyFieldsP
 
       {/* ON DELETE */}
       <div className="grid grid-cols-[120px_1fr] gap-2 items-center">
-        <label className="text-sm text-muted-foreground">On Delete</label>
+        <span className="text-sm text-muted-foreground">On Delete</span>
         <Select
           value={constraint.onDelete ?? 'NO ACTION'}
           onValueChange={(v) => onUpdate({ onDelete: v as ReferentialAction })}

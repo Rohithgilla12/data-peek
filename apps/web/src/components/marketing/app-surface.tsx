@@ -7,7 +7,7 @@ const tables = [
   { name: "shipments", rows: "98,104" },
   { name: "refunds", rows: "1,221" },
   { name: "sessions", rows: "— view" },
-]
+];
 
 const rows = [
   ["8142", "amelia.tan@…", "Paid", "$284.10", "2h ago"],
@@ -17,7 +17,7 @@ const rows = [
   ["8138", "max.ruiz@…", "Pending", "$90.00", "4h ago"],
   ["8137", "nadia.b@…", "Paid", "$1,998.00", "4h ago"],
   ["8136", "hiroki.w@…", "Paid", "$58.40", "5h ago"],
-]
+];
 
 export function AppSurface() {
   return (
@@ -33,18 +33,33 @@ export function AppSurface() {
       {/* Title bar */}
       <div
         className="flex items-center h-9 px-3"
-        style={{ borderBottom: "1px solid var(--n-line-soft)", background: "var(--n-bg-raised)" }}
+        style={{
+          borderBottom: "1px solid var(--n-line-soft)",
+          background: "var(--n-bg-raised)",
+        }}
       >
         <div className="flex items-center gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full" style={{ background: "oklch(0.68 0.14 20)" }} />
-          <span className="h-2.5 w-2.5 rounded-full" style={{ background: "oklch(0.80 0.14 75)" }} />
-          <span className="h-2.5 w-2.5 rounded-full" style={{ background: "oklch(0.75 0.14 145)" }} />
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ background: "oklch(0.68 0.14 20)" }}
+          />
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ background: "oklch(0.80 0.14 75)" }}
+          />
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ background: "oklch(0.75 0.14 145)" }}
+          />
         </div>
         <div className="flex-1 text-center text-[11px] text-[var(--n-fg-faint)] tabular-nums">
           data-peek — main · shop_production · postgres 16.4
         </div>
         <div className="flex items-center gap-1 text-[10.5px] text-[var(--n-fg-faint)]">
-          <span className="h-1.5 w-1.5 rounded-full" style={{ background: "var(--n-accent)" }} />
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ background: "var(--n-accent)" }}
+          />
           <span>connected</span>
         </div>
       </div>
@@ -156,12 +171,23 @@ export function AppSurface() {
 6
 7`}</pre>
               <pre className="text-[var(--n-fg)] whitespace-pre-wrap">
-                <span className="c">-- last 24h of paid orders, joined to customer</span>{"\n"}
-                <span className="k">select</span> o.id, u.email, o.status, o.total, o.created_at{"\n"}
+                <span className="c">
+                  -- last 24h of paid orders, joined to customer
+                </span>
+                {"\n"}
+                <span className="k">select</span> o.id, u.email, o.status,
+                o.total, o.created_at{"\n"}
                 <span className="k">from</span> orders o{"\n"}
-                <span className="k">join</span> users u <span className="k">on</span> u.id = o.user_id{"\n"}
-                <span className="k">where</span> o.created_at {">"} <span className="k">now</span>() - <span className="k">interval</span> <span className="s">&apos;24 hours&apos;</span>{"\n"}
-                <span className="k">order by</span> o.created_at <span className="k">desc</span>{"\n"}
+                <span className="k">join</span> users u{" "}
+                <span className="k">on</span> u.id = o.user_id{"\n"}
+                <span className="k">where</span> o.created_at {">"}{" "}
+                <span className="k">now</span>() -{" "}
+                <span className="k">interval</span>{" "}
+                <span className="s">&apos;24 hours&apos;</span>
+                {"\n"}
+                <span className="k">order by</span> o.created_at{" "}
+                <span className="k">desc</span>
+                {"\n"}
                 <span className="k">limit</span> <span className="n">50</span>
                 <span className="neat-caret" aria-hidden />
               </pre>
@@ -171,7 +197,10 @@ export function AppSurface() {
           {/* Status / actions row */}
           <div
             className="flex items-center h-8 px-4 text-[11px] text-[var(--n-fg-muted)] tabular-nums"
-            style={{ borderBottom: "1px solid var(--n-line-soft)", background: "var(--n-bg-raised)" }}
+            style={{
+              borderBottom: "1px solid var(--n-line-soft)",
+              background: "var(--n-bg-raised)",
+            }}
           >
             <span className="text-[var(--n-fg)]">7 rows</span>
             <span className="mx-3 text-[var(--n-fg-faint)]">·</span>
@@ -210,7 +239,9 @@ export function AppSurface() {
                   borderBottom: "1px solid oklch(0.22 0.006 260 / 0.5)",
                 }}
               >
-                <span className="px-4 py-2 text-[var(--n-fg-faint)]">{r[0]}</span>
+                <span className="px-4 py-2 text-[var(--n-fg-faint)]">
+                  {r[0]}
+                </span>
                 <span className="px-4 py-2 text-[var(--n-fg)]">{r[1]}</span>
                 <span
                   className="px-4 py-2"
@@ -219,14 +250,16 @@ export function AppSurface() {
                       r[2] === "Paid"
                         ? "oklch(0.80 0.13 150)"
                         : r[2] === "Refunded"
-                        ? "oklch(0.75 0.12 30)"
-                        : "var(--n-fg-muted)",
+                          ? "oklch(0.75 0.12 30)"
+                          : "var(--n-fg-muted)",
                   }}
                 >
                   {r[2]}
                 </span>
                 <span className="px-4 py-2 text-[var(--n-fg)]">{r[3]}</span>
-                <span className="px-4 py-2 text-[var(--n-fg-muted)]">{r[4]}</span>
+                <span className="px-4 py-2 text-[var(--n-fg-muted)]">
+                  {r[4]}
+                </span>
               </div>
             ))}
           </div>
@@ -236,7 +269,10 @@ export function AppSurface() {
       {/* Bottom bar */}
       <div
         className="flex items-center h-7 px-3 text-[10.5px] text-[var(--n-fg-faint)] tabular-nums"
-        style={{ borderTop: "1px solid var(--n-line-soft)", background: "var(--n-bg-raised)" }}
+        style={{
+          borderTop: "1px solid var(--n-line-soft)",
+          background: "var(--n-bg-raised)",
+        }}
       >
         <span>UTF-8</span>
         <span className="mx-3">·</span>
@@ -247,5 +283,5 @@ export function AppSurface() {
         <span>AI: claude-sonnet-4 (BYOK)</span>
       </div>
     </div>
-  )
+  );
 }

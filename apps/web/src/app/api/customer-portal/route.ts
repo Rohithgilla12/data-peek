@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     if (!license_key) {
       return NextResponse.json(
         { success: false, error: "License key is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     if (!license) {
       return NextResponse.json(
         { success: false, error: "License key not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -41,13 +41,13 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Customer not found or not linked to payment provider",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Create customer portal session via Dodo Payments
     const portalSession = await dodo.customers.customerPortal.create(
-      license.customer.dodoCustomerId
+      license.customer.dodoCustomerId,
     );
 
     return NextResponse.json({
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     console.error("Customer portal error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to create customer portal session" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

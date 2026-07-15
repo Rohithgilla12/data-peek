@@ -30,6 +30,7 @@ revenue-generating or work-related activities within a for-profit organization
 of two or more people.
 
 ### Free Use (No License Required)
+
 - Personal projects and learning
 - Open source contributors
 - Students and educators
@@ -37,6 +38,7 @@ of two or more people.
 - Solo founders (company of one)
 
 ### License Required
+
 - Developers at companies with 2+ people
 - Freelancers billing clients
 - Agencies using for client work

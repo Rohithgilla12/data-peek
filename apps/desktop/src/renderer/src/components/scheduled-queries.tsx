@@ -13,7 +13,29 @@ import {
   Plus
 } from 'lucide-react'
 
-import { Badge, Collapsible, CollapsibleContent, CollapsibleTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@data-peek/ui'
+import {
+  Badge,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar
+} from '@data-peek/ui'
 
 import { useScheduledQueryStore, useConnectionStore } from '@/stores'
 import { ScheduledQueriesDialog } from './scheduled-queries-dialog'
@@ -116,7 +138,7 @@ export function ScheduledQueries() {
   }, [isInitialized, initialize])
 
   // Sort active queries first, then by next run time
-  const sortedQueries = [...scheduledQueries].sort((a, b) => {
+  const sortedQueries = scheduledQueries.toSorted((a, b) => {
     if (a.status === 'active' && b.status !== 'active') return -1
     if (a.status !== 'active' && b.status === 'active') return 1
     if (a.nextRunAt && b.nextRunAt) return a.nextRunAt - b.nextRunAt

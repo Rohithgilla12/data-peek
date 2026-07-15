@@ -23,14 +23,14 @@ The results viewer displays your query output in a powerful, interactive table.
 
 ### Data Type Formatting
 
-| Type | Display |
-|------|---------|
-| Text | Plain text (truncated if long) |
-| Numbers | Right-aligned, formatted |
-| Dates | ISO format with time |
-| Boolean | Checkbox icon (✓ or ✗) |
-| JSON | Collapsed preview, expandable |
-| NULL | Gray `NULL` badge |
+| Type    | Display                        |
+| ------- | ------------------------------ |
+| Text    | Plain text (truncated if long) |
+| Numbers | Right-aligned, formatted       |
+| Dates   | ISO format with time           |
+| Boolean | Checkbox icon (✓ or ✗)         |
+| JSON    | Collapsed preview, expandable  |
+| NULL    | Gray `NULL` badge              |
 
 ## JSON Viewer
 
@@ -45,6 +45,7 @@ For JSON/JSONB columns, data-peek provides a rich viewer:
 ### Expanded View
 
 When expanded, JSON shows:
+
 - Collapsible tree structure
 - Color-coded values by type:
   - 🟢 Strings in green
@@ -77,7 +78,8 @@ Results are paginated for performance:
 3. Results reload with new page size
 
 <Callout type="tip">
-  Smaller page sizes make navigation faster, especially for tables with many columns or JSON data.
+  Smaller page sizes make navigation faster, especially for tables with many
+  columns or JSON data.
 </Callout>
 
 ## Toolbar Actions
@@ -85,6 +87,7 @@ Results are paginated for performance:
 ### Query Metrics
 
 The toolbar shows:
+
 - **Row count** - Total rows returned
 - **Duration** - Query execution time (ms)
 
@@ -92,10 +95,10 @@ The toolbar shows:
 
 Click **Export** to download results:
 
-| Format | Description |
-|--------|-------------|
-| CSV | Comma-separated values |
-| JSON | JSON array of objects |
+| Format | Description            |
+| ------ | ---------------------- |
+| CSV    | Comma-separated values |
+| JSON   | JSON array of objects  |
 
 See [Export](/docs/features/export) for more details.
 
@@ -111,12 +114,12 @@ Click **Explain** to view the query execution plan. See [Query Plans](/docs/feat
 
 Right-click any cell for:
 
-| Option | Description |
-|--------|-------------|
-| **Copy Cell** | Copy the cell value |
-| **Copy Row as JSON** | Copy entire row as JSON |
-| **Copy Column** | Copy all values in column |
-| **Filter by Value** | Add WHERE clause for this value |
+| Option               | Description                     |
+| -------------------- | ------------------------------- |
+| **Copy Cell**        | Copy the cell value             |
+| **Copy Row as JSON** | Copy entire row as JSON         |
+| **Copy Column**      | Copy all values in column       |
+| **Filter by Value**  | Add WHERE clause for this value |
 
 ## Foreign Key Navigation
 
@@ -127,7 +130,8 @@ If a column is a foreign key:
 3. Opens a new tab with the referenced record
 
 <Callout type="info">
-  Foreign key navigation requires the referenced table to be accessible in the current connection.
+  Foreign key navigation requires the referenced table to be accessible in the
+  current connection.
 </Callout>
 
 ## Performance Tips

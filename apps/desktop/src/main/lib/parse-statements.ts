@@ -34,10 +34,7 @@ function stripLeadingComments(stmt: string): string {
  * (dollar quotes, backticks, bracket identifiers, etc.) then walks the original
  * SQL to find each statement's line range.
  */
-export function parseStatementsWithLines(
-  sql: string,
-  dbType: DatabaseType
-): ParsedStatement[] {
+export function parseStatementsWithLines(sql: string, dbType: DatabaseType): ParsedStatement[] {
   const rawStatements = splitStatements(sql, dbType)
   if (rawStatements.length === 0) return []
 
@@ -55,7 +52,7 @@ export function parseStatementsWithLines(
       const fallbackStartLine = countLines(sql, searchFrom) + 1
       log.warn(
         `parseStatementsWithLines: could not locate statement #${result.length} in source SQL; ` +
-        `using approximate line range ${fallbackStartLine}-${fallbackStartLine + internalNewlines}`
+          `using approximate line range ${fallbackStartLine}-${fallbackStartLine + internalNewlines}`
       )
       result.push({
         index: result.length,

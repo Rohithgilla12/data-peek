@@ -92,7 +92,8 @@ export function AISuggestions({ schemas, onSelect }: AISuggestionsProps) {
     <div className="flex flex-wrap gap-2 justify-center max-w-[320px]">
       {suggestions.map((suggestion, index) => (
         <button
-          key={index}
+          type="button"
+          key={suggestion.query}
           onClick={() => onSelect(suggestion.query)}
           className={cn(
             'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',

@@ -25,26 +25,26 @@ The Table Designer provides a visual interface for creating and modifying databa
 
 ### Table Settings
 
-| Field | Description |
-|-------|-------------|
-| **Table Name** | Name of the table |
-| **Schema** | Schema where table will be created |
-| **Comment** | Optional description |
-| **Unlogged** | Faster writes, but not crash-safe |
+| Field          | Description                        |
+| -------------- | ---------------------------------- |
+| **Table Name** | Name of the table                  |
+| **Schema**     | Schema where table will be created |
+| **Comment**    | Optional description               |
+| **Unlogged**   | Faster writes, but not crash-safe  |
 
 ### Columns Section
 
 Add, edit, and reorder columns:
 
-| Property | Description |
-|----------|-------------|
-| **Name** | Column name |
-| **Type** | Data type (with 50+ PostgreSQL types) |
-| **Length/Precision** | Size modifier for applicable types |
-| **Not Null** | Whether NULL is allowed |
-| **Primary Key** | Include in primary key |
-| **Default** | Default value expression |
-| **Comment** | Column description |
+| Property             | Description                           |
+| -------------------- | ------------------------------------- |
+| **Name**             | Column name                           |
+| **Type**             | Data type (with 50+ PostgreSQL types) |
+| **Length/Precision** | Size modifier for applicable types    |
+| **Not Null**         | Whether NULL is allowed               |
+| **Primary Key**      | Include in primary key                |
+| **Default**          | Default value expression              |
+| **Comment**          | Column description                    |
 
 ### Column Actions
 
@@ -58,6 +58,7 @@ Add, edit, and reorder columns:
 Types are grouped by category:
 
 ### Numeric
+
 - `smallint`, `integer`, `bigint`
 - `serial`, `bigserial`
 - `numeric`, `decimal`
@@ -65,33 +66,38 @@ Types are grouped by category:
 - `money`
 
 ### Text
+
 - `char(n)`, `varchar(n)`, `text`
 - `bytea`
 
 ### Date/Time
+
 - `timestamp`, `timestamptz`
 - `date`, `time`, `timetz`
 - `interval`
 
 ### Boolean & UUID
+
 - `boolean`
 - `uuid`
 
 ### JSON
+
 - `json`, `jsonb`
 
 ### Arrays
+
 - Any type with `[]` suffix (e.g., `integer[]`, `text[]`)
 
 ## Default Values
 
 Choose from three types:
 
-| Type | Example | Description |
-|------|---------|-------------|
-| **Literal** | `'active'`, `0`, `true` | Static value |
-| **Expression** | `now()`, `gen_random_uuid()` | SQL function |
-| **Sequence** | `nextval('seq_name')` | Auto-increment |
+| Type           | Example                      | Description    |
+| -------------- | ---------------------------- | -------------- |
+| **Literal**    | `'active'`, `0`, `true`      | Static value   |
+| **Expression** | `now()`, `gen_random_uuid()` | SQL function   |
+| **Sequence**   | `nextval('seq_name')`        | Auto-increment |
 
 ## Constraints
 
@@ -124,14 +130,14 @@ Choose from three types:
 
 Add indexes for query performance:
 
-| Option | Description |
-|--------|-------------|
-| **Name** | Index name |
-| **Method** | btree, hash, gist, gin, spgist, brin |
-| **Columns** | Columns to index |
-| **Unique** | Enforce uniqueness |
-| **Where** | Partial index condition |
-| **Include** | Covering index columns |
+| Option      | Description                          |
+| ----------- | ------------------------------------ |
+| **Name**    | Index name                           |
+| **Method**  | btree, hash, gist, gin, spgist, brin |
+| **Columns** | Columns to index                     |
+| **Unique**  | Enforce uniqueness                   |
+| **Where**   | Partial index condition              |
+| **Include** | Covering index columns               |
 
 ## Preview SQL
 
@@ -159,7 +165,8 @@ Click **Create Table** to execute the CREATE TABLE statement.
 Click **Save Changes** to execute ALTER TABLE statements for your modifications.
 
 <Callout type="info">
-  In edit mode, data-peek generates minimal ALTER statements - only what changed.
+  In edit mode, data-peek generates minimal ALTER statements - only what
+  changed.
 </Callout>
 
 ## Discarding Changes

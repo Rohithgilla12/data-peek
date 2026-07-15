@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     if (!license_key) {
       return NextResponse.json(
         { valid: false, error: "License key is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     console.error("License validation error:", error);
     return NextResponse.json(
       { valid: false, error: "Failed to validate license" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

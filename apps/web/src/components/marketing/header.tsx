@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useEffect, useState } from "react"
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const nav = [
   { href: "/#features", label: "Features" },
@@ -9,28 +9,28 @@ const nav = [
   { href: "/#faq", label: "FAQ" },
   { href: "/blog", label: "Changelog" },
   { href: "https://docs.datapeek.dev/docs", label: "Docs", external: true },
-]
+];
 
 export function Header() {
-  const [scrolled, setScrolled] = useState(false)
-  const [open, setOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 8)
-    on()
-    window.addEventListener("scroll", on, { passive: true })
-    return () => window.removeEventListener("scroll", on)
-  }, [])
+    const on = () => setScrolled(window.scrollY > 8);
+    on();
+    window.addEventListener("scroll", on, { passive: true });
+    return () => window.removeEventListener("scroll", on);
+  }, []);
 
   return (
     <header
       className={`neat sticky top-0 z-50 transition-colors duration-200 ${
-        scrolled
-          ? "bg-[var(--n-bg)]/90 backdrop-blur-md"
-          : "bg-transparent"
+        scrolled ? "bg-[var(--n-bg)]/90 backdrop-blur-md" : "bg-transparent"
       }`}
       style={{
-        borderBottom: scrolled ? "1px solid var(--n-line-soft)" : "1px solid transparent",
+        borderBottom: scrolled
+          ? "1px solid var(--n-line-soft)"
+          : "1px solid transparent",
       }}
     >
       <div className="mx-auto flex h-14 max-w-[1240px] items-center justify-between px-5 sm:px-8">
@@ -53,7 +53,9 @@ export function Header() {
               <Link
                 key={l.label}
                 href={l.href}
-                {...(l.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                {...(l.external
+                  ? { target: "_blank", rel: "noopener noreferrer" }
+                  : {})}
                 className="text-[12.5px] text-[var(--n-fg-muted)] hover:text-[var(--n-fg)] transition-colors"
               >
                 {l.label}
@@ -82,7 +84,10 @@ export function Header() {
           <Link
             href="/#pricing"
             className="inline-flex h-8 items-center px-3.5 text-[12px] font-medium"
-            style={{ background: "var(--n-accent)", color: "var(--n-accent-ink)" }}
+            style={{
+              background: "var(--n-accent)",
+              color: "var(--n-accent-ink)",
+            }}
           >
             Get Pro
           </Link>
@@ -100,7 +105,10 @@ export function Header() {
       {open && (
         <div
           className="md:hidden"
-          style={{ borderTop: "1px solid var(--n-line-soft)", background: "var(--n-bg)" }}
+          style={{
+            borderTop: "1px solid var(--n-line-soft)",
+            background: "var(--n-bg)",
+          }}
         >
           <div className="mx-auto max-w-[1240px] px-5 sm:px-8 py-4 flex flex-col gap-3">
             {nav.map((l) => (
@@ -117,5 +125,5 @@ export function Header() {
         </div>
       )}
     </header>
-  )
+  );
 }

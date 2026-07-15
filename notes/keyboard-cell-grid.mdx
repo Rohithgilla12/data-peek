@@ -1,0 +1,152 @@
+---
+title: "A keyboard-native result grid for SQL"
+description: "Arrow keys at 60fps in a 100k-row virtualized table. Enter for a docked inspector that scrubs along with the cursor. Cmd+C copies. The mouse is now optional. The cell ring is one absolutely-positioned div derived from geometry, not refs — which is why it survives virtualization."
+date: "2026-05-26"
+author: "Rohith Gilla"
+tags: ["release-notes", "feature", "keyboard", "virtualization", "ux"]
+published: true
+---
+
+data-peek's brand line is "data is the UI." The query result grid is the
+protagonist of the app — schemas, sidebars, and tabs exist to bring you
+to it.
+
+So when I caught myself reaching for the mouse to inspect a specific
+cell value, I knew there was a real gap. The grid already navigated by
+row (arrow up/down, click). What was missing was _cell-level
+interaction_: pick a single cell with the keyboard, see its full
+untruncated value, copy it, follow a foreign key — without ever leaving
+the keyboard.
+
+v0.23.0 ships that layer. The result table is fully arrow-key driven,
+in any virtualized result, from 100 rows to 100k, at 60fps.
+
+## The headline behaviour
+
+- **Arrow keys move between cells.** Up / down / left / right, scoped to
+  the focused result table — the same keys still drive the SQL editor
+  cursor, sidebar tree, and command palette as before.
+- **Home / End** jump to the first / last cell in the current row.
+  **Cmd+Home / Cmd+End** jump to the first / last cell in the result.
+- **PageUp / PageDown** jump 20 rows.
+- **The focused row gets a subtle full-width stripe** behind the cell
+  ring — tells you which row you're on even when only the column is
+  changing.
+
+## The inspector (`Enter` to open)
+
+The inspector is a docked panel beside the table. Open it on any cell
+and it shows:
+
+- Column name and data type
+- The **full untruncated value** — JSON pretty-printed, long strings
+  wrapped, byte-accurate
+- Cell kind, char count, byte count
+- A "Follow foreign key" action when the focused cell points to a
+  referenced row
+- A copy action that goes through the standard clipboard hook (visible
+  "Copied" state only after the write resolves)
+
+Here's the part that matters: the inspector **scrubs along with the
+cursor**. While the inspector is open, arrow keys keep moving focus,
+and the panel updates live. Esc closes it; keyboard focus returns to
+the table so navigation resumes immediately.
+
+The first version of the inspector shipped to code review froze on the
+cell it opened on. Reviewer caught it. The fix was making the panel
+read from the focus store rather than capturing its initial cell into
+closure.
+
+## `Cmd+C` copies — but only after the write resolves
+
+A small "copied" pill rises from the cell to confirm — but only after
+the clipboard write actually resolves. If the write fails
+(`NotAllowed`, focus-loss, oversized payload), no false success is
+shown, and the failure is logged.
+
+This is the kind of detail you don't notice until it bites you. The
+previous shared `useCopyToClipboard` hook used to silently drop
+rejected writes on the floor. It now logs to the console by default
+when no `onError` handler is provided.
+
+## How the cell ring survives virtualization
+
+The grid renders ~30 rows at a time even when the result has 100k. The
+focused cell's DOM node is _not stable_ — scroll past it and the row
+unmounts. The natural pull is to track focus by storing a DOM ref and
+positioning an overlay via `getBoundingClientRect()`. That falls apart
+the moment virtualization unmounts the row. The overlay would jump or
+disappear on scroll.
+
+The fix was to **derive overlay position from geometry instead of DOM
+measurement.** Column widths are measured once per width change (by
+reading `offsetWidth` from the header cells via a `ResizeObserver`).
+After that, every cell's position is determined arithmetically:
+
+```ts
+// Y position is row index × row height + header height
+const y = headerHeight + focus.row * rowHeight;
+
+// X position is the prefix sum of column widths up to the focused column
+const x = columnOffsets[focus.col];
+```
+
+The focus overlay is one absolutely-positioned `<div>` that uses
+`transform: translate3d(x, y, 0)` to snap between cells. No DOM refs.
+No layout reads. One GPU-composited transform.
+
+The snap curve is `cubic-bezier(0.32, 0.72, 0, 1)` — fast start, soft
+landing. 160ms is the sweet spot: long enough to read as a deliberate
+motion, short enough to never feel slow. `prefers-reduced-motion` makes
+the snap instant.
+
+## The bug that almost shipped
+
+The first cut of the keyboard layer attached its keydown listener to
+`window`. Arrows worked beautifully in the grid — and broke arrow-key
+navigation across the entire app. Type in the SQL editor, hit the down
+arrow, and the cursor jumped to row 3 of the result table instead of
+moving down a line.
+
+Code review caught it. The fix was scoping the listener to the table
+container's focus subtree, with an extra check that the active element
+isn't a form input or contenteditable. Tab still moves out to
+surrounding chrome — no keyboard trap, no focus prison.
+
+## Accessibility
+
+- All motion respects `prefers-reduced-motion`. Snap becomes instant.
+  The inspector fades instead of rising.
+- Focused cell is announced through standard table semantics
+  (`role="grid"`, `aria-rowindex`, `aria-colindex`).
+- Inspector renders as a labeled `role="region"` so screen readers
+  announce the transition.
+- Tab moves out, not within — arrow keys are the within-grid
+  navigation, Tab is the out-of-grid escape hatch.
+
+## When it activates
+
+The grid activates when virtualization kicks in — result row count > 50. Smaller results use native browser focus and don't render the
+overlay. The assumption is that for tiny results you don't need the
+keyboard layer; for large results you can't live without it.
+
+## What does it cost
+
+One absolutely-positioned `<div>` per result table. One memoised
+geometry object. One scoped keydown listener. No re-render storm — the
+overlay transforms via inline style, so the React tree above it stays
+quiet. The cell-grid hook bundle is ~830 lines net diff after a
+simplification pass that deduplicated the table integration into a
+single `useCellGrid` hook plus two panel components
+(`CellGridInspector`, `CellGridOverlays`).
+
+## Try it
+
+Auto-update via **data-peek → Check for Updates**, or download from
+[datapeek.dev](https://datapeek.dev/download).
+
+Then open any query with more than 50 rows, click into the result, and
+press an arrow key. The cell ring snaps. Press Enter. The inspector
+docks. Press another arrow. The inspector follows.
+
+The mouse is now optional.

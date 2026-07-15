@@ -40,6 +40,7 @@ export function FKCellValue({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
             onClick={handleClick}
             className="group flex items-center gap-1 text-left text-blue-400 hover:text-blue-300 hover:underline cursor-pointer font-mono text-xs px-1 -mx-1 rounded transition-colors"
           >

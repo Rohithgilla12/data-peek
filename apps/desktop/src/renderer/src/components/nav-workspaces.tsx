@@ -1,6 +1,20 @@
 import { ChevronRight, MoreHorizontal, Plus } from 'lucide-react'
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem, SidebarMenuSub, SidebarMenuSubButton, SidebarMenuSubItem } from '@data-peek/ui'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem
+} from '@data-peek/ui'
 
 export function NavWorkspaces({
   workspaces

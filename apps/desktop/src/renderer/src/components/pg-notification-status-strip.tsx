@@ -190,23 +190,14 @@ function Sparkline({
   }, [samples, tone, width, height])
 
   return (
-    <canvas
-      ref={canvasRef}
-      style={{ width, height }}
-      className="shrink-0"
-      aria-hidden="true"
-    />
+    <canvas ref={canvasRef} style={{ width, height }} className="shrink-0" aria-hidden="true" />
   )
 }
 
 const SPARK_BUCKETS = 30
 const SPARK_WINDOW_MS = 30_000
 
-export function PgNotificationStatusStrip({
-  connectionId,
-  hostLabel,
-  channelCount
-}: Props) {
+export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCount }: Props) {
   const status = usePgNotificationStore((s) => s.statuses[connectionId])
   const reconnect = usePgNotificationStore((s) => s.reconnect)
   const events = usePgNotificationStore((s) => s.events)
@@ -266,12 +257,7 @@ export function PgNotificationStatusStrip({
   }, [connectionId, reconnect])
 
   return (
-    <div
-      className={cn(
-        'relative overflow-hidden border-b shrink-0 font-mono text-xs',
-        t.border
-      )}
-    >
+    <div className={cn('relative overflow-hidden border-b shrink-0 font-mono text-xs', t.border)}>
       <div
         className={cn(
           'absolute inset-0 bg-gradient-to-r pointer-events-none transition-opacity duration-500',
@@ -309,10 +295,7 @@ export function PgNotificationStatusStrip({
         <span className="text-muted-foreground/70 shrink-0">│</span>
 
         <span className="text-muted-foreground shrink-0 tabular-nums">
-          rx{' '}
-          <span className="text-foreground/80">
-            {stats.eventsPerSecond.toFixed(1)}
-          </span>
+          rx <span className="text-foreground/80">{stats.eventsPerSecond.toFixed(1)}</span>
           /s
         </span>
 
@@ -326,9 +309,7 @@ export function PgNotificationStatusStrip({
           <Sparkline samples={samples} tone={tone} />
 
           {reconnecting && countdown && (
-            <span className="text-amber-500 shrink-0 tabular-nums">
-              retry in {countdown}
-            </span>
+            <span className="text-amber-500 shrink-0 tabular-nums">retry in {countdown}</span>
           )}
 
           {(failed || reconnecting) && (

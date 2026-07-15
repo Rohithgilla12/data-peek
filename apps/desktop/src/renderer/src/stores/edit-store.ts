@@ -134,7 +134,11 @@ function makeRowKey(
       parts.push(`b${value.toString()}`)
     } else if (value instanceof Date) {
       parts.push(`d${value.toISOString()}`)
-    } else if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
+    } else if (
+      typeof value === 'number' ||
+      typeof value === 'string' ||
+      typeof value === 'boolean'
+    ) {
       parts.push(`p${JSON.stringify(value)}`)
     } else {
       // Fallback for buffers, objects, etc — stringify defensively.

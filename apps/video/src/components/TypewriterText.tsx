@@ -1,32 +1,32 @@
-import { useCurrentFrame, useVideoConfig, interpolate } from 'remotion'
+import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
 
 type TypewriterTextProps = {
-  text: string
-  startFrame?: number
-  charsPerSecond?: number
-  style?: React.CSSProperties
-  cursorColor?: string
-}
+  text: string;
+  startFrame?: number;
+  charsPerSecond?: number;
+  style?: React.CSSProperties;
+  cursorColor?: string;
+};
 
 export const TypewriterText: React.FC<TypewriterTextProps> = ({
   text,
   startFrame = 0,
   charsPerSecond = 20,
   style,
-  cursorColor = '#6b8cf5',
+  cursorColor = "#6b8cf5",
 }) => {
-  const frame = useCurrentFrame()
-  const { fps } = useVideoConfig()
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
-  const localFrame = Math.max(0, frame - startFrame)
-  const framesPerChar = fps / charsPerSecond
+  const localFrame = Math.max(0, frame - startFrame);
+  const framesPerChar = fps / charsPerSecond;
   const charsVisible = Math.min(
     text.length,
-    Math.floor(localFrame / framesPerChar)
-  )
+    Math.floor(localFrame / framesPerChar),
+  );
 
-  const cursorOpacity = Math.round(localFrame / (fps / 2)) % 2 === 0 ? 1 : 0
-  const showCursor = charsVisible < text.length
+  const cursorOpacity = Math.round(localFrame / (fps / 2)) % 2 === 0 ? 1 : 0;
+  const showCursor = charsVisible < text.length;
 
   return (
     <span style={style}>
@@ -42,5 +42,5 @@ export const TypewriterText: React.FC<TypewriterTextProps> = ({
         </span>
       )}
     </span>
-  )
-}
+  );
+};

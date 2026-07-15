@@ -1,6 +1,37 @@
 import { useEffect, useState } from 'react'
 import { Activity, RefreshCw, Loader2, Skull, CheckCircle2, Share2 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@data-peek/ui'
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from '@data-peek/ui'
 
 import { ShareImageDialog, type ShareImageTheme } from '@/components/share-image-dialog'
 import {
@@ -94,7 +125,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
     await useHealthStore.getState().fetchLocks(connection)
   }
 
-  const sortedTableSizes = [...tableSizes].sort((a, b) => {
+  const sortedTableSizes = tableSizes.toSorted((a, b) => {
     switch (sizeSort) {
       case 'data':
         return b.dataSizeBytes - a.dataSizeBytes

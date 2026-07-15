@@ -116,6 +116,9 @@ interface EditableDataTableProps<TData> {
   onColumnStatsClick?: (column: DataTableColumn) => void
   /** Called after changes are successfully committed */
   onChangesCommitted?: () => void
+  autoCommit?: boolean
+  hasActiveTransaction?: boolean
+  onTransactionStart?: () => void
   /** Server-side pagination: current page (1-indexed) */
   serverCurrentPage?: number
   /** Server-side pagination: total row count from database */
@@ -221,6 +224,9 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   onForeignKeyOpenTab,
   onColumnStatsClick,
   onChangesCommitted,
+  autoCommit = true,
+  hasActiveTransaction = false,
+  onTransactionStart,
   serverCurrentPage,
   serverTotalRowCount,
   onServerPaginationChange
@@ -614,6 +620,19 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     setCommitError(null)
 
     try {
+      if (!autoCommit && !hasActiveTransaction) {
+        const beginRes = await window.api.db.beginTransaction(connection, tabId)
+        if (beginRes.success) {
+          onTransactionStart?.()
+        } else {
+          throw new Error('Failed to begin transaction: ' + beginRes.error)
+        }
+      }
+
+      if (!autoCommit) {
+        batch.sessionId = tabId
+      }
+
       const response = await window.api.db.execute(connection, batch)
 
       if (response.success && response.data?.success) {
@@ -1019,21 +1038,31 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     toggleHeaderSort
   ])
 
+  const tableState = React.useMemo(
+    () => ({
+      globalFilter: filterChips
+    }),
+    [filterChips]
+  )
+
+  const tableInitialState = React.useMemo(
+    () => ({
+      pagination: { pageSize }
+    }),
+    [pageSize]
+  )
+
+  const tableGlobalFilterFn = React.useCallback((row: any) => globalFilterFn(row), [globalFilterFn])
+
   const table = useReactTable({
     data: sortedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    globalFilterFn: (row) => globalFilterFn(row),
-    state: {
-      globalFilter: filterChips
-    },
-    initialState: {
-      pagination: {
-        pageSize
-      }
-    }
+    globalFilterFn: tableGlobalFilterFn,
+    state: tableState,
+    initialState: tableInitialState
   })
 
   React.useEffect(() => {

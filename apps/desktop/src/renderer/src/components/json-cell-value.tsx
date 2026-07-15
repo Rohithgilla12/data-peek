@@ -1,6 +1,17 @@
 import * as React from 'react'
 import { Braces, ChevronDown, ChevronRight as ChevronRightIcon, Copy, Check } from 'lucide-react'
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@data-peek/ui'
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription
+} from '@data-peek/ui'
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { useSettingsStore } from '@/stores/settings-store'
@@ -62,6 +73,8 @@ function JsonTreeNode({
       <div className="flex items-center gap-1">
         {hasChildren && (
           <button
+            type="button"
+            aria-label={isExpanded ? 'Collapse' : 'Expand'}
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-0.5 hover:bg-accent/50 rounded shrink-0"
           >
@@ -303,6 +316,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation()
                 setIsOpen(true)

@@ -93,8 +93,7 @@ function StatusIcon({ status }: { status: 'idle' | 'running' | 'success' | 'erro
   if (status === 'idle') return null
   if (status === 'running')
     return <span className="size-2 rounded-full bg-primary animate-pulse shrink-0" />
-  if (status === 'success')
-    return <Check className="size-3 text-emerald-500 shrink-0" />
+  if (status === 'success') return <Check className="size-3 text-emerald-500 shrink-0" />
   return <X className="size-3 text-destructive shrink-0" />
 }
 
@@ -246,9 +245,7 @@ export const NotebookCell = memo(function NotebookCell({
         <span
           className={cn(
             'text-[10px] font-medium px-1.5 py-0.5 rounded font-mono uppercase tracking-wide',
-            cell.type === 'sql'
-              ? 'text-primary bg-primary/10'
-              : 'text-muted-foreground bg-muted/50'
+            cell.type === 'sql' ? 'text-primary bg-primary/10' : 'text-muted-foreground bg-muted/50'
           )}
         >
           {cell.type === 'sql' ? 'SQL' : 'MD'}
@@ -371,10 +368,19 @@ export const NotebookCell = memo(function NotebookCell({
               'prose prose-sm dark:prose-invert max-w-none cursor-text min-h-[1.5rem]',
               !cell.content && 'text-muted-foreground/40 italic text-sm'
             )}
+            role="button"
+            tabIndex={0}
             onClick={(e) => {
               e.stopPropagation()
               onFocus()
               setIsEditing(true)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                onFocus()
+                setIsEditing(true)
+              }
             }}
           >
             {cell.content ? (
@@ -430,9 +436,7 @@ export const NotebookCell = memo(function NotebookCell({
 
           {!liveError && !liveResult && !hasPinnedResult && status === 'idle' && (
             <div className="px-3 py-2">
-              <p className="text-[10px] text-muted-foreground/50">
-                Not yet executed — ⇧⏎ to run
-              </p>
+              <p className="text-[10px] text-muted-foreground/50">Not yet executed — ⇧⏎ to run</p>
             </div>
           )}
         </div>

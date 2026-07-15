@@ -13,7 +13,14 @@ import {
   Cell,
   ResponsiveContainer
 } from 'recharts'
-import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from '@data-peek/ui'
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+  type ChartConfig
+} from '@data-peek/ui'
 import type { ChartWidgetConfig } from '@shared/index'
 import { useMemo, useCallback } from 'react'
 

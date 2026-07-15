@@ -1,11 +1,30 @@
+import { useEffect, useState } from 'react'
 import { Settings } from 'lucide-react'
-import { Button, Switch, Label, Input, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@data-peek/ui'
+import {
+  Button,
+  Switch,
+  Label,
+  Input,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from '@data-peek/ui'
+import type { TimeMachineStats } from '@data-peek/shared'
 
 import { useSettingsStore } from '@/stores/settings-store'
 
 interface SettingsModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`
 }
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
@@ -16,14 +35,51 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     hideQuickQueryPanel,
     queryTimeoutMs,
     pokemonBuddyEnabled,
+    timeMachineEnabled,
     setHideQueryEditorByDefault,
     setExpandJsonByDefault,
     setJsonExpandDepth,
     setHideQuickQueryPanel,
     setQueryTimeoutMs,
     setPokemonBuddyEnabled,
+    setTimeMachineEnabled,
     resetSettings
   } = useSettingsStore()
+
+  const [tmStats, setTmStats] = useState<TimeMachineStats | null>(null)
+  const [tmWipeArmed, setTmWipeArmed] = useState(false)
+
+  useEffect(() => {
+    if (!open) {
+      setTmWipeArmed(false)
+      return
+    }
+    let cancelled = false
+    window.api.timeMachine
+      .stats()
+      .then((response) => {
+        if (!cancelled && response.success && response.data) setTmStats(response.data)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [open])
+
+  const handleWipeTimeMachine = async () => {
+    if (!tmWipeArmed) {
+      setTmWipeArmed(true)
+      return
+    }
+    setTmWipeArmed(false)
+    try {
+      await window.api.timeMachine.clearAll()
+      const response = await window.api.timeMachine.stats()
+      if (response.success && response.data) setTmStats(response.data)
+    } catch {
+      // Storage unavailable — nothing to wipe.
+    }
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -164,6 +220,43 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
                   }}
                 />
               </div>
+            </div>
+          </div>
+
+          {/* Time Machine Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+              Time Machine
+            </h3>
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="time-machine">Snapshot query results</Label>
+                <p className="text-xs text-muted-foreground">
+                  Keep a local history of SELECT results to scrub and diff. Masked columns are
+                  stored redacted.
+                </p>
+              </div>
+              <Switch
+                id="time-machine"
+                checked={timeMachineEnabled}
+                onCheckedChange={setTimeMachineEnabled}
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {tmStats
+                  ? `${tmStats.runCount} runs across ${tmStats.queryCount} queries · ${formatBytes(tmStats.totalBytes)} on disk`
+                  : 'No snapshot storage in use'}
+              </p>
+              <Button
+                variant={tmWipeArmed ? 'destructive' : 'outline'}
+                size="sm"
+                className="h-7 text-xs"
+                disabled={!tmStats || tmStats.runCount === 0}
+                onClick={handleWipeTimeMachine}
+              >
+                {tmWipeArmed ? 'Click again to confirm' : 'Delete all snapshots'}
+              </Button>
             </div>
           </div>
         </div>

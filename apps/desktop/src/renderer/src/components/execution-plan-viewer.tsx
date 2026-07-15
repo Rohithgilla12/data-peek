@@ -16,7 +16,15 @@ import {
   Filter,
   Database
 } from 'lucide-react'
-import { Button, Badge, Progress, Collapsible, CollapsibleContent, CollapsibleTrigger, cn } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  Progress,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  cn
+} from '@data-peek/ui'
 
 // PostgreSQL EXPLAIN JSON plan node structure
 interface PlanNode {
@@ -197,7 +205,10 @@ function PlanNodeView({
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <div className="py-1.5">
           <CollapsibleTrigger asChild>
-            <button className="group flex items-start gap-2 w-full text-left hover:bg-muted/50 rounded p-1.5 -ml-1.5 transition-colors">
+            <button
+              type="button"
+              className="group flex items-start gap-2 w-full text-left hover:bg-muted/50 rounded p-1.5 -ml-1.5 transition-colors"
+            >
               {hasChildren ? (
                 <ChevronRight
                   className={cn(

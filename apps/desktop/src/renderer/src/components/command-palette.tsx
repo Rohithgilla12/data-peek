@@ -17,12 +17,14 @@ import {
   ChevronLeft,
   Pin,
   PinOff,
-  Pencil
+  Pencil,
+  History
 } from 'lucide-react'
 
 import { useTheme } from '@/components/theme-provider'
 import { DatabaseIcon } from '@/components/database-icons'
-import { useConnectionStore, useTabStore } from '@/stores'
+import { useConnectionStore, useTabStore, useSettingsStore } from '@/stores'
+import { useTimeMachineStore } from '@/stores/time-machine-store'
 import { useSavedQueryStore } from '@/stores/saved-queries-store'
 import { useAIStore } from '@/stores/ai-store'
 import {
@@ -164,7 +166,7 @@ export function CommandPalette({
 
   // Sort saved queries: pinned first, then by last used
   const sortedQueries = React.useMemo(() => {
-    return [...savedQueries].sort((a, b) => {
+    return savedQueries.toSorted((a, b) => {
       // Pinned first
       if (a.isPinned && !b.isPinned) return -1
       if (!a.isPinned && b.isPinned) return 1
@@ -254,6 +256,7 @@ export function CommandPalette({
         {activePage !== 'home' && (
           <div className="flex items-center gap-2 px-3 py-2 border-b text-xs text-muted-foreground">
             <button
+              type="button"
               onClick={popPage}
               className="flex items-center gap-1 hover:text-foreground transition-colors"
             >
@@ -365,6 +368,30 @@ export function CommandPalette({
                   <Bookmark className="text-amber-400" />
                   <span>Saved Queries</span>
                   <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                </CommandItem>
+                <CommandItem
+                  value="query-time-machine"
+                  keywords={['history', 'snapshot', 'timeline', 'diff', 'runs', 'past']}
+                  onSelect={() => {
+                    const { activeTabId, getTab } = useTabStore.getState()
+                    const activeTab = activeTabId ? getTab(activeTabId) : null
+                    if (
+                      activeTab?.type === 'query' &&
+                      useSettingsStore.getState().timeMachineEnabled
+                    ) {
+                      const tm = useTimeMachineStore.getState()
+                      if (tm.getState(activeTab.id)?.open) tm.closeStrip(activeTab.id)
+                      else tm.openStrip(activeTab.id)
+                    }
+                    onClose()
+                  }}
+                >
+                  <History className="text-amber-400" />
+                  <span>Toggle Time Machine</span>
+                  <CommandShortcut>
+                    {keys.mod}
+                    {keys.shift}H
+                  </CommandShortcut>
                 </CommandItem>
               </CommandGroup>
 
@@ -643,6 +670,7 @@ export function CommandPalette({
                         </div>
                         {/* Pin/Unpin button */}
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation()
                             togglePin(query.id)

@@ -54,11 +54,11 @@ All of them used to do:
 
 ```ts
 if (sslOptions.rejectUnauthorized === false) {
-  ssl = { rejectUnauthorized: false }
+  ssl = { rejectUnauthorized: false };
 } else if (sslOptions.ca) {
-  ssl = { rejectUnauthorized: true, ca: read(ca) }
+  ssl = { rejectUnauthorized: true, ca: read(ca) };
 } else {
-  ssl = true   // <-- this branch defaulted to strict
+  ssl = true; // <-- this branch defaulted to strict
 }
 ```
 
@@ -69,10 +69,10 @@ if (sslOptions.ca) {
   ssl = {
     rejectUnauthorized: sslOptions.rejectUnauthorized !== false,
     ca: read(ca),
-  }
+  };
 } else {
   // no CA pinned — verification is opt-in
-  ssl = { rejectUnauthorized: sslOptions.rejectUnauthorized === true }
+  ssl = { rejectUnauthorized: sslOptions.rejectUnauthorized === true };
 }
 ```
 

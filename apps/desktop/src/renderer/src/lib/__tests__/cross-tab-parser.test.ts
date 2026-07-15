@@ -221,10 +221,10 @@ describe('parseTabReferences', () => {
     })
 
     it('with knownNames, only matching names are emitted', () => {
-      const r = parseTabReferences(
-        'SET @count = 5; SELECT @count, @users FROM x',
-        { dialect: 'mysql', knownNames: new Set(['users']) }
-      )
+      const r = parseTabReferences('SET @count = 5; SELECT @count, @users FROM x', {
+        dialect: 'mysql',
+        knownNames: new Set(['users'])
+      })
       expect(r.references.map((x) => x.name)).toEqual(['users'])
     })
 

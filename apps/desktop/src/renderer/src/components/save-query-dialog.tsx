@@ -1,4 +1,21 @@
-import { Badge, Button, Checkbox, Input, Label, Textarea, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Badge,
+  Button,
+  Checkbox,
+  Input,
+  Label,
+  Textarea,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useConnectionStore, useSavedQueryStore } from '@/stores'
 import type { SavedQuery } from '@shared/index'

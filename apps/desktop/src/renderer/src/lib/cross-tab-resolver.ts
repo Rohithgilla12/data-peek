@@ -80,9 +80,7 @@ export function resolveReferences(
   source: string,
   parsed: ParsedSql,
   ctx: ResolveContext
-):
-  | { ok: true; result: ResolveResult }
-  | { ok: false; error: ResolveErrorKind } {
+): { ok: true; result: ResolveResult } | { ok: false; error: ResolveErrorKind } {
   const caps: ResolveCaps = { ...DEFAULT_RESOLVE_CAPS, ...(ctx.caps ?? {}) }
 
   if (parsed.references.length === 0) {
@@ -203,7 +201,7 @@ export function resolveReferences(
   // through escapeSQLIdentifier handles any name that happens to need it
   // (capitals / mixed case / future relaxation of the reserved-word
   // check above).
-  const sortedRefs = [...parsed.references].sort((a, b) => b.start - a.start)
+  const sortedRefs = parsed.references.toSorted((a, b) => b.start - a.start)
   let rewritten = source
   for (const ref of sortedRefs) {
     rewritten =
@@ -212,7 +210,11 @@ export function resolveReferences(
       rewritten.slice(ref.end)
   }
 
-  const merged = mergeIntoWith(ctes, rewritten, plans.map((p) => p.name))
+  const merged = mergeIntoWith(
+    ctes,
+    rewritten,
+    plans.map((p) => p.name)
+  )
   if (!merged.ok) {
     return { ok: false, error: merged.error }
   }
@@ -317,12 +319,7 @@ function formatCte(
     // MySQL 8.0.19+ requires `VALUES ROW(...)` — the bare `(v1, v2)`
     // tuples from buildTuple get reshaped to `ROW(v1, v2)`.
     const rowTuples = tuples.map((t) => t.replace(/^\s*\(/, '  ROW('))
-    return [
-      `${cteIdent}(${colList}) AS (`,
-      `  VALUES`,
-      rowTuples.join(',\n'),
-      `)`
-    ].join('\n')
+    return [`${cteIdent}(${colList}) AS (`, `  VALUES`, rowTuples.join(',\n'), `)`].join('\n')
   }
   if (dialect === 'mssql') {
     return [
@@ -334,12 +331,7 @@ function formatCte(
     ].join('\n')
   }
   // Postgres / SQLite.
-  return [
-    `${cteIdent}(${colList}) AS (`,
-    `  VALUES`,
-    tuples.join(',\n'),
-    `)`
-  ].join('\n')
+  return [`${cteIdent}(${colList}) AS (`, `  VALUES`, tuples.join(',\n'), `)`].join('\n')
 }
 
 /**

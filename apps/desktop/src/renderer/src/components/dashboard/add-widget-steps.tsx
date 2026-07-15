@@ -1,7 +1,17 @@
 import { CheckCircle2, Database, FileText, Loader2, Play, RefreshCw, Search } from 'lucide-react'
 
 import { SQLEditor } from '@/components/sql-editor'
-import { Input, Label, ScrollArea, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Input,
+  Label,
+  ScrollArea,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import type {
   ChartWidgetType,
@@ -30,6 +40,7 @@ export function TypeStep({ widgetType, dispatch }: TypeStepProps) {
     <div className="grid gap-2">
       {WIDGET_TYPES.map((wt) => (
         <button
+          type="button"
           key={wt.type}
           onClick={() => dispatch({ type: 'SET_WIDGET_TYPE', payload: wt.type })}
           className={cn(
@@ -98,6 +109,7 @@ export function SourceStep({
     <div className="space-y-4">
       <div className="inline-flex p-1 bg-muted/50 rounded-lg w-full">
         <button
+          type="button"
           onClick={() => dispatch({ type: 'SET_SOURCE_TYPE', payload: 'saved-query' })}
           className={cn(
             'flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200',
@@ -110,6 +122,7 @@ export function SourceStep({
           Saved Query
         </button>
         <button
+          type="button"
           onClick={() => dispatch({ type: 'SET_SOURCE_TYPE', payload: 'inline' })}
           className={cn(
             'flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200',
@@ -144,6 +157,7 @@ export function SourceStep({
               ) : (
                 filteredQueries.map((query) => (
                   <button
+                    type="button"
                     key={query.id}
                     onClick={() => dispatch({ type: 'SET_SELECTED_QUERY_ID', payload: query.id })}
                     className={cn(
@@ -267,6 +281,7 @@ export function ConfigStep({
     <div className="space-y-4">
       {!previewData ? (
         <button
+          type="button"
           onClick={onPreviewQuery}
           disabled={isLoadingPreview}
           className="w-full flex items-center justify-between p-4 rounded-xl bg-linear-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary/40 transition-all duration-200 group"
@@ -305,6 +320,7 @@ export function ConfigStep({
             </span>
           </div>
           <button
+            type="button"
             onClick={onPreviewQuery}
             disabled={isLoadingPreview}
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -409,6 +425,7 @@ function ChartConfig({ chartType, xKey, yKeys, availableColumns, dispatch }: Cha
         <div className="grid grid-cols-4 gap-1.5">
           {CHART_TYPES.map((ct) => (
             <button
+              type="button"
               key={ct.type}
               onClick={() => dispatch({ type: 'SET_CHART_TYPE', payload: ct.type })}
               className={cn(
@@ -621,6 +638,7 @@ function WidgetWidthSelector({ widgetWidth, dispatch }: WidgetWidthSelectorProps
       <div className="inline-flex p-1 bg-muted/50 rounded-lg">
         {WIDTH_OPTIONS.map((option) => (
           <button
+            type="button"
             key={option.value}
             onClick={() => dispatch({ type: 'SET_WIDGET_WIDTH', payload: option.value })}
             className={cn(

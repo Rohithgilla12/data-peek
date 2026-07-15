@@ -26,20 +26,20 @@ interface AIApi {
   chat(
     messages: AIMessage[],
     schemas: Schema[],
-    dbType: string
+    dbType: string,
   ): Promise<IpcResponse<AIChatResponse>>;
 
   // Session management
   getSessions(connectionId: string): Promise<ChatSession[]>;
   getSession(
     connectionId: string,
-    sessionId: string
+    sessionId: string,
   ): Promise<ChatSession | null>;
   createSession(connectionId: string, title?: string): Promise<ChatSession>;
   updateSession(
     connectionId: string,
     sessionId: string,
-    updates: Partial<ChatSession>
+    updates: Partial<ChatSession>,
   ): Promise<ChatSession>;
   deleteSession(connectionId: string, sessionId: string): Promise<boolean>;
 }
@@ -112,8 +112,8 @@ export const useAIStore = create<AIState>()(
       name: "data-peek-ai",
       // Only persist config, not conversations
       partialize: (state) => ({ config: state.config }),
-    }
-  )
+    },
+  ),
 );
 ```
 
@@ -430,7 +430,7 @@ async function generateChatResponse(
   messages: AIMessage[],
   schemas: Schema[],
   dbType: string,
-  config: AIConfig
+  config: AIConfig,
 ): Promise<AIChatResponse> {
   const model = getLanguageModel(config);
   const systemPrompt = buildSystemPrompt(schemas, dbType);
@@ -485,7 +485,7 @@ function getChatSessions(connectionId: string): ChatSession[] {
 function updateChatSession(
   connectionId: string,
   sessionId: string,
-  updates: Partial<ChatSession>
+  updates: Partial<ChatSession>,
 ): ChatSession {
   const sessions = getChatSessions(connectionId);
   const index = sessions.findIndex((s) => s.id === sessionId);

@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { X, Plus } from 'lucide-react'
-import { useQueryTabs } from '@/hooks/use-query-tabs'
+import { X, Plus } from "lucide-react";
+import { useQueryTabs } from "@/hooks/use-query-tabs";
 
 export function TabContainer() {
-  const { tabs, activeTabId, setActiveTab, addTab, removeTab } = useQueryTabs()
+  const { tabs, activeTabId, setActiveTab, addTab, removeTab } = useQueryTabs();
 
   return (
     <div className="flex items-center border-b border-border bg-background/50">
@@ -14,8 +14,8 @@ export function TabContainer() {
           onClick={() => setActiveTab(tab.id)}
           className={`group flex items-center gap-1.5 px-4 py-2 text-xs transition-all duration-200 border-b-2 ${
             tab.id === activeTabId
-              ? 'border-accent text-foreground'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              ? "border-accent text-foreground"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           {tab.title}
@@ -23,8 +23,8 @@ export function TabContainer() {
             <X
               className="h-3 w-3 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
               onClick={(e) => {
-                e.stopPropagation()
-                removeTab(tab.id)
+                e.stopPropagation();
+                removeTab(tab.id);
               }}
             />
           )}
@@ -37,5 +37,5 @@ export function TabContainer() {
         <Plus className="h-3.5 w-3.5" />
       </button>
     </div>
-  )
+  );
 }

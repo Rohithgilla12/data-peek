@@ -42,12 +42,12 @@ you can add your own (for my team: a `stripe_` rule that catches
 `users.full_name` in one query does not affect a different query.
 
 Masked cells render with `filter: blur(5px)` and `user-select: none`. You can
-see the *shape* of the data — same row height, same column width, no layout
+see the _shape_ of the data — same row height, same column width, no layout
 shift — but not the contents. When you actually need to see a value, hold
 `Alt` and hover. The cell reveals for as long as you hold it and re-blurs
 when you let go.
 
-That hover-to-peek mode is the best part. It keeps you *in* the flow:
+That hover-to-peek mode is the best part. It keeps you _in_ the flow:
 "checking a single email address to verify an account" no longer means
 revealing twenty of them.
 
@@ -61,13 +61,13 @@ These are the defaults, straight from `src/renderer/src/stores/masking-store.ts`
 
 ```ts
 const DEFAULT_RULES: AutoMaskRule[] = [
-  { id: 'email',    pattern: 'email',                                 enabled: true  },
-  { id: 'password', pattern: 'password|passwd|pwd',                   enabled: true  },
-  { id: 'ssn',      pattern: 'ssn|social_security',                   enabled: true  },
-  { id: 'token',    pattern: 'token|secret|api_key|apikey',           enabled: true  },
-  { id: 'phone',    pattern: 'phone|mobile|cell',                     enabled: false },
-  { id: 'address',  pattern: 'address|street',                        enabled: false }
-]
+  { id: "email", pattern: "email", enabled: true },
+  { id: "password", pattern: "password|passwd|pwd", enabled: true },
+  { id: "ssn", pattern: "ssn|social_security", enabled: true },
+  { id: "token", pattern: "token|secret|api_key|apikey", enabled: true },
+  { id: "phone", pattern: "phone|mobile|cell", enabled: false },
+  { id: "address", pattern: "address|street", enabled: false },
+];
 ```
 
 Two things I learned writing the matcher.
@@ -81,35 +81,35 @@ every time and you have a false sense of security.
 Second, **the effective mask is the union of manual and auto.** If you
 manually unmask a column but the auto-rule still matches, the auto-rule wins
 on the next render. This was a deliberate choice: the whole point is to fail
-*closed*. If you want to permanently exclude a column, you edit the rule,
+_closed_. If you want to permanently exclude a column, you edit the rule,
 not the cell.
 
 Here is the resolver that combines both sources:
 
 ```ts
 getEffectiveMaskedColumns: (tabId, allColumns) => {
-  const { maskedColumns, autoMaskRules, autoMaskEnabled } = get()
-  const manualMasked = new Set(maskedColumns[tabId] ?? [])
+  const { maskedColumns, autoMaskRules, autoMaskEnabled } = get();
+  const manualMasked = new Set(maskedColumns[tabId] ?? []);
 
-  if (!autoMaskEnabled) return manualMasked
+  if (!autoMaskEnabled) return manualMasked;
 
-  const effective = new Set(manualMasked)
+  const effective = new Set(manualMasked);
   for (const col of allColumns) {
     for (const rule of autoMaskRules) {
-      if (!rule.enabled) continue
+      if (!rule.enabled) continue;
       try {
-        const regex = new RegExp(rule.pattern, 'i')
+        const regex = new RegExp(rule.pattern, "i");
         if (regex.test(col)) {
-          effective.add(col)
-          break
+          effective.add(col);
+          break;
         }
       } catch {
         // Invalid regex — skip
       }
     }
   }
-  return effective
-}
+  return effective;
+};
 ```
 
 The `try/catch` around the regex is there because the rule list is
@@ -125,31 +125,31 @@ cell component. The meaningful lines from `data-table.tsx`:
 
 ```tsx
 function MaskedCell({ isMasked, hoverToPeek, children }: MaskedCellProps) {
-  const [peeking, setPeeking] = useState(false)
+  const [peeking, setPeeking] = useState(false);
 
   const onMouseEnter = (e: React.MouseEvent) => {
-    if (hoverToPeek && e.altKey) setPeeking(true)
-  }
+    if (hoverToPeek && e.altKey) setPeeking(true);
+  };
 
   return (
     <span
       onMouseEnter={onMouseEnter}
       onMouseLeave={() => setPeeking(false)}
-      style={peeking ? undefined : { filter: 'blur(5px)', userSelect: 'none' }}
+      style={peeking ? undefined : { filter: "blur(5px)", userSelect: "none" }}
     >
       {children}
     </span>
-  )
+  );
 }
 ```
 
 That is the whole thing. No canvas trickery, no data-URL sleight of hand,
-no modified result set — the *raw value* is still in the DOM. If someone is
+no modified result set — the _raw value_ is still in the DOM. If someone is
 smart enough to open devtools on your SQL client during a demo, they can dig
 it out. The threat model here is "accidentally revealing data to a camera or
 screen-share," not "malicious insider with inspector access." I think that is
-the right level to aim at. Perfect is the enemy of *I will actually use it
-every day*.
+the right level to aim at. Perfect is the enemy of _I will actually use it
+every day_.
 
 The `userSelect: 'none'` matters more than the blur: it means you cannot
 double-click and copy a masked value into the clipboard by reflex. One of
@@ -184,7 +184,7 @@ repo root would solve it. Queued up.
 
 If you have ever had a "I was sharing my screen" moment, this feature is for
 you. If you record Loom demos, pair on production bugs, or stream your
-coding, this feature is *definitely* for you.
+coding, this feature is _definitely_ for you.
 
 data-peek is at [datapeek.dev](https://datapeek.dev). The masking code is
 open source — `src/renderer/src/stores/masking-store.ts` if you want to

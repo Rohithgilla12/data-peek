@@ -85,16 +85,16 @@ one is about ten lines, dispatches to the adapter, and wraps the result in
 the project's standard `IpcResponse<T>` shape:
 
 ```ts
-ipcMain.handle('db:active-queries', async (_, config: ConnectionConfig) => {
+ipcMain.handle("db:active-queries", async (_, config: ConnectionConfig) => {
   try {
-    const adapter = getAdapter(config)
-    const queries = await adapter.getActiveQueries(config)
-    return { success: true, data: queries } as IpcResponse<typeof queries>
+    const adapter = getAdapter(config);
+    const queries = await adapter.getActiveQueries(config);
+    return { success: true, data: queries } as IpcResponse<typeof queries>;
   } catch (error) {
-    log.error('Failed to get active queries:', error)
-    return { success: false, error: String(error) } as IpcResponse<never>
+    log.error("Failed to get active queries:", error);
+    return { success: false, error: String(error) } as IpcResponse<never>;
   }
-})
+});
 ```
 
 That pattern ensures every health panel can fail independently. If `pg_locks`
@@ -201,7 +201,7 @@ async killQuery(config, pid) {
 }
 ```
 
-`pg_cancel_backend` sends SIGINT to the backend process. It is the *polite*
+`pg_cancel_backend` sends SIGINT to the backend process. It is the _polite_
 version — `pg_terminate_backend` is the hammer, and I deliberately do not
 expose it from the UI because killing a backend mid-transaction is a foot-gun
 that no amount of confirm dialogs can save you from. If `pg_cancel_backend`

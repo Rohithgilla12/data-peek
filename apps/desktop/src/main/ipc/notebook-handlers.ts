@@ -1,6 +1,11 @@
 import { ipcMain } from 'electron'
 import type { NotebookStorage } from '../notebook-storage'
-import type { CreateNotebookInput, UpdateNotebookInput, AddCellInput, UpdateCellInput } from '@shared/index'
+import type {
+  CreateNotebookInput,
+  UpdateNotebookInput,
+  AddCellInput,
+  UpdateCellInput
+} from '@shared/index'
 
 export function registerNotebookHandlers(storage: NotebookStorage): void {
   ipcMain.handle('notebooks:list', () => {

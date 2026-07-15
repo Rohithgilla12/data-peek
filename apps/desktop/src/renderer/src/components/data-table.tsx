@@ -48,6 +48,8 @@ import { useMaskingStore } from '@/stores/masking-store'
 import { CellGridInspector, CellGridOverlays, useCellGrid } from '@/components/cell-grid'
 import { WatchDecorationOverlay } from '@/components/cell-grid/watch-decoration-overlay'
 import { useWatchStore } from '@/stores/watch-store'
+import type { WatchDiff } from '@/lib/watch-types'
+import { cellKey, deriveRowKey, type KeyingPlan } from '@/lib/watch-row-keying'
 
 const VIRTUALIZATION_THRESHOLD = 50
 const ROW_HEIGHT = 37
@@ -84,6 +86,12 @@ interface DataTableProps<TData> {
   onForeignKeyOpenTab?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   /** Called when user requests column statistics for a column */
   onColumnStatsClick?: (column: DataTableColumn) => void
+  /**
+   * Pinned cell-diff decorations (Time Machine compare view). Unlike the watch
+   * overlay these never fade, and small (non-virtualized) results get inline
+   * cell tints since the geometry overlay only exists above the threshold.
+   */
+  diffOverlay?: WatchDiff | null
 }
 
 const CellValue = React.memo(function CellValue({
@@ -130,6 +138,7 @@ const CellValue = React.memo(function CellValue({
     const boolVal = value === true || value === 'true' || value === 't' || value === 1
     return (
       <button
+        type="button"
         onClick={() => copy(String(value))}
         className={`text-xs font-mono px-1.5 py-0.5 -mx-1 rounded hover:bg-accent/50 transition-colors ${
           boolVal ? 'text-green-500' : 'text-red-400'
@@ -156,6 +165,7 @@ const CellValue = React.memo(function CellValue({
       <Tooltip>
         <TooltipTrigger asChild>
           <button
+            type="button"
             onClick={() => copy(stringValue)}
             className={`text-left truncate max-w-[300px] hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${isMono ? 'font-mono text-xs' : ''}`}
           >
@@ -229,7 +239,8 @@ export function DataTable<TData extends Record<string, unknown>>({
   onApplyToQuery,
   onForeignKeyClick,
   onForeignKeyOpenTab,
-  onColumnStatsClick
+  onColumnStatsClick,
+  diffOverlay
 }: DataTableProps<TData>) {
   const { defaultPageSize } = useSettingsStore()
   const toggleColumnMask = useMaskingStore((s) => s.toggleColumnMask)
@@ -487,21 +498,31 @@ export function DataTable<TData extends Record<string, unknown>>({
     ]
   )
 
+  const tableState = React.useMemo(
+    () => ({
+      globalFilter: filterChips
+    }),
+    [filterChips]
+  )
+
+  const tableInitialState = React.useMemo(
+    () => ({
+      pagination: { pageSize }
+    }),
+    [pageSize]
+  )
+
+  const tableGlobalFilterFn = React.useCallback((row: any) => globalFilterFn(row), [globalFilterFn])
+
   const table = useReactTable({
     data: sortedData,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    globalFilterFn: (row) => globalFilterFn(row),
-    state: {
-      globalFilter: filterChips
-    },
-    initialState: {
-      pagination: {
-        pageSize
-      }
-    }
+    globalFilterFn: tableGlobalFilterFn,
+    state: tableState,
+    initialState: tableInitialState
   })
 
   React.useEffect(() => {
@@ -566,6 +587,10 @@ export function DataTable<TData extends Record<string, unknown>>({
     virtualizer,
     enabled: shouldVirtualize
   })
+
+  const diffPlan: KeyingPlan | null = diffOverlay
+    ? { strategy: diffOverlay.keyingStrategy, keyColumns: diffOverlay.keyColumns }
+    : null
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -670,21 +695,48 @@ export function DataTable<TData extends Record<string, unknown>>({
                     </td>
                   </tr>
                 ) : (
-                  rows.map((row) => (
-                    <RowContextMenu
-                      key={row.id}
-                      row={row.original as Record<string, unknown>}
-                      columns={columnDefs.map((c) => ({ name: c.name, dataType: c.dataType }))}
-                    >
-                      <TableRow className="hover:bg-accent/30 border-border/30 transition-colors">
-                        {row.getVisibleCells().map((cell) => (
-                          <TableCell key={cell.id} className="py-2 text-sm whitespace-nowrap">
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                          </TableCell>
-                        ))}
-                      </TableRow>
-                    </RowContextMenu>
-                  ))
+                  rows.map((row) => {
+                    const rowKey = diffPlan
+                      ? deriveRowKey(row.original as Record<string, unknown>, diffPlan, row.index)
+                      : null
+                    const isAddedRow = !!(rowKey && diffOverlay?.addedRowKeys.has(rowKey))
+                    return (
+                      <RowContextMenu
+                        key={row.id}
+                        row={row.original as Record<string, unknown>}
+                        columns={columnDefs.map((c) => ({ name: c.name, dataType: c.dataType }))}
+                      >
+                        <TableRow
+                          className="hover:bg-accent/30 border-border/30 transition-colors"
+                          style={
+                            isAddedRow ? { backgroundColor: 'var(--cell-diff-added)' } : undefined
+                          }
+                        >
+                          {row.getVisibleCells().map((cell, cellIndex) => {
+                            const isChangedCell =
+                              !isAddedRow &&
+                              rowKey !== null &&
+                              diffOverlay?.cells.get(
+                                cellKey(rowKey, columnDefs[cellIndex]?.name ?? '')
+                              )?.kind === 'changed'
+                            return (
+                              <TableCell
+                                key={cell.id}
+                                className="py-2 text-sm whitespace-nowrap"
+                                style={
+                                  isChangedCell
+                                    ? { backgroundColor: 'var(--cell-diff-fill)' }
+                                    : undefined
+                                }
+                              >
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </TableCell>
+                            )
+                          })}
+                        </TableRow>
+                      </RowContextMenu>
+                    )
+                  })
                 )
               ) : (
                 <TableRow>
@@ -704,6 +756,16 @@ export function DataTable<TData extends Record<string, unknown>>({
             virtualizer={virtualizer}
             enabled={shouldVirtualize && columnWidths.length > 0}
           />
+          {diffOverlay && shouldVirtualize && columnWidths.length > 0 && (
+            <WatchDecorationOverlay
+              diff={diffOverlay}
+              rows={rows}
+              columnNames={columnDefs.map((c) => c.name)}
+              geometry={cellGrid.geometry}
+              virtualizer={virtualizer}
+              fadeMs={Number.MAX_SAFE_INTEGER}
+            />
+          )}
         </div>
       </div>
 

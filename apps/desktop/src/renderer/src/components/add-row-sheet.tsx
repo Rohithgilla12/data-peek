@@ -1,6 +1,33 @@
 import * as React from 'react'
 
-import { Button, Input, Label, Badge, Switch, Textarea, ScrollArea, Popover, PopoverContent, PopoverTrigger, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Label,
+  Badge,
+  Switch,
+  Textarea,
+  ScrollArea,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  cn,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 import {
   Sparkles,
   Clock,

@@ -15,13 +15,14 @@ Use EXPLAIN ANALYZE to understand how PostgreSQL executes your queries and optim
 
 ### Modes
 
-| Mode | Description |
-|------|-------------|
-| **EXPLAIN** | Shows estimated plan without executing |
+| Mode                | Description                            |
+| ------------------- | -------------------------------------- |
+| **EXPLAIN**         | Shows estimated plan without executing |
 | **EXPLAIN ANALYZE** | Runs query and shows actual statistics |
 
 <Callout type="info">
-  EXPLAIN ANALYZE actually executes the query, so use with caution on slow queries or data-modifying statements.
+  EXPLAIN ANALYZE actually executes the query, so use with caution on slow
+  queries or data-modifying statements.
 </Callout>
 
 ## Plan Viewer
@@ -40,18 +41,19 @@ Aggregate (cost=1000..1001 rows=1)
 
 Each node shows:
 
-| Metric | Description |
-|--------|-------------|
+| Metric        | Description                                    |
+| ------------- | ---------------------------------------------- |
 | **Node Type** | Type of operation (Seq Scan, Index Scan, etc.) |
-| **Cost** | Estimated startup..total cost |
-| **Rows** | Estimated rows (vs actual with ANALYZE) |
-| **Width** | Average row width in bytes |
-| **Time** | Actual execution time (ANALYZE only) |
-| **Loops** | Number of times node was executed |
+| **Cost**      | Estimated startup..total cost                  |
+| **Rows**      | Estimated rows (vs actual with ANALYZE)        |
+| **Width**     | Average row width in bytes                     |
+| **Time**      | Actual execution time (ANALYZE only)           |
+| **Loops**     | Number of times node was executed              |
 
 ### Color Coding
 
 Nodes are color-coded by type:
+
 - 🔵 **Scans**: Seq Scan, Index Scan, Bitmap Scan
 - 🟢 **Joins**: Nested Loop, Hash Join, Merge Join
 - 🟡 **Sorts**: Sort, Incremental Sort
@@ -61,18 +63,19 @@ Nodes are color-coded by type:
 
 ### Common Node Types
 
-| Node | Description | Performance |
-|------|-------------|-------------|
-| **Seq Scan** | Full table scan | Slow on large tables |
-| **Index Scan** | Uses index | Fast for selective queries |
-| **Index Only Scan** | Uses covering index | Very fast |
-| **Bitmap Scan** | Two-phase index scan | Good for medium selectivity |
-| **Hash Join** | Hash-based join | Fast for large joins |
-| **Nested Loop** | Row-by-row join | Fast for small sets |
+| Node                | Description          | Performance                 |
+| ------------------- | -------------------- | --------------------------- |
+| **Seq Scan**        | Full table scan      | Slow on large tables        |
+| **Index Scan**      | Uses index           | Fast for selective queries  |
+| **Index Only Scan** | Uses covering index  | Very fast                   |
+| **Bitmap Scan**     | Two-phase index scan | Good for medium selectivity |
+| **Hash Join**       | Hash-based join      | Fast for large joins        |
+| **Nested Loop**     | Row-by-row join      | Fast for small sets         |
 
 ### Performance Warnings
 
 Watch for:
+
 - **High row estimates** with low actual rows (bad statistics)
 - **Sequential scans** on large tables
 - **Sort operations** without indexes

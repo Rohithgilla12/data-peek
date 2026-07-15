@@ -1,7 +1,23 @@
 import { useState, useEffect, useMemo } from 'react'
 import { Clock, Calendar, Info } from 'lucide-react'
 
-import { Button, Label, Input, Switch, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Label,
+  Input,
+  Switch,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useDashboardStore } from '@/stores'
 import type { Dashboard, SchedulePreset } from '@shared/index'
@@ -203,8 +219,8 @@ export function RefreshScheduleDialog({
                     Next scheduled refreshes
                   </div>
                   <ul className="space-y-1 text-xs text-muted-foreground">
-                    {nextRuns.slice(0, 3).map((time, i) => (
-                      <li key={i}>{formatNextRunTime(time)}</li>
+                    {nextRuns.slice(0, 3).map((time) => (
+                      <li key={String(time)}>{formatNextRunTime(time)}</li>
                     ))}
                   </ul>
                 </div>

@@ -18,7 +18,22 @@ import { SavedQueriesDialog } from '@/components/saved-queries-dialog'
 import { DatabaseIcon } from '@/components/database-icons'
 import { AppSidebar } from '@/components/app-sidebar'
 import { NavActions } from '@/components/nav-actions'
-import { Separator, SidebarInset, SidebarProvider, SidebarTrigger, useSidebar, Switch, Label, Input, cn, keys, Button, Tooltip, TooltipContent, TooltipTrigger } from '@data-peek/ui'
+import {
+  Separator,
+  SidebarInset,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+  Switch,
+  Label,
+  Input,
+  cn,
+  keys,
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@data-peek/ui'
 import { TabContainer } from '@/components/tab-container'
 import { DashboardView } from '@/components/dashboard'
 import { ConnectionPicker } from '@/components/connection-picker'
@@ -356,6 +371,7 @@ function ThemeOption({
 
   return (
     <button
+      type="button"
       onClick={() => onSelect(value)}
       className={cn(
         'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all',
@@ -458,6 +474,7 @@ function SettingsPage() {
               )}
             </div>
             <button
+              type="button"
               onClick={() =>
                 licenseStatus?.type === 'personal' ? openActivationModal() : openSettingsModal()
               }
@@ -569,6 +586,11 @@ function SettingsPage() {
               <div className="space-y-1">
                 <ShortcutRow keys={[keys.mod, 'Enter']} description="Execute/run current query" />
                 <ShortcutRow keys={[keys.mod, keys.shift, 'F']} description="Format SQL query" />
+                <ShortcutRow keys={[keys.mod, keys.shift, 'W']} description="Toggle Watch Mode" />
+                <ShortcutRow
+                  keys={[keys.mod, keys.shift, 'H']}
+                  description="Toggle Time Machine run history"
+                />
               </div>
             </div>
 

@@ -1,6 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Play, Square, Eye, Loader2, AlertCircle, CheckCircle2, Shuffle } from 'lucide-react'
-import { Button, Input, Checkbox, ScrollArea, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Checkbox,
+  ScrollArea,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useTabStore, useConnectionStore, useDataGenStore } from '@/stores'
 import type { DataGeneratorTab } from '@/stores/tab-store'
@@ -141,8 +152,14 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
 
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground whitespace-nowrap">Rows</label>
+            <label
+              htmlFor="datagen-rows"
+              className="text-xs text-muted-foreground whitespace-nowrap"
+            >
+              Rows
+            </label>
             <Input
+              id="datagen-rows"
               type="number"
               min={1}
               max={10000}
@@ -153,8 +170,14 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
             />
           </div>
           <div className="flex items-center gap-2">
-            <label className="text-xs text-muted-foreground whitespace-nowrap">Seed</label>
+            <label
+              htmlFor="datagen-seed"
+              className="text-xs text-muted-foreground whitespace-nowrap"
+            >
+              Seed
+            </label>
             <Input
+              id="datagen-seed"
               type="number"
               placeholder="optional"
               value={seedInput}

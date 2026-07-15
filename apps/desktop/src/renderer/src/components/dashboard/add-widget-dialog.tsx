@@ -12,7 +12,24 @@ import {
 import { useEffect, useReducer, useState } from 'react'
 
 import { SQLEditor } from '@/components/sql-editor'
-import { Button, Input, Label, ScrollArea, cn, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Label,
+  ScrollArea,
+  cn,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useConnectionStore, useDashboardStore, useSavedQueryStore } from '@/stores'
 import type {
@@ -252,6 +269,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                 <div className="flex gap-1 p-1 bg-muted/50 rounded-lg">
                   {WIDGET_TYPE_OPTIONS.map((opt) => (
                     <button
+                      type="button"
                       key={opt.type}
                       onClick={() => dispatch({ type: 'SET_WIDGET_TYPE', payload: opt.type })}
                       className={cn(
@@ -276,6 +294,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                 </Label>
                 <div className="flex gap-1 p-0.5 bg-muted/50 rounded-md">
                   <button
+                    type="button"
                     onClick={() => dispatch({ type: 'SET_SOURCE_TYPE', payload: 'inline' })}
                     className={cn(
                       'flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all',
@@ -288,6 +307,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                     SQL
                   </button>
                   <button
+                    type="button"
                     onClick={() => dispatch({ type: 'SET_SOURCE_TYPE', payload: 'saved-query' })}
                     className={cn(
                       'flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-all',
@@ -479,6 +499,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                 <div className="grid grid-cols-4 gap-1.5">
                   {CHART_TYPES.map((ct) => (
                     <button
+                      type="button"
                       key={ct.type}
                       onClick={() => dispatch({ type: 'SET_CHART_TYPE', payload: ct.type })}
                       className={cn(
@@ -622,6 +643,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
               <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
                 {(['auto', 'half', 'full'] as const).map((w) => (
                   <button
+                    type="button"
                     key={w}
                     onClick={() => dispatch({ type: 'SET_WIDGET_WIDTH', payload: w })}
                     className={cn(

@@ -1,10 +1,13 @@
-import Link from "next/link"
-import { AppSurface } from "./app-surface"
+import Link from "next/link";
+import { AppSurface } from "./app-surface";
 
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div aria-hidden className="absolute inset-x-0 top-0 h-[560px] neat-grid-bg" />
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-[560px] neat-grid-bg"
+      />
 
       <div className="relative mx-auto max-w-[1240px] px-5 sm:px-8 pt-16 pb-10 sm:pt-24 sm:pb-14">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
@@ -19,7 +22,9 @@ export function Hero() {
                 style={{ background: "var(--n-accent)" }}
               />
               v0.23 — Watch Mode: pin a SELECT, see it move
-              <span aria-hidden className="text-[var(--n-fg-faint)]">→</span>
+              <span aria-hidden className="text-[var(--n-fg-faint)]">
+                →
+              </span>
               <Link
                 href="/blog"
                 className="text-[var(--n-fg-muted)] hover:text-[var(--n-fg)]"
@@ -41,9 +46,7 @@ export function Hero() {
               </span>
             </h1>
 
-            <p
-              className="mt-6 max-w-[56ch] text-[15px] leading-[1.65] text-[var(--n-fg-muted)]"
-            >
+            <p className="mt-6 max-w-[56ch] text-[15px] leading-[1.65] text-[var(--n-fg-muted)]">
               Connect, query, and edit data across Postgres, MySQL, SQL Server,
               and SQLite. Inline edits, AI assist with your own key, and a
               command palette that knows every action.
@@ -53,10 +56,15 @@ export function Hero() {
               <Link
                 href="/download"
                 className="inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium"
-                style={{ background: "var(--n-accent)", color: "var(--n-accent-ink)" }}
+                style={{
+                  background: "var(--n-accent)",
+                  color: "var(--n-accent-ink)",
+                }}
               >
                 Download — free
-                <span aria-hidden className="text-[var(--n-accent-ink)]/70">↓</span>
+                <span aria-hidden className="text-[var(--n-accent-ink)]/70">
+                  ↓
+                </span>
               </Link>
               <Link
                 href="/#pricing"
@@ -88,7 +96,9 @@ export function Hero() {
                 <dt className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--n-fg-faint)]">
                   Databases
                 </dt>
-                <dd className="mt-1 text-[20px] text-[var(--n-fg)] tabular-nums">4</dd>
+                <dd className="mt-1 text-[20px] text-[var(--n-fg)] tabular-nums">
+                  4
+                </dd>
               </div>
               <div>
                 <dt className="text-[10.5px] uppercase tracking-[0.14em] text-[var(--n-fg-faint)]">
@@ -116,7 +126,10 @@ export function Hero() {
                   <span className="text-[var(--n-fg-muted)]">{s.v}</span>
                   <kbd
                     className="text-[11px] text-[var(--n-fg)] px-1.5 h-6 inline-flex items-center tabular-nums"
-                    style={{ border: "1px solid var(--n-line)", background: "var(--n-bg-raised)" }}
+                    style={{
+                      border: "1px solid var(--n-line)",
+                      background: "var(--n-bg-raised)",
+                    }}
                   >
                     {s.k}
                   </kbd>
@@ -132,13 +145,17 @@ export function Hero() {
 
         <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-[11px] text-[var(--n-fg-faint)]">
           <span>Available for</span>
-          <span className="text-[var(--n-fg-muted)]">macOS (Apple Silicon, Intel)</span>
+          <span className="text-[var(--n-fg-muted)]">
+            macOS (Apple Silicon, Intel)
+          </span>
           <span aria-hidden>·</span>
           <span className="text-[var(--n-fg-muted)]">Windows 10/11</span>
           <span aria-hidden>·</span>
-          <span className="text-[var(--n-fg-muted)]">Linux (.deb, .rpm, .AppImage)</span>
+          <span className="text-[var(--n-fg-muted)]">
+            Linux (.deb, .rpm, .AppImage)
+          </span>
         </div>
       </div>
     </section>
-  )
+  );
 }

@@ -82,9 +82,9 @@ const responseSchema = z.discriminatedUnion("type", [
             name: z.string(),
             type: z.string(),
             isPrimaryKey: z.boolean().optional(),
-          })
+          }),
         ),
-      })
+      }),
     ),
   }),
 

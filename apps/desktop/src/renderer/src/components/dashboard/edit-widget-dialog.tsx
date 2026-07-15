@@ -1,7 +1,22 @@
 import { useState, useEffect } from 'react'
 import { Check, Play, Loader2, FileText, Database } from 'lucide-react'
 
-import { Button, Input, Label, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Input,
+  Label,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { SQLEditor } from '@/components/sql-editor'
 import { useConnectionStore, useSavedQueryStore, useDashboardStore } from '@/stores'

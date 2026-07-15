@@ -30,9 +30,7 @@ describe('gateForWatch', () => {
     })
 
     it('CTE that mentions a mutating keyword inside a block comment is fine', () => {
-      const r = gateForWatch(
-        'WITH t AS (SELECT 1 /* INSERT INTO logs */ AS id) SELECT * FROM t'
-      )
+      const r = gateForWatch('WITH t AS (SELECT 1 /* INSERT INTO logs */ AS id) SELECT * FROM t')
       expect(r.ok).toBe(true)
     })
 
@@ -83,9 +81,7 @@ describe('gateForWatch', () => {
     it('WITH x AS (CREATE TABLE ...) — DDL inside CTE is also refused', () => {
       // Not valid PG (CREATE inside CTE is rejected by the planner), but the
       // gate should reject early so the watch never gets to dispatch it.
-      const r = gateForWatch(
-        'WITH x AS (CREATE TABLE foo (id int)) SELECT 1'
-      )
+      const r = gateForWatch('WITH x AS (CREATE TABLE foo (id int)) SELECT 1')
       expect(r.ok).toBe(false)
       if (!r.ok) expect(r.reason).toBe('ddl_statement')
     })
@@ -93,7 +89,7 @@ describe('gateForWatch', () => {
 
   describe('rejects mutating queries', () => {
     it('INSERT', () => {
-      const r = gateForWatch("INSERT INTO users (id) VALUES (1)")
+      const r = gateForWatch('INSERT INTO users (id) VALUES (1)')
       expect(r.ok).toBe(false)
       if (!r.ok) expect(r.reason).toBe('destructive_statement')
     })
@@ -182,7 +178,7 @@ describe('gateForWatch', () => {
     })
 
     it('semicolons inside dollar-quotes do not split', () => {
-      const r = gateForWatch("SELECT $body$ a; b $body$ FROM x")
+      const r = gateForWatch('SELECT $body$ a; b $body$ FROM x')
       expect(r.ok).toBe(true)
     })
 

@@ -167,15 +167,15 @@ Where Postgres pulls ahead is in the range of window frame options and the abili
 
 This is where Postgres really flexes. The extension ecosystem is one of the strongest arguments for choosing PostgreSQL.
 
-| Extension | What it does |
-|-----------|-------------|
-| PostGIS | Full geospatial database |
-| pg_trgm | Fuzzy text search |
-| pgvector | Vector similarity search for AI/ML |
-| TimescaleDB | Time-series data at scale |
-| Citus | Distributed Postgres (horizontal sharding) |
-| pg_cron | Scheduled jobs inside the database |
-| pg_stat_statements | Query performance analysis |
+| Extension          | What it does                               |
+| ------------------ | ------------------------------------------ |
+| PostGIS            | Full geospatial database                   |
+| pg_trgm            | Fuzzy text search                          |
+| pgvector           | Vector similarity search for AI/ML         |
+| TimescaleDB        | Time-series data at scale                  |
+| Citus              | Distributed Postgres (horizontal sharding) |
+| pg_cron            | Scheduled jobs inside the database         |
+| pg_stat_statements | Query performance analysis                 |
 
 MySQL has plugins, but the ecosystem is thinner. ProxySQL, Vitess for sharding, and the audit plugin are the big ones. For vector search, MySQL 9.0 added `VECTOR` type support, but the surrounding ecosystem is still catching up to what pgvector offers.
 
@@ -196,17 +196,17 @@ MySQL's Group Replication and InnoDB Cluster give you a more "batteries included
 
 Both are exceptionally well-supported by managed database providers in 2026:
 
-| Provider | PostgreSQL | MySQL |
-|----------|-----------|-------|
-| AWS RDS / Aurora | Yes | Yes |
-| Google Cloud SQL | Yes | Yes |
-| Azure | Yes | Yes |
-| PlanetScale | No | Yes |
-| Neon | Yes | No |
-| Supabase | Yes | No |
-| Turso | No | No (libSQL) |
-| Railway | Yes | Yes |
-| Render | Yes | No |
+| Provider         | PostgreSQL | MySQL       |
+| ---------------- | ---------- | ----------- |
+| AWS RDS / Aurora | Yes        | Yes         |
+| Google Cloud SQL | Yes        | Yes         |
+| Azure            | Yes        | Yes         |
+| PlanetScale      | No         | Yes         |
+| Neon             | Yes        | No          |
+| Supabase         | Yes        | No          |
+| Turso            | No         | No (libSQL) |
+| Railway          | Yes        | Yes         |
+| Render           | Yes        | No          |
 
 The developer-experience-focused platforms (Neon, Supabase) tend to bet on Postgres. PlanetScale remains MySQL's strongest managed offering with its branching and schema migration workflow.
 
@@ -249,6 +249,7 @@ MySQL has the backing of Oracle (for better or worse) and the MariaDB fork conti
 ## When to Pick What
 
 **Choose PostgreSQL when**:
+
 - Your data model is complex (lots of relationships, constraints, custom types)
 - You need strong JSON support as a core feature
 - You want to use extensions like PostGIS, pgvector, or TimescaleDB
@@ -257,6 +258,7 @@ MySQL has the backing of Oracle (for better or worse) and the MariaDB fork conti
 - You are starting a new project and do not have a strong reason to pick MySQL
 
 **Choose MySQL when**:
+
 - You need proven, simple read replication at scale
 - Your workload is primarily read-heavy with simple queries
 - You are using PlanetScale or need its branching workflow
@@ -265,6 +267,7 @@ MySQL has the backing of Oracle (for better or worse) and the MariaDB fork conti
 - You value operational simplicity and a well-trodden path
 
 **Either works great when**:
+
 - You are building a standard web application with a typical CRUD workload
 - You have a competent team that can operate either database
 - Your cloud provider manages the database for you

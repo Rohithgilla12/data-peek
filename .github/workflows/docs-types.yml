@@ -3,10 +3,10 @@ name: docs types check
 on:
   pull_request:
     paths:
-      - 'apps/docs/**'
-      - 'packages/**'
-      - 'pnpm-lock.yaml'
-      - '.github/workflows/docs-types.yml'
+      - "apps/docs/**"
+      - "packages/**"
+      - "pnpm-lock.yaml"
+      - ".github/workflows/docs-types.yml"
   push:
     branches:
       - main
@@ -25,7 +25,7 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: 24
-          cache: 'pnpm'
+          cache: "pnpm"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile

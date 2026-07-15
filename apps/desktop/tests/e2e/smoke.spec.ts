@@ -9,7 +9,9 @@ import { test, expect } from './fixtures/electron-app'
 
 test('the app launches and shows the main window', async ({ electronApp, window }) => {
   // Sanity check: an Electron BrowserWindow exists.
-  const winCount = await electronApp.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length)
+  const winCount = await electronApp.evaluate(
+    ({ BrowserWindow }) => BrowserWindow.getAllWindows().length
+  )
   expect(winCount).toBeGreaterThanOrEqual(1)
 
   // Renderer reports a non-empty title — this catches white-screen regressions
@@ -31,7 +33,9 @@ test('the renderer mounts and reaches an interactive state', async ({ consoleErr
   // emitted during the initial mount, which is the exact regression class we want to
   // catch.
   const meaningful = consoleErrors().filter((e) => !e.includes('Autofill.enable'))
-  expect(meaningful, `Unexpected console errors during mount:\n${meaningful.join('\n')}`).toEqual([])
+  expect(meaningful, `Unexpected console errors during mount:\n${meaningful.join('\n')}`).toEqual(
+    []
+  )
 })
 
 test('userData isolation: each test gets a fresh app state', async ({ userDataDir, window }) => {

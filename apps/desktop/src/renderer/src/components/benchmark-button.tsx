@@ -1,4 +1,16 @@
-import { cn, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@data-peek/ui'
+import {
+  cn,
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from '@data-peek/ui'
 import { Timer, Loader2, ChevronDown, Gauge } from 'lucide-react'
 
 interface BenchmarkButtonProps {

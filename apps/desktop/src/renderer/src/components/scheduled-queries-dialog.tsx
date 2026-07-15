@@ -14,7 +14,26 @@ import {
   History,
   RefreshCw
 } from 'lucide-react'
-import { Button, Badge, Input, Dialog, DialogContent, DialogHeader, DialogTitle, ScrollArea, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  Input,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  ScrollArea,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useScheduledQueryStore, useConnectionStore } from '@/stores'
 import type { ScheduledQuery, ScheduledQueryStatus } from '@shared/index'
@@ -178,7 +197,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
     }
 
     // Sort by next run time (active first), then by name
-    return [...result].sort((a, b) => {
+    return result.toSorted((a, b) => {
       if (a.status === 'active' && b.status !== 'active') return -1
       if (a.status !== 'active' && b.status === 'active') return 1
       return a.name.localeCompare(b.name)

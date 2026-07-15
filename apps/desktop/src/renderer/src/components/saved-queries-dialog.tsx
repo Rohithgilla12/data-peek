@@ -15,7 +15,29 @@ import {
   BarChart3,
   SortAsc
 } from 'lucide-react'
-import { Button, Badge, Input, Dialog, DialogContent, DialogHeader, DialogTitle, ScrollArea, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, Collapsible, CollapsibleContent, CollapsibleTrigger, cn, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  Input,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  ScrollArea,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  cn,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@data-peek/ui'
 
 import { useSavedQueryStore, useConnectionStore, useTabStore } from '@/stores'
 import type { SavedQuery } from '@shared/index'
@@ -94,7 +116,9 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
   const [selectedFolder, setSelectedFolder] = useState<string>('all')
   const [selectedTag, setSelectedTag] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortOption>('lastUsed')
-  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set(['(ungrouped)']))
+  const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
+    () => new Set(['(ungrouped)'])
+  )
 
   // Initialize on open
   useEffect(() => {
@@ -137,7 +161,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
     }
 
     // Sort
-    result = [...result].sort((a, b) => {
+    result = result.toSorted((a, b) => {
       switch (sortBy) {
         case 'name':
           return a.name.localeCompare(b.name)

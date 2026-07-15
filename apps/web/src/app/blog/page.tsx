@@ -1,42 +1,55 @@
-import { Metadata } from 'next'
-import Link from 'next/link'
-import { Header } from '@/components/marketing/header'
-import { Footer } from '@/components/marketing/footer'
-import { Breadcrumbs } from '@/components/seo/breadcrumbs'
-import { getBlogPosts } from '@/lib/blog'
-import { ArrowRight, Calendar, Clock, Terminal, Zap, BookOpen, Sparkles } from 'lucide-react'
-import { generateMetadata as generateSeoMetadata } from '@/lib/seo'
-import { FadeIn, StaggerContainer, StaggerItem, ScaleIn } from '@/components/ui/motion-wrapper'
-import { DataSubstrate } from '@/components/marketing/data-substrate'
+import { Metadata } from "next";
+import Link from "next/link";
+import { Header } from "@/components/marketing/header";
+import { Footer } from "@/components/marketing/footer";
+import { Breadcrumbs } from "@/components/seo/breadcrumbs";
+import { getBlogPosts } from "@/lib/blog";
+import {
+  ArrowRight,
+  Calendar,
+  Clock,
+  Terminal,
+  Zap,
+  BookOpen,
+  Sparkles,
+} from "lucide-react";
+import { generateMetadata as generateSeoMetadata } from "@/lib/seo";
+import {
+  FadeIn,
+  StaggerContainer,
+  StaggerItem,
+  ScaleIn,
+} from "@/components/ui/motion-wrapper";
+import { DataSubstrate } from "@/components/marketing/data-substrate";
 
 export const metadata: Metadata = generateSeoMetadata({
-  title: 'Blog',
+  title: "Blog",
   description:
-    'Technical insights, tutorials, and behind-the-scenes looks at building a modern database client. Learn about SQL optimization, database internals, and developer tooling.',
+    "Technical insights, tutorials, and behind-the-scenes looks at building a modern database client. Learn about SQL optimization, database internals, and developer tooling.",
   keywords: [
-    'database blog',
-    'SQL tutorials',
-    'PostgreSQL tips',
-    'database optimization',
-    'developer tools',
-    'SQL performance',
+    "database blog",
+    "SQL tutorials",
+    "PostgreSQL tips",
+    "database optimization",
+    "developer tools",
+    "SQL performance",
   ],
-  path: '/blog',
-})
+  path: "/blog",
+});
 
 function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  })
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export default function BlogPage() {
-  const posts = getBlogPosts()
-  const featuredPost = posts[0]
-  const otherPosts = posts.slice(1)
+  const posts = getBlogPosts();
+  const featuredPost = posts[0];
+  const otherPosts = posts.slice(1);
 
   return (
     <div className="min-h-screen">
@@ -49,7 +62,7 @@ export default function BlogPage() {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
           <FadeIn>
             <div className="mb-12 flex justify-center">
-              <Breadcrumbs items={[{ label: 'Blog', href: '/blog' }]} />
+              <Breadcrumbs items={[{ label: "Blog", href: "/blog" }]} />
             </div>
 
             {/* Hero Section */}
@@ -63,14 +76,12 @@ export default function BlogPage() {
                 </div>
               </div>
 
-              <h1
-                className="text-6xl sm:text-8xl md:text-9xl font-bold tracking-tighter leading-[0.8] mb-10 text-white font-mono uppercase"
-              >
+              <h1 className="text-6xl sm:text-8xl md:text-9xl font-bold tracking-tighter leading-[0.8] mb-10 text-white font-mono uppercase">
                 The
                 <br />
                 <span className="text-(--color-text-secondary)">Journal.</span>
               </h1>
-              
+
               <p className="text-base sm:text-xl text-(--color-text-muted) max-w-2xl mx-auto font-mono leading-relaxed">
                 Deep dives into database internals, performance optimization,
                 and the craft of building professional developer tools.
@@ -84,7 +95,7 @@ export default function BlogPage() {
               <Link href={`/blog/${featuredPost.slug}`} className="group block">
                 <article className="relative overflow-hidden rounded-[3rem] bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition-all duration-500 border-flow">
                   <div className="absolute inset-0 bg-gradient-to-br from-(--color-accent)/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  
+
                   <div className="relative p-8 md:p-16">
                     <div className="flex items-center gap-4 mb-10 font-mono text-[10px] uppercase tracking-widest text-(--color-text-muted)">
                       <div className="flex gap-2">
@@ -92,13 +103,13 @@ export default function BlogPage() {
                         <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
                         <div className="w-3 h-3 rounded-full bg-green-500/50" />
                       </div>
-                      <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-(--color-accent)">Latest Release</span>
+                      <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-(--color-accent)">
+                        Latest Release
+                      </span>
                       <span>~/{featuredPost.slug}.mdx</span>
                     </div>
 
-                    <h2
-                      className="text-3xl md:text-6xl font-bold mb-8 text-white group-hover:text-(--color-accent) transition-colors duration-300 font-mono uppercase tracking-tighter leading-tight"
-                    >
+                    <h2 className="text-3xl md:text-6xl font-bold mb-8 text-white group-hover:text-(--color-accent) transition-colors duration-300 font-mono uppercase tracking-tighter leading-tight">
                       {featuredPost.title}
                     </h2>
 
@@ -155,9 +166,7 @@ export default function BlogPage() {
                       <span className="ml-2">Entry: {post.slug}</span>
                     </div>
 
-                    <h3
-                      className="text-xl sm:text-2xl font-bold mb-4 text-white group-hover:text-(--color-accent) transition-colors font-mono uppercase tracking-tight leading-snug line-clamp-2"
-                    >
+                    <h3 className="text-xl sm:text-2xl font-bold mb-4 text-white group-hover:text-(--color-accent) transition-colors font-mono uppercase tracking-tight leading-snug line-clamp-2">
                       {post.title}
                     </h3>
 
@@ -183,5 +192,5 @@ export default function BlogPage() {
       </main>
       <Footer />
     </div>
-  )
+  );
 }

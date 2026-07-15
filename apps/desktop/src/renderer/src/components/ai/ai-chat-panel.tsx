@@ -18,7 +18,19 @@ import {
   Pencil,
   Check
 } from 'lucide-react'
-import { Button, Badge, ScrollArea, Tooltip, TooltipContent, TooltipTrigger, cn, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@data-peek/ui'
+import {
+  Button,
+  Badge,
+  ScrollArea,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 
 import { AIMessage } from './ai-message'
 import { AISuggestions } from './ai-suggestions'
@@ -221,8 +233,10 @@ export function AIChatPanel({
   // Focus input when panel opens
   React.useEffect(() => {
     if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 100)
+      const timer = setTimeout(() => inputRef.current?.focus(), 100)
+      return () => clearTimeout(timer)
     }
+    return undefined
   }, [isOpen])
 
   const handleSendMessage = async () => {
@@ -447,6 +461,7 @@ export function AIChatPanel({
     <>
       {/* Backdrop with gradient */}
       <div
+        role="presentation"
         className="fixed inset-0 z-40 bg-gradient-to-r from-transparent via-black/20 to-black/40 transition-opacity duration-300"
         onClick={onClose}
       />
@@ -492,6 +507,7 @@ export function AIChatPanel({
               ) : (
                 <>
                   <button
+                    type="button"
                     onClick={() => connection && setShowSessionsList(true)}
                     className="font-semibold text-sm hover:text-blue-400 transition-colors flex items-center gap-1.5 truncate max-w-[200px]"
                     disabled={!connection}
@@ -626,7 +642,15 @@ export function AIChatPanel({
                           ? 'bg-blue-500/10 border border-blue-500/20'
                           : 'hover:bg-muted/50'
                       )}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => handleSwitchSession(session.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          handleSwitchSession(session.id)
+                        }
+                      }}
                     >
                       <MessageSquare
                         className={cn(
@@ -641,6 +665,7 @@ export function AIChatPanel({
                           <div className="flex items-center gap-1">
                             <input
                               type="text"
+                              aria-label="Session title"
                               value={editingTitle}
                               onChange={(e) => setEditingTitle(e.target.value)}
                               onKeyDown={(e) => {

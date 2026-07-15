@@ -21,7 +21,15 @@ import {
   xpForLevel,
   type Achievement
 } from '@/stores/pokemon-buddy-store'
-import { Collapsible, CollapsibleContent, CollapsibleTrigger, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, cn } from '@data-peek/ui'
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  cn
+} from '@data-peek/ui'
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms.toFixed(0)}ms`
@@ -230,6 +238,7 @@ export function FunAnalytics() {
 
               {/* Achievements section */}
               <button
+                type="button"
                 onClick={() => setShowAchievements(!showAchievements)}
                 className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-accent/50 transition-colors"
               >
@@ -261,6 +270,7 @@ export function FunAnalytics() {
               {/* Reset button */}
               {totalQueries > 0 && (
                 <button
+                  type="button"
                   onClick={() => {
                     if (confirm('Reset all fun stats? Your Pokemon buddy will go back to Lv.1!')) {
                       resetStats()

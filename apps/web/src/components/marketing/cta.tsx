@@ -1,4 +1,4 @@
-import Link from "next/link"
+import Link from "next/link";
 
 export function Cta() {
   return (
@@ -6,7 +6,10 @@ export function Cta() {
       <div className="mx-auto max-w-[1240px] px-5 sm:px-8 pb-24 sm:pb-32">
         <div
           className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 items-center p-8 sm:p-12"
-          style={{ border: "1px solid var(--n-line)", background: "var(--n-bg-sunken)" }}
+          style={{
+            border: "1px solid var(--n-line)",
+            background: "var(--n-bg-sunken)",
+          }}
         >
           <div>
             <div className="text-[10.5px] uppercase tracking-[0.18em] text-[var(--n-fg-faint)]">
@@ -24,7 +27,10 @@ export function Cta() {
             <Link
               href="/download"
               className="h-11 inline-flex items-center gap-2 px-5 text-[13px] font-medium"
-              style={{ background: "var(--n-accent)", color: "var(--n-accent-ink)" }}
+              style={{
+                background: "var(--n-accent)",
+                color: "var(--n-accent-ink)",
+              }}
             >
               Download — free
               <span aria-hidden>↓</span>
@@ -42,5 +48,5 @@ export function Cta() {
         </div>
       </div>
     </section>
-  )
+  );
 }

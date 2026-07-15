@@ -46,11 +46,11 @@ with four presets:
 
 ```ts
 const RUN_OPTIONS = [
-  { count: 10,  label: '10 runs',  description: 'Quick test' },
-  { count: 50,  label: '50 runs',  description: 'Standard benchmark' },
-  { count: 100, label: '100 runs', description: 'Detailed analysis' },
-  { count: 500, label: '500 runs', description: 'Statistical precision' }
-]
+  { count: 10, label: "10 runs", description: "Quick test" },
+  { count: 50, label: "50 runs", description: "Standard benchmark" },
+  { count: 100, label: "100 runs", description: "Detailed analysis" },
+  { count: 500, label: "500 runs", description: "Statistical precision" },
+];
 ```
 
 Pick one, the currently open query runs that many times, and the results
@@ -79,48 +79,45 @@ process loops through the query that many times, collecting telemetry on
 each pass. The important bits from `src/main/ipc/query-handlers.ts`:
 
 ```ts
-ipcMain.handle(
-  'db:benchmark',
-  async (_, { config, query, runCount }) => {
-    // Validate run count
-    if (runCount < 1 || runCount > 1000) {
-      return { success: false, error: 'Run count must be between 1 and 1000' }
-    }
-
-    const adapter = getAdapter(config)
-    const telemetryRuns: QueryTelemetry[] = []
-
-    for (let i = 0; i < runCount; i++) {
-      const executionId = `benchmark-${Date.now()}-${i}`
-
-      try {
-        const result = await adapter.queryMultiple(config, query, {
-          executionId,
-          collectTelemetry: true
-        })
-
-        if (result.telemetry) {
-          telemetryRuns.push(result.telemetry)
-        }
-
-        // Small delay between runs to avoid overwhelming the database
-        if (i < runCount - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 10))
-        }
-      } catch (runError) {
-        // If a run fails, log it but continue
-        log.warn(`Benchmark run ${i + 1} failed:`, runError)
-      }
-    }
-
-    if (telemetryRuns.length === 0) {
-      return { success: false, error: 'All benchmark runs failed' }
-    }
-
-    const benchmarkResult = telemetryCollector.aggregateBenchmark(telemetryRuns)
-    return { success: true, data: benchmarkResult }
+ipcMain.handle("db:benchmark", async (_, { config, query, runCount }) => {
+  // Validate run count
+  if (runCount < 1 || runCount > 1000) {
+    return { success: false, error: "Run count must be between 1 and 1000" };
   }
-)
+
+  const adapter = getAdapter(config);
+  const telemetryRuns: QueryTelemetry[] = [];
+
+  for (let i = 0; i < runCount; i++) {
+    const executionId = `benchmark-${Date.now()}-${i}`;
+
+    try {
+      const result = await adapter.queryMultiple(config, query, {
+        executionId,
+        collectTelemetry: true,
+      });
+
+      if (result.telemetry) {
+        telemetryRuns.push(result.telemetry);
+      }
+
+      // Small delay between runs to avoid overwhelming the database
+      if (i < runCount - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+      }
+    } catch (runError) {
+      // If a run fails, log it but continue
+      log.warn(`Benchmark run ${i + 1} failed:`, runError);
+    }
+  }
+
+  if (telemetryRuns.length === 0) {
+    return { success: false, error: "All benchmark runs failed" };
+  }
+
+  const benchmarkResult = telemetryCollector.aggregateBenchmark(telemetryRuns);
+  return { success: true, data: benchmarkResult };
+});
 ```
 
 Three things I want to point out.
@@ -152,10 +149,10 @@ implementation:
 
 ```ts
 export function calcPercentile(sorted: number[], p: number): number {
-  if (sorted.length === 0) return 0
-  if (sorted.length === 1) return sorted[0]
-  const idx = Math.ceil((p / 100) * sorted.length) - 1
-  return sorted[Math.max(0, Math.min(idx, sorted.length - 1))]
+  if (sorted.length === 0) return 0;
+  if (sorted.length === 1) return sorted[0];
+  const idx = Math.ceil((p / 100) * sorted.length) - 1;
+  return sorted[Math.max(0, Math.min(idx, sorted.length - 1))];
 }
 ```
 

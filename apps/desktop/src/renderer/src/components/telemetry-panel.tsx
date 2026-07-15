@@ -258,6 +258,8 @@ function generateTimeMarkers(totalMs: number): { position: number; label: string
   return markers
 }
 
+const percentiles = ['avg', 'p90', 'p95', 'p99'] as const
+
 export function TelemetryPanel({
   telemetry,
   benchmark,
@@ -281,7 +283,7 @@ export function TelemetryPanel({
   })
 
   // Sort phases by startOffset for timeline view
-  const sortedPhases = [...visiblePhases].sort((a, b) => a.startOffset - b.startOffset)
+  const sortedPhases = visiblePhases.toSorted((a, b) => a.startOffset - b.startOffset)
 
   const getDisplayValue = (phaseName: string): number => {
     if (benchmark?.phaseStats[phaseName]) {
@@ -338,8 +340,6 @@ export function TelemetryPanel({
 
   const totalDuration = getTotalDuration()
   const timeMarkers = generateTimeMarkers(totalDuration)
-
-  const percentiles = ['avg', 'p90', 'p95', 'p99'] as const
 
   return (
     <div
@@ -406,6 +406,7 @@ export function TelemetryPanel({
             <div className="flex items-center p-0.5 bg-muted/50 rounded-md border border-border/50">
               {percentiles.map((p) => (
                 <button
+                  type="button"
                   key={p}
                   onClick={() => onSelectPercentile(p)}
                   className={cn(
@@ -424,6 +425,7 @@ export function TelemetryPanel({
           {/* View mode toggle */}
           <div className="flex items-center p-0.5 bg-muted/50 rounded-md border border-border/50">
             <button
+              type="button"
               onClick={() => onViewModeChange('bars')}
               className={cn(
                 'p-1.5 rounded transition-all duration-150',
@@ -436,6 +438,7 @@ export function TelemetryPanel({
               <BarChart3 className="size-3.5" />
             </button>
             <button
+              type="button"
               onClick={() => onViewModeChange('timeline')}
               className={cn(
                 'p-1.5 rounded transition-all duration-150',
@@ -583,9 +586,9 @@ export function TelemetryPanel({
             <div className="absolute bottom-0 left-28 right-0 h-px bg-border/60" />
 
             {/* Time markers */}
-            {timeMarkers.map((marker, idx) => (
+            {timeMarkers.map((marker) => (
               <div
-                key={idx}
+                key={marker.position}
                 className="absolute bottom-0 flex flex-col items-center"
                 style={{ left: `calc(112px + ${marker.position}% * (100% - 112px) / 100)` }}
               >

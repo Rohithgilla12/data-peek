@@ -79,6 +79,8 @@ function PokemonSelector({
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-foreground">Choose Your Buddy</span>
         <button
+          type="button"
+          aria-label="Close"
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
@@ -88,6 +90,7 @@ function PokemonSelector({
       <div className="grid grid-cols-4 gap-1.5">
         {POKEMON_ROSTER.map((pokemon) => (
           <button
+            type="button"
             key={pokemon.id}
             onClick={() => {
               onSelect(pokemon.id)
@@ -127,6 +130,8 @@ function MovesPanel({
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold text-foreground">Moves</span>
         <button
+          type="button"
+          aria-label="Close"
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
@@ -136,6 +141,7 @@ function MovesPanel({
       <div className="grid grid-cols-2 gap-1.5">
         {moves.map((move) => (
           <button
+            type="button"
             key={move.name}
             onClick={() => {
               onUseMove(move)
@@ -200,15 +206,19 @@ export function PokemonBuddy() {
     setSpriteError(false)
   }, [activePokemonId])
 
-  // Walking animation — uses chained setTimeout so each tick gets a fresh random delay
+  // Walking animation — uses chained setTimeout so each tick gets a fresh random
+  // delay. The cancelled flag guards the tick that may already be dispatched when
+  // cleanup clears the current timer.
   useEffect(() => {
     if (mood !== 'idle' || isDragging) return
 
     let timerId: ReturnType<typeof setTimeout>
+    let cancelled = false
 
     const scheduleWalk = () => {
       timerId = setTimeout(
         () => {
+          if (cancelled) return
           const store = usePokemonBuddyStore.getState()
           const direction = Math.random() > 0.5 ? 1 : -1
           const distance = Math.random() * 8 + 2
@@ -222,7 +232,10 @@ export function PokemonBuddy() {
 
     scheduleWalk()
 
-    return () => clearTimeout(timerId)
+    return () => {
+      cancelled = true
+      clearTimeout(timerId)
+    }
   }, [mood, isDragging])
 
   const handleSpriteError = useCallback(() => {
@@ -272,6 +285,7 @@ export function PokemonBuddy() {
   if (!isVisible) {
     return (
       <button
+        type="button"
         onClick={() => setVisible(true)}
         className="fixed bottom-3 right-3 z-50 rounded-full bg-card border border-border/50 p-1.5 shadow-md hover:bg-accent transition-colors"
         title="Show Pokemon Buddy"
@@ -355,6 +369,7 @@ export function PokemonBuddy() {
             {/* Action buttons */}
             <div className="flex gap-1">
               <button
+                type="button"
                 onClick={() => {
                   setIsExpanded(false)
                   setShowMoves(true)
@@ -364,6 +379,7 @@ export function PokemonBuddy() {
                 Moves
               </button>
               <button
+                type="button"
                 onClick={() => {
                   setIsExpanded(false)
                   setShowSelector(true)
@@ -373,6 +389,7 @@ export function PokemonBuddy() {
                 Switch
               </button>
               <button
+                type="button"
                 onClick={() => setVisible(false)}
                 className="rounded-md bg-accent p-1 text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-colors"
                 title="Hide buddy"
@@ -410,10 +427,7 @@ export function PokemonBuddy() {
           <img
             src={currentSprite}
             alt={pokemon.name}
-            className={cn(
-              'size-16 drop-shadow-lg select-none',
-              !spriteError && 'pixelated'
-            )}
+            className={cn('size-16 drop-shadow-lg select-none', !spriteError && 'pixelated')}
             draggable={false}
             onError={handleSpriteError}
           />

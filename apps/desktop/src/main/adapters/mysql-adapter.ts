@@ -387,7 +387,7 @@ export class MySQLAdapter implements DatabaseAdapter {
 
     try {
       connection = await mysql.createConnection(toMySQLConfig(config, tunnelOverrides))
-      const [result] = await connection.execute(sql, params)
+      const [result] = await connection.execute(sql, params as any)
       const affectedRows = (result as mysql.ResultSetHeader).affectedRows ?? null
       return { rowCount: affectedRows }
     } finally {
@@ -417,7 +417,7 @@ export class MySQLAdapter implements DatabaseAdapter {
       let rowsAffected = 0
 
       for (const stmt of statements) {
-        const [result] = await connection.execute(stmt.sql, stmt.params)
+        const [result] = await connection.execute(stmt.sql, stmt.params as any)
         const affectedRows = (result as mysql.ResultSetHeader).affectedRows ?? 0
         results.push({ rowCount: affectedRows })
         rowsAffected += affectedRows
@@ -1078,7 +1078,6 @@ export class MySQLAdapter implements DatabaseAdapter {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getSequences(_config: ConnectionConfig): Promise<SequenceInfo[]> {
     // MySQL doesn't have sequences - it uses AUTO_INCREMENT
     // Return empty array as sequences are a PostgreSQL concept

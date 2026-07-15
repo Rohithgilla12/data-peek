@@ -122,6 +122,7 @@ function FKPanel({
                         <span className="text-sm text-muted-foreground/50 italic">NULL</span>
                       ) : hasFK ? (
                         <button
+                          type="button"
                           onClick={(e) => {
                             if (e.metaKey || e.ctrlKey) {
                               onOpenInTab(columnInfo!.foreignKey!, value)
@@ -196,7 +197,11 @@ export function FKPanelStack({
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/30 z-40 transition-opacity" onClick={onCloseAll} />
+      <div
+        role="presentation"
+        className="fixed inset-0 bg-black/30 z-40 transition-opacity"
+        onClick={onCloseAll}
+      />
 
       {/* All Panels stacked */}
       {panels.map((panel, index) => (

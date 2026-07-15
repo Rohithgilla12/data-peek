@@ -1,15 +1,15 @@
-'use client'
+"use client";
 
-import { CheckCircle, XCircle, Loader2, Download } from 'lucide-react'
-import { downloadCSV, downloadJSON } from '@/lib/export'
+import { CheckCircle, XCircle, Loader2, Download } from "lucide-react";
+import { downloadCSV, downloadJSON } from "@/lib/export";
 
 interface ResultsStatusProps {
-  rowCount: number | null
-  durationMs: number | null
-  error: string | null
-  isExecuting: boolean
-  rows?: Record<string, unknown>[]
-  fields?: { name: string }[]
+  rowCount: number | null;
+  durationMs: number | null;
+  error: string | null;
+  isExecuting: boolean;
+  rows?: Record<string, unknown>[];
+  fields?: { name: string }[];
 }
 
 export function ResultsStatus({
@@ -36,7 +36,7 @@ export function ResultsStatus({
         <>
           <div className="h-2 w-2 rounded-full bg-success animate-fade-in" />
           <span className="text-muted-foreground">
-            {rowCount.toLocaleString()} row{rowCount !== 1 ? 's' : ''} returned
+            {rowCount.toLocaleString()} row{rowCount !== 1 ? "s" : ""} returned
           </span>
           {durationMs !== null && (
             <span className="text-muted-foreground/70">{durationMs}ms</span>
@@ -66,5 +66,5 @@ export function ResultsStatus({
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,7 +1,14 @@
 import React from 'react'
 import { type LucideIcon } from 'lucide-react'
 
-import { SidebarGroup, SidebarGroupContent, SidebarMenu, SidebarMenuBadge, SidebarMenuButton, SidebarMenuItem } from '@data-peek/ui'
+import {
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuBadge,
+  SidebarMenuButton,
+  SidebarMenuItem
+} from '@data-peek/ui'
 
 export function NavSecondary({
   items,

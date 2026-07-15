@@ -15,7 +15,19 @@ import { FunAnalytics } from '@/components/fun-analytics'
 
 import { useConnectionStore, useTabStore } from '@/stores'
 import { useSettingsStore } from '@/stores/settings-store'
-import { cn, Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarRail, SidebarSeparator } from '@data-peek/ui'
+import {
+  cn,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  SidebarSeparator
+} from '@data-peek/ui'
 
 /**
  * Render the application's multi-section sidebar with connection switching, query tools, schema access, history, saved and scheduled queries, dashboards, and secondary navigation.

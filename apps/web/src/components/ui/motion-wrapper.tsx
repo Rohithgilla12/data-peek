@@ -1,10 +1,10 @@
-'use client'
+"use client";
 
-import { motion, HTMLMotionProps } from 'framer-motion'
-import { forwardRef, type HTMLAttributes } from 'react'
+import { motion, HTMLMotionProps } from "framer-motion";
+import { forwardRef, type HTMLAttributes } from "react";
 
-export interface MotionDivProps extends HTMLMotionProps<'div'> {
-  className?: string
+export interface MotionDivProps extends HTMLMotionProps<"div"> {
+  className?: string;
 }
 
 export const FadeIn = forwardRef<HTMLDivElement, MotionDivProps>(
@@ -13,17 +13,17 @@ export const FadeIn = forwardRef<HTMLDivElement, MotionDivProps>(
       ref={ref}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-100px' }}
+      viewport={{ once: true, margin: "-100px" }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       className={className}
       {...props}
     >
       {children}
     </motion.div>
-  )
-)
+  ),
+);
 
-FadeIn.displayName = 'FadeIn'
+FadeIn.displayName = "FadeIn";
 
 export const ScaleIn = forwardRef<HTMLDivElement, MotionDivProps>(
   ({ children, className, ...props }, ref) => (
@@ -38,10 +38,10 @@ export const ScaleIn = forwardRef<HTMLDivElement, MotionDivProps>(
     >
       {children}
     </motion.div>
-  )
-)
+  ),
+);
 
-ScaleIn.displayName = 'ScaleIn'
+ScaleIn.displayName = "ScaleIn";
 
 export const StaggerContainer = ({
   children,
@@ -65,9 +65,13 @@ export const StaggerContainer = ({
   >
     {children}
   </motion.div>
-)
+);
 
-export const StaggerItem = ({ children, className, ...props }: MotionDivProps) => (
+export const StaggerItem = ({
+  children,
+  className,
+  ...props
+}: MotionDivProps) => (
   <motion.div
     variants={{
       initial: { opacity: 0, y: 20 },
@@ -79,4 +83,4 @@ export const StaggerItem = ({ children, className, ...props }: MotionDivProps) =
   >
     {children}
   </motion.div>
-)
+);

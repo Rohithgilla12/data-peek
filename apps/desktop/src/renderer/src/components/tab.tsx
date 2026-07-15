@@ -2,7 +2,14 @@ import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { FileCode, Table2, Pin, X, Network, SearchCode } from 'lucide-react'
-import { cn, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from '@data-peek/ui'
+import {
+  cn,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger
+} from '@data-peek/ui'
 import type { Tab as TabType } from '@/stores/tab-store'
 import { useTabStore } from '@/stores/tab-store'
 import { useWatchStore } from '@/stores/watch-store'
@@ -174,6 +181,8 @@ export function Tab({
           {/* Close button (hidden for pinned tabs) */}
           {!tab.isPinned && (
             <button
+              type="button"
+              aria-label="Close tab"
               onClick={(e) => {
                 e.stopPropagation()
                 onClose()

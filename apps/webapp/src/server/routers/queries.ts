@@ -1,10 +1,10 @@
-import { z } from 'zod'
-import { eq, and } from 'drizzle-orm'
-import { TRPCError } from '@trpc/server'
-import { createRouter, protectedProcedure } from '../trpc'
-import { userConnections, queryHistory } from '@/db/schema'
-import { getAdapter } from '@/lib/db-connect'
-import { checkQueryLimit, incrementUsage } from '../usage'
+import { z } from "zod";
+import { eq, and } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
+import { createRouter, protectedProcedure } from "../trpc";
+import { userConnections, queryHistory } from "@/db/schema";
+import { getAdapter } from "@/lib/db-connect";
+import { checkQueryLimit, incrementUsage } from "../usage";
 
 export const queriesRouter = createRouter({
   execute: protectedProcedure
@@ -13,26 +13,29 @@ export const queriesRouter = createRouter({
         connectionId: z.string().uuid(),
         sql: z.string().min(1).max(100000),
         timeoutMs: z.number().int().min(1000).max(300000).default(30000),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const connection = await ctx.db.query.userConnections.findFirst({
         where: and(
           eq(userConnections.id, input.connectionId),
-          eq(userConnections.customerId, ctx.customerId)
+          eq(userConnections.customerId, ctx.customerId),
         ),
-      })
+      });
 
       if (!connection) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Connection not found' })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Connection not found",
+        });
       }
 
-      const limitCheck = await checkQueryLimit(ctx.customerId)
+      const limitCheck = await checkQueryLimit(ctx.customerId);
       if (!limitCheck.allowed) {
         throw new TRPCError({
-          code: 'FORBIDDEN',
+          code: "FORBIDDEN",
           message: `Daily query limit reached (${limitCheck.used}/${limitCheck.limit}). Upgrade to Pro for unlimited queries.`,
-        })
+        });
       }
 
       const adapter = await getAdapter(
@@ -41,44 +44,51 @@ export const queriesRouter = createRouter({
         connection.encryptedCredentials,
         connection.iv,
         connection.authTag,
-        ctx.userId
-      )
+        ctx.userId,
+      );
 
       try {
-        const result = await adapter.query(input.sql, input.timeoutMs)
+        const result = await adapter.query(input.sql, input.timeoutMs);
 
         await ctx.db.insert(queryHistory).values({
           customerId: ctx.customerId,
           connectionId: input.connectionId,
           query: input.sql,
-          status: 'success',
+          status: "success",
           durationMs: result.durationMs,
           rowCount: result.rowCount,
-        })
+        });
 
         try {
-          await incrementUsage(ctx.customerId, 'queryCount')
+          await incrementUsage(ctx.customerId, "queryCount");
         } catch (usageErr) {
-          console.error('Failed to increment usage counter', { customerId: ctx.customerId, error: usageErr })
+          console.error("Failed to increment usage counter", {
+            customerId: ctx.customerId,
+            error: usageErr,
+          });
         }
 
-        return result
+        return result;
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Query execution failed'
+        const message =
+          error instanceof Error ? error.message : "Query execution failed";
 
         try {
           await ctx.db.insert(queryHistory).values({
             customerId: ctx.customerId,
             connectionId: input.connectionId,
             query: input.sql,
-            status: 'error',
+            status: "error",
             errorMessage: message,
-          })
+          });
         } catch (historyErr) {
-          console.error('Failed to write error to query history', { customerId: ctx.customerId, error: historyErr })
+          console.error("Failed to write error to query history", {
+            customerId: ctx.customerId,
+            error: historyErr,
+          });
         }
 
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message })
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
       }
     }),
 
@@ -86,18 +96,21 @@ export const queriesRouter = createRouter({
     .input(
       z.object({
         connectionId: z.string().uuid(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const connection = await ctx.db.query.userConnections.findFirst({
         where: and(
           eq(userConnections.id, input.connectionId),
-          eq(userConnections.customerId, ctx.customerId)
+          eq(userConnections.customerId, ctx.customerId),
         ),
-      })
+      });
 
       if (!connection) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Connection not found' })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Connection not found",
+        });
       }
 
       const adapter = await getAdapter(
@@ -106,15 +119,16 @@ export const queriesRouter = createRouter({
         connection.encryptedCredentials,
         connection.iv,
         connection.authTag,
-        ctx.userId
-      )
+        ctx.userId,
+      );
 
       try {
-        await adapter.cancelQuery()
-        return { success: true }
+        await adapter.cancelQuery();
+        return { success: true };
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Cancel failed'
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message })
+        const message =
+          error instanceof Error ? error.message : "Cancel failed";
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
       }
     }),
 
@@ -124,18 +138,21 @@ export const queriesRouter = createRouter({
         connectionId: z.string().uuid(),
         sql: z.string().min(1).max(100000),
         timeoutMs: z.number().int().min(1000).max(300000).default(30000),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const connection = await ctx.db.query.userConnections.findFirst({
         where: and(
           eq(userConnections.id, input.connectionId),
-          eq(userConnections.customerId, ctx.customerId)
+          eq(userConnections.customerId, ctx.customerId),
         ),
-      })
+      });
 
       if (!connection) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Connection not found' })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Connection not found",
+        });
       }
 
       const adapter = await getAdapter(
@@ -144,15 +161,16 @@ export const queriesRouter = createRouter({
         connection.encryptedCredentials,
         connection.iv,
         connection.authTag,
-        ctx.userId
-      )
+        ctx.userId,
+      );
 
       try {
-        const result = await adapter.execute(input.sql, input.timeoutMs)
-        return result
+        const result = await adapter.execute(input.sql, input.timeoutMs);
+        return result;
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Edit execution failed'
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message })
+        const message =
+          error instanceof Error ? error.message : "Edit execution failed";
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
       }
     }),
 
@@ -162,18 +180,21 @@ export const queriesRouter = createRouter({
         connectionId: z.string().uuid(),
         sql: z.string().min(1),
         analyze: z.boolean().default(false),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       const connection = await ctx.db.query.userConnections.findFirst({
         where: and(
           eq(userConnections.id, input.connectionId),
-          eq(userConnections.customerId, ctx.customerId)
+          eq(userConnections.customerId, ctx.customerId),
         ),
-      })
+      });
 
       if (!connection) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Connection not found' })
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Connection not found",
+        });
       }
 
       const adapter = await getAdapter(
@@ -182,14 +203,15 @@ export const queriesRouter = createRouter({
         connection.encryptedCredentials,
         connection.iv,
         connection.authTag,
-        ctx.userId
-      )
+        ctx.userId,
+      );
 
       try {
-        return await adapter.explain(input.sql, input.analyze)
+        return await adapter.explain(input.sql, input.analyze);
       } catch (error) {
-        const message = error instanceof Error ? error.message : 'Explain failed'
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message })
+        const message =
+          error instanceof Error ? error.message : "Explain failed";
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message });
       }
     }),
-})
+});

@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
-import { HomeLayout } from "fumadocs-ui/layouts/home"
-import { baseOptions } from "@/lib/layout.shared"
-import { generateMetaTags, DOCS_CONFIG } from "@/lib/seo"
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { HomeLayout } from "fumadocs-ui/layouts/home";
+import { baseOptions } from "@/lib/layout.shared";
+import { generateMetaTags, DOCS_CONFIG } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -19,15 +19,15 @@ export const Route = createFileRoute("/")({
       ],
     }),
   }),
-})
+});
 
 type Section = {
-  number: string
-  title: string
-  blurb: string
-  href: string
-  leaves: string[]
-}
+  number: string;
+  title: string;
+  blurb: string;
+  href: string;
+  leaves: string[];
+};
 
 const sections: Section[] = [
   {
@@ -35,26 +35,40 @@ const sections: Section[] = [
     title: "Getting started",
     blurb: "Install data-peek, connect your first database, and run a query.",
     href: "/docs/getting-started",
-    leaves: ["Installation", "First connection", "Your first query", "Keyboard basics"],
+    leaves: [
+      "Installation",
+      "First connection",
+      "Your first query",
+      "Keyboard basics",
+    ],
   },
   {
     number: "02",
     title: "Features",
-    blurb: "Command palette, AI assist, inline editing, telemetry, ER diagrams, and more.",
+    blurb:
+      "Command palette, AI assist, inline editing, telemetry, ER diagrams, and more.",
     href: "/docs/features",
-    leaves: ["Command palette", "AI assistant", "Inline editing", "Query telemetry", "ER diagrams"],
+    leaves: [
+      "Command palette",
+      "AI assistant",
+      "Inline editing",
+      "Query telemetry",
+      "ER diagrams",
+    ],
   },
   {
     number: "03",
     title: "Database support",
-    blurb: "Feature matrix and connection specifics for every supported engine.",
+    blurb:
+      "Feature matrix and connection specifics for every supported engine.",
     href: "/docs/database-support",
     leaves: ["PostgreSQL", "MySQL", "SQL Server", "SQLite"],
   },
   {
     number: "04",
     title: "Configuration",
-    blurb: "Themes, shortcuts, AI providers, SSH tunnels, and everything you can tune.",
+    blurb:
+      "Themes, shortcuts, AI providers, SSH tunnels, and everything you can tune.",
     href: "/docs/configuration",
     leaves: ["Settings", "AI providers", "SSH tunnels", "Themes", "Shortcuts"],
   },
@@ -65,7 +79,7 @@ const sections: Section[] = [
     href: "/docs/reference",
     leaves: ["Keyboard shortcuts"],
   },
-]
+];
 
 function Home() {
   return (
@@ -108,7 +122,10 @@ function Home() {
               to="/docs/$"
               params={{ _splat: "getting-started" }}
               className="inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium"
-              style={{ background: "var(--n-accent)", color: "var(--n-accent-ink)" }}
+              style={{
+                background: "var(--n-accent)",
+                color: "var(--n-accent-ink)",
+              }}
             >
               Start with the intro
               <span aria-hidden>→</span>
@@ -125,9 +142,7 @@ function Home() {
           </div>
 
           {/* Section index */}
-          <div
-            className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-3"
-          >
+          <div className="mt-14 grid grid-cols-1 md:grid-cols-2 gap-3">
             {sections.map((s) => (
               <Link
                 key={s.number}
@@ -215,5 +230,5 @@ function Home() {
         </div>
       </main>
     </HomeLayout>
-  )
+  );
 }

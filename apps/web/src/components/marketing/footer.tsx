@@ -1,6 +1,9 @@
-import Link from "next/link"
+import Link from "next/link";
 
-const cols: { title: string; links: { label: string; href: string; external?: boolean }[] }[] = [
+const cols: {
+  title: string;
+  links: { label: string; href: string; external?: boolean }[];
+}[] = [
   {
     title: "Product",
     links: [
@@ -22,7 +25,11 @@ const cols: { title: string; links: { label: string; href: string; external?: bo
   {
     title: "Resources",
     links: [
-      { label: "Documentation", href: "https://docs.datapeek.dev/docs", external: true },
+      {
+        label: "Documentation",
+        href: "https://docs.datapeek.dev/docs",
+        external: true,
+      },
       { label: "Changelog", href: "/blog" },
       { label: "FAQ", href: "/#faq" },
       { label: "Students & OSS", href: "/community" },
@@ -40,14 +47,17 @@ const cols: { title: string; links: { label: string; href: string; external?: bo
       },
     ],
   },
-]
+];
 
 export function Footer() {
-  const year = new Date().getFullYear()
+  const year = new Date().getFullYear();
   return (
     <footer
       className="neat relative"
-      style={{ borderTop: "1px solid var(--n-line)", background: "var(--n-bg-sunken)" }}
+      style={{
+        borderTop: "1px solid var(--n-line)",
+        background: "var(--n-bg-sunken)",
+      }}
     >
       <div className="mx-auto max-w-[1240px] px-5 sm:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-10">
@@ -62,7 +72,8 @@ export function Footer() {
             </Link>
             <p className="mt-4 max-w-[40ch] text-[12.5px] leading-[1.6] text-[var(--n-fg-muted)]">
               A minimal SQL client that opens fast, edits inline, and never
-              phones home. Built by one person who was tired of the alternatives.
+              phones home. Built by one person who was tired of the
+              alternatives.
             </p>
             <div className="mt-5 flex gap-2 text-[11px]">
               <Link
@@ -128,5 +139,5 @@ export function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }
