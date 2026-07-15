@@ -1018,16 +1018,31 @@ export function SchemaExplorer() {
     return trimmed.endsWith(';') ? trimmed : `${trimmed};`
   }
 
+  // Always quote so names with special characters or reserved words stay intact
+  const quoteTriggerIdent = (name: string, dbType: string): string => {
+    switch (dbType) {
+      case 'mysql':
+        return `\`${name.replace(/`/g, '``')}\``
+      case 'mssql':
+        return `[${name.replace(/\]/g, ']]')}]`
+      default:
+        return `"${name.replace(/"/g, '""')}"`
+    }
+  }
+
   const buildDropTriggerSql = (dbType: string, trigger: TriggerInfo): string => {
+    const name = quoteTriggerIdent(trigger.name, dbType)
+    const schema = quoteTriggerIdent(trigger.schema, dbType)
+    const table = quoteTriggerIdent(trigger.table, dbType)
     switch (dbType) {
       case 'postgresql':
-        return `DROP TRIGGER IF EXISTS "${trigger.name}" ON "${trigger.schema}"."${trigger.table}";`
+        return `DROP TRIGGER IF EXISTS ${name} ON ${schema}.${table};`
       case 'mysql':
-        return `DROP TRIGGER IF EXISTS \`${trigger.schema}\`.\`${trigger.name}\`;`
+        return `DROP TRIGGER IF EXISTS ${schema}.${name};`
       case 'mssql':
-        return `DROP TRIGGER [${trigger.schema}].[${trigger.name}];`
+        return `DROP TRIGGER ${schema}.${name};`
       case 'sqlite':
-        return `DROP TRIGGER IF EXISTS "${trigger.name}";`
+        return `DROP TRIGGER IF EXISTS ${name};`
       default:
         return `DROP TRIGGER ${trigger.name};`
     }
@@ -1035,11 +1050,14 @@ export function SchemaExplorer() {
 
   const buildToggleTriggerSql = (dbType: string, trigger: TriggerInfo): string => {
     const action = trigger.enabled ? 'DISABLE' : 'ENABLE'
+    const name = quoteTriggerIdent(trigger.name, dbType)
+    const schema = quoteTriggerIdent(trigger.schema, dbType)
+    const table = quoteTriggerIdent(trigger.table, dbType)
     switch (dbType) {
       case 'postgresql':
-        return `ALTER TABLE "${trigger.schema}"."${trigger.table}" ${action} TRIGGER "${trigger.name}";`
+        return `ALTER TABLE ${schema}.${table} ${action} TRIGGER ${name};`
       case 'mssql':
-        return `${action} TRIGGER [${trigger.schema}].[${trigger.name}] ON [${trigger.schema}].[${trigger.table}];`
+        return `${action} TRIGGER ${schema}.${name} ON ${schema}.${table};`
       default:
         return ''
     }

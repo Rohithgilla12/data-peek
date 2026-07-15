@@ -466,10 +466,65 @@ describe('real-world SQL examples', () => {
       END;
       CALL get_user(1)
     `
-    // Note: This splits on semicolons - MySQL DELIMITER is not handled
-    // In practice, MySQL procedures use DELIMITER which this parser doesn't support
     const result = splitStatements(sql, 'mysql')
-    expect(result.length).toBeGreaterThan(1)
+    expect(result).toHaveLength(2)
+    expect(result[0]).toContain('CREATE PROCEDURE')
+    expect(result[0]).toContain('END')
+    expect(result[1]).toBe('CALL get_user(1)')
+  })
+
+  it('should keep a MySQL compound trigger body as one statement', () => {
+    const sql = `
+      DROP TRIGGER IF EXISTS audit_users;
+
+      CREATE TRIGGER audit_users BEFORE UPDATE ON users
+      FOR EACH ROW BEGIN
+        SET NEW.updated_at = NOW();
+        INSERT INTO audit_log (user_id) VALUES (OLD.id);
+      END
+    `
+    const result = splitStatements(sql, 'mysql')
+    expect(result).toHaveLength(2)
+    expect(result[1]).toContain('CREATE TRIGGER')
+    expect(result[1]).toContain('INSERT INTO audit_log')
+  })
+
+  it('should handle nested blocks and CASE inside a trigger body', () => {
+    const sql = `
+      CREATE TRIGGER t1 BEFORE INSERT ON orders
+      FOR EACH ROW BEGIN
+        IF NEW.total > 100 THEN
+          SET NEW.tier = CASE WHEN NEW.total > 1000 THEN 'gold' ELSE 'silver' END;
+        END IF;
+        BEGIN
+          INSERT INTO log (msg) VALUES ('ok');
+        END;
+      END;
+      SELECT 1
+    `
+    const result = splitStatements(sql, 'mysql')
+    expect(result).toHaveLength(2)
+    expect(result[1]).toBe('SELECT 1')
+  })
+
+  it('should keep a SQLite trigger body as one statement', () => {
+    const sql = `
+      CREATE TRIGGER trg AFTER INSERT ON t
+      BEGIN
+        UPDATE t SET n = n + 1;
+        DELETE FROM other WHERE id = NEW.id;
+      END;
+      SELECT 2
+    `
+    const result = splitStatements(sql, 'sqlite')
+    expect(result).toHaveLength(2)
+    expect(result[1]).toBe('SELECT 2')
+  })
+
+  it('should not treat BEGIN TRANSACTION as a block opener', () => {
+    const sql = `BEGIN; SELECT 1; COMMIT; SELECT 2`
+    const result = splitStatements(sql, 'mysql')
+    expect(result).toHaveLength(4)
   })
 
   it('should handle MSSQL with brackets and temp tables', () => {
