@@ -8,141 +8,141 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as DocsRouteImport } from "./routes/docs";
-import { Route as IndexRouteImport } from "./routes/index";
-import { Route as SitemapXmlRouteImport } from "./routes/sitemap.xml";
-import { Route as DocsSplatRouteImport } from "./routes/docs/$";
-import { Route as ApiSearchRouteImport } from "./routes/api/search";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as DocsRouteImport } from './routes/docs'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsSplatRouteImport } from './routes/docs/$'
+import { Route as ApiSearchRouteImport } from './routes/api/search'
 
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsRoute = DocsRouteImport.update({
-  id: "/docs",
-  path: "/docs",
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
-const SitemapXmlRoute = SitemapXmlRouteImport.update({
-  id: "/sitemap/xml",
-  path: "/sitemap/xml",
-  getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const DocsSplatRoute = DocsSplatRouteImport.update({
-  id: "/$",
-  path: "/$",
+  id: '/$',
+  path: '/$',
   getParentRoute: () => DocsRoute,
-} as any);
+} as any)
 const ApiSearchRoute = ApiSearchRouteImport.update({
-  id: "/api/search",
-  path: "/api/search",
+  id: '/api/search',
+  path: '/api/search',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/docs": typeof DocsRouteWithChildren;
-  "/api/search": typeof ApiSearchRoute;
-  "/docs/$": typeof DocsSplatRoute;
-  "/sitemap/xml": typeof SitemapXmlRoute;
+  '/': typeof IndexRoute
+  '/docs': typeof DocsRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/search': typeof ApiSearchRoute
+  '/docs/$': typeof DocsSplatRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/docs": typeof DocsRouteWithChildren;
-  "/api/search": typeof ApiSearchRoute;
-  "/docs/$": typeof DocsSplatRoute;
-  "/sitemap/xml": typeof SitemapXmlRoute;
+  '/': typeof IndexRoute
+  '/docs': typeof DocsRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/search': typeof ApiSearchRoute
+  '/docs/$': typeof DocsSplatRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/docs": typeof DocsRouteWithChildren;
-  "/api/search": typeof ApiSearchRoute;
-  "/docs/$": typeof DocsSplatRoute;
-  "/sitemap/xml": typeof SitemapXmlRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/docs': typeof DocsRouteWithChildren
+  '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/api/search': typeof ApiSearchRoute
+  '/docs/$': typeof DocsSplatRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: "/" | "/docs" | "/api/search" | "/docs/$" | "/sitemap/xml";
-  fileRoutesByTo: FileRoutesByTo;
-  to: "/" | "/docs" | "/api/search" | "/docs/$" | "/sitemap/xml";
-  id: "__root__" | "/" | "/docs" | "/api/search" | "/docs/$" | "/sitemap/xml";
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/docs' | '/sitemap.xml' | '/api/search' | '/docs/$'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/docs' | '/sitemap.xml' | '/api/search' | '/docs/$'
+  id: '__root__' | '/' | '/docs' | '/sitemap.xml' | '/api/search' | '/docs/$'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  DocsRoute: typeof DocsRouteWithChildren;
-  ApiSearchRoute: typeof ApiSearchRoute;
-  SitemapXmlRoute: typeof SitemapXmlRoute;
+  IndexRoute: typeof IndexRoute
+  DocsRoute: typeof DocsRouteWithChildren
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  ApiSearchRoute: typeof ApiSearchRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/docs": {
-      id: "/docs";
-      path: "/docs";
-      fullPath: "/docs";
-      preLoaderRoute: typeof DocsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/sitemap/xml": {
-      id: "/sitemap/xml";
-      path: "/sitemap/xml";
-      fullPath: "/sitemap/xml";
-      preLoaderRoute: typeof SitemapXmlRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/docs/$": {
-      id: "/docs/$";
-      path: "/$";
-      fullPath: "/docs/$";
-      preLoaderRoute: typeof DocsSplatRouteImport;
-      parentRoute: typeof DocsRoute;
-    };
-    "/api/search": {
-      id: "/api/search";
-      path: "/api/search";
-      fullPath: "/api/search";
-      preLoaderRoute: typeof ApiSearchRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/$': {
+      id: '/docs/$'
+      path: '/$'
+      fullPath: '/docs/$'
+      preLoaderRoute: typeof DocsSplatRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/api/search': {
+      id: '/api/search'
+      path: '/api/search'
+      fullPath: '/api/search'
+      preLoaderRoute: typeof ApiSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 interface DocsRouteChildren {
-  DocsSplatRoute: typeof DocsSplatRoute;
+  DocsSplatRoute: typeof DocsSplatRoute
 }
 
 const DocsRouteChildren: DocsRouteChildren = {
   DocsSplatRoute: DocsSplatRoute,
-};
+}
 
-const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren);
+const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DocsRoute: DocsRouteWithChildren,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   ApiSearchRoute: ApiSearchRoute,
-  SitemapXmlRoute: SitemapXmlRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx";
-import type { createStart } from "@tanstack/react-start";
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
-    ssr: true;
-    router: Awaited<ReturnType<typeof getRouter>>;
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
   }
 }
