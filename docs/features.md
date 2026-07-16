@@ -160,6 +160,19 @@ For power users and teams:
 | Groq | Speed | Ultra-fast inference |
 | Ollama | Privacy | Local models, no API key needed |
 
+### MCP Server (New)
+
+| Feature | Description |
+|---------|-------------|
+| **MCP server** | Expose your connections to AI agents (read-only queries free, writes gated by in-app approval) |
+| **Streamable HTTP** | Local server on `127.0.0.1:4722` (configurable), off by default |
+| **Bearer Token Auth** | Requests without a valid `Authorization: Bearer <token>` header are rejected |
+| **list_connections / list_schemas** | Agents can enumerate saved connections and browse schema without seeing credentials |
+| **run_query (read-only)** | 500-row cap, wrapped in a rollback transaction; PostgreSQL connections additionally run `SET TRANSACTION READ ONLY` |
+| **explain_query** | Agents can fetch query plans the same way they would in the app |
+| **execute_statement (writes)** | Every write pops an Approve/Reject dialog in data-peek; a 60s timeout auto-rejects |
+| **Copyable Setup Snippet** | Settings → MCP server generates the `claude mcp add` command with your token pre-filled |
+
 ### Column Statistics
 
 | Feature | Description |
