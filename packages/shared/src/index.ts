@@ -2577,3 +2577,18 @@ export const TM_MAX_SNAPSHOT_ROWS = 2000;
 export const TM_MAX_SNAPSHOT_PAYLOAD_BYTES = 6 * 1024 * 1024;
 export const TM_MAX_RUNS_PER_QUERY = 50;
 export const TM_GLOBAL_BUDGET_BYTES = 512 * 1024 * 1024;
+
+export interface McpApprovalRequest {
+  id: string;
+  connectionName: string;
+  sql: string;
+}
+
+export interface McpServerStatus {
+  enabled: boolean;
+  running: boolean;
+  port: number;
+  token: string;
+  url: string;
+  error?: string;
+}

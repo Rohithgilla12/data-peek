@@ -145,3 +145,10 @@ export { registerNotebookHandlers } from './notebook-handlers'
 export { registerIntelHandlers } from './intel-handlers'
 export { registerStepHandlers } from './step-handlers'
 export { registerTimeMachineHandlers } from './time-machine-handlers'
+export {
+  registerMcpHandlers,
+  startMcpIfEnabled,
+  createMcpService,
+  MCP_SETTINGS_DEFAULTS,
+  type McpSettings
+} from './mcp-handlers'

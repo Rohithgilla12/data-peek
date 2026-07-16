@@ -76,7 +76,9 @@ import type {
   TimeMachineRunMeta,
   TimeMachineSnapshot,
   TimeMachineListResult,
-  TimeMachineStats
+  TimeMachineStats,
+  McpServerStatus,
+  McpApprovalRequest
 } from '@shared/index'
 
 // AI Types
@@ -532,6 +534,15 @@ interface DataPeekApi {
     maximize: () => Promise<void>
     close: () => Promise<void>
     setConnectionInfo: (connectionName: string | null) => void
+  }
+  mcp: {
+    status: () => Promise<IpcResponse<McpServerStatus>>
+    setEnabled: (enabled: boolean) => Promise<IpcResponse<McpServerStatus>>
+    setPort: (port: number) => Promise<IpcResponse<McpServerStatus>>
+    regenerateToken: () => Promise<IpcResponse<McpServerStatus>>
+    respondToApproval: (id: string, approved: boolean) => Promise<IpcResponse<void>>
+    onApprovalRequest: (callback: (req: McpApprovalRequest) => void) => () => void
+    onApprovalResolved: (callback: (payload: { id: string }) => void) => () => void
   }
 }
 

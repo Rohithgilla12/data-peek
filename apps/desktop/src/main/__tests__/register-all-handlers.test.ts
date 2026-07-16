@@ -110,6 +110,14 @@ vi.mock('../ipc/intel-handlers', () => ({
   registerIntelHandlers: hoisted.registerIntelHandlers
 }))
 vi.mock('../ipc/step-handlers', () => ({ registerStepHandlers: hoisted.registerStepHandlers }))
+// mcp-handlers isn't called by registerAllHandlers, but the barrel re-exports it and its
+// real module pulls in window-manager → electron, which can't load under node vitest.
+vi.mock('../ipc/mcp-handlers', () => ({
+  registerMcpHandlers: vi.fn(),
+  startMcpIfEnabled: vi.fn(),
+  createMcpService: vi.fn(),
+  MCP_SETTINGS_DEFAULTS: { enabled: false, port: 4722, token: '' }
+}))
 
 import { registerAllHandlers } from '../ipc'
 import type { DpStorage } from '../storage'

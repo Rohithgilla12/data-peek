@@ -83,6 +83,10 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
         title: "Bring your own key",
         body: "OpenAI, Anthropic, Google, Groq — or Ollama for a local model. Keys never leave your machine.",
       },
+      {
+        title: "MCP server",
+        body: "Read-only queries run free. Writes are gated behind an in-app approval before they touch the database.",
+      },
     ],
   },
   {

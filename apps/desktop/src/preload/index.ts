@@ -84,7 +84,9 @@ import type {
   TimeMachineRunMeta,
   TimeMachineSnapshot,
   TimeMachineListResult,
-  TimeMachineStats
+  TimeMachineStats,
+  McpServerStatus,
+  McpApprovalRequest
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -702,6 +704,27 @@ const api = {
     close: (): Promise<void> => ipcRenderer.invoke('close-window'),
     setConnectionInfo: (connectionName: string | null): void =>
       ipcRenderer.send('window:set-connection-info', connectionName)
+  },
+  mcp: {
+    status: (): Promise<IpcResponse<McpServerStatus>> => ipcRenderer.invoke('mcp:status'),
+    setEnabled: (enabled: boolean): Promise<IpcResponse<McpServerStatus>> =>
+      ipcRenderer.invoke('mcp:setEnabled', { enabled }),
+    setPort: (port: number): Promise<IpcResponse<McpServerStatus>> =>
+      ipcRenderer.invoke('mcp:setPort', { port }),
+    regenerateToken: (): Promise<IpcResponse<McpServerStatus>> =>
+      ipcRenderer.invoke('mcp:regenerateToken'),
+    respondToApproval: (id: string, approved: boolean): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('mcp:approval:respond', { id, approved }),
+    onApprovalRequest: (callback: (req: McpApprovalRequest) => void): (() => void) => {
+      const listener = (_event: unknown, req: McpApprovalRequest): void => callback(req)
+      ipcRenderer.on('mcp:approval:request', listener)
+      return () => ipcRenderer.removeListener('mcp:approval:request', listener)
+    },
+    onApprovalResolved: (callback: (payload: { id: string }) => void): (() => void) => {
+      const listener = (_event: unknown, payload: { id: string }): void => callback(payload)
+      ipcRenderer.on('mcp:approval:resolved', listener)
+      return () => ipcRenderer.removeListener('mcp:approval:resolved', listener)
+    }
   }
 }
 

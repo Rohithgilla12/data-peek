@@ -20,7 +20,15 @@ import {
 import { NotebookStorage } from './notebook-storage'
 import { TimeMachineStorage } from './time-machine-storage'
 import { initSchemaCache } from './schema-cache'
-import { registerAllHandlers } from './ipc'
+import {
+  registerAllHandlers,
+  createMcpService,
+  registerMcpHandlers,
+  startMcpIfEnabled,
+  MCP_SETTINGS_DEFAULTS,
+  type McpSettings
+} from './ipc'
+import type { McpServiceWithApproval } from './ipc/mcp-handlers'
 import { setForceQuit } from './app-state'
 import { windowManager } from './window-manager'
 import { initSchedulerService, stopAllSchedules } from './scheduler-service'
@@ -40,6 +48,8 @@ let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 let snippetsStore: DpStorage<{ snippets: Snippet[] }>
 let queryHistoryStore: DpStorage<{ queryHistory: QueryHistoryEntry[] }>
 let timeMachineStorage: TimeMachineStorage | null = null
+let mcpStore: PersistentStore<{ mcpSettings: McpSettings }>
+let mcpService: McpServiceWithApproval
 
 const stepSessionRegistry = new StepSessionRegistry()
 
@@ -101,6 +111,33 @@ async function createConnectionsStore(): Promise<
 }
 
 /**
+ * Create the MCP settings store, preferring OS-encrypted storage. This store holds a
+ * bearer token that grants read access to every configured DB connection, so it should
+ * be encrypted just like connection credentials. Falls back to plaintext if secure
+ * storage is unavailable (e.g. a Linux box without a keyring), logging the degradation.
+ */
+async function createMcpSettingsStore(): Promise<PersistentStore<{ mcpSettings: McpSettings }>> {
+  try {
+    return await DpSecureStorage.create<{ mcpSettings: McpSettings }>({
+      name: 'data-peek-mcp-secure',
+      defaults: { mcpSettings: MCP_SETTINGS_DEFAULTS }
+    })
+  } catch (error) {
+    if (error instanceof EncryptionUnavailableError) {
+      log.warn(
+        'Secure storage unavailable — the MCP bearer token will be stored unencrypted on this machine.'
+      )
+    } else {
+      log.error('Failed to open encrypted MCP settings store, falling back to plaintext:', error)
+    }
+    return DpStorage.create<{ mcpSettings: McpSettings }>({
+      name: 'data-peek-mcp',
+      defaults: { mcpSettings: MCP_SETTINGS_DEFAULTS }
+    })
+  }
+}
+
+/**
  * Initialize all persistent stores
  */
 async function initStores(): Promise<void> {
@@ -129,6 +166,9 @@ async function initStores(): Promise<void> {
 
   // Initialize schema cache
   await initSchemaCache()
+
+  mcpStore = await createMcpSettingsStore()
+  mcpService = createMcpService(() => store.get('connections', []))
 }
 
 // Set app name for macOS dock and Mission Control
@@ -242,6 +282,9 @@ app.whenReady().then(async () => {
     stepSessionRegistry
   )
 
+  registerMcpHandlers(mcpStore, mcpService)
+  void startMcpIfEnabled(mcpStore, mcpService)
+
   // Create initial window
   await windowManager.createWindow()
 
@@ -277,6 +320,7 @@ app.on('before-quit', (event) => {
   stopPeriodicChecks()
   stopAllSchedules()
   cleanupPgNotify()
+  void mcpService?.stop()
 
   // Roll back any open manual transactions first — their checked-out clients
   // would otherwise block pool.end() and leave transactions open server-side.

@@ -14,6 +14,7 @@ import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { usePokemonTracker } from '@/hooks/use-pokemon-tracker'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import { CommandPalette } from '@/components/command-palette'
+import { McpApprovalDialog } from '@/components/mcp-approval-dialog'
 import { SavedQueriesDialog } from '@/components/saved-queries-dialog'
 import { DatabaseIcon } from '@/components/database-icons'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -261,6 +262,8 @@ function LayoutContent() {
         onOpenAddConnection={() => setIsAddConnectionOpen(true)}
         onOpenEditConnection={(id) => setEditConnectionId(id)}
       />
+
+      <McpApprovalDialog />
 
       {/* Global Connection Picker */}
       <ConnectionPicker open={isConnectionPickerOpen} onOpenChange={setIsConnectionPickerOpen} />

@@ -51,6 +51,14 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Charts & Insights** - Generate visualizations and metrics from query results
 - **Schema-Aware** - AI understands your database structure for accurate queries
 
+### MCP Server
+
+- **MCP server** - expose your connections to AI agents (read-only queries free, writes gated by in-app approval)
+- **Streamable HTTP** - local server on `127.0.0.1:4722` (configurable), secured with a bearer token, off by default
+- **Read-only tools** - `list_connections`, `list_schemas`, `run_query` (500-row cap, rollback-wrapped, Postgres additionally runs `READ ONLY` at the DB level), `explain_query`
+- **Approved writes** - `execute_statement` prompts an in-app Approve/Reject dialog for every write; 60s timeout auto-rejects
+- **One-command setup** - copy the ready-made `claude mcp add` snippet straight from Settings → MCP server
+
 ### Query Editor
 
 - **Monaco Editor** - SQL syntax highlighting with smart autocomplete
