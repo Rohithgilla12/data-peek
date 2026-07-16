@@ -76,6 +76,18 @@ If your editor contains multiple SQL statements, data-peek executes them all seq
   DELETE statements report affected row counts.
 </Callout>
 
+### Step-Through Execution
+
+Run a multi-statement script one statement at a time:
+
+- **Shortcut:** `Cmd+Shift+Enter` (macOS) or `Ctrl+Shift+Enter` (Windows/Linux) to start, then `Shift+Enter` for each next statement
+- Each step shows its result before the next statement runs
+- On PostgreSQL, check **Debug in transaction** to wrap the stepped run in a transaction you can roll back at the end — see [Transactions](/docs/features/transactions)
+
+### Cross-Tab References
+
+Name a tab and reference its result from another tab's SQL with `@name` — autocomplete, hover info, and diagnostics included. See [Cross-Tab References](/docs/features/cross-tab-references).
+
 ## Tab Management
 
 ### Creating Tabs
@@ -91,7 +103,7 @@ If your editor contains multiple SQL statements, data-peek executes them all seq
 | Query          | 📝   | Custom SQL query                 |
 | Table Preview  | 📊   | Auto-generated SELECT from table |
 | ERD            | 🔗   | Entity relationship diagram      |
-| Table Designer | 🛠   | Create/edit table structure      |
+| Table Designer | 🛠    | Create/edit table structure      |
 
 ### Tab Actions
 

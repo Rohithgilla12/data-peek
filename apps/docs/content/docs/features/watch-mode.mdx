@@ -1,0 +1,94 @@
+---
+title: Watch Mode
+description: Pin a SELECT and re-run it on a cadence with live diff highlights and alerts
+---
+
+# Watch Mode
+
+Watch Mode re-runs a read-only query on a cadence and highlights exactly what changed between runs — new rows band green, changed cells flash amber. Pin a query on a job table, a migration, or an incoming events stream and see it move without hammering Cmd+Enter.
+
+## Starting a Watch
+
+1. Write a single `SELECT` in a query tab
+2. Click the **Watch** button in the editor toolbar, or press `Cmd+Shift+W` (macOS) / `Ctrl+Shift+W` (Windows/Linux)
+3. The query re-runs on the chosen cadence; the button shows a countdown (`Watching · 3s`)
+
+Press the shortcut again or click **Stop** to end the watch.
+
+## What Can Be Watched
+
+Watch Mode only polls queries that can't mutate data. A pre-execution gate allows:
+
+- `SELECT` statements
+- CTE-led queries (`WITH ... SELECT`)
+- `TABLE` and `VALUES` (PostgreSQL)
+
+It refuses — with a tooltip explaining why:
+
+- `INSERT`, `UPDATE`, `DELETE`, and other destructive statements
+- DDL (`CREATE`, `DROP`, `ALTER`, ...)
+- Transaction control (`BEGIN`, `COMMIT`, `SET`, ...)
+- Multi-statement queries
+- CTEs that contain mutations (`WITH x AS (DELETE ...)`)
+
+## Cadence
+
+Click the Watch button while active to open the watch popover. Cadence presets: `500ms`, `1s`, `2s`, `5s` (default), `10s`, `15s`, `30s`, `1m`, `5m`.
+
+If a query takes longer than the cadence, the next tick fires as soon as the previous one finishes — ticks never overlap.
+
+The popover also has:
+
+- **Pause / Resume** - Suspend polling without losing history
+- **Run** - Trigger an immediate tick
+- **Pause when window hidden** - On by default; background windows don't burn CPU or pound the database
+
+## Diff Highlights
+
+Each tick is diffed against the previous run at the cell level:
+
+- **Added rows** - Full-width green band
+- **Changed cells** - Amber highlight with the previous value preserved
+- **Removed rows** - Counted in the popover metrics
+
+Highlights fade over a few seconds so recent changes stand out. The popover shows running totals: ticks run, row count delta, and cumulative cells changed.
+
+### Row Keying
+
+Diffs survive sorting and shifting result order because rows are keyed rather than compared by position:
+
+1. Explicit primary key from the schema (single-table SELECTs)
+2. Heuristic key column: `id`, `uuid`, `pk`, `rowid`, `_id`, or the first `*_id` column
+3. Row position as a last resort
+
+## Row-Count Sparkline
+
+The popover charts the row count over recent ticks — a quick trend line for "is the queue draining?" Errored ticks render as red dots along the baseline. Up to 120 points are kept (about 10 minutes at the default 5s cadence).
+
+## Alerts
+
+Add alert conditions in the watch popover and data-peek fires an **OS notification** when they trip — walk away and let the query watch itself.
+
+| Condition             | Fires when                                      |
+| --------------------- | ----------------------------------------------- |
+| `rows > N`            | Row count rises above the threshold             |
+| `rows < N`            | Row count falls below the threshold             |
+| **row count changes** | Row count differs between two consecutive ticks |
+| **anything changes**  | Any cell changed, or rows were added/removed    |
+| **query errors**      | A tick fails                                    |
+
+Threshold alerts are edge-triggered: they fire once when the condition becomes true and re-arm when it clears. Change-based alerts have a 10-second cooldown so a busy table doesn't flood your notification center. Each alert in the list shows how many times it has fired.
+
+## Stopping and Invalidation
+
+A watch stops automatically when:
+
+- You edit the SQL (the watched query no longer matches)
+- You switch the connection
+- The edited SQL would no longer pass the read-only gate
+
+<Callout type="info">
+  Watch history lives in memory only — the last handful of snapshots per tab,
+  discarded when the app closes. For a persistent history you can scrub and
+  diff, see [Time Machine](/docs/features/time-machine).
+</Callout>

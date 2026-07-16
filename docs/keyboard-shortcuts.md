@@ -118,7 +118,7 @@ Edit table data efficiently with keyboard shortcuts.
 |----------|--------|----------------|
 | `Cmd/Ctrl + S` | Save all pending changes | Edit mode with unsaved changes |
 | `Cmd/Ctrl + Shift + Z` | Discard all changes | Edit mode with unsaved changes |
-| `Cmd/Ctrl + Shift + I` | Add new row (with form) | Viewing an editable table |
+| `Cmd/Ctrl + Shift + A` | Add new row (with form) | Viewing an editable table |
 | `Escape` | Exit edit mode | Edit mode (not editing a cell) |
 
 ### Cell Editing

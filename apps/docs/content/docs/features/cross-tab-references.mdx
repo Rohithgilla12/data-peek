@@ -1,0 +1,80 @@
+---
+title: Cross-Tab References
+description: Name a tab's result and reference it from another tab's SQL with @name
+---
+
+# Cross-Tab References
+
+Name a query tab's result and reference it from any other tab on the same connection with `@name` — no copy-pasting IDs between queries. At run time, the referenced result is inlined into your SQL as a `VALUES`-backed CTE.
+
+## Example
+
+In one tab, run a query and name the tab `@active_users`:
+
+```sql
+SELECT id AS user_id FROM users
+WHERE last_seen > now() - interval '24 hours'
+```
+
+In another tab, reference it like a table:
+
+```sql
+SELECT count(*) FROM events
+WHERE user_id IN (SELECT user_id FROM @active_users)
+```
+
+Run it — a pill in the toolbar confirms what was inlined (`1 ref · 128 rows inlined`).
+
+## Naming a Tab
+
+1. Right-click a query tab and choose **Name as @…**
+2. Type a name and press `Enter` (or `Esc` to cancel)
+3. The tab header now shows `@name` in the accent color
+
+Right-click again and choose **Clear @name** to remove it.
+
+Naming rules:
+
+- Lowercase letters, digits, and underscores; must start with a letter
+- Max 32 characters
+- SQL keywords are reserved
+- Unique per connection — different connections can reuse the same name
+
+## Editor Support
+
+The editor understands `@name` tokens:
+
+- **Autocomplete** - Type `@` for a list of named tabs on the connection, with row/column counts
+- **Hover** - Shows the source tab's title and result shape
+- **Diagnostics** - A red squiggle for unknown names, an amber warning for tabs that haven't been run yet
+
+## How Resolution Works
+
+References are resolved on your machine at run time — the database only ever sees plain SQL:
+
+1. data-peek finds `@name` tokens in your query (skipping strings, comments, and `@@variables`)
+2. Each referenced tab's _result rows_ are turned into a CTE using dialect-appropriate syntax (PostgreSQL, MySQL, SQL Server, and SQLite are all supported)
+3. The CTEs are prepended to your query — merging cleanly with your own `WITH` clauses — and the rewritten SQL is executed
+
+Because the _data_ is inlined (not the SQL), the referenced query is never re-run, and a chain of references can't loop.
+
+## Limits
+
+| Limit                 | Value  | On exceed                           |
+| --------------------- | ------ | ----------------------------------- |
+| Rows per reference    | 10,000 | Error — add a `LIMIT` to the source |
+| Total inlined size    | 5 MB   | Error — add a `LIMIT` to the source |
+| Columns per reference | 100    | Error                               |
+
+For heavier inlines (over 1,000 rows or 256 KB), data-peek shows a confirm dialog with a per-reference breakdown before running. Check **Don't ask again this session** to skip it.
+
+## Requirements and Errors
+
+- References work across tabs on the **same connection** only
+- The referenced tab must have been **run successfully** — you'll get a clear error otherwise (`@draft hasn't been run yet — run it first.`)
+- A tab can't reference itself
+
+<Callout type="tip">
+  Named results are just CTEs — use them anywhere a table works: `FROM @name`,
+  `JOIN @name`, or inside subqueries.
+</Callout>

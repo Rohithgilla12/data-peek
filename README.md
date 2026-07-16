@@ -56,6 +56,9 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Monaco Editor** - SQL syntax highlighting with smart autocomplete
 - **Table Aliases** - Autocomplete understands aliases for complex queries
 - **Multi-tab & Multi-window** - Work with multiple queries and databases simultaneously
+- **Cross-Tab References** - Name a tab and reference its result from other tabs with `@name`, inlined as a CTE at run time
+- **Manual Transactions** - Turn off auto-commit on PostgreSQL, then commit or roll back explicitly; open transactions auto-rollback on tab close or disconnect
+- **Step-Through Execution** - Run multi-statement scripts one statement at a time, optionally inside a transaction
 - **Saved Queries** - Bookmark and organize queries with folders and tags
 - **Command Palette** - `Cmd+K` to access everything instantly
 

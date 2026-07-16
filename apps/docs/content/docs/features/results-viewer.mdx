@@ -13,6 +13,7 @@ The results viewer displays your query output in a powerful, interactive table.
 
 - Click a column header to sort by that column
 - Click again to reverse sort order
+- `Shift+Click` another header to add a second sort level
 - Data type badge shows the column type
 
 ### Cells
@@ -31,6 +32,68 @@ The results viewer displays your query output in a powerful, interactive table.
 | Boolean | Checkbox icon (✓ or ✗)         |
 | JSON    | Collapsed preview, expandable  |
 | NULL    | Gray `NULL` badge              |
+
+## Smart Sort Bar
+
+Multi-column sorting is managed by a sort bar above the grid. Each sort level is a chip showing its priority, column, and direction — drag chips to reorder priority, click the arrow to flip direction, and click **Clear** to remove all sorts.
+
+### Type-Aware Sort Modes
+
+Beyond ascending/descending, each column type offers extra modes (press `M` on a focused chip to cycle):
+
+| Type    | Modes                                                    |
+| ------- | -------------------------------------------------------- |
+| Text    | Alphabetic, Natural (`item2` before `item10`), By length |
+| Numbers | Numeric, Absolute value                                  |
+| Dates   | Chronological, By month, By weekday, Time of day         |
+| Boolean | True first / false first                                 |
+
+Every type also has a **Shuffle** mode for a random sample order — click the dice to reroll.
+
+### Sort Presets
+
+The sort bar's picker includes one-click presets: **Newest first**, **Oldest first**, **A → Z**, **Z → A**, **Largest first**, **Smallest first**, and **Shuffle**. Each preset picks the first matching column by type.
+
+### Chip Keyboard Controls
+
+With a chip focused:
+
+| Key               | Action                      |
+| ----------------- | --------------------------- |
+| `Space` / `Enter` | Toggle direction            |
+| `M`               | Cycle sort mode             |
+| `Backspace`       | Remove the sort             |
+| `Cmd+←` / `Cmd+→` | Move chip (change priority) |
+
+A hover toggle on each chip controls whether NULLs sort first or last.
+
+## Keyboard Navigation
+
+The grid is fully keyboard-navigable — click a cell (or run a query) and drive with the keyboard:
+
+| Key                    | Action                         |
+| ---------------------- | ------------------------------ |
+| `↑` `↓` `←` `→`        | Move between cells             |
+| `Home` / `End`         | First / last column in the row |
+| `Cmd+Home` / `Cmd+End` | Top-left / bottom-right cell   |
+| `PageUp` / `PageDown`  | Jump 20 rows                   |
+| `Cmd+C`                | Copy the focused cell          |
+| `Enter`                | Open the cell inspector        |
+| `Escape`               | Close the inspector            |
+
+Focus position is preserved across sorting, filtering, and pagination.
+
+## Cell Inspector
+
+Press `Enter` on a focused cell to open the inspector — a docked panel below the grid showing the full value without truncation:
+
+- **Position and type** - Row/column position, column name, data type badge, and a NULL badge when applicable
+- **Value details** - Kind (string, number, date, JSON, ...), character count, and byte size
+- **Formatted display** - JSON pretty-printed with syntax coloring
+- **Copy** - Copy the exact value
+- **Follow** - For foreign key cells, jump to the referenced record
+
+Arrow buttons (and `↑` `↓` `←` `→` while open) scrub the inspector across neighboring cells, so you can walk a column of JSON payloads without reopening it.
 
 ## JSON Viewer
 
@@ -118,8 +181,11 @@ Right-click any cell for:
 | -------------------- | ------------------------------- |
 | **Copy Cell**        | Copy the cell value             |
 | **Copy Row as JSON** | Copy entire row as JSON         |
+| **Copy Row as CSV**  | Copy the row with a header line |
 | **Copy Column**      | Copy all values in column       |
 | **Filter by Value**  | Add WHERE clause for this value |
+
+In [edit mode](/docs/features/inline-editing), the row menu also offers **Duplicate Row** and **Delete Row**. The context menu works on every row, including virtualized rows deep in large result sets.
 
 ## Foreign Key Navigation
 
