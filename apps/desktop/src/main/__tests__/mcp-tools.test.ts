@@ -100,6 +100,20 @@ describe('mcp tools', () => {
     expect(mockAdapter.execute).not.toHaveBeenCalled()
   })
 
+  it('execute_statement rejects multiple statements without requesting approval', async () => {
+    const approvalSpy = vi.fn()
+    const approval = new ApprovalManager(approvalSpy)
+    const client = await connectedClient(approval)
+    const res = await client.callTool({
+      name: 'execute_statement',
+      arguments: { connectionId: 'c1', sql: 'UPDATE t SET x=1; DROP TABLE t' }
+    })
+    expect(res.isError).toBe(true)
+    expect((res.content as Array<{ text: string }>)[0].text).toMatch(/single statement/i)
+    expect(approvalSpy).not.toHaveBeenCalled()
+    expect(mockAdapter.execute).not.toHaveBeenCalled()
+  })
+
   it('explain_query rejects statement injection without calling explain', async () => {
     const client = await connectedClient(new ApprovalManager(() => undefined))
     const res = await client.callTool({

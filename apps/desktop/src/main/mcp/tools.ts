@@ -5,6 +5,7 @@ import { getAdapter } from '../db-adapter'
 import { getCachedSchema, isCacheValid, getOrFetchCachedSchema } from '../schema-cache'
 import { runReadOnlyQuery, assertSingleReadStatement, MCP_MAX_ROWS } from './read-guard'
 import type { ApprovalManager } from './approval'
+import { parseStatementsWithLines } from '../lib/parse-statements'
 
 export interface McpToolDeps {
   getConnections: () => ConnectionConfig[]
@@ -126,9 +127,16 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
     async ({ connectionId, sql }) =>
       withToolErrors(async () => {
         const conn = findConnection(deps, connectionId)
-        const approved = await deps.approval.request(conn.name, sql)
+        const statements = parseStatementsWithLines(sql, conn.dbType || 'postgresql')
+        if (statements.length !== 1) {
+          return fail(
+            'execute_statement accepts a single statement; use one tool call per statement'
+          )
+        }
+        const stmt = statements[0].sql.trim()
+        const approved = await deps.approval.request(conn.name, stmt)
         if (!approved) return fail('User rejected the statement')
-        const result = await getAdapter(conn).execute(conn, sql, [])
+        const result = await getAdapter(conn).execute(conn, stmt, [])
         return ok({ rowCount: result.rowCount })
       })
   )

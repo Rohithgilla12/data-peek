@@ -67,6 +67,26 @@ describe('assertSingleReadStatement', () => {
       /read-only/i
     )
   })
+
+  it('accepts a SELECT wrapped in parentheses', () => {
+    expect(assertSingleReadStatement('(SELECT 1)', 'postgresql')).toBe('(SELECT 1)')
+  })
+
+  it('accepts SELECT with a write keyword inside a single-quoted string', () => {
+    expect(assertSingleReadStatement("SELECT 'insert'", 'postgresql')).toBe("SELECT 'insert'")
+  })
+
+  it('accepts SELECT with a write keyword inside a double-quoted identifier', () => {
+    expect(assertSingleReadStatement('SELECT "update" FROM t', 'postgresql')).toBe(
+      'SELECT "update" FROM t'
+    )
+  })
+
+  it('still rejects SELECT ... INTO after literal stripping', () => {
+    expect(() => assertSingleReadStatement('SELECT * INTO t2 FROM t1', 'mssql')).toThrow(
+      /read-only/i
+    )
+  })
 })
 
 describe('runReadOnlyQuery', () => {

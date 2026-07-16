@@ -62,7 +62,7 @@ export function McpSettingsSection() {
         </div>
         <Switch
           id="mcp-enabled"
-          checked={status.enabled && status.running}
+          checked={status.enabled}
           onCheckedChange={(enabled) => window.api.mcp.setEnabled(enabled).then(applyResult)}
         />
       </div>
@@ -81,8 +81,8 @@ export function McpSettingsSection() {
           value={portDraft}
           onChange={(e) => setPortDraft(e.target.value)}
           onBlur={() => {
-            const port = Number(portDraft)
-            if (Number.isFinite(port) && port !== status.port) {
+            const port = Number.parseInt(portDraft, 10)
+            if (Number.isInteger(port) && port !== status.port) {
               window.api.mcp.setPort(port).then(applyResult)
             } else {
               setPortDraft(String(status.port))

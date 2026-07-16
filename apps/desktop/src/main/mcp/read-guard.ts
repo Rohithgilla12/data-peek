@@ -21,12 +21,13 @@ const WRITE_KEYWORDS =
 export function assertSingleReadStatement(sql: string, dbType: DatabaseType): string {
   const statements = parseStatementsWithLines(sql, dbType)
   if (statements.length !== 1) {
-    throw new Error('run_query accepts a single statement; use one tool call per statement')
+    throw new Error('This tool accepts a single statement; use one tool call per statement')
   }
   const stmt = statements[0].sql.trim()
-  const first = stmt.split(/[\s(]+/)[0]?.toLowerCase() ?? ''
-  if (!READ_FIRST_KEYWORDS.has(first) || WRITE_KEYWORDS.test(stmt)) {
-    throw new Error('run_query is read-only; use execute_statement for writes or DDL')
+  const first = stmt.match(/^[\s(]*([a-z]+)/i)?.[1]?.toLowerCase() ?? ''
+  const stripped = stmt.replace(/'(?:[^']|'')*'/g, '').replace(/"[^"]*"/g, '')
+  if (!READ_FIRST_KEYWORDS.has(first) || WRITE_KEYWORDS.test(stripped)) {
+    throw new Error('This tool is read-only; use execute_statement for writes or DDL')
   }
   return stmt
 }
