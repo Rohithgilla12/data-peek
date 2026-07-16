@@ -20,7 +20,15 @@ import {
 import { NotebookStorage } from './notebook-storage'
 import { TimeMachineStorage } from './time-machine-storage'
 import { initSchemaCache } from './schema-cache'
-import { registerAllHandlers } from './ipc'
+import {
+  registerAllHandlers,
+  createMcpService,
+  registerMcpHandlers,
+  startMcpIfEnabled,
+  MCP_SETTINGS_DEFAULTS,
+  type McpSettings
+} from './ipc'
+import type { McpServiceWithApproval } from './ipc/mcp-handlers'
 import { setForceQuit } from './app-state'
 import { windowManager } from './window-manager'
 import { initSchedulerService, stopAllSchedules } from './scheduler-service'
@@ -40,6 +48,8 @@ let savedQueriesStore: DpStorage<{ savedQueries: SavedQuery[] }>
 let snippetsStore: DpStorage<{ snippets: Snippet[] }>
 let queryHistoryStore: DpStorage<{ queryHistory: QueryHistoryEntry[] }>
 let timeMachineStorage: TimeMachineStorage | null = null
+let mcpStore: PersistentStore<{ mcpSettings: McpSettings }>
+let mcpService: McpServiceWithApproval
 
 const stepSessionRegistry = new StepSessionRegistry()
 
@@ -129,6 +139,12 @@ async function initStores(): Promise<void> {
 
   // Initialize schema cache
   await initSchemaCache()
+
+  mcpStore = await DpStorage.create<{ mcpSettings: McpSettings }>({
+    name: 'data-peek-mcp',
+    defaults: { mcpSettings: MCP_SETTINGS_DEFAULTS }
+  })
+  mcpService = createMcpService(() => store.get('connections', []))
 }
 
 // Set app name for macOS dock and Mission Control
@@ -242,6 +258,9 @@ app.whenReady().then(async () => {
     stepSessionRegistry
   )
 
+  registerMcpHandlers(mcpStore, mcpService)
+  void startMcpIfEnabled(mcpStore, mcpService)
+
   // Create initial window
   await windowManager.createWindow()
 
@@ -277,6 +296,7 @@ app.on('before-quit', (event) => {
   stopPeriodicChecks()
   stopAllSchedules()
   cleanupPgNotify()
+  void mcpService?.stop()
 
   // Roll back any open manual transactions first — their checked-out clients
   // would otherwise block pool.end() and leave transactions open server-side.
