@@ -719,6 +719,11 @@ const api = {
       const listener = (_event: unknown, req: McpApprovalRequest): void => callback(req)
       ipcRenderer.on('mcp:approval:request', listener)
       return () => ipcRenderer.removeListener('mcp:approval:request', listener)
+    },
+    onApprovalResolved: (callback: (payload: { id: string }) => void): (() => void) => {
+      const listener = (_event: unknown, payload: { id: string }): void => callback(payload)
+      ipcRenderer.on('mcp:approval:resolved', listener)
+      return () => ipcRenderer.removeListener('mcp:approval:resolved', listener)
     }
   }
 }

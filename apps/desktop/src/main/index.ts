@@ -111,6 +111,33 @@ async function createConnectionsStore(): Promise<
 }
 
 /**
+ * Create the MCP settings store, preferring OS-encrypted storage. This store holds a
+ * bearer token that grants read access to every configured DB connection, so it should
+ * be encrypted just like connection credentials. Falls back to plaintext if secure
+ * storage is unavailable (e.g. a Linux box without a keyring), logging the degradation.
+ */
+async function createMcpSettingsStore(): Promise<PersistentStore<{ mcpSettings: McpSettings }>> {
+  try {
+    return await DpSecureStorage.create<{ mcpSettings: McpSettings }>({
+      name: 'data-peek-mcp-secure',
+      defaults: { mcpSettings: MCP_SETTINGS_DEFAULTS }
+    })
+  } catch (error) {
+    if (error instanceof EncryptionUnavailableError) {
+      log.warn(
+        'Secure storage unavailable — the MCP bearer token will be stored unencrypted on this machine.'
+      )
+    } else {
+      log.error('Failed to open encrypted MCP settings store, falling back to plaintext:', error)
+    }
+    return DpStorage.create<{ mcpSettings: McpSettings }>({
+      name: 'data-peek-mcp',
+      defaults: { mcpSettings: MCP_SETTINGS_DEFAULTS }
+    })
+  }
+}
+
+/**
  * Initialize all persistent stores
  */
 async function initStores(): Promise<void> {
@@ -140,10 +167,7 @@ async function initStores(): Promise<void> {
   // Initialize schema cache
   await initSchemaCache()
 
-  mcpStore = await DpStorage.create<{ mcpSettings: McpSettings }>({
-    name: 'data-peek-mcp',
-    defaults: { mcpSettings: MCP_SETTINGS_DEFAULTS }
-  })
+  mcpStore = await createMcpSettingsStore()
   mcpService = createMcpService(() => store.get('connections', []))
 }
 

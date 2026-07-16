@@ -40,9 +40,7 @@ describe('assertSingleReadStatement', () => {
   })
 
   it('rejects statements starting with a write keyword', () => {
-    expect(() => assertSingleReadStatement('DELETE FROM users', 'postgresql')).toThrow(
-      /read-only/i
-    )
+    expect(() => assertSingleReadStatement('DELETE FROM users', 'postgresql')).toThrow(/read-only/i)
   })
 
   it('rejects WITH ... INSERT (data-modifying CTE)', () => {
@@ -55,6 +53,18 @@ describe('assertSingleReadStatement', () => {
     expect(assertSingleReadStatement('EXPLAIN SELECT 1', 'postgresql')).toBe('EXPLAIN SELECT 1')
     expect(assertSingleReadStatement('SHOW server_version', 'postgresql')).toBe(
       'SHOW server_version'
+    )
+  })
+
+  it('rejects SELECT ... INTO', () => {
+    expect(() => assertSingleReadStatement('SELECT * INTO t2 FROM t1', 'mssql')).toThrow(
+      /read-only/i
+    )
+  })
+
+  it('rejects PRAGMA', () => {
+    expect(() => assertSingleReadStatement('PRAGMA user_version = 5', 'postgresql')).toThrow(
+      /read-only/i
     )
   })
 })
@@ -105,7 +115,10 @@ describe('runReadOnlyQuery', () => {
   })
 
   it('falls back to plain query with keyword guard when adapter has no transactions', async () => {
-    const bare = { dbType: 'mssql', query: vi.fn().mockResolvedValue({ rows: [], fields: [], rowCount: 0 }) }
+    const bare = {
+      dbType: 'mssql',
+      query: vi.fn().mockResolvedValue({ rows: [], fields: [], rowCount: 0 })
+    }
     const { getAdapter } = await import('../db-adapter')
     vi.mocked(getAdapter).mockReturnValueOnce(bare as never)
 

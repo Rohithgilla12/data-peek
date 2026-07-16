@@ -3,7 +3,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { ConnectionConfig } from '@shared/index'
 import { getAdapter } from '../db-adapter'
 import { getCachedSchema, isCacheValid, getOrFetchCachedSchema } from '../schema-cache'
-import { runReadOnlyQuery, MCP_MAX_ROWS } from './read-guard'
+import { runReadOnlyQuery, assertSingleReadStatement, MCP_MAX_ROWS } from './read-guard'
 import type { ApprovalManager } from './approval'
 
 export interface McpToolDeps {
@@ -110,7 +110,8 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
     async ({ connectionId, sql }) =>
       withToolErrors(async () => {
         const conn = findConnection(deps, connectionId)
-        const result = await getAdapter(conn).explain(conn, sql, false)
+        const stmt = assertSingleReadStatement(sql, conn.dbType || 'postgresql')
+        const result = await getAdapter(conn).explain(conn, stmt, false)
         return ok(result.plan)
       })
   )

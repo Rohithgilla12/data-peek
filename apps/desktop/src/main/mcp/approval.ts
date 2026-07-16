@@ -13,7 +13,8 @@ export class ApprovalManager {
 
   constructor(
     private send: (req: McpApprovalRequest) => void,
-    private timeoutMs = 60_000
+    private timeoutMs = 60_000,
+    private onResolved?: (id: string) => void
   ) {}
 
   request(connectionName: string, sql: string): Promise<boolean> {
@@ -23,6 +24,7 @@ export class ApprovalManager {
         const timer = setTimeout(() => {
           this.pending.delete(id)
           resolve(false)
+          this.onResolved?.(id)
         }, this.timeoutMs)
         this.pending.set(id, { resolve, timer })
         this.send({ id, connectionName, sql })
@@ -44,5 +46,6 @@ export class ApprovalManager {
     clearTimeout(entry.timer)
     this.pending.delete(id)
     entry.resolve(approved)
+    this.onResolved?.(id)
   }
 }

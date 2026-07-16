@@ -99,4 +99,24 @@ describe('mcp tools', () => {
     expect((res.content as Array<{ text: string }>)[0].text).toMatch(/rejected/i)
     expect(mockAdapter.execute).not.toHaveBeenCalled()
   })
+
+  it('explain_query rejects statement injection without calling explain', async () => {
+    const client = await connectedClient(new ApprovalManager(() => undefined))
+    const res = await client.callTool({
+      name: 'explain_query',
+      arguments: { connectionId: 'c1', sql: 'SELECT 1; DELETE FROM t' }
+    })
+    expect(res.isError).toBe(true)
+    expect(mockAdapter.explain).not.toHaveBeenCalled()
+  })
+
+  it('explain_query returns the plan for a single statement', async () => {
+    const client = await connectedClient(new ApprovalManager(() => undefined))
+    const res = await client.callTool({
+      name: 'explain_query',
+      arguments: { connectionId: 'c1', sql: 'SELECT 1' }
+    })
+    expect(res.isError).toBeFalsy()
+    expect((res.content as Array<{ text: string }>)[0].text).toContain('"cost": 1')
+  })
 })

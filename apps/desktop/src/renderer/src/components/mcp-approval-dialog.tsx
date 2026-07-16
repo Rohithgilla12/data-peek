@@ -22,6 +22,16 @@ export function McpApprovalDialog(): React.JSX.Element | null {
     })
   }, [])
 
+  useEffect(() => {
+    return window.api.mcp.onApprovalResolved(({ id }) => {
+      setRequest((current) => {
+        if (current?.id !== id) return current
+        respondedRef.current = true
+        return null
+      })
+    })
+  }, [])
+
   if (!request) return null
 
   const respond = (approved: boolean): void => {

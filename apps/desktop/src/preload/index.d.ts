@@ -542,6 +542,7 @@ interface DataPeekApi {
     regenerateToken: () => Promise<IpcResponse<McpServerStatus>>
     respondToApproval: (id: string, approved: boolean) => Promise<IpcResponse<void>>
     onApprovalRequest: (callback: (req: McpApprovalRequest) => void) => () => void
+    onApprovalResolved: (callback: (payload: { id: string }) => void) => () => void
   }
 }
 

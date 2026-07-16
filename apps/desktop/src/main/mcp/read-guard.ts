@@ -12,12 +12,11 @@ const READ_FIRST_KEYWORDS = new Set([
   'describe',
   'desc',
   'with',
-  'pragma',
   'values',
   'table'
 ])
 const WRITE_KEYWORDS =
-  /\b(insert|update|delete|merge|drop|alter|create|truncate|grant|revoke|vacuum|exec|execute|call|copy)\b/i
+  /\b(insert|update|delete|merge|drop|alter|create|truncate|grant|revoke|vacuum|exec|execute|call|copy|into)\b/i
 
 export function assertSingleReadStatement(sql: string, dbType: DatabaseType): string {
   const statements = parseStatementsWithLines(sql, dbType)

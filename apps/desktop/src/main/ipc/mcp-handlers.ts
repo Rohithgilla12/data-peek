@@ -27,8 +27,10 @@ export interface McpServiceWithApproval extends McpService {
 }
 
 export function createMcpService(getConnections: () => ConnectionConfig[]): McpServiceWithApproval {
-  const approval = new ApprovalManager((req) =>
-    windowManager.broadcastToAll('mcp:approval:request', req)
+  const approval = new ApprovalManager(
+    (req) => windowManager.broadcastToAll('mcp:approval:request', req),
+    undefined,
+    (id) => windowManager.broadcastToAll('mcp:approval:resolved', { id })
   )
   const service = new McpService({ getConnections, approval }) as McpServiceWithApproval
   service.approval = approval

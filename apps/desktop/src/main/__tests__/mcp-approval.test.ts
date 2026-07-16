@@ -48,4 +48,32 @@ describe('ApprovalManager', () => {
     const mgr = new ApprovalManager(() => undefined)
     expect(() => mgr.respond('nope', true)).not.toThrow()
   })
+
+  it('calls onResolved with the id on explicit respond', async () => {
+    const sent: McpApprovalRequest[] = []
+    const resolved: string[] = []
+    const mgr = new ApprovalManager(
+      (req) => sent.push(req),
+      60_000,
+      (id) => resolved.push(id)
+    )
+    const p = mgr.request('local', 'UPDATE t SET x = 1')
+    mgr.respond(sent[0].id, true)
+    await expect(p).resolves.toBe(true)
+    expect(resolved).toEqual([sent[0].id])
+  })
+
+  it('calls onResolved with the id on timeout', async () => {
+    const sent: McpApprovalRequest[] = []
+    const resolved: string[] = []
+    const mgr = new ApprovalManager(
+      (req) => sent.push(req),
+      60_000,
+      (id) => resolved.push(id)
+    )
+    const p = mgr.request('local', 'DELETE FROM t')
+    vi.advanceTimersByTime(60_001)
+    await expect(p).resolves.toBe(false)
+    expect(resolved).toEqual([sent[0].id])
+  })
 })
