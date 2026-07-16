@@ -103,11 +103,20 @@ export function registerMcpHandlers(store: McpStore, service: McpServiceWithAppr
       }
       const settings = ensureToken(store)
       const updated = { ...settings, port }
-      store.set('mcpSettings', updated)
       if (service.running) {
         await service.stop()
-        await service.start(updated.port, updated.token)
+        try {
+          await service.start(updated.port, updated.token)
+        } catch (err) {
+          try {
+            await service.start(settings.port, settings.token)
+          } catch {
+            // Best-effort restart with old settings failed; leave stopped
+          }
+          throw err
+        }
       }
+      store.set('mcpSettings', updated)
       return toStatus(updated, service)
     })
   )
@@ -117,11 +126,20 @@ export function registerMcpHandlers(store: McpStore, service: McpServiceWithAppr
     wrapHandler(async () => {
       const settings = store.get('mcpSettings', MCP_SETTINGS_DEFAULTS)
       const updated = { ...settings, token: randomBytes(32).toString('hex') }
-      store.set('mcpSettings', updated)
       if (service.running) {
         await service.stop()
-        await service.start(updated.port, updated.token)
+        try {
+          await service.start(updated.port, updated.token)
+        } catch (err) {
+          try {
+            await service.start(settings.port, settings.token)
+          } catch {
+            // Best-effort restart with old settings failed; leave stopped
+          }
+          throw err
+        }
       }
+      store.set('mcpSettings', updated)
       return toStatus(updated, service)
     })
   )
