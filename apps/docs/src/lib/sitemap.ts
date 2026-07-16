@@ -16,40 +16,16 @@ interface SitemapUrl {
 }
 
 function getAllPages(): Array<{ path: string; lastmod?: string }> {
-  const pages: Array<{ path: string; lastmod?: string }> = [];
-
-  function traverse(node: any, currentPath: string[] = []) {
-    if (node.type === "page") {
-      const fullPath =
-        currentPath.length > 0 ? `/docs/${currentPath.join("/")}` : "/docs";
-      const frontmatter = node.data?.frontmatter || {};
-      pages.push({
-        path: fullPath,
-        lastmod: frontmatter.lastModified || frontmatter.date,
-      });
-    }
-
-    if (node.children) {
-      node.children.forEach((child: any) => {
-        const newPath =
-          node.type === "page" ? [...currentPath, node.name] : currentPath;
-        traverse(child, newPath);
-      });
-    }
-
-    if (node.index) {
-      traverse(node.index, currentPath);
-    }
-  }
-
-  const pageTree = source.pageTree as any;
-  if (pageTree?.children) {
-    pageTree.children.forEach((child: any) => {
-      traverse(child);
+  return source
+    .getPages()
+    .filter((page) => page.url !== "/docs")
+    .map((page) => {
+      const data = page.data as { lastModified?: string; date?: string };
+      return {
+        path: page.url,
+        lastmod: data.lastModified || data.date,
+      };
     });
-  }
-
-  return pages;
 }
 
 export function generateSitemap(): string {
