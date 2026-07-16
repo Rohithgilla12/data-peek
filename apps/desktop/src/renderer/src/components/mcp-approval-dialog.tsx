@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { McpApprovalRequest } from '@shared/index'
 import {
   AlertDialog,
@@ -9,16 +9,24 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle
-} from '@/components/ui/alert-dialog'
+} from '@data-peek/ui'
 
 export function McpApprovalDialog(): React.JSX.Element | null {
   const [request, setRequest] = useState<McpApprovalRequest | null>(null)
+  const respondedRef = useRef(false)
 
-  useEffect(() => window.api.mcp.onApprovalRequest(setRequest), [])
+  useEffect(() => {
+    return window.api.mcp.onApprovalRequest((next) => {
+      respondedRef.current = false
+      setRequest(next)
+    })
+  }, [])
 
   if (!request) return null
 
   const respond = (approved: boolean): void => {
+    if (respondedRef.current) return
+    respondedRef.current = true
     void window.api.mcp.respondToApproval(request.id, approved)
     setRequest(null)
   }
@@ -37,7 +45,7 @@ export function McpApprovalDialog(): React.JSX.Element | null {
           {request.sql}
         </pre>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={() => respond(false)}>Reject</AlertDialogCancel>
+          <AlertDialogCancel>Reject</AlertDialogCancel>
           <AlertDialogAction onClick={() => respond(true)}>Approve & run</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
