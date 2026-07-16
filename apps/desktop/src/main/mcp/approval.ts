@@ -8,7 +8,8 @@ interface Pending {
 
 export class ApprovalManager {
   private pending = new Map<string, Pending>()
-  private chain: Promise<unknown> = Promise.resolve()
+  private queue: Promise<unknown> = Promise.resolve()
+  private inFlight = 0
 
   constructor(
     private send: (req: McpApprovalRequest) => void,
@@ -27,8 +28,13 @@ export class ApprovalManager {
         this.send({ id, connectionName, sql })
       })
 
-    const result = this.chain.then(run, run)
-    this.chain = result.catch(() => undefined)
+    const exec = (): Promise<boolean> =>
+      run().finally(() => {
+        this.inFlight--
+      })
+    this.inFlight++
+    const result = this.inFlight === 1 ? exec() : this.queue.then(exec, exec)
+    this.queue = result.catch(() => undefined)
     return result
   }
 
