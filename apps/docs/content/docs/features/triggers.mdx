@@ -1,0 +1,50 @@
+---
+title: Triggers
+description: View, alter, enable/disable, and drop database triggers from the schema explorer
+---
+
+# Triggers
+
+data-peek surfaces database triggers in the [Schema Explorer](/docs/features/schema-explorer) — see what fires when, inspect definitions, and generate the SQL to alter, enable/disable, or drop a trigger.
+
+## Browsing Triggers
+
+Triggers appear in the schema tree with a lightning-bolt icon and a `trig` badge. Disabled triggers render struck-through. Expand a trigger to see:
+
+- The table it's attached to
+- **Timing** (`BEFORE`, `AFTER`, `INSTEAD OF`) and **events** (`INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`)
+- **Orientation** — `FOR EACH ROW` or `FOR EACH STATEMENT`
+- The invoked function name (PostgreSQL)
+- The `WHEN` condition, if any (PostgreSQL, MySQL)
+
+Use the schema explorer's **Filter** menu to show or hide triggers in the tree.
+
+## Trigger Actions
+
+Open a trigger's context menu for:
+
+| Action              | What it does                                                                                                       |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **View Definition** | Opens the full `CREATE TRIGGER` statement in a query tab                                                           |
+| **Alter Trigger**   | Opens a `DROP` + `CREATE` template — edit the definition, then run                                                 |
+| **Enable/Disable**  | Opens the `ALTER TABLE ... ENABLE/DISABLE TRIGGER` statement (PostgreSQL) or `ENABLE/DISABLE TRIGGER` (SQL Server) |
+| **Drop Trigger**    | Opens the dialect-correct `DROP TRIGGER` statement                                                                 |
+
+<Callout type="info">
+  Nothing executes automatically. Every action opens the generated SQL in a
+  query tab so you can review — and edit — before running it.
+</Callout>
+
+## Engine Support
+
+| Capability          | PostgreSQL | MySQL | SQL Server | SQLite |
+| ------------------- | :--------: | :---: | :--------: | :----: |
+| View triggers       |     ✓      |   ✓   |     ✓      |   ✓    |
+| View definition     |     ✓      |   ✓   |     ✓      |   ✓    |
+| Alter (drop+create) |     ✓      |   ✓   |     ✓      |   ✓    |
+| Drop                |     ✓      |   ✓   |     ✓      |   ✓    |
+| Enable / Disable    |     ✓      |   -   |     ✓      |   -    |
+| `INSTEAD OF` timing |     ✓      |   -   |     ✓      |   ✓    |
+| Statement-level     |     ✓      |   -   |     ✓      |   -    |
+
+MySQL and SQLite have no native enable/disable mechanism, so that action only appears on PostgreSQL and SQL Server connections.

@@ -1,0 +1,60 @@
+---
+title: Time Machine
+description: Snapshot every SELECT, scrub back through past runs, and diff any two results
+---
+
+# Time Machine
+
+Every successful `SELECT` in a query tab is snapshotted locally — automatically, no setup. Scrub back through past runs, view any old result read-only, and diff any two runs cell by cell. Run a query before a migration, run it after, diff the two: a before/after audit that used to need a scratch file and discipline.
+
+## Opening the Timeline
+
+Press `Cmd+Shift+H` (macOS) / `Ctrl+Shift+H` (Windows/Linux), or click the **Time Machine** button in the editor toolbar. A timeline strip appears above the results grid with one chip per captured run, showing the capture time and row count, plus a row-count sparkline across runs.
+
+- **Click a chip** to view that run exactly as it was — the grid switches to read-only with a banner: run time, row count, duration
+- **Click Live** to come back to the current result
+
+Runs of the "same" query share a timeline: SQL is grouped by a normalized fingerprint, so `WHERE id = 1` and `WHERE id = 2` land in one history.
+
+## Diffing Two Runs
+
+Select a run, then `Option`-click (or `Shift`-click) another. data-peek diffs them with the same cell-level engine that powers [Watch Mode](/docs/features/watch-mode):
+
+- **Changed cells** highlight amber with the old value preserved
+- **Added rows** band green
+- **Removed rows** are counted in the banner
+
+The diff banner counts what moved (`+6 added · −2 removed · 14 cells changed`) and says how rows were matched: `keyed by <primary key columns>` when a key could be resolved, or `keyed by position` as a fallback.
+
+## What Gets Captured
+
+Only deliberate, single-statement, successful `SELECT` runs in query tabs. These never pollute the timeline:
+
+- Watch Mode ticks
+- Notebook cells
+- AI assistant runs
+- Table-preview page flips
+
+Works with all supported databases — PostgreSQL, MySQL, SQL Server, and SQLite.
+
+## Privacy and Storage
+
+Snapshots are privacy-aware by construction:
+
+- **Masked columns are stored redacted.** Columns matching mask rules (email, password, ssn, token by default) are written as `[MASKED]` — redacted before rows are ever persisted. See [Data Masking](/docs/features/data-masking).
+- **Storage is capped.** 2,000 rows per snapshot, 50 runs per query, and a 512 MB global budget with oldest-first eviction. The database self-vacuums.
+- **Local only.** Snapshots live in a local SQLite database on your machine; nothing leaves it.
+
+Values are normalized once at capture (timestamps → ISO strings, binary → hex preview) so a diff between two snapshots never lies about a timestamp cell.
+
+## Settings
+
+**Settings → Time Machine** shows exactly what's on disk — run count, query count, and bytes used — with:
+
+- **Snapshot query results** - Global toggle for capture
+- **Delete all snapshots** - One-click wipe (click twice to confirm)
+
+<Callout type="info">
+  Truncated snapshots are marked in the timeline: a chip captured from a
+  100,000-row result notes that the first 2,000 rows were stored.
+</Callout>

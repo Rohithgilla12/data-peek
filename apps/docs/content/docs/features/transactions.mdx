@@ -1,0 +1,57 @@
+---
+title: Transactions
+description: Manual transaction mode for PostgreSQL — turn off auto-commit and commit or roll back explicitly
+---
+
+# Transactions
+
+By default, every query auto-commits. On PostgreSQL connections you can turn auto-commit off and control the transaction yourself — run queries and inline edits, review the effect, then **Commit** or **Rollback** explicitly.
+
+<Callout type="info">
+  Manual transaction mode is currently PostgreSQL-only. The toggle doesn't
+  appear on MySQL or SQL Server connections.
+</Callout>
+
+## Enabling Manual Mode
+
+1. Uncheck **Auto-commit** in the query editor toolbar
+2. Run a query — data-peek issues `BEGIN` and keeps a dedicated session open for the tab
+3. Every subsequent query and inline edit in that tab runs inside the transaction
+4. Click **Commit** to make the changes permanent, or **Rollback** to discard them
+
+The **Commit** and **Rollback** buttons light up while a transaction is open. A toast confirms the outcome (`Transaction committed` / `Transaction rolled back`).
+
+## What Runs in the Transaction
+
+Everything you do in the tab while auto-commit is off:
+
+- Queries (`SELECT`, `INSERT`, `UPDATE`, `DELETE`)
+- [Inline edits](/docs/features/inline-editing) — a batch of cell edits, inserted rows, and deletions commits or rolls back atomically
+- DDL — PostgreSQL DDL is transactional, so even `CREATE TABLE` and `ALTER TABLE` can be rolled back
+
+Changes are visible inside the transaction immediately, but other sessions don't see them until you commit.
+
+## Safety Nets
+
+data-peek never leaves a transaction dangling:
+
+- **Close the tab** → the open transaction is rolled back
+- **Switch connections** → rolled back, with a toast (`Open transaction rolled back — connection changed`)
+- **Quit the app** → all open transactions are rolled back before exit
+
+If a statement errors mid-transaction, PostgreSQL aborts the transaction; further queries fail until you click **Rollback** to recover the session.
+
+Each tab has its own session — transactions don't span tabs.
+
+## Step-Through Debugging
+
+Multi-statement scripts can be executed one statement at a time:
+
+1. Press `Cmd+Shift+Enter` (macOS) / `Ctrl+Shift+Enter` (Windows/Linux), or click **Step**
+2. Each `Shift+Enter` runs the next statement and shows its result
+3. Check **Debug in transaction** to wrap the whole stepped run in a transaction, so you can roll everything back at the end
+
+<Callout type="tip">
+  Testing a risky migration? Uncheck Auto-commit, run it, `SELECT` around to
+  verify the result, then decide. Rollback is one click.
+</Callout>
