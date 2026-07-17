@@ -6,6 +6,7 @@ import { getCachedSchema, isCacheValid, getOrFetchCachedSchema } from '../schema
 import { runReadOnlyQuery, assertSingleReadStatement, MCP_MAX_ROWS } from './read-guard'
 import type { ApprovalManager } from './approval'
 import { parseStatementsWithLines } from '../lib/parse-statements'
+import { recordAudit } from '../audit-service'
 
 export interface McpToolDeps {
   getConnections: () => ConnectionConfig[]
@@ -97,8 +98,34 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
     async ({ connectionId, sql, maxRows }) =>
       withToolErrors(async () => {
         const conn = findConnection(deps, connectionId)
-        const result = await runReadOnlyQuery(conn, sql, maxRows)
-        return ok({ rows: result.rows, rowCount: result.rowCount })
+        const started = Date.now()
+        try {
+          const result = await runReadOnlyQuery(conn, sql, maxRows)
+          recordAudit({
+            source: 'mcp',
+            connectionId: conn.id ?? 'unsaved',
+            connectionName: conn.name ?? conn.database,
+            dbType: conn.dbType || 'postgresql',
+            sql,
+            rowCount: result.rowCount,
+            success: true,
+            durationMs: Date.now() - started
+          })
+          return ok({ rows: result.rows, rowCount: result.rowCount })
+        } catch (err) {
+          recordAudit({
+            source: 'mcp',
+            connectionId: conn.id ?? 'unsaved',
+            connectionName: conn.name ?? conn.database,
+            dbType: conn.dbType || 'postgresql',
+            sql,
+            rowCount: null,
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+            durationMs: Date.now() - started
+          })
+          throw err
+        }
       })
   )
 
@@ -136,8 +163,34 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
         const stmt = statements[0].sql.trim()
         const approved = await deps.approval.request(conn.name, stmt)
         if (!approved) return fail('User rejected the statement')
-        const result = await getAdapter(conn).execute(conn, stmt, [])
-        return ok({ rowCount: result.rowCount })
+        const started = Date.now()
+        try {
+          const result = await getAdapter(conn).execute(conn, stmt, [])
+          recordAudit({
+            source: 'mcp',
+            connectionId: conn.id ?? 'unsaved',
+            connectionName: conn.name ?? conn.database,
+            dbType: conn.dbType || 'postgresql',
+            sql: stmt,
+            rowCount: result.rowCount,
+            success: true,
+            durationMs: Date.now() - started
+          })
+          return ok({ rowCount: result.rowCount })
+        } catch (err) {
+          recordAudit({
+            source: 'mcp',
+            connectionId: conn.id ?? 'unsaved',
+            connectionName: conn.name ?? conn.database,
+            dbType: conn.dbType || 'postgresql',
+            sql: stmt,
+            rowCount: null,
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+            durationMs: Date.now() - started
+          })
+          throw err
+        }
       })
   )
 }

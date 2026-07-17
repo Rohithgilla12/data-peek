@@ -22,6 +22,7 @@ import { createLogger } from '../lib/logger'
 import { annotateSslError } from '../lib/ssl-error'
 import { telemetryCollector } from '../telemetry-collector'
 import { analyzeQueryPerformance } from '../performance-analyzer'
+import { recordAudit } from '../audit-service'
 
 const log = createLogger('query-handlers')
 
@@ -81,6 +82,22 @@ export function registerQueryHandlers(): void {
         log.debug('Query completed in', multiResult.totalDurationMs, 'ms')
         log.debug('Statement count:', multiResult.results.length)
 
+        const legacyRowCount =
+          multiResult.results.find((r) => r.isDataReturning)?.rowCount ??
+          multiResult.results[0]?.rowCount ??
+          0
+
+        recordAudit({
+          source: 'editor',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType: config.dbType || 'postgresql',
+          sql: query,
+          rowCount: legacyRowCount,
+          success: true,
+          durationMs: multiResult.totalDurationMs
+        })
+
         return {
           success: true,
           data: {
@@ -98,16 +115,23 @@ export function registerQueryHandlers(): void {
               multiResult.results.find((r) => r.isDataReturning)?.fields ||
               multiResult.results[0]?.fields ||
               [],
-            rowCount:
-              multiResult.results.find((r) => r.isDataReturning)?.rowCount ??
-              multiResult.results[0]?.rowCount ??
-              0,
+            rowCount: legacyRowCount,
             durationMs: multiResult.totalDurationMs
           }
         }
       } catch (error: unknown) {
         log.error('Query error:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
+        recordAudit({
+          source: 'editor',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType: config.dbType || 'postgresql',
+          sql: query,
+          rowCount: null,
+          success: false,
+          error: errorMessage
+        })
         return { success: false, error: errorMessage }
       }
     }
@@ -280,10 +304,30 @@ export function registerQueryHandlers(): void {
               )
               result.rowsAffected += res.rowCount ?? 0
               result.executedSql.push(op.preview)
+              recordAudit({
+                source: 'inline-edit',
+                connectionId: config.id ?? 'unsaved',
+                connectionName: config.name ?? config.database,
+                dbType,
+                sql: op.sql,
+                rowCount: res.rowCount ?? 0,
+                success: true
+              })
             } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error)
               result.errors!.push({
                 operationId: op.opId,
-                message: error instanceof Error ? error.message : String(error)
+                message: errorMessage
+              })
+              recordAudit({
+                source: 'inline-edit',
+                connectionId: config.id ?? 'unsaved',
+                connectionName: config.name ?? config.database,
+                dbType,
+                sql: op.sql,
+                rowCount: null,
+                success: false,
+                error: errorMessage
               })
               break // Stop executing further ops in this transaction
             }
@@ -298,6 +342,18 @@ export function registerQueryHandlers(): void {
         result.rowsAffected = txResult.rowsAffected
         result.executedSql = validOperations.map((op) => op.preview)
 
+        for (const op of validOperations) {
+          recordAudit({
+            source: 'inline-edit',
+            connectionId: config.id ?? 'unsaved',
+            connectionName: config.name ?? config.database,
+            dbType,
+            sql: op.sql,
+            rowCount: null,
+            success: true
+          })
+        }
+
         return { success: true, data: result }
       } catch (error: unknown) {
         log.error('Execute batch error:', error)
@@ -307,6 +363,16 @@ export function registerQueryHandlers(): void {
           result.errors!.push({
             operationId: op.opId,
             message: errorMessage
+          })
+          recordAudit({
+            source: 'inline-edit',
+            connectionId: config.id ?? 'unsaved',
+            connectionName: config.name ?? config.database,
+            dbType,
+            sql: op.sql,
+            rowCount: null,
+            success: false,
+            error: errorMessage
           })
         }
         result.success = false

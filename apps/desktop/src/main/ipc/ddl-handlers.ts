@@ -10,6 +10,7 @@ import {
 } from '../ddl-builder'
 import { invalidateSchemaCache } from '../schema-cache'
 import { createLogger } from '../lib/logger'
+import { recordAudit } from '../audit-service'
 
 const log = createLogger('ddl-handlers')
 
@@ -64,10 +65,30 @@ export function registerDDLHandlers(): void {
         // Drop cached schemas so callers see the new table on the next read.
         invalidateSchemaCache(config)
 
+        recordAudit({
+          source: 'ddl',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType,
+          sql: result.executedSql.join('\n'),
+          rowCount: null,
+          success: true
+        })
+
         return { success: true, data: result }
       } catch (error: unknown) {
         log.error('Create table error:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
+        recordAudit({
+          source: 'ddl',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType,
+          sql: result.executedSql.join('\n'),
+          rowCount: null,
+          success: false,
+          error: errorMessage
+        })
         return { success: false, error: errorMessage }
       }
     }
@@ -100,12 +121,32 @@ export function registerDDLHandlers(): void {
         // Cached column sets / FK metadata are now stale; force the next read.
         invalidateSchemaCache(config)
 
+        recordAudit({
+          source: 'ddl',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType,
+          sql: result.executedSql.join('\n'),
+          rowCount: null,
+          success: true
+        })
+
         return { success: true, data: result }
       } catch (error: unknown) {
         log.error('Alter table error:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
         result.errors!.push(errorMessage)
         result.success = false
+        recordAudit({
+          source: 'ddl',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType,
+          sql: result.executedSql.join('\n'),
+          rowCount: null,
+          success: false,
+          error: errorMessage
+        })
         return { success: true, data: result }
       }
     }
@@ -127,15 +168,26 @@ export function registerDDLHandlers(): void {
 
       const adapter = getAdapter(config)
       const dbType = config.dbType || 'postgresql'
+      let sql = ''
 
       try {
-        const { sql } = buildDropTable(schema, table, cascade, dbType)
+        ;({ sql } = buildDropTable(schema, table, cascade, dbType))
         log.debug('Executing SQL:', sql)
 
         await adapter.executeTransaction(config, [{ sql, params: [] }])
 
         // Drop cached schemas so the dropped table disappears from the next read.
         invalidateSchemaCache(config)
+
+        recordAudit({
+          source: 'ddl',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType,
+          sql,
+          rowCount: null,
+          success: true
+        })
 
         return {
           success: true,
@@ -144,6 +196,16 @@ export function registerDDLHandlers(): void {
       } catch (error: unknown) {
         log.error('Drop table error:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
+        recordAudit({
+          source: 'ddl',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType,
+          sql,
+          rowCount: null,
+          success: false,
+          error: errorMessage
+        })
         return { success: false, error: errorMessage }
       }
     }
