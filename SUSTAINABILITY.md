@@ -13,7 +13,7 @@ verifiable against the source code.
 - **Releases are not tied to one machine.** Every published binary is built by
   GitHub Actions ([build.yml](.github/workflows/build.yml),
   [build-artifacts.yml](.github/workflows/build-artifacts.yml)). Anyone with a
-  fork can produce identical builds.
+  fork can run the same workflows to produce their own builds.
 - **Your licence does not depend on our servers.** See the guarantee below.
 
 ## Kill-switch-free guarantee
