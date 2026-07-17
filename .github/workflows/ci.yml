@@ -53,5 +53,11 @@ jobs:
       - name: Run desktop tests
         run: pnpm --filter @data-peek/desktop test
 
+      # better-sqlite3 is compiled for Electron's ABI, so the audit/time-machine/
+      # notebook storage suites (hash-chain, prune, export logic) skip under
+      # plain node above and only run for real here, under the Electron binary.
+      - name: Run desktop tests (Electron ABI)
+        run: pnpm --filter @data-peek/desktop test:electron
+
       - name: Typecheck desktop
         run: pnpm --filter @data-peek/desktop typecheck

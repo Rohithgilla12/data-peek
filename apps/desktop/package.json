@@ -12,7 +12,7 @@
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json --composite false",
     "typecheck": "pnpm run typecheck:node && pnpm run typecheck:web",
     "test": "vitest run",
-    "test:electron": "ELECTRON_RUN_AS_NODE=1 electron ../../node_modules/vitest/vitest.mjs run src/main/__tests__/time-machine-storage.test.ts",
+    "test:electron": "ELECTRON_RUN_AS_NODE=1 electron $(node -e \"console.log(require('node:path').join(require('node:path').dirname(require.resolve('vitest/package.json')), 'vitest.mjs'))\") run src/main/__tests__/time-machine-storage.test.ts src/main/__tests__/audit-storage.test.ts src/main/__tests__/notebook-storage.test.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "pnpm run build && playwright test",

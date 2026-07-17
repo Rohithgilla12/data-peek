@@ -1,0 +1,54 @@
+---
+title: Audit Log
+description: A tamper-evident, hash-chained local record of every SQL statement data-peek executes
+---
+
+# Audit Log
+
+The audit log keeps a tamper-evident record of every SQL statement data-peek executes, so you can answer "what ran, when, and from where" after the fact. It's off by default.
+
+Enable it in **Settings → Audit Log**.
+
+## What is recorded
+
+Every recorded entry is tagged with the source that triggered it:
+
+| Source        | What triggers it                                     |
+| ------------- | ----------------------------------------------------- |
+| `editor`      | Queries run from the SQL editor                       |
+| `inline-edit` | INSERT/UPDATE/DELETE from inline data editing          |
+| `ddl`         | CREATE/ALTER/DROP statements from the Table Designer   |
+| `scheduled`   | Statements run by Scheduled Queries                    |
+| `mcp`         | Statements run by an AI agent through the MCP server   |
+
+Each entry stores the timestamp, source, connection, database type, SQL text, row count, success/error, and duration.
+
+## What is NOT recorded
+
+- The explain panel (and the MCP `explain_query` tool)
+- Schema reads (listing tables, columns, schemas)
+- Writes rejected in the MCP approval dialog
+
+An `EXPLAIN` statement you type and run in the editor is recorded like any other executed statement.
+
+## Hash chain and integrity
+
+Every entry is hashed together with the hash of the entry before it, forming a chain anchored to a fixed starting value. Any edit, deletion, or reordering of a past entry breaks the chain from that point forward.
+
+Click **Verify integrity** in Settings to walk the chain. It reports either that the chain is intact, or the ID of the first broken entry.
+
+### Integrity limitations
+
+The hash chain detects edits and deletions inside the recorded history. It cannot detect truncation from the tail (or deletion of the whole file) by someone with write access to the log file — a limitation of any local-only integrity scheme. For stronger guarantees, export regularly and store the export elsewhere.
+
+## Retention and pruning
+
+Retention is configurable from 7 to 3650 days (default 90). Entries older than the retention window are pruned automatically. Pruning preserves the chain: the anchor is advanced to the hash of the last pruned entry, so **Verify integrity** continues to validate correctly across prune boundaries.
+
+## Export
+
+Export the log to CSV or JSON from Settings. The default filename is `YYYYMMDD-data-peek-audit.csv` (or `.json`).
+
+## Privacy
+
+Records SQL statements data-peek executes — editor, edits, DDL, scheduled, and agent (MCP) — in a local file on this machine. Not recorded: the explain panel, schema reads, and agent writes you reject. SQL text can contain data values. Off by default; prunable and deletable.

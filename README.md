@@ -59,6 +59,10 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Approved writes** - `execute_statement` prompts an in-app Approve/Reject dialog for every write; 60s timeout auto-rejects
 - **One-command setup** - copy the ready-made `claude mcp add` snippet straight from Settings → MCP server
 
+### Audit Log
+
+- **Audit log** - tamper-evident (hash-chained) local record of every executed statement, with CSV/JSON export and integrity verification. Off by default. Stored locally, never uploaded; SQL text can contain data values.
+
 ### Query Editor
 
 - **Monaco Editor** - SQL syntax highlighting with smart autocomplete

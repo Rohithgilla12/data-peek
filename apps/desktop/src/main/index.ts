@@ -29,6 +29,9 @@ import {
   type McpSettings
 } from './ipc'
 import type { McpServiceWithApproval } from './ipc/mcp-handlers'
+import { AuditStorage } from './audit-storage'
+import { initAuditService, AUDIT_SETTINGS_DEFAULTS, type AuditSettings } from './audit-service'
+import { registerAuditHandlers } from './ipc/audit-handlers'
 import { setForceQuit } from './app-state'
 import { windowManager } from './window-manager'
 import { initSchedulerService, stopAllSchedules } from './scheduler-service'
@@ -50,6 +53,8 @@ let queryHistoryStore: DpStorage<{ queryHistory: QueryHistoryEntry[] }>
 let timeMachineStorage: TimeMachineStorage | null = null
 let mcpStore: PersistentStore<{ mcpSettings: McpSettings }>
 let mcpService: McpServiceWithApproval
+let auditStore: PersistentStore<{ auditSettings: AuditSettings }>
+let auditStorage: AuditStorage | null = null
 
 const stepSessionRegistry = new StepSessionRegistry()
 
@@ -169,6 +174,17 @@ async function initStores(): Promise<void> {
 
   mcpStore = await createMcpSettingsStore()
   mcpService = createMcpService(() => store.get('connections', []))
+
+  auditStore = await DpStorage.create<{ auditSettings: AuditSettings }>({
+    name: 'data-peek-audit',
+    defaults: { auditSettings: AUDIT_SETTINGS_DEFAULTS }
+  })
+  try {
+    auditStorage = new AuditStorage(join(app.getPath('userData'), 'audit.db'))
+  } catch (error) {
+    log.warn('AuditStorage unavailable; audit logging disabled:', error)
+  }
+  initAuditService(auditStore, auditStorage)
 }
 
 // Set app name for macOS dock and Mission Control
@@ -284,6 +300,7 @@ app.whenReady().then(async () => {
 
   registerMcpHandlers(mcpStore, mcpService)
   void startMcpIfEnabled(mcpStore, mcpService)
+  registerAuditHandlers()
 
   // Create initial window
   await windowManager.createWindow()
@@ -345,6 +362,11 @@ app.on('before-quit', (event) => {
         timeMachineStorage?.close()
       } catch (err) {
         log.warn('TimeMachineStorage close failed during quit:', err)
+      }
+      try {
+        auditStorage?.close()
+      } catch (err) {
+        log.warn('AuditStorage close failed during quit:', err)
       }
       app.quit()
     })

@@ -13,6 +13,7 @@ import { SCHEDULE_PRESETS } from '@shared/index'
 import { DpStorage, type PersistentStore } from './storage'
 import { getAdapter } from './db-adapter'
 import { createLogger } from './lib/logger'
+import { recordAudit } from './audit-service'
 
 const log = createLogger('scheduler')
 
@@ -185,11 +186,10 @@ async function executeScheduledQuery(queryId: string): Promise<void> {
     success: false
   }
 
-  try {
-    // Get the connection
-    const connections = connectionsStore.get('connections', [])
-    const connection = connections.find((c) => c.id === query.connectionId)
+  const connections = connectionsStore.get('connections', [])
+  const connection = connections.find((c) => c.id === query.connectionId)
 
+  try {
     if (!connection) {
       throw new Error(`Connection not found: ${query.connectionId}`)
     }
@@ -215,6 +215,17 @@ async function executeScheduledQuery(queryId: string): Promise<void> {
 
     log.debug(`Scheduled query "${query.name}" completed in ${run.durationMs}ms`)
 
+    recordAudit({
+      source: 'scheduled',
+      connectionId: connection.id ?? 'unsaved',
+      connectionName: connection.name ?? connection.database,
+      dbType: connection.dbType || 'postgresql',
+      sql: query.query,
+      rowCount: run.rowCount ?? null,
+      success: true,
+      durationMs: run.durationMs
+    })
+
     // Update query with last run time
     updateScheduledQueryInternal(query.id, {
       lastRunAt: run.completedAt,
@@ -237,6 +248,17 @@ async function executeScheduledQuery(queryId: string): Promise<void> {
     run.error = errorMessage
 
     log.error(`Scheduled query "${query.name}" failed:`, errorMessage)
+
+    recordAudit({
+      source: 'scheduled',
+      connectionId: connection?.id ?? 'unsaved',
+      connectionName: connection?.name ?? connection?.database ?? 'unknown',
+      dbType: connection?.dbType || 'postgresql',
+      sql: query.query,
+      rowCount: null,
+      success: false,
+      error: errorMessage
+    })
 
     // Update query with error status
     updateScheduledQueryInternal(query.id, {

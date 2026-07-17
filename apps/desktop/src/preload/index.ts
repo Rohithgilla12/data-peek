@@ -86,7 +86,9 @@ import type {
   TimeMachineListResult,
   TimeMachineStats,
   McpServerStatus,
-  McpApprovalRequest
+  McpApprovalRequest,
+  AuditStatus,
+  AuditVerifyResult
 } from '@shared/index'
 
 // Re-export AI types for renderer consumers
@@ -725,6 +727,18 @@ const api = {
       ipcRenderer.on('mcp:approval:resolved', listener)
       return () => ipcRenderer.removeListener('mcp:approval:resolved', listener)
     }
+  },
+  audit: {
+    status: (): Promise<IpcResponse<AuditStatus>> => ipcRenderer.invoke('audit:status'),
+    setEnabled: (enabled: boolean): Promise<IpcResponse<AuditStatus>> =>
+      ipcRenderer.invoke('audit:setEnabled', { enabled }),
+    setRetention: (days: number): Promise<IpcResponse<AuditStatus>> =>
+      ipcRenderer.invoke('audit:setRetention', { days }),
+    verify: (): Promise<IpcResponse<AuditVerifyResult>> => ipcRenderer.invoke('audit:verify'),
+    export: (
+      format: 'csv' | 'json'
+    ): Promise<IpcResponse<{ path: string; entries: number } | null>> =>
+      ipcRenderer.invoke('audit:export', { format })
   }
 }
 

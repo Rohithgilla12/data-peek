@@ -2592,3 +2592,44 @@ export interface McpServerStatus {
   url: string;
   error?: string;
 }
+
+export type AuditSource = "editor" | "inline-edit" | "ddl" | "scheduled" | "mcp";
+
+export interface AuditEntryInput {
+  source: AuditSource;
+  connectionId: string;
+  connectionName: string;
+  dbType: string;
+  sql: string;
+  rowCount: number | null;
+  success: boolean;
+  error?: string;
+  durationMs?: number;
+}
+
+export interface AuditEntry extends AuditEntryInput {
+  id: number;
+  ts: string;
+  prevHash: string;
+  hash: string;
+}
+
+export interface AuditFilters {
+  source?: AuditSource;
+  connectionId?: string;
+  from?: string;
+  to?: string;
+}
+
+export interface AuditVerifyResult {
+  valid: boolean;
+  entries: number;
+  firstBrokenId?: number;
+}
+
+export interface AuditStatus {
+  available: boolean;
+  enabled: boolean;
+  retentionDays: number;
+  entryCount: number;
+}

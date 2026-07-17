@@ -36,6 +36,7 @@
     "health-monitor",
     "pg-notifications",
     "data-masking",
+    "audit-log",
     "ssh-tunnels",
     "export",
     "share-as-image",

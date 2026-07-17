@@ -15,6 +15,7 @@ import type { TimeMachineStats } from '@data-peek/shared'
 
 import { useSettingsStore } from '@/stores/settings-store'
 import { McpSettingsSection } from '@/components/mcp-settings-section'
+import { AuditSettingsSection } from '@/components/audit-settings-section'
 
 interface SettingsModalProps {
   open: boolean
@@ -225,6 +226,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           </div>
 
           <McpSettingsSection />
+
+          <AuditSettingsSection />
 
           {/* Time Machine Section */}
           <div className="space-y-4">

@@ -87,6 +87,10 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
         title: "MCP server",
         body: "Read-only queries run free. Writes are gated behind an in-app approval before they touch the database.",
       },
+      {
+        title: "Audit log",
+        body: "Hash-chained record of every statement executed, from any source. Local, off by default, exportable to CSV or JSON.",
+      },
     ],
   },
   {
