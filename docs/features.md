@@ -173,6 +173,13 @@ For power users and teams:
 | **execute_statement (writes)** | Every write pops an Approve/Reject dialog in data-peek; a 60s timeout auto-rejects |
 | **Copyable Setup Snippet** | Settings → MCP server generates the `claude mcp add` command with your token pre-filled |
 
+### Audit Log
+
+| Feature | Description |
+|---------|-------------|
+| **Audit log** | Tamper-evident (hash-chained) local record of every executed statement, with CSV/JSON export and integrity verification. Off by default. |
+| **Privacy** | Stored locally, never uploaded; SQL text can contain data values. |
+
 ### Column Statistics
 
 | Feature | Description |

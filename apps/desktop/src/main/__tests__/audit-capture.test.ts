@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-const recordAudit = vi.fn()
+const recordAudit = vi.hoisted(() => vi.fn())
 vi.mock('../audit-service', () => ({ recordAudit }))
 vi.mock('../lib/logger', () => ({
   createLogger: () => ({ debug: vi.fn(), warn: vi.fn(), error: vi.fn(), info: vi.fn() })
