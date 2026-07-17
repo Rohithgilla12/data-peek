@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import * as fs from 'fs'
 import * as path from 'path'
 import * as os from 'os'
+import Database from 'better-sqlite3'
 
 vi.mock('electron-log/main', () => ({
   default: {
@@ -27,7 +28,19 @@ vi.mock('electron', () => ({
 
 import { NotebookStorage } from '../notebook-storage'
 
-describe('NotebookStorage', () => {
+// better-sqlite3 is compiled for Electron's ABI; under plain node the whole
+// suite skips (mirrors the vitest.config.ts exclusion of sqlite-adapter).
+// Run for real via: pnpm test:electron
+const sqliteAvailable = (() => {
+  try {
+    new Database(':memory:').close()
+    return true
+  } catch {
+    return false
+  }
+})()
+
+describe.skipIf(!sqliteAvailable)('NotebookStorage', () => {
   let storage: NotebookStorage
   let tmpDir: string
 
