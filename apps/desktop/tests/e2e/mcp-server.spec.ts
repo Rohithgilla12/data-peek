@@ -41,25 +41,21 @@ async function enableMcp(window: Page, port: number): Promise<McpStatus> {
   return status
 }
 
-function mcpClient(status: McpStatus, token = status.token): Client {
+async function mcpClient(status: McpStatus, token = status.token): Promise<Client> {
   const client = new Client({ name: 'e2e', version: '0.0.0' })
   const transport = new StreamableHTTPClientTransport(new URL(status.url), {
     requestInit: { headers: { authorization: `Bearer ${token}` } }
   })
-  // connect() is awaited at call sites; stash transport on the client for reuse.
-  ;(client as unknown as { __transport: StreamableHTTPClientTransport }).__transport = transport
-  return client
-}
-
-async function connect(client: Client): Promise<void> {
-  const transport = (client as unknown as { __transport: StreamableHTTPClientTransport })
-    .__transport
   await client.connect(transport)
+  return client
 }
 
 function textOf(result: Awaited<ReturnType<Client['callTool']>>): string {
   const content = result.content as Array<{ type: string; text?: string }>
-  return content.map((c) => c.text ?? '').join('\n')
+  return content
+    .filter((c) => c.type === 'text')
+    .map((c) => c.text ?? '')
+    .join('\n')
 }
 
 test('MCP server is off by default', async ({ window }) => {
@@ -94,8 +90,7 @@ test('bearer auth: requests without the token are rejected, valid token connects
   expect(wrongToken.status).toBe(401)
 
   // Real MCP client with the right token completes initialize + tools/list.
-  const client = mcpClient(status)
-  await connect(client)
+  const client = await mcpClient(status)
   const tools = await client.listTools()
   const names = tools.tools.map((t) => t.name).sort()
   expect(names).toEqual([
@@ -124,8 +119,7 @@ test('token regeneration invalidates the old token', async ({ window }) => {
   })
   expect(oldAuth.status).toBe(401)
 
-  const client = mcpClient(fresh)
-  await connect(client)
+  const client = await mcpClient(fresh)
   await expect(client.listTools()).resolves.toBeTruthy()
   await client.close()
 })
@@ -137,13 +131,21 @@ test('disabling the server closes the port', async ({ window }) => {
   expect(disable.success).toBe(true)
   expect((disable.data as McpStatus).running).toBe(false)
 
-  await expect(
-    fetch(status.url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', authorization: `Bearer ${status.token}` },
-      body: '{}'
+  // Poll: the OS can take a beat to fully release the socket after close().
+  await expect
+    .poll(async () => {
+      try {
+        await fetch(status.url, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${status.token}` },
+          body: '{}'
+        })
+        return 'open'
+      } catch {
+        return 'closed'
+      }
     })
-  ).rejects.toThrow()
+    .toBe('closed')
 })
 
 test('list_connections exposes saved connections without credentials', async ({ window }) => {
@@ -151,8 +153,7 @@ test('list_connections exposes saved connections without credentials', async ({ 
   expect(added.success).toBe(true)
 
   const status = await enableMcp(window, 47234)
-  const client = mcpClient(status)
-  await connect(client)
+  const client = await mcpClient(status)
 
   const result = await client.callTool({ name: 'list_connections', arguments: {} })
   const connections = JSON.parse(textOf(result)) as Array<Record<string, unknown>>
@@ -168,10 +169,10 @@ test('list_connections exposes saved connections without credentials', async ({ 
 })
 
 test('run_query reads from the seeded database and refuses writes', async ({ window }) => {
-  await window.evaluate(async (cfg) => window.api.connections.add(cfg), pg.config)
+  const added = await window.evaluate(async (cfg) => window.api.connections.add(cfg), pg.config)
+  expect(added.success).toBe(true)
   const status = await enableMcp(window, 47235)
-  const client = mcpClient(status)
-  await connect(client)
+  const client = await mcpClient(status)
 
   const read = await client.callTool({
     name: 'run_query',
@@ -196,10 +197,10 @@ test('run_query reads from the seeded database and refuses writes', async ({ win
 })
 
 test('execute_statement: rejecting in the approval dialog blocks the write', async ({ window }) => {
-  await window.evaluate(async (cfg) => window.api.connections.add(cfg), pg.config)
+  const added = await window.evaluate(async (cfg) => window.api.connections.add(cfg), pg.config)
+  expect(added.success).toBe(true)
   const status = await enableMcp(window, 47236)
-  const client = mcpClient(status)
-  await connect(client)
+  const client = await mcpClient(status)
 
   const sql =
     "UPDATE users SET email = 'rejected@example.com' WHERE id = (SELECT id FROM users ORDER BY created_at LIMIT 1)"
@@ -230,10 +231,10 @@ test('execute_statement: rejecting in the approval dialog blocks the write', asy
 })
 
 test('execute_statement: approving in the dialog runs the write', async ({ window }) => {
-  await window.evaluate(async (cfg) => window.api.connections.add(cfg), pg.config)
+  const added = await window.evaluate(async (cfg) => window.api.connections.add(cfg), pg.config)
+  expect(added.success).toBe(true)
   const status = await enableMcp(window, 47237)
-  const client = mcpClient(status)
-  await connect(client)
+  const client = await mcpClient(status)
 
   const sql =
     "UPDATE users SET email = 'approved@example.com' WHERE id = (SELECT id FROM users ORDER BY created_at LIMIT 1)"
