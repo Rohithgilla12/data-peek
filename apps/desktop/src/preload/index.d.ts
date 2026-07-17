@@ -78,7 +78,9 @@ import type {
   TimeMachineListResult,
   TimeMachineStats,
   McpServerStatus,
-  McpApprovalRequest
+  McpApprovalRequest,
+  AuditStatus,
+  AuditVerifyResult
 } from '@shared/index'
 
 // AI Types
@@ -543,6 +545,15 @@ interface DataPeekApi {
     respondToApproval: (id: string, approved: boolean) => Promise<IpcResponse<void>>
     onApprovalRequest: (callback: (req: McpApprovalRequest) => void) => () => void
     onApprovalResolved: (callback: (payload: { id: string }) => void) => () => void
+  }
+  audit: {
+    status: () => Promise<IpcResponse<AuditStatus>>
+    setEnabled: (enabled: boolean) => Promise<IpcResponse<AuditStatus>>
+    setRetention: (days: number) => Promise<IpcResponse<AuditStatus>>
+    verify: () => Promise<IpcResponse<AuditVerifyResult>>
+    export: (
+      format: 'csv' | 'json'
+    ) => Promise<IpcResponse<{ path: string; entries: number } | null>>
   }
 }
 
