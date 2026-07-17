@@ -34,6 +34,12 @@ pnpm lint
 # Type checking (from apps/desktop)
 cd apps/desktop
 pnpm typecheck
+
+# Unit tests (from apps/desktop)
+pnpm test
+
+# End-to-end tests (from apps/desktop; builds first, needs Docker for the Postgres specs)
+pnpm test:e2e
 ```
 
 ## Project Structure
@@ -44,10 +50,18 @@ apps/
     src/main/        # Main process (Node.js)
     src/preload/     # IPC bridge
     src/renderer/    # React frontend
-  web/               # Marketing website
+  web/               # Marketing website + licence API
+  docs/              # Documentation site
 packages/
   shared/            # Shared TypeScript types
 ```
+
+## Where to start
+
+Issues labelled
+[good first issue](https://github.com/Rohithgilla12/data-peek/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)
+are scoped for newcomers. For bigger changes, open an issue first so we can
+agree on the approach before you invest time. Every PR gets maintainer review.
 
 ## Code Style
 

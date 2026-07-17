@@ -1,0 +1,40 @@
+---
+title: Continuity
+description: What happens to data-peek — and your licence — if the project stops being maintained
+---
+
+# Continuity
+
+data-peek is built by a single maintainer. Instead of pretending otherwise,
+the project makes two concrete commitments, both versioned in the repository
+as [SUSTAINABILITY.md](https://github.com/Rohithgilla12/data-peek/blob/main/SUSTAINABILITY.md).
+
+## The kill-switch-free guarantee
+
+Licence activation is designed to fail open for versions you already have:
+
+- Activated licences revalidate roughly every 7 days.
+- If the licence server is unreachable, your licence stays fully valid for a
+  30-day grace window.
+- After that, the licence falls back to **perpetual mode**: the version you
+  activated keeps working with all commercial features, forever, fully
+  offline.
+
+If the licence server disappeared tomorrow, every activated installation
+would keep working on its current version indefinitely. This describes how
+the shipped code behaves today — not a promise about future behaviour.
+
+## The dormancy pledge
+
+If the repository has no maintainer activity — no commits, no releases, no
+issue triage — for 12 consecutive months, the commercial-licence requirement
+is waived for all versions released up to that point.
+
+## Everything else that de-risks adoption
+
+- **MIT source.** Build it yourself, patch it, fork it — today, not just in a
+  doomsday scenario.
+- **CI-built releases.** Binaries come from GitHub Actions, not a laptop, so
+  a fork can reproduce them.
+- **Local-first.** No service dependency in day-to-day use: queries go from
+  your machine to your database.
