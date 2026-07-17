@@ -30,6 +30,10 @@ const faqs = [
     a: "A Pro license includes one year of updates. If you don't renew, the version you have keeps working forever. Renew whenever you want new features.",
   },
   {
+    q: "What happens if data-peek stops being maintained?",
+    a: "Your activated version keeps working forever, fully offline — licence checks fail open, not closed. And if the project sees no maintainer activity for 12 months, the commercial-licence requirement is waived for every released version. The source is MIT, so you can always build it yourself.",
+  },
+  {
     q: "I'm a student or educator — can I use it for free?",
     a: "Yes, including for paid university coursework. DM @gillarohith on X or email gillarohith1@gmail.com for a free license.",
   },
