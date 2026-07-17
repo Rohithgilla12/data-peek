@@ -70,10 +70,9 @@ export function AuditSettingsSection() {
         Audit Log
       </h3>
       <p className="text-xs text-muted-foreground">
-        Records SQL statements data-peek executes — editor, edits, DDL, scheduled, and agent (MCP)
-        — in a local file on this machine. Not recorded: the explain panel, schema reads, and
-        agent writes you reject. SQL text can contain data values. Off by default; prunable and
-        deletable.
+        Records SQL statements data-peek executes — editor, edits, DDL, scheduled, and agent (MCP) —
+        in a local file on this machine. Not recorded: the explain panel, schema reads, and agent
+        writes you reject. SQL text can contain data values. Off by default; prunable and deletable.
       </p>
 
       <div className="flex items-center justify-between">
@@ -103,12 +102,19 @@ export function AuditSettingsSection() {
         <Input
           id="audit-retention"
           type="number"
+          min={7}
+          max={3650}
           className="w-24 font-mono"
           value={retentionDraft}
           onChange={(e) => setRetentionDraft(e.target.value)}
           onBlur={() => {
             const days = Number.parseInt(retentionDraft, 10)
-            if (Number.isInteger(days) && days > 0 && days !== status.retentionDays) {
+            if (
+              Number.isInteger(days) &&
+              days >= 7 &&
+              days <= 3650 &&
+              days !== status.retentionDays
+            ) {
               window.api.audit.setRetention(days).then(applyResult)
             } else {
               setRetentionDraft(String(status.retentionDays))
