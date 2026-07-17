@@ -23,10 +23,13 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      # Reuse the pnpm store between runs so the verify gate doesn't re-download
+      # every dependency on a cold runner before the platform builds can start.
       - uses: actions/setup-node@v6
         with:
           node-version: 24
-      - uses: pnpm/action-setup@v6
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @data-peek/desktop test
       - run: pnpm --filter @data-peek/desktop typecheck
