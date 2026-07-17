@@ -17,19 +17,31 @@ type AuditStore = PersistentStore<{ auditSettings: AuditSettings }>
 let store: AuditStore | null = null
 let storage: AuditStorage | null = null
 const warnedClasses = new Set<string>()
+const DAY_MS = 24 * 60 * 60 * 1000
+let pruneInterval: ReturnType<typeof setInterval> | null = null
+
+function pruneNow(): void {
+  if (!storage) return
+  const s = settings()
+  if (!s.enabled) return
+  try {
+    const removed = storage.prune(s.retentionDays)
+    if (removed > 0) log.debug(`Pruned ${removed} audit entries older than retention`)
+  } catch (err) {
+    log.warn('Audit prune failed:', err)
+  }
+}
 
 export function initAuditService(s: AuditStore, st: AuditStorage | null): void {
   store = s
   storage = st
-  const settings = s.get('auditSettings', AUDIT_SETTINGS_DEFAULTS)
-  if (st && settings.enabled) {
-    try {
-      const removed = st.prune(settings.retentionDays)
-      if (removed > 0) log.debug(`Pruned ${removed} audit entries older than retention`)
-    } catch (err) {
-      log.warn('Audit prune failed:', err)
-    }
+  if (pruneInterval) {
+    clearInterval(pruneInterval)
+    pruneInterval = null
   }
+  pruneNow()
+  pruneInterval = setInterval(pruneNow, DAY_MS)
+  pruneInterval.unref()
 }
 
 function settings(): AuditSettings {

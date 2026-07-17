@@ -97,6 +97,17 @@ describe.skipIf(!sqliteAvailable)('AuditStorage', () => {
     expect(result.firstBrokenId).toBe(second.id)
   })
 
+  it('verify detects tampering with connectionName', () => {
+    for (let i = 0; i < 3; i++) store.record(entry({ sql: `SELECT ${i}` }))
+    const second = store.list({ limit: 10, offset: 0 })[1]
+    const raw = new Database(join(dir, 'audit.db'))
+    raw.prepare('UPDATE audit_log SET connection_name = ? WHERE id = ?').run('renamed', second.id)
+    raw.close()
+    const result = store.verify()
+    expect(result.valid).toBe(false)
+    expect(result.firstBrokenId).toBe(second.id)
+  })
+
   it('filters by source and connection', () => {
     store.record(entry())
     store.record(entry({ source: 'mcp', connectionId: 'c2' }))
@@ -129,5 +140,21 @@ describe.skipIf(!sqliteAvailable)('AuditStorage', () => {
     const csv = readFileSync(csvPath, 'utf-8')
     expect(csv.split('\n')[0]).toContain('ts,source,connectionId')
     expect(csv).toContain('"SELECT ""quoted"", comma"')
+  })
+
+  it('escapes CSV formula injection with a leading apostrophe', () => {
+    store.record(entry({ sql: "=CMD('x')" }))
+    const csvPath = join(dir, 'out.csv')
+    store.exportTo('csv', csvPath)
+    const csv = readFileSync(csvPath, 'utf-8')
+    expect(csv).toMatch(/'=CMD\('x'\)/)
+  })
+
+  it('quotes CSV fields containing a bare carriage return', () => {
+    store.record(entry({ sql: 'line1\rline2' }))
+    const csvPath = join(dir, 'out.csv')
+    store.exportTo('csv', csvPath)
+    const csv = readFileSync(csvPath, 'utf-8')
+    expect(csv).toContain('"line1\rline2"')
   })
 })

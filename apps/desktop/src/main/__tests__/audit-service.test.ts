@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 vi.mock('../lib/logger', () => ({
   createLogger: () => ({ debug: vi.fn(), warn: vi.fn(), error: vi.fn(), info: vi.fn() })
 }))
@@ -36,6 +36,23 @@ function makeStorage() {
 
 describe('audit-service', () => {
   beforeEach(() => vi.clearAllMocks())
+  afterEach(() => vi.useRealTimers())
+
+  it('prunes daily with the current retention settings', () => {
+    vi.useFakeTimers()
+    const store = makeStore({ enabled: true, retentionDays: 30 })
+    const storage = makeStorage()
+    initAuditService(store, storage)
+    const pruneMock = (storage as { prune: ReturnType<typeof vi.fn> }).prune
+    expect(pruneMock).toHaveBeenCalledWith(30)
+    pruneMock.mockClear()
+
+    setAuditRetention(45)
+    pruneMock.mockClear()
+
+    vi.advanceTimersByTime(24 * 60 * 60 * 1000 + 1000)
+    expect(pruneMock).toHaveBeenCalledWith(45)
+  })
 
   it('recordAudit is a no-op while disabled', () => {
     const storage = makeStorage()

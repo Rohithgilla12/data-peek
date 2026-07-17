@@ -13,6 +13,7 @@ function entryHash(prevHash: string, e: AuditEntryInput & { ts: string }): strin
     e.ts,
     e.source,
     e.connectionId,
+    e.connectionName,
     e.dbType,
     e.sql,
     e.rowCount,
@@ -81,8 +82,9 @@ function whereClause(f: AuditFilters): { sql: string; params: unknown[] } {
 
 function csvField(value: unknown): string {
   if (value === null || value === undefined) return ''
-  const s = String(value)
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
+  let s = String(value)
+  if (/^[=+\-@\t]/.test(s)) s = `'${s}`
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
 export class AuditStorage {
