@@ -57,13 +57,19 @@ jobs:
       - name: Install Playwright system deps
         run: pnpm --filter @data-peek/desktop exec playwright install-deps
 
+      # Build the electron-vite bundle directly and skip the typecheck that
+      # `pnpm build` runs — the CI workflow already typechecks in parallel, so
+      # repeating it here just adds latency to the critical path.
       - name: Build desktop bundle
-        run: pnpm --filter @data-peek/desktop build
+        run: pnpm --filter @data-peek/desktop exec electron-vite build
 
       - name: Run e2e tests
         # xvfb-run wraps Playwright so the Electron BrowserWindow has a virtual display.
         run: xvfb-run --auto-servernum pnpm --filter @data-peek/desktop exec playwright test
         env:
+          # Run spec files across multiple workers (each with its own container +
+          # Electron instance). Tune to the runner's core count if it changes.
+          E2E_WORKERS: "2"
           # Skip the Ryuk reaper sidecar that testcontainers normally launches —
           # GitHub-hosted runners can't always reach Docker Hub for the image, and the
           # runner is torn down per job anyway so leaked containers aren't an issue.

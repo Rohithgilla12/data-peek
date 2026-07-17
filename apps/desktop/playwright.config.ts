@@ -19,10 +19,18 @@ export default defineConfig({
   testMatch: '**/*.spec.ts',
   testIgnore: ['**/node_modules/**'],
 
-  // Electron tests share a single OS-level app instance per test, so parallelism
-  // adds OS-window juggling without much speedup. Keep it simple at one worker.
+  // Each spec file owns its Postgres container and launches its own Electron app
+  // against an isolated `userData` dir, so whole files can run concurrently without
+  // shared state. We keep `fullyParallel` off (no intra-file parallelism — tests in a
+  // file share one container) but let Playwright run several files at once via workers.
+  // On CI that turns a serial 12-file run into a parallel one; locally we stay at a
+  // single worker for readable, deterministic output. Override with E2E_WORKERS.
   fullyParallel: false,
-  workers: 1,
+  workers: process.env.E2E_WORKERS
+    ? Number(process.env.E2E_WORKERS)
+    : process.env.CI
+      ? 2
+      : 1,
 
   // Generous default — Electron cold-start + electron-vite output traversal is slow.
   timeout: 60_000,

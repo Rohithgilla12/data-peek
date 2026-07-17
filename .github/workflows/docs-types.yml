@@ -11,6 +11,11 @@ on:
     branches:
       - main
 
+# A newer commit on the same ref makes the in-flight types check obsolete.
+concurrency:
+  group: docs-types-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   types-check:
     runs-on: ubuntu-latest
