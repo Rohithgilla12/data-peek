@@ -56,7 +56,7 @@ export function registerAuditHandlers(): void {
         const storage = requireStorage()
         const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
         const { canceled, filePath } = await dialog.showSaveDialog({
-          defaultPath: `data-peek-audit-${stamp}.${format}`,
+          defaultPath: `${stamp}-data-peek-audit.${format}`,
           filters: [{ name: format.toUpperCase(), extensions: [format] }]
         })
         if (canceled || !filePath) return null
