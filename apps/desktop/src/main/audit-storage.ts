@@ -83,7 +83,7 @@ function whereClause(f: AuditFilters): { sql: string; params: unknown[] } {
 function csvField(value: unknown): string {
   if (value === null || value === undefined) return ''
   let s = String(value)
-  if (/^[=+\-@\t]/.test(s)) s = `'${s}`
+  if (/^[=+\-@\t]/.test(s.trimStart()) || /^[\r\n]/.test(s)) s = `'${s}`
   return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
@@ -229,18 +229,21 @@ export class AuditStorage {
 
   prune(maxAgeDays: number): number {
     const cutoff = new Date(Date.now() - maxAgeDays * 24 * 3600 * 1000).toISOString()
-    const last = this.db
-      .prepare('SELECT hash FROM audit_log WHERE ts < ? ORDER BY id DESC LIMIT 1')
-      .get(cutoff) as { hash: string } | undefined
-    if (!last) return 0
-    const result = this.db.prepare('DELETE FROM audit_log WHERE ts < ?').run(cutoff)
-    this.db
-      .prepare(
-        "INSERT INTO audit_meta (key, value) VALUES ('chainAnchor', ?) " +
-          'ON CONFLICT(key) DO UPDATE SET value = excluded.value'
-      )
-      .run(last.hash)
-    return result.changes
+    const runPrune = this.db.transaction((cutoffTs: string) => {
+      const last = this.db
+        .prepare('SELECT hash FROM audit_log WHERE ts < ? ORDER BY id DESC LIMIT 1')
+        .get(cutoffTs) as { hash: string } | undefined
+      if (!last) return 0
+      const result = this.db.prepare('DELETE FROM audit_log WHERE ts < ?').run(cutoffTs)
+      this.db
+        .prepare(
+          "INSERT INTO audit_meta (key, value) VALUES ('chainAnchor', ?) " +
+            'ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+        )
+        .run(last.hash)
+      return result.changes
+    })
+    return runPrune(cutoff)
   }
 
   close(): void {

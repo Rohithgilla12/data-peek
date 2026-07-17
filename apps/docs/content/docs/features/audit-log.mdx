@@ -25,15 +25,21 @@ Each entry stores the timestamp, source, connection, database type, SQL text, ro
 
 ## What is NOT recorded
 
-- `EXPLAIN` / query plan requests
+- The explain panel (and the MCP `explain_query` tool)
 - Schema reads (listing tables, columns, schemas)
 - Writes rejected in the MCP approval dialog
+
+An `EXPLAIN` statement you type and run in the editor is recorded like any other executed statement.
 
 ## Hash chain and integrity
 
 Every entry is hashed together with the hash of the entry before it, forming a chain anchored to a fixed starting value. Any edit, deletion, or reordering of a past entry breaks the chain from that point forward.
 
 Click **Verify integrity** in Settings to walk the chain. It reports either that the chain is intact, or the ID of the first broken entry.
+
+### Integrity limitations
+
+The hash chain detects edits and deletions inside the recorded history. It cannot detect truncation from the tail (or deletion of the whole file) by someone with write access to the log file — a limitation of any local-only integrity scheme. For stronger guarantees, export regularly and store the export elsewhere.
 
 ## Retention and pruning
 
@@ -45,4 +51,4 @@ Export the log to CSV or JSON from Settings. The default filename is `YYYYMMDD-d
 
 ## Privacy
 
-Records every SQL statement data-peek executes, in a local file on this machine. SQL text can contain data values. Off by default; prunable and deletable.
+Records SQL statements data-peek executes — editor, edits, DDL, scheduled, and agent (MCP) — in a local file on this machine. Not recorded: the explain panel, schema reads, and agent writes you reject. SQL text can contain data values. Off by default; prunable and deletable.

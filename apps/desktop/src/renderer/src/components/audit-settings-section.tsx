@@ -70,8 +70,10 @@ export function AuditSettingsSection() {
         Audit Log
       </h3>
       <p className="text-xs text-muted-foreground">
-        Records every SQL statement data-peek executes, in a local file on this machine. SQL text
-        can contain data values. Off by default; prunable and deletable.
+        Records SQL statements data-peek executes — editor, edits, DDL, scheduled, and agent (MCP)
+        — in a local file on this machine. Not recorded: the explain panel, schema reads, and
+        agent writes you reject. SQL text can contain data values. Off by default; prunable and
+        deletable.
       </p>
 
       <div className="flex items-center justify-between">
