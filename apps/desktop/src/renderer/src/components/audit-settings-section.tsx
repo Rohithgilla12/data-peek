@@ -31,6 +31,8 @@ export function AuditSettingsSection() {
   }, [])
 
   const applyResult = (response: IpcResponse<AuditStatus>) => {
+    setVerifyResult(null)
+    setExportResult(null)
     if (response.success && response.data) {
       setStatus(response.data)
       setRetentionDraft(String(response.data.retentionDays))
@@ -125,7 +127,9 @@ export function AuditSettingsSection() {
           variant="outline"
           size="sm"
           className="h-7 text-xs"
-          onClick={() =>
+          onClick={() => {
+            setExportResult(null)
+            setError(null)
             window.api.audit.verify().then((response) => {
               if (response.success && response.data) {
                 setVerifyResult(
@@ -137,7 +141,7 @@ export function AuditSettingsSection() {
                 setError(response.error ?? 'Unknown error')
               }
             })
-          }
+          }}
         >
           Verify integrity
         </Button>
@@ -155,7 +159,9 @@ export function AuditSettingsSection() {
             variant="outline"
             size="sm"
             className="h-7 text-xs"
-            onClick={() =>
+            onClick={() => {
+              setVerifyResult(null)
+              setError(null)
               window.api.audit.export('csv').then((response) => {
                 if (response.success) {
                   if (response.data) {
@@ -165,7 +171,7 @@ export function AuditSettingsSection() {
                   setError(response.error ?? 'Unknown error')
                 }
               })
-            }
+            }}
           >
             Export CSV
           </Button>
@@ -173,7 +179,9 @@ export function AuditSettingsSection() {
             variant="outline"
             size="sm"
             className="h-7 text-xs"
-            onClick={() =>
+            onClick={() => {
+              setVerifyResult(null)
+              setError(null)
               window.api.audit.export('json').then((response) => {
                 if (response.success) {
                   if (response.data) {
@@ -183,7 +191,7 @@ export function AuditSettingsSection() {
                   setError(response.error ?? 'Unknown error')
                 }
               })
-            }
+            }}
           >
             Export JSON
           </Button>
