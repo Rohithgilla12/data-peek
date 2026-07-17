@@ -300,6 +300,17 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 Pre-built binaries require a license for commercial use. See the license file for details on free vs. commercial use.
 
+## Project continuity
+
+data-peek is a single-maintainer project, and we treat that honestly rather
+than hiding it. Two commitments are written down in
+[SUSTAINABILITY.md](SUSTAINABILITY.md): a **kill-switch-free guarantee** (if
+the licence server ever disappears, your activated version keeps working
+forever, offline) and a **dormancy pledge** (12 months of maintainer
+inactivity waives the commercial-licence requirement for all released
+versions). Releases are built by CI, and the MIT source means you can always
+build from source.
+
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
