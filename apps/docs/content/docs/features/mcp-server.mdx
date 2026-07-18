@@ -19,7 +19,7 @@ Once connected, the agent has five tools. The four read tools run freely — ins
 | ------------------- | --------------- | --------------------------------------------------- |
 | `list_connections`  | read-only       | Lists your saved connections (no credentials)       |
 | `list_schemas`      | read-only       | Returns schemas, tables, and columns                |
-| `run_query`         | read-only       | Runs a single SELECT/EXPLAIN, capped at 500 rows    |
+| `run_query`         | read-only       | Runs a single read-only statement, capped at 500 rows |
 | `explain_query`     | read-only       | Returns the query plan (EXPLAIN, no ANALYZE)        |
 | `execute_statement` | needs approval  | Runs a write/DDL statement — only after you approve |
 
@@ -47,10 +47,10 @@ Paste the command into your terminal to register data-peek with Claude Code. Any
 
 ## Ask your agent
 
-Now just ask questions. The agent calls `list_connections`, then `run_query` — reads run in a read-only, rolled-back transaction. Credentials are never exposed:
+Now just ask questions. The agent calls `list_connections`, then `run_query` — reads run in a read-only, rolled-back transaction. Every tool returns JSON, which your client typically renders as a table. Credentials are never included:
 
-```json
-// list_connections
+```jsonc
+// list_connections — no passwords or connection secrets
 [
   {
     "id": "acme-demo",
@@ -63,13 +63,17 @@ Now just ask questions. The agent calls `list_connections`, then `run_query` —
 ]
 ```
 
-```text
-// run_query: SELECT plan, count(*) FROM organizations GROUP BY plan
- plan         orgs
- free         2
- enterprise   2
- starter      2
- pro          2
+```jsonc
+// run_query: SELECT plan, count(*) AS orgs FROM organizations GROUP BY plan
+{
+  "rows": [
+    { "plan": "free", "orgs": 2 },
+    { "plan": "enterprise", "orgs": 2 },
+    { "plan": "starter", "orgs": 2 },
+    { "plan": "pro", "orgs": 2 }
+  ],
+  "rowCount": 4
+}
 ```
 
 ## Writes wait for you
