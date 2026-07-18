@@ -3,15 +3,22 @@ name: Update Homebrew Cask
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to sync the cask to (e.g. v0.26.0)"
+        required: true
 
 jobs:
   update-cask:
     runs-on: ubuntu-latest
-    if: "!github.event.release.prerelease"
+    if: "github.event_name == 'workflow_dispatch' || !github.event.release.prerelease"
+    env:
+      RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
     steps:
       - name: Get release version
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        run: echo "version=${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
 
       - name: Download macOS DMG and compute SHA256
         id: sha
@@ -23,7 +30,7 @@ jobs:
           # mac builds are arm64-only (see apps/desktop/electron-builder.yml) — the
           # cask is Apple Silicon only, so there is no x64 DMG to fetch.
           echo "Downloading arm64 DMG..."
-          gh release download "$GITHUB_REF_NAME" \
+          gh release download "$RELEASE_TAG" \
             --repo Rohithgilla12/data-peek \
             --pattern "data-peek-${VERSION}-arm64.dmg" \
             --dir /tmp/release
