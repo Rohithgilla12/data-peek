@@ -42,6 +42,6 @@
     "export",
     "share-as-image",
     "keyboard-shortcuts",
-    "settings"
+    "[Settings](/docs/configuration/settings)"
   ]
 }
