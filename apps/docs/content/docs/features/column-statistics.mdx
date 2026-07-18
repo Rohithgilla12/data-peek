@@ -1,11 +1,13 @@
 ---
 title: Column Statistics
-description: View distribution and statistics for any result column
+description: Instant data profiling for any result column — nulls, distincts, distribution, and top values
 ---
 
 # Column Statistics
 
 Get instant statistical insights on any column in your query results without writing aggregate queries.
+
+It's the quickest way to *profile* data before you trust it: how many nulls are really in that column, how skewed the distribution is, whether a "unique" field actually is. Instead of writing four `COUNT(DISTINCT ...)` / `MIN` / `MAX` queries by hand, you click a column and read it off.
 
 ## Opening the Stats Panel
 
@@ -15,10 +17,10 @@ Click on any column header in the results table and select **Column Statistics**
 
 ### General
 
-- **Row count** - Total rows in the result
-- **Distinct count** - Number of unique values
-- **Null count** - Number of NULL values
-- **Null percentage** - Proportion of NULLs
+- **Row count** — total rows in the result
+- **Distinct count** — number of unique values
+- **Null count** — number of NULL values
+- **Null percentage** — proportion of NULLs
 
 ### Numeric Columns
 
@@ -37,7 +39,18 @@ A histogram shows the distribution of values across the column, giving you a vis
 
 A frequency chart displays the most common values with relative proportion bars, helping you spot dominant patterns at a glance.
 
+## Example: profiling a column before a migration
+
+About to add `NOT NULL` to `users.phone`? Run `SELECT phone FROM users`, open Column Statistics on the column, and read the **Null percentage**. If it's above 0%, the constraint will fail — now you know to backfill first. The **Most Common Values** chart also exposes junk defaults (a suspicious spike of `''` or `'N/A'`) that a plain null check would miss.
+
 <Callout type="info">
-  Statistics are computed client-side on the fetched result set. For full-table
-  statistics, ensure your query fetches all rows.
+  Statistics are computed client-side on the fetched result set, so they reflect
+  the rows you pulled — a query with a `LIMIT` profiles only those rows. For
+  full-table statistics, make sure your query fetches every row.
 </Callout>
+
+## Related
+
+- [Results Viewer](/docs/features/results-viewer) — the grid these stats are computed from
+- [Smart Filters](/docs/features/smart-filters) — filter to the rows a stat surfaced
+- [Data Masking](/docs/features/data-masking) — hide sensitive column values for demos and screenshots
