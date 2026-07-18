@@ -1,21 +1,23 @@
 ---
 title: Scheduled Queries
-description: Run SQL queries automatically on a cron schedule
+description: Run SQL queries automatically on a cron schedule, with run history and desktop notifications
 ---
 
 # Scheduled Queries
 
 Schedule queries to run automatically at recurring intervals. Useful for monitoring, periodic data checks, or generating recurring reports.
 
+Where [Watch Mode](/docs/features/watch-mode) re-runs a query while you're looking at it, Scheduled Queries keep running on their own cadence in the background — so you can leave a "how many signups today?" or "any rows stuck in `pending`?" check ticking over and get a desktop ping when it completes, without babysitting a tab.
+
 ## Creating a Schedule
 
 1. Open the **Scheduled Queries** dialog from the sidebar
 2. Click **New Schedule**
 3. Configure the schedule:
-   - **Name** - A descriptive label
-   - **Connection** - Which database to run against
-   - **SQL** - The query to execute
-   - **Schedule** - Choose a preset or enter a custom cron expression
+   - **Name** — a descriptive label
+   - **Connection** — which database to run against
+   - **SQL** — the query to execute
+   - **Schedule** — choose a preset or enter a custom cron expression
 
 ### Schedule Presets
 
@@ -50,7 +52,24 @@ Click a schedule to see all past runs with:
 
 When a scheduled query completes, data-peek sends a desktop notification with the result summary.
 
+## Example: an hourly backlog check
+
+Create a schedule named **Pending invoices**, pick your connection, set the cron to `0 * * * *` (every hour), and use:
+
+```sql
+SELECT count(*) AS pending FROM invoices WHERE status = 'pending';
+```
+
+Each hour you get a notification with the count, and the run history keeps a timestamped record you can scan for the moment the number started climbing. Need a custom cadence like every 15 minutes? Use `*/15 * * * *`.
+
 <Callout type="warning">
   Scheduled queries only run while data-peek is open. They do not run in the
-  background after quitting the app.
+  background after quitting the app — for always-on jobs use a server-side
+  scheduler (cron, pg_cron, etc.).
 </Callout>
+
+## Related
+
+- [Watch Mode](/docs/features/watch-mode) — live-refresh a query while you watch it
+- [Query Telemetry](/docs/features/query-telemetry) — see where a slow scheduled query spends its time
+- [Health Monitor](/docs/features/health-monitor) — live view of active queries, locks, and table sizes

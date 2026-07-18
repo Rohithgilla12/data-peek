@@ -1,26 +1,28 @@
 ---
 title: CSV Import
-description: Import CSV files into database tables
+description: Import CSV files into database tables with column mapping, type inference, and conflict handling
 ---
 
 # CSV Import
 
-Import data from CSV files directly into your database tables.
+Import data from CSV files directly into your database tables — no `COPY` command, no scripting, no leaving the app.
+
+CSV import is the fastest way to get a spreadsheet, an export from another tool, or a colleague's data dump into a real table you can query. It's handy for seeding a dev database, loading a lookup table, or reconciling an external file against data you already have.
 
 ## Starting an Import
 
-1. Open the CSV Import dialog from the sidebar or command palette
+1. Open the CSV Import dialog from the sidebar or [command palette](/docs/features/command-palette)
 2. Drag and drop a `.csv` file, or click to browse
 
 ## Configuration
 
 ### Column Mapping
 
-data-peek auto-detects CSV headers and attempts to match them to existing table columns. You can:
+data-peek reads the CSV header row, infers a type for each column, and attempts to match each one to a column in your target table. From there you can:
 
-- Map CSV columns to different table columns
+- Map CSV columns to differently-named table columns
 - Skip columns you don't want to import
-- Create a new table from the CSV structure
+- Create a brand-new table from the CSV structure (types are inferred from the data)
 
 ### Import Options
 
@@ -33,8 +35,39 @@ data-peek auto-detects CSV headers and attempts to match them to existing table 
 
 ## Import Progress
 
-A progress bar shows the import status. Large files are imported in batches to avoid timeouts.
+A progress bar shows the import status. Large files are streamed and inserted in batches, so a single huge transaction never blocks the connection or times out.
+
+## Example: loading a users file into a new table
+
+Say you have `users.csv`:
+
+```csv
+email,full_name,plan
+ada@acme.test,Ada Lovelace,pro
+grace@acme.test,Grace Hopper,free
+```
+
+Drop it in, choose **Create new table** named `users_import`, keep the inferred types, and import. You now have a queryable table:
+
+```sql
+SELECT plan, count(*) FROM users_import GROUP BY plan;
+```
+
+Re-running the same file with **Conflict handling → Update on primary key** lets you use the CSV as a repeatable upsert source instead of creating duplicates.
 
 ## Supported Databases
 
 CSV import works with PostgreSQL and MySQL connections.
+
+<Callout type="tip">
+  Type inference is a best guess from the sampled rows — a column of `007` or
+  leading-zero IDs may come in as an integer. If exact types matter, create the
+  table first in the [Table Designer](/docs/features/table-designer), then import
+  into it.
+</Callout>
+
+## Related
+
+- [SQL Dump Import](/docs/features/pg-import) — for `.sql` dump files rather than CSV
+- [Data Generator](/docs/features/data-generator) — synthesize test data instead of importing it
+- [Inline Editing](/docs/features/inline-editing) — fix up individual rows after an import

@@ -1,15 +1,17 @@
 ---
 title: Data Generator
-description: Generate realistic test data for any table
+description: Generate realistic, FK-aware test data for any table — for development, testing, and demos
 ---
 
 # Data Generator
 
-Generate realistic test data for your tables without leaving data-peek. Useful for development, testing, and demos.
+Generate realistic test data for your tables without leaving data-peek — no seed scripts, no Faker boilerplate, no hand-writing a thousand `INSERT`s.
+
+It's the fastest way to fill an empty dev database, stress-test a query against realistic volume, or build a believable demo dataset. Because it's **foreign-key aware**, you can populate a whole related schema (organizations → users → invoices) and the rows actually join up.
 
 ## Opening the Generator
 
-Right-click a table in the sidebar and select **Generate Data**, or open it from the command palette. It opens as a dedicated tab.
+Right-click a table in the sidebar and select **Generate Data**, or open it from the [command palette](/docs/features/command-palette). It opens as a dedicated tab.
 
 ## Configuring Columns
 
@@ -34,8 +36,8 @@ For each column, choose a generator:
 
 ## Generation Options
 
-- **Row count** - Generate 1 to 10,000 rows
-- **Seed** - Set a seed for reproducible output
+- **Row count** — generate 1 to 10,000 rows
+- **Seed** — set a seed for reproducible output
 
 ## Preview Mode
 
@@ -45,7 +47,30 @@ Click **Preview** to generate sample rows without inserting them. Review the dat
 
 A progress indicator shows generation status. You can cancel at any time.
 
+## Example: seeding a related schema
+
+To fill `organizations` then `users` so every user belongs to a real org:
+
+1. On `organizations`, set `name` → **Faker: name**, `plan` → **Random enum** (`free`, `pro`, `enterprise`), generate 20 rows.
+2. On `users`, set `email` → **Faker: email**, `organization_id` → **FK reference** (`organizations.id`), generate 500 rows.
+
+Now the join works out of the box:
+
+```sql
+SELECT o.plan, count(u.id) AS users
+FROM organizations o JOIN users u ON u.organization_id = o.id
+GROUP BY o.plan;
+```
+
 <Callout type="tip">
-  Use the FK reference generator to maintain referential integrity. It pulls
-  real foreign key values from the parent table.
+  Use the FK reference generator to maintain referential integrity — it pulls
+  real values from the parent table, so **generate parents before children**.
+  Set a **seed** when you need the same dataset every run (handy for
+  reproducible tests or screenshots).
 </Callout>
+
+## Related
+
+- [CSV Import](/docs/features/csv-import) — load real data from a file instead of generating it
+- [Inline Editing](/docs/features/inline-editing) — tweak individual generated rows
+- [Table Designer](/docs/features/table-designer) — create the table first, then fill it

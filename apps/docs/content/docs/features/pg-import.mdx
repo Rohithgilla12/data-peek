@@ -1,30 +1,54 @@
 ---
 title: SQL Dump Import
-description: Import PostgreSQL SQL dump files
+description: Import PostgreSQL .sql dump files statement-by-statement, with progress and error handling
 ---
 
 # SQL Dump Import
 
 Import `.sql` dump files into your PostgreSQL database directly from data-peek.
 
+Reach for this when you have a `pg_dump` plain-text export, a schema file from a repo, or a seed script you want to load into a connection — and you'd rather watch it run with a progress bar and an error report than paste it into a terminal and hope. It's the companion to [CSV Import](/docs/features/csv-import): CSV for tabular data, SQL dump for full schema + data + statements.
+
 ## Starting an Import
 
-1. Open the import dialog from the sidebar or command palette
+1. Open the import dialog from the sidebar or [command palette](/docs/features/command-palette)
 2. Select a `.sql` dump file
 
 ## Import Process
 
 data-peek streams the dump file and executes SQL statements one at a time:
 
-- **Progress** - Shows statements executed vs. total
-- **Error handling** - Choose between stopping on first error or continuing past failures
-- **Report** - After completion, see a summary of successful, skipped, and failed statements
+- **Progress** — shows statements executed vs. total
+- **Error handling** — choose between stopping on the first error or continuing past failures
+- **Report** — after completion, see a summary of successful, skipped, and failed statements
+
+Because statements run individually rather than as one giant transaction, a large dump won't hold a single lock for the whole run, and the report tells you exactly which statement failed if one does.
+
+## Example: loading a schema + seed file
+
+Point it at a plain-text dump like:
+
+```sql
+CREATE TABLE organizations (id serial PRIMARY KEY, name text, plan text);
+INSERT INTO organizations (name, plan) VALUES ('Acme', 'pro'), ('Globex', 'free');
+```
+
+Run it with **continue past failures** on, and if (say) the `CREATE TABLE` fails because the table already exists, the `INSERT` statements still run and the report flags the one skipped statement — no need to hand-edit the file first.
 
 <Callout type="warning">
   Large dump files may take time to import. The progress indicator helps you
-  track the process.
+  track the process. For dumps that are pure tabular data, [CSV Import](/docs/features/csv-import)
+  is usually faster.
 </Callout>
 
 <Callout type="info">
-  SQL dump import is currently available for PostgreSQL connections only.
+  SQL dump import is currently available for PostgreSQL connections only. It
+  expects plain-text (`--format=plain`) dumps, not custom/compressed archive
+  formats.
 </Callout>
+
+## Related
+
+- [CSV Import](/docs/features/csv-import) — import tabular data from a `.csv` file
+- [Connection Management](/docs/features/connection-management) — pick which database the dump loads into
+- [Export](/docs/features/export) — export results back out to CSV, JSON, or Excel

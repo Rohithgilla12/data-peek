@@ -1,11 +1,13 @@
 ---
 title: Health Monitor
-description: Monitor database health with active queries, table sizes, cache ratios, and locks
+description: Live view of database health — active queries, table sizes, cache hit ratios, and blocking locks
 ---
 
 # Health Monitor
 
 The Health Monitor gives you a live view of your database's operational health without leaving data-peek.
+
+It's the panel you open when something feels off: a query that won't return, a dashboard that's suddenly slow, or a table that's ballooning on disk. Instead of remembering the `pg_stat_activity` and `pg_locks` incantations, you get the four things you actually reach for during an incident — what's running, what's blocking, what's cached, and what's big — in one auto-refreshing tab.
 
 ## Opening the Monitor
 
@@ -36,7 +38,7 @@ Sort by any column to find your largest tables or most indexed tables.
 
 ### Cache Hit Ratios
 
-Displays the cache hit ratio for your database, indicating how effectively PostgreSQL is using shared buffers.
+Displays the cache hit ratio for your database, indicating how effectively PostgreSQL is using shared buffers. A healthy OLTP database usually sits well above 99% — a sustained dip often means a working set that no longer fits in memory.
 
 ### Locks
 
@@ -54,11 +56,21 @@ Configure automatic polling:
 | 30s      | Low-frequency checks  |
 | Off      | Manual refresh only   |
 
+## Example: finding and clearing a blocker
+
+A write is hanging. Open the Health Monitor, drop the refresh to **2s**, and check the **Locks** panel — it surfaces the blocking query and what it's holding. Cross-reference it in **Active Queries** (sort by duration to find the long-running culprit), confirm it's safe to stop, and hit **Terminate** (graceful) or **Kill** (force). The blocked write clears immediately.
+
 ## Share as Image
 
-Each panel has a **Share** button that exports the data as a styled PNG image with your choice of background theme, perfect for sharing in Slack or documentation.
+Each panel has a **Share** button that exports the data as a styled PNG image with your choice of background theme, perfect for sharing in Slack or documentation. See [Share as Image](/docs/features/share-as-image).
 
 <Callout type="info">
   The Health Monitor currently supports PostgreSQL. MySQL and MSSQL support is
   planned.
 </Callout>
+
+## Related
+
+- [Query Plans](/docs/features/query-plans) — `EXPLAIN` the slow query you just found
+- [Query Telemetry](/docs/features/query-telemetry) — timing breakdown for a single execution
+- [Transactions](/docs/features/transactions) — manage the open transactions that cause locks
