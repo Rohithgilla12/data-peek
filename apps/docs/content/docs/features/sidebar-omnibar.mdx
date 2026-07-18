@@ -7,6 +7,8 @@ description: Search across tables, columns, functions, saved queries, and histor
 
 The omnibar is a universal search bar at the top of the sidebar that searches across everything in your workspace.
 
+On a database with hundreds of tables and columns, scrolling the schema tree is slow. The omnibar is the "just type what you're looking for" answer — one input that spans your schema, your saved work, and your history, so getting to a table, a column, or that query you ran yesterday is a few keystrokes instead of a hunt. Think of it as find-as-you-type for the whole workspace, not just the tree.
+
 ## What It Searches
 
 | Source                   | Example                      |
@@ -24,6 +26,20 @@ The omnibar is a universal search bar at the top of the sidebar that searches ac
 2. Type your search term
 3. Results are grouped by type
 4. Click a result to take action:
-   - **Table/view** - Opens a preview tab
-   - **Saved query/snippet** - Inserts into the active editor
-   - **History item** - Opens in a new tab
+   - **Table/view** — opens a preview tab
+   - **Saved query/snippet** — inserts into the active editor
+   - **History item** — opens in a new tab
+
+## Example: jumping to a column you half-remember
+
+You know there's an `email` column somewhere but not which table. Type `email` in the omnibar and it lists every table that has one, grouped under Columns — click through to the right table's preview without expanding a single tree node. The same search surfaces the `calculate_total()` function and last week's query touching email, so one term covers "where is it" and "what did I run against it."
+
+## Omnibar vs Command Palette
+
+The omnibar searches your **data and workspace** (tables, columns, functions, saved queries, history). The [Command Palette](/docs/features/command-palette) (`Cmd+K`) runs **actions** (new tab, format SQL, toggle settings). Reach for the omnibar to *find something*, the palette to *do something*.
+
+## Related
+
+- [Command Palette](/docs/features/command-palette) — run actions with `Cmd+K`
+- [Schema Explorer](/docs/features/schema-explorer) — browse the full schema tree
+- [Saved Queries](/docs/features/saved-queries) and [Snippets](/docs/features/snippets) — both searchable here

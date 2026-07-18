@@ -7,6 +7,8 @@ description: Export queries and data as styled PNG images
 
 Export your queries or data as beautiful, styled PNG images for sharing in Slack, documentation, or presentations.
 
+Pasting raw SQL or a wall of query output into Slack looks rough and loses its formatting. Share as Image renders it as a clean, syntax-highlighted card — the same idea as the popular "screenshot your code" tools, but built in and pointed at your queries and results, so a teammate instantly gets readable context instead of a mangled monospace blob.
+
 ## Sharing a Query
 
 1. Right-click in the query editor or use the command palette
@@ -43,10 +45,21 @@ Optionally include or hide the data-peek watermark.
 
 ## Export Options
 
-- **Copy to clipboard** - Paste directly into Slack, Notion, or any app
-- **Download as PNG** - Save to disk
+- **Copy to clipboard** — paste directly into Slack, Notion, or any app
+- **Download as PNG** — save to disk
+
+## Example: dropping a query into Slack
+
+You want to ask a teammate about a query. Right-click it → **Share as Image**, pick the **Brand Blue** background and a **dark** code theme, hide the watermark for an internal share, and hit **Copy to clipboard**. Paste straight into the Slack thread — they see clean, highlighted SQL with zero formatting loss, and you never left the app.
 
 <Callout type="tip">
-  Health Monitor panels also support Share as Image via the share button on each
-  card.
+  [Health Monitor](/docs/features/health-monitor) panels also support Share as
+  Image via the share button on each card — handy for pasting a locks or
+  table-sizes snapshot into an incident channel.
 </Callout>
+
+## Related
+
+- [Health Monitor](/docs/features/health-monitor) — share live health panels as images
+- [Results Viewer](/docs/features/results-viewer) — the grid you export from
+- [Export](/docs/features/export) — export the underlying data as CSV/JSON/Excel instead of an image

@@ -7,6 +7,8 @@ description: Subscribe to PostgreSQL notification channels in real time
 
 Monitor PostgreSQL pub/sub channels directly in data-peek with a live event stream.
 
+`LISTEN`/`NOTIFY` is PostgreSQL's built-in pub/sub: a trigger or an app fires `NOTIFY channel, 'payload'`, and anyone listening gets it instantly. It's great for cache invalidation, real-time UI updates, and job queues — but debugging it usually means writing a throwaway listener script. This panel is that listener, built in: subscribe to a channel and watch events stream in live, or fire test notifications to check your consumers react.
+
 ## Opening the Panel
 
 Open the **Notifications** panel from the sidebar. It opens as a dedicated tab.
@@ -38,10 +40,27 @@ This is useful for testing notification consumers.
 
 ## Actions
 
-- **Copy** - Copy a notification payload to clipboard
-- **Clear All** - Remove all received events from the display
+- **Copy** — copy a notification payload to clipboard
+- **Clear All** — remove all received events from the display
+
+## Example: watching a trigger fire
+
+Subscribe to a channel — say `orders_changed` — then, from a [Query Editor](/docs/features/query-editor) tab (or the panel's **Send**), fire:
+
+```sql
+NOTIFY orders_changed, '{"id": 4821, "status": "paid"}';
+```
+
+The event shows up in the stream instantly, timestamped, with the JSON payload pretty-printed. Wire the same `NOTIFY` into an `AFTER INSERT` [trigger](/docs/features/triggers) and you can watch your database emit events in real time as data changes — the fastest way to confirm a trigger actually fires and carries the payload you expect.
 
 <Callout type="info">
-  This feature is PostgreSQL-only, as LISTEN/NOTIFY is a PostgreSQL-specific
-  feature.
+  This feature is PostgreSQL-only, as `LISTEN`/`NOTIFY` is a PostgreSQL-specific
+  feature. Payloads are capped at 8000 bytes by Postgres itself — send an id and
+  look the row up, rather than stuffing the whole record into the payload.
 </Callout>
+
+## Related
+
+- [Triggers](/docs/features/triggers) — fire `NOTIFY` automatically on data changes
+- [Query Editor](/docs/features/query-editor) — run `NOTIFY` / set up `LISTEN` manually
+- [Watch Mode](/docs/features/watch-mode) — poll a query on a cadence when pub/sub isn't a fit
