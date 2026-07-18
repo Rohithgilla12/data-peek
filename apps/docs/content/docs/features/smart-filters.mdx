@@ -1,11 +1,13 @@
 ---
 title: Smart Filters
-description: Filter query results client-side with a visual filter builder
+description: Filter query results client-side with a visual filter builder — no re-running SQL
 ---
 
 # Smart Filters
 
 Smart Filters let you narrow down query results without rewriting SQL. Filters run client-side on already-fetched data.
+
+That's the whole point: once you've pulled a result set, you can slice it a dozen different ways instantly — no round trip to the database, no editing your `WHERE` clause, no losing your place. It turns a static grid into something you can interrogate the way you'd filter a spreadsheet, which is perfect for exploring unfamiliar data or hunting down the handful of rows that look wrong.
 
 ## Adding a Filter
 
@@ -67,7 +69,19 @@ Add multiple filter chips to narrow results further. All filters are combined wi
 
 Click the **X** on any filter chip to remove it, or click **Clear All** to remove all filters.
 
+## Example: isolating a suspicious subset
+
+You ran `SELECT * FROM users` and something's off with free-plan signups. Instead of editing the query, add two chips: `plan` **equals** `free`, then `email` **contains** `test`. The grid narrows immediately to the rows that match both (filters stack with AND), and [Column Statistics](/docs/features/column-statistics) on the filtered view tells you how many you're dealing with. Clear the chips and the full result is back — the underlying query never re-ran.
+
 <Callout type="tip">
-  Smart Filters are great for exploring a large result set without re-running
-  queries. For server-side filtering, add a WHERE clause to your SQL instead.
+  Smart Filters work on the rows already fetched, so they're instant but bounded
+  by your result set — if a query has a `LIMIT`, you're filtering only those
+  rows. When you need to filter the whole table, add a `WHERE` clause in the
+  [Query Editor](/docs/features/query-editor) instead.
 </Callout>
+
+## Related
+
+- [Results Viewer](/docs/features/results-viewer) — the grid these filters run on
+- [Column Statistics](/docs/features/column-statistics) — profile the rows a filter surfaced
+- [Query Editor](/docs/features/query-editor) — push a filter server-side with `WHERE`

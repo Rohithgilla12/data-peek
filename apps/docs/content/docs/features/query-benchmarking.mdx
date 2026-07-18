@@ -7,6 +7,8 @@ description: Benchmark queries by running them multiple times and collecting tim
 
 Run a query multiple times to collect accurate performance statistics, eliminating variance from single-run measurements.
 
+A single run tells you almost nothing: a cold cache, a background checkpoint, or a noisy neighbor can make the same query look 10× slower than it really is. Benchmarking runs it many times and reports the distribution, so "is this actually faster?" gets a trustworthy answer instead of a coin flip. It's the tool you reach for when deciding whether an index or a rewrite really helped — not just whether it happened to be quick once.
+
 ## Running a Benchmark
 
 1. Write your query in the editor
@@ -26,13 +28,24 @@ Run a query multiple times to collect accurate performance statistics, eliminati
 
 After completion, you see:
 
-- **Average** - Mean execution time
-- **P90** - 90th percentile (90% of runs were faster than this)
-- **P95** - 95th percentile
-- **P99** - 99th percentile
+- **Average** — mean execution time
+- **P90** — 90th percentile (90% of runs were faster than this)
+- **P95** — 95th percentile
+- **P99** — 99th percentile
+
+## Example: proving an index helped
+
+You suspect a filter on `organizations.plan` needs an index. Benchmark the query at **100 iterations** and note the numbers (say avg 42 ms, P99 110 ms). Add the index in the [Table Designer](/docs/features/table-designer), benchmark again, and compare — if the average drops to 3 ms and P99 to 6 ms, the win is real and consistent, not a fluke of one lucky run. Watch the **P99** especially: an index that fixes the average but leaves a fat tail is often a caching artifact, not a genuine improvement.
 
 <Callout type="tip">
-  Use benchmarking to compare query performance before and after adding an index
-  or rewriting a query. The percentile values help you understand worst-case
-  behavior, not just average.
+  Percentiles describe worst-case behavior, not just the average — a query with
+  a great average but a bad P99 will still feel janky under load. Pair this with
+  [Query Plans](/docs/features/query-plans) to see *why* a query is slow before
+  you benchmark the fix.
 </Callout>
+
+## Related
+
+- [Query Plans](/docs/features/query-plans) — `EXPLAIN` the query to find the bottleneck
+- [Query Telemetry](/docs/features/query-telemetry) — timing breakdown of a single execution
+- [Performance Analysis](/docs/features/performance-analysis) — detect missing indexes and slow patterns

@@ -1,11 +1,13 @@
 ---
 title: Quick Query
-description: Run ad-hoc queries from the sidebar without opening a tab
+description: Run ad-hoc SQL from the sidebar without opening a full editor tab
 ---
 
 # Quick Query
 
 A mini SQL editor embedded in the sidebar for running quick, one-off queries without opening a full tab.
+
+It exists for the queries you don't want to think about: a `COUNT(*)` to sanity-check a table, a fast lookup of one row, a `SHOW` to confirm a setting. Opening a full [editor tab](/docs/features/query-editor) for those is overkill and clutters your workspace — Quick Query keeps them out of the way while you're really working on something else in the main tabs.
 
 ## Using Quick Query
 
@@ -16,13 +18,31 @@ A mini SQL editor embedded in the sidebar for running quick, one-off queries wit
 
 ## Recent Queries
 
-The panel shows your 3 most recent successful queries as clickable chips. Tap one to re-run it instantly.
+The panel shows your 3 most recent successful queries as clickable chips. Tap one to re-run it instantly — handy when you're repeatedly checking the same count as you work.
 
 ## Hiding Quick Query
 
-If you prefer a cleaner sidebar, go to **Settings** and enable **Hide quick query panel**.
+If you prefer a cleaner sidebar, go to [Settings](/docs/configuration/settings) and enable **Hide quick query panel**.
+
+## Example: a throwaway sanity check
+
+Mid-way through building a bigger query in a main tab, you want to confirm a table isn't empty. Instead of switching tabs, drop into the sidebar panel:
+
+```sql
+SELECT count(*) FROM organizations;
+```
+
+`Cmd+Enter`, read the number inline, and carry on — your real editor tab is untouched, and the query lands in the recent-chips list if you need it again.
 
 <Callout type="tip">
   Quick Query is perfect for `SELECT COUNT(*)`, checking a value, or running a
-  quick `SHOW` command without cluttering your tab bar.
+  quick `SHOW` command. For anything you'll iterate on — multi-statement scripts,
+  saved work, results you want to chart — use a full [Query Editor](/docs/features/query-editor)
+  tab instead.
 </Callout>
+
+## Related
+
+- [Query Editor](/docs/features/query-editor) — the full multi-tab SQL editor
+- [Command Palette](/docs/features/command-palette) — jump to any action with `Cmd+K`
+- [Saved Queries](/docs/features/saved-queries) — bookmark a query you keep re-running
