@@ -144,4 +144,13 @@ describe('closeAllPgPools', () => {
     await expect(withPgClient(makeConfig(), async () => 'ok')).resolves.toBe('ok')
     expect(PoolCtor.mock.calls.length).toBe(beforeClose + 1)
   })
+
+  it('coalesces concurrent teardown calls without wedging the guard', async () => {
+    await withPgClient(makeConfig(), async () => {})
+
+    // Two overlapping teardowns must not leave shuttingDown latched.
+    await Promise.all([closeAllPgPools(), closeAllPgPools()])
+
+    await expect(withPgClient(makeConfig(), async () => 'ok')).resolves.toBe('ok')
+  })
 })

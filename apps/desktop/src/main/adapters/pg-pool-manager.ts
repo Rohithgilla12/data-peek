@@ -29,6 +29,7 @@ const pools = new Map<string, PoolEntry>()
 const pendingPools = new Map<string, Promise<PoolEntry>>()
 
 let shuttingDown = false
+let teardownInFlight: Promise<void> | null = null
 
 function getPoolKey(config: ConnectionConfig): string {
   if (config.id) return `pg:${config.id}`
@@ -233,21 +234,34 @@ export async function closePgPool(config: ConnectionConfig): Promise<void> {
  * fail with "Pool manager is shutting down" until relaunch.
  */
 export async function closeAllPgPools(): Promise<void> {
+  // Coalesce concurrent calls onto one teardown, so a second call's `finally`
+  // can't flip `shuttingDown` back to false while the first is still tearing down.
+  if (teardownInFlight) return teardownInFlight
   shuttingDown = true
-  try {
-    const entries = Array.from(pools.values())
-    pools.clear()
-    await Promise.all(
-      entries.map(async (entry) => {
-        try {
-          await entry.pool.end()
-        } catch (err) {
-          log.warn('error ending pool:', (err as Error).message)
-        }
-        closeTunnel(entry.tunnel)
-      })
-    )
-  } finally {
-    shuttingDown = false
-  }
+  teardownInFlight = (async () => {
+    try {
+      // Let in-flight pool creations settle first. Each resolves through
+      // getOrCreatePool's post-create check, which ends the pool and closes its
+      // tunnel while `shuttingDown` is true — so awaiting them here tears them
+      // down too instead of leaking a half-created pool + tunnel. New creations
+      // can't start during teardown (the guard above rejects them).
+      await Promise.allSettled(Array.from(pendingPools.values()))
+      const entries = Array.from(pools.values())
+      pools.clear()
+      await Promise.all(
+        entries.map(async (entry) => {
+          try {
+            await entry.pool.end()
+          } catch (err) {
+            log.warn('error ending pool:', (err as Error).message)
+          }
+          closeTunnel(entry.tunnel)
+        })
+      )
+    } finally {
+      shuttingDown = false
+      teardownInFlight = null
+    }
+  })()
+  return teardownInFlight
 }
