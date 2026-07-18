@@ -222,19 +222,32 @@ export async function closePgPool(config: ConnectionConfig): Promise<void> {
 
 /**
  * Close every pool. Call on app shutdown.
+ *
+ * `shuttingDown` is a *transient* guard, not a permanent latch: it blocks new
+ * pool creation only while teardown is in flight (so a pool created mid-teardown
+ * can't be orphaned by the snapshot below), then clears. This matters on macOS,
+ * where the process routinely outlives a cleanup pass — the last window hides
+ * instead of quitting, and a raced/aborted quit (e.g. an auto-update
+ * `quitAndInstall` whose quit is preventDefault-ed) can run this without the
+ * process dying. If the flag stayed latched, every later pool acquisition would
+ * fail with "Pool manager is shutting down" until relaunch.
  */
 export async function closeAllPgPools(): Promise<void> {
   shuttingDown = true
-  const entries = Array.from(pools.values())
-  pools.clear()
-  await Promise.all(
-    entries.map(async (entry) => {
-      try {
-        await entry.pool.end()
-      } catch (err) {
-        log.warn('error ending pool:', (err as Error).message)
-      }
-      closeTunnel(entry.tunnel)
-    })
-  )
+  try {
+    const entries = Array.from(pools.values())
+    pools.clear()
+    await Promise.all(
+      entries.map(async (entry) => {
+        try {
+          await entry.pool.end()
+        } catch (err) {
+          log.warn('error ending pool:', (err as Error).message)
+        }
+        closeTunnel(entry.tunnel)
+      })
+    )
+  } finally {
+    shuttingDown = false
+  }
 }

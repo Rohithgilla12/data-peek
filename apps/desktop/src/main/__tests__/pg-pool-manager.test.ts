@@ -21,7 +21,7 @@ vi.mock('../lib/logger', () => ({
   createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }))
 
-import { withPgClient, withPgTransaction } from '../adapters/pg-pool-manager'
+import { withPgClient, withPgTransaction, closeAllPgPools } from '../adapters/pg-pool-manager'
 
 let counter = 0
 function makeConfig(overrides: Partial<ConnectionConfig> = {}): ConnectionConfig {
@@ -127,5 +127,21 @@ describe('withPgTransaction', () => {
     ).rejects.toBe(original)
 
     expect(mockClient.release).toHaveBeenCalledWith(true)
+  })
+})
+
+describe('closeAllPgPools', () => {
+  it('leaves the manager reusable after teardown (does not permanently poison it)', async () => {
+    // A pool is created and in use.
+    await withPgClient(makeConfig(), async () => {})
+    const beforeClose = PoolCtor.mock.calls.length
+
+    // The app runs shutdown cleanup — but on macOS the process can outlive it
+    // (windows hide instead of quitting; an aborted/raced quit can leave it alive).
+    await closeAllPgPools()
+
+    // Subsequent work must still succeed — not throw "Pool manager is shutting down".
+    await expect(withPgClient(makeConfig(), async () => 'ok')).resolves.toBe('ok')
+    expect(PoolCtor.mock.calls.length).toBe(beforeClose + 1)
   })
 })
