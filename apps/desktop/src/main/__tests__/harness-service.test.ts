@@ -17,8 +17,10 @@ import {
   buildAgenticHarnessArgs,
   mcpAllowedTools,
   buildAgenticInstruction,
-  MCP_READ_TOOLS
+  MCP_READ_TOOLS,
+  generateChatResponseViaHarness
 } from '../harness-service'
+import type { AIConfig, AIMessage } from '@shared/index'
 
 // A fake child process whose stdout/stderr/exit we drive from the test.
 function fakeChild() {
@@ -142,6 +144,45 @@ describe('agentic (MCP) wiring', () => {
     const instr = buildAgenticInstruction('conn-42')
     expect(instr).toContain('conn-42')
     expect(instr).toMatch(/do not call list_connections/i)
+  })
+})
+
+describe('generateChatResponseViaHarness (spawn-mocked)', () => {
+  beforeEach(() => spawnMock.mockReset())
+  const cfg = { provider: 'claude-cli', model: 'sonnet' } as unknown as AIConfig
+  const msgs: AIMessage[] = [{ role: 'user', content: 'how many users?' }]
+
+  // Regression for the real credit-balance case: claude exits 1 but the useful
+  // message is in stdout's envelope, not stderr. We must surface it.
+  it('surfaces the structured stdout error even when the CLI exits non-zero', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(cfg, msgs, [], 'postgresql')
+    child.stderr.emit('data', Buffer.from('⚠ some warning about connectors\n'))
+    child.stdout.emit(
+      'data',
+      Buffer.from(JSON.stringify({ is_error: true, result: 'Credit balance is too low' }))
+    )
+    child.emit('close', 1)
+    const res = await p
+    expect(res.success).toBe(false)
+    expect(res.error).toMatch(/credit balance/i)
+  })
+
+  it('returns parsed structured data on a successful run', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(cfg, msgs, [], 'postgresql')
+    child.stdout.emit(
+      'data',
+      Buffer.from(
+        JSON.stringify({ result: JSON.stringify({ type: 'message', message: 'hi there' }) })
+      )
+    )
+    child.emit('close', 0)
+    const res = await p
+    expect(res.success).toBe(true)
+    expect(res.data?.message).toBe('hi there')
   })
 })
 

@@ -321,11 +321,15 @@ export async function generateChatResponseViaHarness(
 
     log.debug('Running claude CLI', { bin, model, agentic })
     const { stdout, stderr, code } = await runProcess(bin, args, timeoutMs)
-    if (code !== 0) {
-      const detail = stderr.trim() || `exited with code ${code}`
-      throw new Error(`Claude CLI failed: ${detail}`)
+    // The CLI puts its real error in the stdout JSON envelope (e.g. is_error +
+    // "Credit balance is too low") even when it exits non-zero — stderr usually
+    // only carries warnings. Parse stdout first so the user sees the actual
+    // reason; fall back to stderr/exit code only when there's no output.
+    if (stdout.trim()) {
+      return { success: true, data: parseHarnessResult(stdout) }
     }
-    return { success: true, data: parseHarnessResult(stdout) }
+    const detail = stderr.trim() || `exited with code ${code}`
+    throw new Error(`Claude CLI failed: ${detail}`)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     log.error('generateChatResponseViaHarness error:', message)
