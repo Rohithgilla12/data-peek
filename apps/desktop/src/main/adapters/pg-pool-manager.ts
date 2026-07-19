@@ -23,6 +23,11 @@ interface PoolEntry {
 const POOL_MAX = 5
 const IDLE_TIMEOUT_MS = 30_000
 const CONNECT_TIMEOUT_MS = 15_000
+// pool.end() blocks until every checked-out client is released, so an ad-hoc query
+// stuck on a server-side lock (or a dead socket) would otherwise hang teardown
+// indefinitely — leaving `shuttingDown` latched and every later acquisition failing
+// with "Pool manager is shutting down". Bound each end() so teardown always completes.
+const POOL_END_TIMEOUT_MS = 2_500
 
 const pools = new Map<string, PoolEntry>()
 // Tracks in-flight pool creation so concurrent first-use callers share one tunnel/pool.
@@ -233,6 +238,24 @@ export async function closePgPool(config: ConnectionConfig): Promise<void> {
  * process dying. If the flag stayed latched, every later pool acquisition would
  * fail with "Pool manager is shutting down" until relaunch.
  */
+// Await pool.end() but never longer than POOL_END_TIMEOUT_MS. A stuck client keeps
+// end() pending forever; letting teardown move on unblocks the manager's state reset
+// (the pg socket handle is the OS's to clean up on exit).
+async function endPoolBounded(pool: Pool): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  try {
+    await Promise.race([
+      pool.end(),
+      new Promise<void>((resolve) => {
+        timer = setTimeout(resolve, POOL_END_TIMEOUT_MS)
+        timer.unref?.()
+      })
+    ])
+  } finally {
+    if (timer) clearTimeout(timer)
+  }
+}
+
 export async function closeAllPgPools(): Promise<void> {
   // Coalesce concurrent calls onto one teardown, so a second call's `finally`
   // can't flip `shuttingDown` back to false while the first is still tearing down.
@@ -251,7 +274,7 @@ export async function closeAllPgPools(): Promise<void> {
       await Promise.all(
         entries.map(async (entry) => {
           try {
-            await entry.pool.end()
+            await endPoolBounded(entry.pool)
           } catch (err) {
             log.warn('error ending pool:', (err as Error).message)
           }
