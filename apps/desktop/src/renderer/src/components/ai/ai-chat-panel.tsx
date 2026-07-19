@@ -263,8 +263,9 @@ export function AIChatPanel({
       // Determine database type from connection
       const dbType = connection.dbType || 'postgresql'
 
-      // Call actual AI service via IPC
-      const response = await window.api.ai.chat(aiMessages, schemas, dbType)
+      // Call actual AI service via IPC. Pass the connection id so a harness
+      // provider can query this database through the MCP server (agentic mode).
+      const response = await window.api.ai.chat(aiMessages, schemas, dbType, connection.id)
 
       if (response.success && response.data) {
         const data = response.data

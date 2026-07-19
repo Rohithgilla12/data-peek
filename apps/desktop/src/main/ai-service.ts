@@ -310,17 +310,19 @@ export async function generateChatResponse(
   config: AIConfig,
   messages: AIMessage[],
   schemas: SchemaInfo[],
-  dbType: string
+  dbType: string,
+  connectionId?: string
 ): Promise<{
   success: boolean
   data?: AIStructuredResponse
   error?: string
 }> {
   // Bring-your-own-harness: the local `claude` CLI isn't an AI SDK model, so it
-  // gets its own code path (spawn + parse) rather than generateObject.
+  // gets its own code path (spawn + parse) rather than generateObject. Given the
+  // connection id + a running MCP server it can query the live DB to ground its answer.
   if (config.provider === 'claude-cli') {
     const { generateChatResponseViaHarness } = await import('./harness-service')
-    return generateChatResponseViaHarness(config, messages, schemas, dbType)
+    return generateChatResponseViaHarness(config, messages, schemas, dbType, connectionId)
   }
 
   try {

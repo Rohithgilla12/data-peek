@@ -558,9 +558,10 @@ const api = {
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],
-      dbType: string
+      dbType: string,
+      connectionId?: string
     ): Promise<IpcResponse<AIChatResponse>> =>
-      ipcRenderer.invoke('ai:chat', { messages, schemas, dbType }),
+      ipcRenderer.invoke('ai:chat', { messages, schemas, dbType, connectionId }),
     // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string): Promise<IpcResponse<StoredChatMessage[]>> =>
       ipcRenderer.invoke('ai:get-chat-history', connectionId),

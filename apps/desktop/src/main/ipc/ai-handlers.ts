@@ -170,11 +170,13 @@ export function registerAIHandlers(): void {
       {
         messages,
         schemas,
-        dbType
+        dbType,
+        connectionId
       }: {
         messages: AIMessage[]
         schemas: SchemaInfo[]
         dbType: string
+        connectionId?: string
       }
     ) => {
       log.debug('Received chat request, messages count:', messages.length)
@@ -185,7 +187,7 @@ export function registerAIHandlers(): void {
           return { success: false, error: 'AI not configured. Please set up your API key.' }
         }
 
-        const result = await generateChatResponse(config, messages, schemas, dbType)
+        const result = await generateChatResponse(config, messages, schemas, dbType, connectionId)
 
         if (result.success && result.data) {
           return {

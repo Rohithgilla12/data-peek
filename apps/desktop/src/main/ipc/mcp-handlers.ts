@@ -6,6 +6,7 @@ import { windowManager } from '../window-manager'
 import { wrapHandler } from './types'
 import { McpService, MCP_DEFAULT_PORT } from '../mcp/server'
 import { ApprovalManager } from '../mcp/approval'
+import { setMcpRuntimeProvider } from '../mcp-runtime'
 
 export interface McpSettings {
   enabled: boolean
@@ -85,6 +86,18 @@ export async function startMcpIfEnabled(store: McpStore, service: McpService): P
 }
 
 export function registerMcpHandlers(store: McpStore, service: McpServiceWithApproval): void {
+  // Expose live server info to other modules (e.g. the BYOH harness) without
+  // them importing the MCP server. Returns null unless the server is running.
+  setMcpRuntimeProvider(() => {
+    const settings = store.get('mcpSettings', MCP_SETTINGS_DEFAULTS)
+    if (!service.running || !settings.token) return null
+    return {
+      port: settings.port,
+      token: settings.token,
+      url: `http://127.0.0.1:${settings.port}/mcp`
+    }
+  })
+
   ipcMain.handle(
     'mcp:status',
     wrapHandler(async () => toStatus(ensureToken(store), service))

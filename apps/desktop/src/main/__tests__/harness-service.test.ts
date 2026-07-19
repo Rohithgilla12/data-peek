@@ -9,7 +9,16 @@ vi.mock('../lib/logger', () => ({
 const { spawnMock } = vi.hoisted(() => ({ spawnMock: vi.fn() }))
 vi.mock('child_process', () => ({ spawn: spawnMock }))
 
-import { buildHarnessArgs, parseHarnessResult, detectClaudeCli } from '../harness-service'
+import {
+  buildHarnessArgs,
+  parseHarnessResult,
+  detectClaudeCli,
+  buildMcpConfigJson,
+  buildAgenticHarnessArgs,
+  mcpAllowedTools,
+  buildAgenticInstruction,
+  MCP_READ_TOOLS
+} from '../harness-service'
 
 // A fake child process whose stdout/stderr/exit we drive from the test.
 function fakeChild() {
@@ -88,6 +97,51 @@ describe('parseHarnessResult', () => {
 
   it('throws on an empty result', () => {
     expect(() => parseHarnessResult(envelope(''))).toThrow(/empty/i)
+  })
+})
+
+describe('agentic (MCP) wiring', () => {
+  const info = { port: 4722, token: 'secret-tok', url: 'http://127.0.0.1:4722/mcp' }
+
+  it('builds an mcp-config pointing at the running server with the bearer token', () => {
+    const cfg = JSON.parse(buildMcpConfigJson(info))
+    const server = cfg.mcpServers.datapeek
+    expect(server.type).toBe('http')
+    expect(server.url).toBe('http://127.0.0.1:4722/mcp')
+    expect(server.headers.Authorization).toBe('Bearer secret-tok')
+  })
+
+  it('allow-lists only the read tools (never execute_statement)', () => {
+    const tools = mcpAllowedTools()
+    expect(tools).toContain('mcp__datapeek__run_query')
+    expect(tools).toContain('mcp__datapeek__list_schemas')
+    expect(tools).toContain('mcp__datapeek__explain_query')
+    expect(tools.join(',')).not.toContain('execute_statement')
+    expect(MCP_READ_TOOLS).not.toContain('execute_statement' as never)
+  })
+
+  it('adds --mcp-config and --allowedTools on top of the one-shot args', () => {
+    const args = buildAgenticHarnessArgs(
+      'q',
+      'sys',
+      'sonnet',
+      buildMcpConfigJson(info),
+      mcpAllowedTools()
+    )
+    expect(args).toContain('--mcp-config')
+    expect(args).toContain('--allowedTools')
+    // still the structured one-shot underneath
+    expect(args.slice(0, 4)).toEqual(['-p', 'q', '--output-format', 'json'])
+    const allowed = args[args.indexOf('--allowedTools') + 1]
+    expect(allowed).toBe(
+      'mcp__datapeek__list_schemas,mcp__datapeek__run_query,mcp__datapeek__explain_query'
+    )
+  })
+
+  it('pins the agent to a specific connectionId and forbids list_connections', () => {
+    const instr = buildAgenticInstruction('conn-42')
+    expect(instr).toContain('conn-42')
+    expect(instr).toMatch(/do not call list_connections/i)
   })
 })
 

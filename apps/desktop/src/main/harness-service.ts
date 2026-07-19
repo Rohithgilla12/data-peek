@@ -20,11 +20,14 @@ import { join } from 'path'
 import type { AIConfig, AIMessage, SchemaInfo, AIStructuredResponse } from '@shared/index'
 import { DEFAULT_MODELS } from '@shared/index'
 import { buildSystemPrompt, responseSchema, normalizeStructuredResponse } from './ai-schema'
+import { getMcpRuntimeInfo, type McpRuntimeInfo } from './mcp-runtime'
 import { createLogger } from './lib/logger'
 
 const log = createLogger('harness-service')
 
 const GENERATION_TIMEOUT_MS = 120_000
+// Agentic runs make several tool round-trips, so they get a longer ceiling.
+const AGENTIC_TIMEOUT_MS = 180_000
 const DETECT_TIMEOUT_MS = 10_000
 
 // Instruction appended to the schema-aware system prompt so the CLI returns a
@@ -88,6 +91,56 @@ export function buildHarnessArgs(
     systemPrompt,
     '--model',
     model
+  ]
+}
+
+// Server name registered in the generated mcp-config. No hyphen so the derived
+// tool ids (`mcp__<server>__<tool>`) stay unambiguous in --allowedTools.
+export const MCP_SERVER_NAME = 'datapeek'
+
+// Only the read tools are exposed to the agent — never execute_statement (which
+// would trip the in-app approval dialog and can't be answered in headless mode).
+export const MCP_READ_TOOLS = ['list_schemas', 'run_query', 'explain_query'] as const
+
+/** Fully-qualified Claude Code tool ids for our MCP read tools. */
+export function mcpAllowedTools(serverName: string = MCP_SERVER_NAME): string[] {
+  return MCP_READ_TOOLS.map((t) => `mcp__${serverName}__${t}`)
+}
+
+/** Inline mcp-config JSON pointing Claude Code at data-peek's running MCP server. */
+export function buildMcpConfigJson(
+  info: McpRuntimeInfo,
+  serverName: string = MCP_SERVER_NAME
+): string {
+  return JSON.stringify({
+    mcpServers: {
+      [serverName]: {
+        type: 'http',
+        url: info.url,
+        headers: { Authorization: `Bearer ${info.token}` }
+      }
+    }
+  })
+}
+
+/**
+ * Build the argv for an agentic call: same structured one-shot, plus the MCP
+ * server and an allow-list of just its read tools so it runs non-interactively.
+ * Pure — unit-tested.
+ */
+export function buildAgenticHarnessArgs(
+  userPrompt: string,
+  systemPrompt: string,
+  model: string,
+  mcpConfigJson: string,
+  allowedTools: string[]
+): string[] {
+  return [
+    ...buildHarnessArgs(userPrompt, systemPrompt, model),
+    '--mcp-config',
+    mcpConfigJson,
+    '--allowedTools',
+    allowedTools.join(',')
   ]
 }
 
@@ -210,22 +263,64 @@ function buildUserPrompt(messages: AIMessage[]): string {
 }
 
 /**
+ * Instruction that turns on Phase 2: tells the model it can query the live DB
+ * through the MCP tools and should ground its answer before replying.
+ */
+export function buildAgenticInstruction(connectionId: string): string {
+  return `
+
+## Live database access
+You can query THIS database directly with your MCP tools (list_schemas, run_query, explain_query). Use connectionId "${connectionId}" for every call — do not call list_connections. Ground your answer in the real database: confirm table and column names, and where useful run or EXPLAIN the query (reads execute in a read-only, always-rolled-back transaction capped at 500 rows) before answering. Then reply with the JSON contract below, putting the verified SQL in the "sql" field.`
+}
+
+/**
  * Generate a structured chat response by driving the user's local `claude` CLI.
+ *
+ * When data-peek's MCP server is running and the chat is on a saved connection,
+ * the harness runs *agentically* — it can query the live DB through the MCP read
+ * tools to ground its answer — then returns the same structured contract. Falls
+ * back to one-shot generation otherwise.
  */
 export async function generateChatResponseViaHarness(
   config: AIConfig,
   messages: AIMessage[],
   schemas: SchemaInfo[],
-  dbType: string
+  dbType: string,
+  connectionId?: string
 ): Promise<{ success: boolean; data?: AIStructuredResponse; error?: string }> {
   try {
     const bin = resolveClaudeBinary()
     const model = config.model || DEFAULT_MODELS['claude-cli']
-    const systemPrompt = buildSystemPrompt(schemas, dbType) + JSON_ONLY_INSTRUCTION
-    const args = buildHarnessArgs(buildUserPrompt(messages), systemPrompt, model)
+    const userPrompt = buildUserPrompt(messages)
 
-    log.debug('Running claude CLI', { bin, model })
-    const { stdout, stderr, code } = await runProcess(bin, args, GENERATION_TIMEOUT_MS)
+    const mcp = getMcpRuntimeInfo()
+    // Agentic mode needs both a running MCP server and a saved connection the
+    // server can address by id.
+    const agentic = mcp !== null && !!connectionId
+
+    let args: string[]
+    let timeoutMs: number
+    if (agentic && mcp && connectionId) {
+      const systemPrompt =
+        buildSystemPrompt(schemas, dbType) +
+        buildAgenticInstruction(connectionId) +
+        JSON_ONLY_INSTRUCTION
+      args = buildAgenticHarnessArgs(
+        userPrompt,
+        systemPrompt,
+        model,
+        buildMcpConfigJson(mcp),
+        mcpAllowedTools()
+      )
+      timeoutMs = AGENTIC_TIMEOUT_MS
+    } else {
+      const systemPrompt = buildSystemPrompt(schemas, dbType) + JSON_ONLY_INSTRUCTION
+      args = buildHarnessArgs(userPrompt, systemPrompt, model)
+      timeoutMs = GENERATION_TIMEOUT_MS
+    }
+
+    log.debug('Running claude CLI', { bin, model, agentic })
+    const { stdout, stderr, code } = await runProcess(bin, args, timeoutMs)
     if (code !== 0) {
       const detail = stderr.trim() || `exited with code ${code}`
       throw new Error(`Claude CLI failed: ${detail}`)

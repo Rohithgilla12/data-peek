@@ -417,7 +417,8 @@ interface DataPeekApi {
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],
-      dbType: string
+      dbType: string,
+      connectionId?: string
     ) => Promise<IpcResponse<AIChatResponse>>
     // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string) => Promise<IpcResponse<StoredChatMessage[]>>
