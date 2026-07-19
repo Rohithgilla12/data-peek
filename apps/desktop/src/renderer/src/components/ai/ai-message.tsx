@@ -418,6 +418,14 @@ export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AI
           </div>
         )}
 
+        {/* Grounded-against-DB indicator (BYOH agentic mode queried the live DB) */}
+        {!isUser && message.grounded && (
+          <div className="flex items-center gap-1 text-[10px] text-green-400/90">
+            <Check className="size-3" />
+            Grounded against your database
+          </div>
+        )}
+
         {/* Response data (query, chart, metric, schema) */}
         {message.responseData && renderResponseData(message.responseData)}
 

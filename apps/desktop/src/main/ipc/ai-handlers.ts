@@ -162,6 +162,17 @@ export function registerAIHandlers(): void {
     }
   })
 
+  // Detect whether the local `claude` CLI is installed (for the BYOH provider)
+  ipcMain.handle('ai:detect-harness', async () => {
+    try {
+      const { detectClaudeCli } = await import('../harness-service')
+      return { success: true, data: await detectClaudeCli() }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
   // Chat with AI - returns structured JSON response
   ipcMain.handle(
     'ai:chat',
@@ -192,7 +203,8 @@ export function registerAIHandlers(): void {
         if (result.success && result.data) {
           return {
             success: true,
-            data: result.data // Returns AIStructuredResponse directly
+            data: result.data, // Returns AIStructuredResponse directly
+            meta: result.meta // BYOH grounding info (undefined for AI SDK providers)
           }
         } else {
           return { success: false, error: result.error }

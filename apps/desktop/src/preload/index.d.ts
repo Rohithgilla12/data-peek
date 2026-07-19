@@ -414,12 +414,19 @@ interface DataPeekApi {
     setConfig: (config: AIConfig) => Promise<IpcResponse<void>>
     clearConfig: () => Promise<IpcResponse<void>>
     validateKey: (config: AIConfig) => Promise<IpcResponse<{ valid: boolean; error?: string }>>
+    detectHarness: () => Promise<
+      IpcResponse<{ available: boolean; path?: string; version?: string; error?: string }>
+    >
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],
       dbType: string,
       connectionId?: string
-    ) => Promise<IpcResponse<AIChatResponse>>
+    ) => Promise<
+      IpcResponse<AIChatResponse> & {
+        meta?: { grounded: boolean; agentic: boolean; turns?: number }
+      }
+    >
     // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string) => Promise<IpcResponse<StoredChatMessage[]>>
     saveChatHistory: (

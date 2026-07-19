@@ -316,6 +316,7 @@ export async function generateChatResponse(
   success: boolean
   data?: AIStructuredResponse
   error?: string
+  meta?: { grounded: boolean; agentic: boolean; turns?: number }
 }> {
   // Bring-your-own-harness: the local `claude` CLI isn't an AI SDK model, so it
   // gets its own code path (spawn + parse) rather than generateObject. Given the

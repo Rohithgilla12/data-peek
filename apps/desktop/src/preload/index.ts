@@ -555,13 +555,17 @@ const api = {
     clearConfig: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('ai:clear-config'),
     validateKey: (config: AIConfig): Promise<IpcResponse<{ valid: boolean; error?: string }>> =>
       ipcRenderer.invoke('ai:validate-key', config),
+    detectHarness: (): Promise<
+      IpcResponse<{ available: boolean; path?: string; version?: string; error?: string }>
+    > => ipcRenderer.invoke('ai:detect-harness'),
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],
       dbType: string,
       connectionId?: string
-    ): Promise<IpcResponse<AIChatResponse>> =>
-      ipcRenderer.invoke('ai:chat', { messages, schemas, dbType, connectionId }),
+    ): Promise<
+      IpcResponse<AIChatResponse> & { meta?: { grounded: boolean; agentic: boolean; turns?: number } }
+    > => ipcRenderer.invoke('ai:chat', { messages, schemas, dbType, connectionId }),
     // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string): Promise<IpcResponse<StoredChatMessage[]>> =>
       ipcRenderer.invoke('ai:get-chat-history', connectionId),

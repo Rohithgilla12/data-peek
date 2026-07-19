@@ -296,13 +296,32 @@ You can query THIS database directly with your MCP tools (list_schemas, run_quer
  * tools to ground its answer — then returns the same structured contract. Falls
  * back to one-shot generation otherwise.
  */
+export interface HarnessMeta {
+  /** The answer was produced agentically against the live DB (MCP + tool calls). */
+  grounded: boolean
+  /** Agentic mode was enabled for this call (MCP server up + saved connection). */
+  agentic: boolean
+  /** Turns reported by the CLI (>1 implies tool round-trips happened). */
+  turns?: number
+}
+
+/** Read num_turns from the CLI's JSON envelope (best-effort). */
+function readNumTurns(stdout: string): number | undefined {
+  try {
+    const env = JSON.parse(stdout) as Record<string, unknown>
+    return typeof env.num_turns === 'number' ? env.num_turns : undefined
+  } catch {
+    return undefined
+  }
+}
+
 export async function generateChatResponseViaHarness(
   config: AIConfig,
   messages: AIMessage[],
   schemas: SchemaInfo[],
   dbType: string,
   connectionId?: string
-): Promise<{ success: boolean; data?: AIStructuredResponse; error?: string }> {
+): Promise<{ success: boolean; data?: AIStructuredResponse; error?: string; meta?: HarnessMeta }> {
   try {
     const bin = resolveClaudeBinary()
     const model = config.model || DEFAULT_MODELS['claude-cli']
@@ -341,7 +360,12 @@ export async function generateChatResponseViaHarness(
     // only carries warnings. Parse stdout first so the user sees the actual
     // reason; fall back to stderr/exit code only when there's no output.
     if (stdout.trim()) {
-      return { success: true, data: parseHarnessResult(stdout) }
+      const data = parseHarnessResult(stdout)
+      const turns = readNumTurns(stdout)
+      // "Grounded" = agentic mode AND the model actually took tool round-trips
+      // (turns > 1); a single turn means it answered without querying.
+      const grounded = agentic && (turns ?? 0) > 1
+      return { success: true, data, meta: { grounded, agentic, turns } }
     }
     const detail = stderr.trim() || `exited with code ${code}`
     throw new Error(`Claude CLI failed: ${detail}`)
