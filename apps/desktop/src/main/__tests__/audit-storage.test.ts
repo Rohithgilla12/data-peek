@@ -129,6 +129,31 @@ describe.skipIf(!sqliteAvailable)('AuditStorage', () => {
     expect(store.verify()).toEqual({ valid: true, entries: 2 })
   })
 
+  it('prune keeps the chain valid when a backward clock change makes ts order differ from insertion order', () => {
+    vi.useFakeTimers()
+    try {
+      const recordAt = (iso: string): void => {
+        vi.setSystemTime(new Date(iso))
+        store.record(entry({ sql: iso }))
+      }
+      recordAt('2020-01-01T00:00:00.000Z') // id 1
+      recordAt('2020-01-02T00:00:00.000Z') // id 2
+      recordAt('2020-01-10T00:00:00.000Z') // id 3
+      recordAt('2020-01-05T00:00:00.000Z') // id 4 — clock jumped back, ts earlier than id 3
+      recordAt('2020-01-20T00:00:00.000Z') // id 5
+      expect(store.verify().valid).toBe(true)
+
+      // cutoff = now - 25d = 2020-01-07. `ts < cutoff` matches id 1, 2, 4 but not id 3,
+      // so a ts-keyed delete would leave id 3 as a hole below the re-anchor point and
+      // orphan the survivors from the chain anchor — verify() must still pass.
+      vi.setSystemTime(new Date('2020-02-01T00:00:00.000Z'))
+      store.prune(25)
+      expect(store.verify().valid).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('exports JSON and CSV with correct shapes', () => {
     store.record(entry({ sql: 'SELECT "quoted", comma' }))
     const jsonPath = join(dir, 'out.json')
