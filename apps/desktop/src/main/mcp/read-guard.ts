@@ -4,6 +4,12 @@ import { getAdapter, type AdapterQueryResult } from '../db-adapter'
 import { parseStatementsWithLines } from '../lib/parse-statements'
 
 export const MCP_MAX_ROWS = 500
+// Bound how long a single MCP read may run on PostgreSQL. The read-only keyword
+// guard can't catch side-effecting or slow functions inside a SELECT (e.g.
+// pg_sleep), and the row cap is applied after the full result is fetched — a
+// statement timeout puts a hard ceiling on both a runaway query and a
+// SELECT pg_sleep(600) DoS through a tool advertised as safe.
+export const MCP_READ_TIMEOUT_MS = 30_000
 
 const READ_FIRST_KEYWORDS = new Set([
   'select',
@@ -48,6 +54,12 @@ export async function runReadOnlyQuery(
     try {
       if (dbType === 'postgresql') {
         await adapter.queryInTransaction(config, sessionId, 'SET TRANSACTION READ ONLY')
+        // SET LOCAL is scoped to this transaction, which is always rolled back.
+        await adapter.queryInTransaction(
+          config,
+          sessionId,
+          `SET LOCAL statement_timeout = ${MCP_READ_TIMEOUT_MS}`
+        )
       }
       const result = await adapter.queryInTransaction(config, sessionId, stmt)
       return { ...result, rows: result.rows.slice(0, cap) }

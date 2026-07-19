@@ -26,6 +26,28 @@ import { recordAudit } from '../audit-service'
 
 const log = createLogger('query-handlers')
 
+// Record a manual-transaction boundary (BEGIN/COMMIT/ROLLBACK) in the audit log.
+// Without this a rolled-back write is indistinguishable in the trail from a
+// committed one — the per-statement entries look identical either way, so the
+// outcome events are what make the tamper-evident log forensically complete.
+function recordTxBoundary(
+  config: ConnectionConfig,
+  boundary: 'BEGIN' | 'COMMIT' | 'ROLLBACK',
+  success: boolean,
+  error?: string
+): void {
+  recordAudit({
+    source: 'editor',
+    connectionId: config.id ?? 'unsaved',
+    connectionName: config.name ?? config.database,
+    dbType: config.dbType || 'postgresql',
+    sql: boundary,
+    rowCount: null,
+    success,
+    ...(error ? { error } : {})
+  })
+}
+
 /**
  * Register database query and schema handlers
  */
@@ -615,12 +637,15 @@ export function registerQueryHandlers(): void {
         const adapter = getAdapter(config)
         if (adapter.beginTransaction) {
           await adapter.beginTransaction(config, sessionId)
+          recordTxBoundary(config, 'BEGIN', true)
           return { success: true }
         } else {
           return { success: false, error: 'Transactions not supported for this database type.' }
         }
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) }
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        recordTxBoundary(config, 'BEGIN', false, errorMessage)
+        return { success: false, error: errorMessage }
       }
     }
   )
@@ -632,11 +657,14 @@ export function registerQueryHandlers(): void {
         const adapter = getAdapter(config)
         if (adapter.commitTransaction) {
           await adapter.commitTransaction(config, sessionId)
+          recordTxBoundary(config, 'COMMIT', true)
           return { success: true }
         }
         return { success: false, error: 'Transactions not supported.' }
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) }
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        recordTxBoundary(config, 'COMMIT', false, errorMessage)
+        return { success: false, error: errorMessage }
       }
     }
   )
@@ -648,11 +676,14 @@ export function registerQueryHandlers(): void {
         const adapter = getAdapter(config)
         if (adapter.rollbackTransaction) {
           await adapter.rollbackTransaction(config, sessionId)
+          recordTxBoundary(config, 'ROLLBACK', true)
           return { success: true }
         }
         return { success: false, error: 'Transactions not supported.' }
       } catch (error: unknown) {
-        return { success: false, error: error instanceof Error ? error.message : String(error) }
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        recordTxBoundary(config, 'ROLLBACK', false, errorMessage)
+        return { success: false, error: errorMessage }
       }
     }
   )

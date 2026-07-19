@@ -88,7 +88,7 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
   server.registerTool(
     'run_query',
     {
-      description: `Run a single read-only SQL statement. Executes inside a transaction that is always rolled back; PostgreSQL additionally enforces READ ONLY at the database level. Rows are capped at ${MCP_MAX_ROWS}. Use execute_statement for writes/DDL.`,
+      description: `Run a single read-only SQL statement. On PostgreSQL it runs inside a READ ONLY transaction that is always rolled back and bounded by a statement timeout; on MySQL/SQL Server it is checked by a read-only statement guard (best-effort — a side-effecting function inside a SELECT can still run). Rows are capped at ${MCP_MAX_ROWS}. Use execute_statement for writes/DDL.`,
       inputSchema: {
         connectionId: z.string(),
         sql: z.string(),
