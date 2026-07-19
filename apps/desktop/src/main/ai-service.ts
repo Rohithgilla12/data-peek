@@ -7,7 +7,12 @@
 
 import { generateObject, generateText } from 'ai'
 import { createProviderClient } from './ai-providers'
-import { z } from 'zod'
+import {
+  responseSchema,
+  normalizeStructuredResponse,
+  buildSystemPrompt,
+  providerNeedsKey
+} from './ai-schema'
 import type {
   SchemaInfo,
   AIProvider,
@@ -33,40 +38,6 @@ export type {
   AIMultiProviderConfig,
   AIProviderConfig
 }
-
-// Zod schema for structured output
-// Using flat object instead of discriminatedUnion for Anthropic/OpenAI tool compatibility
-// (discriminatedUnion produces anyOf without root type:object which providers reject)
-// Using .nullish() instead of .nullable() to accept undefined when fields are missing
-const responseSchema = z.object({
-  type: z.enum(['query', 'chart', 'metric', 'schema', 'message']).describe('Response type'),
-  message: z.string().describe('Brief explanation or response message'),
-  // Query fields (null/undefined when type is not query)
-  sql: z.string().nullish().describe('SQL query - for query/chart/metric types'),
-  explanation: z.string().nullish().describe('Detailed explanation - for query type'),
-  warning: z.string().nullish().describe('Warning for mutations - for query type'),
-  requiresConfirmation: z
-    .boolean()
-    .nullish()
-    .describe('True for destructive queries - for query type'),
-  // Chart fields (null/undefined when type is not chart)
-  title: z.string().nullish().describe('Chart title - for chart type'),
-  description: z.string().nullish().describe('Chart description - for chart type'),
-  chartType: z
-    .enum(['bar', 'line', 'pie', 'area'])
-    .nullish()
-    .describe('Chart type - for chart type'),
-  xKey: z.string().nullish().describe('X-axis column - for chart type'),
-  yKeys: z.array(z.string()).nullish().describe('Y-axis columns - for chart type'),
-  // Metric fields (null/undefined when type is not metric)
-  label: z.string().nullish().describe('Metric label - for metric type'),
-  format: z
-    .enum(['number', 'currency', 'percent', 'duration'])
-    .nullish()
-    .describe('Value format - for metric type'),
-  // Schema fields (null/undefined when type is not schema)
-  tables: z.array(z.string()).nullish().describe('Table names - for schema type')
-})
 
 import { DpStorage } from './storage'
 import { createLogger } from './lib/logger'
@@ -178,7 +149,7 @@ export function setProviderConfig(provider: AIProvider, providerConfig: AIProvid
   config.providers[provider] = providerConfig
 
   // If this is the first provider being configured, make it active
-  if (!config.providers[config.activeProvider]?.apiKey && provider !== 'ollama') {
+  if (!config.providers[config.activeProvider]?.apiKey && providerNeedsKey(provider)) {
     config.activeProvider = provider
   }
 
@@ -237,8 +208,8 @@ export function getAIConfig(): AIConfig | null {
   const provider = multiConfig.activeProvider
   const providerConfig = multiConfig.providers[provider]
 
-  // For non-Ollama providers, require an API key
-  if (provider !== 'ollama' && !providerConfig?.apiKey) {
+  // Keyless providers (ollama, claude-cli) run locally without a stored key.
+  if (providerNeedsKey(provider) && !providerConfig?.apiKey) {
     return null
   }
 
@@ -295,84 +266,6 @@ function getModel(config: AIConfig) {
 }
 
 /**
- * Build the system prompt with schema context
- */
-function buildSystemPrompt(schemas: SchemaInfo[], dbType: string): string {
-  // Build a concise schema representation
-  const schemaContext = schemas
-    .map((schema) => {
-      const tables = schema.tables
-        .map((table) => {
-          const columns = table.columns
-            .map((col) => {
-              let colDef = `${col.name}: ${col.dataType}`
-              if (col.isPrimaryKey) colDef += ' (PK)'
-              if (col.foreignKey) {
-                colDef += ` -> ${col.foreignKey.referencedTable}.${col.foreignKey.referencedColumn}`
-              }
-              return colDef
-            })
-            .join(', ')
-          return `  ${table.name}: [${columns}]`
-        })
-        .join('\n')
-      return `Schema "${schema.name}":\n${tables}`
-    })
-    .join('\n\n')
-
-  return `You are a helpful database assistant for a ${dbType} database.
-
-## Database Schema
-
-${schemaContext}
-
-## Response Format
-
-Set the "type" field and fill ONLY the relevant fields. **IMPORTANT: All fields must be present in the response.** Set unused fields to null (not undefined). Include every field listed below.
-
-### type: "query"
-Use when user asks for data or wants to run a query.
-- Fill: message, sql, explanation
-- Optional: warning, requiresConfirmation (set true for UPDATE/DELETE/DROP/TRUNCATE)
-- Null: title, description, chartType, xKey, yKeys, label, format, tables
-- Limit results: ${dbType === 'mssql' ? 'Use SELECT TOP 100 for MSSQL' : 'Include LIMIT 100 at the end'} unless user specifies otherwise
-
-### type: "chart"
-Use when user asks to visualize, chart, graph, or plot data.
-- Fill: message, sql, title, chartType, xKey, yKeys
-- Optional: description
-- Null: explanation, warning, requiresConfirmation, label, format, tables
-- chartType: bar (comparisons), line (time trends), pie (proportions ≤8 items), area (cumulative)
-
-### type: "metric"
-Use when user asks for a single KPI/number (total, count, average).
-- Fill: message, sql, label, format
-- Null: explanation, warning, requiresConfirmation, title, description, chartType, xKey, yKeys, tables
-- format: number, currency, percent, or duration
-
-### type: "schema"
-Use when user asks about table structure or columns.
-- Fill: message, tables
-- Null: sql, explanation, warning, requiresConfirmation, title, description, chartType, xKey, yKeys, label, format
-
-### type: "message"
-Use for general questions, clarifications, or when no SQL is needed.
-- Fill: message
-- Null: ALL other fields
-
-## SQL Guidelines
-- Use proper ${dbType} syntax
-- Use table aliases for readability
-- Quote identifiers if they contain special characters
-- Be precise with JOINs based on foreign key relationships${
-    dbType === 'sqlite'
-      ? `
-- SQLite specifics: Use double-quotes for identifiers, booleans are 0/1 integers, no RIGHT JOIN (reverse tables with LEFT JOIN), use COALESCE instead of IFNULL for portability`
-      : ''
-  }`
-}
-
-/**
  * Validate an API key by making a simple request
  */
 export async function validateAPIKey(
@@ -423,6 +316,13 @@ export async function generateChatResponse(
   data?: AIStructuredResponse
   error?: string
 }> {
+  // Bring-your-own-harness: the local `claude` CLI isn't an AI SDK model, so it
+  // gets its own code path (spawn + parse) rather than generateObject.
+  if (config.provider === 'claude-cli') {
+    const { generateChatResponseViaHarness } = await import('./harness-service')
+    return generateChatResponseViaHarness(config, messages, schemas, dbType)
+  }
+
   try {
     const model = getModel(config)
     const systemPrompt = buildSystemPrompt(schemas, dbType)
@@ -446,26 +346,9 @@ export async function generateChatResponse(
       temperature: 0.1 // Lower temperature for more consistent SQL generation
     })
 
-    // Normalize undefined to null for consistency
-    const normalizedData = {
-      ...result.object,
-      sql: result.object.sql ?? null,
-      explanation: result.object.explanation ?? null,
-      warning: result.object.warning ?? null,
-      requiresConfirmation: result.object.requiresConfirmation ?? null,
-      title: result.object.title ?? null,
-      description: result.object.description ?? null,
-      chartType: result.object.chartType ?? null,
-      xKey: result.object.xKey ?? null,
-      yKeys: result.object.yKeys ?? null,
-      label: result.object.label ?? null,
-      format: result.object.format ?? null,
-      tables: result.object.tables ?? null
-    }
-
     return {
       success: true,
-      data: normalizedData as AIStructuredResponse
+      data: normalizeStructuredResponse(result.object)
     }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error'

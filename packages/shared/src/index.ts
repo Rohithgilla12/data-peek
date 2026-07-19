@@ -61,7 +61,10 @@ export type AIProvider =
   | "mistral"
   | "xai"
   | "glm"
-  | "ollama";
+  | "ollama"
+  // Bring-your-own-harness: drives the user's locally installed `claude` CLI,
+  // which owns its own auth (subscription or key). No API key stored by data-peek.
+  | "claude-cli";
 
 /**
  * Configuration for AI service
@@ -335,6 +338,18 @@ export const AI_PROVIDERS: readonly ProviderInfo[] = [
       { id: "deepseek-coder-v2", name: "DeepSeek Coder V2" },
     ],
   },
+  {
+    id: "claude-cli",
+    name: "Claude Code (local CLI)",
+    description: "Uses your installed `claude` CLI — no API key stored here",
+    keyPrefix: null,
+    keyUrl: "https://docs.claude.com/en/docs/claude-code/setup",
+    models: [
+      { id: "sonnet", name: "Claude Sonnet", recommended: true },
+      { id: "opus", name: "Claude Opus", description: "Most capable" },
+      { id: "haiku", name: "Claude Haiku", description: "Fast & cheap" },
+    ],
+  },
 ] as const;
 
 /**
@@ -369,7 +384,21 @@ export const DEFAULT_MODELS: Record<AIProvider, string> = {
   xai: getRecommendedModel("xai"),
   glm: getRecommendedModel("glm"),
   ollama: getRecommendedModel("ollama"),
+  "claude-cli": getRecommendedModel("claude-cli"),
 };
+
+/**
+ * Providers that run locally and need no API key stored by data-peek:
+ * ollama talks to localhost, claude-cli drives the user's own authed CLI.
+ */
+const KEYLESS_AI_PROVIDERS: ReadonlySet<AIProvider> = new Set([
+  "ollama",
+  "claude-cli",
+]);
+
+export function providerNeedsKey(provider: AIProvider): boolean {
+  return !KEYLESS_AI_PROVIDERS.has(provider);
+}
 
 /**
  * AI message for chat conversations

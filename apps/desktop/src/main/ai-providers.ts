@@ -82,6 +82,12 @@ export function createProviderClient(config: AIConfig) {
       return ollama(config.model)
     }
 
+    case 'claude-cli': {
+      // Not an AI SDK provider — it shells out to the local `claude` CLI.
+      // Routed to harness-service before this factory is ever reached.
+      throw new Error('claude-cli is handled by the harness service, not the AI SDK factory')
+    }
+
     default: {
       const _exhaustive: never = config.provider
       throw new Error(`Unknown provider: ${String(_exhaustive)}`)

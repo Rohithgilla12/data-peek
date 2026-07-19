@@ -85,7 +85,16 @@ import type {
 
 // AI Types
 type AIProvider =
-  'openai' | 'anthropic' | 'google' | 'groq' | 'deepseek' | 'mistral' | 'xai' | 'glm' | 'ollama'
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'groq'
+  | 'deepseek'
+  | 'mistral'
+  | 'xai'
+  | 'glm'
+  | 'ollama'
+  | 'claude-cli'
 
 interface AIConfig {
   provider: AIProvider

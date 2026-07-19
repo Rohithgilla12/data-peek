@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AIProvider, AIConfig, AIMultiProviderConfig, AIProviderConfig } from '@shared/index'
-import { DEFAULT_MODELS } from '@shared/index'
+import { DEFAULT_MODELS, providerNeedsKey } from '@shared/index'
 
 // Re-export types for convenience
 export type { AIProvider, AIConfig, AIMultiProviderConfig, AIProviderConfig }
@@ -77,13 +77,10 @@ interface AIState {
 // Helper to check if multi-provider config is valid
 const isMultiProviderConfigured = (config: AIMultiProviderConfig | null): boolean => {
   if (!config?.providers || !config.activeProvider) return false
-  const activeConfig = config.providers[config.activeProvider]
-  if (!activeConfig) return false
-  if (config.activeProvider === 'ollama') {
-    // Ollama works with default localhost URL, so just check if config exists
-    return true
-  }
-  return !!activeConfig.apiKey
+  // Keyless providers (ollama, claude-cli) are ready whenever they're active —
+  // they need no stored key (ollama = localhost, claude-cli = the user's own CLI).
+  if (!providerNeedsKey(config.activeProvider)) return true
+  return !!config.providers[config.activeProvider]?.apiKey
 }
 
 // Helper to derive legacy AIConfig from multi-provider config
@@ -118,7 +115,7 @@ export const useAIStore = create<AIState>()(
       setConfig: (config) => {
         set({
           config,
-          isConfigured: config !== null && (config.provider === 'ollama' || !!config.apiKey)
+          isConfigured: config !== null && (!providerNeedsKey(config.provider) || !!config.apiKey)
         })
       },
 
