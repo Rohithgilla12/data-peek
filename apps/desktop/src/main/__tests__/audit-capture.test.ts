@@ -8,7 +8,8 @@ vi.mock('../lib/logger', () => ({
 
 const mockAdapter = vi.hoisted(() => ({
   execute: vi.fn(),
-  queryMultiple: vi.fn()
+  queryMultiple: vi.fn(),
+  explain: vi.fn().mockResolvedValue({ plan: { cost: 1 }, durationMs: 2 })
 }))
 vi.mock('../db-adapter', () => ({ getAdapter: vi.fn(() => mockAdapter) }))
 vi.mock('../mcp/read-guard', async (importOriginal) => ({
@@ -54,6 +55,17 @@ describe('audit capture', () => {
     await client.callTool({ name: 'run_query', arguments: { connectionId: 'c1', sql: 'SELECT 1' } })
     expect(recordAudit).toHaveBeenCalledWith(
       expect.objectContaining({ source: 'mcp', sql: 'SELECT 1', success: true, rowCount: 1 })
+    )
+  })
+
+  it('mcp explain_query records an mcp entry on success', async () => {
+    const client = await connectedClient(new ApprovalManager(() => undefined))
+    await client.callTool({
+      name: 'explain_query',
+      arguments: { connectionId: 'c1', sql: 'SELECT 1' }
+    })
+    expect(recordAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'mcp', sql: 'SELECT 1', success: true })
     )
   })
 
