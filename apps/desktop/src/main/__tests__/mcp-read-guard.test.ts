@@ -97,10 +97,11 @@ describe('runReadOnlyQuery', () => {
     mockAdapter.rollbackTransaction.mockResolvedValue(undefined)
   })
 
-  it('runs postgres queries in a read-only transaction and rolls back', async () => {
+  it('runs postgres queries read-only, bounds them with a statement timeout, and rolls back', async () => {
     mockAdapter.queryInTransaction
-      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null })
-      .mockResolvedValueOnce({ rows: [{ n: 1 }], fields: [], rowCount: 1 })
+      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET TRANSACTION READ ONLY
+      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET LOCAL statement_timeout
+      .mockResolvedValueOnce({ rows: [{ n: 1 }], fields: [], rowCount: 1 }) // the query
 
     const result = await runReadOnlyQuery(pgConfig, 'SELECT 1')
 
@@ -111,13 +112,20 @@ describe('runReadOnlyQuery', () => {
       expect.any(String),
       'SET TRANSACTION READ ONLY'
     )
+    expect(mockAdapter.queryInTransaction).toHaveBeenNthCalledWith(
+      2,
+      pgConfig,
+      expect.any(String),
+      expect.stringContaining('statement_timeout')
+    )
     expect(mockAdapter.rollbackTransaction).toHaveBeenCalledOnce()
     expect(result.rows).toEqual([{ n: 1 }])
   })
 
   it('rolls back even when the query throws', async () => {
     mockAdapter.queryInTransaction
-      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null })
+      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET TRANSACTION READ ONLY
+      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET LOCAL statement_timeout
       .mockRejectedValueOnce(new Error('syntax error'))
 
     await expect(runReadOnlyQuery(pgConfig, 'SELECT oops')).rejects.toThrow('syntax error')
@@ -127,7 +135,8 @@ describe('runReadOnlyQuery', () => {
   it('caps returned rows at maxRows', async () => {
     const rows = Array.from({ length: 600 }, (_, i) => ({ i }))
     mockAdapter.queryInTransaction
-      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null })
+      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET TRANSACTION READ ONLY
+      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET LOCAL statement_timeout
       .mockResolvedValueOnce({ rows, fields: [], rowCount: 600 })
 
     const result = await runReadOnlyQuery(pgConfig, 'SELECT * FROM big')
