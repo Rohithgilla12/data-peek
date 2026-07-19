@@ -200,11 +200,26 @@ interface RunResult {
   code: number | null
 }
 
-/** Spawn a process with the augmented PATH and the user's env (so CLI auth works). */
+/**
+ * Env for the spawned CLI. We deliberately DROP ANTHROPIC_API_KEY /
+ * ANTHROPIC_AUTH_TOKEN so `claude` uses its own configured login (the user's
+ * claude.ai subscription) instead of whatever API key happens to be in the
+ * environment — the whole point of BYOH is to ride the local CLI's auth.
+ * (Driving a subscription from a third-party app is a ToS gray area; that's an
+ * accepted product decision here, see the claude-cli provider notes.)
+ */
+function harnessEnv(): NodeJS.ProcessEnv {
+  const env: Record<string, string | undefined> = { ...process.env, PATH: augmentedPath() }
+  delete env.ANTHROPIC_API_KEY
+  delete env.ANTHROPIC_AUTH_TOKEN
+  return env as NodeJS.ProcessEnv
+}
+
+/** Spawn a process with the augmented PATH and the CLI's own auth. */
 function runProcess(bin: string, args: string[], timeoutMs: number): Promise<RunResult> {
   return new Promise((resolve, reject) => {
     const child = spawn(bin, args, {
-      env: { ...process.env, PATH: augmentedPath() },
+      env: harnessEnv(),
       shell: false
     })
     let stdout = ''

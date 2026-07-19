@@ -169,6 +169,29 @@ describe('generateChatResponseViaHarness (spawn-mocked)', () => {
     expect(res.error).toMatch(/credit balance/i)
   })
 
+  it('does not leak ANTHROPIC_API_KEY to the CLI (uses its own login)', async () => {
+    const prev = process.env.ANTHROPIC_API_KEY
+    process.env.ANTHROPIC_API_KEY = 'sk-ant-should-not-leak'
+    try {
+      const child = fakeChild()
+      spawnMock.mockReturnValue(child)
+      const p = generateChatResponseViaHarness(cfg, msgs, [], 'postgresql')
+      child.stdout.emit(
+        'data',
+        Buffer.from(JSON.stringify({ result: JSON.stringify({ type: 'message', message: 'ok' }) }))
+      )
+      child.emit('close', 0)
+      await p
+      const spawnEnv = (spawnMock.mock.calls[0][2] as { env: Record<string, string | undefined> })
+        .env
+      expect(spawnEnv.ANTHROPIC_API_KEY).toBeUndefined()
+      expect(spawnEnv.ANTHROPIC_AUTH_TOKEN).toBeUndefined()
+    } finally {
+      if (prev === undefined) delete process.env.ANTHROPIC_API_KEY
+      else process.env.ANTHROPIC_API_KEY = prev
+    }
+  })
+
   it('returns parsed structured data on a successful run', async () => {
     const child = fakeChild()
     spawnMock.mockReturnValue(child)
