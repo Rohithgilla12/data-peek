@@ -15,6 +15,7 @@ import type {
   ParameterizedQuery,
   DatabaseType
 } from '@data-peek/shared'
+import { formatColumnType } from '@data-peek/shared'
 import { quoteIdentifier as quoteIdentifierUtil } from './sql-utils'
 
 /**
@@ -88,34 +89,6 @@ function buildTableRef(schema: string, table: string, dialect: DdlDialect): stri
 }
 
 /**
- * Build column data type with modifiers
- */
-function buildDataType(column: ColumnDefinition): string {
-  let dataType = column.dataType
-
-  // Handle length for varchar/char
-  if ((dataType === 'varchar' || dataType === 'char') && column.length !== undefined) {
-    dataType = `${dataType}(${column.length})`
-  }
-
-  // Handle precision/scale for numeric
-  if (dataType === 'numeric' && column.precision !== undefined) {
-    if (column.scale !== undefined) {
-      dataType = `numeric(${column.precision},${column.scale})`
-    } else {
-      dataType = `numeric(${column.precision})`
-    }
-  }
-
-  // Handle array types
-  if (column.isArray) {
-    dataType = `${dataType}[]`
-  }
-
-  return dataType
-}
-
-/**
  * Build column definition for CREATE TABLE
  */
 function buildColumnDef(column: ColumnDefinition, dialect: DdlDialect): string {
@@ -123,7 +96,7 @@ function buildColumnDef(column: ColumnDefinition, dialect: DdlDialect): string {
 
   // Column name and type
   parts.push(quoteIdentifier(column.name, dialect))
-  parts.push(buildDataType(column))
+  parts.push(formatColumnType(column))
 
   // Collation
   if (column.collation) {

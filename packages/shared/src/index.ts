@@ -1182,6 +1182,214 @@ export interface AlterTableBatch {
 }
 
 /**
+ * Format a column's SQL data type with length / precision / scale / array
+ * modifiers. Shared by CREATE (ddl-builder) and the ALTER diff below so both
+ * agree on exactly what a column's type string looks like.
+ */
+export function formatColumnType(column: ColumnDefinition): string {
+  let dataType = column.dataType;
+  if (
+    (dataType === "varchar" || dataType === "char") &&
+    column.length !== undefined
+  ) {
+    dataType = `${dataType}(${column.length})`;
+  }
+  if (dataType === "numeric" && column.precision !== undefined) {
+    dataType =
+      column.scale !== undefined
+        ? `numeric(${column.precision},${column.scale})`
+        : `numeric(${column.precision})`;
+  }
+  if (column.isArray) dataType = `${dataType}[]`;
+  return dataType;
+}
+
+// Stable signature of a column's default so an unchanged default never produces
+// a spurious ALTER — compares the raw fields, not a rendered SQL string.
+function columnDefaultSignature(c: ColumnDefinition): string {
+  return JSON.stringify([
+    c.defaultValue ?? null,
+    c.defaultType ?? null,
+    c.sequenceName ?? null
+  ]);
+}
+
+// The SQL expression to feed a SET DEFAULT, or null for DROP DEFAULT.
+function columnDefaultSql(c: ColumnDefinition): string | null {
+  if (c.defaultValue === undefined || c.defaultValue === "") return null;
+  if (c.defaultType === "sequence" && c.sequenceName) {
+    return `nextval('${c.sequenceName}')`;
+  }
+  return c.defaultValue;
+}
+
+function normalizedComment(comment?: string): string | null {
+  return comment && comment.length > 0 ? comment : null;
+}
+
+/**
+ * Result of diffing an edited table definition against its original.
+ * - `noop`: nothing to apply.
+ * - `batch`: an ALTER batch to execute.
+ * - `unsupported`: the edit contains a change the visual editor can't safely
+ *   express as an in-place ALTER; the caller should surface `reason` and NOT
+ *   fall back to any other DDL (silently doing the wrong thing loses edits).
+ */
+export type TableDiffResult =
+  | { kind: "noop" }
+  | { kind: "batch"; batch: AlterTableBatch }
+  | { kind: "unsupported"; reason: string };
+
+/**
+ * Diff an edited table definition against the original loaded from the database
+ * and produce the ALTER operations needed to reconcile them.
+ *
+ * Columns are matched by their stable client-side `id` (assigned when the
+ * definition is loaded and preserved through edits), so a rename is detected
+ * unambiguously rather than guessed from a name heuristic. Anything the batch
+ * model can't safely express in place — table rename/schema move, primary-key
+ * or unique changes, constraint or index edits — returns `unsupported` so the
+ * caller refuses the save with guidance instead of mis-applying it.
+ */
+export function diffTableDefinitions(
+  original: TableDefinition,
+  edited: TableDefinition
+): TableDiffResult {
+  if (edited.name !== original.name) {
+    return {
+      kind: "unsupported",
+      reason:
+        "Renaming a table isn't supported in the visual editor yet — rename it with a SQL query (ALTER TABLE … RENAME TO …)."
+    };
+  }
+  if (edited.schema !== original.schema) {
+    return {
+      kind: "unsupported",
+      reason:
+        "Moving a table to another schema isn't supported in the visual editor yet — use a SQL query (ALTER TABLE … SET SCHEMA …)."
+    };
+  }
+  if (!!edited.unlogged !== !!original.unlogged) {
+    return {
+      kind: "unsupported",
+      reason:
+        "Changing whether a table is UNLOGGED isn't supported in the visual editor yet — use a SQL query."
+    };
+  }
+  if (
+    JSON.stringify(original.constraints) !== JSON.stringify(edited.constraints)
+  ) {
+    return {
+      kind: "unsupported",
+      reason:
+        "Editing constraints isn't supported in the visual editor yet — apply constraint changes with a SQL query."
+    };
+  }
+  if (JSON.stringify(original.indexes) !== JSON.stringify(edited.indexes)) {
+    return {
+      kind: "unsupported",
+      reason:
+        "Editing indexes isn't supported in the visual editor yet — apply index changes with a SQL query."
+    };
+  }
+
+  const columnOperations: AlterColumnOperation[] = [];
+  const editById = new Map(edited.columns.map((c) => [c.id, c]));
+  const origById = new Map(original.columns.map((c) => [c.id, c]));
+
+  // Dropped columns (present originally, gone from the edited set).
+  for (const orig of original.columns) {
+    if (!editById.has(orig.id)) {
+      columnOperations.push({ type: "drop", columnName: orig.name });
+    }
+  }
+
+  for (const edit of edited.columns) {
+    const orig = origById.get(edit.id);
+    if (!orig) {
+      columnOperations.push({ type: "add", column: edit });
+      continue;
+    }
+
+    // Structural per-column changes the batch model can't express as a plain
+    // column op (PK/UNIQUE are also constraints; collation/CHECK have no op).
+    if (
+      !!edit.isPrimaryKey !== !!orig.isPrimaryKey ||
+      !!edit.isUnique !== !!orig.isUnique
+    ) {
+      return {
+        kind: "unsupported",
+        reason: `Changing the primary key or unique flag on "${edit.name}" isn't supported in the visual editor yet — use a SQL query.`
+      };
+    }
+    if ((edit.collation ?? "") !== (orig.collation ?? "")) {
+      return {
+        kind: "unsupported",
+        reason: `Changing the collation on "${edit.name}" isn't supported in the visual editor yet — use a SQL query.`
+      };
+    }
+    if ((edit.checkConstraint ?? "") !== (orig.checkConstraint ?? "")) {
+      return {
+        kind: "unsupported",
+        reason: `Changing the CHECK constraint on "${edit.name}" isn't supported in the visual editor yet — use a SQL query.`
+      };
+    }
+
+    // Rename first so subsequent ops reference the new name.
+    if (edit.name !== orig.name) {
+      columnOperations.push({
+        type: "rename",
+        oldName: orig.name,
+        newName: edit.name
+      });
+    }
+    if (formatColumnType(orig) !== formatColumnType(edit)) {
+      columnOperations.push({
+        type: "set_type",
+        columnName: edit.name,
+        newType: formatColumnType(edit)
+      });
+    }
+    if (!!orig.isNullable !== !!edit.isNullable) {
+      columnOperations.push({
+        type: "set_nullable",
+        columnName: edit.name,
+        nullable: edit.isNullable
+      });
+    }
+    if (columnDefaultSignature(orig) !== columnDefaultSignature(edit)) {
+      columnOperations.push({
+        type: "set_default",
+        columnName: edit.name,
+        defaultValue: columnDefaultSql(edit)
+      });
+    }
+    if ((orig.comment ?? "") !== (edit.comment ?? "")) {
+      columnOperations.push({
+        type: "set_comment",
+        columnName: edit.name,
+        comment: normalizedComment(edit.comment)
+      });
+    }
+  }
+
+  const commentChanged = (original.comment ?? "") !== (edited.comment ?? "");
+  if (columnOperations.length === 0 && !commentChanged) {
+    return { kind: "noop" };
+  }
+
+  const batch: AlterTableBatch = {
+    schema: original.schema,
+    table: original.name,
+    columnOperations,
+    constraintOperations: [],
+    indexOperations: []
+  };
+  if (commentChanged) batch.comment = normalizedComment(edited.comment);
+  return { kind: "batch", batch };
+}
+
+/**
  * Result of DDL operations
  */
 export interface DDLResult {

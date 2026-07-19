@@ -38,6 +38,7 @@ import { useTabStore, useConnectionStore } from '@/stores'
 import { useDDLStore, type ValidationError } from '@/stores/ddl-store'
 import type { TableDesignerTab } from '@/stores/tab-store'
 import type { ColumnDefinition, PostgresDataType, ConstraintType } from '@data-peek/shared'
+import { diffTableDefinitions } from '@data-peek/shared'
 import { ConstraintEditor } from '@/components/constraint-editor'
 import { IndexEditor } from '@/components/index-editor'
 
@@ -225,6 +226,45 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
       return
     }
 
+    // In edit mode, diff against the loaded definition and issue an ALTER —
+    // issuing CREATE TABLE for an existing table would error or, worse, silently
+    // create a second table under a new name. The diff refuses changes it can't
+    // safely express (see diffTableDefinitions) rather than mis-applying them.
+    if (state?.mode === 'edit') {
+      const original = state.originalDefinition
+      if (!original) {
+        setError(tabId, 'Original table definition not loaded yet — reopen the table and try again')
+        return
+      }
+
+      const diff = diffTableDefinitions(original, definition)
+      if (diff.kind === 'unsupported') {
+        setError(tabId, diff.reason)
+        return
+      }
+      if (diff.kind === 'noop') {
+        setError(tabId, null)
+        return
+      }
+
+      setSaving(tabId, true)
+      setError(tabId, null)
+      try {
+        const response = await window.api.ddl.alterTable(tabConnection, diff.batch)
+        if (response.success) {
+          await fetchSchemas(tabConnection.id)
+          setError(tabId, null)
+        } else {
+          setError(tabId, response.error ?? 'Failed to alter table')
+        }
+      } catch (err) {
+        setError(tabId, err instanceof Error ? err.message : String(err))
+      } finally {
+        setSaving(tabId, false)
+      }
+      return
+    }
+
     setSaving(tabId, true)
     setError(tabId, null)
 
@@ -244,7 +284,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
     } finally {
       setSaving(tabId, false)
     }
-  }, [definition, tabConnection, tabId, validate, setSaving, setError, fetchSchemas])
+  }, [definition, tabConnection, tabId, state, validate, setSaving, setError, fetchSchemas])
 
   // Get available schema names
   const availableSchemas = schemas.map((s) => s.name)
