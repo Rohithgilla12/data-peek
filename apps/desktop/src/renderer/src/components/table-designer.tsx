@@ -253,6 +253,17 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
         const response = await window.api.ddl.alterTable(tabConnection, diff.batch)
         if (response.success) {
           await fetchSchemas(tabConnection.id)
+          // Re-sync the editor with the now-altered table so a subsequent save in
+          // this tab diffs against current DB state instead of re-applying ops that
+          // already landed (e.g. renaming a column that was already renamed).
+          const reloaded = await window.api.ddl.getTableDDL(
+            tabConnection,
+            definition.schema,
+            definition.name
+          )
+          if (reloaded.success && reloaded.data) {
+            loadTableDefinition(tabId, reloaded.data)
+          }
           setError(tabId, null)
         } else {
           setError(tabId, response.error ?? 'Failed to alter table')
@@ -284,7 +295,17 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
     } finally {
       setSaving(tabId, false)
     }
-  }, [definition, tabConnection, tabId, state, validate, setSaving, setError, fetchSchemas])
+  }, [
+    definition,
+    tabConnection,
+    tabId,
+    state,
+    validate,
+    setSaving,
+    setError,
+    fetchSchemas,
+    loadTableDefinition
+  ])
 
   // Get available schema names
   const availableSchemas = schemas.map((s) => s.name)
