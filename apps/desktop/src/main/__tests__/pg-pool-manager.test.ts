@@ -145,6 +145,25 @@ describe('closeAllPgPools', () => {
     expect(PoolCtor.mock.calls.length).toBe(beforeClose + 1)
   })
 
+  it('does not wedge when a pool.end() hangs (bounded teardown)', async () => {
+    vi.useFakeTimers()
+    try {
+      await withPgClient(makeConfig(), async () => {})
+      // A client stuck on a server-side lock keeps pool.end() pending forever.
+      mockPool.end.mockReturnValueOnce(new Promise<void>(() => {}))
+
+      const closed = closeAllPgPools()
+      await vi.advanceTimersByTimeAsync(2_500)
+      await expect(closed).resolves.toBeUndefined()
+
+      // The manager must be reusable, not latched on the hung teardown.
+      mockPool.end.mockResolvedValue(undefined)
+      await expect(withPgClient(makeConfig(), async () => 'ok')).resolves.toBe('ok')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('coalesces concurrent teardown calls without wedging the guard', async () => {
     await withPgClient(makeConfig(), async () => {})
 

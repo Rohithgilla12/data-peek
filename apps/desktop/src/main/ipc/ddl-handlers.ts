@@ -135,8 +135,6 @@ export function registerDDLHandlers(): void {
       } catch (error: unknown) {
         log.error('Alter table error:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
-        result.errors!.push(errorMessage)
-        result.success = false
         recordAudit({
           source: 'ddl',
           connectionId: config.id ?? 'unsaved',
@@ -147,7 +145,9 @@ export function registerDDLHandlers(): void {
           success: false,
           error: errorMessage
         })
-        return { success: true, data: result }
+        // Surface failure on the envelope like create-table/drop-table — the renderer
+        // keys off response.success, so returning success:true here would hide a failed ALTER.
+        return { success: false, error: errorMessage }
       }
     }
   )

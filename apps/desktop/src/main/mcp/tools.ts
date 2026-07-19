@@ -139,8 +139,34 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
       withToolErrors(async () => {
         const conn = findConnection(deps, connectionId)
         const stmt = assertSingleReadStatement(sql, conn.dbType || 'postgresql')
-        const result = await getAdapter(conn).explain(conn, stmt, false)
-        return ok(result.plan)
+        const started = Date.now()
+        try {
+          const result = await getAdapter(conn).explain(conn, stmt, false)
+          recordAudit({
+            source: 'mcp',
+            connectionId: conn.id ?? 'unsaved',
+            connectionName: conn.name ?? conn.database,
+            dbType: conn.dbType || 'postgresql',
+            sql,
+            rowCount: null,
+            success: true,
+            durationMs: Date.now() - started
+          })
+          return ok(result.plan)
+        } catch (err) {
+          recordAudit({
+            source: 'mcp',
+            connectionId: conn.id ?? 'unsaved',
+            connectionName: conn.name ?? conn.database,
+            dbType: conn.dbType || 'postgresql',
+            sql,
+            rowCount: null,
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+            durationMs: Date.now() - started
+          })
+          throw err
+        }
       })
   )
 

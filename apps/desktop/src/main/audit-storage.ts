@@ -230,17 +230,23 @@ export class AuditStorage {
   prune(maxAgeDays: number): number {
     const cutoff = new Date(Date.now() - maxAgeDays * 24 * 3600 * 1000).toISOString()
     const runPrune = this.db.transaction((cutoffTs: string) => {
-      const last = this.db
-        .prepare('SELECT hash FROM audit_log WHERE ts < ? ORDER BY id DESC LIMIT 1')
-        .get(cutoffTs) as { hash: string } | undefined
-      if (!last) return 0
-      const result = this.db.prepare('DELETE FROM audit_log WHERE ts < ?').run(cutoffTs)
+      // The hash chain is ordered by id, so pruning must remove a contiguous id-prefix
+      // and re-anchor to the last removed row's hash. Deleting `WHERE ts < cutoff`
+      // directly would leave a hole if a backward clock change made an earlier-inserted
+      // row's ts newer than a later one — the survivors would be orphaned from the anchor
+      // and verify() would fail permanently. So pick the boundary as the highest id whose
+      // ts is older than the cutoff, then delete by id up to (and including) that boundary.
+      const boundary = this.db
+        .prepare('SELECT id, hash FROM audit_log WHERE ts < ? ORDER BY id DESC LIMIT 1')
+        .get(cutoffTs) as { id: number; hash: string } | undefined
+      if (!boundary) return 0
+      const result = this.db.prepare('DELETE FROM audit_log WHERE id <= ?').run(boundary.id)
       this.db
         .prepare(
           "INSERT INTO audit_meta (key, value) VALUES ('chainAnchor', ?) " +
             'ON CONFLICT(key) DO UPDATE SET value = excluded.value'
         )
-        .run(last.hash)
+        .run(boundary.hash)
       return result.changes
     })
     return runPrune(cutoff)
