@@ -31,6 +31,17 @@ interface QueryResultState {
   duration: number
 }
 
+// Conservative read-only check (mirrors the MCP read-guard): a leading read
+// keyword and no write verb outside string/identifier literals. Used to decide
+// which assistant queries are safe to auto-run.
+const READ_FIRST = /^\s*\(*\s*(select|with|show|explain|describe|desc|table|values)\b/i
+const WRITE_KW =
+  /\b(insert|update|delete|merge|drop|alter|create|truncate|grant|revoke|vacuum|exec|execute|call|copy|into)\b/i
+function isReadOnlySql(sql: string): boolean {
+  const stripped = sql.replace(/'(?:[^']|'')*'/g, '').replace(/"[^"]*"/g, '')
+  return READ_FIRST.test(sql) && !WRITE_KW.test(stripped)
+}
+
 export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AIMessageProps) {
   const [copiedContent, setCopiedContent] = React.useState(false)
   const [chartData, setChartData] = React.useState<Record<string, unknown>[] | null>(null)
@@ -52,52 +63,75 @@ export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AI
   }
 
   // Execute query inline and show results in chat
-  const handleExecuteInline = async (sql: string) => {
-    if (!connection || queryExecuting) return
+  const handleExecuteInline = React.useCallback(
+    async (sql: string) => {
+      if (!connection || queryExecuting) return
 
-    setQueryExecuting(true)
-    setQueryError(null)
+      setQueryExecuting(true)
+      setQueryError(null)
 
-    const startTime = performance.now()
+      const startTime = performance.now()
 
-    try {
-      const response = await window.api.db.query(connection, sql)
-      const duration = Math.round(performance.now() - startTime)
+      try {
+        const response = await window.api.db.query(connection, sql)
+        const duration = Math.round(performance.now() - startTime)
 
-      if (response.success && response.data) {
-        const data = response.data as {
-          rows: Record<string, unknown>[]
-          fields?: Array<{ name: string; dataTypeID?: number }>
+        if (response.success && response.data) {
+          const data = response.data as {
+            rows: Record<string, unknown>[]
+            fields?: Array<{ name: string; dataTypeID?: number }>
+          }
+
+          // Extract column info from fields or first row
+          const columns: Array<{ name: string; type: string }> =
+            data.fields?.map((f) => ({
+              name: f.name,
+              type: f.dataTypeID ? `type_${f.dataTypeID}` : 'unknown'
+            })) ||
+            (data.rows[0]
+              ? Object.keys(data.rows[0]).map((key) => ({
+                  name: key,
+                  type: typeof data.rows[0][key]
+                }))
+              : [])
+
+          setQueryResult({
+            columns,
+            rows: data.rows,
+            totalRows: data.rows.length,
+            duration
+          })
+        } else {
+          setQueryError(response.error || 'Query failed')
         }
-
-        // Extract column info from fields or first row
-        const columns: Array<{ name: string; type: string }> =
-          data.fields?.map((f) => ({
-            name: f.name,
-            type: f.dataTypeID ? `type_${f.dataTypeID}` : 'unknown'
-          })) ||
-          (data.rows[0]
-            ? Object.keys(data.rows[0]).map((key) => ({
-                name: key,
-                type: typeof data.rows[0][key]
-              }))
-            : [])
-
-        setQueryResult({
-          columns,
-          rows: data.rows,
-          totalRows: data.rows.length,
-          duration
-        })
-      } else {
-        setQueryError(response.error || 'Query failed')
+      } catch (err) {
+        setQueryError(err instanceof Error ? err.message : 'Unknown error')
+      } finally {
+        setQueryExecuting(false)
       }
-    } catch (err) {
-      setQueryError(err instanceof Error ? err.message : 'Unknown error')
-    } finally {
-      setQueryExecuting(false)
-    }
-  }
+    },
+    [connection, queryExecuting]
+  )
+
+  // Auto-run read-only queries (SELECT/CTE/SHOW/EXPLAIN) the assistant returns so
+  // results show without a manual click. Writes and anything flagged for
+  // confirmation still wait for the explicit Run button.
+  React.useEffect(() => {
+    if (isUser) return
+    const rd = message.responseData
+    if (rd?.type !== 'query') return
+    if (rd.requiresConfirmation || !isReadOnlySql(rd.sql)) return
+    if (!connection || queryResult || queryExecuting || queryError) return
+    void handleExecuteInline(rd.sql)
+  }, [
+    isUser,
+    message.responseData,
+    connection,
+    queryResult,
+    queryExecuting,
+    queryError,
+    handleExecuteInline
+  ])
 
   // Fetch chart data when chart response is received
   React.useEffect(() => {
