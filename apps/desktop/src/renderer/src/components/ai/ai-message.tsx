@@ -15,6 +15,7 @@ import type {
   AISchemaData
 } from './ai-chat-panel'
 import type { ConnectionConfig, SchemaInfo } from '@data-peek/shared'
+import { isReadOnlySql } from '@data-peek/shared'
 
 interface AIMessageProps {
   message: AIChatMessage
@@ -29,17 +30,6 @@ interface QueryResultState {
   rows: Record<string, unknown>[]
   totalRows: number
   duration: number
-}
-
-// Conservative read-only check (mirrors the MCP read-guard): a leading read
-// keyword and no write verb outside string/identifier literals. Used to decide
-// which assistant queries are safe to auto-run.
-const READ_FIRST = /^\s*\(*\s*(select|with|show|explain|describe|desc|table|values)\b/i
-const WRITE_KW =
-  /\b(insert|update|delete|merge|drop|alter|create|truncate|grant|revoke|vacuum|exec|execute|call|copy|into)\b/i
-function isReadOnlySql(sql: string): boolean {
-  const stripped = sql.replace(/'(?:[^']|'')*'/g, '').replace(/"[^"]*"/g, '')
-  return READ_FIRST.test(sql) && !WRITE_KW.test(stripped)
 }
 
 export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AIMessageProps) {

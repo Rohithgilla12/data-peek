@@ -10,6 +10,7 @@ import {
   DialogTitle
 } from '@data-peek/ui'
 import type { CreateWidgetInput, WidgetConfig, WidgetLayout, SchemaInfo } from '@data-peek/shared'
+import { isReadOnlySql } from '@data-peek/shared'
 import { useDashboardStore } from '@/stores/dashboard-store'
 import { useConnectionStore } from '@/stores/connection-store'
 
@@ -76,6 +77,8 @@ export function AIDashboardDialog({ open, onOpenChange, dashboardId }: AIDashboa
       const layouts = packLayouts(spec.widgets)
       for (let i = 0; i < spec.widgets.length; i++) {
         const wSpec = spec.widgets[i]
+        // Never run/pin a widget whose SQL isn't a single read-only statement.
+        if (!isReadOnlySql(wSpec.sql)) continue
         setStatus(`Adding widget ${i + 1} of ${spec.widgets.length}: ${wSpec.title}`)
         // Resolve real columns so the config points at columns that exist.
         const run = await window.api.db.query(connection, wSpec.sql)

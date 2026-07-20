@@ -400,6 +400,32 @@ export function providerNeedsKey(provider: AIProvider): boolean {
   return !KEYLESS_AI_PROVIDERS.has(provider);
 }
 
+// Verbs that mutate data/schema or have side effects. Word-boundary matched, so
+// substrings like "lock_events" or "created_at" don't trip it.
+const SQL_WRITE_KEYWORDS =
+  /\b(insert|update|delete|merge|upsert|drop|alter|create|truncate|grant|revoke|vacuum|analyze|reindex|cluster|refresh|lock|comment|rename|exec|execute|call|do|copy|into|set|reset|discard|prepare|deallocate|listen|unlisten|notify|checkpoint|begin|commit|rollback|savepoint|security)\b/i;
+const SQL_READ_FIRST = /^\(*\s*(select|with|show|explain|describe|desc|table|values)\b/i;
+
+/**
+ * Conservative "is this a single read-only statement?" check used before the app
+ * auto-runs or pins AI-generated SQL. Strips comments and string/identifier
+ * literals, rejects anything with more than one statement (so `SELECT 1; DROP …`
+ * can't slip through), requires a leading read keyword, and rejects any write /
+ * DDL / side-effecting verb. Deliberately errs toward false (better to make the
+ * user click Run than to auto-execute something mutating).
+ */
+export function isReadOnlySql(sql: string): boolean {
+  const stripped = sql
+    .replace(/--[^\n]*/g, " ")
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .replace(/'(?:[^']|'')*'/g, "''")
+    .replace(/"(?:[^"]|"")*"/g, '""');
+  // Single statement only — drop a lone trailing semicolon, then reject any more.
+  const body = stripped.trim().replace(/;\s*$/, "");
+  if (!body || body.includes(";")) return false;
+  return SQL_READ_FIRST.test(body) && !SQL_WRITE_KEYWORDS.test(body);
+}
+
 /**
  * AI message for chat conversations
  */

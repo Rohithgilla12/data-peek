@@ -10,6 +10,7 @@ import {
   DialogTitle
 } from '@data-peek/ui'
 import type { CreateWidgetInput, WidgetConfig, SchemaInfo } from '@data-peek/shared'
+import { isReadOnlySql } from '@data-peek/shared'
 import { useDashboardStore } from '@/stores/dashboard-store'
 import { useConnectionStore } from '@/stores/connection-store'
 
@@ -66,6 +67,11 @@ export function AIWidgetDialog({ open, onOpenChange, dashboardId }: AIWidgetDial
       const data = res.data
       if (!data.sql) {
         setError("That didn't produce a query to chart. Try naming a table or metric.")
+        return
+      }
+      // Never run/pin generated SQL that isn't a single read-only statement.
+      if (!isReadOnlySql(data.sql)) {
+        setError('The generated query is not read-only, so it was not run. Try rephrasing.')
         return
       }
 
