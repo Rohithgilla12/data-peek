@@ -12,6 +12,43 @@ import type { SchemaInfo, AIStructuredResponse } from '@shared/index'
 // Single source of truth for which providers need a key lives in shared.
 export { providerNeedsKey } from '@shared/index'
 
+// One widget in an AI-generated dashboard. The model writes read-only SQL per
+// widget and picks how to visualise it; the renderer maps this to a real widget.
+export const dashboardWidgetSpecSchema = z.object({
+  title: z.string().describe('Short widget title'),
+  kind: z.enum(['kpi', 'chart', 'table']).describe('Widget kind'),
+  sql: z.string().describe('Read-only SQL that produces the widget data'),
+  chartType: z.enum(['bar', 'line', 'pie', 'area']).nullish().describe('For kind=chart'),
+  format: z.enum(['number', 'currency', 'percent', 'duration']).nullish().describe('For kind=kpi'),
+  xKey: z.string().nullish().describe('For kind=chart: category/x column'),
+  yKeys: z.array(z.string()).nullish().describe('For kind=chart: value column(s)')
+})
+
+export type DashboardWidgetSpec = z.infer<typeof dashboardWidgetSpecSchema>
+
+export const dashboardSpecSchema = z.object({
+  title: z.string().describe('Dashboard title'),
+  widgets: z.array(dashboardWidgetSpecSchema).min(1).max(8)
+})
+
+export type DashboardSpec = z.infer<typeof dashboardSpecSchema>
+
+/**
+ * System prompt for generating a whole dashboard. The model should use its DB
+ * tools (when available) to ground each widget's SQL in the real schema.
+ */
+export function buildDashboardPrompt(schemas: SchemaInfo[], dbType: string): string {
+  return `${buildSystemPrompt(schemas, dbType)}
+
+## Task: design a dashboard
+Design a concise, useful dashboard for this database. Return ONLY a JSON object:
+{ "title": string, "widgets": [ { "title", "kind", "sql", "chartType"?, "format"?, "xKey"?, "yKeys"? } ] }
+
+- 4–7 widgets. Lead with 2–4 KPI tiles (kind "kpi": SQL returns a single row/column; set "format"), then 2–3 charts (kind "chart": grouped/time SQL with "chartType", "xKey", and "yKeys"), optionally one "table".
+- Every SQL must be READ-ONLY (SELECT), valid for THIS schema, and reference real tables/columns. Prefer meaningful business metrics (counts, revenue, growth, distribution).
+- No prose, no markdown fences — the reply must be a single JSON object starting with "{" and ending with "}".`
+}
+
 // Zod schema for structured output.
 // Flat object (not discriminatedUnion) for Anthropic/OpenAI tool compatibility;
 // .nullish() so missing fields are accepted and normalized to null below.

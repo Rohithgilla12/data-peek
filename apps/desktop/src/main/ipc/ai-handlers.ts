@@ -6,6 +6,7 @@ import {
   clearAIConfig,
   validateAPIKey,
   generateChatResponse,
+  generateDashboard,
   getChatHistory,
   saveChatHistory,
   clearChatHistory,
@@ -172,6 +173,28 @@ export function registerAIHandlers(): void {
       return { success: false, error: errorMessage }
     }
   })
+
+  // Generate a whole dashboard spec from a prompt
+  ipcMain.handle(
+    'ai:generate-dashboard',
+    async (
+      _,
+      {
+        prompt,
+        schemas,
+        dbType,
+        connectionId
+      }: { prompt: string; schemas: SchemaInfo[]; dbType: string; connectionId?: string }
+    ) => {
+      try {
+        const config = getAIConfig()
+        if (!config) return { success: false, error: 'AI not configured.' }
+        return await generateDashboard(config, prompt, schemas, dbType, connectionId)
+      } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
+    }
+  )
 
   // Chat with AI - returns structured JSON response
   ipcMain.handle(

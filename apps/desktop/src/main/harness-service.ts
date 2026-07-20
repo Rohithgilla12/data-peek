@@ -19,7 +19,14 @@ import { homedir } from 'os'
 import { join } from 'path'
 import type { AIConfig, AIMessage, SchemaInfo, AIStructuredResponse } from '@shared/index'
 import { DEFAULT_MODELS } from '@shared/index'
-import { buildSystemPrompt, responseSchema, normalizeStructuredResponse } from './ai-schema'
+import {
+  buildSystemPrompt,
+  responseSchema,
+  normalizeStructuredResponse,
+  buildDashboardPrompt,
+  dashboardSpecSchema,
+  type DashboardSpec
+} from './ai-schema'
 import { getMcpRuntimeInfo, type McpRuntimeInfo } from './mcp-runtime'
 import { createLogger } from './lib/logger'
 
@@ -28,6 +35,8 @@ const log = createLogger('harness-service')
 const GENERATION_TIMEOUT_MS = 120_000
 // Agentic runs make several tool round-trips, so they get a longer ceiling.
 const AGENTIC_TIMEOUT_MS = 180_000
+// Generating a whole dashboard verifies several queries — allow more time.
+const DASHBOARD_TIMEOUT_MS = 300_000
 const DETECT_TIMEOUT_MS = 10_000
 
 // Instruction appended to the schema-aware system prompt so the CLI returns a
@@ -380,6 +389,81 @@ export async function generateChatResponseViaHarness(
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     log.error('generateChatResponseViaHarness error:', message)
+    return { success: false, error: message }
+  }
+}
+
+/** Parse the CLI envelope → validated DashboardSpec. */
+function parseDashboardSpec(stdout: string): DashboardSpec {
+  let outer: unknown
+  try {
+    outer = JSON.parse(stdout)
+  } catch {
+    throw new Error('Claude CLI did not return valid JSON')
+  }
+  const envelope = (outer ?? {}) as Record<string, unknown>
+  if (envelope.is_error) {
+    throw new Error(typeof envelope.result === 'string' ? envelope.result : 'Claude CLI error')
+  }
+  const resultText = typeof envelope.result === 'string' ? envelope.result : ''
+  if (!resultText.trim()) throw new Error('Claude CLI returned an empty result')
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(extractJsonObject(resultText))
+  } catch {
+    throw new Error('Could not parse a dashboard spec from the model output')
+  }
+  const validated = dashboardSpecSchema.safeParse(parsed)
+  if (!validated.success) {
+    throw new Error(
+      `Dashboard spec did not match the expected shape: ${
+        validated.error.issues[0]?.message ?? 'invalid'
+      }`
+    )
+  }
+  return validated.data
+}
+
+/**
+ * Generate a whole dashboard spec by driving the user's local `claude` CLI
+ * agentically against the live DB (requires the MCP server + a saved connection).
+ */
+export async function generateDashboardViaHarness(
+  prompt: string,
+  schemas: SchemaInfo[],
+  dbType: string,
+  connectionId: string
+): Promise<{ success: boolean; spec?: DashboardSpec; error?: string }> {
+  try {
+    const mcp = getMcpRuntimeInfo()
+    if (!mcp) {
+      return {
+        success: false,
+        error: 'Enable the MCP server so the assistant can query your database.'
+      }
+    }
+    const bin = resolveClaudeBinary()
+    const model = DEFAULT_MODELS['claude-cli']
+    const systemPrompt =
+      buildDashboardPrompt(schemas, dbType) +
+      `\n\nUse connectionId "${connectionId}" for every tool call; do not call list_connections. Verify each widget's SQL against the live database before returning.`
+    const userPrompt = prompt.trim() || 'Design a useful overview dashboard for this database.'
+    const args = buildAgenticHarnessArgs(
+      userPrompt,
+      systemPrompt,
+      model,
+      buildMcpConfigJson(mcp),
+      mcpAllowedTools()
+    )
+    log.debug('Running claude CLI (dashboard)', { bin, model })
+    const { stdout, stderr, code } = await runProcess(bin, args, DASHBOARD_TIMEOUT_MS)
+    if (!stdout.trim()) {
+      throw new Error(`Claude CLI failed: ${stderr.trim() || `exited with code ${code}`}`)
+    }
+    return { success: true, spec: parseDashboardSpec(stdout) }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    log.error('generateDashboardViaHarness error:', message)
     return { success: false, error: message }
   }
 }

@@ -17,6 +17,7 @@ import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import { useDashboardStore } from '@/stores'
 import { AddWidgetDialog } from './add-widget-dialog'
 import { AIWidgetDialog } from './ai-widget-dialog'
+import { AIDashboardDialog } from './ai-dashboard-dialog'
 import { DashboardFormDialog } from './dashboard-form-dialog'
 import { DashboardGrid } from './dashboard-grid'
 import { RefreshScheduleDialog } from './refresh-schedule-dialog'
@@ -45,6 +46,7 @@ export function DashboardView() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false)
   const [isAIWidgetOpen, setIsAIWidgetOpen] = useState(false)
+  const [isAIDashboardOpen, setIsAIDashboardOpen] = useState(false)
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false)
 
   const dashboard = dashboards.find((d) => d.id === dashboardId)
@@ -197,6 +199,10 @@ export function DashboardView() {
             <Sparkles className="size-4 mr-2" />
             Ask AI
           </Button>
+          <Button size="sm" onClick={() => setIsAIDashboardOpen(true)}>
+            <Sparkles className="size-4 mr-2" />
+            Generate
+          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -246,7 +252,11 @@ export function DashboardView() {
       </div>
 
       {dashboard.widgets.length === 0 ? (
-        <EmptyDashboard dashboardId={dashboard.id} onAddWidget={() => setIsAddWidgetOpen(true)} />
+        <EmptyDashboard
+          dashboardId={dashboard.id}
+          onAddWidget={() => setIsAddWidgetOpen(true)}
+          onGenerateAI={() => setIsAIDashboardOpen(true)}
+        />
       ) : (
         <DashboardGrid dashboard={dashboard} editMode={editMode} />
       )}
@@ -260,6 +270,12 @@ export function DashboardView() {
       <AIWidgetDialog
         open={isAIWidgetOpen}
         onOpenChange={setIsAIWidgetOpen}
+        dashboardId={dashboard.id}
+      />
+
+      <AIDashboardDialog
+        open={isAIDashboardOpen}
+        onOpenChange={setIsAIDashboardOpen}
         dashboardId={dashboard.id}
       />
 
@@ -281,6 +297,7 @@ export function DashboardView() {
 interface EmptyDashboardProps {
   dashboardId: string
   onAddWidget: () => void
+  onGenerateAI: () => void
 }
 
 /**
@@ -291,7 +308,7 @@ interface EmptyDashboardProps {
  * @param onAddWidget - Callback invoked when the user clicks the "Add Widget" button
  * @returns The empty dashboard view element
  */
-function EmptyDashboard({ onAddWidget }: EmptyDashboardProps) {
+function EmptyDashboard({ onAddWidget, onGenerateAI }: EmptyDashboardProps) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center max-w-md text-center">
@@ -300,13 +317,18 @@ function EmptyDashboard({ onAddWidget }: EmptyDashboardProps) {
         </div>
         <h2 className="text-xl font-semibold mb-2">No widgets yet</h2>
         <p className="text-muted-foreground mb-6">
-          Add widgets to visualize your data. You can add charts, KPI metrics, or data tables from
-          your saved queries.
+          Describe what you want and let AI build the whole dashboard — or add widgets yourself.
         </p>
-        <Button onClick={onAddWidget}>
-          <Plus className="size-4 mr-2" />
-          Add Widget
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={onGenerateAI}>
+            <Sparkles className="size-4 mr-2" />
+            Generate with AI
+          </Button>
+          <Button variant="outline" onClick={onAddWidget}>
+            <Plus className="size-4 mr-2" />
+            Add Widget
+          </Button>
+        </div>
       </div>
     </div>
   )

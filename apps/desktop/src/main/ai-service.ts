@@ -11,7 +11,10 @@ import {
   responseSchema,
   normalizeStructuredResponse,
   buildSystemPrompt,
-  providerNeedsKey
+  providerNeedsKey,
+  buildDashboardPrompt,
+  dashboardSpecSchema,
+  type DashboardSpec
 } from './ai-schema'
 import type {
   SchemaInfo,
@@ -300,6 +303,37 @@ export async function validateAPIKey(
     }
 
     return { valid: false, error: message }
+  }
+}
+
+/**
+ * Generate a whole dashboard spec from a prompt. claude-cli grounds it against
+ * the live DB via the harness; other providers use generateObject (from schema).
+ */
+export async function generateDashboard(
+  config: AIConfig,
+  prompt: string,
+  schemas: SchemaInfo[],
+  dbType: string,
+  connectionId?: string
+): Promise<{ success: boolean; spec?: DashboardSpec; error?: string }> {
+  if (config.provider === 'claude-cli') {
+    if (!connectionId) return { success: false, error: 'No connection selected.' }
+    const { generateDashboardViaHarness } = await import('./harness-service')
+    return generateDashboardViaHarness(prompt, schemas, dbType, connectionId)
+  }
+  try {
+    const model = getModel(config)
+    const result = await generateObject({
+      model,
+      schema: dashboardSpecSchema,
+      system: buildDashboardPrompt(schemas, dbType),
+      prompt: prompt || 'Design a useful overview dashboard for this database.',
+      temperature: 0.2
+    })
+    return { success: true, spec: result.object }
+  } catch (error: unknown) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) }
   }
 }
 

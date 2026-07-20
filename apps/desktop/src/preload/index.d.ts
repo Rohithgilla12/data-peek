@@ -417,6 +417,27 @@ interface DataPeekApi {
     detectHarness: () => Promise<
       IpcResponse<{ available: boolean; path?: string; version?: string; error?: string }>
     >
+    generateDashboard: (
+      prompt: string,
+      schemas: SchemaInfo[],
+      dbType: string,
+      connectionId?: string
+    ) => Promise<{
+      success: boolean
+      spec?: {
+        title: string
+        widgets: Array<{
+          title: string
+          kind: 'kpi' | 'chart' | 'table'
+          sql: string
+          chartType?: 'bar' | 'line' | 'pie' | 'area' | null
+          format?: 'number' | 'currency' | 'percent' | 'duration' | null
+          xKey?: string | null
+          yKeys?: string[] | null
+        }>
+      }
+      error?: string
+    }>
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],

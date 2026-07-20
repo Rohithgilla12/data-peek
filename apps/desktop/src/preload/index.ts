@@ -558,6 +558,27 @@ const api = {
     detectHarness: (): Promise<
       IpcResponse<{ available: boolean; path?: string; version?: string; error?: string }>
     > => ipcRenderer.invoke('ai:detect-harness'),
+    generateDashboard: (
+      prompt: string,
+      schemas: SchemaInfo[],
+      dbType: string,
+      connectionId?: string
+    ): Promise<{
+      success: boolean
+      spec?: {
+        title: string
+        widgets: Array<{
+          title: string
+          kind: 'kpi' | 'chart' | 'table'
+          sql: string
+          chartType?: 'bar' | 'line' | 'pie' | 'area' | null
+          format?: 'number' | 'currency' | 'percent' | 'duration' | null
+          xKey?: string | null
+          yKeys?: string[] | null
+        }>
+      }
+      error?: string
+    }> => ipcRenderer.invoke('ai:generate-dashboard', { prompt, schemas, dbType, connectionId }),
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],
