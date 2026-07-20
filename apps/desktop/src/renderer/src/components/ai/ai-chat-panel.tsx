@@ -95,6 +95,8 @@ export interface AIChatMessage {
   role: 'user' | 'assistant' | 'system'
   content: string
   responseData?: AIResponseData
+  /** True when a BYOH harness answered agentically by querying the live DB. */
+  grounded?: boolean
   createdAt: Date
 }
 
@@ -263,8 +265,9 @@ export function AIChatPanel({
       // Determine database type from connection
       const dbType = connection.dbType || 'postgresql'
 
-      // Call actual AI service via IPC
-      const response = await window.api.ai.chat(aiMessages, schemas, dbType)
+      // Call actual AI service via IPC. Pass the connection id so a harness
+      // provider can query this database through the MCP server (agentic mode).
+      const response = await window.api.ai.chat(aiMessages, schemas, dbType, connection.id)
 
       if (response.success && response.data) {
         const data = response.data
@@ -316,6 +319,7 @@ export function AIChatPanel({
           role: 'assistant',
           content: data.message,
           responseData,
+          grounded: response.meta?.grounded ?? false,
           createdAt: new Date()
         }
 

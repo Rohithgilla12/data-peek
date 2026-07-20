@@ -555,12 +555,38 @@ const api = {
     clearConfig: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('ai:clear-config'),
     validateKey: (config: AIConfig): Promise<IpcResponse<{ valid: boolean; error?: string }>> =>
       ipcRenderer.invoke('ai:validate-key', config),
+    detectHarness: (): Promise<
+      IpcResponse<{ available: boolean; path?: string; version?: string; error?: string }>
+    > => ipcRenderer.invoke('ai:detect-harness'),
+    generateDashboard: (
+      prompt: string,
+      schemas: SchemaInfo[],
+      dbType: string,
+      connectionId?: string
+    ): Promise<{
+      success: boolean
+      spec?: {
+        title: string
+        widgets: Array<{
+          title: string
+          kind: 'kpi' | 'chart' | 'table'
+          sql: string
+          chartType?: 'bar' | 'line' | 'pie' | 'area' | null
+          format?: 'number' | 'currency' | 'percent' | 'duration' | null
+          xKey?: string | null
+          yKeys?: string[] | null
+        }>
+      }
+      error?: string
+    }> => ipcRenderer.invoke('ai:generate-dashboard', { prompt, schemas, dbType, connectionId }),
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],
-      dbType: string
-    ): Promise<IpcResponse<AIChatResponse>> =>
-      ipcRenderer.invoke('ai:chat', { messages, schemas, dbType }),
+      dbType: string,
+      connectionId?: string
+    ): Promise<
+      IpcResponse<AIChatResponse> & { meta?: { grounded: boolean; agentic: boolean; turns?: number } }
+    > => ipcRenderer.invoke('ai:chat', { messages, schemas, dbType, connectionId }),
     // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string): Promise<IpcResponse<StoredChatMessage[]>> =>
       ipcRenderer.invoke('ai:get-chat-history', connectionId),

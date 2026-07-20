@@ -24,6 +24,22 @@ Each SQL cell is an independent query editor. Run the cell to see results inline
 
 Markdown cells accept standard Markdown syntax. Use them to add context, explain steps, document expected output, or leave notes for teammates. They render in place when not being edited.
 
+### AI cells
+
+New in v0.27: click **AI cell** and describe what you want. The [AI assistant](/docs/features/ai-assistant) writes the query — grounded against your live schema when using the **Claude Code (local CLI)** provider — and drops it in as a ready-to-run SQL cell, with a short note above it.
+
+<video
+  controls
+  muted
+  playsInline
+  poster="/images/ai-notebook-cell-poster.png"
+  style={{ width: '100%', borderRadius: '12px', border: '1px solid rgba(128,128,128,0.25)' }}
+>
+  <source src="/videos/ai-notebook-cell.mp4" type="video/mp4" />
+  Your browser doesn't support embedded video —
+  [download the walkthrough](/videos/ai-notebook-cell.mp4).
+</video>
+
 ## Running Queries
 
 | Action                       | Shortcut                          |

@@ -6,6 +6,7 @@ import {
   clearAIConfig,
   validateAPIKey,
   generateChatResponse,
+  generateDashboard,
   getChatHistory,
   saveChatHistory,
   clearChatHistory,
@@ -162,6 +163,39 @@ export function registerAIHandlers(): void {
     }
   })
 
+  // Detect whether the local `claude` CLI is installed (for the BYOH provider)
+  ipcMain.handle('ai:detect-harness', async () => {
+    try {
+      const { detectClaudeCli } = await import('../harness-service')
+      return { success: true, data: await detectClaudeCli() }
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return { success: false, error: errorMessage }
+    }
+  })
+
+  // Generate a whole dashboard spec from a prompt
+  ipcMain.handle(
+    'ai:generate-dashboard',
+    async (
+      _,
+      {
+        prompt,
+        schemas,
+        dbType,
+        connectionId
+      }: { prompt: string; schemas: SchemaInfo[]; dbType: string; connectionId?: string }
+    ) => {
+      try {
+        const config = getAIConfig()
+        if (!config) return { success: false, error: 'AI not configured.' }
+        return await generateDashboard(config, prompt, schemas, dbType, connectionId)
+      } catch (error: unknown) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
+    }
+  )
+
   // Chat with AI - returns structured JSON response
   ipcMain.handle(
     'ai:chat',
@@ -170,11 +204,13 @@ export function registerAIHandlers(): void {
       {
         messages,
         schemas,
-        dbType
+        dbType,
+        connectionId
       }: {
         messages: AIMessage[]
         schemas: SchemaInfo[]
         dbType: string
+        connectionId?: string
       }
     ) => {
       log.debug('Received chat request, messages count:', messages.length)
@@ -185,12 +221,13 @@ export function registerAIHandlers(): void {
           return { success: false, error: 'AI not configured. Please set up your API key.' }
         }
 
-        const result = await generateChatResponse(config, messages, schemas, dbType)
+        const result = await generateChatResponse(config, messages, schemas, dbType, connectionId)
 
         if (result.success && result.data) {
           return {
             success: true,
-            data: result.data // Returns AIStructuredResponse directly
+            data: result.data, // Returns AIStructuredResponse directly
+            meta: result.meta // BYOH grounding info (undefined for AI SDK providers)
           }
         } else {
           return { success: false, error: result.error }

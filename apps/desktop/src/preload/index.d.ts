@@ -85,7 +85,16 @@ import type {
 
 // AI Types
 type AIProvider =
-  'openai' | 'anthropic' | 'google' | 'groq' | 'deepseek' | 'mistral' | 'xai' | 'glm' | 'ollama'
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'groq'
+  | 'deepseek'
+  | 'mistral'
+  | 'xai'
+  | 'glm'
+  | 'ollama'
+  | 'claude-cli'
 
 interface AIConfig {
   provider: AIProvider
@@ -405,11 +414,40 @@ interface DataPeekApi {
     setConfig: (config: AIConfig) => Promise<IpcResponse<void>>
     clearConfig: () => Promise<IpcResponse<void>>
     validateKey: (config: AIConfig) => Promise<IpcResponse<{ valid: boolean; error?: string }>>
+    detectHarness: () => Promise<
+      IpcResponse<{ available: boolean; path?: string; version?: string; error?: string }>
+    >
+    generateDashboard: (
+      prompt: string,
+      schemas: SchemaInfo[],
+      dbType: string,
+      connectionId?: string
+    ) => Promise<{
+      success: boolean
+      spec?: {
+        title: string
+        widgets: Array<{
+          title: string
+          kind: 'kpi' | 'chart' | 'table'
+          sql: string
+          chartType?: 'bar' | 'line' | 'pie' | 'area' | null
+          format?: 'number' | 'currency' | 'percent' | 'duration' | null
+          xKey?: string | null
+          yKeys?: string[] | null
+        }>
+      }
+      error?: string
+    }>
     chat: (
       messages: AIMessage[],
       schemas: SchemaInfo[],
-      dbType: string
-    ) => Promise<IpcResponse<AIChatResponse>>
+      dbType: string,
+      connectionId?: string
+    ) => Promise<
+      IpcResponse<AIChatResponse> & {
+        meta?: { grounded: boolean; agentic: boolean; turns?: number }
+      }
+    >
     // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string) => Promise<IpcResponse<StoredChatMessage[]>>
     saveChatHistory: (

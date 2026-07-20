@@ -25,20 +25,29 @@ function configFor(provider: AIProvider): AIConfig {
   }
 }
 
+// claude-cli is not an AI SDK provider — it drives the local `claude` CLI via
+// harness-service, so createProviderClient intentionally throws for it (callers
+// route it away before reaching the factory).
+const SDK_PROVIDERS = AI_PROVIDERS.filter((p) => p.id !== 'claude-cli')
+
 describe('createProviderClient', () => {
-  for (const info of AI_PROVIDERS) {
+  for (const info of SDK_PROVIDERS) {
     it(`instantiates ${info.id} without throwing`, () => {
       const model = createProviderClient(configFor(info.id))
       expect(model).toBeTruthy()
     })
   }
 
-  it('covers every AIProvider enumerated in AI_PROVIDERS', () => {
+  it('covers every AI-SDK AIProvider enumerated in AI_PROVIDERS', () => {
     // If someone adds a provider to the shared union but forgets to
     // extend AI_PROVIDERS or the switch, at least one of these explodes.
-    for (const info of AI_PROVIDERS) {
+    for (const info of SDK_PROVIDERS) {
       expect(() => createProviderClient(configFor(info.id))).not.toThrow()
     }
+  })
+
+  it('throws for claude-cli (handled by the harness, not the AI SDK factory)', () => {
+    expect(() => createProviderClient(configFor('claude-cli'))).toThrow(/harness/i)
   })
 
   it('throws on an unknown provider (defensive)', () => {

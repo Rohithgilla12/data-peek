@@ -30,9 +30,16 @@ import {
 } from '@data-peek/ui'
 
 import type { AIProvider, AIMultiProviderConfig, AIProviderConfig } from '@shared/index'
-import { AI_PROVIDERS } from '@shared/index'
+import { AI_PROVIDERS, providerNeedsKey } from '@shared/index'
 
 type ProviderId = AIProvider
+
+interface HarnessDetection {
+  available: boolean
+  path?: string
+  version?: string
+  error?: string
+}
 
 interface AISettingsModalProps {
   isOpen: boolean
@@ -60,18 +67,40 @@ export function AISettingsModal({
   const [isValidating, setIsValidating] = React.useState(false)
   const [validationResult, setValidationResult] = React.useState<'success' | 'error' | null>(null)
   const [isSaving, setIsSaving] = React.useState(false)
+  const [harness, setHarness] = React.useState<HarnessDetection | null>(null)
+  const [isDetecting, setIsDetecting] = React.useState(false)
 
   const providerConfig = AI_PROVIDERS.find((p) => p.id === selectedProvider)!
+  const needsKey = providerNeedsKey(selectedProvider)
 
   // Check if a provider has a saved config
   const hasProviderConfig = (providerId: ProviderId): boolean => {
     if (!multiProviderConfig?.providers) return false
     const config = multiProviderConfig.providers[providerId]
-    if (providerId === 'ollama') {
-      return !!config?.baseUrl
-    }
+    if (providerId === 'ollama') return !!config?.baseUrl
+    // claude-cli: no key/url, so an existing entry means it's been configured.
+    if (!providerNeedsKey(providerId)) return !!config
     return !!config?.apiKey
   }
+
+  // Detect the local claude CLI whenever the harness provider is selected.
+  React.useEffect(() => {
+    if (!isOpen || selectedProvider !== 'claude-cli') return
+    let cancelled = false
+    setIsDetecting(true)
+    setHarness(null)
+    window.api.ai
+      .detectHarness()
+      .then((res) => {
+        if (!cancelled) setHarness(res.success && res.data ? res.data : { available: false })
+      })
+      .finally(() => {
+        if (!cancelled) setIsDetecting(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isOpen, selectedProvider])
 
   // Get the active provider
   const activeProvider = multiProviderConfig?.activeProvider || 'openai'
@@ -107,7 +136,7 @@ export function AISettingsModal({
   }, [isOpen, multiProviderConfig?.activeProvider])
 
   const handleValidate = async () => {
-    if (!apiKey && selectedProvider !== 'ollama') return
+    if (!apiKey && needsKey) return
 
     setIsValidating(true)
     setValidationResult(null)
@@ -115,7 +144,7 @@ export function AISettingsModal({
     try {
       const result = await window.api.ai.validateKey({
         provider: selectedProvider,
-        apiKey: selectedProvider === 'ollama' ? undefined : apiKey,
+        apiKey: needsKey ? apiKey : undefined,
         model: getSavedModel(selectedProvider),
         baseUrl: baseUrl || undefined
       })
@@ -136,7 +165,7 @@ export function AISettingsModal({
     setIsSaving(true)
     try {
       await onSaveProviderConfig(selectedProvider, {
-        apiKey: selectedProvider === 'ollama' ? undefined : apiKey,
+        apiKey: needsKey ? apiKey : undefined,
         baseUrl: baseUrl || undefined
       })
       setValidationResult('success')
@@ -177,7 +206,7 @@ export function AISettingsModal({
     }
   }
 
-  const canSaveConfig = (selectedProvider === 'ollama' || apiKey.length > 10) && !isSaving
+  const canSaveConfig = (!needsKey || apiKey.length > 10) && !isSaving
   const isActiveProvider = activeProvider === selectedProvider
 
   return (
@@ -249,7 +278,7 @@ export function AISettingsModal({
           </div>
 
           {/* API Key Input */}
-          {selectedProvider !== 'ollama' && (
+          {needsKey && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="api-key" className="text-xs">
@@ -317,6 +346,44 @@ export function AISettingsModal({
                   <AlertCircle className="size-3" />
                   Invalid API key
                 </p>
+              )}
+            </div>
+          )}
+
+          {/* Local Claude CLI detection (BYOH) */}
+          {selectedProvider === 'claude-cli' && (
+            <div className="space-y-2">
+              <Label className="text-xs">Claude Code CLI</Label>
+              {isDetecting ? (
+                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                  <Loader2 className="size-3.5 animate-spin" />
+                  Looking for the claude binary…
+                </p>
+              ) : harness?.available ? (
+                <div className="flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/5 px-3 py-2">
+                  <CheckCircle2 className="size-4 text-green-500 shrink-0" />
+                  <span className="text-[11px] text-green-400">
+                    Detected{harness.version ? ` · ${harness.version}` : ''} — uses your Claude
+                    login, no API key stored here.
+                  </span>
+                </div>
+              ) : (
+                <div className="space-y-1.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
+                  <span className="text-[11px] text-amber-400 flex items-center gap-1.5">
+                    <AlertCircle className="size-3.5 shrink-0" />
+                    claude CLI not found. Install it and run{' '}
+                    <code className="font-mono">claude</code> once to sign in.
+                  </span>
+                  <a
+                    href={providerConfig.keyUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
+                  >
+                    Install Claude Code
+                    <ExternalLink className="size-3" />
+                  </a>
+                </div>
               )}
             </div>
           )}
