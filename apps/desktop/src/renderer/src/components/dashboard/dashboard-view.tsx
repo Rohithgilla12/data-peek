@@ -8,13 +8,15 @@ import {
   Pencil,
   ArrowLeft,
   Clock,
-  Timer
+  Timer,
+  Sparkles
 } from 'lucide-react'
 
 import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@data-peek/ui'
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import { useDashboardStore } from '@/stores'
 import { AddWidgetDialog } from './add-widget-dialog'
+import { AIWidgetDialog } from './ai-widget-dialog'
 import { DashboardFormDialog } from './dashboard-form-dialog'
 import { DashboardGrid } from './dashboard-grid'
 import { RefreshScheduleDialog } from './refresh-schedule-dialog'
@@ -42,6 +44,7 @@ export function DashboardView() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false)
+  const [isAIWidgetOpen, setIsAIWidgetOpen] = useState(false)
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false)
 
   const dashboard = dashboards.find((d) => d.id === dashboardId)
@@ -188,6 +191,15 @@ export function DashboardView() {
           <Button
             variant="outline"
             size="sm"
+            className="text-blue-400 hover:text-blue-300"
+            onClick={() => setIsAIWidgetOpen(true)}
+          >
+            <Sparkles className="size-4 mr-2" />
+            Ask AI
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={handleRefresh}
             disabled={isRefreshing || dashboard.widgets.length === 0}
           >
@@ -243,6 +255,12 @@ export function DashboardView() {
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
         editingDashboard={dashboard}
+      />
+
+      <AIWidgetDialog
+        open={isAIWidgetOpen}
+        onOpenChange={setIsAIWidgetOpen}
+        dashboardId={dashboard.id}
       />
 
       <AddWidgetDialog
