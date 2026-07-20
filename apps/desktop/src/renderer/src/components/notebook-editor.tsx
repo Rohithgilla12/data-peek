@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Sparkles } from 'lucide-react'
 import { Button, cn } from '@data-peek/ui'
 import {
   DndContext,
@@ -18,6 +18,7 @@ import {
 import { useNotebookStore } from '@/stores/notebook-store'
 import { useConnectionStore } from '@/stores/connection-store'
 import { NotebookCell } from './notebook-cell'
+import { NotebookAICellDialog } from './notebook-ai-cell-dialog'
 import type { NotebookTab } from '@/stores/tab-store'
 
 interface NotebookEditorProps {
@@ -82,6 +83,9 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
     },
     [activeNotebook, cells, addCell]
   )
+
+  const [isAICellOpen, setIsAICellOpen] = useState(false)
+  const openAICell = useCallback(() => setIsAICellOpen(true), [])
 
   const handleDeleteCell = useCallback(
     (cellId: string, index: number) => {
@@ -243,6 +247,16 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
           <Plus className="size-3" />
           Note
         </Button>
+
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 gap-1.5 text-xs text-blue-400 hover:text-blue-300"
+          onClick={() => openAICell()}
+        >
+          <Sparkles className="size-3" />
+          AI cell
+        </Button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-16">
@@ -267,6 +281,10 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
               >
                 <Plus className="size-3" />
                 Note cell
+              </Button>
+              <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAICell()}>
+                <Sparkles className="size-3" />
+                AI cell
               </Button>
             </div>
           </div>
@@ -309,6 +327,16 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
         <span>⌘J/⌘K Navigate</span>
         <span>Esc Exit editor</span>
       </div>
+
+      {activeNotebook && (
+        <NotebookAICellDialog
+          open={isAICellOpen}
+          onOpenChange={setIsAICellOpen}
+          notebookId={activeNotebook.id}
+          connectionId={connectionId ?? undefined}
+          order={cells.length}
+        />
+      )}
     </div>
   )
 }
