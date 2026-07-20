@@ -168,6 +168,9 @@ export function AISettingsModal({
         apiKey: needsKey ? apiKey : undefined,
         baseUrl: baseUrl || undefined
       })
+      // Keyless providers (Claude Code CLI, Ollama) have nothing to configure —
+      // choosing one means "use it", so make it active in the same click.
+      if (!needsKey) await onSetActiveProvider(selectedProvider)
       setValidationResult('success')
     } catch (error) {
       console.error('Failed to save provider config:', error)
@@ -440,11 +443,15 @@ export function AISettingsModal({
             <Button
               size="sm"
               onClick={handleSaveProviderConfig}
-              disabled={!canSaveConfig}
+              disabled={!canSaveConfig || (!needsKey && isActiveProvider)}
               className="flex-1"
             >
               {isSaving ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
-              {hasProviderConfig(selectedProvider) ? 'Update' : 'Save'} {providerConfig.name} Key
+              {needsKey
+                ? `${hasProviderConfig(selectedProvider) ? 'Update' : 'Save'} ${providerConfig.name} Key`
+                : isActiveProvider
+                  ? `✓ Using ${providerConfig.name}`
+                  : `Use ${providerConfig.name}`}
             </Button>
             {hasProviderConfig(selectedProvider) && !isActiveProvider && (
               <Button size="sm" variant="outline" onClick={handleSetActive} disabled={isSaving}>

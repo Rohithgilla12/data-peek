@@ -17,16 +17,15 @@ data-peek includes a powerful AI assistant that helps you write SQL queries, gen
 - Or click the sparkle icon in the toolbar
 - Or use the command palette (`Cmd+K`) and search for "AI"
 
-### Configure Your API Key
+### Choose a provider
 
-The AI assistant uses a "Bring Your Own Key" (BYOK) model. You need to provide your own API key:
+Open **AI Settings** (from the AI panel or the command palette) and pick one provider. The app always uses whichever provider is marked **Active** — you can switch anytime.
 
-1. Open AI Settings from the command palette or AI panel
-2. Select your preferred provider (OpenAI, Anthropic, or others)
-3. Enter your API key
-4. Click Save
+- **Claude Code (local CLI)** — _no API key._ If you have the `claude` CLI installed and signed in, select the tile and click **Use Claude Code**. That single click makes it active — nothing else to configure. See [Bring your own harness](#bring-your-own-harness-claude-code) below.
+- **API-key providers** (OpenAI, Anthropic, Google, …) — paste your key, click **Save … Key**, then **Set Active**. Keys are stored in your OS keychain and only ever sent to that provider.
+- **Ollama** — local models, no key; point it at your Ollama URL and click **Use Ollama**.
 
-Your API key is stored securely using your operating system's keychain.
+To use _only_ the local Claude CLI, just make **Claude Code (local CLI)** the active provider — the others can stay configured but unused.
 
 ## Supported Providers
 
