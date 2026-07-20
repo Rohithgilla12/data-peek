@@ -31,6 +31,7 @@ export function AIWidgetDialog({ open, onOpenChange, dashboardId }: AIWidgetDial
   const [error, setError] = React.useState<string | null>(null)
 
   const addWidget = useDashboardStore((s) => s.addWidget)
+  const refreshWidget = useDashboardStore((s) => s.refreshWidget)
   const connections = useConnectionStore((s) => s.connections)
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
   const schemas = useConnectionStore((s) => s.schemas)
@@ -88,7 +89,9 @@ export function AIWidgetDialog({ open, onOpenChange, dashboardId }: AIWidgetDial
         layout: { x: 0, y: 0, w, h, minW: 2, minH: 2 },
         aiGenerated: true
       }
-      await addWidget(dashboardId, input)
+      const created = await addWidget(dashboardId, input)
+      // Run it immediately so data shows without a manual Refresh.
+      if (created) await refreshWidget(created)
       reset()
       onOpenChange(false)
     } catch (err) {
