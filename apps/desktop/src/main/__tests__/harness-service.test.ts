@@ -132,6 +132,9 @@ describe('agentic (MCP) wiring', () => {
     )
     expect(args).toContain('--mcp-config')
     expect(args).toContain('--allowedTools')
+    // Must isolate to our MCP server so a user's global 'data-peek' entry can't
+    // shadow the read tools and cause a headless permission denial.
+    expect(args).toContain('--strict-mcp-config')
     // still the structured one-shot underneath
     expect(args.slice(0, 4)).toEqual(['-p', 'q', '--output-format', 'json'])
     const allowed = args[args.indexOf('--allowedTools') + 1]

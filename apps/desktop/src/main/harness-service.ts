@@ -139,6 +139,11 @@ export function buildAgenticHarnessArgs(
     ...buildHarnessArgs(userPrompt, systemPrompt, model),
     '--mcp-config',
     mcpConfigJson,
+    // Use ONLY this config's MCP server — ignore the user's global/project MCP
+    // servers. Without this, a pre-existing 'data-peek' entry collides and the
+    // read tools land under a different namespace than our allow-list, so they
+    // require approval and get denied in headless mode (grounding silently fails).
+    '--strict-mcp-config',
     '--allowedTools',
     allowedTools.join(',')
   ]
@@ -305,13 +310,15 @@ export interface HarnessMeta {
   turns?: number
 }
 
-/** Read num_turns from the CLI's JSON envelope (best-effort). */
-function readNumTurns(stdout: string): number | undefined {
+/** Read num_turns + permission-denial count from the CLI's JSON envelope. */
+function readEnvelopeStats(stdout: string): { turns?: number; denials: number } {
   try {
     const env = JSON.parse(stdout) as Record<string, unknown>
-    return typeof env.num_turns === 'number' ? env.num_turns : undefined
+    const turns = typeof env.num_turns === 'number' ? env.num_turns : undefined
+    const denials = Array.isArray(env.permission_denials) ? env.permission_denials.length : 0
+    return { turns, denials }
   } catch {
-    return undefined
+    return { denials: 0 }
   }
 }
 
@@ -361,10 +368,11 @@ export async function generateChatResponseViaHarness(
     // reason; fall back to stderr/exit code only when there's no output.
     if (stdout.trim()) {
       const data = parseHarnessResult(stdout)
-      const turns = readNumTurns(stdout)
-      // "Grounded" = agentic mode AND the model actually took tool round-trips
-      // (turns > 1); a single turn means it answered without querying.
-      const grounded = agentic && (turns ?? 0) > 1
+      const { turns, denials } = readEnvelopeStats(stdout)
+      // "Grounded" only if agentic AND the model actually took tool round-trips
+      // (turns > 1) AND no tool call was denied — a denied read means it couldn't
+      // query, so claiming "grounded" would be false.
+      const grounded = agentic && (turns ?? 0) > 1 && denials === 0
       return { success: true, data, meta: { grounded, agentic, turns } }
     }
     const detail = stderr.trim() || `exited with code ${code}`
