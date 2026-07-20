@@ -37,6 +37,27 @@ Your API key is stored securely using your operating system's keychain.
 
 _Note: Available models may change as providers release updates. Check your provider's documentation for the latest model offerings._
 
+## Bring your own harness (Claude Code)
+
+New in v0.27: instead of pasting an API key, point the assistant at the `claude` CLI you already have installed. data-peek drives your **local Claude Code**, on your own login — so there's nothing to store. And when the [MCP server](/docs/features/mcp-server) is enabled, the assistant runs _grounded_: it queries your real database (read-only, always rolled back) to verify its answer before replying.
+
+<video
+  controls
+  muted
+  playsInline
+  poster="/images/ai-byoh-walkthrough-poster.png"
+  style={{ width: '100%', borderRadius: '12px', border: '1px solid rgba(128,128,128,0.25)' }}
+>
+  <source src="/videos/ai-byoh-walkthrough.mp4" type="video/mp4" />
+  Your browser doesn't support embedded video —
+  [download the walkthrough](/videos/ai-byoh-walkthrough.mp4).
+</video>
+
+1. Install the Claude Code CLI and sign in (run `claude` once).
+2. In AI Settings, choose **Claude Code (local CLI)** — no API key required.
+3. Enable the MCP server (Settings → MCP) so the assistant can query your database.
+4. Ask in plain English. Read-only queries run automatically, and grounded answers show a **"Grounded against your database"** badge.
+
 ## Features
 
 ### Natural Language to SQL
