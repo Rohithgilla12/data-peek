@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { AIProvider, AIConfig, AIMultiProviderConfig, AIProviderConfig } from '@shared/index'
 import { DEFAULT_MODELS, providerNeedsKey } from '@shared/index'
+import { sanitizeMultiConfig } from './ai-config-sanitize'
 
 // Re-export types for convenience
 export type { AIProvider, AIConfig, AIMultiProviderConfig, AIProviderConfig }
@@ -128,7 +129,8 @@ export const useAIStore = create<AIState>()(
       },
 
       // Multi-provider configuration actions
-      setMultiProviderConfig: (config) => {
+      setMultiProviderConfig: (rawConfig) => {
+        const config = sanitizeMultiConfig(rawConfig)
         set({
           multiProviderConfig: config,
           config: deriveLegacyConfig(config),
@@ -219,10 +221,11 @@ export const useAIStore = create<AIState>()(
         try {
           const result = await window.api.ai.getMultiProviderConfig()
           if (result.success && result.data) {
+            const config = sanitizeMultiConfig(result.data)
             set({
-              multiProviderConfig: result.data,
-              config: deriveLegacyConfig(result.data),
-              isConfigured: isMultiProviderConfigured(result.data)
+              multiProviderConfig: config,
+              config: deriveLegacyConfig(config),
+              isConfigured: isMultiProviderConfigured(config)
             })
           }
         } catch (error) {

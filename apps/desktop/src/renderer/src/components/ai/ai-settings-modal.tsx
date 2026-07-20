@@ -70,7 +70,9 @@ export function AISettingsModal({
   const [harness, setHarness] = React.useState<HarnessDetection | null>(null)
   const [isDetecting, setIsDetecting] = React.useState(false)
 
-  const providerConfig = AI_PROVIDERS.find((p) => p.id === selectedProvider)!
+  // Fall back to the first provider rather than crashing if selectedProvider ever
+  // goes stale (e.g. a removed/renamed provider left in persisted state).
+  const providerConfig = AI_PROVIDERS.find((p) => p.id === selectedProvider) ?? AI_PROVIDERS[0]
   const needsKey = providerNeedsKey(selectedProvider)
 
   // Check if a provider has a saved config
