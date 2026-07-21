@@ -2,7 +2,7 @@ import type { WidgetConfig } from '@data-peek/shared'
 
 /** The subset of an AI structured response that widget construction reads. */
 export interface WidgetSourceData {
-  type: 'query' | 'chart' | 'metric' | 'schema' | 'message'
+  type: 'query' | 'chart' | 'metric' | 'schema' | 'message' | 'report'
   message?: string | null
   chartType?: 'bar' | 'line' | 'pie' | 'area' | null
   xKey?: string | null
