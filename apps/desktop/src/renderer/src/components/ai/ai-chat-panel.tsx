@@ -127,6 +127,10 @@ export function AIChatPanel({
 }: AIChatPanelProps) {
   const [messages, setMessages] = React.useState<AIChatMessage[]>([])
   const [input, setInput] = React.useState('')
+  // @-mention autocomplete for schema tables/columns in the composer.
+  const [mentionStart, setMentionStart] = React.useState(-1)
+  const [mentionQuery, setMentionQuery] = React.useState('')
+  const [mentionIndex, setMentionIndex] = React.useState(0)
   const [isLoading, setIsLoading] = React.useState(false)
   const [isExpanded, setIsExpanded] = React.useState(false)
   const [showSessionsList, setShowSessionsList] = React.useState(false)
@@ -382,7 +386,83 @@ export function AIChatPanel({
     }
   }
 
+  // Flat, ordered candidate list (tables first, then columns) for @-mentions.
+  const mentionItems = React.useMemo(() => {
+    if (mentionStart < 0) return []
+    const tables: Array<{ label: string; detail: string; insert: string }> = []
+    const cols: Array<{ label: string; detail: string; insert: string }> = []
+    for (const schema of schemas) {
+      for (const t of schema.tables) {
+        tables.push({ label: t.name, detail: 'table', insert: t.name })
+        for (const c of t.columns) {
+          cols.push({
+            label: `${t.name}.${c.name}`,
+            detail: c.dataType || 'column',
+            insert: `${t.name}.${c.name}`
+          })
+        }
+      }
+    }
+    const all = [...tables, ...cols]
+    const q = mentionQuery.toLowerCase()
+    return (q ? all.filter((i) => i.label.toLowerCase().includes(q)) : all).slice(0, 8)
+  }, [schemas, mentionStart, mentionQuery])
+
+  // Detect a trailing `@token` before the caret and open the mention menu.
+  const computeMention = (value: string, caret: number) => {
+    const match = value.slice(0, caret).match(/@([\w.]*)$/)
+    if (match) {
+      setMentionStart(caret - match[0].length)
+      setMentionQuery(match[1])
+      setMentionIndex(0)
+    } else if (mentionStart !== -1) {
+      setMentionStart(-1)
+      setMentionQuery('')
+    }
+  }
+
+  const applyMention = (item: { insert: string }) => {
+    if (mentionStart < 0) return
+    const end = mentionStart + 1 + mentionQuery.length
+    const next = input.slice(0, mentionStart) + item.insert + ' ' + input.slice(end)
+    setInput(next)
+    setMentionStart(-1)
+    setMentionQuery('')
+    const pos = mentionStart + item.insert.length + 1
+    requestAnimationFrame(() => {
+      const el = inputRef.current
+      if (el) {
+        el.focus()
+        el.setSelectionRange(pos, pos)
+      }
+    })
+  }
+
+  const mentionOpen = mentionStart >= 0 && mentionItems.length > 0
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (mentionOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setMentionIndex((i) => (i + 1) % mentionItems.length)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setMentionIndex((i) => (i - 1 + mentionItems.length) % mentionItems.length)
+        return
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        applyMention(mentionItems[mentionIndex])
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setMentionStart(-1)
+        return
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
@@ -892,10 +972,43 @@ export function AIChatPanel({
                   'focus-within:border-blue-500/30 focus-within:ring-2 focus-within:ring-blue-500/10'
                 )}
               >
+                {/* @-mention autocomplete menu (tables + columns) */}
+                {mentionOpen && (
+                  <div className="absolute bottom-full left-0 mb-2 w-72 max-h-56 overflow-auto rounded-lg border border-border/60 bg-popover shadow-xl z-50 py-1">
+                    <div className="px-2.5 py-1 text-[10px] uppercase tracking-wide text-muted-foreground/50">
+                      Reference a table or column
+                    </div>
+                    {mentionItems.map((item, i) => (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault()
+                          applyMention(item)
+                        }}
+                        onMouseEnter={() => setMentionIndex(i)}
+                        className={cn(
+                          'flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs',
+                          i === mentionIndex
+                            ? 'bg-blue-500/15 text-blue-200'
+                            : 'text-foreground/80 hover:bg-muted/40'
+                        )}
+                      >
+                        <span className="font-mono truncate">{item.label}</span>
+                        <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                          {item.detail}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <textarea
                   ref={inputRef}
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value)
+                    computeMention(e.target.value, e.target.selectionStart ?? e.target.value.length)
+                  }}
                   onKeyDown={handleKeyDown}
                   placeholder="Ask about your data..."
                   rows={1}
@@ -934,7 +1047,7 @@ export function AIChatPanel({
                 </Button>
               </div>
               <p className="text-[10px] text-muted-foreground/50 mt-2 text-center">
-                Press Enter to send, Shift+Enter for new line
+                Press Enter to send, Shift+Enter for new line · Type @ to reference a table
               </p>
             </div>
           </>
