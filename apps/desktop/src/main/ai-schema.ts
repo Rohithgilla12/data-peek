@@ -75,7 +75,11 @@ export const responseSchema = z.object({
     .enum(['number', 'currency', 'percent', 'duration'])
     .nullish()
     .describe('Value format - for metric type'),
-  tables: z.array(z.string()).nullish().describe('Table names - for schema type')
+  tables: z.array(z.string()).nullish().describe('Table names - for schema type'),
+  suggestions: z
+    .array(z.string())
+    .nullish()
+    .describe('2-3 short follow-up questions the user might ask next (any type)')
 })
 
 /**
@@ -103,7 +107,8 @@ export const RESPONSE_JSON_SCHEMA = {
     yKeys: { type: ['array', 'null'], items: { type: 'string' } },
     label: { type: ['string', 'null'] },
     format: { type: ['string', 'null'], enum: ['number', 'currency', 'percent', 'duration', null] },
-    tables: { type: ['array', 'null'], items: { type: 'string' } }
+    tables: { type: ['array', 'null'], items: { type: 'string' } },
+    suggestions: { type: ['array', 'null'], items: { type: 'string' } }
   }
 } as const
 
@@ -130,7 +135,8 @@ export function normalizeStructuredResponse(
     yKeys: object.yKeys ?? null,
     label: object.label ?? null,
     format: object.format ?? null,
-    tables: object.tables ?? null
+    tables: object.tables ?? null,
+    suggestions: object.suggestions ?? null
   } as AIStructuredResponse
 }
 
@@ -197,7 +203,13 @@ Use when user asks about table structure or columns.
 ### type: "message"
 Use for general questions, clarifications, or when no SQL is needed.
 - Fill: message
-- Null: ALL other fields
+- Null: all other fields (suggestions is still allowed — see below)
+
+### suggestions (any type)
+Optionally include "suggestions": 2-3 SHORT (≤6 words) natural next questions the
+user is likely to ask given this answer and schema (e.g. "Break down by month",
+"Compare to last quarter", "Show as a chart"). Phrase them as prompts the user
+would send. Omit (null) if nothing useful comes to mind.
 
 ## SQL Guidelines
 - Use proper ${dbType} syntax

@@ -469,6 +469,8 @@ export interface AIStructuredResponse {
   format: "number" | "currency" | "percent" | "duration" | null;
   // Schema fields (null when type is not schema)
   tables: string[] | null;
+  // 2–3 short follow-up prompts the user might ask next (any type). null when none.
+  suggestions: string[] | null;
 }
 
 /**

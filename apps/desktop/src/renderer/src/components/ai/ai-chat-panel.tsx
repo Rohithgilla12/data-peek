@@ -101,6 +101,8 @@ export interface AIChatMessage {
   streaming?: boolean
   /** Live label for the current grounding/tool step (e.g. "Running query…"). */
   activity?: string
+  /** Short follow-up prompts the model suggested (clickable chips). */
+  suggestions?: string[]
   createdAt: Date
 }
 
@@ -253,12 +255,17 @@ export function AIChatPanel({
   }, [isOpen])
 
   const handleSendMessage = async () => {
-    if (!input.trim() || isLoading || !isConfigured || !connection) return
+    await sendPrompt(input.trim())
+  }
+
+  // Send an explicit prompt (used by the composer and by follow-up chips).
+  const sendPrompt = async (text: string) => {
+    if (!text || isLoading || !isConfigured || !connection) return
 
     const userMessage: AIChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
-      content: input.trim(),
+      content: text,
       createdAt: new Date()
     }
 
@@ -352,6 +359,7 @@ export function AIChatPanel({
           content: data.message,
           responseData,
           grounded: response.meta?.grounded ?? false,
+          suggestions: data.suggestions ?? undefined,
           streaming: false,
           activity: undefined
         })
@@ -837,6 +845,7 @@ export function AIChatPanel({
                       key={message.id}
                       message={message}
                       onOpenInTab={onOpenInTab}
+                      onSuggestionClick={sendPrompt}
                       connection={connection}
                       schemas={schemas}
                     />
