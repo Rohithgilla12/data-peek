@@ -9,10 +9,11 @@ import {
   DialogHeader,
   DialogTitle
 } from '@data-peek/ui'
-import type { CreateWidgetInput, WidgetConfig, SchemaInfo } from '@data-peek/shared'
+import type { CreateWidgetInput, SchemaInfo } from '@data-peek/shared'
 import { isReadOnlySql } from '@data-peek/shared'
 import { useDashboardStore } from '@/stores/dashboard-store'
 import { useConnectionStore } from '@/stores/connection-store'
+import { buildWidgetConfig, widgetNameFor } from '@/lib/ai-widget'
 
 interface AIWidgetDialogProps {
   open: boolean
@@ -81,12 +82,8 @@ export function AIWidgetDialog({ open, onOpenChange, dashboardId }: AIWidgetDial
       const rows = (run.success && (run.data as { rows?: Record<string, unknown>[] })?.rows) || []
       const cols = rows[0] ? Object.keys(rows[0]) : []
 
-      const { config, w, h } = buildConfig(data, cols)
-      const name =
-        (data.type === 'chart' && data.title) ||
-        (data.type === 'metric' && data.label) ||
-        data.message?.slice(0, 60) ||
-        'AI widget'
+      const { config, w, h } = buildWidgetConfig(data, cols)
+      const name = widgetNameFor(data)
 
       const input: CreateWidgetInput = {
         name,
@@ -167,51 +164,4 @@ export function AIWidgetDialog({ open, onOpenChange, dashboardId }: AIWidgetDial
       </DialogContent>
     </Dialog>
   )
-}
-
-type ChatData = NonNullable<Awaited<ReturnType<typeof window.api.ai.chat>>['data']>
-
-/** Map an AI structured response + real columns → a widget config + grid size. */
-function buildConfig(
-  data: ChatData,
-  cols: string[]
-): { config: WidgetConfig; w: number; h: number } {
-  // Chart when the model returned a usable chart spec.
-  if (data.type === 'chart' && data.chartType && (data.xKey || cols[0])) {
-    const xKey = data.xKey && cols.includes(data.xKey) ? data.xKey : cols[0]
-    const yKeys =
-      (data.yKeys ?? []).filter((k) => cols.includes(k)).length > 0
-        ? (data.yKeys ?? []).filter((k) => cols.includes(k))
-        : cols.filter((c) => c !== xKey).slice(0, 1)
-    return {
-      config: {
-        widgetType: 'chart',
-        chartType: data.chartType,
-        xKey,
-        yKeys: yKeys.length ? yKeys : cols.slice(0, 1),
-        title: data.title ?? undefined,
-        showLegend: true,
-        showGrid: true
-      },
-      w: 6,
-      h: 4
-    }
-  }
-
-  // KPI for a single-value metric.
-  if (data.type === 'metric' && cols[0]) {
-    return {
-      config: {
-        widgetType: 'kpi',
-        format: data.format ?? 'number',
-        label: data.label ?? data.message?.slice(0, 40) ?? 'Metric',
-        valueKey: cols[0]
-      },
-      w: 3,
-      h: 2
-    }
-  }
-
-  // Otherwise show the rows as a table.
-  return { config: { widgetType: 'table', maxRows: 50 }, w: 6, h: 4 }
 }
