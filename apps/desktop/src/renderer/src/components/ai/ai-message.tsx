@@ -25,13 +25,15 @@ import { AIChart, type ChartData } from './ai-chart'
 import { AIMetricCard, type MetricData } from './ai-metric-card'
 import { AISchemaCard } from './ai-schema-card'
 import { AIQueryResult } from './ai-query-result'
+import { AIReport } from './ai-report'
 import type {
   AIChatMessage,
   AIResponseData,
   AIQueryData,
   AIChartData,
   AIMetricData,
-  AISchemaData
+  AISchemaData,
+  AIReportData
 } from './ai-chat-panel'
 import type { ConnectionConfig, SchemaInfo } from '@data-peek/shared'
 import { isReadOnlySql } from '@data-peek/shared'
@@ -500,6 +502,17 @@ export function AIMessage({
               <AISchemaCard key={table.name} table={table} />
             ))}
           </div>
+        )
+      }
+
+      case 'report': {
+        const reportData = data as AIReportData
+        return (
+          <AIReport
+            widgets={reportData.widgets}
+            connection={connection}
+            onOpenInTab={onOpenInTab}
+          />
         )
       }
 

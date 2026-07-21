@@ -53,7 +53,9 @@ Design a concise, useful dashboard for this database. Return ONLY a JSON object:
 // Flat object (not discriminatedUnion) for Anthropic/OpenAI tool compatibility;
 // .nullish() so missing fields are accepted and normalized to null below.
 export const responseSchema = z.object({
-  type: z.enum(['query', 'chart', 'metric', 'schema', 'message']).describe('Response type'),
+  type: z
+    .enum(['query', 'chart', 'metric', 'schema', 'message', 'report'])
+    .describe('Response type'),
   message: z.string().describe('Brief explanation or response message'),
   sql: z.string().nullish().describe('SQL query - for query/chart/metric types'),
   explanation: z.string().nullish().describe('Detailed explanation - for query type'),
@@ -76,6 +78,10 @@ export const responseSchema = z.object({
     .nullish()
     .describe('Value format - for metric type'),
   tables: z.array(z.string()).nullish().describe('Table names - for schema type'),
+  widgets: z
+    .array(dashboardWidgetSpecSchema)
+    .nullish()
+    .describe('For report type: 2-6 widgets (kpi/chart/table), each with read-only SQL'),
   suggestions: z
     .array(z.string())
     .nullish()
@@ -94,7 +100,7 @@ export const RESPONSE_JSON_SCHEMA = {
   additionalProperties: false,
   required: ['type', 'message'],
   properties: {
-    type: { type: 'string', enum: ['query', 'chart', 'metric', 'schema', 'message'] },
+    type: { type: 'string', enum: ['query', 'chart', 'metric', 'schema', 'message', 'report'] },
     message: { type: 'string' },
     sql: { type: ['string', 'null'] },
     explanation: { type: ['string', 'null'] },
@@ -108,6 +114,26 @@ export const RESPONSE_JSON_SCHEMA = {
     label: { type: ['string', 'null'] },
     format: { type: ['string', 'null'], enum: ['number', 'currency', 'percent', 'duration', null] },
     tables: { type: ['array', 'null'], items: { type: 'string' } },
+    widgets: {
+      type: ['array', 'null'],
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['title', 'kind', 'sql'],
+        properties: {
+          title: { type: 'string' },
+          kind: { type: 'string', enum: ['kpi', 'chart', 'table'] },
+          sql: { type: 'string' },
+          chartType: { type: ['string', 'null'], enum: ['bar', 'line', 'pie', 'area', null] },
+          format: {
+            type: ['string', 'null'],
+            enum: ['number', 'currency', 'percent', 'duration', null]
+          },
+          xKey: { type: ['string', 'null'] },
+          yKeys: { type: ['array', 'null'], items: { type: 'string' } }
+        }
+      }
+    },
     suggestions: { type: ['array', 'null'], items: { type: 'string' } }
   }
 } as const
@@ -136,6 +162,7 @@ export function normalizeStructuredResponse(
     label: object.label ?? null,
     format: object.format ?? null,
     tables: object.tables ?? null,
+    widgets: object.widgets ?? null,
     suggestions: object.suggestions ?? null
   } as AIStructuredResponse
 }
@@ -199,6 +226,17 @@ Use when user asks for a single KPI/number (total, count, average).
 Use when user asks about table structure or columns.
 - Fill: message, tables
 - Null: sql, explanation, warning, requiresConfirmation, title, description, chartType, xKey, yKeys, label, format
+
+### type: "report"
+Use when the user asks for an overview/summary/dashboard-like answer that needs
+SEVERAL metrics at once (e.g. "give me a business overview", "summarize signups").
+- Fill: message (1-2 sentence intro), widgets (2-6 items)
+- Each widget: { title, kind ("kpi"|"chart"|"table"), sql (READ-ONLY, valid for THIS
+  schema) }. For kind "chart" also set chartType + xKey + yKeys; for "kpi" set format
+  (sql returns a single row/column). Lead with KPIs, then charts, optionally a table.
+- Null: sql, chartType, xKey, yKeys, label, format, tables (those are for single-widget types)
+- Prefer a single "query"/"chart"/"metric" response for one focused ask; only use
+  "report" when multiple widgets genuinely help.
 
 ### type: "message"
 Use for general questions, clarifications, or when no SQL is needed.

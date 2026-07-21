@@ -34,7 +34,7 @@ import {
 
 import { AIMessage } from './ai-message'
 import { AISuggestions } from './ai-suggestions'
-import type { ConnectionConfig, SchemaInfo } from '@data-peek/shared'
+import type { ConnectionConfig, SchemaInfo, AIReportWidget } from '@data-peek/shared'
 
 // Chat session type (matching preload)
 interface ChatSession {
@@ -88,7 +88,13 @@ export interface AISchemaData {
   tables: string[]
 }
 
-export type AIResponseData = AIQueryData | AIChartData | AIMetricData | AISchemaData | null
+export interface AIReportData {
+  type: 'report'
+  widgets: AIReportWidget[]
+}
+
+export type AIResponseData =
+  AIQueryData | AIChartData | AIMetricData | AISchemaData | AIReportData | null
 
 export interface AIChatMessage {
   id: string
@@ -222,7 +228,8 @@ export function AIChatPanel({
           id: m.id,
           role: m.role,
           content: m.content,
-          responseData: m.responseData || null,
+          // Reports are ephemeral (re-run on demand), so they aren't persisted.
+          responseData: m.responseData && m.responseData.type !== 'report' ? m.responseData : null,
           createdAt: m.createdAt.toISOString()
         }))
         const response = await window.api.ai.updateSession(connectionId, currentSessionId, {
@@ -354,6 +361,11 @@ export function AIChatPanel({
           responseData = {
             type: 'schema',
             tables: data.tables
+          }
+        } else if (data.type === 'report' && data.widgets && data.widgets.length > 0) {
+          responseData = {
+            type: 'report',
+            widgets: data.widgets
           }
         }
 

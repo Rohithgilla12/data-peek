@@ -442,7 +442,19 @@ export type AIResponseType =
   | "query"
   | "chart"
   | "metric"
-  | "schema";
+  | "schema"
+  | "report";
+
+/** One widget in a multi-widget chat "report" (a mini inline dashboard). */
+export interface AIReportWidget {
+  title: string;
+  kind: "kpi" | "chart" | "table";
+  sql: string;
+  chartType?: "bar" | "line" | "pie" | "area" | null;
+  format?: "number" | "currency" | "percent" | "duration" | null;
+  xKey?: string | null;
+  yKeys?: string[] | null;
+}
 
 /**
  * AI structured response - flat object with nullable fields.
@@ -469,6 +481,8 @@ export interface AIStructuredResponse {
   format: "number" | "currency" | "percent" | "duration" | null;
   // Schema fields (null when type is not schema)
   tables: string[] | null;
+  // Report fields (null when type is not report): a small set of widgets.
+  widgets: AIReportWidget[] | null;
   // 2–3 short follow-up prompts the user might ask next (any type). null when none.
   suggestions: string[] | null;
 }

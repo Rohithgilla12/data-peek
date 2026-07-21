@@ -123,7 +123,17 @@ interface AIMessage {
 }
 
 // Structured AI response types
-type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
+type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema' | 'report'
+
+interface AIReportWidget {
+  title: string
+  kind: 'kpi' | 'chart' | 'table'
+  sql: string
+  chartType?: 'bar' | 'line' | 'pie' | 'area' | null
+  format?: 'number' | 'currency' | 'percent' | 'duration' | null
+  xKey?: string | null
+  yKeys?: string[] | null
+}
 
 // Incremental event from a streaming chat run (mirror of shared AIChatStreamEvent)
 type AIChatStreamEvent = { type: 'message'; text: string } | { type: 'activity'; label: string }
@@ -148,6 +158,8 @@ interface AIChatResponse {
   format: 'number' | 'currency' | 'percent' | 'duration' | null
   // Schema fields (null when type is not schema)
   tables: string[] | null
+  // Report fields (null when type is not report)
+  widgets: AIReportWidget[] | null
   // 2–3 short follow-up prompts (any type). null when none.
   suggestions: string[] | null
 }
