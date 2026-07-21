@@ -17,7 +17,13 @@ import { spawn } from 'child_process'
 import { existsSync } from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
-import type { AIConfig, AIMessage, SchemaInfo, AIStructuredResponse } from '@shared/index'
+import type {
+  AIConfig,
+  AIMessage,
+  SchemaInfo,
+  AIStructuredResponse,
+  AIChatStreamEvent
+} from '@shared/index'
 import { DEFAULT_MODELS } from '@shared/index'
 import {
   buildSystemPrompt,
@@ -25,8 +31,10 @@ import {
   normalizeStructuredResponse,
   buildDashboardPrompt,
   dashboardSpecSchema,
+  RESPONSE_JSON_SCHEMA_STRING,
   type DashboardSpec
 } from './ai-schema'
+import { classifyStreamLine, extractPartialMessage } from './harness-stream'
 import { getMcpRuntimeInfo, type McpRuntimeInfo } from './mcp-runtime'
 import { createLogger } from './lib/logger'
 
@@ -38,15 +46,6 @@ const AGENTIC_TIMEOUT_MS = 180_000
 // Generating a whole dashboard verifies several queries — allow more time.
 const DASHBOARD_TIMEOUT_MS = 300_000
 const DETECT_TIMEOUT_MS = 10_000
-
-// Instruction appended to the schema-aware system prompt so the CLI returns a
-// bare JSON object (generateObject enforces this structurally; the CLI can't).
-const JSON_ONLY_INSTRUCTION = `
-
-## Output contract (STRICT)
-Respond with ONLY a single JSON object matching the response format above.
-No prose, no explanation outside the JSON, no markdown code fences. The first
-character of your reply must be "{" and the last must be "}".`
 
 /** Common places the `claude` binary lands that a GUI-launched app's PATH misses. */
 function candidateBinDirs(): string[] {
@@ -85,22 +84,43 @@ export function resolveClaudeBinary(): string {
   return 'claude'
 }
 
-/** Build the argv for a one-shot structured generation call. Pure — unit-tested. */
+/**
+ * Build the argv for a structured generation call. Pure — unit-tested.
+ * With `stream: true` the CLI emits NDJSON (stream-json) with token-level deltas
+ * instead of a single buffered JSON envelope.
+ */
+export interface HarnessArgOpts {
+  /** NDJSON token streaming (stream-json + verbose + partial messages). */
+  stream?: boolean
+  /** Serialized JSON Schema for native structured output (`--json-schema`). */
+  jsonSchema?: string
+  /** Resume a prior CLI session so the model keeps conversation memory. */
+  resumeSessionId?: string
+}
+
 export function buildHarnessArgs(
   userPrompt: string,
   systemPrompt: string,
-  model: string
+  model: string,
+  opts?: HarnessArgOpts
 ): string[] {
-  return [
+  const args = [
     '-p',
     userPrompt,
     '--output-format',
-    'json',
+    opts?.stream ? 'stream-json' : 'json',
     '--append-system-prompt',
     systemPrompt,
     '--model',
     model
   ]
+  // stream-json requires --verbose; token-level deltas require partial messages.
+  if (opts?.stream) args.push('--verbose', '--include-partial-messages')
+  // Native structured output: the CLI constrains + validates the reply to schema.
+  if (opts?.jsonSchema) args.push('--json-schema', opts.jsonSchema)
+  // Multi-turn memory: continue the prior conversation server-side.
+  if (opts?.resumeSessionId) args.push('--resume', opts.resumeSessionId)
+  return args
 }
 
 // Server name registered in the generated mcp-config. No hyphen so the derived
@@ -142,10 +162,11 @@ export function buildAgenticHarnessArgs(
   systemPrompt: string,
   model: string,
   mcpConfigJson: string,
-  allowedTools: string[]
+  allowedTools: string[],
+  opts?: HarnessArgOpts
 ): string[] {
   return [
-    ...buildHarnessArgs(userPrompt, systemPrompt, model),
+    ...buildHarnessArgs(userPrompt, systemPrompt, model, opts),
     '--mcp-config',
     mcpConfigJson,
     // Use ONLY this config's MCP server — ignore the user's global/project MCP
@@ -182,21 +203,38 @@ export function parseHarnessResult(stdout: string): AIStructuredResponse {
   } catch {
     throw new Error('Claude CLI did not return valid JSON (is --output-format json supported?)')
   }
+  return parseResultEnvelope(outer)
+}
+
+/**
+ * Parse an already-decoded CLI result envelope into an AIStructuredResponse.
+ * Shared by the one-shot (`json`) and streaming (`stream-json`) paths — the
+ * streaming path hands us the parsed `result` frame directly.
+ */
+export function parseResultEnvelope(outer: unknown): AIStructuredResponse {
   const envelope = (outer ?? {}) as Record<string, unknown>
   if (envelope.is_error) {
     const msg =
       typeof envelope.result === 'string' ? envelope.result : 'Claude CLI reported an error'
     throw new Error(msg)
   }
-  const resultText = typeof envelope.result === 'string' ? envelope.result : ''
-  if (!resultText.trim()) throw new Error('Claude CLI returned an empty result')
 
+  // Native structured output (--json-schema): the CLI already validated the
+  // object against our schema, so use it directly. Fall back to parsing the
+  // `result` text for older CLIs / the non-schema path.
   let parsed: unknown
-  try {
-    parsed = JSON.parse(extractJsonObject(resultText))
-  } catch {
-    throw new Error('Could not parse a JSON response from the model output')
+  if (envelope.structured_output && typeof envelope.structured_output === 'object') {
+    parsed = envelope.structured_output
+  } else {
+    const resultText = typeof envelope.result === 'string' ? envelope.result : ''
+    if (!resultText.trim()) throw new Error('Claude CLI returned an empty result')
+    try {
+      parsed = JSON.parse(extractJsonObject(resultText))
+    } catch {
+      throw new Error('Could not parse a JSON response from the model output')
+    }
   }
+
   const validated = responseSchema.safeParse(parsed)
   if (!validated.success) {
     throw new Error(
@@ -317,18 +355,42 @@ export interface HarnessMeta {
   agentic: boolean
   /** Turns reported by the CLI (>1 implies tool round-trips happened). */
   turns?: number
+  /** CLI session id — pass back as resumeSessionId next turn for conversation memory. */
+  sessionId?: string
 }
 
-/** Read num_turns + permission-denial count from the CLI's JSON envelope. */
-function readEnvelopeStats(stdout: string): { turns?: number; denials: number } {
+/** num_turns + permission-denial count + session id from a decoded CLI envelope. */
+function readEnvelopeStatsFromObject(env: Record<string, unknown>): {
+  turns?: number
+  denials: number
+  sessionId?: string
+} {
+  const turns = typeof env.num_turns === 'number' ? env.num_turns : undefined
+  const denials = Array.isArray(env.permission_denials) ? env.permission_denials.length : 0
+  const sessionId = typeof env.session_id === 'string' ? env.session_id : undefined
+  return { turns, denials, sessionId }
+}
+
+/** Read num_turns + permission-denial count + session id from the CLI envelope. */
+function readEnvelopeStats(stdout: string): {
+  turns?: number
+  denials: number
+  sessionId?: string
+} {
   try {
-    const env = JSON.parse(stdout) as Record<string, unknown>
-    const turns = typeof env.num_turns === 'number' ? env.num_turns : undefined
-    const denials = Array.isArray(env.permission_denials) ? env.permission_denials.length : 0
-    return { turns, denials }
+    return readEnvelopeStatsFromObject(JSON.parse(stdout) as Record<string, unknown>)
   } catch {
     return { denials: 0 }
   }
+}
+
+/**
+ * "Grounded" only if agentic AND the model actually took tool round-trips
+ * (turns > 1) AND no tool call was denied — a denied read means it couldn't
+ * query, so claiming "grounded" would be false.
+ */
+function isGrounded(agentic: boolean, turns: number | undefined, denials: number): boolean {
+  return agentic && (turns ?? 0) > 1 && denials === 0
 }
 
 export async function generateChatResponseViaHarness(
@@ -350,22 +412,24 @@ export async function generateChatResponseViaHarness(
 
     let args: string[]
     let timeoutMs: number
+    // Native structured output via --json-schema (no prose-only instruction needed).
     if (agentic && mcp && connectionId) {
       const systemPrompt =
-        buildSystemPrompt(schemas, dbType) +
-        buildAgenticInstruction(connectionId) +
-        JSON_ONLY_INSTRUCTION
+        buildSystemPrompt(schemas, dbType) + buildAgenticInstruction(connectionId)
       args = buildAgenticHarnessArgs(
         userPrompt,
         systemPrompt,
         model,
         buildMcpConfigJson(mcp),
-        mcpAllowedTools()
+        mcpAllowedTools(),
+        { jsonSchema: RESPONSE_JSON_SCHEMA_STRING }
       )
       timeoutMs = AGENTIC_TIMEOUT_MS
     } else {
-      const systemPrompt = buildSystemPrompt(schemas, dbType) + JSON_ONLY_INSTRUCTION
-      args = buildHarnessArgs(userPrompt, systemPrompt, model)
+      const systemPrompt = buildSystemPrompt(schemas, dbType)
+      args = buildHarnessArgs(userPrompt, systemPrompt, model, {
+        jsonSchema: RESPONSE_JSON_SCHEMA_STRING
+      })
       timeoutMs = GENERATION_TIMEOUT_MS
     }
 
@@ -377,18 +441,174 @@ export async function generateChatResponseViaHarness(
     // reason; fall back to stderr/exit code only when there's no output.
     if (stdout.trim()) {
       const data = parseHarnessResult(stdout)
-      const { turns, denials } = readEnvelopeStats(stdout)
-      // "Grounded" only if agentic AND the model actually took tool round-trips
-      // (turns > 1) AND no tool call was denied — a denied read means it couldn't
-      // query, so claiming "grounded" would be false.
-      const grounded = agentic && (turns ?? 0) > 1 && denials === 0
-      return { success: true, data, meta: { grounded, agentic, turns } }
+      const { turns, denials, sessionId } = readEnvelopeStats(stdout)
+      const grounded = isGrounded(agentic, turns, denials)
+      return { success: true, data, meta: { grounded, agentic, turns, sessionId } }
     }
     const detail = stderr.trim() || `exited with code ${code}`
     throw new Error(`Claude CLI failed: ${detail}`)
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error)
     log.error('generateChatResponseViaHarness error:', message)
+    return { success: false, error: message }
+  }
+}
+
+/**
+ * Spawn the CLI and deliver each NDJSON line to `onLine` as it arrives. Buffers
+ * across chunk boundaries so a line split across two `data` events is only
+ * parsed once complete. Non-JSON noise lines are skipped.
+ */
+function runProcessStreaming(
+  bin: string,
+  args: string[],
+  timeoutMs: number,
+  onLine: (obj: unknown) => void
+): Promise<{ stderr: string; code: number | null }> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(bin, args, { env: harnessEnv(), shell: false })
+    let stderr = ''
+    let buf = ''
+    const timer = setTimeout(() => {
+      child.kill('SIGTERM')
+      reject(new Error(`Claude CLI timed out after ${Math.round(timeoutMs / 1000)}s`))
+    }, timeoutMs)
+
+    const consume = (chunk: string): void => {
+      buf += chunk
+      let nl: number
+      while ((nl = buf.indexOf('\n')) !== -1) {
+        const line = buf.slice(0, nl).trim()
+        buf = buf.slice(nl + 1)
+        if (!line) continue
+        try {
+          onLine(JSON.parse(line))
+        } catch {
+          /* ignore a non-JSON noise line */
+        }
+      }
+    }
+
+    child.stdout.on('data', (d) => consume(d.toString()))
+    child.stderr.on('data', (d) => (stderr += d.toString()))
+    child.on('error', (err) => {
+      clearTimeout(timer)
+      reject(
+        (err as NodeJS.ErrnoException).code === 'ENOENT'
+          ? new Error('Claude CLI not found. Install it and run `claude` once to sign in.')
+          : err
+      )
+    })
+    child.on('close', (code) => {
+      clearTimeout(timer)
+      const rest = buf.trim()
+      if (rest) {
+        try {
+          onLine(JSON.parse(rest))
+        } catch {
+          /* ignore trailing noise */
+        }
+      }
+      resolve({ stderr, code })
+    })
+  })
+}
+
+/**
+ * Streaming variant of {@link generateChatResponseViaHarness}. Same inputs,
+ * same final return shape — but pushes incremental `AIChatStreamEvent`s through
+ * `onEvent` as the CLI streams: the assistant prose (extracted live from the
+ * partial JSON) and a label for each grounding/tool step. The authoritative
+ * structured response is still parsed from the terminal `result` frame.
+ */
+export async function generateChatResponseViaHarnessStream(
+  config: AIConfig,
+  messages: AIMessage[],
+  schemas: SchemaInfo[],
+  dbType: string,
+  connectionId: string | undefined,
+  resumeSessionId: string | undefined,
+  onEvent: (event: AIChatStreamEvent) => void
+): Promise<{ success: boolean; data?: AIStructuredResponse; error?: string; meta?: HarnessMeta }> {
+  try {
+    const bin = resolveClaudeBinary()
+    const model = config.model || DEFAULT_MODELS['claude-cli']
+    // Resuming a session restores the prior turns server-side, so we send only
+    // the latest user message instead of replaying the whole transcript.
+    const userPrompt = resumeSessionId
+      ? messages[messages.length - 1].content
+      : buildUserPrompt(messages)
+
+    const mcp = getMcpRuntimeInfo()
+    const agentic = mcp !== null && !!connectionId
+
+    // Native structured output via --json-schema; optional session resume.
+    const argOpts: HarnessArgOpts = {
+      stream: true,
+      jsonSchema: RESPONSE_JSON_SCHEMA_STRING,
+      resumeSessionId
+    }
+
+    let args: string[]
+    let timeoutMs: number
+    if (agentic && mcp && connectionId) {
+      const systemPrompt =
+        buildSystemPrompt(schemas, dbType) + buildAgenticInstruction(connectionId)
+      args = buildAgenticHarnessArgs(
+        userPrompt,
+        systemPrompt,
+        model,
+        buildMcpConfigJson(mcp),
+        mcpAllowedTools(),
+        argOpts
+      )
+      timeoutMs = AGENTIC_TIMEOUT_MS
+    } else {
+      const systemPrompt = buildSystemPrompt(schemas, dbType)
+      args = buildHarnessArgs(userPrompt, systemPrompt, model, argOpts)
+      timeoutMs = GENERATION_TIMEOUT_MS
+    }
+
+    log.debug('Running claude CLI (streaming)', { bin, model, agentic, resume: !!resumeSessionId })
+
+    let raw = ''
+    let lastMessage = ''
+    let lastActivity = ''
+    let resultEnvelope: Record<string, unknown> | undefined
+
+    const { stderr, code } = await runProcessStreaming(bin, args, timeoutMs, (obj) => {
+      const info = classifyStreamLine(obj)
+      // With --json-schema the reply streams as input_json_delta fragments; the
+      // non-schema path streams text_delta. Either way `raw` accumulates the JSON
+      // string, and extractPartialMessage surfaces the "message" field live.
+      const delta = info.jsonDelta ?? info.textDelta
+      if (delta) {
+        raw += delta
+        const message = extractPartialMessage(raw)
+        if (message && message !== lastMessage) {
+          lastMessage = message
+          onEvent({ type: 'message', text: message })
+        }
+      }
+      if (info.toolLabel && info.toolLabel !== lastActivity) {
+        lastActivity = info.toolLabel
+        onEvent({ type: 'activity', label: info.toolLabel })
+      }
+      if (info.resultEnvelope) resultEnvelope = info.resultEnvelope
+    })
+
+    if (!resultEnvelope) {
+      const detail = stderr.trim() || `exited with code ${code}`
+      throw new Error(`Claude CLI failed: ${detail}`)
+    }
+
+    const data = parseResultEnvelope(resultEnvelope)
+    const { turns, denials, sessionId } = readEnvelopeStatsFromObject(resultEnvelope)
+    const grounded = isGrounded(agentic, turns, denials)
+    return { success: true, data, meta: { grounded, agentic, turns, sessionId } }
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error)
+    log.error('generateChatResponseViaHarnessStream error:', message)
     return { success: false, error: message }
   }
 }

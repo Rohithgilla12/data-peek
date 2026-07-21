@@ -6,6 +6,7 @@ import {
   clearAIConfig,
   validateAPIKey,
   generateChatResponse,
+  generateChatResponseStream,
   generateDashboard,
   getChatHistory,
   saveChatHistory,
@@ -236,6 +237,61 @@ export function registerAIHandlers(): void {
         log.error('Chat error:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
         return { success: false, error: errorMessage }
+      }
+    }
+  )
+
+  // Streaming chat: same as ai:chat, but pushes incremental events on
+  // 'ai:chat-stream:event' (keyed by requestId) while the invoke resolves with
+  // the final structured response. Used by the main chat panel; the modal
+  // dialogs keep using the one-shot ai:chat handler above.
+  ipcMain.handle(
+    'ai:chat-stream',
+    async (
+      event,
+      {
+        requestId,
+        messages,
+        schemas,
+        dbType,
+        connectionId,
+        resumeSessionId
+      }: {
+        requestId: string
+        messages: AIMessage[]
+        schemas: SchemaInfo[]
+        dbType: string
+        connectionId?: string
+        resumeSessionId?: string
+      }
+    ) => {
+      try {
+        const config = getAIConfig()
+        if (!config) {
+          return { success: false, error: 'AI not configured. Please set up your API key.' }
+        }
+
+        const result = await generateChatResponseStream(
+          config,
+          messages,
+          schemas,
+          dbType,
+          connectionId,
+          resumeSessionId,
+          (streamEvent) => {
+            if (!event.sender.isDestroyed()) {
+              event.sender.send('ai:chat-stream:event', { requestId, event: streamEvent })
+            }
+          }
+        )
+
+        if (result.success && result.data) {
+          return { success: true, data: result.data, meta: result.meta }
+        }
+        return { success: false, error: result.error }
+      } catch (error: unknown) {
+        log.error('Chat stream error:', error)
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
       }
     }
   )

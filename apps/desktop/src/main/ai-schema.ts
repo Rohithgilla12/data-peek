@@ -79,6 +79,38 @@ export const responseSchema = z.object({
 })
 
 /**
+ * JSON Schema mirror of {@link responseSchema}, for the CLI's `--json-schema`
+ * flag (native structured output). zod v3 has no `toJSONSchema()`, so this is
+ * hand-authored and kept in sync by a drift-guard test (its property set must
+ * equal the zod schema's). Only `type` + `message` are required; the rest are
+ * optional and nullable, matching the `.nullish()` fields above.
+ */
+export const RESPONSE_JSON_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['type', 'message'],
+  properties: {
+    type: { type: 'string', enum: ['query', 'chart', 'metric', 'schema', 'message'] },
+    message: { type: 'string' },
+    sql: { type: ['string', 'null'] },
+    explanation: { type: ['string', 'null'] },
+    warning: { type: ['string', 'null'] },
+    requiresConfirmation: { type: ['boolean', 'null'] },
+    title: { type: ['string', 'null'] },
+    description: { type: ['string', 'null'] },
+    chartType: { type: ['string', 'null'], enum: ['bar', 'line', 'pie', 'area', null] },
+    xKey: { type: ['string', 'null'] },
+    yKeys: { type: ['array', 'null'], items: { type: 'string' } },
+    label: { type: ['string', 'null'] },
+    format: { type: ['string', 'null'], enum: ['number', 'currency', 'percent', 'duration', null] },
+    tables: { type: ['array', 'null'], items: { type: 'string' } }
+  }
+} as const
+
+/** Serialized form for the `--json-schema` CLI flag. */
+export const RESPONSE_JSON_SCHEMA_STRING = JSON.stringify(RESPONSE_JSON_SCHEMA)
+
+/**
  * Normalize a raw structured response: undefined → null for every optional field,
  * so the renderer always sees a complete object. Shared by both provider paths.
  */
