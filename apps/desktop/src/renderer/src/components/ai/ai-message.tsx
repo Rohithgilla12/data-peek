@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { User, Sparkles, Copy, Check, AlertTriangle, Loader2 } from 'lucide-react'
+import { User, Sparkles, Copy, Check, AlertTriangle, Loader2, CornerDownRight } from 'lucide-react'
 import { cn } from '@data-peek/ui'
 import { AISQLPreview } from './ai-sql-preview'
 import { AIChart, type ChartData } from './ai-chart'
@@ -20,6 +20,7 @@ import { isReadOnlySql } from '@data-peek/shared'
 interface AIMessageProps {
   message: AIChatMessage
   onOpenInTab: (sql: string) => void
+  onSuggestionClick?: (prompt: string) => void
   connection?: ConnectionConfig | null
   schemas?: SchemaInfo[]
 }
@@ -32,7 +33,13 @@ interface QueryResultState {
   duration: number
 }
 
-export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AIMessageProps) {
+export function AIMessage({
+  message,
+  onOpenInTab,
+  onSuggestionClick,
+  connection,
+  schemas = []
+}: AIMessageProps) {
   const [copiedContent, setCopiedContent] = React.useState(false)
   const [chartData, setChartData] = React.useState<Record<string, unknown>[] | null>(null)
   const [chartLoading, setChartLoading] = React.useState(false)
@@ -465,6 +472,27 @@ export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AI
 
         {/* Response data (query, chart, metric, schema) */}
         {message.responseData && renderResponseData(message.responseData)}
+
+        {/* Follow-up suggestion chips */}
+        {!isUser &&
+          !message.streaming &&
+          onSuggestionClick &&
+          message.suggestions &&
+          message.suggestions.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {message.suggestions.slice(0, 3).map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => onSuggestionClick(s)}
+                  className="inline-flex items-center gap-1 rounded-full border border-blue-500/25 bg-blue-500/5 px-2.5 py-1 text-xs text-blue-300/90 hover:bg-blue-500/10 hover:border-blue-500/40 transition-colors"
+                >
+                  <CornerDownRight className="size-3 opacity-60" />
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
 
         {/* Timestamp */}
         <p className="text-[10px] text-muted-foreground/50 mt-1">

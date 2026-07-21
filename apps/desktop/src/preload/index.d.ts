@@ -148,6 +148,8 @@ interface AIChatResponse {
   format: 'number' | 'currency' | 'percent' | 'duration' | null
   // Schema fields (null when type is not schema)
   tables: string[] | null
+  // 2–3 short follow-up prompts (any type). null when none.
+  suggestions: string[] | null
 }
 
 // Stored response data types (without message field since it's in content)
