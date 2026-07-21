@@ -254,13 +254,15 @@ export function registerAIHandlers(): void {
         messages,
         schemas,
         dbType,
-        connectionId
+        connectionId,
+        resumeSessionId
       }: {
         requestId: string
         messages: AIMessage[]
         schemas: SchemaInfo[]
         dbType: string
         connectionId?: string
+        resumeSessionId?: string
       }
     ) => {
       try {
@@ -275,6 +277,7 @@ export function registerAIHandlers(): void {
           schemas,
           dbType,
           connectionId,
+          resumeSessionId,
           (streamEvent) => {
             if (!event.sender.isDestroyed()) {
               event.sender.send('ai:chat-stream:event', { requestId, event: streamEvent })

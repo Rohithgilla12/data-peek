@@ -136,6 +136,13 @@ export function AIChatPanel({
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const previousConnectionId = React.useRef<string | null>(null)
   const isInitialLoad = React.useRef(true)
+  // CLI session id from the last BYOH turn, so the next turn resumes the same
+  // conversation (server-side memory). Reset when the chat/connection changes.
+  const harnessSessionIdRef = React.useRef<string | undefined>(undefined)
+
+  React.useEffect(() => {
+    harnessSessionIdRef.current = undefined
+  }, [connection?.id, currentSessionId])
 
   // Load sessions when connection changes
   React.useEffect(() => {
@@ -285,11 +292,15 @@ export function AIChatPanel({
         schemas,
         dbType,
         connection.id,
+        harnessSessionIdRef.current,
         (event) => {
           if (event.type === 'message') patchAssistant({ content: event.text })
           else if (event.type === 'activity') patchAssistant({ activity: event.label })
         }
       )
+
+      // Remember the CLI session so the next turn resumes it (conversation memory).
+      if (response.meta?.sessionId) harnessSessionIdRef.current = response.meta.sessionId
 
       if (response.success && response.data) {
         const data = response.data
@@ -460,6 +471,9 @@ export function AIChatPanel({
   // Clear current session's chat
   const handleClearChat = async () => {
     setMessages([])
+    // Start a fresh CLI session too — resuming the old one would restore the
+    // conversation we just cleared.
+    harnessSessionIdRef.current = undefined
     if (connection?.id && currentSessionId) {
       try {
         await window.api.ai.updateSession(connection.id, currentSessionId, { messages: [] })

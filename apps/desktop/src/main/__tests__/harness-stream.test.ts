@@ -42,10 +42,29 @@ describe('classifyStreamLine', () => {
     expect(info.textDelta).toBe('hello')
   })
 
+  it('extracts json deltas (structured output under --json-schema)', () => {
+    const info = classifyStreamLine({
+      type: 'stream_event',
+      event: {
+        type: 'content_block_delta',
+        delta: { type: 'input_json_delta', partial_json: '{"ty' }
+      }
+    })
+    expect(info.jsonDelta).toBe('{"ty')
+    expect(info.textDelta).toBeUndefined()
+  })
+
   it('ignores non-text stream events', () => {
     expect(classifyStreamLine({ type: 'stream_event', event: { type: 'message_start' } })).toEqual(
       {}
     )
+    // thinking deltas are not answer content
+    expect(
+      classifyStreamLine({
+        type: 'stream_event',
+        event: { type: 'content_block_delta', delta: { type: 'thinking_delta', thinking: 'hmm' } }
+      })
+    ).toEqual({})
   })
 
   it('labels tool_use from assistant frames', () => {

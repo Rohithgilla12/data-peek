@@ -12,6 +12,12 @@
 export interface StreamLineInfo {
   /** Incremental assistant text (from a content_block_delta / text_delta). */
   textDelta?: string
+  /**
+   * Incremental structured-output JSON (from an input_json_delta). Emitted when
+   * the CLI runs with `--json-schema`: the reply streams as JSON fragments rather
+   * than plain text. Accumulated, it reconstructs the same JSON object.
+   */
+  jsonDelta?: string
   /** Human label for a tool the assistant just invoked (grounding step). */
   toolLabel?: string
   /** The terminal `result` envelope, carrying the model's final reply + stats. */
@@ -42,9 +48,14 @@ export function classifyStreamLine(obj: unknown): StreamLineInfo {
 
   if (line.type === 'stream_event') {
     const event = line.event as
-      { type?: string; delta?: { type?: string; text?: unknown } } | undefined
-    if (event?.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
-      info.textDelta = String(event.delta.text ?? '')
+      | { type?: string; delta?: { type?: string; text?: unknown; partial_json?: unknown } }
+      | undefined
+    if (event?.type === 'content_block_delta') {
+      if (event.delta?.type === 'text_delta') {
+        info.textDelta = String(event.delta.text ?? '')
+      } else if (event.delta?.type === 'input_json_delta') {
+        info.jsonDelta = String(event.delta.partial_json ?? '')
+      }
     }
     return info
   }

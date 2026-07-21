@@ -408,12 +408,13 @@ export async function generateChatResponseStream(
   schemas: SchemaInfo[],
   dbType: string,
   connectionId: string | undefined,
+  resumeSessionId: string | undefined,
   onEvent: (event: AIChatStreamEvent) => void
 ): Promise<{
   success: boolean
   data?: AIStructuredResponse
   error?: string
-  meta?: { grounded: boolean; agentic: boolean; turns?: number }
+  meta?: { grounded: boolean; agentic: boolean; turns?: number; sessionId?: string }
 }> {
   if (config.provider === 'claude-cli') {
     const { generateChatResponseViaHarnessStream } = await import('./harness-service')
@@ -423,10 +424,12 @@ export async function generateChatResponseStream(
       schemas,
       dbType,
       connectionId,
+      resumeSessionId,
       onEvent
     )
   }
 
+  // Non-CLI providers have no CLI session to resume; ignore resumeSessionId.
   const result = await generateChatResponse(config, messages, schemas, dbType, connectionId)
   if (result.success && result.data) onEvent({ type: 'message', text: result.data.message })
   return result

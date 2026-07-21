@@ -599,10 +599,11 @@ const api = {
       schemas: SchemaInfo[],
       dbType: string,
       connectionId: string | undefined,
+      resumeSessionId: string | undefined,
       onEvent: (event: AIChatStreamEvent) => void
     ): Promise<
       IpcResponse<AIChatResponse> & {
-        meta?: { grounded: boolean; agentic: boolean; turns?: number }
+        meta?: { grounded: boolean; agentic: boolean; turns?: number; sessionId?: string }
       }
     > => {
       const requestId =
@@ -616,7 +617,14 @@ const api = {
       }
       ipcRenderer.on('ai:chat-stream:event', listener)
       return ipcRenderer
-        .invoke('ai:chat-stream', { requestId, messages, schemas, dbType, connectionId })
+        .invoke('ai:chat-stream', {
+          requestId,
+          messages,
+          schemas,
+          dbType,
+          connectionId,
+          resumeSessionId
+        })
         .finally(() => ipcRenderer.removeListener('ai:chat-stream:event', listener))
     },
     // Chat history persistence (legacy API)
