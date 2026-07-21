@@ -843,8 +843,9 @@ export function AIChatPanel({
                   ))
                 )}
 
-                {/* Loading indicator */}
-                {isLoading && (
+                {/* Loading indicator — only when there's no streaming bubble
+                    already showing live activity (avoids a double "Thinking"). */}
+                {isLoading && !messages.some((m) => m.streaming) && (
                   <div className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
                     <div className="flex items-center justify-center size-7 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 shrink-0">
                       <Sparkles className="size-3.5 text-blue-400" />

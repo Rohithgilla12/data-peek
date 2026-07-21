@@ -75,6 +75,14 @@ describe('classifyStreamLine', () => {
     expect(info.toolLabel).toBe('Running query…')
   })
 
+  it('ignores internal/output tools like StructuredOutput', () => {
+    const info = classifyStreamLine({
+      type: 'assistant',
+      message: { content: [{ type: 'tool_use', name: 'StructuredOutput' }] }
+    })
+    expect(info.toolLabel).toBeUndefined()
+  })
+
   it('captures the result envelope', () => {
     const env = { type: 'result', subtype: 'success', result: '{}', num_turns: 3 }
     expect(classifyStreamLine(env).resultEnvelope).toEqual(env)
@@ -93,7 +101,8 @@ describe('toolLabel', () => {
     expect(toolLabel('mcp__datapeek__explain_query')).toBe('Explaining query…')
     expect(toolLabel('mcp__datapeek__list_schemas')).toBe('Reading schema…')
   })
-  it('falls back for unknown tools', () => {
-    expect(toolLabel('mcp__datapeek__something_else')).toBe('Using something_else…')
+  it('returns undefined for unknown / internal tools', () => {
+    expect(toolLabel('mcp__datapeek__something_else')).toBeUndefined()
+    expect(toolLabel('StructuredOutput')).toBeUndefined()
   })
 })
