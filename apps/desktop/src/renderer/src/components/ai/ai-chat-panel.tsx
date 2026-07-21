@@ -97,6 +97,10 @@ export interface AIChatMessage {
   responseData?: AIResponseData
   /** True when a BYOH harness answered agentically by querying the live DB. */
   grounded?: boolean
+  /** True while the assistant reply is still streaming in. */
+  streaming?: boolean
+  /** Live label for the current grounding/tool step (e.g. "Running query…"). */
+  activity?: string
   createdAt: Date
 }
 
@@ -251,29 +255,46 @@ export function AIChatPanel({
       createdAt: new Date()
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    // Build message history BEFORE we add the empty streaming placeholder, so
+    // the placeholder itself is never sent to the model.
+    const aiMessages = [...messages, userMessage].map((m) => ({
+      role: m.role,
+      content: m.content
+    }))
+    const dbType = connection.dbType || 'postgresql'
+
+    // Placeholder assistant bubble that fills in as the reply streams.
+    const assistantId = crypto.randomUUID()
+    setMessages((prev) => [
+      ...prev,
+      userMessage,
+      { id: assistantId, role: 'assistant', content: '', streaming: true, createdAt: new Date() }
+    ])
     setInput('')
     setIsLoading(true)
 
+    const patchAssistant = (patch: Partial<AIChatMessage>): void =>
+      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, ...patch } : m)))
+
     try {
-      // Build message history for AI context
-      const aiMessages = [...messages, userMessage].map((m) => ({
-        role: m.role,
-        content: m.content
-      }))
-
-      // Determine database type from connection
-      const dbType = connection.dbType || 'postgresql'
-
-      // Call actual AI service via IPC. Pass the connection id so a harness
-      // provider can query this database through the MCP server (agentic mode).
-      const response = await window.api.ai.chat(aiMessages, schemas, dbType, connection.id)
+      // Stream the reply. Prose arrives as `message` events; grounding/tool
+      // steps as `activity`. Pass the connection id so a harness provider can
+      // query this database through the MCP server (agentic mode).
+      const response = await window.api.ai.chatStream(
+        aiMessages,
+        schemas,
+        dbType,
+        connection.id,
+        (event) => {
+          if (event.type === 'message') patchAssistant({ content: event.text })
+          else if (event.type === 'activity') patchAssistant({ activity: event.label })
+        }
+      )
 
       if (response.success && response.data) {
         const data = response.data
 
-        // Extract response data based on type
-        // Note: Backend uses flat schema with nullable fields for AI provider compatibility
+        // Map the flat, nullable backend schema to the renderer's response data.
         let responseData: AIResponseData = null
         if (data.type === 'query' && data.sql) {
           responseData = {
@@ -314,35 +335,29 @@ export function AIChatPanel({
           }
         }
 
-        const assistantMessage: AIChatMessage = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
+        // Finalize with the authoritative parsed response (replaces the live
+        // partial text, clears the activity indicator).
+        patchAssistant({
           content: data.message,
           responseData,
           grounded: response.meta?.grounded ?? false,
-          createdAt: new Date()
-        }
-
-        setMessages((prev) => [...prev, assistantMessage])
+          streaming: false,
+          activity: undefined
+        })
       } else {
-        // Show error message
-        const errorMessage: AIChatMessage = {
-          id: crypto.randomUUID(),
-          role: 'assistant',
+        patchAssistant({
           content: `Sorry, I encountered an error: ${response.error || 'Unknown error'}`,
-          createdAt: new Date()
-        }
-        setMessages((prev) => [...prev, errorMessage])
+          streaming: false,
+          activity: undefined
+        })
       }
     } catch (error) {
       console.error('AI chat error:', error)
-      const errorMessage: AIChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
+      patchAssistant({
         content: `Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        createdAt: new Date()
-      }
-      setMessages((prev) => [...prev, errorMessage])
+        streaming: false,
+        activity: undefined
+      })
     } finally {
       setIsLoading(false)
     }

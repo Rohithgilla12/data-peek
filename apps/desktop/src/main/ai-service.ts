@@ -25,7 +25,8 @@ import type {
   StoredChatMessage,
   ChatSession,
   AIMultiProviderConfig,
-  AIProviderConfig
+  AIProviderConfig,
+  AIChatStreamEvent
 } from '@shared/index'
 import { DEFAULT_MODELS } from '@shared/index'
 import { randomUUID } from 'crypto'
@@ -393,6 +394,42 @@ export async function generateChatResponse(
 
     return { success: false, error: message }
   }
+}
+
+/**
+ * Streaming chat: for the BYOH `claude-cli` provider, drives the CLI in
+ * stream-json mode and forwards incremental events through `onEvent`. Other
+ * (AI SDK) providers don't stream here — they run normally and emit their final
+ * message as one event so the caller's rendering path stays uniform.
+ */
+export async function generateChatResponseStream(
+  config: AIConfig,
+  messages: AIMessage[],
+  schemas: SchemaInfo[],
+  dbType: string,
+  connectionId: string | undefined,
+  onEvent: (event: AIChatStreamEvent) => void
+): Promise<{
+  success: boolean
+  data?: AIStructuredResponse
+  error?: string
+  meta?: { grounded: boolean; agentic: boolean; turns?: number }
+}> {
+  if (config.provider === 'claude-cli') {
+    const { generateChatResponseViaHarnessStream } = await import('./harness-service')
+    return generateChatResponseViaHarnessStream(
+      config,
+      messages,
+      schemas,
+      dbType,
+      connectionId,
+      onEvent
+    )
+  }
+
+  const result = await generateChatResponse(config, messages, schemas, dbType, connectionId)
+  if (result.success && result.data) onEvent({ type: 'message', text: result.data.message })
+  return result
 }
 
 /**

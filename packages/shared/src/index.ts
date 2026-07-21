@@ -476,6 +476,15 @@ export interface AIStructuredResponse {
  */
 export type AIChatResponse = AIStructuredResponse;
 
+/**
+ * Incremental event pushed from a streaming chat run (BYOH `stream-json`).
+ * `message` carries the assistant's prose as it is written; `activity` is a
+ * short human label for a live grounding/tool step (e.g. "Running query…").
+ */
+export type AIChatStreamEvent =
+  | { type: "message"; text: string }
+  | { type: "activity"; label: string };
+
 // Stored response data types (without message field since it's in content)
 
 /**

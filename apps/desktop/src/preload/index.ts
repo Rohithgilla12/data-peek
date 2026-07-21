@@ -22,6 +22,7 @@ import type {
   AIConfig,
   AIMessage,
   AIChatResponse,
+  AIChatStreamEvent,
   StoredChatMessage,
   ChatSession,
   AIMultiProviderConfig,
@@ -97,6 +98,7 @@ export type {
   AIConfig,
   AIMessage,
   AIChatResponse,
+  AIChatStreamEvent,
   StoredChatMessage,
   ChatSession,
   AIMultiProviderConfig,
@@ -585,8 +587,38 @@ const api = {
       dbType: string,
       connectionId?: string
     ): Promise<
-      IpcResponse<AIChatResponse> & { meta?: { grounded: boolean; agentic: boolean; turns?: number } }
+      IpcResponse<AIChatResponse> & {
+        meta?: { grounded: boolean; agentic: boolean; turns?: number }
+      }
     > => ipcRenderer.invoke('ai:chat', { messages, schemas, dbType, connectionId }),
+    // Streaming chat: resolves with the final response; `onEvent` fires with
+    // incremental prose/activity while it runs. Each call is keyed by a
+    // requestId so concurrent chats don't cross streams.
+    chatStream: (
+      messages: AIMessage[],
+      schemas: SchemaInfo[],
+      dbType: string,
+      connectionId: string | undefined,
+      onEvent: (event: AIChatStreamEvent) => void
+    ): Promise<
+      IpcResponse<AIChatResponse> & {
+        meta?: { grounded: boolean; agentic: boolean; turns?: number }
+      }
+    > => {
+      const requestId =
+        globalThis.crypto?.randomUUID?.() ??
+        `req-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      const listener = (
+        _e: unknown,
+        payload: { requestId: string; event: AIChatStreamEvent }
+      ): void => {
+        if (payload?.requestId === requestId) onEvent(payload.event)
+      }
+      ipcRenderer.on('ai:chat-stream:event', listener)
+      return ipcRenderer
+        .invoke('ai:chat-stream', { requestId, messages, schemas, dbType, connectionId })
+        .finally(() => ipcRenderer.removeListener('ai:chat-stream:event', listener))
+    },
     // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string): Promise<IpcResponse<StoredChatMessage[]>> =>
       ipcRenderer.invoke('ai:get-chat-history', connectionId),

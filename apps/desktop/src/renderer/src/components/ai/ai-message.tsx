@@ -422,6 +422,10 @@ export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AI
                 }
                 return part
               })}
+              {/* Streaming caret while prose is still arriving */}
+              {!isUser && message.streaming && (
+                <span className="inline-block w-1 h-3.5 ml-0.5 -mb-0.5 bg-blue-400/80 animate-pulse align-middle" />
+              )}
             </div>
 
             {/* Copy button */}
@@ -439,6 +443,15 @@ export function AIMessage({ message, onOpenInTab, connection, schemas = [] }: AI
                 )}
               </button>
             )}
+          </div>
+        )}
+
+        {/* Live streaming activity: a grounding/tool step, or "Thinking…" before
+            any prose has arrived. Hidden once prose is streaming with no active step. */}
+        {!isUser && message.streaming && (message.activity || !message.content) && (
+          <div className="flex items-center gap-1.5 text-[11px] text-blue-400/90">
+            <Loader2 className="size-3 animate-spin" />
+            {message.activity ?? 'Thinking…'}
           </div>
         )}
 

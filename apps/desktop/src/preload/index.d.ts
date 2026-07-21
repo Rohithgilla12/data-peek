@@ -125,6 +125,11 @@ interface AIMessage {
 // Structured AI response types
 type AIResponseType = 'message' | 'query' | 'chart' | 'metric' | 'schema'
 
+// Incremental event from a streaming chat run (mirror of shared AIChatStreamEvent)
+type AIChatStreamEvent =
+  | { type: 'message'; text: string }
+  | { type: 'activity'; label: string }
+
 // Flat schema with nullable fields for AI provider compatibility
 interface AIChatResponse {
   type: AIResponseType
@@ -443,6 +448,17 @@ interface DataPeekApi {
       schemas: SchemaInfo[],
       dbType: string,
       connectionId?: string
+    ) => Promise<
+      IpcResponse<AIChatResponse> & {
+        meta?: { grounded: boolean; agentic: boolean; turns?: number }
+      }
+    >
+    chatStream: (
+      messages: AIMessage[],
+      schemas: SchemaInfo[],
+      dbType: string,
+      connectionId: string | undefined,
+      onEvent: (event: AIChatStreamEvent) => void
     ) => Promise<
       IpcResponse<AIChatResponse> & {
         meta?: { grounded: boolean; agentic: boolean; turns?: number }
