@@ -96,6 +96,34 @@ export function getBlogPost(slug: string): BlogPost | null {
   return post;
 }
 
+export function getRelatedPosts(slug: string, limit = 3): BlogPostMeta[] {
+  const posts = getBlogPosts();
+  const current = posts.find((post) => post.slug === slug);
+
+  if (!current) {
+    return posts.filter((post) => post.slug !== slug).slice(0, limit);
+  }
+
+  const currentTags = new Set(current.tags.map((tag) => tag.toLowerCase()));
+
+  return posts
+    .filter((post) => post.slug !== slug)
+    .map((post) => {
+      const sharedTags = post.tags.filter((tag) =>
+        currentTags.has(tag.toLowerCase()),
+      ).length;
+      return { post, sharedTags };
+    })
+    .sort((a, b) => {
+      if (b.sharedTags !== a.sharedTags) {
+        return b.sharedTags - a.sharedTags;
+      }
+      return new Date(b.post.date).getTime() - new Date(a.post.date).getTime();
+    })
+    .slice(0, limit)
+    .map((entry) => entry.post);
+}
+
 export function getAllBlogSlugs(): string[] {
   if (!fs.existsSync(BLOG_DIR)) {
     return [];

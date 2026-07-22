@@ -8,28 +8,16 @@ import { Header } from "@/components/marketing/header";
 import { Footer } from "@/components/marketing/footer";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { StructuredData } from "@/components/seo/structured-data";
-import { getBlogPost, getAllBlogSlugs } from "@/lib/blog";
+import { getBlogPost, getAllBlogSlugs, getRelatedPosts } from "@/lib/blog";
 import { mdxComponents } from "@/components/blog/mdx-components";
 import { ReadingProgress } from "@/components/blog/reading-progress";
+import { RelatedPosts } from "@/components/blog/related-posts";
 import {
   generateMetadata as generateSeoMetadata,
   SITE_CONFIG,
 } from "@/lib/seo";
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  User,
-  Terminal,
-  Sparkles,
-  Database,
-} from "lucide-react";
-import {
-  FadeIn,
-  StaggerContainer,
-  StaggerItem,
-  ScaleIn,
-} from "@/components/ui/motion-wrapper";
+import { ArrowLeft, Calendar, Clock, User, Sparkles } from "lucide-react";
+import { FadeIn } from "@/components/ui/motion-wrapper";
 import { DataSubstrate } from "@/components/marketing/data-substrate";
 import { Button } from "@/components/ui/button";
 
@@ -84,6 +72,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   }
 
   const postUrl = `${SITE_CONFIG.url}/blog/${slug}`;
+  const relatedPosts = getRelatedPosts(slug);
 
   return (
     <div className="min-h-screen">
@@ -99,6 +88,16 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             author: post.author,
             url: postUrl,
           },
+        }}
+      />
+      <StructuredData
+        type="breadcrumb"
+        data={{
+          breadcrumb: [
+            { name: "Home", url: SITE_CONFIG.url },
+            { name: "Blog", url: `${SITE_CONFIG.url}/blog` },
+            { name: post.title, url: postUrl },
+          ],
         }}
       />
       <main className="relative pt-32 sm:pt-48 pb-24 overflow-hidden">
@@ -199,6 +198,12 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </div>
             </article>
           </FadeIn>
+
+          {relatedPosts.length > 0 && (
+            <FadeIn>
+              <RelatedPosts posts={relatedPosts} />
+            </FadeIn>
+          )}
 
           {/* CTA Section */}
           <FadeIn>
