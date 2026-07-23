@@ -1,0 +1,95 @@
+---
+title: "Spotting Postgres Table Bloat Before It Bites"
+description: "Disk climbing while row counts stay flat? That's dead tuples. How to measure bloat with pg_stat_user_tables, tell when autovacuum is falling behind, and reclaim space without a heavy lock."
+date: "2026-07-23"
+author: "Rohith Gilla"
+tags: ["postgres", "performance", "database", "sql"]
+published: true
+---
+
+Here's the confusing version of the problem: your disk usage is climbing and
+queries on a table are getting slower, but the row count is basically flat.
+Nothing is growing — so what's eating the space?
+
+Dead tuples. Postgres doesn't overwrite a row on `UPDATE` or remove it on
+`DELETE`; it marks the old version dead and leaves it in place for `VACUUM` to
+reclaim later. On a table with heavy churn, if autovacuum can't keep up, those
+dead versions pile up — that's bloat. Sequential and index scans still have to
+step over the corpses, so the table gets both bigger and slower.
+
+## Measure it
+
+`pg_stat_user_tables` tracks live and dead tuples per table. The ratio is what
+matters:
+
+```sql
+SELECT
+  schemaname,
+  relname AS table,
+  n_live_tup AS live_rows,
+  n_dead_tup AS dead_rows,
+  ROUND(n_dead_tup::numeric / NULLIF(n_live_tup + n_dead_tup, 0) * 100, 1)
+    AS dead_pct,
+  last_autovacuum,
+  last_vacuum
+FROM pg_stat_user_tables
+WHERE n_dead_tup > 1000
+ORDER BY n_dead_tup DESC;
+```
+
+A table sitting at 20%+ dead tuples is bloated enough to care about. Look at
+`last_autovacuum` too: if it's null or ancient on a busy table, autovacuum
+isn't keeping pace. (For a byte-accurate estimate rather than a tuple ratio,
+the community `ioguix/pgsql-bloat-estimation` catalog queries are the standard
+tool — but the ratio above is enough to catch the problem day to day.)
+
+## Fix it — and mind the lock
+
+- **Plain `VACUUM`** reclaims dead tuples for reuse *without* an exclusive
+  lock. This is the normal answer and safe to run on a live table:
+  ```sql
+  VACUUM (VERBOSE, ANALYZE) my_table;
+  ```
+- **`VACUUM FULL` rewrites the whole table** and returns space to the OS, but
+  takes an `ACCESS EXCLUSIVE` lock — the table is unusable for the duration.
+  Never reach for it casually on production. For heavy bloat where you need the
+  disk back with minimal locking, `pg_repack` does the rewrite online.
+- **Tune autovacuum for hot tables** so it stops falling behind. The defaults
+  (`autovacuum_vacuum_scale_factor = 0.2`) mean a million-row table waits for
+  ~200k dead rows before vacuuming. For a high-churn table, make it aggressive
+  per-table:
+  ```sql
+  ALTER TABLE my_table SET (
+    autovacuum_vacuum_scale_factor = 0.02,
+    autovacuum_vacuum_threshold = 500
+  );
+  ```
+
+## The one-click version
+
+data-peek's [Schema Intel](/blog/schema-intel-diagnostics) runs the bloat math
+for you as read-only checks:
+
+- **Bloated tables** — flags tables where dead tuples are a large share of
+  storage (dead / (live + dead) over ~20%), with a VACUUM / `pg_repack`
+  suggestion attached.
+- **Never vacuumed or analyzed** — tables autovacuum has never touched, which
+  usually also means stale planner statistics and bad query plans.
+
+Pair that with the [Table Sizes panel](/blog/check-table-sizes-postgresql) to
+watch which tables are actually growing on disk, and you can see bloat forming
+before it turns into a 3am disk-full page.
+
+## The short version
+
+- Bloat = dead tuples from `UPDATE`/`DELETE` churn that `VACUUM` hasn't
+  reclaimed; it grows the table and slows scans while row counts stay flat.
+- Measure the dead-tuple ratio in `pg_stat_user_tables` and check
+  `last_autovacuum`.
+- Plain `VACUUM` is safe and usually enough; `VACUUM FULL` locks the table —
+  use `pg_repack` for online rewrites. Tune per-table autovacuum on hot tables
+  so it stops falling behind.
+
+data-peek is at [datapeek.dev](https://datapeek.dev), free for personal use
+and MIT source. Bloat and vacuum diagnostics sit in Schema Intel next to the
+[index checks](/blog/find-unused-indexes-postgres).

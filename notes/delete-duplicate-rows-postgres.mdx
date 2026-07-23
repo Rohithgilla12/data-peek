@@ -1,0 +1,130 @@
+---
+title: "Finding and Deleting Duplicate Rows in Postgres (Safely)"
+description: "How to find duplicate rows in Postgres and delete all but one — with the row_number() and ctid patterns, and how to run the DELETE inside a transaction so a wrong WHERE can't wreck the table."
+date: "2026-07-23"
+author: "Rohith Gilla"
+tags: ["postgres", "performance", "database", "sql"]
+published: true
+---
+
+An import ran twice. Or a retry fired before the first request finished. Or
+a missing unique constraint quietly let the same row in four times. However
+it happened, you now have duplicates, and you need to delete the copies
+without deleting the originals — and without a stray `WHERE` turning a cleanup
+into an incident.
+
+The deleting is the scary part, so let's be careful about it. But first you
+have to see what you're dealing with.
+
+## Find the duplicates
+
+Start read-only. Group by whatever *should* have been unique and count:
+
+```sql
+SELECT email, count(*)
+FROM users
+GROUP BY email
+HAVING count(*) > 1
+ORDER BY count(*) DESC;
+```
+
+That tells you which keys are duplicated and how badly. Look at it before you
+delete anything — sometimes "duplicates" turn out to be legitimately distinct
+rows that just share one column, and the fix is a better key, not a `DELETE`.
+
+## Delete all but one
+
+The safe, standard pattern uses `row_number()` to number the copies within
+each duplicate group, then deletes everything after the first:
+
+```sql
+DELETE FROM users
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id,
+           row_number() OVER (
+             PARTITION BY email
+             ORDER BY created_at
+           ) AS rn
+    FROM users
+  ) t
+  WHERE t.rn > 1
+);
+```
+
+The `PARTITION BY` is your definition of "duplicate"; the `ORDER BY` decides
+*which* copy survives (here, the oldest). Get both right and the query keeps
+exactly one row per group.
+
+**No primary key to lean on?** Use the system column `ctid`:
+
+```sql
+DELETE FROM users a
+USING users b
+WHERE a.ctid < b.ctid
+  AND a.email = b.email;
+```
+
+(Tables without a primary key make this harder in general — it's one of the
+things data-peek's [Schema Intel](/blog/schema-intel-diagnostics) flags for
+exactly this reason.)
+
+## The part that saves you: run it in a transaction
+
+The failure mode here is not writing the query — it's running a `DELETE`
+whose `WHERE` is subtly wrong and watching too many rows disappear. The fix
+is to never run a destructive statement you haven't previewed. Wrap it:
+
+```sql
+BEGIN;
+
+-- how many rows will this remove?
+SELECT count(*) FROM users
+WHERE id IN ( /* …the rn > 1 subquery… */ );
+
+DELETE FROM users
+WHERE id IN ( /* …the same subquery… */ );
+
+-- sanity check the survivors before you commit
+SELECT email, count(*) FROM users GROUP BY email HAVING count(*) > 1;
+
+-- happy? COMMIT;  wrong? ROLLBACK;
+```
+
+If the count is 10× what you expected, `ROLLBACK` and nothing happened. This
+one habit — count first, delete, verify, *then* commit — turns "duplicate
+cleanup" from a heart-in-mouth operation into a boring one.
+
+This is where a fast client earns its keep, and I'll be honest about what it
+is: data-peek has no magic "de-dupe" button. What it has is the thing that
+actually matters — you run the `SELECT` and see the exact rows in the grid
+before you touch anything, and you can walk the `BEGIN → DELETE → verify →
+COMMIT/ROLLBACK` sequence one statement at a time with
+[multi-statement step-through](/blog/multi-statement-step-through), so the
+`ROLLBACK` is always one keystroke away. The safety comes from the workflow,
+not a feature.
+
+## Stop it recurring
+
+Once the table is clean, add the constraint that should have been there:
+
+```sql
+ALTER TABLE users ADD CONSTRAINT users_email_key UNIQUE (email);
+```
+
+It will fail if any duplicates remain — which is a useful final check that
+your cleanup actually worked. From then on the database refuses the fourth
+copy for you.
+
+## The short version
+
+- Find first with `GROUP BY … HAVING count(*) > 1` and *look* before deleting.
+- Delete all-but-one with `row_number() … PARTITION BY`, or `ctid` when there's
+  no primary key.
+- Wrap the `DELETE` in a transaction, count and verify before you `COMMIT`.
+- Add the `UNIQUE` constraint so it can't happen again.
+
+data-peek is at [datapeek.dev](https://datapeek.dev), free for personal use
+and MIT source. It won't dedupe your table for you — but running the find
+query, previewing the damage, and rolling back a bad `DELETE` is exactly the
+loop it's built for.
