@@ -85,6 +85,10 @@ failures you end up with a listener that tries once an hour and you swear
 the panel "doesn't work anymore" when actually it just happens to be in
 a two-hour retry gap.
 
+The same reconnect-with-backoff discipline shows up elsewhere in the app —
+the [connection health monitor](/blog/connection-health-monitor-in-a-sql-client)
+applies it to every connection, not just the notification listener.
+
 The `destroyed` flag is the quiet hero. Every `ListenerEntry` has one:
 
 ```ts
@@ -151,6 +155,11 @@ sqliteDb.exec(`
 `);
 ```
 
+That composite index on `(connection_id, received_at DESC)` is what keeps the
+history query fast as the table fills toward 10,000 rows. If you are ever
+unsure an index like this is actually being used, the way to confirm it is to
+[read the EXPLAIN plan](/blog/understanding-explain-analyze).
+
 Three reasons this matters:
 
 1. **Close the panel, come back later.** Your events are still there. This
@@ -187,7 +196,9 @@ if (count > MAX_EVENTS_PER_CONNECTION) {
 The subquery guarantees we delete the oldest `excess` rows for _this
 connection_, not the oldest rows overall. On a laptop with two databases
 open, the global ordering would let one chatty channel evict events from
-the quiet one.
+the quiet one. Capping row growth like this is the same instinct behind
+[keeping an eye on table sizes](/blog/check-table-sizes-postgresql) in a
+production database — unbounded tables are how disks fill up at 3am.
 
 ## Identifier quoting for channel names
 
