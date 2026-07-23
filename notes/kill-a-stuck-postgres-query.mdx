@@ -149,10 +149,9 @@ that was stuck will happily show you where it spent its time.
 
 And if the query was not slow so much as *blocked* — waiting on a lock held
 by another session — cancelling it treats the symptom while the real
-offender keeps the lock. That is a different hunt, and it is why the same
-health monitor also surfaces the
-[connection and lock picture](/blog/connection-health-monitor-in-a-sql-client)
-alongside active queries.
+offender keeps the lock. That is a different hunt entirely:
+[finding what's blocking your query](/blog/what-is-blocking-my-postgres-query)
+means reading the lock tree, not the query plan.
 
 ## The short version
 

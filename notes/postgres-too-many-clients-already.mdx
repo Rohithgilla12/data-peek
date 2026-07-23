@@ -1,0 +1,103 @@
+---
+title: "Postgres 'Too Many Clients Already': The 3am Fix and the Real Cause"
+description: "FATAL: sorry, too many clients already — how to get back online fast, and why bumping max_connections is the wrong long-term fix. Connection leaks, pooling, and idle-in-transaction."
+date: "2026-07-23"
+author: "Rohith Gilla"
+tags: ["postgres", "devops", "troubleshooting", "sql"]
+published: true
+---
+
+Your app is throwing this and the pager is going off:
+
+```
+FATAL: sorry, too many clients already
+```
+
+Every new connection is being refused, so the app is effectively down. This
+is one of the clearest error messages Postgres produces — you have hit
+`max_connections` — but the obvious fix is a trap, and the real cause is
+almost never "not enough connections."
+
+## Get back online first
+
+You need slots freed up. Look at what is actually connected, grouped by
+state:
+
+```sql
+SELECT state, count(*)
+FROM pg_stat_activity
+GROUP BY state
+ORDER BY count(*) DESC;
+```
+
+Nine times out of ten you will see a large pile of `idle` or, worse,
+`idle in transaction` connections. Those are the ones to clear. To end the
+idle sessions from a runaway client (adjust the filter to target the right
+application — do **not** blanket-kill everything):
+
+```sql
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE state IN ('idle', 'idle in transaction')
+  AND application_name = 'the-leaking-app'
+  AND pid <> pg_backend_pid();
+```
+
+That buys you breathing room. **Bumping `max_connections` also works — and is
+usually the wrong instinct.** Each connection costs memory (work_mem and
+per-backend overhead), so raising the limit without also revisiting
+`shared_buffers` and RAM can trade a connection error for the OOM killer.
+Treat a `max_connections` bump as a deliberate capacity decision, not a
+reflex.
+
+## The real cause
+
+"Too many clients" is a symptom. The disease is almost always one of:
+
+- **No connection pooling.** Each app instance opens its own raw connections,
+  and under load the count multiplies past what the server allows. A pooler —
+  PgBouncer, or your framework's built-in pool — is the actual fix. It keeps a
+  small, bounded set of real Postgres connections and multiplexes your app
+  across them.
+- **Leaked connections.** Code that opens a connection and never returns it to
+  the pool (missing `finally`, an error path that skips cleanup). The count
+  only ever grows.
+- **`idle in transaction` sessions.** A transaction opened and never committed
+  holds its connection *and* any locks it took. Set
+  `idle_in_transaction_session_timeout` so Postgres reaps them automatically.
+
+If you take one thing from an outage like this: **put a pooler in front of
+Postgres and cap it.** It is the difference between a load spike causing
+slightly slower queries versus a hard outage.
+
+## Where a client helps (and where it doesn't)
+
+I want to be straight about this one, because it is where a GUI is only
+partly useful. data-peek's health monitor has an **Active Queries** panel,
+and it deliberately shows non-idle sessions — including
+`idle in transaction`, which is exactly the state you care about here. If a
+transaction-leaking client is the culprit, you will see those sessions and
+can cancel them from the panel, the same way you would
+[kill any stuck query](/blog/kill-a-stuck-postgres-query).
+
+What it does **not** show is the full count of plain `idle` connections or a
+running total against `max_connections` — so for the triage query above
+(grouping every state, counting toward the limit) you will still reach for a
+SQL tab. The panel is good for spotting the *offending transactions*; the
+`GROUP BY state` count is how you see the *whole* picture. Use both.
+
+## The short version
+
+- Clear the `idle` / `idle in transaction` pile-up to get back online; target
+  the offending app, don't blanket-kill.
+- Do not reach for a bigger `max_connections` as the fix — it costs memory and
+  hides the real problem.
+- The real fix is a **connection pooler** with a bounded size, plus
+  `idle_in_transaction_session_timeout` to reap abandoned transactions.
+
+data-peek is at [datapeek.dev](https://datapeek.dev), free for personal use
+and MIT source. When the database is refusing connections, the fastest path
+is still a `GROUP BY state` in a query tab — and once you have found the
+transaction-leaking session, the [Active Queries](/blog/kill-a-stuck-postgres-query)
+panel and the [lock view](/blog/what-is-blocking-my-postgres-query) are right
+there to deal with it.
