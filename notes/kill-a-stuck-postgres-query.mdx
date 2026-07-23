@@ -1,0 +1,167 @@
+---
+title: "Killing a Stuck Postgres Query Without Killing the Wrong One"
+description: "How to find and stop a runaway Postgres query safely: pg_cancel_backend vs pg_terminate_backend, picking the right pid from pg_stat_activity, and not nuking your migration by mistake."
+date: "2026-07-23"
+author: "Rohith Gilla"
+tags: ["postgres", "devops", "troubleshooting", "sql"]
+published: true
+---
+
+The dashboard is timing out. Something is holding the database hostage — a
+report query that decided to sequential-scan a 200-million-row table, or a
+migration that grabbed a lock and wandered off. You SSH into the box, open
+`psql`, and run the query everyone runs:
+
+```sql
+SELECT pid, state, now() - query_start AS duration, query
+FROM pg_stat_activity
+WHERE state = 'active'
+ORDER BY duration DESC;
+```
+
+You get a wall of rows. You find the one that has been running for eleven
+minutes, copy its `pid`, and type the thing you always half-regret:
+
+```sql
+SELECT pg_terminate_backend(48213);
+```
+
+And then the doubt hits. Was `48213` the runaway analytics query, or the
+migration that was halfway through rebuilding an index? Did I just roll back
+something that was 90% done? On a bad day you paste the wrong pid entirely
+and terminate a healthy connection while the real culprit keeps running.
+
+I have done this enough times, at enough levels of caffeination, that I built
+the safe version into data-peek. But the SQL is worth understanding first,
+because the tool is just a faster, less error-prone way of doing exactly
+this.
+
+## Cancel, don't terminate (at least not first)
+
+Postgres gives you two ways to stop a backend, and the difference matters
+more than most people treat it:
+
+```sql
+SELECT pg_cancel_backend(pid);     -- polite: cancels the current query
+SELECT pg_terminate_backend(pid);  -- nuclear: kills the whole connection
+```
+
+`pg_cancel_backend` sends the equivalent of pressing Ctrl+C. It cancels the
+**currently running query**, the client gets an error, and the session stays
+alive. If a connection is chewing on one bad `SELECT`, this is almost always
+what you want — the query stops, nothing else is disturbed.
+
+`pg_terminate_backend` is `kill` for the whole backend. It tears down the
+entire session, not just the query. Any open transaction rolls back and the
+connection drops. You reach for this when cancelling did not work, or when
+the session itself is the problem — an `idle in transaction` connection
+sitting on a lock, for example, where there is no active query to cancel.
+
+The rule I follow: **cancel first, terminate only if cancel fails.** Starting
+with the nuclear option is how you turn a slow query into a rolled-back
+transaction you did not mean to lose.
+
+## Finding the right pid without guessing
+
+The dangerous part is never the kill — it is picking the wrong target. A
+better `pg_stat_activity` query gives you enough context to be sure:
+
+```sql
+SELECT
+  pid,
+  usename,
+  application_name,
+  state,
+  now() - query_start AS duration,
+  wait_event_type,
+  wait_event,
+  query
+FROM pg_stat_activity
+WHERE state <> 'idle'
+  AND pid <> pg_backend_pid()
+ORDER BY query_start ASC;
+```
+
+A few things in here save you from yourself:
+
+- **`state <> 'idle'`** drops the connections that are just sitting there
+  doing nothing, so you are only looking at sessions actually doing work.
+  Note this still shows `idle in transaction` — those are not idle, they are
+  holding a transaction open, and they are often the real villain.
+- **`pid <> pg_backend_pid()`** excludes your own session. Cancelling
+  yourself is a rite of passage you only need once.
+- **`ORDER BY query_start ASC`** puts the oldest queries first. The thing
+  that has been running longest is usually the thing you came here to kill.
+- **`wait_event`** tells you *why* it is stuck. A query waiting on `Lock`
+  is blocked by someone else — killing it might not help if the real problem
+  is the session holding the lock.
+
+Read the `query` text and the `usename` before you do anything. If it says
+`autovacuum` or it is a replication sender, leave it alone. Confirm the
+duration matches the pain you are feeling. *Then* cancel it.
+
+## The version I actually use now
+
+Doing this by hand works, but at 3am, over a slow SSH tunnel, copy-pasting
+pids between a `pg_stat_activity` query and a `pg_cancel_backend` call is
+exactly when mistakes happen. So data-peek's health monitor has an **Active
+Queries** panel that is just this query, kept live.
+
+It lists every non-idle session — pid, user, state, how long it has been
+running, the wait event, and the full query text — sorted oldest-first, so
+the runaway query floats to the top on its own. Each row has a stop button.
+
+The one deliberate decision worth calling out: **that button runs
+`pg_cancel_backend`, not `pg_terminate_backend`.** The default action is the
+graceful one. Here is the relevant slice from
+`src/main/adapters/postgres-adapter.ts`:
+
+```ts
+async killQuery(config, pid) {
+  const result = await client.query(
+    'SELECT pg_cancel_backend($1) AS cancelled',
+    [pid]
+  )
+  const cancelled = result.rows[0]?.cancelled === true
+  return cancelled
+    ? { success: true }
+    : { success: false, error: 'Failed to cancel query - may have already completed' }
+}
+```
+
+`pg_cancel_backend` returns a boolean, so we can tell you whether the cancel
+actually landed or whether the query had already finished on its own. You see
+the query, you see how long it has run, you click stop, and the safe thing
+happens. No copied pids, no accidental terminate.
+
+If cancelling genuinely is not enough — an `idle in transaction` session that
+will not budge — that is still a job for `pg_terminate_backend` in a query
+tab, deliberately, with the pid right in front of you. I would rather make
+the destructive path a conscious choice than hide it behind the same button.
+
+## Stopping it from happening again
+
+Killing the query is the tourniquet, not the cure. Once the fire is out, the
+question is why a query ran for eleven minutes in the first place. Usually it
+is a missing index or a plan gone wrong, and the way to find out is to
+[read its EXPLAIN plan](/blog/understanding-explain-analyze) — the same query
+that was stuck will happily show you where it spent its time.
+
+And if the query was not slow so much as *blocked* — waiting on a lock held
+by another session — cancelling it treats the symptom while the real
+offender keeps the lock. That is a different hunt entirely:
+[finding what's blocking your query](/blog/what-is-blocking-my-postgres-query)
+means reading the lock tree, not the query plan.
+
+## The short version
+
+- Prefer `pg_cancel_backend` (cancels the query). Only reach for
+  `pg_terminate_backend` (kills the session) when cancel is not enough.
+- Query `pg_stat_activity` with `state`, `duration`, `wait_event`, and the
+  full query text so you kill the right pid on purpose, not by guess.
+- Exclude your own backend (`pg_backend_pid()`), and never assume — read the
+  query and the user before you stop it.
+
+data-peek is at [datapeek.dev](https://datapeek.dev). It is free for personal
+use and the source is MIT. The Active Queries panel is the one I open first
+when the database gets quiet in the bad way.

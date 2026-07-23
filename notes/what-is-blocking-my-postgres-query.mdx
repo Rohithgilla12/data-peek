@@ -1,0 +1,116 @@
+---
+title: "What's Blocking My Postgres Query? Reading the Lock Tree"
+description: "Your query isn't slow — it's blocked. How to find the session holding the lock with pg_blocking_pids and pg_locks, cancel the right one, and stop idle-in-transaction from doing it again."
+date: "2026-07-23"
+author: "Rohith Gilla"
+tags: ["postgres", "devops", "troubleshooting", "sql"]
+published: true
+---
+
+There is a specific kind of Postgres problem that feels like a slow query but
+is not one. A `SELECT` or an `UPDATE` that should take twenty milliseconds
+just… sits there. You check `pg_stat_activity` and it has been "running" for
+four minutes. You start reading its query plan looking for the missing index,
+and there is nothing to find — because the query is not doing any work. It is
+**waiting**. Someone else is holding a lock it needs, and it will wait,
+politely, forever.
+
+The tell is in `pg_stat_activity`: the state is `active` but `wait_event_type`
+is `Lock`. It is not slow. It is blocked. And killing *it* will not help —
+you have to find and stop whoever is holding the lock.
+
+## Finding the blocker
+
+The old way to do this was a `pg_locks` self-join that nobody remembers
+without looking it up. Modern Postgres gives you `pg_blocking_pids()`, which
+turns the whole thing into one readable query:
+
+```sql
+SELECT
+  blocked.pid            AS blocked_pid,
+  blocked.query          AS blocked_query,
+  blocking.pid           AS blocking_pid,
+  blocking.query         AS blocking_query,
+  blocking.state         AS blocking_state
+FROM pg_stat_activity AS blocked
+JOIN pg_stat_activity AS blocking
+  ON blocking.pid = ANY(pg_blocking_pids(blocked.pid))
+WHERE blocked.wait_event_type = 'Lock';
+```
+
+This gives you the pair that matters: the query that is stuck, and the query
+that is holding it hostage. Read the `blocking_query` — that is the one you
+have to deal with.
+
+Two things trip people up here:
+
+- **Cancelling the blocked query does nothing useful.** It is the victim, not
+  the cause. Cancel the *blocker* (`blocking_pid`) and the blocked query
+  usually completes on its own a moment later.
+- **The blocker is often not running a query at all.** If `blocking_state` is
+  `idle in transaction`, there is no active statement to cancel — someone
+  opened a transaction, took a lock, and walked away (a debugger paused on a
+  breakpoint, an app that forgot to `COMMIT`). For those you need
+  `pg_terminate_backend`, because there is no live query for
+  `pg_cancel_backend` to interrupt.
+
+## The version I actually use
+
+Reconstructing the lock tree by hand, at the exact moment the app is down, is
+not where I want to be spending my attention. So data-peek's health monitor
+has a **Locks & Blocking** panel that keeps this query live and renders the
+pairs directly: blocked PID and query on one side, blocking PID and query on
+the other, with how long the blocked session has been waiting. When nothing
+is blocked it just says "No blocking locks", which is its own kind of relief.
+
+Under the hood it is the classic `pg_locks` join (from
+`src/main/adapters/postgres-adapter.ts`), matching a waiting lock against the
+lock that is granted on the same object:
+
+```sql
+FROM pg_locks blocked
+JOIN pg_stat_activity blocked_activity ON blocked.pid = blocked_activity.pid
+JOIN pg_locks blocking ON (
+  blocked.locktype = blocking.locktype
+  AND blocked.relation IS NOT DISTINCT FROM blocking.relation
+  -- …the rest of the lock-identity columns…
+  AND blocked.pid != blocking.pid
+)
+JOIN pg_stat_activity blocking_activity ON blocking.pid = blocking_activity.pid
+WHERE NOT blocked.granted AND blocking.granted
+```
+
+Each blocking row has a "Kill Blocker" action, so once you have spotted the
+session at the root of the pile-up you can stop it in place. That kill runs
+the same graceful `pg_cancel_backend` path described in
+[killing a stuck query](/blog/kill-a-stuck-postgres-query) — cancel first,
+and drop to a deliberate `pg_terminate_backend` only for the
+`idle in transaction` holders that have no query to cancel.
+
+## Stopping the pile-up
+
+Blocking is almost always a transaction that holds a lock longer than it
+should. A few habits make it rare:
+
+- **Keep transactions short.** Do the slow work (HTTP calls, file I/O, user
+  think-time) *outside* the transaction, not while holding a row lock.
+- **Set `idle_in_transaction_session_timeout`.** It automatically kills
+  sessions that open a transaction and go idle — the single most common
+  source of mystery blocking.
+- **Set `lock_timeout` for risky statements.** Better to fail fast with a
+  clear lock-timeout error than to wedge behind a lock indefinitely.
+
+## The short version
+
+- A query stuck with `wait_event_type = 'Lock'` is blocked, not slow — don't
+  go hunting for a missing index.
+- Use `pg_blocking_pids()` to find the blocking session, and act on the
+  *blocker*, not the victim.
+- `idle in transaction` blockers have no query to cancel — terminate them,
+  and add `idle_in_transaction_session_timeout` so they cannot happen again.
+
+data-peek is at [datapeek.dev](https://datapeek.dev), free for personal use
+and MIT source. The Locks & Blocking panel sits right next to
+[Active Queries](/blog/kill-a-stuck-postgres-query) in the same health
+monitor — because when the database goes quiet in the bad way, "is something
+blocked?" is the very next question after "what is running?".
