@@ -3,7 +3,7 @@ import { getBlogPosts } from "@/lib/blog";
 
 const BASE_URL = "https://www.datapeek.dev";
 
-const databases = ["postgresql", "mysql", "sql-server", "sqlite"];
+// /databases/* detail pages are currently noindexed (thin) — excluded below.
 const alternatives = ["pgadmin", "dbeaver", "tableplus"];
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -14,13 +14,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: new Date(post.date),
     changeFrequency: "monthly" as const,
     priority: 0.7,
-  }));
-
-  const databaseUrls: MetadataRoute.Sitemap = databases.map((db) => ({
-    url: `${BASE_URL}/databases/${db}`,
-    lastModified: new Date(),
-    changeFrequency: "monthly" as const,
-    priority: 0.8,
   }));
 
   const compareUrls: MetadataRoute.Sitemap = alternatives.map((alt) => ({
@@ -56,7 +49,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: 0.8,
     },
-    ...databaseUrls,
     {
       url: `${BASE_URL}/compare`,
       lastModified: new Date(),
