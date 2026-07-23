@@ -3,7 +3,7 @@ import { Header } from "@/components/marketing/header";
 import { Breadcrumbs } from "@/components/seo/breadcrumbs";
 import { Button } from "@/components/ui/button";
 import { generateMetadata as generateSeoMetadata } from "@/lib/seo";
-import { ArrowRight, Check, Download, Sparkles, Database } from "lucide-react";
+import { ArrowRight, Check, Download, Database } from "lucide-react";
 import { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -112,6 +112,9 @@ export async function generateMetadata({
     description: dbInfo.description,
     keywords: Array.from(dbInfo.keywords),
     path: `/databases/${database}`,
+    // Thin programmatic pages — noindexed until expanded into real content.
+    // Kept out of the sitemap too (see app/sitemap.ts).
+    noindex: true,
   });
 }
 
