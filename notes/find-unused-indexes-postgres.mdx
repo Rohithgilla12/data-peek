@@ -1,0 +1,104 @@
+---
+title: "Find Your Unused (and Missing) Postgres Indexes"
+description: "Unused indexes slow every write and waste disk. How to find them with pg_stat_user_indexes, spot missing ones from sequential scans, and drop the dead weight safely — with the caveats that matter."
+date: "2026-07-23"
+author: "Rohith Gilla"
+tags: ["postgres", "performance", "database", "sql"]
+published: true
+---
+
+Indexes feel free. They are not. Every index you keep is paid for on every
+`INSERT`, `UPDATE`, and `DELETE` — the write has to maintain the index too —
+and it sits on disk taking up space and buffer cache. Most databases I've
+looked at carry a handful of indexes that nobody's query has touched in
+months: leftovers from an experiment, a migration that added one "just in
+case", or two indexes that do the same job because nobody dropped the old one.
+
+Here's how to find both the dead weight and the gaps.
+
+## Unused indexes
+
+Postgres tracks how many times each index has been scanned in
+`pg_stat_user_indexes`. An index with `idx_scan = 0` has not served a single
+lookup since stats were last reset:
+
+```sql
+SELECT
+  s.schemaname,
+  s.relname   AS table,
+  s.indexrelname AS index,
+  s.idx_scan  AS scans,
+  pg_size_pretty(pg_relation_size(s.indexrelid)) AS size
+FROM pg_stat_user_indexes s
+JOIN pg_index i ON i.indexrelid = s.indexrelid
+WHERE s.idx_scan = 0
+  AND NOT i.indisunique      -- keep unique/PK indexes; they enforce constraints
+ORDER BY pg_relation_size(s.indexrelid) DESC;
+```
+
+Then drop them without locking the table:
+
+```sql
+DROP INDEX CONCURRENTLY idx_that_never_gets_used;
+```
+
+**Read the caveats before you drop anything** — this is where people cause
+outages:
+
+- **Stats are cumulative since the last reset.** If someone ran
+  `pg_stat_reset()` yesterday, *everything* looks unused. Check
+  `stats_reset` in `pg_stat_database` — you want weeks of history, ideally
+  spanning your monthly/quarterly jobs.
+- **Replicas keep their own stats.** An index unused on the primary may be
+  doing heavy work serving reads on a replica. Check there too.
+- **Never drop a unique or primary-key index** just because `idx_scan` is 0 —
+  it's enforcing a constraint, not serving queries. The `NOT i.indisunique`
+  filter above excludes them.
+
+## Missing indexes
+
+The mirror image: tables taking sequential scans they shouldn't. Compare
+`seq_scan` against `idx_scan`:
+
+```sql
+SELECT relname AS table, seq_scan, idx_scan, n_live_tup AS est_rows
+FROM pg_stat_user_tables
+WHERE seq_scan > 1000
+ORDER BY seq_scan DESC;
+```
+
+A big table with lots of sequential scans and few index scans is a candidate.
+But "candidate" is not "add an index" — confirm the specific slow query needs
+one by [reading its EXPLAIN plan](/blog/understanding-explain-analyze) first.
+The most common concrete miss is a **foreign key column with no index**, which
+turns every join and parent-row delete into a scan.
+
+## The one-click version
+
+Writing and re-writing these queries is exactly the chore you keep meaning to
+automate and don't. data-peek's [Schema Intel](/blog/schema-intel-diagnostics)
+runs them for you as read-only checks and hands back copyable fixes —
+specifically:
+
+- **Unused indexes** — the `idx_scan = 0` check above, with a `DROP INDEX`
+  ready to copy.
+- **Duplicate or redundant indexes** — two indexes covering the same leading
+  columns, wasting writes.
+- **Foreign keys missing an index** — the most common *missing*-index case,
+  surfaced directly.
+
+That post is the feature tour; this one is the why and the SQL behind it. Use
+whichever you prefer — but do the thinking (the caveats above) before you drop.
+
+## The short version
+
+- Find dead indexes with `pg_stat_user_indexes` `idx_scan = 0`, excluding
+  unique/PK indexes, and drop with `DROP INDEX CONCURRENTLY`.
+- Check `stats_reset` age and your replicas before trusting "unused" — this is
+  how people drop an index that was actually in use.
+- For missing indexes, start from `seq_scan` heavy tables and unindexed FK
+  columns, then confirm with `EXPLAIN` — don't index on a hunch.
+
+data-peek is at [datapeek.dev](https://datapeek.dev), free for personal use
+and MIT source. The index checks live in Schema Intel, right next to the
+[bloat and vacuum diagnostics](/blog/postgres-table-bloat-dead-tuples).
