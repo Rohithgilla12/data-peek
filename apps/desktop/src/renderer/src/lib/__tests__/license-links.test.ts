@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   buildTrackingUrl,
@@ -40,21 +40,17 @@ describe('buildTrackingUrl', () => {
 })
 
 describe('license purchase link', () => {
-  // Regression test: the in-app "Purchase one" button used to point at /pricing,
-  // which has no page on the marketing site and returned a 404.
-  it('points at the home page pricing anchor, not a standalone /pricing route', () => {
+  // Regression test: the in-app "Purchase one" button used to point at /pricing
+  // before that page existed on the marketing site, so users got a 404.
+  it('builds a well-formed tracking URL', () => {
     const url = new URL(buildTrackingUrl(LICENSE_PURCHASE_PATH, { source: 'desktop' }))
-    expect(url.pathname).toBe('/')
-    expect(url.hash).toBe('#pricing')
+    expect(url.pathname).toBe(LICENSE_PURCHASE_PATH)
+    expect(url.searchParams.get('utm_source')).toBe('desktop')
   })
 
-  it('targets an anchor that exists on the marketing site', () => {
-    const pricingSection = readFileSync(
-      resolve(WEB_APP_DIR, 'src/components/marketing/pricing.tsx'),
-      'utf-8'
-    )
-    const anchor = LICENSE_PURCHASE_PATH.split('#')[1]
-    expect(pricingSection).toContain(`id="${anchor}"`)
+  it('targets a page that exists on the marketing site', () => {
+    const pagePath = resolve(WEB_APP_DIR, `src/app${LICENSE_PURCHASE_PATH}/page.tsx`)
+    expect(existsSync(pagePath)).toBe(true)
   })
 })
 

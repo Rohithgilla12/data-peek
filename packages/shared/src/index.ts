@@ -24,9 +24,9 @@ export const DATAPEEK_BASE_URL = "https://www.datapeek.dev";
 
 /**
  * Marketing-site path for purchasing a license.
- * Pricing lives at an anchor on the home page — there is no standalone /pricing route.
+ * Must match a real page in apps/web — shipped desktop builds link here directly.
  */
-export const LICENSE_PURCHASE_PATH = "/#pricing";
+export const LICENSE_PURCHASE_PATH = "/pricing";
 
 /**
  * Marketing-site path for managing an existing license.
