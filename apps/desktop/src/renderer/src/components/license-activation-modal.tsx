@@ -12,7 +12,7 @@ import {
 } from '@data-peek/ui'
 
 import { useLicenseStore } from '@/stores/license-store'
-import { buildTrackingUrl } from '@shared/index'
+import { buildTrackingUrl, LICENSE_PURCHASE_PATH, LICENSE_DASHBOARD_PATH } from '@shared/index'
 
 const UTM_PARAMS = { source: 'desktop', medium: 'app', content: 'activation_modal' }
 
@@ -131,7 +131,7 @@ export function LicenseActivationModal({ open, onOpenChange }: LicenseActivation
             <p className="text-sm text-muted-foreground">
               Don&apos;t have a license?{' '}
               <a
-                href={buildTrackingUrl('/pricing', UTM_PARAMS)}
+                href={buildTrackingUrl(LICENSE_PURCHASE_PATH, UTM_PARAMS)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-primary hover:underline"
@@ -143,7 +143,7 @@ export function LicenseActivationModal({ open, onOpenChange }: LicenseActivation
             <p className="mt-2 text-sm text-muted-foreground">
               Need to manage your license?{' '}
               <a
-                href={buildTrackingUrl('/dashboard', UTM_PARAMS)}
+                href={buildTrackingUrl(LICENSE_DASHBOARD_PATH, UTM_PARAMS)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-primary hover:underline"

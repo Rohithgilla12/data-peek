@@ -18,7 +18,7 @@ import {
 } from '@data-peek/ui'
 
 import { useLicenseStore } from '@/stores/license-store'
-import { buildTrackingUrl } from '@shared/index'
+import { buildTrackingUrl, LICENSE_PURCHASE_PATH } from '@shared/index'
 
 interface LicenseSettingsModalProps {
   open: boolean
@@ -190,7 +190,7 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
               <Button
                 onClick={() =>
                   window.open(
-                    buildTrackingUrl('/pricing', {
+                    buildTrackingUrl(LICENSE_PURCHASE_PATH, {
                       source: 'desktop',
                       medium: 'app',
                       content: 'license_settings'

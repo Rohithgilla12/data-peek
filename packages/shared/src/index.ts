@@ -23,6 +23,18 @@ export {
 export const DATAPEEK_BASE_URL = "https://www.datapeek.dev";
 
 /**
+ * Marketing-site path for purchasing a license.
+ * Pricing lives at an anchor on the home page — there is no standalone /pricing route.
+ */
+export const LICENSE_PURCHASE_PATH = "/#pricing";
+
+/**
+ * Marketing-site path for managing an existing license.
+ * There is no standalone dashboard page yet; the site redirects this to the home page.
+ */
+export const LICENSE_DASHBOARD_PATH = "/dashboard";
+
+/**
  * UTM parameters for tracking
  */
 export interface UTMParams {
@@ -44,9 +56,15 @@ export function buildTrackingUrl(path: string, utm: UTMParams = {}): string {
   if (utm.content) params.set("utm_content", utm.content);
 
   const queryString = params.toString();
-  const separator = path.includes("?") ? "&" : "?";
 
-  return `${DATAPEEK_BASE_URL}${path}${queryString ? separator + queryString : ""}`;
+  // Query params must be inserted before any hash fragment:
+  // "/#pricing" → "/?utm_source=…#pricing", not "/#pricing?utm_source=…"
+  const hashIndex = path.indexOf("#");
+  const basePath = hashIndex === -1 ? path : path.slice(0, hashIndex);
+  const hash = hashIndex === -1 ? "" : path.slice(hashIndex);
+  const separator = basePath.includes("?") ? "&" : "?";
+
+  return `${DATAPEEK_BASE_URL}${basePath}${queryString ? separator + queryString : ""}${hash}`;
 }
 
 /**

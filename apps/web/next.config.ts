@@ -33,6 +33,18 @@ const nextConfig: NextConfig = {
         destination: "https://www.datapeek.dev/:path*",
         permanent: true,
       },
+      // Shipped desktop builds link to /pricing and /dashboard, which have no
+      // standalone pages — keep these resolving instead of 404ing.
+      {
+        source: "/pricing",
+        destination: "/#pricing",
+        permanent: false,
+      },
+      {
+        source: "/dashboard",
+        destination: "/",
+        permanent: false,
+      },
     ];
   },
 };
