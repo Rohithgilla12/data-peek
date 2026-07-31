@@ -90,3 +90,74 @@ jobs:
           name: playwright-results
           path: apps/desktop/test-results
           retention-days: 7
+
+  web:
+    name: playwright (web)
+    # The marketing site's jsdom suite cannot observe media resource selection or
+    # hydration attribute reconciliation, and two real bugs shipped through that gap:
+    # a clip switch that kept playing the previous video, and a reduced-motion
+    # controls fallback that never reached the DOM. This job is the only place those
+    # are actually verified.
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Chromium only — these assertions are about media resource selection and
+      # hydration, not cross-browser rendering.
+      - name: Install Chromium
+        run: pnpm --filter @data-peek/web exec playwright install --with-deps chromium
+
+      # The Playwright config's webServer runs `next build && next start` itself, so
+      # there is no separate build step here.
+      - name: Run web browser tests
+        run: pnpm --filter @data-peek/web test:browser
+        env:
+          # Placeholders, never real, and only needed to be non-empty. Three API
+          # routes construct a DodoPayments client at module scope and Next collects
+          # page data for them at build time, so an absent key aborts the build.
+          #
+          # The Clerk values only have to exist for the build — they are never
+          # validated at request time any more, because middleware no longer runs on
+          # public routes. A bogus key used to return 400 for every page.
+          DODO_API_KEY: placeholder-not-a-real-key
+          DODO_PAYMENTS_API_KEY: placeholder-not-a-real-key
+          DODO_WEBHOOK_SECRET: placeholder-not-a-real-secret
+          DODO_PRO_PRODUCT_ID: placeholder-product-id
+          RESEND_API_KEY: placeholder-not-a-real-key
+          CLERK_SECRET_KEY: sk_test_placeholder
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk
+          DATABASE_URL: postgres://placeholder:placeholder@127.0.0.1:5432/placeholder
+
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report-web
+          path: apps/web/playwright-report
+          retention-days: 7
