@@ -137,6 +137,19 @@ jobs:
       # there is no separate build step here.
       - name: Run web browser tests
         run: pnpm --filter @data-peek/web test:browser
+        env:
+          # The production build constructs a DodoPayments client at module scope in
+          # three API routes, and Next collects page data for them at build time — so
+          # these only need to be non-empty, never real. Nothing here talks to a live
+          # service: no test hits an API route, and the server is torn down with the job.
+          DODO_API_KEY: placeholder-not-a-real-key
+          DODO_PAYMENTS_API_KEY: placeholder-not-a-real-key
+          DODO_WEBHOOK_SECRET: placeholder-not-a-real-secret
+          DODO_PRO_PRODUCT_ID: placeholder-product-id
+          RESEND_API_KEY: placeholder-not-a-real-key
+          CLERK_SECRET_KEY: sk_test_placeholder
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_ZXhhbXBsZS5jbGVyay5hY2NvdW50cy5kZXYk
+          DATABASE_URL: postgres://placeholder:placeholder@127.0.0.1:5432/placeholder
 
       - name: Upload Playwright report on failure
         if: failure()

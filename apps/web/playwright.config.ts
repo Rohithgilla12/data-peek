@@ -14,9 +14,8 @@ import { defineConfig, devices } from "@playwright/test";
  *      because React does not reconcile hydration attribute mismatches. RTL
  *      `render()` is a pure client render and never hydrates.
  *
- * Both are only observable in a real browser against the real server output, so
- * this runs against a production build rather than `next dev` — the hydration path
- * is the point.
+ * Both are only observable in a real browser, so this drives a real Chromium against
+ * a server-rendered page — the hydration path is the point.
  *
  * Deliberately kept to that: a handful of assertions about media actually loading
  * and reduced-motion actually degrading. Behaviour that jsdom *can* see belongs in
@@ -50,14 +49,24 @@ export default defineConfig({
   webServer: {
     // Always builds. Slower on a cold local run, but it removes the footgun of
     // testing a stale build, and a production build is what these tests are for.
+    // A production build, not `next dev`. Dev proved flaky here — the media-switch
+    // assertion passed in isolation but failed in a full run, and an intermittent
+    // test is worse than none. The built output is also the truer target.
+    //
+    // Note this build needs a handful of env vars merely to be non-empty:
+    // /api/checkout, /api/customer-portal and /api/webhooks/dodo construct a
+    // DodoPayments client at module scope, and Next collects page data for those
+    // routes at build time. Locally `.env` covers it; CI passes obvious placeholders.
+    //
     // PORT rather than `-p`: pnpm forwards `--` through to next, which reads it as a
     // project directory and dies. Next honours PORT directly.
     command: `pnpm run build && PORT=${PORT} pnpm run start`,
     url: `http://127.0.0.1:${PORT}`,
-    // Never reuse. The suite rebuilds regardless, so reuse buys no speed — and it
-    // trades that for the risk of binding to whatever else happens to hold the port
-    // and reporting failures against the wrong application. Failing loudly on a
-    // taken port is the better outcome.
+    // Never reuse. Reuse trades a rebuild for the risk of binding to whatever
+    // else happens to hold the port and reporting failures against the wrong
+    // application — which is exactly what happened on this suite's first run, where
+    // an iOS Simulator preview server held 3100. Failing loudly on a taken port is
+    // the better outcome.
     reuseExistingServer: false,
     timeout: 300_000,
     stdout: "pipe",
