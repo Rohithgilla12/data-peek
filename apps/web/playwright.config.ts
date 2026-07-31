@@ -20,6 +20,22 @@ import { defineConfig, devices } from "@playwright/test";
  * Deliberately kept to that: a handful of assertions about media actually loading
  * and reduced-motion actually degrading. Behaviour that jsdom *can* see belongs in
  * the Vitest suite, which is far faster.
+ *
+ * Run it with `pnpm --filter @data-peek/web test:browser`.
+ *
+ * NOT WIRED INTO CI YET, and the reason is not the tests. `src/middleware.ts` runs
+ * clerkMiddleware on `/`, and Clerk answers 400 "Invalid host" for any request when
+ * the publishable key does not belong to a real instance — so every page load in CI
+ * returns an error body and nothing renders. A build-time placeholder is not enough,
+ * because the rejection happens at request time inside clerkMiddleware, before the
+ * route callback that decides `/` needs no auth.
+ *
+ * Resolving that means one of: a real Clerk test key as a repo secret; restructuring
+ * the middleware so public routes never enter clerkMiddleware (a change to production
+ * auth behaviour); or pointing this suite at the Vercel preview deployment, which
+ * already builds each PR with real credentials. All three are judgement calls beyond
+ * a bugfix branch, so for now this runs locally — where it does work, and where it
+ * caught the bug this PR fixes.
  */
 // Deliberately obscure. 3000/3100 collide with other dev servers, and combined with
 // `reuseExistingServer` a collision means silently testing an unrelated app — which
