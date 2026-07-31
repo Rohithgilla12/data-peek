@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FeatureShowcase } from "../feature-showcase";
+import { FEATURE_CLIPS } from "../feature-clips";
 import { observers } from "../../../../vitest.setup";
 
 // FEATURE_CLIPS spans all 5 categories now that "ai" has clips of its own
@@ -144,6 +145,11 @@ describe("FeatureShowcase", () => {
     const user = userEvent.setup();
     render(<FeatureShowcase />);
     await user.click(screen.getByRole("tab", { name: "Performance" }));
-    expect(window.location.hash).toBe("#feature-query-plans");
+
+    // Derived rather than hardcoded: the assertion is that the hash names whichever
+    // clip the category leads with, not that any particular clip leads it. A
+    // hardcoded id here broke the moment Watch Mode was added ahead of query-plans.
+    const first = FEATURE_CLIPS.find((c) => c.category === "performance");
+    expect(window.location.hash).toBe(`#feature-${first?.id}`);
   });
 });

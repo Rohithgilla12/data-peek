@@ -80,6 +80,14 @@
         "to": 25,
         "factor": 5
       }
+    },
+    {
+      "id": "watch-mode",
+      "in": 17,
+      "out": 28.5,
+      "posterAt": 23,
+      "gif": false,
+      "speedRamp": null
     }
   ]
 }

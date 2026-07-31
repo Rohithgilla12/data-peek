@@ -2,26 +2,20 @@ import { Client } from 'pg'
 import { test, expect } from './fixtures/recording-app'
 
 /**
- * This spec is EXPECTED TO FAIL until Watch Mode Bug 2 is fixed (see
- * notes/_watch-mode-bugs.md). It's kept in the repo anyway, deliberately
- * failing, as the real acceptance test for that bug.
+ * Films Watch Mode: a pinned SELECT re-running on a cadence, with the amber
+ * changed-cell background that is the feature's whole visual signature.
  *
- * Bug 2: the diff decoration overlay (amber changed-cell background, green
- * added-row band) is gated behind `shouldVirtualize` in both
- * editable-data-table.tsx and data-table.tsx, which only turns on above 50
- * rows. The query this capture runs returns 3 rows, so the overlay never
- * mounts and the decoration assertion below currently has nothing to find.
- * Fixing Bug 2 (out of scope for whatever branch you're reading this on
- * unless you're specifically working that bug) should make this spec pass
- * without any other change here.
+ * This spec was written to fail. It was the acceptance test for Watch Mode Bug 2 —
+ * diff decoration gated behind `shouldVirtualize` in both grids, so nothing rendered
+ * at or below 50 rows — and it sat in the repo deliberately red until that was fixed
+ * (see notes/_watch-mode-bugs.md). It now passes unchanged, which is the evidence
+ * that the fix works.
  *
- * The `(Live)` text assertion further down is a *different*, already-fixed
- * bug (Bug 1 — the grid not repainting cell values on a tick at all) and
- * passes today; it is not sufficient evidence that Bug 2 is fixed, which is
- * why the decoration assertion exists as a separate check.
- *
- * Captures never run in CI (see tools/feature-clips/README.md), so a
- * deliberately-failing capture spec doesn't block anything.
+ * Two assertions, deliberately separate, because they cover different bugs:
+ * the `(Live)` text proves cell values repaint on a tick (Bug 1), and the
+ * `--cell-diff-fill` style proves the change is actually highlighted (Bug 2).
+ * Passing the first without the second is exactly the state this project shipped in
+ * once — a feature that told you a cell changed while showing you the old value.
  */
 
 interface PgConnectionDetails {

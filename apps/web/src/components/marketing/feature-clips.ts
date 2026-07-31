@@ -48,6 +48,14 @@ export const FEATURE_CLIPS: FeatureClip[] = [
     media: { kind: "video", file: "command-palette", width: 1280, height: 800 },
   },
   {
+    id: "watch-mode",
+    title: "Watch Mode",
+    blurb:
+      "Pin a SELECT, see it move. Re-runs on a cadence with live cell-level diff highlights.",
+    category: "performance",
+    media: { kind: "video", file: "watch-mode", width: 1280, height: 800 },
+  },
+  {
     id: "query-plans",
     title: "Query plans",
     blurb: "EXPLAIN ANALYZE rendered as a tree, not a wall of text.",

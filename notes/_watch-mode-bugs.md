@@ -144,24 +144,33 @@ passes unmodified. Suite 1159 passed / 56 skipped.
   (`:844`), `carryDiff` vs `computeDiff` fade-pruning disagreement
   (`watch-scheduler.ts:70-81`), untested table-preview + watch combination.
 
-## State of the clip
+## State of the clip — shipped
 
 `apps/desktop/tests/capture/watch-mode.capture.ts` asserts two things: that the
-`(Live)` value becomes visible (Bug 1's fix made this true), and that the amber
-changed-cell decoration (`[style*="--cell-diff-fill"]`) becomes visible. The
-decoration assertion was Bug 2's acceptance check and **passes as of `3be3cb9`**,
-with no change to the spec. Its file header still describes the spec as
-deliberately failing — that header is now stale and wants a follow-up edit.
+`(Live)` value becomes visible (Bug 1) and that the amber changed-cell decoration
+(`[style*="--cell-diff-fill"]`) becomes visible (Bug 2). Both pass, with the spec
+byte-identical to how it looked while deliberately failing — which is the evidence the
+fix is real rather than the test having been softened. Its header has been rewritten;
+it no longer claims to be expected-to-fail.
 
-The clip is **not shipped yet**: `watch-mode` is absent from
-`apps/web/src/components/marketing/feature-clips.ts` and from
-`tools/feature-clips/clips.manifest.json`, because footage of a static-looking
-table would undercut the copy sitting next to it. Fresh footage now exists at
-`tools/feature-clips/footage/watch-mode.webm` (recorded against the fix), so
-adding both entries is all that remains — no new capture code needed.
+The clip **ships**: `watch-mode` is in `tools/feature-clips/clips.manifest.json`
+(in 17.0, out 28.5, posterAt 23.0 — 11.5s, 157KB mp4 / 168KB webm) and in
+`apps/web/src/components/marketing/feature-clips.ts` under `performance`, with a
+`#feature-watch-mode` cross-link from the features index. Frame inspection confirms
+the amber highlight lands on `Ahmed Hassan (Live)` while the two neighbouring name
+cells stay unhighlighted, so the clip demonstrates selective cell-level diffing rather
+than a whole-row flash.
 
-Footage and the frames that prove each claim are in the capture workspace under
-`.superpowers/sdd/2026-07-30-feature-clips/`.
+## The three public claims are now true
+
+These were false for results of ≤50 rows and are no longer:
+
+- `apps/web/src/components/marketing/features.tsx` — Watch Mode feature copy
+- `notes/watch-mode.mdx` — the published blog post
+- `apps/docs/content/docs/features/watch-mode.mdx` — docs page, four places
+
+No copy edits were needed. Fixing the bug made the claims accurate, which was the
+point of choosing the fix over a walk-back.
 
 ## Decision: Bug 2 is a follow-up branch
 

@@ -42,6 +42,7 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
       {
         title: "Watch Mode",
         body: "Pin a SELECT, see it move. Re-runs on a cadence with live cell-level diff highlights. Refuses to poll INSERT/UPDATE/DELETE/DDL.",
+        href: "#feature-watch-mode",
       },
       {
         title: "Cold start under 2s",
