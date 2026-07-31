@@ -49,7 +49,15 @@ import { CellGridInspector, CellGridOverlays, useCellGrid } from '@/components/c
 import { WatchDecorationOverlay } from '@/components/cell-grid/watch-decoration-overlay'
 import { useWatchStore } from '@/stores/watch-store'
 import type { WatchDiff } from '@/lib/watch-types'
-import { cellKey, deriveRowKey, type KeyingPlan } from '@/lib/watch-row-keying'
+import {
+  INLINE_ADDED_ROW_STYLE,
+  INLINE_CHANGED_CELL_STYLE,
+  inlineDiffPlan,
+  isInlineChangedCell,
+  isPinnedDiffView,
+  resolveInlineRowDecoration,
+  selectInlineWatchDiff
+} from '@/lib/watch-inline-diff'
 
 const VIRTUALIZATION_THRESHOLD = 50
 const ROW_HEIGHT = 37
@@ -88,8 +96,10 @@ interface DataTableProps<TData> {
   onColumnStatsClick?: (column: DataTableColumn) => void
   /**
    * Pinned cell-diff decorations (Time Machine compare view). Unlike the watch
-   * overlay these never fade, and small (non-virtualized) results get inline
-   * cell tints since the geometry overlay only exists above the threshold.
+   * diff these never fade and never change after mount, so they're passed in
+   * rather than subscribed to. Watch Mode does not use this prop — it reaches
+   * the grid through the watch store instead (see `selectInlineWatchDiff` and
+   * `WatchOverlay` below).
    */
   diffOverlay?: WatchDiff | null
 }
@@ -548,6 +558,19 @@ export function DataTable<TData extends Record<string, unknown>>({
   const rows = table.getRowModel().rows
   const shouldVirtualize = rows.length > VIRTUALIZATION_THRESHOLD
 
+  // Time Machine renders historical rows through this same grid, so the live
+  // watch diff must not decorate them.
+  const isPinnedView = isPinnedDiffView(diffOverlay)
+
+  // Below the threshold the geometry overlay can't paint (no measured column
+  // offsets), so the row map further down tints cells inline instead. Scoped to
+  // the non-virtualized case on purpose: this subscription re-renders the whole
+  // grid on every tick, which is only acceptable at <= 50 rows — and there the
+  // grid re-renders anyway, since a tick replaces `tab.result`.
+  const inlineWatchDiff = useWatchStore((s) =>
+    selectInlineWatchDiff(tabId && !isPinnedView ? s.states[tabId] : undefined, shouldVirtualize)
+  )
+
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => tableContainerRef.current,
@@ -600,9 +623,11 @@ export function DataTable<TData extends Record<string, unknown>>({
     enabled: shouldVirtualize
   })
 
-  const diffPlan: KeyingPlan | null = diffOverlay
-    ? { strategy: diffOverlay.keyingStrategy, keyColumns: diffOverlay.keyColumns }
-    : null
+  // Time Machine's pinned diff and Watch Mode's live one are never both active
+  // on the same grid — one comes from a compare view, the other from a watched
+  // tab — so a single inline painter serves both.
+  const inlineDiff = diffOverlay ?? inlineWatchDiff
+  const diffPlan = inlineDiffPlan(inlineDiff)
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -708,10 +733,12 @@ export function DataTable<TData extends Record<string, unknown>>({
                   </tr>
                 ) : (
                   rows.map((row) => {
-                    const rowKey = diffPlan
-                      ? deriveRowKey(row.original as Record<string, unknown>, diffPlan, row.index)
-                      : null
-                    const isAddedRow = !!(rowKey && diffOverlay?.addedRowKeys.has(rowKey))
+                    const decoration = resolveInlineRowDecoration(
+                      inlineDiff,
+                      diffPlan,
+                      row.original as Record<string, unknown>,
+                      row.index
+                    )
                     return (
                       <RowContextMenu
                         key={row.id}
@@ -720,26 +747,19 @@ export function DataTable<TData extends Record<string, unknown>>({
                       >
                         <TableRow
                           className="hover:bg-accent/30 border-border/30 transition-colors"
-                          style={
-                            isAddedRow ? { backgroundColor: 'var(--cell-diff-added)' } : undefined
-                          }
+                          style={decoration.isAdded ? INLINE_ADDED_ROW_STYLE : undefined}
                         >
                           {row.getVisibleCells().map((cell, cellIndex) => {
-                            const isChangedCell =
-                              !isAddedRow &&
-                              rowKey !== null &&
-                              diffOverlay?.cells.get(
-                                cellKey(rowKey, columnDefs[cellIndex]?.name ?? '')
-                              )?.kind === 'changed'
+                            const isChangedCell = isInlineChangedCell(
+                              inlineDiff,
+                              decoration,
+                              columnDefs[cellIndex]?.name
+                            )
                             return (
                               <TableCell
                                 key={cell.id}
                                 className="py-2 text-sm whitespace-nowrap"
-                                style={
-                                  isChangedCell
-                                    ? { backgroundColor: 'var(--cell-diff-fill)' }
-                                    : undefined
-                                }
+                                style={isChangedCell ? INLINE_CHANGED_CELL_STYLE : undefined}
                               >
                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
                               </TableCell>
@@ -760,13 +780,19 @@ export function DataTable<TData extends Record<string, unknown>>({
             </TableBody>
           </table>
           <CellGridOverlays cellGrid={cellGrid} />
+          {/*
+            The geometry overlays below and the inline tints above are mutually
+            exclusive: these need measured column widths, which only the
+            virtualized path produces. Everything at or below the threshold is
+            decorated inline (lib/watch-inline-diff.ts).
+          */}
           <WatchOverlay
             tabId={tabId}
             rows={rows}
             columnDefs={columnDefs}
             geometry={cellGrid.geometry}
             virtualizer={virtualizer}
-            enabled={shouldVirtualize && columnWidths.length > 0}
+            enabled={shouldVirtualize && columnWidths.length > 0 && !isPinnedView}
           />
           {diffOverlay && shouldVirtualize && columnWidths.length > 0 && (
             <WatchDecorationOverlay
@@ -802,8 +828,12 @@ export function DataTable<TData extends Record<string, unknown>>({
 
 /**
  * Lightweight wrapper that subscribes to the watch store for this tab and
- * renders the diff layer. Split out so DataTable doesn't subscribe to the
- * store when the tab isn't being watched.
+ * renders the diff layer. Split out so a per-tick diff change re-renders only
+ * this overlay, not the (potentially thousands of rows) virtualized grid.
+ *
+ * The non-virtualized counterpart can't use this trick — its decorations live
+ * on the grid's own rows — so it subscribes at grid level, bounded to <= 50
+ * rows. See `selectInlineWatchDiff`.
  */
 function WatchOverlay({
   tabId,
