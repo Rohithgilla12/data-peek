@@ -547,6 +547,9 @@ importers:
         specifier: ^11.1.1
         version: 11.1.1
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.61.1
+        version: 1.61.1
       '@tailwindcss/postcss':
         specifier: ^4.3.2
         version: 4.3.2

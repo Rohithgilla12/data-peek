@@ -59,3 +59,5 @@ skills-lock.json
 tools/feature-clips/footage/*
 !tools/feature-clips/footage/.gitkeep
 tools/feature-clips/dist/
+apps/web/test-results/
+apps/web/playwright-report/
