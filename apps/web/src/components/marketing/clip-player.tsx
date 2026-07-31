@@ -25,7 +25,13 @@ function getServerReducedMotion() {
  * nothing. Under prefers-reduced-motion nothing ever autoplays; the poster
  * renders with native controls so an explicit click still works.
  */
-export function ClipPlayer({ clip, active }: { clip: FeatureClip; active: boolean }) {
+export function ClipPlayer({
+  clip,
+  active,
+}: {
+  clip: FeatureClip;
+  active: boolean;
+}) {
   const ref = useRef<HTMLVideoElement>(null);
   // useSyncExternalStore, not a lazy useState initializer: a lazy initializer
   // reads window.matchMedia during the hydration render itself, which
@@ -70,7 +76,14 @@ export function ClipPlayer({ clip, active }: { clip: FeatureClip; active: boolea
   const { file, width, height } = clip.media;
 
   return (
+    // Keyed on `file` so switching clips replaces the element instead of reusing it.
+    // React would otherwise keep the same <video> and only rewrite the <source> src
+    // attributes — and per the HTML spec, mutating <source> after the browser has
+    // selected a media resource does nothing. The previous clip would keep playing.
+    // Remounting also resets preload="none" and the poster, and re-runs the
+    // IntersectionObserver effect below against the new element.
     <video
+      key={file}
       ref={ref}
       data-testid="clip-video"
       poster={posterUrl(file)}
@@ -83,7 +96,10 @@ export function ClipPlayer({ clip, active }: { clip: FeatureClip; active: boolea
       controls={reduced || undefined}
       aria-label={`${clip.title} demonstration`}
       className="w-full h-auto block"
-      style={{ border: "1px solid var(--n-line-soft)", background: "var(--n-bg-sunken)" }}
+      style={{
+        border: "1px solid var(--n-line-soft)",
+        background: "var(--n-bg-sunken)",
+      }}
     >
       <source src={webmUrl(file)} type="video/webm" />
       <source src={mp4Url(file)} type="video/mp4" />

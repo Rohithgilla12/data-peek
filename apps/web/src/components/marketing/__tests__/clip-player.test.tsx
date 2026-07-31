@@ -7,7 +7,8 @@ import { observers, setReducedMotion } from "../../../../vitest.setup";
 const clip: FeatureClip = {
   id: "command-palette",
   title: "Command palette",
-  blurb: "⌘K opens every action. Switch connections, run queries, jump to tables.",
+  blurb:
+    "⌘K opens every action. Switch connections, run queries, jump to tables.",
   category: "editor",
   media: { kind: "video", file: "command-palette", width: 1280, height: 800 },
 };
@@ -32,6 +33,37 @@ describe("ClipPlayer", () => {
       s.getAttribute("type"),
     );
     expect(types).toEqual(["video/webm", "video/mp4"]);
+  });
+
+  it("replaces the video element when the clip changes", () => {
+    const other: FeatureClip = {
+      ...clip,
+      id: "data-masking",
+      title: "Data masking",
+      media: { kind: "video", file: "data-masking", width: 1280, height: 800 },
+    };
+
+    const { rerender } = render(<ClipPlayer clip={clip} active />);
+    const first = screen.getByTestId("clip-video");
+
+    rerender(<ClipPlayer clip={other} active />);
+    const second = screen.getByTestId("clip-video");
+
+    // Element identity is the assertion that matters. Without a key React reuses the
+    // same <video> and only rewrites the <source> src attributes — which the src
+    // checks below would happily accept, while a real browser keeps playing the
+    // already-selected resource. jsdom loads no media, so identity is the only
+    // observable proxy for "the browser will re-run resource selection".
+    expect(second).not.toBe(first);
+
+    expect(second).toHaveAttribute("poster", "/clips/data-masking.webp");
+    const srcs = Array.from(second.querySelectorAll("source")).map((s) =>
+      s.getAttribute("src"),
+    );
+    expect(srcs).toEqual([
+      "/clips/data-masking.webm",
+      "/clips/data-masking.mp4",
+    ]);
   });
 
   it("plays when scrolled into view and pauses when it leaves", () => {
