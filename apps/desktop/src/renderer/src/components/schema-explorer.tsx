@@ -793,13 +793,26 @@ export function SchemaExplorer() {
   // change to the focus dropdown sticks for the rest of the connection's session.
   const appliedDefaultFocusRef = React.useRef<string | null>(null)
   React.useEffect(() => {
-    if (!activeConnectionId || schemas.length === 0) return
+    // Clear the marker when no connection is active so reselecting the same
+    // connection re-applies the default focus.
+    if (!activeConnectionId) {
+      appliedDefaultFocusRef.current = null
+      return
+    }
+    if (schemas.length === 0) return
     if (appliedDefaultFocusRef.current === activeConnectionId) return
-    appliedDefaultFocusRef.current = activeConnectionId
 
     // search_path can list several schemas; the first one is the effective default.
     const primary = defaultSchema?.split(',')[0]?.trim()
-    setFocusedSchema(primary && schemas.some((s) => s.name === primary) ? primary : null)
+    const found = !!primary && schemas.some((s) => s.name === primary)
+
+    // If a default schema is configured but not yet present (e.g. the schema list
+    // came from a stale cache), hold off marking the connection as applied so the
+    // effect retries when the background refresh delivers the full list.
+    if (primary && !found) return
+
+    appliedDefaultFocusRef.current = activeConnectionId
+    setFocusedSchema(found ? primary : null)
   }, [activeConnectionId, defaultSchema, schemas])
 
   const toggleSchema = (schemaName: string) => {

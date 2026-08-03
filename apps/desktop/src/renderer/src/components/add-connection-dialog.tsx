@@ -749,6 +749,12 @@ export function AddConnectionDialog({
                     <span className="font-mono">{port}</span>
                     <span>Database:</span>
                     <span className="font-mono">{database}</span>
+                    {dbType === 'postgresql' && schema && (
+                      <>
+                        <span>Default schema:</span>
+                        <span className="font-mono">{schema}</span>
+                      </>
+                    )}
                     <span>User:</span>
                     <span className="font-mono">{user}</span>
                     <span>Password:</span>
