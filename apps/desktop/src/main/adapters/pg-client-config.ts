@@ -11,10 +11,16 @@ import type { ConnectionConfig } from '@shared/index'
  */
 export function parseSchemaList(schema: string | undefined): string[] {
   if (!schema) return []
-  return schema
-    .split(',')
-    .map((name) => name.trim())
-    .filter(Boolean)
+  return (
+    schema
+      .split(',')
+      .map((name) => name.trim())
+      // `SHOW search_path` reports quoted identifiers, so a value pasted straight from psql
+      // arrives as `"bbl","public"`. Unwrap it rather than re-quoting into `"""bbl"""`.
+      .map((name) => name.replace(/^"(.*)"$/, '$1'))
+      .map((name) => name.trim())
+      .filter(Boolean)
+  )
 }
 
 /**

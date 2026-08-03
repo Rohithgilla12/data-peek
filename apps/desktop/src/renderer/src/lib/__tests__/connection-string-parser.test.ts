@@ -36,6 +36,26 @@ describe('parseConnectionString — default schema', () => {
     ).toBe('bbl,public')
   })
 
+  it('keeps a backslash-escaped space in the libpq form instead of truncating at it', () => {
+    // The server splits `options` on unescaped whitespace only, so `\ ` is part of the
+    // value. A naive \S+ would capture just `"my\` and silently drop `,"public"`.
+    expect(
+      parseConnectionString(
+        'postgresql://u:p@host:5432/db?options=-c%20search_path%3D%22my%5C%20schema%22%2C%22public%22',
+        'postgresql'
+      )?.schema
+    ).toBe('my schema,public')
+  })
+
+  it('stops at the next unescaped option rather than swallowing it', () => {
+    expect(
+      parseConnectionString(
+        'postgresql://u:p@host:5432/db?options=-c%20search_path%3Dbbl%20-c%20statement_timeout%3D5s',
+        'postgresql'
+      )?.schema
+    ).toBe('bbl')
+  })
+
   it('leaves schema undefined when the URL does not specify one', () => {
     expect(
       parseConnectionString('postgresql://u:p@host:5432/db', 'postgresql')?.schema

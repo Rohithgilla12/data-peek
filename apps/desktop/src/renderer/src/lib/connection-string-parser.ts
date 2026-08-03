@@ -39,7 +39,10 @@ function parseSchemaParam(url: URL): string | undefined {
   if (direct?.trim()) return direct.trim()
 
   const options = url.searchParams.get('options')
-  const fromOptions = options?.match(/-c\s+search_path=(\S+)/)?.[1]
+  // `\\.` before `\S` so a backslash-escaped space stays part of the value — the server
+  // splits `options` on *unescaped* whitespace only, and `\S+` alone would truncate
+  // `search_path="my\ schema","public"` to `"my\`.
+  const fromOptions = options?.match(/-c\s+search_path=((?:\\.|\S)+)/)?.[1]
   if (!fromOptions) return undefined
 
   const unescaped = fromOptions.replace(/\\(.)/g, '$1').replace(/"/g, '')

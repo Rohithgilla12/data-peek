@@ -33,6 +33,15 @@ describe('parseSchemaList', () => {
     expect(parseSchemaList('bbl, public')).toEqual(['bbl', 'public'])
     expect(parseSchemaList('  bbl  ')).toEqual(['bbl'])
   })
+
+  it('unwraps a value pasted straight out of SHOW search_path', () => {
+    expect(parseSchemaList('"bbl","public"')).toEqual(['bbl', 'public'])
+    expect(parseSchemaList('"blocktree"')).toEqual(['blocktree'])
+  })
+
+  it('re-quotes an unwrapped paste rather than nesting the quotes', () => {
+    expect(buildSearchPathOption('"bbl","public"')).toBe('-c search_path="bbl","public"')
+  })
 })
 
 describe('buildSearchPathOption', () => {
