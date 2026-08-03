@@ -79,6 +79,25 @@ describe('withPgClient', () => {
     expect(PoolCtor).toHaveBeenCalledTimes(2)
   })
 
+  it('passes the configured default schema through as startup options', async () => {
+    await withPgClient(makeConfig({ schema: 'bbl' }), async () => {})
+
+    expect(PoolCtor).toHaveBeenCalledWith(
+      expect.objectContaining({ options: '-c search_path="bbl"' })
+    )
+  })
+
+  it('does not share a pool between unsaved configs that differ only by schema', async () => {
+    // search_path is baked into each connection's startup options, so reusing a pool
+    // across schemas would silently keep the first one's search_path.
+    const base = { ...makeConfig(), id: '' }
+
+    await withPgClient({ ...base, schema: 'bbl' }, async () => {})
+    await withPgClient({ ...base, schema: 'fel' }, async () => {})
+
+    expect(PoolCtor).toHaveBeenCalledTimes(2)
+  })
+
   it('survives double-release without throwing', async () => {
     mockClient.release.mockImplementationOnce(() => {
       throw new Error('Release called on client which has already been released')

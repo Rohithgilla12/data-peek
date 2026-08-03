@@ -13,6 +13,7 @@ import type {
   RetryStepResponse,
   StopStepResponse
 } from '@shared/index'
+import { buildSearchPathOption } from './adapters/pg-client-config'
 import { STEP_SESSION_IDLE_TIMEOUT_MS, STEP_SESSION_CLEANUP_INTERVAL_MS } from '@shared/index'
 import { parseStatementsWithLines } from './lib/parse-statements'
 import { createLogger } from './lib/logger'
@@ -354,6 +355,7 @@ function defaultClientFactory(config: ConnectionConfig): MinimalDbClient {
     database: config.database,
     user: config.user,
     password: config.password,
+    options: buildSearchPathOption(config.schema),
     ssl: config.ssl ? { rejectUnauthorized: false } : undefined
   })
   return {

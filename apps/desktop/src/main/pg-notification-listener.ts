@@ -12,6 +12,7 @@ import type {
   PgNotificationConnectionState
 } from '@shared/index'
 import { createTunnel, closeTunnel, TunnelSession } from './ssh-tunnel-service'
+import { buildSearchPathOption } from './adapters/pg-client-config'
 import { createLogger } from './lib/logger'
 
 const log = createLogger('pg-notification-listener')
@@ -29,6 +30,11 @@ function buildClientConfig(
     database: config.database,
     user: config.user,
     password: config.password
+  }
+
+  const searchPathOption = buildSearchPathOption(config.schema)
+  if (searchPathOption) {
+    clientConfig.options = searchPathOption
   }
 
   if (config.ssl) {

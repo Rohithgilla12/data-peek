@@ -21,7 +21,29 @@ export interface ParsedConnectionConfig {
   user: string
   password: string
   ssl: boolean
+  /** Default schema, from `?schema=`/`?search_path=`/`?options=-c search_path=` (PostgreSQL) */
+  schema?: string
   mssqlOptions?: MSSQLConnectionOptions
+}
+
+/**
+ * Pull the default schema out of a PostgreSQL URL's query string.
+ *
+ * Three spellings are in the wild: `?schema=` (Prisma), `?search_path=` (SQLAlchemy,
+ * JDBC-style tooling) and `?options=-c search_path=...` (libpq passthrough). Quotes
+ * and backslash escapes are stripped from the libpq form so the value round-trips
+ * back into the plain text the schema field expects.
+ */
+function parseSchemaParam(url: URL): string | undefined {
+  const direct = url.searchParams.get('schema') || url.searchParams.get('search_path')
+  if (direct?.trim()) return direct.trim()
+
+  const options = url.searchParams.get('options')
+  const fromOptions = options?.match(/-c\s+search_path=(\S+)/)?.[1]
+  if (!fromOptions) return undefined
+
+  const unescaped = fromOptions.replace(/\\(.)/g, '$1').replace(/"/g, '')
+  return unescaped.trim() || undefined
 }
 
 /**
@@ -218,7 +240,11 @@ export function parseConnectionString(
     const sslParam = url.searchParams.get('sslmode') || url.searchParams.get('ssl')
     const ssl = sslParam ? !['disable', 'false', '0'].includes(sslParam.toLowerCase()) : false
 
-    return { host, port, database, user, password, ssl }
+    // MySQL has no schema-vs-database distinction and SQLite has no schemas at all,
+    // so the default schema is only meaningful for PostgreSQL.
+    const schema = dbType === 'postgresql' ? parseSchemaParam(url) : undefined
+
+    return { host, port, database, user, password, ssl, schema }
   } catch {
     return null
   }

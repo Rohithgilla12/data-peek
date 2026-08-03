@@ -62,6 +62,7 @@ export function AddConnectionDialog({
   const [host, setHost] = useState('localhost')
   const [port, setPort] = useState('5432')
   const [database, setDatabase] = useState('')
+  const [schema, setSchema] = useState('')
   const [user, setUser] = useState('postgres')
   const [password, setPassword] = useState('')
   const [ssl, setSsl] = useState(false)
@@ -109,6 +110,7 @@ export function AddConnectionDialog({
       setHost(editConnection.host)
       setPort(String(editConnection.port))
       setDatabase(editConnection.database)
+      setSchema(editConnection.schema || '')
       setUser(editConnection.user || '')
       setPassword(editConnection.password || '')
       setSsl(editConnection.ssl || false)
@@ -176,6 +178,10 @@ export function AddConnectionDialog({
     if (newType !== 'mssql') {
       setMssqlOptions(undefined)
     }
+    // Default schema is a PostgreSQL-only concept
+    if (newType !== 'postgresql') {
+      setSchema('')
+    }
     // SQLite doesn't support SSH/SSL, and doesn't use connection strings
     if (newType === 'sqlite') {
       setSsh(false)
@@ -203,6 +209,7 @@ export function AddConnectionDialog({
       setHost(parsed.host)
       setPort(parsed.port)
       setDatabase(parsed.database)
+      setSchema(parsed.schema || '')
       setUser(parsed.user)
       setPassword(parsed.password)
       setSsl(parsed.ssl)
@@ -234,6 +241,7 @@ export function AddConnectionDialog({
     setHost('localhost')
     setPort('5432')
     setDatabase('')
+    setSchema('')
     setUser('postgres')
     setPassword('')
     setSsl(false)
@@ -285,6 +293,7 @@ export function AddConnectionDialog({
       host,
       port: parseInt(port, 10) || 0,
       database,
+      ...(dbType === 'postgresql' && schema.trim() && { schema: schema.trim() }),
       user: isActiveDirectoryIntegrated ? undefined : user,
       password: isActiveDirectoryIntegrated ? undefined : password || undefined,
       ssl,
@@ -788,6 +797,29 @@ export function AddConnectionDialog({
                   onChange={(e) => setDatabase(e.target.value)}
                 />
               </div>
+
+              {dbType === 'postgresql' && (
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="schema" className="text-sm font-medium">
+                    Default Schema
+                    <span className="text-xs text-muted-foreground font-normal ml-1">
+                      (optional)
+                    </span>
+                  </label>
+                  <Input
+                    id="schema"
+                    placeholder="public"
+                    value={schema}
+                    onChange={(e) => setSchema(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Sets <code className="font-mono">search_path</code> so unqualified table names
+                    resolve here, and focuses the sidebar on this schema. Comma-separate for a
+                    fallback chain (e.g. <code className="font-mono">bbl, public</code>). Leave
+                    empty to use the server default.
+                  </p>
+                </div>
+              )}
 
               <div className="flex flex-col gap-2">
                 <label htmlFor="user" className="text-sm font-medium">

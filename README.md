@@ -42,6 +42,7 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Fast** - Opens in under 2 seconds, low memory footprint
 - **Multi-Database** - PostgreSQL, MySQL, Microsoft SQL Server, SQLite
 - **SSH Tunnels** - Connect securely through bastion hosts with password or key auth
+- **Default Schema** - Pin a PostgreSQL connection's `search_path` and focus the sidebar on one schema
 - **Secure** - Connection credentials encrypted locally using OS keychain, no telemetry
 
 ### AI Assistant

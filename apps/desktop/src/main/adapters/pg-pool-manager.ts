@@ -38,12 +38,16 @@ let teardownInFlight: Promise<void> | null = null
 
 function getPoolKey(config: ConnectionConfig): string {
   if (config.id) return `pg:${config.id}`
-  // Unsaved configs (test-connect before save) hash the auth+tunnel+ssl shape so
+  // Unsaved configs (test-connect before save) hash the auth+tunnel+ssl+schema shape so
   // two attempts to the same host with different credentials/keys can't share a pool.
+  // schema is part of the fingerprint because it is baked into each connection's
+  // startup options — reusing a pool across schemas would silently keep the old
+  // search_path.
   const fingerprint = createHash('sha256')
     .update(
       JSON.stringify({
         password: config.password ?? '',
+        schema: config.schema ?? '',
         ssh: config.ssh ? (config.sshConfig ?? null) : null,
         ssl: config.ssl ? (config.sslOptions ?? null) : null
       })

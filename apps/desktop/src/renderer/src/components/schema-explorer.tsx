@@ -689,6 +689,9 @@ export function SchemaExplorer() {
   const isLoadingSchema = useConnectionStore((s) => s.isLoadingSchema)
   const schemaError = useConnectionStore((s) => s.schemaError)
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
+  const defaultSchema = useConnectionStore(
+    (s) => s.connections.find((c) => c.id === s.activeConnectionId)?.schema
+  )
   const getActiveConnection = useConnectionStore((s) => s.getActiveConnection)
   const fetchSchemas = useConnectionStore((s) => s.fetchSchemas)
   const schemaFromCache = useConnectionStore((s) => s.schemaFromCache)
@@ -784,6 +787,20 @@ export function SchemaExplorer() {
       setFocusedSchema(null)
     }
   }, [schemas, focusedSchema])
+
+  // Pre-focus the connection's default schema once its schema list arrives. Keyed by
+  // connection id so switching connections re-applies the default, while a manual
+  // change to the focus dropdown sticks for the rest of the connection's session.
+  const appliedDefaultFocusRef = React.useRef<string | null>(null)
+  React.useEffect(() => {
+    if (!activeConnectionId || schemas.length === 0) return
+    if (appliedDefaultFocusRef.current === activeConnectionId) return
+    appliedDefaultFocusRef.current = activeConnectionId
+
+    // search_path can list several schemas; the first one is the effective default.
+    const primary = defaultSchema?.split(',')[0]?.trim()
+    setFocusedSchema(primary && schemas.some((s) => s.name === primary) ? primary : null)
+  }, [activeConnectionId, defaultSchema, schemas])
 
   const toggleSchema = (schemaName: string) => {
     setExpandedSchemas((prev) => {

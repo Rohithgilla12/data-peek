@@ -70,7 +70,8 @@ For power users and teams:
 | Feature | Description |
 |---------|-------------|
 | **Quick Connection Setup** | Add connections with host, port, database, user, and password — or paste a connection string |
-| **Connection String Parsing** | Paste any PostgreSQL connection URL and auto-fill all fields |
+| **Connection String Parsing** | Paste any PostgreSQL connection URL and auto-fill all fields, including `?schema=` |
+| **Default Schema** | Pin a PostgreSQL connection's `search_path` so unqualified table names resolve there, and pre-focus the sidebar on that schema. Comma-separate for a fallback chain (`bbl, public`) |
 | **Test Before Save** | Verify connections work before adding them |
 | **Encrypted Storage** | Credentials stored securely with encryption |
 | **SSL Support** | Connect to SSL-enabled databases |

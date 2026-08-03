@@ -30,6 +30,8 @@ export interface Connection {
   host: string
   port: number
   database: string
+  /** Default schema (PostgreSQL only) — pins search_path and pre-focuses the explorer */
+  schema?: string
   user?: string // Optional for MSSQL with Azure AD authentication
   password?: string
   ssl?: boolean

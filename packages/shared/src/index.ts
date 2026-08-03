@@ -665,6 +665,13 @@ export interface ConnectionConfig {
   host: string;
   port: number;
   database: string;
+  /**
+   * Default schema (PostgreSQL only). Pins `search_path` for every connection
+   * in the pool and pre-focuses the schema explorer. Accepts a comma-separated
+   * list to set a fallback chain (e.g. `"bbl, public"`). Empty/absent leaves the
+   * server default (`"$user", public`) untouched.
+   */
+  schema?: string;
   user?: string; // Optional for MSSQL with Azure AD authentication
   password?: string;
   ssl?: boolean;
