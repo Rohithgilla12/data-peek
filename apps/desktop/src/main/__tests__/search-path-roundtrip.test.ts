@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import { buildSearchPathOption, parseSchemaList } from '../adapters/pg-client-config'
+// Relative, not the `@/` alias: that alias is declared only in tsconfig.web.json, and this
+// file sits under src/main/**, which tsconfig.node.json owns — `@/lib/...` fails
+// typecheck:node with TS2307 even though vitest resolves it happily. The test lives on the
+// main side because pulling main's pg-client-config (which imports `fs`) into the web
+// project would be the worse of the two boundary crossings.
 import { parseConnectionString } from '../../renderer/src/lib/connection-string-parser'
 
 /**
