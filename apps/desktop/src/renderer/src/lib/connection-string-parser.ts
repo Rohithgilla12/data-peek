@@ -45,7 +45,18 @@ function parseSchemaParam(url: URL): string | undefined {
   const fromOptions = options?.match(/-c\s+search_path=((?:\\.|\S)+)/)?.[1]
   if (!fromOptions) return undefined
 
-  const unescaped = fromOptions.replace(/\\(.)/g, '$1').replace(/"/g, '')
+  // Two quote levels to undo: `""` is one literal quote inside an identifier, while a
+  // lone `"` is the identifier delimiter. Park the doubled pairs on NUL — which cannot
+  // occur in a Postgres identifier or survive a URL — so stripping the delimiters can't
+  // eat them, then restore. Stripping all quotes in one pass would turn `we""ird` into
+  // `weird` and silently point search_path at a different schema.
+  const NUL = '\u0000'
+  const unescaped = fromOptions
+    .replace(/\\(.)/g, '$1')
+    .replace(/""/g, NUL)
+    .replace(/"/g, '')
+    .split(NUL)
+    .join('"')
   return unescaped.trim() || undefined
 }
 

@@ -47,6 +47,26 @@ describe('parseConnectionString — default schema', () => {
     ).toBe('my schema,public')
   })
 
+  it('preserves a doubled quote as one literal quote in the schema name', () => {
+    // `"we""ird"` is the identifier we"ird. Stripping every quote in one pass would
+    // yield `weird` and point search_path at a different schema entirely.
+    expect(
+      parseConnectionString(
+        'postgresql://u:p@host:5432/db?options=-c%20search_path%3D%22we%22%22ird%22%2C%22public%22',
+        'postgresql'
+      )?.schema
+    ).toBe('we"ird,public')
+  })
+
+  it('handles a name carrying both an escaped space and a doubled quote', () => {
+    expect(
+      parseConnectionString(
+        'postgresql://u:p@host:5432/db?options=-c%20search_path%3D%22my%5C%20%22%22quoted%22%22%5C%20schema%22',
+        'postgresql'
+      )?.schema
+    ).toBe('my "quoted" schema')
+  })
+
   it('stops at the next unescaped option rather than swallowing it', () => {
     expect(
       parseConnectionString(
