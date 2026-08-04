@@ -1,10 +1,16 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { readFileSync } from 'fs'
 import type { ConnectionConfig } from '@shared/index'
 import {
   buildClientConfig,
   buildSearchPathOption,
   parseSchemaList
 } from '../adapters/pg-client-config'
+
+vi.mock('fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs')>()
+  return { ...actual, readFileSync: vi.fn() }
+})
 
 function makeConfig(overrides: Partial<ConnectionConfig> = {}): ConnectionConfig {
   return {
@@ -94,5 +100,66 @@ describe('buildClientConfig', () => {
     expect(config.host).toBe('127.0.0.1')
     expect(config.port).toBe(54320)
     expect(config.options).toBe('-c search_path="bbl"')
+  })
+})
+
+describe('buildClientConfig SSL', () => {
+  beforeEach(() => {
+    vi.mocked(readFileSync).mockReset()
+  })
+
+  it('leaves ssl unset when the connection does not use it', () => {
+    expect(buildClientConfig(makeConfig()).ssl).toBeUndefined()
+    expect(buildClientConfig(makeConfig({ ssl: false })).ssl).toBeUndefined()
+  })
+
+  it('asks pg to initiate TLS whenever "Use SSL" is on', () => {
+    // A truthy ssl object is what makes pg send the SSLRequest — the equivalent of
+    // sslmode=require. Without it the server answers "no pg_hba.conf entry ... no
+    // encryption" (issue #252).
+    expect(buildClientConfig(makeConfig({ ssl: true })).ssl).toEqual({
+      rejectUnauthorized: false
+    })
+    expect(buildClientConfig(makeConfig({ ssl: true, sslOptions: {} })).ssl).toEqual({
+      rejectUnauthorized: false
+    })
+  })
+
+  it('only verifies the server certificate when strict mode is opted into', () => {
+    expect(
+      buildClientConfig(makeConfig({ ssl: true, sslOptions: { rejectUnauthorized: true } })).ssl
+    ).toEqual({ rejectUnauthorized: true })
+    expect(
+      buildClientConfig(makeConfig({ ssl: true, sslOptions: { rejectUnauthorized: false } })).ssl
+    ).toEqual({ rejectUnauthorized: false })
+  })
+
+  it('pins a supplied CA and verifies against it by default', () => {
+    vi.mocked(readFileSync).mockReturnValue('---CA---')
+
+    const config = buildClientConfig(makeConfig({ ssl: true, sslOptions: { ca: '/tmp/ca.pem' } }))
+
+    expect(readFileSync).toHaveBeenCalledWith('/tmp/ca.pem', 'utf-8')
+    expect(config.ssl).toEqual({ rejectUnauthorized: true, ca: '---CA---' })
+  })
+
+  it('keeps a pinned CA while honouring an explicit opt-out of verification', () => {
+    vi.mocked(readFileSync).mockReturnValue('---CA---')
+
+    const config = buildClientConfig(
+      makeConfig({ ssl: true, sslOptions: { ca: '/tmp/ca.pem', rejectUnauthorized: false } })
+    )
+
+    expect(config.ssl).toEqual({ rejectUnauthorized: false, ca: '---CA---' })
+  })
+
+  it('fails loudly rather than silently dropping TLS when the CA file is unreadable', () => {
+    vi.mocked(readFileSync).mockImplementation(() => {
+      throw new Error('ENOENT')
+    })
+
+    expect(() =>
+      buildClientConfig(makeConfig({ ssl: true, sslOptions: { ca: '/nope.pem' } }))
+    ).toThrow('Failed to read CA certificate file: /nope.pem')
   })
 })

@@ -13,6 +13,10 @@ const log = createLogger('pg-pool')
  * Each saved connection gets one pg.Pool plus (optionally) one SSH tunnel that
  * the pool's clients share. Pools are created lazily on first use and torn
  * down via `closePgPool` when the connection is edited/deleted.
+ *
+ * A pool is keyed by *both* the connection it belongs to and the shape it was built
+ * from, so a config that has been edited — new credentials, TLS settings, schema,
+ * tunnel — always gets a fresh socket rather than a pool that predates the change.
  */
 
 interface PoolEntry {
@@ -36,25 +40,52 @@ const pendingPools = new Map<string, Promise<PoolEntry>>()
 let shuttingDown = false
 let teardownInFlight: Promise<void> | null = null
 
-function getPoolKey(config: ConnectionConfig): string {
-  if (config.id) return `pg:${config.id}`
-  // Unsaved configs (test-connect before save) hash the auth+tunnel+ssl+schema shape so
-  // two attempts to the same host with different credentials/keys can't share a pool.
-  // schema is part of the fingerprint because it is baked into each connection's
-  // startup options — reusing a pool across schemas would silently keep the old
-  // search_path.
-  const fingerprint = createHash('sha256')
+/**
+ * Hash the fields that decide what a physical connection *is*.
+ *
+ * Everything here is baked into the socket at startup — the TLS handshake, the
+ * credentials, the `search_path` startup option, the tunnel it rides through — so a
+ * pool built from one shape can never be handed to a caller asking for another. That
+ * used to be exactly what happened when a *saved* connection was edited: pools keyed
+ * on `config.id` alone meant ticking "Use SSL" and hitting Test Connection reused the
+ * cached plaintext pool, and the server kept answering `no pg_hba.conf entry for host
+ * ... no encryption` with the box checked (issue #252).
+ */
+function getShapeFingerprint(config: ConnectionConfig): string {
+  return createHash('sha256')
     .update(
       JSON.stringify({
+        host: config.host,
+        port: config.port,
+        database: config.database,
+        user: config.user ?? '',
         password: config.password ?? '',
         schema: config.schema ?? '',
-        ssh: config.ssh ? (config.sshConfig ?? null) : null,
-        ssl: config.ssl ? (config.sslOptions ?? null) : null
+        ssl: config.ssl ? (config.sslOptions ?? {}) : false,
+        ssh: config.ssh ? (config.sshConfig ?? null) : null
       })
     )
     .digest('hex')
     .slice(0, 16)
-  return `pg:${config.host}:${config.port}:${config.database}:${config.user ?? 'default'}:${fingerprint}`
+}
+
+/**
+ * Which connection a pool belongs to, independent of its current shape: the saved
+ * connection's id, or the target itself for an ad-hoc config that was never saved.
+ * Shape variants under one identity are collapsed to a single live pool.
+ */
+function getPoolIdentity(config: ConnectionConfig): string {
+  if (config.id) return `pg:id:${config.id}`
+  return `pg:adhoc:${config.host}:${config.port}:${config.database}:${config.user ?? 'default'}`
+}
+
+function getPoolKey(config: ConnectionConfig): string {
+  return `${getPoolIdentity(config)}#${getShapeFingerprint(config)}`
+}
+
+/** Recover the identity half of a pool key. Fingerprints never contain `#`. */
+function identityOf(key: string): string {
+  return key.slice(0, key.lastIndexOf('#'))
 }
 
 async function createPoolEntry(config: ConnectionConfig, key: string): Promise<PoolEntry> {
@@ -103,11 +134,34 @@ async function createPoolEntry(config: ConnectionConfig, key: string): Promise<P
   }
 }
 
+/**
+ * Retire pools that share `identity` but were built from a different shape.
+ *
+ * Runs on every acquisition, which is what keeps a connection down to one live pool
+ * as its shape changes — otherwise each edited-and-tested variant would linger until
+ * app shutdown. `pool.end()` drains its own checked-out clients, so a query still
+ * running on the outgoing pool finishes; we don't wait for it because the caller is
+ * waiting on a different pool entirely.
+ */
+function evictOtherShapes(identity: string, keepKey: string): void {
+  for (const [key, entry] of pools) {
+    if (key === keepKey || identityOf(key) !== identity) continue
+    pools.delete(key)
+    log.debug('retiring pool built from a superseded connection shape')
+    entry.pool.end().catch((err) => {
+      log.warn('error ending superseded pool:', (err as Error).message)
+    })
+    closeTunnel(entry.tunnel)
+  }
+}
+
 export async function getOrCreatePool(config: ConnectionConfig): Promise<PoolEntry> {
   if (shuttingDown) {
     throw new Error('Pool manager is shutting down')
   }
   const key = getPoolKey(config)
+  evictOtherShapes(identityOf(key), key)
+
   const existing = pools.get(key)
   if (existing) return existing
 
@@ -213,21 +267,31 @@ function evictPoolEntry(key: string): PoolEntry | undefined {
  * appears after this returns.
  */
 export async function closePgPool(config: ConnectionConfig): Promise<void> {
-  const key = getPoolKey(config)
-  const inflight = pendingPools.get(key)
-  if (inflight) {
+  // Every shape variant goes, not just the one matching the config we were handed:
+  // the caller passes the *pre-edit* config, while a Test Connection during that edit
+  // may already have built a pool from the new shape.
+  const identity = getPoolIdentity(config)
+
+  for (const [key, promise] of pendingPools) {
+    if (identityOf(key) !== identity) continue
     pendingPools.delete(key)
     // The .then in getOrCreatePool checks pendingPools identity and self-disposes.
-    await inflight.catch(() => {})
+    await promise.catch(() => {})
   }
-  const entry = evictPoolEntry(key)
-  if (!entry) return
-  try {
-    await entry.pool.end()
-  } catch (err) {
-    log.warn('error ending pool:', (err as Error).message)
+
+  const entries = Array.from(pools.keys())
+    .filter((key) => identityOf(key) === identity)
+    .map((key) => evictPoolEntry(key))
+
+  for (const entry of entries) {
+    if (!entry) continue
+    try {
+      await entry.pool.end()
+    } catch (err) {
+      log.warn('error ending pool:', (err as Error).message)
+    }
+    closeTunnel(entry.tunnel)
   }
-  closeTunnel(entry.tunnel)
 }
 
 /**
