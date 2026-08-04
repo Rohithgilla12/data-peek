@@ -122,8 +122,9 @@ test('fill, test-connection, save → connection appears in connections.list', a
   // Click the Test Connection button (targeted by visible label text)
   await dialog(window).getByRole('button', { name: 'Test Connection' }).click()
 
-  // Expect a success banner to appear inside the sheet
-  await expect(dialog(window).getByText(/connection successful|connected|success/i)).toBeVisible({
+  // Expect a success banner to appear inside the sheet. Scoped to the banner itself
+  // rather than any matching text in the sheet — see the note on the error assertion below.
+  await expect(dialog(window).getByRole('status')).toContainText(/connection successful/i, {
     timeout: 10000
   })
 
@@ -161,9 +162,14 @@ test('wrong password → test connection shows an error', async ({ window }) => 
   // Click Test and expect an error banner inside the sheet
   await dialog(window).getByRole('button', { name: 'Test Connection' }).click()
 
-  await expect(
-    dialog(window).getByText(/authentication failed|password|connection failed|error/i)
-  ).toBeVisible({ timeout: 10000 })
+  // Scoped to the result banner. The previous sheet-wide getByText matched the
+  // always-present "Password" field label, so it passed the moment the dialog rendered
+  // and never actually observed the error — then hit a strict-mode violation (2 matches)
+  // whenever the error banner won the race and appeared before the assertion ran.
+  await expect(dialog(window).getByRole('alert')).toContainText(
+    /authentication failed|password authentication|connection failed|error/i,
+    { timeout: 10000 }
+  )
 
   // Do NOT save — the fixture tears down the Electron app after this test.
 })

@@ -1034,6 +1034,9 @@ export function AddConnectionDialog({
           {testResult && (
             <div
               ref={testResultRef}
+              data-testid="connection-dialog-test-result"
+              // A failure is worth interrupting a screen reader for; a success is not.
+              role={testResult === 'success' ? 'status' : 'alert'}
               className={`flex items-center gap-2 rounded-md p-3 text-sm ${
                 testResult === 'success'
                   ? 'bg-green-500/10 text-green-500'
