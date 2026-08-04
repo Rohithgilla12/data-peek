@@ -36,6 +36,9 @@ const POOL_END_TIMEOUT_MS = 2_500
 const pools = new Map<string, PoolEntry>()
 // Tracks in-flight pool creation so concurrent first-use callers share one tunnel/pool.
 const pendingPools = new Map<string, Promise<PoolEntry>>()
+// identity -> most recently requested pool key, so a slow creation can detect that the
+// connection's shape moved on while it was dialing. Entries are dropped on teardown.
+const latestShape = new Map<string, string>()
 
 let shuttingDown = false
 let teardownInFlight: Promise<void> | null = null
@@ -142,6 +145,12 @@ async function createPoolEntry(config: ConnectionConfig, key: string): Promise<P
  * app shutdown. `pool.end()` drains its own checked-out clients, so a query still
  * running on the outgoing pool finishes; we don't wait for it because the caller is
  * waiting on a different pool entirely.
+ *
+ * Two shapes of one connection being used *concurrently* — a Test Connection on an
+ * edited config while the saved one is being queried — therefore retire each other in
+ * turn. That is accepted: both callers still talk to a pool matching their own config,
+ * and a Test Connection is one `SELECT 1`, so the churn is a pool rebuild or two rather
+ * than a sustained thrash.
  */
 function evictOtherShapes(identity: string, keepKey: string): void {
   for (const [key, entry] of pools) {
@@ -160,7 +169,13 @@ export async function getOrCreatePool(config: ConnectionConfig): Promise<PoolEnt
     throw new Error('Pool manager is shutting down')
   }
   const key = getPoolKey(config)
-  evictOtherShapes(identityOf(key), key)
+  const identity = identityOf(key)
+  // Recorded before dialing so a creation that is still in flight can tell it has been
+  // superseded: evictOtherShapes only sees installed pools, so without this a slow dial
+  // (SSH tunnel setup widens the window considerably) would install a second live pool
+  // and tunnel under one identity after a newer shape had already been installed.
+  latestShape.set(identity, key)
+  evictOtherShapes(identity, key)
 
   const existing = pools.get(key)
   if (existing) return existing
@@ -170,8 +185,9 @@ export async function getOrCreatePool(config: ConnectionConfig): Promise<PoolEnt
 
   const promise = createPoolEntry(config, key)
     .then((entry) => {
-      // Don't install the entry if a closePgPool/shutdown raced and decided to drop it.
-      if (shuttingDown || pendingPools.get(key) !== promise) {
+      // Don't install the entry if a closePgPool/shutdown raced and decided to drop it,
+      // or if a newer shape for this connection was acquired while we were dialing.
+      if (shuttingDown || pendingPools.get(key) !== promise || latestShape.get(identity) !== key) {
         entry.pool.end().catch(() => {})
         closeTunnel(entry.tunnel)
         throw new Error('Pool was closed before initialization completed')
@@ -271,6 +287,9 @@ export async function closePgPool(config: ConnectionConfig): Promise<void> {
   // the caller passes the *pre-edit* config, while a Test Connection during that edit
   // may already have built a pool from the new shape.
   const identity = getPoolIdentity(config)
+  // Also makes any in-flight creation for this connection self-dispose instead of
+  // installing itself after we have finished tearing down.
+  latestShape.delete(identity)
 
   for (const [key, promise] of pendingPools) {
     if (identityOf(key) !== identity) continue
@@ -339,6 +358,7 @@ export async function closeAllPgPools(): Promise<void> {
       await Promise.allSettled(Array.from(pendingPools.values()))
       const entries = Array.from(pools.values())
       pools.clear()
+      latestShape.clear()
       await Promise.all(
         entries.map(async (entry) => {
           try {

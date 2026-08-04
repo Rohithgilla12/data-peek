@@ -21,6 +21,7 @@ vi.mock('../lib/logger', () => ({
   createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }))
 
+import { createTunnel, closeTunnel, type TunnelSession } from '../ssh-tunnel-service'
 import {
   withPgClient,
   withPgTransaction,
@@ -58,6 +59,8 @@ beforeEach(() => {
   mockPool.connect.mockReset().mockResolvedValue(mockClient)
   mockPool.end.mockReset().mockResolvedValue(undefined)
   mockPool.on.mockReset()
+  vi.mocked(createTunnel).mockReset()
+  vi.mocked(closeTunnel).mockReset()
   createdPools.length = 0
   PoolCtor.mockImplementation(function (this: unknown) {
     const instance = {
@@ -172,6 +175,48 @@ describe('withPgClient', () => {
     expect(createdPools).toHaveLength(2)
     expect(createdPools[0].end).toHaveBeenCalledTimes(1)
     expect(createdPools[1].end).not.toHaveBeenCalled()
+  })
+
+  it('disposes a creation that was superseded while it was still dialing', async () => {
+    // evictOtherShapes only sees installed pools, so a slow dial could otherwise install
+    // a second live pool *and* tunnel under one identity after the newer shape landed.
+    // Tunnel setup makes that window wide, so it is the one reproduced here.
+    const saved = makeConfig({
+      ssh: true,
+      sshConfig: {
+        host: 'bastion',
+        port: 22,
+        user: 'x',
+        authMethod: 'Password',
+        privateKeyPath: ''
+      }
+    })
+    const tunnel: TunnelSession = {
+      ssh: null,
+      server: null,
+      localHost: '127.0.0.1',
+      localPort: 54320
+    }
+    let finishDial: (t: TunnelSession) => void = () => {}
+    vi.mocked(createTunnel).mockReturnValueOnce(
+      new Promise<TunnelSession>((resolve) => {
+        finishDial = resolve
+      })
+    )
+
+    const superseded = withPgClient(saved, async () => {})
+    // A newer shape for the same connection is acquired and installed meanwhile.
+    await withPgClient({ ...saved, ssl: true }, async () => {})
+
+    finishDial(tunnel)
+    await expect(superseded).rejects.toThrow('Pool was closed before initialization completed')
+
+    // createdPools[0] is the newer shape: the superseded dial had not reached new Pool()
+    // yet. It must be the one torn down, tunnel included.
+    expect(createdPools).toHaveLength(2)
+    expect(createdPools[0].end).not.toHaveBeenCalled()
+    expect(createdPools[1].end).toHaveBeenCalledTimes(1)
+    expect(closeTunnel).toHaveBeenCalledWith(tunnel)
   })
 
   it('survives double-release without throwing', async () => {
