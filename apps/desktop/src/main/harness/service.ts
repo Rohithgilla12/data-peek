@@ -349,7 +349,9 @@ export async function generateDashboardViaHarness(
 ): Promise<{ success: boolean; spec?: DashboardSpec; error?: string }> {
   try {
     const adapter = adapterFor(provider)
-    if (!adapter.capabilities.dashboard) {
+    // Dashboards are generated against the live DB, so an adapter that can't
+    // ground itself agentically can't be trusted with dashboard generation either.
+    if (!adapter.capabilities.dashboard || !adapter.capabilities.agentic) {
       return {
         success: false,
         error: 'Dashboard generation is not supported by this harness yet.'

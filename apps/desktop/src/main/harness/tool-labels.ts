@@ -1,4 +1,4 @@
-export const TOOL_LABELS: Record<string, string> = {
+const TOOL_LABELS: Record<string, string> = {
   run_query: 'Running query…',
   explain_query: 'Explaining query…',
   list_schemas: 'Reading schema…'

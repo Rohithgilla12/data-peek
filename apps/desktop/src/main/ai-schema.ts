@@ -2,7 +2,7 @@
  * AI response schema, prompt builder, and provider helpers — Pure Module
  *
  * Kept free of Electron / storage / AI-SDK imports so both ai-service (AI SDK
- * path) and harness-service (local CLI path) can share one source of truth for
+ * path) and harness/service (local CLI path) can share one source of truth for
  * the structured response contract, and so it can be unit-tested in plain node.
  */
 

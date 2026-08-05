@@ -15,7 +15,7 @@ import type { HarnessAdapter, HarnessInput, HarnessRun, HarnessStreamInfo } from
 
 const NOT_FOUND = 'Codex CLI not found. Install it and run `codex login` once to sign in.'
 
-export const CODEX_SCHEMA_FILENAME = 'output-schema.json'
+const CODEX_SCHEMA_FILENAME = 'output-schema.json'
 
 export function composeCodexPrompt(systemPrompt: string, userPrompt: string): string {
   return `## Instructions\n${systemPrompt}\n\n## Request\n${userPrompt}`

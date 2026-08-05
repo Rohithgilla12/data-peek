@@ -444,7 +444,7 @@ export function providerNeedsKey(provider: AIProvider): boolean {
  * BYOH providers: instead of an AI SDK client, data-peek shells out to the
  * user's own locally installed, locally authenticated CLI.
  */
-export const HARNESS_AI_PROVIDERS: ReadonlySet<AIProvider> = new Set([
+const HARNESS_AI_PROVIDERS: ReadonlySet<AIProvider> = new Set([
   "claude-cli",
   "codex-cli",
 ]);

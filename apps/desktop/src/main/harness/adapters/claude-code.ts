@@ -22,7 +22,7 @@ const NOT_FOUND = 'Claude CLI not found. Install it and run `claude` once to sig
 
 // Server name registered in the generated mcp-config. No hyphen so the derived
 // tool ids (`mcp__<server>__<tool>`) stay unambiguous in --allowedTools.
-export const MCP_SERVER_NAME = 'datapeek'
+const MCP_SERVER_NAME = 'datapeek'
 
 // Only the read tools are exposed to the agent — never execute_statement (which
 // would trip the in-app approval dialog and can't be answered in headless mode).

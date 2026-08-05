@@ -1,5 +1,5 @@
 /**
- * Light indirection so other main-process modules (e.g. harness-service) can ask
+ * Light indirection so other main-process modules (e.g. harness/service) can ask
  * "is the MCP server live, and on what port/token?" without importing the MCP
  * server, Electron, or the SDK — which keeps their unit tests dependency-free.
  *
