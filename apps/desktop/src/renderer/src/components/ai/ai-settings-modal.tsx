@@ -47,7 +47,8 @@ const HARNESS_HINTS: Partial<Record<ProviderId, { detected: string; missing: str
     missing: 'Install Claude Code and run `claude` once to sign in.'
   },
   'codex-cli': {
-    detected: 'uses your Codex sign-in via the codex CLI',
+    detected:
+      'uses your Codex sign-in via the `codex` CLI — schema-aware answers; live grounding lands when Codex supports headless tool approval',
     missing: 'Install Codex and run `codex login` once to sign in.'
   }
 }

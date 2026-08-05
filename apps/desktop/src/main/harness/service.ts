@@ -234,9 +234,10 @@ export async function generateChatResponseViaHarness(
     const userPrompt = buildUserPrompt(messages)
 
     const mcpInfo = getMcpRuntimeInfo()
-    // Agentic mode needs both a running MCP server and a saved connection the
-    // server can address by id.
-    const agentic = mcpInfo !== null && !!connectionId
+    // Agentic mode needs a running MCP server, a saved connection the server
+    // can address by id, and an adapter that can actually act on tool calls in
+    // headless mode (see codex.ts for why codex fails that last check).
+    const agentic = mcpInfo !== null && !!connectionId && adapter.capabilities.agentic
 
     let systemPrompt = buildSystemPrompt(schemas, dbType)
     let mcp: HarnessInput['mcp']
@@ -295,7 +296,7 @@ export async function generateChatResponseViaHarnessStream(
     const userPrompt = resume ? messages[messages.length - 1].content : buildUserPrompt(messages)
 
     const mcpInfo = getMcpRuntimeInfo()
-    const agentic = mcpInfo !== null && !!connectionId
+    const agentic = mcpInfo !== null && !!connectionId && adapter.capabilities.agentic
 
     let systemPrompt = buildSystemPrompt(schemas, dbType)
     let mcp: HarnessInput['mcp']

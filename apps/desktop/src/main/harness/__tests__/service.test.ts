@@ -18,6 +18,7 @@ import {
   detectHarness,
   generateChatResponseViaHarness,
   generateChatResponseViaHarnessStream,
+  generateDashboardViaHarness,
   buildAgenticInstruction
 } from '../service'
 import type { AIConfig, AIMessage } from '@shared/index'
@@ -250,7 +251,12 @@ describe('codex provider routing', () => {
   const codexCfg = { provider: 'codex-cli', model: 'default' } as unknown as AIConfig
   const msgs: AIMessage[] = [{ role: 'user', content: 'how many users?' }]
 
-  it('spawns codex with MCP overrides and the token in env, not argv', async () => {
+  // codex-cli's headless MCP tool calls are always auto-cancelled by the CLI
+  // (openai/codex#24135, verified live against 0.146.0), so the service never
+  // injects MCP config for this adapter — even when the runtime is up and a
+  // connection is picked. It falls back to a plain chat run with schema
+  // context only, and is honest about it in meta.
+  it('spawns codex without MCP overrides or the token, even with MCP up and a connectionId', async () => {
     getMcpRuntimeInfoMock.mockReturnValue({
       port: 4722,
       token: 'secret-tok',
@@ -264,8 +270,7 @@ describe('codex provider routing', () => {
       Buffer.from(
         [
           '{"type":"thread.started","thread_id":"th-1"}',
-          '{"type":"item.completed","item":{"id":"i1","type":"mcp_tool_call","tool":"run_query","status":"completed"}}',
-          '{"type":"item.completed","item":{"id":"i2","type":"agent_message","text":"{\\"type\\":\\"query\\",\\"message\\":\\"42 users\\",\\"sql\\":\\"SELECT count(*) FROM users\\"}"}}',
+          '{"type":"item.completed","item":{"id":"i2","type":"agent_message","text":"{\\"type\\":\\"message\\",\\"message\\":\\"there are 42 users\\"}"}}',
           '{"type":"turn.completed","usage":{}}'
         ].join('\n') + '\n'
       )
@@ -273,8 +278,8 @@ describe('codex provider routing', () => {
     child.emit('close', 0)
     const res = await p
     expect(res.success).toBe(true)
-    expect(res.data?.sql).toBe('SELECT count(*) FROM users')
-    expect(res.meta).toMatchObject({ grounded: true, agentic: true, sessionId: 'th-1' })
+    expect(res.data?.message).toBe('there are 42 users')
+    expect(res.meta).toMatchObject({ agentic: false, grounded: false })
 
     const [bin, args, opts] = spawnMock.mock.calls.at(-1) as [
       string,
@@ -282,13 +287,12 @@ describe('codex provider routing', () => {
       { env: Record<string, string> }
     ]
     expect(bin).toContain('codex')
-    expect(args.join(' ')).toContain('mcp_servers.datapeek.url=')
-    expect(args.join(' ')).not.toContain('secret-tok')
-    expect(opts.env.DATA_PEEK_MCP_TOKEN).toBe('secret-tok')
+    expect(args.join(' ')).not.toContain('mcp_servers')
+    expect(opts.env.DATA_PEEK_MCP_TOKEN).toBeUndefined()
     expect(opts.env.OPENAI_API_KEY).toBeUndefined()
   })
 
-  it('does not claim grounded when a codex tool call failed', async () => {
+  it('does not append the live-grounding instruction to the codex prompt', async () => {
     getMcpRuntimeInfoMock.mockReturnValue({
       port: 4722,
       token: 'secret-tok',
@@ -300,17 +304,15 @@ describe('codex provider routing', () => {
     child.stdout.emit(
       'data',
       Buffer.from(
-        [
-          '{"type":"item.completed","item":{"id":"i1","type":"mcp_tool_call","tool":"run_query","status":"failed"}}',
-          '{"type":"item.completed","item":{"id":"i2","type":"agent_message","text":"{\\"type\\":\\"message\\",\\"message\\":\\"could not check\\"}"}}',
-          '{"type":"turn.completed","usage":{}}'
-        ].join('\n') + '\n'
+        '{"type":"item.completed","item":{"id":"i","type":"agent_message","text":"{\\"type\\":\\"message\\",\\"message\\":\\"ok\\"}"}}\n{"type":"turn.completed","usage":{}}\n'
       )
     )
     child.emit('close', 0)
-    const res = await p
-    expect(res.success).toBe(true)
-    expect(res.meta?.grounded).toBe(false)
+    await p
+    const args = spawnMock.mock.calls.at(-1)![1] as string[]
+    // args[1] is the composed prompt (no --resume in this call).
+    expect(args[1]).not.toMatch(/Live database access/i)
+    expect(args[1]).not.toContain('conn-1')
   })
 
   it('resumes a codex session with only the latest user message', async () => {
@@ -343,5 +345,25 @@ describe('codex provider routing', () => {
     expect(args[3]).toBe('and now?')
     expect(args).not.toContain('--sandbox')
     expect(args).not.toContain('--cd')
+  })
+
+  it('refuses dashboard generation for codex without spawning (dashboard requires live grounding)', async () => {
+    getMcpRuntimeInfoMock.mockReturnValue({
+      port: 4722,
+      token: 'secret-tok',
+      url: 'http://127.0.0.1:4722/mcp'
+    })
+    const res = await generateDashboardViaHarness(
+      'codex-cli',
+      'overview',
+      [],
+      'postgresql',
+      'conn-1'
+    )
+    expect(res).toEqual({
+      success: false,
+      error: 'Dashboard generation is not supported by this harness yet.'
+    })
+    expect(spawnMock).not.toHaveBeenCalled()
   })
 })

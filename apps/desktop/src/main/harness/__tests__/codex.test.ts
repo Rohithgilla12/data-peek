@@ -18,6 +18,48 @@ const input = (over: Partial<HarnessInput> = {}): HarnessInput => ({
   ...over
 })
 
+// Real fixture captured live, 2026-08-05, codex-cli 0.146.0 — confirms the
+// upstream headless-approval bug (openai/codex#24135) the codex adapter's
+// agentic: false capability works around: the CLI itself auto-cancels the
+// MCP tool call, so the collector must surface it as a denial, not a success.
+const CANCELLED_TOOL_CALL_LINES = [
+  { type: 'thread.started', thread_id: '019fd319-a8a6-70a1-987b-6a57d21ec6c9' },
+  {
+    type: 'item.started',
+    item: {
+      id: 'item_1',
+      type: 'mcp_tool_call',
+      server: 'datapeek',
+      tool: 'run_query',
+      arguments: { connectionId: 'c1', sql: 'SELECT count(*) FROM users' },
+      result: null,
+      error: null,
+      status: 'in_progress'
+    }
+  },
+  {
+    type: 'item.completed',
+    item: {
+      id: 'item_1',
+      type: 'mcp_tool_call',
+      server: 'datapeek',
+      tool: 'run_query',
+      arguments: { connectionId: 'c1', sql: 'SELECT count(*) FROM users' },
+      result: null,
+      error: { message: 'user cancelled MCP tool call' },
+      status: 'failed'
+    }
+  },
+  {
+    type: 'item.completed',
+    item: {
+      id: 'item_2',
+      type: 'agent_message',
+      text: '{"message":"Unable to run the query: the database tool call was cancelled."}'
+    }
+  }
+]
+
 const SUCCESS_LINES = [
   { type: 'thread.started', thread_id: '019fd2bf-ffe8-7c23-bd20-436c6938519f' },
   { type: 'turn.started' },
@@ -124,6 +166,18 @@ describe('codex run collector', () => {
     expect(() => run.finish({ code: 1, stderr: 'something exploded' })).toThrow(
       /something exploded/
     )
+  })
+
+  it('labels a cancelled MCP tool call and counts it as a denial (real fixture, 2026-08-05, codex-cli 0.146.0)', () => {
+    const run = codexAdapter.createRun()
+    const infos = CANCELLED_TOOL_CALL_LINES.map((l) => run.onLine(l))
+    expect(infos[1].toolLabel).toBe('Running query…')
+    const res = run.finish({ code: 0, stderr: '' })
+    expect(res.stats).toEqual({
+      toolRoundTrips: 1,
+      denials: 1,
+      sessionId: '019fd319-a8a6-70a1-987b-6a57d21ec6c9'
+    })
   })
 })
 

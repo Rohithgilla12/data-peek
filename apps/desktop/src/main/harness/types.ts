@@ -17,6 +17,8 @@ export interface HarnessCapabilities {
   resume: boolean
   /** Trusted for whole-dashboard generation. */
   dashboard: boolean
+  /** Can ground answers against the live DB via MCP tool calls in headless mode. */
+  agentic: boolean
 }
 
 export interface HarnessDetection {

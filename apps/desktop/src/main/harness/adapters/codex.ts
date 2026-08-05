@@ -131,15 +131,31 @@ function createCodexRun(): HarnessRun {
   }
 }
 
+// Live-verified against codex-cli 0.146.0 on 2026-08-05: `codex exec` (headless)
+// auto-cancels every MCP tool call with "user cancelled MCP tool call",
+// regardless of `approval_policy="never"` or
+// `mcp_servers.<id>.default_tools_approval_mode="auto"`. Upstream issue
+// openai/codex#24135 is open; the only bypass is
+// `--dangerously-bypass-approvals-and-sandbox`, which we reject as a silent
+// default for security. So codex ships chat-only (schema-context) answers
+// until upstream fixes headless approvals or the product adds an explicit
+// opt-in — hence agentic: false. dashboard REQUIRES live grounding (every
+// widget's SQL is meant to be verified against the DB), so it rides on the
+// same flag: dashboard: false.
+//
+// The MCP argv/env plumbing in buildCodexArgs/codexEnv/createCodexRun below
+// stays exactly as built and tested — it's correct for the day approvals
+// become possible, the service just never calls buildRequest with `input.mcp`
+// set for this adapter (see harness/service.ts capability gate).
 export const codexAdapter: HarnessAdapter = {
   id: 'codex-cli',
   cliLabel: 'Codex CLI',
   notFoundMessage: NOT_FOUND,
   // No token-level deltas from codex --json: activity labels stream, the
-  // message text lands at item.completed. resume/dashboard verified in
-  // 0.146.0's exec surface; if live testing disproves one, flip it here and
-  // the service + UI degrade automatically.
-  capabilities: { streaming: false, resume: true, dashboard: true },
+  // message text lands at item.completed. resume verified in 0.146.0's exec
+  // surface; if live testing disproves it, flip it here and the service + UI
+  // degrade automatically.
+  capabilities: { streaming: false, resume: true, dashboard: false, agentic: false },
   detect: () => detectBinary('codex', 'DATA_PEEK_CODEX_PATH', NOT_FOUND),
   buildRequest: (input) => ({
     binary: resolveBinary('codex', 'DATA_PEEK_CODEX_PATH'),
