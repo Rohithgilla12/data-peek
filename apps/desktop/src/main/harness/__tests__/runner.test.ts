@@ -34,7 +34,9 @@ const req = (over: Partial<HarnessRequest> = {}): HarnessRequest => ({
 const opts = { timeoutMs: 5000, cliLabel: 'Fake CLI', notFoundMessage: 'Fake CLI not found.' }
 
 describe('runHarnessProcess', () => {
-  beforeEach(() => spawnMock.mockReset())
+  beforeEach(() => {
+    spawnMock.mockReset()
+  })
 
   it('parses one JSON object per line, buffering across chunk boundaries', async () => {
     const child = fakeChild()
@@ -114,7 +116,9 @@ describe('runHarnessProcess', () => {
 })
 
 describe('resolveBinary / detectBinary', () => {
-  beforeEach(() => spawnMock.mockReset())
+  beforeEach(() => {
+    spawnMock.mockReset()
+  })
 
   it('prefers an existing override path from the env var', () => {
     const prev = process.env.TEST_BIN_OVERRIDE
