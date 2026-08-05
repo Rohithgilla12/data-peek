@@ -82,7 +82,10 @@ export type AIProvider =
   | "ollama"
   // Bring-your-own-harness: drives the user's locally installed `claude` CLI,
   // which owns its own auth (subscription or key). No API key stored by data-peek.
-  | "claude-cli";
+  | "claude-cli"
+  // Bring-your-own-harness: drives the user's locally installed `codex` CLI,
+  // which owns its own auth (ChatGPT sign-in or key). No API key stored by data-peek.
+  | "codex-cli";
 
 /**
  * Configuration for AI service
@@ -368,6 +371,23 @@ export const AI_PROVIDERS: readonly ProviderInfo[] = [
       { id: "haiku", name: "Claude Haiku", description: "Fast & cheap" },
     ],
   },
+  {
+    id: "codex-cli",
+    name: "Codex (local CLI)",
+    description: "Uses your installed `codex` CLI — no API key stored here",
+    keyPrefix: null,
+    keyUrl: "https://developers.openai.com/codex/cli",
+    models: [
+      {
+        id: "default",
+        name: "Codex CLI default",
+        recommended: true,
+        description: "Whatever your codex config uses",
+      },
+      { id: "gpt-5.1-codex", name: "GPT-5.1 Codex" },
+      { id: "gpt-5.1-codex-mini", name: "GPT-5.1 Codex Mini", description: "Fast & cheap" },
+    ],
+  },
 ] as const;
 
 /**
@@ -403,19 +423,34 @@ export const DEFAULT_MODELS: Record<AIProvider, string> = {
   glm: getRecommendedModel("glm"),
   ollama: getRecommendedModel("ollama"),
   "claude-cli": getRecommendedModel("claude-cli"),
+  "codex-cli": getRecommendedModel("codex-cli"),
 };
 
 /**
  * Providers that run locally and need no API key stored by data-peek:
- * ollama talks to localhost, claude-cli drives the user's own authed CLI.
+ * ollama talks to localhost, claude-cli and codex-cli drive the user's own authed CLIs.
  */
 const KEYLESS_AI_PROVIDERS: ReadonlySet<AIProvider> = new Set([
   "ollama",
   "claude-cli",
+  "codex-cli",
 ]);
 
 export function providerNeedsKey(provider: AIProvider): boolean {
   return !KEYLESS_AI_PROVIDERS.has(provider);
+}
+
+/**
+ * BYOH providers: instead of an AI SDK client, data-peek shells out to the
+ * user's own locally installed, locally authenticated CLI.
+ */
+export const HARNESS_AI_PROVIDERS: ReadonlySet<AIProvider> = new Set([
+  "claude-cli",
+  "codex-cli",
+]);
+
+export function isHarnessProvider(provider: AIProvider): boolean {
+  return HARNESS_AI_PROVIDERS.has(provider);
 }
 
 // Verbs that mutate data/schema or have side effects. Word-boundary matched, so
