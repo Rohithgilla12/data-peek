@@ -28,7 +28,7 @@ import type {
   AIProviderConfig,
   AIChatStreamEvent
 } from '@shared/index'
-import { DEFAULT_MODELS } from '@shared/index'
+import { DEFAULT_MODELS, isHarnessProvider } from '@shared/index'
 import { randomUUID } from 'crypto'
 
 // Re-export types for main process consumers
@@ -308,8 +308,9 @@ export async function validateAPIKey(
 }
 
 /**
- * Generate a whole dashboard spec from a prompt. claude-cli grounds it against
- * the live DB via the harness; other providers use generateObject (from schema).
+ * Generate a whole dashboard spec from a prompt. BYOH harness providers ground
+ * it against the live DB via the harness; other providers use generateObject
+ * (from schema).
  */
 export async function generateDashboard(
   config: AIConfig,
@@ -318,10 +319,10 @@ export async function generateDashboard(
   dbType: string,
   connectionId?: string
 ): Promise<{ success: boolean; spec?: DashboardSpec; error?: string }> {
-  if (config.provider === 'claude-cli') {
+  if (isHarnessProvider(config.provider)) {
     if (!connectionId) return { success: false, error: 'No connection selected.' }
-    const { generateDashboardViaHarness } = await import('./harness-service')
-    return generateDashboardViaHarness(prompt, schemas, dbType, connectionId)
+    const { generateDashboardViaHarness } = await import('./harness/service')
+    return generateDashboardViaHarness(config.provider, prompt, schemas, dbType, connectionId)
   }
   try {
     const model = getModel(config)
@@ -353,11 +354,12 @@ export async function generateChatResponse(
   error?: string
   meta?: { grounded: boolean; agentic: boolean; turns?: number }
 }> {
-  // Bring-your-own-harness: the local `claude` CLI isn't an AI SDK model, so it
-  // gets its own code path (spawn + parse) rather than generateObject. Given the
-  // connection id + a running MCP server it can query the live DB to ground its answer.
-  if (config.provider === 'claude-cli') {
-    const { generateChatResponseViaHarness } = await import('./harness-service')
+  // Bring-your-own-harness: BYOH providers aren't AI SDK models, so they get
+  // their own code path (spawn + parse) rather than generateObject. Given the
+  // connection id + a running MCP server they can query the live DB to ground
+  // their answer.
+  if (isHarnessProvider(config.provider)) {
+    const { generateChatResponseViaHarness } = await import('./harness/service')
     return generateChatResponseViaHarness(config, messages, schemas, dbType, connectionId)
   }
 
@@ -397,9 +399,9 @@ export async function generateChatResponse(
 }
 
 /**
- * Streaming chat: for the BYOH `claude-cli` provider, drives the CLI in
- * stream-json mode and forwards incremental events through `onEvent`. Other
- * (AI SDK) providers don't stream here — they run normally and emit their final
+ * Streaming chat: for BYOH harness providers, drives the CLI in stream-json
+ * mode and forwards incremental events through `onEvent`. Other (AI SDK)
+ * providers don't stream here — they run normally and emit their final
  * message as one event so the caller's rendering path stays uniform.
  */
 export async function generateChatResponseStream(
@@ -416,8 +418,8 @@ export async function generateChatResponseStream(
   error?: string
   meta?: { grounded: boolean; agentic: boolean; turns?: number; sessionId?: string }
 }> {
-  if (config.provider === 'claude-cli') {
-    const { generateChatResponseViaHarnessStream } = await import('./harness-service')
+  if (isHarnessProvider(config.provider)) {
+    const { generateChatResponseViaHarnessStream } = await import('./harness/service')
     return generateChatResponseViaHarnessStream(
       config,
       messages,

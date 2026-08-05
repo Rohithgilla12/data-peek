@@ -164,11 +164,14 @@ export function registerAIHandlers(): void {
     }
   })
 
-  // Detect whether the local `claude` CLI is installed (for the BYOH provider)
-  ipcMain.handle('ai:detect-harness', async () => {
+  // Detect whether a local harness CLI is installed (for the BYOH providers)
+  ipcMain.handle('ai:detect-harness', async (_, provider?: string) => {
     try {
-      const { detectClaudeCli } = await import('../harness-service')
-      return { success: true, data: await detectClaudeCli() }
+      const { detectHarness } = await import('../harness/service')
+      return {
+        success: true,
+        data: await detectHarness((provider ?? 'claude-cli') as AIConfig['provider'])
+      }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       return { success: false, error: errorMessage }

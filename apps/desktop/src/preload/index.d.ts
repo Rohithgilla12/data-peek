@@ -419,7 +419,9 @@ interface DataPeekApi {
     setConfig: (config: AIConfig) => Promise<IpcResponse<void>>
     clearConfig: () => Promise<IpcResponse<void>>
     validateKey: (config: AIConfig) => Promise<IpcResponse<{ valid: boolean; error?: string }>>
-    detectHarness: () => Promise<
+    detectHarness: (
+      provider?: AIProvider
+    ) => Promise<
       IpcResponse<{ available: boolean; path?: string; version?: string; error?: string }>
     >
     generateDashboard: (

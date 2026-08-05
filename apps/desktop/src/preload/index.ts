@@ -557,9 +557,11 @@ const api = {
     clearConfig: (): Promise<IpcResponse<void>> => ipcRenderer.invoke('ai:clear-config'),
     validateKey: (config: AIConfig): Promise<IpcResponse<{ valid: boolean; error?: string }>> =>
       ipcRenderer.invoke('ai:validate-key', config),
-    detectHarness: (): Promise<
+    detectHarness: (
+      provider?: AIProvider
+    ): Promise<
       IpcResponse<{ available: boolean; path?: string; version?: string; error?: string }>
-    > => ipcRenderer.invoke('ai:detect-harness'),
+    > => ipcRenderer.invoke('ai:detect-harness', provider),
     generateDashboard: (
       prompt: string,
       schemas: SchemaInfo[],
