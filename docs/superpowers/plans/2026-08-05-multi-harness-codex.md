@@ -19,6 +19,7 @@
 - All paths below are relative to `apps/desktop/` unless they start with `packages/`.
 - Verified against codex-cli 0.146.0 on 2026-08-05: `codex exec --json` event shapes (fixtures below are REAL captured output), `--output-schema <file>`, `exec resume <id> <prompt>` supporting `--json`/`--output-schema`/`-c`/`--ignore-user-config` (but NOT `--sandbox`/`--cd` — a resumed session keeps those), and `mcp_servers.<name>.enabled_tools` passing `--strict-config` validation.
 - Codex spawns MUST use `stdio: ['ignore', 'pipe', 'pipe']` — with an open stdin the CLI prints "Reading additional input from stdin..." and waits.
+- Vitest trap (bit us in Task 2): `beforeEach(() => spawnMock.mockReset())` returns the mock, and vitest treats a function returned from a hook as a teardown callback — the mock gets invoked again after each test. Always write hook bodies in braces: `beforeEach(() => { spawnMock.mockReset() })`. When porting tests from `src/main/__tests__/harness-service.test.ts`, fix its hooks to this form.
 
 ---
 
