@@ -4,6 +4,7 @@ import {
   buildClaudeArgs,
   buildClaudeMcpConfigJson,
   claudeAllowedTools,
+  classifyClaudeLine,
   MCP_READ_TOOLS
 } from '../adapters/claude-code'
 import type { HarnessInput } from '../types'
@@ -160,5 +161,28 @@ describe('claude run collector', () => {
         message: { content: [{ type: 'tool_use', name: 'StructuredOutput' }] }
       }).toolLabel
     ).toBeUndefined()
+  })
+})
+
+describe('classifyClaudeLine noise + thinking deltas', () => {
+  it('does not surface thinking deltas as answer content', () => {
+    const info = classifyClaudeLine({
+      type: 'stream_event',
+      event: { type: 'content_block_delta', delta: { type: 'thinking_delta', thinking: 'hmm' } }
+    })
+    expect(info).toEqual({})
+  })
+
+  it('ignores non-text stream events', () => {
+    expect(classifyClaudeLine({ type: 'stream_event', event: { type: 'message_start' } })).toEqual(
+      {}
+    )
+  })
+
+  it('ignores noise frames and non-objects without throwing', () => {
+    expect(classifyClaudeLine({ type: 'rate_limit_event' })).toEqual({})
+    expect(classifyClaudeLine({ type: 'system', subtype: 'hook_started' })).toEqual({})
+    expect(classifyClaudeLine(null)).toEqual({})
+    expect(classifyClaudeLine('boom')).toEqual({})
   })
 })

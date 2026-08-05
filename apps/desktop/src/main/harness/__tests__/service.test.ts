@@ -104,6 +104,62 @@ describe('generateChatResponseViaHarness (spawn-mocked)', () => {
     expect(res.data?.message).toBe('hi there')
   })
 
+  // The following four mirror the deleted harness-service.test.ts parseHarnessResult
+  // robustness cases (fence stripping, prose recovery, empty result, schema mismatch).
+  // Driven through the public API so they survive a parser refactor; the dashboard
+  // path (jsonSchema: undefined) depends on this exact fence/prose recovery.
+  const query = { type: 'query', message: 'ok', sql: 'SELECT 1' }
+
+  it('strips markdown code fences around the JSON result', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(cfg, msgs, [], 'postgresql')
+    child.stdout.emit('data', Buffer.from(envelope('```json\n' + JSON.stringify(query) + '\n```')))
+    child.emit('close', 0)
+    const res = await p
+    expect(res.success).toBe(true)
+    expect(res.data?.sql).toBe('SELECT 1')
+  })
+
+  it('recovers JSON embedded in surrounding prose', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(cfg, msgs, [], 'postgresql')
+    child.stdout.emit(
+      'data',
+      Buffer.from(envelope(`Here you go:\n${JSON.stringify(query)}\nHope that helps`))
+    )
+    child.emit('close', 0)
+    const res = await p
+    expect(res.success).toBe(true)
+    expect(res.data?.type).toBe('query')
+  })
+
+  it('reports an error on an empty result', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(cfg, msgs, [], 'postgresql')
+    child.stdout.emit('data', Buffer.from(envelope('')))
+    child.emit('close', 0)
+    const res = await p
+    expect(res.success).toBe(false)
+    expect(res.error).toMatch(/empty/i)
+  })
+
+  it('reports an error when the model reply does not match the schema', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(cfg, msgs, [], 'postgresql')
+    child.stdout.emit(
+      'data',
+      Buffer.from(envelope(JSON.stringify({ type: 'nonsense', message: 5 })))
+    )
+    child.emit('close', 0)
+    const res = await p
+    expect(res.success).toBe(false)
+    expect(res.error).toMatch(/schema/i)
+  })
+
   it('reports grounded meta when agentic with tool round-trips and no denials', async () => {
     getMcpRuntimeInfoMock.mockReturnValue({ port: 1, token: 't', url: 'http://127.0.0.1:1/mcp' })
     const child = fakeChild()
