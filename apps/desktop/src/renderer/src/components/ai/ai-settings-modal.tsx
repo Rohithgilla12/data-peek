@@ -52,6 +52,23 @@ const HARNESS_HINTS: Partial<Record<ProviderId, { detected: string; missing: str
   }
 }
 
+// HARNESS_HINTS strings use backticks around command tokens (`claude`, `codex
+// login`). Split on them and render the odd segments as <code> so the tokens
+// get the same monospace treatment the modal always used, instead of leaking
+// literal backtick characters into the DOM.
+function renderHint(text: string | undefined): React.ReactNode {
+  if (!text) return null
+  return text.split('`').map((segment, i) =>
+    i % 2 === 1 ? (
+      <code key={i} className="font-mono">
+        {segment}
+      </code>
+    ) : (
+      segment
+    )
+  )
+}
+
 interface AISettingsModalProps {
   isOpen: boolean
   onClose: () => void
@@ -182,7 +199,7 @@ export function AISettingsModal({
         apiKey: needsKey ? apiKey : undefined,
         baseUrl: baseUrl || undefined
       })
-      // Keyless providers (Claude Code CLI, Ollama) have nothing to configure —
+      // Keyless providers (ollama + the BYOH harnesses) have nothing to configure —
       // choosing one means "use it", so make it active in the same click.
       if (!needsKey) await onSetActiveProvider(selectedProvider)
       setValidationResult('success')
@@ -381,14 +398,14 @@ export function AISettingsModal({
                   <CheckCircle2 className="size-4 text-green-500 shrink-0" />
                   <span className="text-[11px] text-green-400">
                     Detected{harness.version ? ` · ${harness.version}` : ''} —{' '}
-                    {HARNESS_HINTS[selectedProvider]?.detected}
+                    {renderHint(HARNESS_HINTS[selectedProvider]?.detected)}
                   </span>
                 </div>
               ) : (
                 <div className="space-y-1.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
                   <span className="text-[11px] text-amber-400 flex items-center gap-1.5">
                     <AlertCircle className="size-3.5 shrink-0" />
-                    {HARNESS_HINTS[selectedProvider]?.missing}
+                    {renderHint(HARNESS_HINTS[selectedProvider]?.missing)}
                   </span>
                   <a
                     href={providerConfig.keyUrl}
