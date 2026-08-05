@@ -80,21 +80,9 @@ import type {
   McpServerStatus,
   McpApprovalRequest,
   AuditStatus,
-  AuditVerifyResult
+  AuditVerifyResult,
+  AIProvider
 } from '@shared/index'
-
-// AI Types
-type AIProvider =
-  | 'openai'
-  | 'anthropic'
-  | 'google'
-  | 'groq'
-  | 'deepseek'
-  | 'mistral'
-  | 'xai'
-  | 'glm'
-  | 'ollama'
-  | 'claude-cli'
 
 interface AIConfig {
   provider: AIProvider
