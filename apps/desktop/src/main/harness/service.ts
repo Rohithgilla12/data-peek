@@ -22,6 +22,7 @@ import type {
 } from '@shared/index'
 import { DEFAULT_MODELS, isHarnessProvider } from '@shared/index'
 import { claudeCodeAdapter } from './adapters/claude-code'
+import { codexAdapter } from './adapters/codex'
 import { runHarnessProcess } from './runner'
 import { extractPartialMessage } from './partial-json'
 import type {
@@ -53,7 +54,7 @@ const DASHBOARD_TIMEOUT_MS = 300_000
 
 const ADAPTERS: Record<HarnessProviderId, HarnessAdapter> = {
   'claude-cli': claudeCodeAdapter,
-  'codex-cli': claudeCodeAdapter // replaced by codexAdapter in the codex task
+  'codex-cli': codexAdapter
 }
 
 function adapterFor(provider: AIProvider): HarnessAdapter {
@@ -177,14 +178,9 @@ async function executeHarness(
     let raw = ''
     let lastMessage = ''
     let lastActivity = ''
-    const cliLabel = adapter.id === 'claude-cli' ? 'Claude CLI' : 'Codex CLI'
-    const notFoundMessage =
-      adapter.id === 'claude-cli'
-        ? 'Claude CLI not found. Install it and run `claude` once to sign in.'
-        : 'Codex CLI not found. Install it and run `codex login` once to sign in.'
     const exit = await runHarnessProcess(
       request,
-      { timeoutMs, cliLabel, notFoundMessage },
+      { timeoutMs, cliLabel: adapter.cliLabel, notFoundMessage: adapter.notFoundMessage },
       (obj) => {
         const info = run.onLine(obj)
         if (!onEvent) return

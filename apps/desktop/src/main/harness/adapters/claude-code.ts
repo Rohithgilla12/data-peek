@@ -187,6 +187,8 @@ function createClaudeRun(): HarnessRun {
 
 export const claudeCodeAdapter: HarnessAdapter = {
   id: 'claude-cli',
+  cliLabel: 'Claude CLI',
+  notFoundMessage: NOT_FOUND,
   capabilities: { streaming: true, resume: true, dashboard: true },
   detect: () => detectBinary('claude', 'DATA_PEEK_CLAUDE_PATH', NOT_FOUND),
   buildRequest: (input): HarnessRequest => ({

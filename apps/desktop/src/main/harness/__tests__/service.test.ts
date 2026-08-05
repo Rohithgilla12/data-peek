@@ -215,3 +215,24 @@ describe('detectHarness', () => {
     expect(() => detectHarness('openai')).toThrow(/not a harness provider/i)
   })
 })
+
+describe('executeHarness ENOENT path (adapter.notFoundMessage)', () => {
+  beforeEach(() => {
+    spawnMock.mockReset()
+    getMcpRuntimeInfoMock.mockReturnValue(null)
+  })
+
+  it('surfaces the codex-specific not-found message when the codex binary is missing', async () => {
+    const cfg = { provider: 'codex-cli', model: '' } as unknown as AIConfig
+    const msgs: AIMessage[] = [{ role: 'user', content: 'how many users?' }]
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(cfg, msgs, [], 'postgresql')
+    const err = new Error('spawn codex ENOENT') as NodeJS.ErrnoException
+    err.code = 'ENOENT'
+    child.emit('error', err)
+    const res = await p
+    expect(res.success).toBe(false)
+    expect(res.error).toMatch(/Codex CLI not found/)
+  })
+})

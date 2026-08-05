@@ -1,0 +1,144 @@
+import { describe, it, expect } from 'vitest'
+import {
+  codexAdapter,
+  buildCodexArgs,
+  composeCodexPrompt,
+  friendlyCodexError
+} from '../adapters/codex'
+import type { HarnessInput } from '../types'
+
+const input = (over: Partial<HarnessInput> = {}): HarnessInput => ({
+  kind: 'chat',
+  userPrompt: 'how many users?',
+  systemPrompt: 'SYS',
+  model: '',
+  jsonSchema: '{"type":"object"}',
+  stream: false,
+  workDir: '/tmp/run-1',
+  ...over
+})
+
+const SUCCESS_LINES = [
+  { type: 'thread.started', thread_id: '019fd2bf-ffe8-7c23-bd20-436c6938519f' },
+  { type: 'turn.started' },
+  {
+    type: 'item.completed',
+    item: { id: 'item_0', type: 'error', message: 'Skill descriptions were shortened…' }
+  },
+  {
+    type: 'item.completed',
+    item: { id: 'item_1', type: 'agent_message', text: '{"message":"Hello! How can I help?"}' }
+  },
+  { type: 'turn.completed', usage: { input_tokens: 19925, output_tokens: 21 } }
+]
+
+describe('buildCodexArgs', () => {
+  it('runs exec with json output, read-only sandbox, and hermetic config', () => {
+    const args = buildCodexArgs(input())
+    expect(args[0]).toBe('exec')
+    expect(args).toContain('--json')
+    expect(args).toContain('--skip-git-repo-check')
+    expect(args).toContain('--ignore-user-config')
+    expect(args[args.indexOf('--sandbox') + 1]).toBe('read-only')
+    expect(args[args.indexOf('--cd') + 1]).toBe('/tmp/run-1')
+  })
+
+  it('prepends the system prompt into the prompt body (no --append-system-prompt in codex)', () => {
+    const args = buildCodexArgs(input())
+    const prompt = args[1]
+    expect(prompt).toBe(composeCodexPrompt('SYS', 'how many users?'))
+    expect(prompt).toContain('## Instructions')
+    expect(prompt).toContain('## Request')
+  })
+
+  it('omits -m for the CLI-default model and passes explicit models through', () => {
+    expect(buildCodexArgs(input({ model: '' }))).not.toContain('--model')
+    expect(buildCodexArgs(input({ model: 'default' }))).not.toContain('--model')
+    const args = buildCodexArgs(input({ model: 'gpt-5.1-codex' }))
+    expect(args[args.indexOf('--model') + 1]).toBe('gpt-5.1-codex')
+  })
+
+  it('points --output-schema at a temp file inside the work dir', () => {
+    const req = codexAdapter.buildRequest(input())
+    const schemaPath = req.args[req.args.indexOf('--output-schema') + 1]
+    expect(schemaPath).toBe('/tmp/run-1/output-schema.json')
+    expect(req.tempFiles).toEqual([
+      { path: '/tmp/run-1/output-schema.json', content: '{"type":"object"}' }
+    ])
+  })
+
+  it('omits --output-schema when no schema is given (dashboard path)', () => {
+    const req = codexAdapter.buildRequest(input({ jsonSchema: undefined }))
+    expect(req.args).not.toContain('--output-schema')
+    expect(req.tempFiles ?? []).toEqual([])
+  })
+
+  it('drops OPENAI_API_KEY so codex rides its own login', () => {
+    const prev = process.env.OPENAI_API_KEY
+    process.env.OPENAI_API_KEY = 'sk-should-not-leak'
+    try {
+      expect(codexAdapter.buildRequest(input()).env.OPENAI_API_KEY).toBeUndefined()
+    } finally {
+      if (prev === undefined) delete process.env.OPENAI_API_KEY
+      else process.env.OPENAI_API_KEY = prev
+    }
+  })
+})
+
+describe('codex run collector', () => {
+  it('collects the agent message, session id, and clean stats from a real run', () => {
+    const run = codexAdapter.createRun()
+    const infos = SUCCESS_LINES.map((l) => run.onLine(l))
+    // the structured reply surfaces as a json delta so the service can stream the message field
+    expect(infos[3].jsonDelta).toBe('{"message":"Hello! How can I help?"}')
+    const res = run.finish({ code: 0, stderr: '' })
+    expect(res.payload).toBe('{"message":"Hello! How can I help?"}')
+    expect(res.stats).toEqual({
+      toolRoundTrips: 0,
+      denials: 0,
+      sessionId: '019fd2bf-ffe8-7c23-bd20-436c6938519f'
+    })
+  })
+
+  it('treats item-level error items as non-fatal (real runs emit warnings that way)', () => {
+    const run = codexAdapter.createRun()
+    SUCCESS_LINES.forEach((l) => run.onLine(l))
+    expect(() => run.finish({ code: 0, stderr: '' })).not.toThrow()
+  })
+
+  it('surfaces turn.failed with the inner API message unwrapped', () => {
+    const run = codexAdapter.createRun()
+    run.onLine({
+      type: 'turn.failed',
+      error: {
+        message:
+          '{"type":"error","status":400,"error":{"type":"invalid_request_error","message":"The \'totally-bogus-model\' model is not supported when using Codex with a ChatGPT account."}}'
+      }
+    })
+    expect(() => run.finish({ code: 1, stderr: '' })).toThrow(/not supported when using Codex/)
+  })
+
+  it('throws with stderr detail when no agent message ever arrived', () => {
+    const run = codexAdapter.createRun()
+    run.onLine({ type: 'thread.started', thread_id: 't' })
+    expect(() => run.finish({ code: 1, stderr: 'something exploded' })).toThrow(
+      /something exploded/
+    )
+  })
+})
+
+describe('friendlyCodexError', () => {
+  it('maps auth failures to a codex login hint', () => {
+    expect(friendlyCodexError('{"status":401,"error":{"message":"Unauthorized"}}')).toMatch(
+      /codex login/
+    )
+  })
+  it('unwraps the nested API error message', () => {
+    expect(
+      friendlyCodexError('{"type":"error","status":400,"error":{"message":"inner detail"}}')
+    ).toBe('inner detail')
+  })
+  it('passes through plain messages untouched', () => {
+    expect(friendlyCodexError('stream disconnected')).toBe('stream disconnected')
+  })
+})

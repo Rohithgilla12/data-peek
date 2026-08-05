@@ -95,6 +95,10 @@ export interface HarnessRun {
 
 export interface HarnessAdapter {
   id: HarnessProviderId
+  /** Human name used in error messages, e.g. 'Claude CLI'. */
+  cliLabel: string
+  /** Message for ENOENT, e.g. install + sign-in instructions. */
+  notFoundMessage: string
   capabilities: HarnessCapabilities
   detect(): Promise<HarnessDetection>
   buildRequest(input: HarnessInput): HarnessRequest
