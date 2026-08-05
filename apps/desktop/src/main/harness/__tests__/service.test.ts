@@ -14,7 +14,12 @@ const { getMcpRuntimeInfoMock } = vi.hoisted(() => ({
 }))
 vi.mock('../../mcp-runtime', () => ({ getMcpRuntimeInfo: getMcpRuntimeInfoMock }))
 
-import { detectHarness, generateChatResponseViaHarness, buildAgenticInstruction } from '../service'
+import {
+  detectHarness,
+  generateChatResponseViaHarness,
+  generateChatResponseViaHarnessStream,
+  buildAgenticInstruction
+} from '../service'
 import type { AIConfig, AIMessage } from '@shared/index'
 
 // A fake child process whose stdout/stderr/exit we drive from the test.
@@ -234,5 +239,109 @@ describe('executeHarness ENOENT path (adapter.notFoundMessage)', () => {
     const res = await p
     expect(res.success).toBe(false)
     expect(res.error).toMatch(/Codex CLI not found/)
+  })
+})
+
+describe('codex provider routing', () => {
+  beforeEach(() => {
+    spawnMock.mockReset()
+    getMcpRuntimeInfoMock.mockReturnValue(null)
+  })
+  const codexCfg = { provider: 'codex-cli', model: 'default' } as unknown as AIConfig
+  const msgs: AIMessage[] = [{ role: 'user', content: 'how many users?' }]
+
+  it('spawns codex with MCP overrides and the token in env, not argv', async () => {
+    getMcpRuntimeInfoMock.mockReturnValue({
+      port: 4722,
+      token: 'secret-tok',
+      url: 'http://127.0.0.1:4722/mcp'
+    })
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(codexCfg, msgs, [], 'postgresql', 'conn-1')
+    child.stdout.emit(
+      'data',
+      Buffer.from(
+        [
+          '{"type":"thread.started","thread_id":"th-1"}',
+          '{"type":"item.completed","item":{"id":"i1","type":"mcp_tool_call","tool":"run_query","status":"completed"}}',
+          '{"type":"item.completed","item":{"id":"i2","type":"agent_message","text":"{\\"type\\":\\"query\\",\\"message\\":\\"42 users\\",\\"sql\\":\\"SELECT count(*) FROM users\\"}"}}',
+          '{"type":"turn.completed","usage":{}}'
+        ].join('\n') + '\n'
+      )
+    )
+    child.emit('close', 0)
+    const res = await p
+    expect(res.success).toBe(true)
+    expect(res.data?.sql).toBe('SELECT count(*) FROM users')
+    expect(res.meta).toMatchObject({ grounded: true, agentic: true, sessionId: 'th-1' })
+
+    const [bin, args, opts] = spawnMock.mock.calls.at(-1) as [
+      string,
+      string[],
+      { env: Record<string, string> }
+    ]
+    expect(bin).toContain('codex')
+    expect(args.join(' ')).toContain('mcp_servers.datapeek.url=')
+    expect(args.join(' ')).not.toContain('secret-tok')
+    expect(opts.env.DATA_PEEK_MCP_TOKEN).toBe('secret-tok')
+    expect(opts.env.OPENAI_API_KEY).toBeUndefined()
+  })
+
+  it('does not claim grounded when a codex tool call failed', async () => {
+    getMcpRuntimeInfoMock.mockReturnValue({
+      port: 4722,
+      token: 'secret-tok',
+      url: 'http://127.0.0.1:4722/mcp'
+    })
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(codexCfg, msgs, [], 'postgresql', 'conn-1')
+    child.stdout.emit(
+      'data',
+      Buffer.from(
+        [
+          '{"type":"item.completed","item":{"id":"i1","type":"mcp_tool_call","tool":"run_query","status":"failed"}}',
+          '{"type":"item.completed","item":{"id":"i2","type":"agent_message","text":"{\\"type\\":\\"message\\",\\"message\\":\\"could not check\\"}"}}',
+          '{"type":"turn.completed","usage":{}}'
+        ].join('\n') + '\n'
+      )
+    )
+    child.emit('close', 0)
+    const res = await p
+    expect(res.success).toBe(true)
+    expect(res.meta?.grounded).toBe(false)
+  })
+
+  it('resumes a codex session with only the latest user message', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const many: AIMessage[] = [
+      { role: 'user', content: 'first' },
+      { role: 'assistant', content: 'reply' },
+      { role: 'user', content: 'and now?' }
+    ]
+    const p = generateChatResponseViaHarnessStream(
+      codexCfg,
+      many,
+      [],
+      'postgresql',
+      undefined,
+      'th-1',
+      () => {}
+    )
+    child.stdout.emit(
+      'data',
+      Buffer.from(
+        '{"type":"item.completed","item":{"id":"i","type":"agent_message","text":"{\\"type\\":\\"message\\",\\"message\\":\\"ok\\"}"}}\n{"type":"turn.completed","usage":{}}\n'
+      )
+    )
+    child.emit('close', 0)
+    await p
+    const args = spawnMock.mock.calls.at(-1)![1] as string[]
+    expect(args.slice(0, 3)).toEqual(['exec', 'resume', 'th-1'])
+    expect(args[3]).toBe('and now?')
+    expect(args).not.toContain('--sandbox')
+    expect(args).not.toContain('--cd')
   })
 })
