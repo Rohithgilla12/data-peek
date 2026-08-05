@@ -35,6 +35,8 @@ import {
 import { AIMessage } from './ai-message'
 import { AISuggestions } from './ai-suggestions'
 import type { ConnectionConfig, SchemaInfo, AIReportWidget } from '@data-peek/shared'
+import { useAIConfig } from '@/stores/ai-store'
+import { resolveHarnessResumeId, type HarnessSessionRef } from '@/lib/harness-session-ref'
 
 // Chat session type (matching preload)
 interface ChatSession {
@@ -148,13 +150,19 @@ export function AIChatPanel({
   const inputRef = React.useRef<HTMLTextAreaElement>(null)
   const previousConnectionId = React.useRef<string | null>(null)
   const isInitialLoad = React.useRef(true)
-  // CLI session id from the last BYOH turn, so the next turn resumes the same
-  // conversation (server-side memory). Reset when the chat/connection changes.
-  const harnessSessionIdRef = React.useRef<string | undefined>(undefined)
+  // The provider the next turn will actually run against. Read from the
+  // store (not a prop) so a mid-chat provider switch in settings is visible
+  // here immediately.
+  const activeProvider = useAIConfig()?.provider
+  // CLI session id from the last BYOH turn, tagged with the provider that
+  // produced it, so the next turn resumes the same conversation (server-side
+  // memory) only when that provider is still active. Reset when the
+  // chat/connection/provider changes.
+  const harnessSessionIdRef = React.useRef<HarnessSessionRef | undefined>(undefined)
 
   React.useEffect(() => {
     harnessSessionIdRef.current = undefined
-  }, [connection?.id, currentSessionId])
+  }, [connection?.id, currentSessionId, activeProvider])
 
   // Load sessions when connection changes
   React.useEffect(() => {
@@ -310,15 +318,22 @@ export function AIChatPanel({
         schemas,
         dbType,
         connection.id,
-        harnessSessionIdRef.current,
+        resolveHarnessResumeId(harnessSessionIdRef.current, activeProvider),
         (event) => {
           if (event.type === 'message') patchAssistant({ content: event.text })
           else if (event.type === 'activity') patchAssistant({ activity: event.label })
         }
       )
 
-      // Remember the CLI session so the next turn resumes it (conversation memory).
-      if (response.meta?.sessionId) harnessSessionIdRef.current = response.meta.sessionId
+      // Remember the CLI session (tagged with the provider that produced it)
+      // so the next turn resumes it (conversation memory) — but only while
+      // that same provider stays active.
+      if (response.meta?.sessionId && activeProvider) {
+        harnessSessionIdRef.current = {
+          provider: activeProvider,
+          sessionId: response.meta.sessionId
+        }
+      }
 
       if (response.success && response.data) {
         const data = response.data
