@@ -78,8 +78,8 @@ interface AIState {
 // Helper to check if multi-provider config is valid
 const isMultiProviderConfigured = (config: AIMultiProviderConfig | null): boolean => {
   if (!config?.providers || !config.activeProvider) return false
-  // Keyless providers (ollama, claude-cli) are ready whenever they're active —
-  // they need no stored key (ollama = localhost, claude-cli = the user's own CLI).
+  // Keyless providers (ollama + the BYOH harnesses) are ready whenever they're active —
+  // they need no stored key (ollama = localhost, the harnesses = the user's own CLI).
   if (!providerNeedsKey(config.activeProvider)) return true
   return !!config.providers[config.activeProvider]?.apiKey
 }

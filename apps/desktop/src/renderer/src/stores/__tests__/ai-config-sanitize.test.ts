@@ -53,4 +53,13 @@ describe('sanitizeMultiConfig', () => {
     const config = { activeProvider: 'stale' } as unknown as AIMultiProviderConfig
     expect(sanitizeMultiConfig(config)?.activeProvider).toBe(FIRST)
   })
+
+  it('passes through a keyless harness config (codex-cli) unchanged, like claude-cli', () => {
+    const config: AIMultiProviderConfig = {
+      providers: { 'codex-cli': {}, 'claude-cli': {} },
+      activeProvider: 'codex-cli',
+      activeModels: { 'codex-cli': 'default' }
+    }
+    expect(sanitizeMultiConfig(config)).toEqual(config)
+  })
 })
