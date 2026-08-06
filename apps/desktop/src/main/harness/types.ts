@@ -8,7 +8,7 @@
 
 import type { McpRuntimeInfo } from '../mcp-runtime'
 
-export type HarnessProviderId = 'claude-cli' | 'codex-cli'
+export type HarnessProviderId = 'claude-cli' | 'codex-cli' | 'antigravity-cli'
 
 export interface HarnessCapabilities {
   /** Token-level partial messages while generating (vs message-at-completion). */
@@ -54,6 +54,8 @@ export interface HarnessRequest {
   binary: string
   args: string[]
   env: NodeJS.ProcessEnv
+  /** Working directory for the child; for CLIs without a --cd flag. */
+  cwd?: string
   /** Written by the runner before spawn and deleted after the run. */
   tempFiles?: HarnessTempFile[]
 }

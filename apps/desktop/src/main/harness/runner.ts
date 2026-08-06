@@ -81,6 +81,7 @@ export function runHarnessProcess(
   return new Promise((resolve, reject) => {
     const child = spawn(request.binary, request.args, {
       env: request.env,
+      cwd: request.cwd,
       shell: false,
       stdio: ['ignore', 'pipe', 'pipe']
     })

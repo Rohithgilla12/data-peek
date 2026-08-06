@@ -23,6 +23,7 @@ import type {
 import { DEFAULT_MODELS, isHarnessProvider } from '@shared/index'
 import { claudeCodeAdapter } from './adapters/claude-code'
 import { codexAdapter } from './adapters/codex'
+import { antigravityAdapter } from './adapters/antigravity'
 import { runHarnessProcess } from './runner'
 import { extractPartialMessage } from './partial-json'
 import type {
@@ -54,7 +55,8 @@ const DASHBOARD_TIMEOUT_MS = 300_000
 
 const ADAPTERS: Record<HarnessProviderId, HarnessAdapter> = {
   'claude-cli': claudeCodeAdapter,
-  'codex-cli': codexAdapter
+  'codex-cli': codexAdapter,
+  'antigravity-cli': antigravityAdapter
 }
 
 function adapterFor(provider: AIProvider): HarnessAdapter {
