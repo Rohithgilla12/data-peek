@@ -400,3 +400,112 @@ describe('codex provider routing', () => {
     expect(spawnMock).not.toHaveBeenCalled()
   })
 })
+
+describe('antigravity provider routing', () => {
+  beforeEach(() => {
+    spawnMock.mockReset()
+    getMcpRuntimeInfoMock.mockReturnValue(null)
+  })
+  const agyCfg = { provider: 'antigravity-cli', model: 'default' } as unknown as AIConfig
+  const agyMsgs: AIMessage[] = [{ role: 'user', content: 'how many users?' }]
+
+  const emitAgyReply = (child: ReturnType<typeof fakeChild>): void => {
+    child.stdout.emit(
+      'data',
+      Buffer.from(
+        JSON.stringify({
+          event: 'result',
+          result: {
+            conversation_id: 'conv-1',
+            status: 'SUCCESS',
+            response: '',
+            structured_output: { type: 'message', message: 'hello from agy' },
+            num_turns: 1
+          }
+        }) + '\n'
+      )
+    )
+    child.emit('close', 0)
+  }
+
+  it('runs non-agentically even with MCP up: no MCP wiring, honest meta', async () => {
+    getMcpRuntimeInfoMock.mockReturnValue({
+      port: 4722,
+      token: 'secret-tok',
+      url: 'http://127.0.0.1:4722/mcp'
+    })
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(agyCfg, agyMsgs, [], 'postgresql', 'conn-1')
+    emitAgyReply(child)
+    const res = await p
+    expect(res.success).toBe(true)
+    expect(res.data?.message).toBe('hello from agy')
+    expect(res.meta).toMatchObject({ agentic: false, grounded: false, sessionId: 'conv-1' })
+    const [bin, args, opts] = spawnMock.mock.calls.at(-1) as [
+      string,
+      string[],
+      { env: Record<string, string> }
+    ]
+    expect(bin).toContain('agy')
+    expect(args.join(' ')).not.toContain('mcp')
+    expect(args[1]).toMatch(/## No live database access/)
+    expect(opts.env.GEMINI_API_KEY).toBeUndefined()
+  })
+
+  it('surfaces the agy-specific not-found message on ENOENT', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = generateChatResponseViaHarness(agyCfg, agyMsgs, [], 'postgresql')
+    const err = new Error('spawn agy ENOENT') as NodeJS.ErrnoException
+    err.code = 'ENOENT'
+    child.emit('error', err)
+    const res = await p
+    expect(res.success).toBe(false)
+    expect(res.error).toMatch(/Antigravity CLI not found/)
+  })
+
+  it('resumes an agy conversation with only the latest user message', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const many: AIMessage[] = [
+      { role: 'user', content: 'first' },
+      { role: 'assistant', content: 'reply' },
+      { role: 'user', content: 'and now?' }
+    ]
+    const p = generateChatResponseViaHarnessStream(
+      agyCfg,
+      many,
+      [],
+      'postgresql',
+      undefined,
+      'conv-1',
+      () => {}
+    )
+    emitAgyReply(child)
+    await p
+    const args = spawnMock.mock.calls.at(-1)![1] as string[]
+    expect(args[1]).toBe('and now?')
+    expect(args[args.indexOf('--conversation') + 1]).toBe('conv-1')
+  })
+
+  it('refuses dashboard generation for antigravity without spawning', async () => {
+    getMcpRuntimeInfoMock.mockReturnValue({
+      port: 4722,
+      token: 'secret-tok',
+      url: 'http://127.0.0.1:4722/mcp'
+    })
+    const res = await generateDashboardViaHarness(
+      'antigravity-cli',
+      'overview',
+      [],
+      'postgresql',
+      'conn-1'
+    )
+    expect(res).toEqual({
+      success: false,
+      error: 'Dashboard generation is not supported by this harness yet.'
+    })
+    expect(spawnMock).not.toHaveBeenCalled()
+  })
+})

@@ -114,7 +114,7 @@ export function AISettingsModal({
     if (!multiProviderConfig?.providers) return false
     const config = multiProviderConfig.providers[providerId]
     if (providerId === 'ollama') return !!config?.baseUrl
-    // BYOH harnesses (claude-cli, codex-cli): no key/url, so an existing entry
+    // BYOH harnesses: no key/url, so an existing entry
     // means it's been configured.
     if (!providerNeedsKey(providerId)) return !!config
     return !!config?.apiKey

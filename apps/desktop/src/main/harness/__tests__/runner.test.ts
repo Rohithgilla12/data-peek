@@ -61,6 +61,16 @@ describe('runHarnessProcess', () => {
     expect(lines).toEqual([{ type: 'result', result: 'ok' }])
   })
 
+  it('forwards the request cwd to the child (for CLIs without a --cd flag)', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = runHarnessProcess(req({ cwd: '/tmp/work-1' }), opts, () => {})
+    child.emit('close', 0)
+    await p
+    const spawnOpts = spawnMock.mock.calls[0][2] as { cwd?: string }
+    expect(spawnOpts.cwd).toBe('/tmp/work-1')
+  })
+
   it('closes stdin so CLIs never wait for piped input', async () => {
     const child = fakeChild()
     spawnMock.mockReturnValue(child)

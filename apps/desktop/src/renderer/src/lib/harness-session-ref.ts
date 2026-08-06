@@ -2,7 +2,7 @@ import type { AIProvider } from '@data-peek/shared'
 
 /**
  * A CLI session id captured from a BYOH harness turn, tagged with the
- * provider that was active when it arrived. Both harness providers
+ * provider that was active when it arrived. All BYOH harness providers
  * (claude-cli, codex-cli) are resumable, but a session id minted by one is
  * meaningless — and often an outright invalid CLI argument — to the other.
  */
