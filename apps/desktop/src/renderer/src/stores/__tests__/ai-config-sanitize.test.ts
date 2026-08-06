@@ -54,11 +54,11 @@ describe('sanitizeMultiConfig', () => {
     expect(sanitizeMultiConfig(config)?.activeProvider).toBe(FIRST)
   })
 
-  it('passes through a keyless harness config (codex-cli) unchanged, like claude-cli', () => {
+  it('passes through keyless harness configs unchanged (claude, codex, antigravity)', () => {
     const config: AIMultiProviderConfig = {
-      providers: { 'codex-cli': {}, 'claude-cli': {} },
-      activeProvider: 'codex-cli',
-      activeModels: { 'codex-cli': 'default' }
+      providers: { 'codex-cli': {}, 'claude-cli': {}, 'antigravity-cli': {} },
+      activeProvider: 'antigravity-cli',
+      activeModels: { 'codex-cli': 'default', 'antigravity-cli': 'default' }
     }
     expect(sanitizeMultiConfig(config)).toEqual(config)
   })
