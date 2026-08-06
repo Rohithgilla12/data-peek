@@ -3,9 +3,44 @@ import {
   codexAdapter,
   buildCodexArgs,
   composeCodexPrompt,
-  friendlyCodexError
+  friendlyCodexError,
+  toOpenAiStrictSchema
 } from '../adapters/codex'
+import { RESPONSE_JSON_SCHEMA_STRING } from '../../ai-schema'
 import type { HarnessInput } from '../types'
+
+// OpenAI structured outputs run in strict mode: every object level must list
+// every property key in `required`. Regression for the live-verified 400
+// ("Invalid schema for response_format 'codex_output_schema' ... Missing
+// 'chartType'") the untransformed schema triggers.
+describe('toOpenAiStrictSchema', () => {
+  const assertStrict = (node: unknown, path: string): void => {
+    if (Array.isArray(node)) {
+      node.forEach((v, i) => assertStrict(v, `${path}[${i}]`))
+      return
+    }
+    if (!node || typeof node !== 'object') return
+    const obj = node as Record<string, unknown>
+    if (obj.properties && typeof obj.properties === 'object') {
+      const keys = Object.keys(obj.properties as Record<string, unknown>).sort()
+      expect((obj.required as string[]).slice().sort(), `required at ${path}`).toEqual(keys)
+    }
+    for (const [k, v] of Object.entries(obj)) assertStrict(v, `${path}.${k}`)
+  }
+
+  it('makes the real chat response schema strict at every object level', () => {
+    const widened = JSON.parse(toOpenAiStrictSchema(RESPONSE_JSON_SCHEMA_STRING))
+    assertStrict(widened, '$')
+    const widgetItem = widened.properties.widgets.items
+    expect(widgetItem.required).toContain('chartType')
+    expect(widened.required).toContain('suggestions')
+  })
+
+  it('is identity for schemas without properties and for non-JSON input', () => {
+    expect(toOpenAiStrictSchema('{"type":"object"}')).toBe('{"type":"object"}')
+    expect(toOpenAiStrictSchema('not json')).toBe('not json')
+  })
+})
 
 const input = (over: Partial<HarnessInput> = {}): HarnessInput => ({
   kind: 'chat',
@@ -113,6 +148,17 @@ describe('buildCodexArgs', () => {
     const req = codexAdapter.buildRequest(input({ jsonSchema: undefined }))
     expect(req.args).not.toContain('--output-schema')
     expect(req.tempFiles ?? []).toEqual([])
+  })
+
+  it('widens the staged schema to OpenAI strict mode (all keys required)', () => {
+    const loose = JSON.stringify({
+      type: 'object',
+      required: ['a'],
+      properties: { a: { type: 'string' }, b: { type: ['string', 'null'] } }
+    })
+    const req = codexAdapter.buildRequest(input({ jsonSchema: loose }))
+    const staged = JSON.parse(req.tempFiles![0].content)
+    expect(staged.required).toEqual(['a', 'b'])
   })
 
   it('drops OPENAI_API_KEY so codex rides its own login', () => {

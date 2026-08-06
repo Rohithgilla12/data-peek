@@ -17,6 +17,34 @@ const NOT_FOUND = 'Codex CLI not found. Install it and run `codex login` once to
 
 const CODEX_SCHEMA_FILENAME = 'output-schema.json'
 
+/**
+ * OpenAI structured outputs run in strict mode: every object level must list
+ * ALL of its property keys in `required` — optionality is expressed through
+ * nullable types, not by omission. Claude's --json-schema accepts standard
+ * JSON Schema, so this widening lives here rather than in ai-schema. Verified
+ * live against codex-cli 0.146.0: the untransformed schema 400s with
+ * invalid_json_schema ("Missing 'chartType'"); the widened one round-trips,
+ * with the model emitting explicit nulls that normalizeStructuredResponse
+ * already maps.
+ */
+export function toOpenAiStrictSchema(schemaJson: string): string {
+  const widen = (node: unknown): unknown => {
+    if (Array.isArray(node)) return node.map(widen)
+    if (!node || typeof node !== 'object') return node
+    const out: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(node)) out[key] = widen(value)
+    if (out.properties && typeof out.properties === 'object') {
+      out.required = Object.keys(out.properties as Record<string, unknown>)
+    }
+    return out
+  }
+  try {
+    return JSON.stringify(widen(JSON.parse(schemaJson)))
+  } catch {
+    return schemaJson
+  }
+}
+
 export function composeCodexPrompt(systemPrompt: string, userPrompt: string): string {
   return `## Instructions\n${systemPrompt}\n\n## Request\n${userPrompt}`
 }
@@ -162,7 +190,12 @@ export const codexAdapter: HarnessAdapter = {
     args: buildCodexArgs(input),
     env: codexEnv(input.mcp?.token),
     tempFiles: input.jsonSchema
-      ? [{ path: join(input.workDir, CODEX_SCHEMA_FILENAME), content: input.jsonSchema }]
+      ? [
+          {
+            path: join(input.workDir, CODEX_SCHEMA_FILENAME),
+            content: toOpenAiStrictSchema(input.jsonSchema)
+          }
+        ]
       : []
   }),
   createRun: createCodexRun
