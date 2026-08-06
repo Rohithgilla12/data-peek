@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  antigravityAdapter,
-  buildAntigravityArgs,
-  toGeminiSchema
-} from '../adapters/antigravity'
+import { antigravityAdapter, buildAntigravityArgs, toGeminiSchema } from '../adapters/antigravity'
 import { RESPONSE_JSON_SCHEMA_STRING } from '../../ai-schema'
 import type { HarnessInput } from '../types'
 
@@ -21,7 +17,10 @@ const input = (over: Partial<HarnessInput> = {}): HarnessInput => ({
 // Real fixtures captured live, 2026-08-06, agy 1.1.8. `--json-schema` only
 // works in stream-json mode (plain json mode returns an empty response), and
 // the validated object arrives on the terminal result event as
-// `structured_output` alongside the raw `response` text.
+// `structured_output` alongside the raw `response` text. STEP_DELTA_EVENT is
+// a mid-run step_update: agent_response steps carry a text_delta (the
+// structured JSON, when a schema is set), delivered per completed step rather
+// than token-by-token.
 const RESULT_EVENT = {
   event: 'result',
   result: {
@@ -96,6 +95,13 @@ describe('buildAntigravityArgs', () => {
     const args = buildAntigravityArgs(input({ resumeSessionId: 'conv-7', userPrompt: 'and now?' }))
     expect(args[args.indexOf('--conversation') + 1]).toBe('conv-7')
     expect(args[1]).toBe('and now?')
+    // Unlike codex's `exec resume`, agy accepts --sandbox on resumed
+    // conversations (verified live, agy 1.1.8) — pin that it stays on.
+    expect(args).toContain('--sandbox')
+  })
+
+  it('stages no temp files (the schema travels inline via --json-schema)', () => {
+    expect(antigravityAdapter.buildRequest(input()).tempFiles).toBeUndefined()
   })
 
   it('drops Google API keys so agy rides its own login', () => {
@@ -171,6 +177,29 @@ describe('antigravity run collector', () => {
     expect(() => run.finish({ code: 1, stderr: '' })).toThrow(/terminated due to error/)
   })
 
+  it('prefers the error field over leftover response text when both are present', () => {
+    const run = antigravityAdapter.createRun()
+    run.onLine({
+      event: 'result',
+      result: {
+        conversation_id: 'x',
+        status: 'ERROR',
+        response: '{"type":"met',
+        error: 'model overloaded'
+      }
+    })
+    expect(() => run.finish({ code: 1, stderr: '' })).toThrow(/model overloaded/)
+  })
+
+  it('falls back to the status when neither response nor error carries detail', () => {
+    const run = antigravityAdapter.createRun()
+    run.onLine({
+      event: 'result',
+      result: { conversation_id: 'x', status: 'CANCELLED', response: '' }
+    })
+    expect(() => run.finish({ code: 1, stderr: '' })).toThrow(/status CANCELLED/)
+  })
+
   it('throws with stderr detail when no result event ever arrived', () => {
     const run = antigravityAdapter.createRun()
     run.onLine(STEP_DELTA_EVENT)
@@ -182,6 +211,9 @@ describe('antigravity run collector', () => {
     expect(run.onLine({ event: 'init', conversation_id: 'c', init: { tools: [] } })).toEqual({})
     expect(run.onLine(null)).toEqual({})
     expect(run.onLine('boom')).toEqual({})
+    // A result event with a malformed result field is noise, not a reply.
+    expect(run.onLine({ event: 'result', result: null })).toEqual({})
+    expect(run.onLine({ event: 'result', result: 'oops' })).toEqual({})
   })
 })
 

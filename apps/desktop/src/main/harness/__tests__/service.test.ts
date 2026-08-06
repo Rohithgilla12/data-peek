@@ -445,12 +445,15 @@ describe('antigravity provider routing', () => {
     const [bin, args, opts] = spawnMock.mock.calls.at(-1) as [
       string,
       string[],
-      { env: Record<string, string> }
+      { env: Record<string, string>; cwd?: string }
     ]
     expect(bin).toContain('agy')
     expect(args.join(' ')).not.toContain('mcp')
     expect(args[1]).toMatch(/## No live database access/)
     expect(opts.env.GEMINI_API_KEY).toBeUndefined()
+    expect(opts.env.GOOGLE_API_KEY).toBeUndefined()
+    // agy has no --cd flag, so the per-run scratch dir must arrive as cwd.
+    expect(opts.cwd).toMatch(/data-peek-harness-/)
   })
 
   it('surfaces the agy-specific not-found message on ENOENT', async () => {

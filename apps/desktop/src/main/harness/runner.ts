@@ -79,6 +79,13 @@ export function runHarnessProcess(
   }
 
   return new Promise((resolve, reject) => {
+    // A missing cwd makes spawn throw the same ENOENT as a missing binary,
+    // which would misdiagnose as "CLI not found" — tell those cases apart.
+    if (request.cwd && !existsSync(request.cwd)) {
+      cleanup()
+      reject(new Error(`${opts.cliLabel} working directory disappeared: ${request.cwd}`))
+      return
+    }
     const child = spawn(request.binary, request.args, {
       env: request.env,
       cwd: request.cwd,

@@ -95,10 +95,11 @@ function createAntigravityRun(): HarnessRun {
         )
       }
       if (result.status !== 'SUCCESS') {
-        // Failures carry a dedicated error field with an empty response.
+        // The dedicated error field is the stronger signal — response may hold
+        // a stale partial reply when both are populated.
         const detail =
-          (typeof result.response === 'string' && result.response.trim()) ||
           (typeof result.error === 'string' && result.error.trim()) ||
+          (typeof result.response === 'string' && result.response.trim()) ||
           `status ${String(result.status)}`
         throw new Error(detail)
       }
