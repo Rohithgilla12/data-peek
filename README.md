@@ -59,7 +59,7 @@ A minimal, fast SQL client desktop application with AI-powered querying. Built f
 - **Read-only tools** - `list_connections`, `list_schemas`, `run_query` (500-row cap, rollback-wrapped, Postgres additionally runs `READ ONLY` at the DB level), `explain_query`
 - **Approved writes** - `execute_statement` prompts an in-app Approve/Reject dialog for every write; 60s timeout auto-rejects
 - **One-command setup** - copy the ready-made `claude mcp add` snippet straight from Settings → MCP server
-- **Bring your own agent** - point the AI assistant at your locally installed Claude Code or Codex CLI; it uses your existing subscription and sign-in, and data-peek never stores a key. Claude Code grounds answers against your live database via MCP; Codex grounding follows once headless tool approval lands upstream.
+- **Bring your own agent** - point the AI assistant at your locally installed Claude Code, Codex, or Antigravity (`agy`) CLI; it uses your existing subscription and sign-in, and data-peek never stores a key. Claude Code grounds answers against your live database via MCP; Codex and Antigravity grounding follows once headless tool approval lands upstream.
 
 ### Audit Log
 
