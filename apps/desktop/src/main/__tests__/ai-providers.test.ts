@@ -13,7 +13,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { AI_PROVIDERS, type AIConfig, type AIProvider } from '@shared/index'
+import { AI_PROVIDERS, isHarnessProvider, type AIConfig, type AIProvider } from '@shared/index'
 import { createProviderClient } from '../ai-providers'
 
 function configFor(provider: AIProvider): AIConfig {
@@ -25,10 +25,10 @@ function configFor(provider: AIProvider): AIConfig {
   }
 }
 
-// claude-cli and codex-cli are not AI SDK providers — they drive local CLIs via
-// harness-service, so createProviderClient intentionally throws for them (callers
+// BYOH harness providers are not AI SDK providers — they drive local CLIs via
+// harness/service, so createProviderClient intentionally throws for them (callers
 // route them away before reaching the factory).
-const SDK_PROVIDERS = AI_PROVIDERS.filter((p) => p.id !== 'claude-cli' && p.id !== 'codex-cli')
+const SDK_PROVIDERS = AI_PROVIDERS.filter((p) => !isHarnessProvider(p.id))
 
 describe('createProviderClient', () => {
   for (const info of SDK_PROVIDERS) {
@@ -52,6 +52,10 @@ describe('createProviderClient', () => {
 
   it('throws for codex-cli (handled by the harness, not the AI SDK factory)', () => {
     expect(() => createProviderClient(configFor('codex-cli'))).toThrow(/harness/i)
+  })
+
+  it('throws for antigravity-cli (handled by the harness, not the AI SDK factory)', () => {
+    expect(() => createProviderClient(configFor('antigravity-cli'))).toThrow(/harness/i)
   })
 
   it('throws on an unknown provider (defensive)', () => {

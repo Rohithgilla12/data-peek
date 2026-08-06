@@ -85,7 +85,10 @@ export type AIProvider =
   | "claude-cli"
   // Bring-your-own-harness: drives the user's locally installed `codex` CLI,
   // which owns its own auth (ChatGPT sign-in or key). No API key stored by data-peek.
-  | "codex-cli";
+  | "codex-cli"
+  // Bring-your-own-harness: drives the user's locally installed `agy` CLI
+  // (Google Antigravity), which owns its own auth. No API key stored by data-peek.
+  | "antigravity-cli";
 
 /**
  * Configuration for AI service
@@ -388,6 +391,21 @@ export const AI_PROVIDERS: readonly ProviderInfo[] = [
       { id: "gpt-5.1-codex-mini", name: "GPT-5.1 Codex Mini", description: "Fast & cheap" },
     ],
   },
+  {
+    id: "antigravity-cli",
+    name: "Antigravity (local CLI)",
+    description: "Uses your installed `agy` CLI — no API key stored here",
+    keyPrefix: null,
+    keyUrl: "https://antigravity.google",
+    models: [
+      {
+        id: "default",
+        name: "Antigravity CLI default",
+        recommended: true,
+        description: "Whatever your agy config uses",
+      },
+    ],
+  },
 ] as const;
 
 /**
@@ -424,16 +442,18 @@ export const DEFAULT_MODELS: Record<AIProvider, string> = {
   ollama: getRecommendedModel("ollama"),
   "claude-cli": getRecommendedModel("claude-cli"),
   "codex-cli": getRecommendedModel("codex-cli"),
+  "antigravity-cli": getRecommendedModel("antigravity-cli"),
 };
 
 /**
  * Providers that run locally and need no API key stored by data-peek:
- * ollama talks to localhost, claude-cli and codex-cli drive the user's own authed CLIs.
+ * ollama talks to localhost; the BYOH harnesses drive the user's own authed CLIs.
  */
 const KEYLESS_AI_PROVIDERS: ReadonlySet<AIProvider> = new Set([
   "ollama",
   "claude-cli",
   "codex-cli",
+  "antigravity-cli",
 ]);
 
 export function providerNeedsKey(provider: AIProvider): boolean {
@@ -447,6 +467,7 @@ export function providerNeedsKey(provider: AIProvider): boolean {
 const HARNESS_AI_PROVIDERS: ReadonlySet<AIProvider> = new Set([
   "claude-cli",
   "codex-cli",
+  "antigravity-cli",
 ]);
 
 export function isHarnessProvider(provider: AIProvider): boolean {

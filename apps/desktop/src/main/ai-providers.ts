@@ -94,6 +94,12 @@ export function createProviderClient(config: AIConfig) {
       throw new Error('codex-cli is handled by the harness service, not the AI SDK factory')
     }
 
+    case 'antigravity-cli': {
+      // Not an AI SDK provider — it shells out to the local `agy` CLI.
+      // Routed to the harness service before this factory is ever reached.
+      throw new Error('antigravity-cli is handled by the harness service, not the AI SDK factory')
+    }
+
     default: {
       const _exhaustive: never = config.provider
       throw new Error(`Unknown provider: ${String(_exhaustive)}`)
