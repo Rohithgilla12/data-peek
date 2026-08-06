@@ -311,8 +311,41 @@ describe('codex provider routing', () => {
     await p
     const args = spawnMock.mock.calls.at(-1)![1] as string[]
     // args[1] is the composed prompt (no --resume in this call).
-    expect(args[1]).not.toMatch(/Live database access/i)
+    expect(args[1]).not.toMatch(/## Live database access/)
     expect(args[1]).not.toContain('conn-1')
+    // Non-agentic runs must instead tell the model it CANNOT see data, so it
+    // returns runnable SQL (metric/query/chart) rather than invented values.
+    // Regression: codex replied type "message" with a fabricated count.
+    expect(args[1]).toMatch(/## No live database access/)
+    expect(args[1]).toMatch(/NEVER state, estimate, or guess data values/i)
+  })
+
+  it('does not append the no-live-access instruction to an agentic claude run', async () => {
+    getMcpRuntimeInfoMock.mockReturnValue({
+      port: 4722,
+      token: 'secret-tok',
+      url: 'http://127.0.0.1:4722/mcp'
+    })
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const claudeCfg = { provider: 'claude-cli', model: 'sonnet' } as unknown as AIConfig
+    const p = generateChatResponseViaHarness(claudeCfg, msgs, [], 'postgresql', 'conn-1')
+    child.stdout.emit(
+      'data',
+      Buffer.from(
+        JSON.stringify({
+          type: 'result',
+          session_id: 's1',
+          result: JSON.stringify({ type: 'message', message: 'ok' })
+        })
+      )
+    )
+    child.emit('close', 0)
+    await p
+    const args = spawnMock.mock.calls.at(-1)![1] as string[]
+    const systemPrompt = args[args.indexOf('--append-system-prompt') + 1]
+    expect(systemPrompt).toMatch(/## Live database access/)
+    expect(systemPrompt).not.toMatch(/## No live database access/)
   })
 
   it('resumes a codex session with only the latest user message', async () => {

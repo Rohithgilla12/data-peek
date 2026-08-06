@@ -100,6 +100,20 @@ export function buildAgenticInstruction(connectionId: string): string {
 You can query THIS database directly with your MCP tools (list_schemas, run_query, explain_query). Use connectionId "${connectionId}" for every call — do not call list_connections. Ground your answer in the real database: confirm table and column names, and where useful run or EXPLAIN the query (reads execute in a read-only, always-rolled-back transaction capped at 500 rows) before answering. Then reply with the JSON contract below, putting the verified SQL in the "sql" field.`
 }
 
+/**
+ * Mirror of {@link buildAgenticInstruction} for non-agentic runs: without live
+ * access, models invent plausible-sounding values ("There are 5 users.") or
+ * degrade to type "message" instead of returning runnable SQL. Verified live
+ * on codex (which is always non-agentic today, see codex.ts) — this flips the
+ * same question from a fabricated message to a metric with correct SQL.
+ */
+export function buildNoLiveAccessInstruction(): string {
+  return `
+
+## No live database access
+You CANNOT execute queries or see any data — only the schema above. For ANY question about the data itself (counts, totals, values, lists, examples), respond with type "query", "metric", or "chart" and put runnable SQL in the "sql" field: the app executes it and shows the real result. NEVER state, estimate, or guess data values in "message" — write it as an intro for the result, e.g. "Here's the total user count:".`
+}
+
 export interface HarnessMeta {
   /** The answer was produced agentically against the live DB (MCP + tool calls). */
   grounded: boolean
@@ -246,6 +260,8 @@ export async function generateChatResponseViaHarness(
       systemPrompt += buildAgenticInstruction(connectionId)
       mcp = { ...mcpInfo, connectionId }
       timeoutMs = AGENTIC_TIMEOUT_MS
+    } else {
+      systemPrompt += buildNoLiveAccessInstruction()
     }
 
     log.debug('Running harness', { provider: config.provider, model, agentic })
@@ -305,6 +321,8 @@ export async function generateChatResponseViaHarnessStream(
       systemPrompt += buildAgenticInstruction(connectionId)
       mcp = { ...mcpInfo, connectionId }
       timeoutMs = AGENTIC_TIMEOUT_MS
+    } else {
+      systemPrompt += buildNoLiveAccessInstruction()
     }
 
     log.debug('Running harness (streaming)', {
