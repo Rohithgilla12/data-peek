@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { EventEmitter } from 'events'
-import { mkdtempSync, existsSync, readFileSync } from 'fs'
+import { mkdtempSync, existsSync, readFileSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
 
@@ -59,6 +59,21 @@ describe('runHarnessProcess', () => {
     child.emit('close', 0)
     await p
     expect(lines).toEqual([{ type: 'result', result: 'ok' }])
+  })
+
+  it('re-diagnoses spawn ENOENT as a missing cwd when the dir vanished after preflight', async () => {
+    // TOCTOU window: the cwd passes the preflight existsSync but disappears
+    // before the OS-level spawn — the ENOENT must still not claim the CLI
+    // is missing.
+    const dir = mkdtempSync(join(tmpdir(), 'runner-toctou-'))
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const p = runHarnessProcess(req({ cwd: dir }), opts, () => {})
+    rmSync(dir, { recursive: true, force: true })
+    const err = new Error('spawn fake-cli ENOENT') as NodeJS.ErrnoException
+    err.code = 'ENOENT'
+    child.emit('error', err)
+    await expect(p).rejects.toThrow(/working directory disappeared/)
   })
 
   it('reports a missing cwd distinctly instead of misdiagnosing it as a missing binary', async () => {
