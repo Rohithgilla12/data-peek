@@ -86,6 +86,33 @@ Requirements:
 - Existing tests assume the seed file at `seeds/acme_saas_seed.sql` is unchanged. If
   the seed grows or shrinks, update the assertions in `queries.spec.ts`.
 
+## Live BYOH harness checks (opt-in)
+
+`byoh-harness-live.spec.ts` covers the bring-your-own-harness providers end to end:
+CLI detection, grounded vs schema-only chat, the capability refusals, and the
+provider-switch session reset. It spawns the **real** `claude` / `codex` / `agy`
+CLIs, so it is gated and skipped by default:
+
+```bash
+BYOH_LIVE=1 pnpm exec playwright test byoh-harness-live --workers=1
+```
+
+Requirements beyond the usual (Docker + a built bundle):
+
+- All three CLIs installed **and signed in** — the adapters deliberately drop
+  `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` / `GEMINI_API_KEY` from the child env, so an
+  env var is not a substitute for the CLI's own auth.
+- Real model round-trips: budget ~3 minutes and your own subscription quota. Timeouts
+  are raised to 300s per test because agentic turns dwarf the 60s default.
+
+CI never runs it (no CLIs, signed in or otherwise), which is the point of the gate —
+the adapters' deterministic coverage lives in `src/main/harness/__tests__/` and runs
+from captured CLI fixtures instead.
+
+MCP ports are set explicitly per test (`47241`+) rather than using the `4722` default,
+for the same reason `mcp-server.spec.ts` does it: a locally running data-peek usually
+holds 4722, and `mcp.setEnabled(true)` rejects on a busy port instead of falling back.
+
 ## CI
 
 `.github/workflows/e2e.yml` runs the suite on every PR and on `main`. The runner
