@@ -25,14 +25,19 @@ import { createTunnel, closeTunnel, type TunnelSession } from '../ssh-tunnel-ser
 import {
   withPgClient,
   withPgTransaction,
+  acquirePgSessionClient,
   closeAllPgPools,
-  closePgPool
+  closePgPool,
+  type PgSessionLease
 } from '../adapters/pg-pool-manager'
 
 // Each `new Pool()` hands back its own object (delegating to the shared spies) so a test
 // can tell which specific pool was ended when a connection's shape changes.
 interface FakePool {
   end: ReturnType<typeof vi.fn>
+  // Per-instance so a test can tell *which* pool a client was checked out of — the
+  // point of the session pool is that its clients don't come from the query pool.
+  connect: ReturnType<typeof vi.fn>
 }
 const createdPools: FakePool[] = []
 
@@ -64,7 +69,7 @@ beforeEach(() => {
   createdPools.length = 0
   PoolCtor.mockImplementation(function (this: unknown) {
     const instance = {
-      connect: (...args: unknown[]) => mockPool.connect(...args),
+      connect: vi.fn((...args: unknown[]) => mockPool.connect(...args)),
       end: vi.fn((...args: unknown[]) => mockPool.end(...args)),
       on: (...args: unknown[]) => mockPool.on(...args)
     }
@@ -194,6 +199,7 @@ describe('withPgClient', () => {
     const tunnel: TunnelSession = {
       ssh: null,
       server: null,
+      sockets: new Set(),
       localHost: '127.0.0.1',
       localPort: 54320
     }
@@ -267,6 +273,118 @@ describe('withPgTransaction', () => {
     ).rejects.toBe(original)
 
     expect(mockClient.release).toHaveBeenCalledWith(true)
+  })
+})
+
+describe('acquirePgSessionClient', () => {
+  // A manual transaction holds its client until the user commits. Serving those from the
+  // query pool meant POOL_MAX open transactions consumed every slot, after which ordinary
+  // queries blocked on pool.connect() and failed with pg's generic connection timeout.
+  const SESSION_POOL_MAX = 4
+
+  it('checks out session clients from a pool separate from the query pool', async () => {
+    const cfg = makeConfig()
+    await withPgClient(cfg, async () => {})
+    expect(createdPools).toHaveLength(1)
+
+    await acquirePgSessionClient(cfg)
+
+    expect(createdPools).toHaveLength(2)
+    const [queryPool, sessionPool] = createdPools
+    // The query pool served only the withPgClient call, not the session checkout.
+    expect(queryPool.connect).toHaveBeenCalledTimes(1)
+    expect(sessionPool.connect).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves the query pool untouched when every session slot is parked', async () => {
+    const cfg = makeConfig()
+    for (let i = 0; i < SESSION_POOL_MAX; i++) {
+      await acquirePgSessionClient(cfg)
+    }
+
+    await withPgClient(cfg, async () => {})
+
+    const [queryPool, sessionPool] = createdPools
+    expect(sessionPool.connect).toHaveBeenCalledTimes(SESSION_POOL_MAX)
+    expect(queryPool.connect).toHaveBeenCalledTimes(1)
+  })
+
+  it('rejects the overflowing session with an actionable message, not a connect timeout', async () => {
+    const cfg = makeConfig()
+    for (let i = 0; i < SESSION_POOL_MAX; i++) {
+      await acquirePgSessionClient(cfg)
+    }
+
+    await expect(acquirePgSessionClient(cfg)).rejects.toThrow(
+      /already has 4 open transactions.*Commit or roll one back/s
+    )
+    // It must fail without even trying to queue behind the parked clients.
+    expect(createdPools[1].connect).toHaveBeenCalledTimes(SESSION_POOL_MAX)
+  })
+
+  it('frees the slot on release', async () => {
+    const cfg = makeConfig()
+    const leases: PgSessionLease[] = []
+    for (let i = 0; i < SESSION_POOL_MAX; i++) {
+      leases.push(await acquirePgSessionClient(cfg))
+    }
+
+    leases[0].release()
+
+    await expect(acquirePgSessionClient(cfg)).resolves.toBeDefined()
+    expect(mockClient.release).toHaveBeenCalledTimes(1)
+  })
+
+  it('frees the slot when the checkout itself fails', async () => {
+    const cfg = makeConfig()
+    await acquirePgSessionClient(cfg)
+    mockPool.connect.mockRejectedValueOnce(new Error('server refused'))
+
+    await expect(acquirePgSessionClient(cfg)).rejects.toThrow('server refused')
+
+    // The failed attempt must not have burned a slot permanently.
+    for (let i = 0; i < SESSION_POOL_MAX - 1; i++) {
+      await expect(acquirePgSessionClient(cfg)).resolves.toBeDefined()
+    }
+    await expect(acquirePgSessionClient(cfg)).rejects.toThrow(/open transactions/)
+  })
+
+  it('is idempotent on release, so a cancellation path cannot free a slot twice', async () => {
+    const cfg = makeConfig()
+    const lease = await acquirePgSessionClient(cfg)
+
+    lease.release(true)
+    lease.release()
+    lease.release()
+
+    expect(mockClient.release).toHaveBeenCalledTimes(1)
+    expect(mockClient.release).toHaveBeenCalledWith(true)
+
+    // Exactly one slot came back, not three.
+    for (let i = 0; i < SESSION_POOL_MAX; i++) {
+      await expect(acquirePgSessionClient(cfg)).resolves.toBeDefined()
+    }
+    await expect(acquirePgSessionClient(cfg)).rejects.toThrow(/open transactions/)
+  })
+
+  it('ends the session pool alongside the query pool on teardown', async () => {
+    const cfg = makeConfig()
+    await acquirePgSessionClient(cfg)
+
+    await closeAllPgPools()
+
+    expect(createdPools).toHaveLength(2)
+    expect(createdPools[0].end).toHaveBeenCalledTimes(1)
+    expect(createdPools[1].end).toHaveBeenCalledTimes(1)
+  })
+
+  it('ends the session pool when a single connection is closed', async () => {
+    const cfg = makeConfig()
+    await acquirePgSessionClient(cfg)
+
+    await closePgPool(cfg)
+
+    expect(createdPools[1].end).toHaveBeenCalledTimes(1)
   })
 })
 

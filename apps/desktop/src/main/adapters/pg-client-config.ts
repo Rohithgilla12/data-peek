@@ -57,7 +57,14 @@ export function buildClientConfig(
     port: overrides?.port ?? config.port,
     database: config.database,
     user: config.user,
-    password: config.password
+    password: config.password,
+    // pg leaves TCP keepalive off by default, which makes a pooled socket that died
+    // while idle — laptop sleep, a NAT/firewall idle reap, a server restart — look
+    // healthy until a query is handed to it and hangs instead of erroring. Keepalive
+    // probes surface the death on the socket, so pg.Pool can evict the client via its
+    // 'error' handler before a caller ever gets it.
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 10_000
   }
 
   // Applied at connection startup rather than via a follow-up SET, so every physical

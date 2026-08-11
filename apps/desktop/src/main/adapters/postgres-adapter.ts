@@ -40,7 +40,12 @@ import type {
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { splitStatements } from '../lib/sql-parser'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
-import { withPgClient, withPgTransaction, getOrCreatePool } from './pg-pool-manager'
+import {
+  withPgClient,
+  withPgTransaction,
+  acquirePgSessionClient,
+  type PgSessionLease
+} from './pg-pool-manager'
 
 export { buildClientConfig } from './pg-client-config'
 
@@ -123,7 +128,7 @@ export function isDataReturningStatement(sql: string): boolean {
  */
 export class PostgresAdapter implements DatabaseAdapter {
   readonly dbType = 'postgresql' as const
-  private sessions = new Map<string, import('pg').PoolClient>()
+  private sessions = new Map<string, PgSessionLease>()
   private pendingSessions = new Set<string>()
 
   async connect(config: ConnectionConfig): Promise<void> {
@@ -292,8 +297,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
 
     if (options?.sessionId && this.sessions.has(options.sessionId)) {
-      const client = this.sessions.get(options.sessionId)!
-      return runWithClient(client)
+      return runWithClient(this.sessions.get(options.sessionId)!.client)
     } else {
       return withPgClient(config, runWithClient)
     }
@@ -334,13 +338,14 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
     this.pendingSessions.add(sessionId)
     try {
-      const poolEntry = await getOrCreatePool(_config)
-      const client = await poolEntry.pool.connect()
+      // Session clients come from a pool of their own — an open transaction holds its
+      // client until the user commits, which would otherwise starve ad-hoc queries.
+      const lease = await acquirePgSessionClient(_config)
       try {
-        await client.query('BEGIN')
-        this.sessions.set(sessionId, client)
+        await lease.client.query('BEGIN')
+        this.sessions.set(sessionId, lease)
       } catch (error) {
-        client.release(true)
+        lease.release(true)
         throw error
       }
     } finally {
@@ -354,11 +359,11 @@ export class PostgresAdapter implements DatabaseAdapter {
     sql: string,
     params?: unknown[]
   ): Promise<AdapterQueryResult> {
-    const client = this.sessions.get(sessionId)
-    if (!client) {
+    const lease = this.sessions.get(sessionId)
+    if (!lease) {
       throw new Error(`Session ${sessionId} does not have an active transaction`)
     }
-    const res = await client.query(sql, params)
+    const res = await lease.client.query(sql, params)
     const fields: QueryField[] = res.fields.map((f) => ({
       name: f.name,
       dataType: resolvePostgresType(f.dataTypeID),
@@ -372,17 +377,17 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async commitTransaction(_config: ConnectionConfig, sessionId: string): Promise<void> {
-    const client = this.sessions.get(sessionId)
-    if (!client) return
+    const lease = this.sessions.get(sessionId)
+    if (!lease) return
     this.sessions.delete(sessionId)
     try {
-      await client.query('COMMIT')
+      await lease.client.query('COMMIT')
     } catch (error) {
       // A failed COMMIT leaves the connection in an unknown state — discard it.
-      client.release(true)
+      lease.release(true)
       throw error
     }
-    client.release()
+    lease.release()
   }
 
   /**
@@ -397,16 +402,16 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async rollbackTransaction(_config: ConnectionConfig, sessionId: string): Promise<void> {
-    const client = this.sessions.get(sessionId)
-    if (!client) return
+    const lease = this.sessions.get(sessionId)
+    if (!lease) return
     this.sessions.delete(sessionId)
     let poisoned = false
     try {
-      await client.query('ROLLBACK')
+      await lease.client.query('ROLLBACK')
     } catch {
       poisoned = true
     } finally {
-      client.release(poisoned ? true : undefined)
+      lease.release(poisoned ? true : undefined)
     }
   }
 
