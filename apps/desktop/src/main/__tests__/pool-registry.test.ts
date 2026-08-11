@@ -186,6 +186,37 @@ describe('PoolRegistry', () => {
     expect(created[1].destroyed).toBe(true)
   })
 
+  it('still closes the tunnel when close() hits a hanging destroy()', async () => {
+    // closeTunnel runs after the destroy, so an unbounded destroy that never settles
+    // would strand the SSH tunnel and its bound local port for the rest of the session.
+    vi.useFakeTimers()
+    try {
+      const tunnel = makeTunnel()
+      vi.mocked(createTunnel).mockResolvedValueOnce(tunnel)
+      const registry = makeRegistry()
+      const cfg = makeConfig({
+        ssh: true,
+        sshConfig: {
+          host: 'bastion',
+          port: 22,
+          user: 'x',
+          authMethod: 'Password',
+          privateKeyPath: ''
+        }
+      })
+      await registry.getOrCreate(cfg)
+      destroy.mockReturnValueOnce(new Promise<void>(() => {}))
+
+      const closed = registry.close(cfg)
+      await vi.advanceTimersByTimeAsync(2_500)
+      await expect(closed).resolves.toBeUndefined()
+
+      expect(closeTunnel).toHaveBeenCalledWith(tunnel)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('leaves the registry reusable after closeAll (guard is transient, not latched)', async () => {
     // On macOS the process routinely outlives a cleanup pass.
     const registry = makeRegistry()

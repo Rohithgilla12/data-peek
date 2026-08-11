@@ -234,7 +234,11 @@ export class PoolRegistry<TPool> {
 
     for (const entry of entries) {
       try {
-        await this.options.destroy(entry.pool)
+        // Bounded, like closeAll(): closeTunnel below runs *after* this, so an
+        // unbounded destroy that never settles (a checked-out client that never
+        // releases) would strand the SSH tunnel and its bound local port for the rest
+        // of the session.
+        await this.destroyBounded(entry.pool)
       } catch (err) {
         this.log.warn('error ending pool:', (err as Error).message)
       }

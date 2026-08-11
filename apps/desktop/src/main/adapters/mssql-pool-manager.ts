@@ -1,7 +1,10 @@
 import sql from 'mssql'
 import type { ConnectionConfig } from '@shared/index'
+import { createLogger } from '../lib/logger'
 import { toMSSQLConfig } from './mssql-client-config'
 import { PoolRegistry } from './pool-registry'
+
+const log = createLogger('mssql-pool')
 
 /**
  * Connection pooling for SQL Server.
@@ -26,9 +29,12 @@ const registry = new PoolRegistry<sql.ConnectionPool>({
       ...toMSSQLConfig(config, overrides),
       pool: { max: POOL_MAX, min: POOL_MIN, idleTimeoutMillis: IDLE_TIMEOUT_MS }
     })
-    // Without a listener, a pool-level error (a socket dying while idle) is an
-    // unhandled 'error' event and takes the process down.
-    pool.on('error', () => {})
+    // Without a listener, a pool-level error (a socket dying while idle) is an unhandled
+    // 'error' event and takes the process down. Log it rather than swallowing: it's the
+    // only trace of why a later query on this connection failed or hung.
+    pool.on('error', (err: Error) => {
+      log.warn('idle pool error:', err.message)
+    })
     await pool.connect()
     return pool
   },
@@ -104,7 +110,9 @@ export async function withDedicatedMSSQLConnection<T>(
     ...toMSSQLConfig(config, overrides),
     pool: { max: 1, min: 0, idleTimeoutMillis: 1_000 }
   })
-  pool.on('error', () => {})
+  pool.on('error', (err: Error) => {
+    log.warn('dedicated connection error:', err.message)
+  })
   await pool.connect()
   try {
     return await fn(pool)
