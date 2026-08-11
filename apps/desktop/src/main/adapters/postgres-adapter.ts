@@ -44,6 +44,7 @@ import {
   withPgClient,
   withPgTransaction,
   acquirePgSessionClient,
+  pgPoolIdentity,
   type PgSessionLease
 } from './pg-pool-manager'
 
@@ -128,7 +129,9 @@ export function isDataReturningStatement(sql: string): boolean {
  */
 export class PostgresAdapter implements DatabaseAdapter {
   readonly dbType = 'postgresql' as const
-  private sessions = new Map<string, PgSessionLease>()
+  // Sessions carry the identity of the connection they were opened against so a
+  // connection being edited or deleted can drain just its own parked transactions.
+  private sessions = new Map<string, { lease: PgSessionLease; poolIdentity: string }>()
   private pendingSessions = new Set<string>()
 
   async connect(config: ConnectionConfig): Promise<void> {
@@ -170,10 +173,11 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
 
     const runWithClient = async (client: import('pg').PoolClient) => {
+      // Closes over the pool acquisition, which is the only connection-level cost left
+      // now that pooling amortises the handshake — and the one worth seeing, since it
+      // spikes when the pool saturates. There is no per-query DB handshake to report.
       if (collectTelemetry) {
         telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
-        telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-        telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
       }
 
       const queryTimeoutMs = options?.queryTimeoutMs
@@ -297,7 +301,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     }
 
     if (options?.sessionId && this.sessions.has(options.sessionId)) {
-      return runWithClient(this.sessions.get(options.sessionId)!.client)
+      return runWithClient(this.sessions.get(options.sessionId)!.lease.client)
     } else {
       return withPgClient(config, runWithClient)
     }
@@ -343,7 +347,7 @@ export class PostgresAdapter implements DatabaseAdapter {
       const lease = await acquirePgSessionClient(_config)
       try {
         await lease.client.query('BEGIN')
-        this.sessions.set(sessionId, lease)
+        this.sessions.set(sessionId, { lease, poolIdentity: pgPoolIdentity(_config) })
       } catch (error) {
         lease.release(true)
         throw error
@@ -359,7 +363,7 @@ export class PostgresAdapter implements DatabaseAdapter {
     sql: string,
     params?: unknown[]
   ): Promise<AdapterQueryResult> {
-    const lease = this.sessions.get(sessionId)
+    const lease = this.sessions.get(sessionId)?.lease
     if (!lease) {
       throw new Error(`Session ${sessionId} does not have an active transaction`)
     }
@@ -377,7 +381,7 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async commitTransaction(_config: ConnectionConfig, sessionId: string): Promise<void> {
-    const lease = this.sessions.get(sessionId)
+    const lease = this.sessions.get(sessionId)?.lease
     if (!lease) return
     this.sessions.delete(sessionId)
     try {
@@ -401,8 +405,26 @@ export class PostgresAdapter implements DatabaseAdapter {
     )
   }
 
+  /**
+   * Roll back the open sessions belonging to one connection.
+   *
+   * Called before tearing that connection's pool down on edit/delete, mirroring what
+   * quit does globally. A parked session client keeps `sessionPool.end()` pending
+   * forever, so without this the teardown hits its timeout and the transaction is left
+   * open server-side holding whatever locks it had taken.
+   */
+  async drainSessions(config: ConnectionConfig): Promise<void> {
+    const identity = pgPoolIdentity(config)
+    const sessionIds = [...this.sessions.entries()]
+      .filter(([, session]) => session.poolIdentity === identity)
+      .map(([id]) => id)
+    await Promise.allSettled(
+      sessionIds.map((id) => this.rollbackTransaction(undefined as never, id))
+    )
+  }
+
   async rollbackTransaction(_config: ConnectionConfig, sessionId: string): Promise<void> {
-    const lease = this.sessions.get(sessionId)
+    const lease = this.sessions.get(sessionId)?.lease
     if (!lease) return
     this.sessions.delete(sessionId)
     let poisoned = false

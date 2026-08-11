@@ -3,11 +3,20 @@ import type { ConnectionConfig } from '@shared/index'
 
 type Handler = (event: unknown, ...args: unknown[]) => unknown
 
-const { handlers, closePgPool, invalidateSchemaCache, broadcastToAll } = vi.hoisted(() => ({
+const {
+  handlers,
+  closePgPool,
+  invalidateSchemaCache,
+  broadcastToAll,
+  drainSessions,
+  getAdapterByType
+} = vi.hoisted(() => ({
   handlers: new Map<string, Handler>(),
   closePgPool: vi.fn(),
   invalidateSchemaCache: vi.fn(),
-  broadcastToAll: vi.fn()
+  broadcastToAll: vi.fn(),
+  drainSessions: vi.fn(),
+  getAdapterByType: vi.fn()
 }))
 
 vi.mock('electron', () => ({
@@ -18,6 +27,7 @@ vi.mock('electron', () => ({
   }
 }))
 vi.mock('../adapters/pg-pool-manager', () => ({ closePgPool }))
+vi.mock('../db-adapter', () => ({ getAdapterByType }))
 vi.mock('../schema-cache', () => ({ invalidateSchemaCache }))
 vi.mock('../window-manager', () => ({ windowManager: { broadcastToAll } }))
 vi.mock('../lib/logger', () => ({
@@ -54,6 +64,8 @@ beforeEach(() => {
   closePgPool.mockReset().mockResolvedValue(undefined)
   invalidateSchemaCache.mockReset()
   broadcastToAll.mockReset()
+  drainSessions.mockReset().mockResolvedValue(undefined)
+  getAdapterByType.mockReset().mockReturnValue({ drainSessions })
 })
 
 describe('connections:update', () => {
@@ -90,6 +102,37 @@ describe('connections:update', () => {
     expect((result as { success: boolean }).success).toBe(true)
     // Let the teardown promise reject; the .catch handler should swallow it.
     await new Promise((resolve) => setImmediate(resolve))
+  })
+
+  it('drains open transactions before tearing the pool down', async () => {
+    // A parked session client keeps the pool's teardown pending, so the rollback has to
+    // land first or the transaction is left open server-side holding its locks.
+    const order: string[] = []
+    drainSessions.mockImplementationOnce(async () => {
+      order.push('drain')
+    })
+    closePgPool.mockImplementationOnce(async () => {
+      order.push('close')
+    })
+    registerConnectionHandlers(makeStore([{ ...previous }]))
+
+    handlers.get('connections:update')!(null, { ...previous, host: 'new-host' })
+    await new Promise((resolve) => setImmediate(resolve))
+
+    expect(order).toEqual(['drain', 'close'])
+    expect(drainSessions).toHaveBeenCalledWith(
+      expect.objectContaining({ host: 'old-host.example.com' })
+    )
+  })
+
+  it('still tears the pool down when the drain fails', async () => {
+    drainSessions.mockRejectedValueOnce(new Error('rollback blew up'))
+    registerConnectionHandlers(makeStore([{ ...previous }]))
+
+    handlers.get('connections:update')!(null, { ...previous, host: 'new-host' })
+    await new Promise((resolve) => setImmediate(resolve))
+
+    expect(closePgPool).toHaveBeenCalledTimes(1)
   })
 
   it('broadcasts to renderers before scheduling teardown', () => {

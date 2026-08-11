@@ -109,6 +109,15 @@ export interface DatabaseAdapter {
   /** Rollback a stateful transaction */
   rollbackTransaction?(config: ConnectionConfig, sessionId: string): Promise<void>
 
+  /**
+   * Roll back any stateful transactions still open against this connection.
+   *
+   * Called before the connection's pool is torn down (edit/delete) so a parked session
+   * client can't keep the pool's teardown pending and leave a transaction open
+   * server-side. Adapters that don't park clients don't need to implement it.
+   */
+  drainSessions?(config: ConnectionConfig): Promise<void>
+
   /** Fetch database schemas, tables, and columns */
   getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]>
 

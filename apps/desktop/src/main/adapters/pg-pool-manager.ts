@@ -2,7 +2,7 @@ import { types as pgTypes, Pool, type ClientConfig, type PoolClient } from 'pg'
 import type { ConnectionConfig } from '@shared/index'
 import { createLogger } from '../lib/logger'
 import { buildClientConfig } from './pg-client-config'
-import { PoolRegistry } from './pool-registry'
+import { PoolRegistry, poolIdentity } from './pool-registry'
 
 const log = createLogger('pg-pool')
 
@@ -89,11 +89,6 @@ function ensureSessionPool(pools: PgPools): Pool {
   return sessionPool
 }
 
-export async function getOrCreatePool(config: ConnectionConfig): Promise<{ pool: Pool }> {
-  const entry = await registry.getOrCreate(config)
-  return { pool: entry.pool.pool }
-}
-
 /**
  * Acquire a pooled client, run `fn`, and release the client.
  *
@@ -118,6 +113,14 @@ export async function withPgClient<T>(
       // already released
     }
   }
+}
+
+/**
+ * Which connection a pool belongs to, for callers bucketing their own per-connection
+ * state (parked transaction sessions) the same way the registry buckets pools.
+ */
+export function pgPoolIdentity(config: ConnectionConfig): string {
+  return poolIdentity('pg', config)
 }
 
 /**

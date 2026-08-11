@@ -3,6 +3,7 @@ import type { ConnectionConfig } from '@shared/index'
 import type { PersistentStore } from '../storage'
 import { windowManager } from '../window-manager'
 import { closePgPool } from '../adapters/pg-pool-manager'
+import { getAdapterByType } from '../db-adapter'
 import { closeMySQLPool } from '../adapters/mysql-pool-manager'
 import { closeMSSQLPool } from '../adapters/mssql-pool-manager'
 import { invalidateSchemaCache } from '../schema-cache'
@@ -22,12 +23,26 @@ const POOL_CLOSERS: Partial<Record<string, (config: ConnectionConfig) => Promise
 // shouldn't poison the response with a misleading error.
 function teardownConnection(connection: ConnectionConfig): void {
   invalidateSchemaCache(connection)
-  const close = POOL_CLOSERS[connection.dbType ?? 'postgresql']
-  if (close) {
-    close(connection).catch((err) => {
-      log.warn(`closing ${connection.dbType} pool failed:`, (err as Error).message)
-    })
+  const dbType = connection.dbType ?? 'postgresql'
+  const close = POOL_CLOSERS[dbType]
+  if (!close) return
+
+  // Drain this connection's manual transactions before its pool goes, mirroring what
+  // quit does globally: a parked session client keeps the pool's teardown pending, so
+  // closing without this leaves the transaction open server-side holding its locks.
+  const drain = async (): Promise<void> => {
+    await getAdapterByType(dbType).drainSessions?.(connection)
   }
+
+  drain()
+    .catch((err) => {
+      // A failed drain must not skip the teardown — the pool still has to go.
+      log.warn(`draining ${dbType} sessions failed:`, (err as Error).message)
+    })
+    .then(() => close(connection))
+    .catch((err) => {
+      log.warn(`closing ${dbType} pool failed:`, (err as Error).message)
+    })
 }
 
 /**

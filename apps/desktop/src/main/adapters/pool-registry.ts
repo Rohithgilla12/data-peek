@@ -45,6 +45,19 @@ export interface PoolRegistryOptions<TPool> {
 /** Bound every destroy() so one stuck client can't leave the registry mid-teardown. */
 const POOL_END_TIMEOUT_MS = 2_500
 
+/**
+ * Which connection a pool belongs to, independent of its current shape: the saved
+ * connection's id, or the target itself for an ad-hoc config that was never saved.
+ * Shape variants under one identity are collapsed to a single live pool.
+ *
+ * Exported so callers holding per-connection state of their own — parked transaction
+ * sessions, for instance — can bucket it the same way the registry buckets pools.
+ */
+export function poolIdentity(driver: string, config: ConnectionConfig): string {
+  if (config.id) return `${driver}:id:${config.id}`
+  return `${driver}:adhoc:${config.host}:${config.port}:${config.database}:${config.user ?? 'default'}`
+}
+
 export class PoolRegistry<TPool> {
   private readonly log
   private readonly pools = new Map<string, PoolEntry<TPool>>()
@@ -90,15 +103,8 @@ export class PoolRegistry<TPool> {
       .slice(0, 16)
   }
 
-  /**
-   * Which connection a pool belongs to, independent of its current shape: the saved
-   * connection's id, or the target itself for an ad-hoc config that was never saved.
-   * Shape variants under one identity are collapsed to a single live pool.
-   */
   private identity(config: ConnectionConfig): string {
-    const { driver } = this.options
-    if (config.id) return `${driver}:id:${config.id}`
-    return `${driver}:adhoc:${config.host}:${config.port}:${config.database}:${config.user ?? 'default'}`
+    return poolIdentity(this.options.driver, config)
   }
 
   private key(config: ConnectionConfig): string {

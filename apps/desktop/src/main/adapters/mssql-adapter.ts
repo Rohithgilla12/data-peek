@@ -243,15 +243,24 @@ export class MSSQLAdapter implements DatabaseAdapter {
     const results: StatementResult[] = []
     let totalRowCount = 0
 
-    return withMSSQLPool(config, async (pool) => {
-      try {
-        if (collectTelemetry) {
-          telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
-          telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-          telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-        }
-        const statements = splitMssqlStatements(sqlQuery)
+    const statements = splitMssqlStatements(sqlQuery)
 
+    // A multi-statement script may carry session state between its statements — a temp
+    // table, SET, DECLARE, SET IDENTITY_INSERT — and `pool.request()` can route each
+    // statement to a different pooled connection, which would break all of those. Pin
+    // the whole loop to one connection when there is more than one statement; a lone
+    // statement has nothing to inherit, so it keeps the pooled fast path.
+    const run = statements.length > 1 ? withDedicatedMSSQLConnection : withMSSQLPool
+
+    return run(config, async (pool) => {
+      // Closes over the pool acquisition, which is the only connection-level cost left
+      // now that pooling amortises the handshake — and the one worth seeing, since it
+      // spikes when the pool saturates. There is no per-query DB handshake to report.
+      if (collectTelemetry) {
+        telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+      }
+
+      try {
         for (let i = 0; i < statements.length; i++) {
           const statement = statements[i]
           const stmtStart = Date.now()

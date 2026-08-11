@@ -113,8 +113,10 @@ export async function withDedicatedMSSQLConnection<T>(
   pool.on('error', (err: Error) => {
     log.warn('dedicated connection error:', err.message)
   })
-  await pool.connect()
+  // connect() inside the try: a rejected connection would otherwise skip the finally
+  // and leak the pool object along with any socket it had already opened.
   try {
+    await pool.connect()
     return await fn(pool)
   } finally {
     await pool.close().catch(() => {})

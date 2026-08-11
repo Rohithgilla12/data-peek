@@ -190,16 +190,17 @@ export class MySQLAdapter implements DatabaseAdapter {
     let totalRowCount = 0
 
     return withMySQLConnection(config, async (connection) => {
+      // Closes over the pool acquisition, which is the only connection-level cost left
+      // now that pooling amortises the handshake — and the one worth seeing, since it
+      // spikes when the pool saturates. There is no per-query DB handshake to report.
+      if (collectTelemetry) {
+        telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+      }
+
       // Whether this call set a session-scoped timeout that must be undone before the
       // connection goes back to the pool.
       let timeoutWasSet = false
       try {
-        if (collectTelemetry) {
-          telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
-          telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-          telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-        }
-
         // Set query timeout if specified (0 = no timeout)
         // Note: max_execution_time only affects SELECT statements in MySQL 5.7.8+
         const queryTimeoutMs = options?.queryTimeoutMs
@@ -314,9 +315,16 @@ export class MySQLAdapter implements DatabaseAdapter {
         }
         // The connection is about to go back to the pool, so undo the session-scoped
         // timeout — otherwise the next unrelated query on this connection silently
-        // inherits it. Best-effort: a cancelled query already destroyed the socket.
+        // inherits it. If the reset itself fails the session state is unknown, so
+        // destroy the connection rather than let the pool hand it to someone else;
+        // mysql2 replaces it on the next checkout. (A cancelled query has already
+        // destroyed the socket, which is why the reset can fail at all.)
         if (timeoutWasSet) {
-          await connection.query('SET SESSION max_execution_time = 0').catch(() => {})
+          try {
+            await connection.query('SET SESSION max_execution_time = 0')
+          } catch {
+            connection.destroy()
+          }
         }
       }
     })
