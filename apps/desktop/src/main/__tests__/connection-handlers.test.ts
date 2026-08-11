@@ -9,14 +9,18 @@ const {
   invalidateSchemaCache,
   broadcastToAll,
   drainSessions,
-  getAdapterByType
+  getAdapterByType,
+  closeMySQLPool,
+  closeMSSQLPool
 } = vi.hoisted(() => ({
   handlers: new Map<string, Handler>(),
   closePgPool: vi.fn(),
   invalidateSchemaCache: vi.fn(),
   broadcastToAll: vi.fn(),
   drainSessions: vi.fn(),
-  getAdapterByType: vi.fn()
+  getAdapterByType: vi.fn(),
+  closeMySQLPool: vi.fn(),
+  closeMSSQLPool: vi.fn()
 }))
 
 vi.mock('electron', () => ({
@@ -28,6 +32,8 @@ vi.mock('electron', () => ({
 }))
 vi.mock('../adapters/pg-pool-manager', () => ({ closePgPool }))
 vi.mock('../db-adapter', () => ({ getAdapterByType }))
+vi.mock('../adapters/mysql-pool-manager', () => ({ closeMySQLPool }))
+vi.mock('../adapters/mssql-pool-manager', () => ({ closeMSSQLPool }))
 vi.mock('../schema-cache', () => ({ invalidateSchemaCache }))
 vi.mock('../window-manager', () => ({ windowManager: { broadcastToAll } }))
 vi.mock('../lib/logger', () => ({
@@ -66,6 +72,8 @@ beforeEach(() => {
   broadcastToAll.mockReset()
   drainSessions.mockReset().mockResolvedValue(undefined)
   getAdapterByType.mockReset().mockReturnValue({ drainSessions })
+  closeMySQLPool.mockReset().mockResolvedValue(undefined)
+  closeMSSQLPool.mockReset().mockResolvedValue(undefined)
 })
 
 describe('connections:update', () => {
@@ -143,6 +151,52 @@ describe('connections:update', () => {
 
     // broadcast should run synchronously inside the handler, before the await tick.
     expect(broadcastToAll).toHaveBeenCalledWith('connections:updated')
+  })
+})
+
+describe('teardown dispatch by driver', () => {
+  // Every pooled driver has to be routed to its own closer and drained through its own
+  // adapter — a connection whose pool is never closed keeps its sockets and, over SSH,
+  // its tunnel for the rest of the session.
+  it.each([
+    ['mysql' as const, () => closeMySQLPool, () => [closePgPool, closeMSSQLPool]],
+    ['mssql' as const, () => closeMSSQLPool, () => [closePgPool, closeMySQLPool]],
+    ['postgresql' as const, () => closePgPool, () => [closeMySQLPool, closeMSSQLPool]]
+  ])('routes %s teardown to its own pool closer', async (dbType, expected, others) => {
+    registerConnectionHandlers(makeStore([{ ...previous, dbType }]))
+
+    handlers.get('connections:delete')!(null, 'conn-1')
+    await new Promise((resolve) => setImmediate(resolve))
+
+    expect(expected()).toHaveBeenCalledWith(expect.objectContaining({ id: 'conn-1', dbType }))
+    for (const other of others()) expect(other).not.toHaveBeenCalled()
+    expect(getAdapterByType).toHaveBeenCalledWith(dbType)
+    expect(drainSessions).toHaveBeenCalledWith(expect.objectContaining({ dbType }))
+  })
+
+  it('tears the pool down for an adapter that has no drainSessions hook', async () => {
+    // Only Postgres parks clients today; the others must not be skipped for lacking it.
+    getAdapterByType.mockReturnValue({})
+    registerConnectionHandlers(makeStore([{ ...previous, dbType: 'mysql' }]))
+
+    handlers.get('connections:delete')!(null, 'conn-1')
+    await new Promise((resolve) => setImmediate(resolve))
+
+    expect(closeMySQLPool).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not attempt a pool teardown for SQLite', async () => {
+    // SQLite opens the file per call and holds no pool or tunnel.
+    registerConnectionHandlers(makeStore([{ ...previous, dbType: 'sqlite' }]))
+
+    handlers.get('connections:delete')!(null, 'conn-1')
+    await new Promise((resolve) => setImmediate(resolve))
+
+    expect(closePgPool).not.toHaveBeenCalled()
+    expect(closeMySQLPool).not.toHaveBeenCalled()
+    expect(closeMSSQLPool).not.toHaveBeenCalled()
+    // The cache is still connection-scoped, so it must be invalidated regardless.
+    expect(invalidateSchemaCache).toHaveBeenCalledWith(expect.objectContaining({ id: 'conn-1' }))
   })
 })
 
