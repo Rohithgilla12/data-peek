@@ -3,19 +3,29 @@ import type { ConnectionConfig } from '@shared/index'
 import type { PersistentStore } from '../storage'
 import { windowManager } from '../window-manager'
 import { closePgPool } from '../adapters/pg-pool-manager'
+import { closeMySQLPool } from '../adapters/mysql-pool-manager'
+import { closeMSSQLPool } from '../adapters/mssql-pool-manager'
 import { invalidateSchemaCache } from '../schema-cache'
 import { createLogger } from '../lib/logger'
 
 const log = createLogger('connection-handlers')
+
+// Every pooled driver. SQLite opens the file per call and holds nothing to tear down.
+const POOL_CLOSERS: Partial<Record<string, (config: ConnectionConfig) => Promise<void>>> = {
+  postgresql: closePgPool,
+  mysql: closeMySQLPool,
+  mssql: closeMSSQLPool
+}
 
 // Pool teardown happens after the IPC has already returned success — the connection is
 // already persisted, the renderer has been notified, and a stale pool failing to close
 // shouldn't poison the response with a misleading error.
 function teardownConnection(connection: ConnectionConfig): void {
   invalidateSchemaCache(connection)
-  if (connection.dbType === 'postgresql') {
-    closePgPool(connection).catch((err) => {
-      log.warn('closePgPool failed:', (err as Error).message)
+  const close = POOL_CLOSERS[connection.dbType ?? 'postgresql']
+  if (close) {
+    close(connection).catch((err) => {
+      log.warn(`closing ${connection.dbType} pool failed:`, (err as Error).message)
     })
   }
 }

@@ -38,6 +38,8 @@ import { initSchedulerService, stopAllSchedules } from './scheduler-service'
 import { initDashboardService } from './dashboard-service'
 import { cleanup as cleanupPgNotify } from './pg-notification-listener'
 import { closeAllPgPools } from './adapters/pg-pool-manager'
+import { closeAllMySQLPools } from './adapters/mysql-pool-manager'
+import { closeAllMSSQLPools } from './adapters/mssql-pool-manager'
 import { PostgresAdapter } from './adapters/postgres-adapter'
 import { getAdapterByType } from './db-adapter'
 import { StepSessionRegistry } from './step-session'
@@ -351,7 +353,9 @@ app.on('before-quit', (event) => {
   Promise.race([
     Promise.all([
       stepSessionRegistry.cleanupAll(),
-      drainPgSessions().then(() => closeAllPgPools())
+      drainPgSessions().then(() => closeAllPgPools()),
+      closeAllMySQLPools(),
+      closeAllMSSQLPools()
     ]),
     new Promise((resolve) => setTimeout(resolve, 3000))
   ])

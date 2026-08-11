@@ -36,9 +36,18 @@ import type {
   QueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
-import { closeTunnel, createTunnel, TunnelSession } from '../ssh-tunnel-service'
+import { toMSSQLConfig } from './mssql-client-config'
+import {
+  withMSSQLPool,
+  withMSSQLTransaction,
+  withDedicatedMSSQLConnection
+} from './mssql-pool-manager'
 import { splitStatements } from '../lib/sql-parser'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
+
+// Re-exported because it was part of this module's surface before it moved out to break
+// an import cycle with the pool manager.
+export { toMSSQLConfig }
 
 /** Split SQL into statements for MSSQL */
 const splitMssqlStatements = (sqlText: string) => splitStatements(sqlText, 'mssql')
@@ -128,93 +137,6 @@ function bindParameter(request: sql.Request, paramName: string, value: unknown):
 }
 
 /**
- * Create MSSQL connection config from our ConnectionConfig
- */
-export function toMSSQLConfig(
-  config: ConnectionConfig,
-  overrides?: { host: string; port: number }
-): sql.config {
-  const mssqlOptions = config.mssqlOptions || {}
-
-  // Handle authentication methods first to determine what options are needed
-  const authentication = mssqlOptions.authentication
-  const isAzureAD = authentication === 'ActiveDirectoryIntegrated'
-
-  // Build options object - for Azure AD, keep it minimal
-  const defaultSsl = config.ssl ?? false
-  const options: sql.config['options'] = {}
-
-  // Always set encrypt if specified
-  if (mssqlOptions.encrypt !== undefined) {
-    options.encrypt = mssqlOptions.encrypt
-  } else if (defaultSsl) {
-    options.encrypt = true
-  }
-
-  // For Azure AD, don't set trustServerCertificate or enableArithAbort
-  // These can interfere with Azure AD authentication
-  if (!isAzureAD) {
-    if (mssqlOptions.trustServerCertificate !== undefined) {
-      options.trustServerCertificate = mssqlOptions.trustServerCertificate
-    } else if (!defaultSsl) {
-      options.trustServerCertificate = true
-    }
-    options.enableArithAbort = mssqlOptions.enableArithAbort ?? true
-  }
-
-  // Add connection timeout if specified
-  if (mssqlOptions.connectionTimeout !== undefined) {
-    options.connectTimeout = mssqlOptions.connectionTimeout
-  }
-
-  // Set request timeout (default to 0 = no timeout to allow long-running queries)
-  // The mssql library defaults to 15000ms which is too short for complex queries
-  options.requestTimeout = mssqlOptions.requestTimeout ?? 0
-
-  // Build base config
-  const sqlConfig: sql.config = {
-    server: overrides?.host ?? config.host,
-    database: config.database,
-    options
-  }
-
-  // Include port if provided (optional in mssql config)
-  if (overrides?.port) {
-    sqlConfig.port = overrides.port
-  } else if (config.port) {
-    sqlConfig.port = config.port
-  }
-
-  // Handle authentication methods
-  if (authentication === 'ActiveDirectoryIntegrated') {
-    // Azure AD Integrated Authentication - uses azure-active-directory-default
-    sqlConfig.authentication = {
-      type: 'azure-active-directory-default',
-      options: {}
-    }
-    // Explicitly don't set user/password for Azure AD authentication
-    // Even if they exist in config, we should not include them
-  } else if (authentication === 'ActiveDirectoryPassword') {
-    // Azure AD Password Authentication
-    // Note: This requires clientId and tenantId which aren't in our config yet
-    // For now, use SQL Server auth as fallback
-    if (config.user) sqlConfig.user = config.user
-    if (config.password) sqlConfig.password = config.password
-  } else if (authentication === 'ActiveDirectoryServicePrincipal') {
-    // Azure AD Service Principal - would need clientId and clientSecret
-    // For now, fall back to SQL Server auth
-    if (config.user) sqlConfig.user = config.user
-    if (config.password) sqlConfig.password = config.password
-  } else {
-    // Default: SQL Server Authentication
-    if (config.user) sqlConfig.user = config.user
-    if (config.password) sqlConfig.password = config.password
-  }
-
-  return sqlConfig
-}
-
-/**
  * Check if a SQL statement is data-returning (SELECT, etc.)
  */
 export function isDataReturningStatement(sqlText: string): boolean {
@@ -235,37 +157,15 @@ export class MSSQLAdapter implements DatabaseAdapter {
   readonly dbType = 'mssql' as const
 
   async connect(config: ConnectionConfig): Promise<void> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-    try {
-      await pool.connect()
-      await pool.close()
-    } catch (error) {
-      await pool.close().catch(() => {})
-      throw error
-    } finally {
-      closeTunnel(tunnelSession)
-    }
+    // Warm the pool AND verify the socket end-to-end. Connecting alone can be satisfied
+    // by an already-open pooled connection; SELECT 1 proves it's live.
+    await withMSSQLPool(config, async (pool) => {
+      await pool.request().query('SELECT 1')
+    })
   }
 
   async query(config: ConnectionConfig, sqlQuery: string): Promise<AdapterQueryResult> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
+    return withMSSQLPool(config, async (pool) => {
       const result = await pool.request().query(sqlQuery)
       const rows = result.recordset as Record<string, unknown>[]
       const fields: QueryField[] = []
@@ -322,10 +222,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
       }
 
       return { rows, fields, rowCount: result.rowsAffected[0] ?? rows.length }
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async queryMultiple(
@@ -342,193 +239,179 @@ export class MSSQLAdapter implements DatabaseAdapter {
       telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
     }
 
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
     const totalStart = Date.now()
     const results: StatementResult[] = []
     let totalRowCount = 0
 
-    try {
-      if (collectTelemetry) {
-        telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
-        telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-      }
+    return withMSSQLPool(config, async (pool) => {
+      try {
+        if (collectTelemetry) {
+          telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.TCP_HANDSHAKE)
+          telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+          telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
+        }
+        const statements = splitMssqlStatements(sqlQuery)
 
-      await pool.connect()
+        for (let i = 0; i < statements.length; i++) {
+          const statement = statements[i]
+          const stmtStart = Date.now()
 
-      if (collectTelemetry) {
-        telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.DB_HANDSHAKE)
-      }
-      const statements = splitMssqlStatements(sqlQuery)
+          try {
+            const request = pool.request()
 
-      for (let i = 0; i < statements.length; i++) {
-        const statement = statements[i]
-        const stmtStart = Date.now()
+            // Set per-request timeout if specified (overrides connection-level timeout)
+            const queryTimeoutMs = options?.queryTimeoutMs
+            if (
+              queryTimeoutMs !== undefined &&
+              typeof queryTimeoutMs === 'number' &&
+              Number.isFinite(queryTimeoutMs)
+            ) {
+              // The mssql library supports request.timeout at runtime but types don't expose it
+              ;(request as unknown as { timeout: number }).timeout = Math.max(
+                0,
+                Math.floor(queryTimeoutMs)
+              )
+            }
 
-        try {
-          const request = pool.request()
+            // Register the current request for cancellation support
+            if (options?.executionId) {
+              registerQuery(options.executionId, { type: 'mssql', request })
+            }
 
-          // Set per-request timeout if specified (overrides connection-level timeout)
-          const queryTimeoutMs = options?.queryTimeoutMs
-          if (
-            queryTimeoutMs !== undefined &&
-            typeof queryTimeoutMs === 'number' &&
-            Number.isFinite(queryTimeoutMs)
-          ) {
-            // The mssql library supports request.timeout at runtime but types don't expose it
-            ;(request as unknown as { timeout: number }).timeout = Math.max(
-              0,
-              Math.floor(queryTimeoutMs)
-            )
-          }
+            // Start execution phase timing
+            if (collectTelemetry) {
+              telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+            }
 
-          // Register the current request for cancellation support
-          if (options?.executionId) {
-            registerQuery(options.executionId, { type: 'mssql', request })
-          }
+            const result = await request.query(statement)
 
-          // Start execution phase timing
-          if (collectTelemetry) {
-            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.EXECUTION)
-          }
+            if (collectTelemetry) {
+              telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.EXECUTION)
+              telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.PARSE)
+            }
 
-          const result = await request.query(statement)
+            const stmtDuration = Date.now() - stmtStart
 
-          if (collectTelemetry) {
-            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.EXECUTION)
-            telemetryCollector.startPhase(executionId, TELEMETRY_PHASES.PARSE)
-          }
+            const rows = (result.recordset || []) as Record<string, unknown>[]
+            const fields: QueryField[] = []
 
-          const stmtDuration = Date.now() - stmtStart
+            if (result.recordset?.columns) {
+              let colIndex = 0
+              for (const col of Object.values(result.recordset.columns)) {
+                const meta = col as { name: string; type?: { id?: number; name?: string } }
+                let dataTypeID: number | undefined
+                let dataType: string
 
-          const rows = (result.recordset || []) as Record<string, unknown>[]
-          const fields: QueryField[] = []
+                // MSSQL returns empty string for unnamed columns (e.g., COUNT(*), SUM(), etc.)
+                // Generate a fallback name and remap the row data
+                const originalName = meta.name
+                const columnName = originalName || `column_${colIndex + 1}`
 
-          if (result.recordset?.columns) {
-            let colIndex = 0
-            for (const col of Object.values(result.recordset.columns)) {
-              const meta = col as { name: string; type?: { id?: number; name?: string } }
-              let dataTypeID: number | undefined
-              let dataType: string
-
-              // MSSQL returns empty string for unnamed columns (e.g., COUNT(*), SUM(), etc.)
-              // Generate a fallback name and remap the row data
-              const originalName = meta.name
-              const columnName = originalName || `column_${colIndex + 1}`
-
-              // If column name was empty, remap the row data to use the generated name
-              if (!originalName && rows.length > 0) {
-                for (const row of rows) {
-                  if (originalName in row) {
-                    row[columnName] = row[originalName]
-                    delete row[originalName]
+                // If column name was empty, remap the row data to use the generated name
+                if (!originalName && rows.length > 0) {
+                  for (const row of rows) {
+                    if (originalName in row) {
+                      row[columnName] = row[originalName]
+                      delete row[originalName]
+                    }
                   }
                 }
+
+                if (meta.type?.id) {
+                  dataTypeID = meta.type.id
+                  dataType = resolveMSSQLType(dataTypeID)
+                } else if (meta.type?.name) {
+                  dataType = meta.type.name.toLowerCase()
+                  const match = Object.entries(MSSQL_TYPE_MAP).find(
+                    ([, name]) => name.toLowerCase() === dataType
+                  )
+                  dataTypeID = match ? Number(match[0]) : undefined
+                } else {
+                  const inferred = inferTypeFromValue(rows[0]?.[columnName])
+                  dataType = inferred.dataType
+                  dataTypeID = inferred.dataTypeID
+                }
+
+                fields.push({
+                  name: columnName,
+                  dataType: dataType || 'nvarchar',
+                  dataTypeID: dataTypeID || 231
+                })
+                colIndex++
               }
-
-              if (meta.type?.id) {
-                dataTypeID = meta.type.id
-                dataType = resolveMSSQLType(dataTypeID)
-              } else if (meta.type?.name) {
-                dataType = meta.type.name.toLowerCase()
-                const match = Object.entries(MSSQL_TYPE_MAP).find(
-                  ([, name]) => name.toLowerCase() === dataType
-                )
-                dataTypeID = match ? Number(match[0]) : undefined
-              } else {
-                const inferred = inferTypeFromValue(rows[0]?.[columnName])
-                dataType = inferred.dataType
-                dataTypeID = inferred.dataTypeID
+            } else if (rows.length > 0) {
+              for (const [name, value] of Object.entries(rows[0])) {
+                const inferred = inferTypeFromValue(value)
+                fields.push({ name, ...inferred })
               }
-
-              fields.push({
-                name: columnName,
-                dataType: dataType || 'nvarchar',
-                dataTypeID: dataTypeID || 231
-              })
-              colIndex++
             }
-          } else if (rows.length > 0) {
-            for (const [name, value] of Object.entries(rows[0])) {
-              const inferred = inferTypeFromValue(value)
-              fields.push({ name, ...inferred })
+
+            const isDataReturning = isDataReturningStatement(statement)
+            const rowCount = isDataReturning ? rows.length : (result.rowsAffected[0] ?? 0)
+            totalRowCount += rowCount
+
+            results.push({
+              statement,
+              statementIndex: i,
+              rows,
+              fields,
+              rowCount,
+              durationMs: stmtDuration,
+              isDataReturning
+            })
+
+            if (collectTelemetry) {
+              telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.PARSE)
             }
+
+            // Unregister after each statement completes successfully
+            if (options?.executionId) {
+              unregisterQuery(options.executionId)
+            }
+          } catch (error) {
+            const stmtDuration = Date.now() - stmtStart
+            const errorMessage = error instanceof Error ? error.message : String(error)
+
+            results.push({
+              statement,
+              statementIndex: i,
+              rows: [],
+              fields: [{ name: 'error', dataType: 'nvarchar' }],
+              rowCount: 0,
+              durationMs: stmtDuration,
+              isDataReturning: false
+            })
+
+            // Cancel telemetry on error
+            if (collectTelemetry) {
+              telemetryCollector.cancel(executionId)
+            }
+
+            throw new Error(
+              `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
+            )
           }
+        }
 
-          const isDataReturning = isDataReturningStatement(statement)
-          const rowCount = isDataReturning ? rows.length : (result.rowsAffected[0] ?? 0)
-          totalRowCount += rowCount
+        const result: AdapterMultiQueryResult = {
+          results,
+          totalDurationMs: Date.now() - totalStart
+        }
 
-          results.push({
-            statement,
-            statementIndex: i,
-            rows,
-            fields,
-            rowCount,
-            durationMs: stmtDuration,
-            isDataReturning
-          })
+        // Finalize telemetry
+        if (collectTelemetry) {
+          result.telemetry = telemetryCollector.finalize(executionId, totalRowCount)
+        }
 
-          if (collectTelemetry) {
-            telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.PARSE)
-          }
-
-          // Unregister after each statement completes successfully
-          if (options?.executionId) {
-            unregisterQuery(options.executionId)
-          }
-        } catch (error) {
-          const stmtDuration = Date.now() - stmtStart
-          const errorMessage = error instanceof Error ? error.message : String(error)
-
-          results.push({
-            statement,
-            statementIndex: i,
-            rows: [],
-            fields: [{ name: 'error', dataType: 'nvarchar' }],
-            rowCount: 0,
-            durationMs: stmtDuration,
-            isDataReturning: false
-          })
-
-          // Cancel telemetry on error
-          if (collectTelemetry) {
-            telemetryCollector.cancel(executionId)
-          }
-
-          throw new Error(
-            `Error in statement ${i + 1}: ${errorMessage}\n\nStatement:\n${statement}`
-          )
+        return result
+      } finally {
+        // The per-statement unregister above only runs on the success path, so a failed
+        // statement would otherwise leave a stale request registered as cancellable.
+        if (options?.executionId) {
+          unregisterQuery(options.executionId)
         }
       }
-
-      const result: AdapterMultiQueryResult = {
-        results,
-        totalDurationMs: Date.now() - totalStart
-      }
-
-      // Finalize telemetry
-      if (collectTelemetry) {
-        result.telemetry = telemetryCollector.finalize(executionId, totalRowCount)
-      }
-
-      return result
-    } finally {
-      // Unregister from tracker
-      if (options?.executionId) {
-        unregisterQuery(options.executionId)
-      }
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async execute(
@@ -536,17 +419,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
     sqlQuery: string,
     params: unknown[]
   ): Promise<{ rowCount: number | null }> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
+    return withMSSQLPool(config, async (pool) => {
       const request = pool.request()
       const hasMSSQLPlaceholders = /@p\d+/.test(sqlQuery)
 
@@ -564,30 +437,14 @@ export class MSSQLAdapter implements DatabaseAdapter {
 
       const result = await request.query(sqlQuery)
       return { rowCount: result.rowsAffected[0] ?? null }
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async executeTransaction(
     config: ConnectionConfig,
     statements: Array<{ sql: string; params: unknown[] }>
   ): Promise<{ rowsAffected: number; results: Array<{ rowCount: number | null }> }> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-    let transaction: sql.Transaction | null = null
-
-    try {
-      await pool.connect()
-      transaction = new sql.Transaction(pool)
-      await transaction.begin()
+    return withMSSQLTransaction(config, async (transaction) => {
       const results: Array<{ rowCount: number | null }> = []
       let rowsAffected = 0
 
@@ -614,29 +471,12 @@ export class MSSQLAdapter implements DatabaseAdapter {
         rowsAffected += affected
       }
 
-      await transaction.commit()
       return { rowsAffected, results }
-    } catch (error) {
-      if (transaction) await transaction.rollback().catch(() => {})
-      throw error
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
+    return withMSSQLPool(config, async (pool) => {
       const schemaList = SYSTEM_SCHEMAS.map((s) => `'${s}'`).join(', ')
 
       const [schemasResult, tablesResult] = await Promise.all([
@@ -851,10 +691,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
       }
 
       return Array.from(schemaMap.values())
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async explain(
@@ -862,17 +699,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
     sqlQuery: string,
     analyze: boolean
   ): Promise<ExplainResult> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
+    // Pinned to one connection: the SET below configures the statement that follows it,
+    // and pooled requests are not guaranteed to share a connection.
+    return withDedicatedMSSQLConnection(config, async (pool) => {
       const start = Date.now()
 
       if (analyze) {
@@ -912,10 +741,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
           durationMs: Date.now() - start
         }
       }
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getTableDDL(
@@ -923,17 +749,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
     schema: string,
     table: string
   ): Promise<TableDefinition> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
+    return withMSSQLPool(config, async (pool) => {
       // Query columns with full metadata
       const columnsResult = await pool
         .request()
@@ -1150,10 +966,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
         indexes,
         comment: tableCommentResult.recordset[0]?.comment || undefined
       }
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getSequences(): Promise<SequenceInfo[]> {
@@ -1163,17 +976,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
   }
 
   async getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
+    return withMSSQLPool(config, async (pool) => {
       // Get user-defined types from sys.types
       const typesResult = await pool.request().query(`
         SELECT
@@ -1195,10 +998,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
         name: row.type_name,
         type: 'composite' as const // Treat as composite for now
       }))
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   private classifyColumnType(dataType: string): ColumnStatsType {
@@ -1239,18 +1039,7 @@ export class MSSQLAdapter implements DatabaseAdapter {
     column: string,
     dataType: string
   ): Promise<ColumnStats> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
-
+    return withMSSQLPool(config, async (pool) => {
       const statsType = this.classifyColumnType(dataType)
       const quoteIdent = (name: string) => '[' + name.replace(/\]/g, ']]') + ']'
       const quotedTable = `${quoteIdent(schema)}.${quoteIdent(table)}`
@@ -1409,25 +1198,11 @@ export class MSSQLAdapter implements DatabaseAdapter {
       }
 
       return stats
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getActiveQueries(config: ConnectionConfig): Promise<ActiveQuery[]> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
-
+    return withMSSQLPool(config, async (pool) => {
       const result = await pool.request().query(`
         SELECT
           r.session_id AS pid,
@@ -1456,28 +1231,14 @@ export class MSSQLAdapter implements DatabaseAdapter {
         query: String(row.query ?? ''),
         waitEvent: row.wait_event ? String(row.wait_event) : undefined
       }))
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getTableSizes(
     config: ConnectionConfig,
     schema?: string
   ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
-
+    return withMSSQLPool(config, async (pool) => {
       const dbSizeResult = await pool.request().query(`
         SELECT
           SUM(size * 8 * 1024) AS total_size_bytes
@@ -1538,25 +1299,11 @@ export class MSSQLAdapter implements DatabaseAdapter {
       })
 
       return { dbSize, tables }
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getCacheStats(config: ConnectionConfig): Promise<CacheStats> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
-
+    return withMSSQLPool(config, async (pool) => {
       const cacheResult = await pool.request().query(`
         SELECT
           CASE WHEN SUM(CAST(page_count AS BIGINT)) = 0 THEN 0
@@ -1593,25 +1340,11 @@ export class MSSQLAdapter implements DatabaseAdapter {
         bufferCacheHitRatio,
         indexHitRatio
       }
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async getLocks(config: ConnectionConfig): Promise<LockInfo[]> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
-
+    return withMSSQLPool(config, async (pool) => {
       const result = await pool.request().query(`
         SELECT
           blocked.request_session_id AS blocked_pid,
@@ -1656,34 +1389,20 @@ export class MSSQLAdapter implements DatabaseAdapter {
         waitDuration: String(row.wait_duration ?? '0s'),
         waitDurationMs: Number(row.wait_duration_ms ?? 0)
       }))
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   async killQuery(
     config: ConnectionConfig,
     pid: number
   ): Promise<{ success: boolean; error?: string }> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
     try {
-      await pool.connect()
-      await pool.request().query(`KILL ${Number(pid)}`)
-      return { success: true }
+      return await withMSSQLPool(config, async (pool) => {
+        await pool.request().query(`KILL ${Number(pid)}`)
+        return { success: true }
+      })
     } catch (err) {
       return { success: false, error: String(err) }
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
     }
   }
 
@@ -1691,22 +1410,9 @@ export class MSSQLAdapter implements DatabaseAdapter {
     config: ConnectionConfig,
     checks?: SchemaIntelCheckId[]
   ): Promise<SchemaIntelReport> {
-    let tunnelSession: TunnelSession | null = null
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-    const tunnelOverrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-    const pool = new sql.ConnectionPool(toMSSQLConfig(config, tunnelOverrides))
-
-    try {
-      await pool.connect()
+    return withMSSQLPool(config, async (pool) => {
       return await runMssqlSchemaIntel(pool, checks)
-    } finally {
-      await pool.close().catch(() => {})
-      closeTunnel(tunnelSession)
-    }
+    })
   }
 
   private formatBytes(bytes: number): string {
