@@ -1,8 +1,9 @@
 import * as React from 'react'
-import { ArrowDownUp, X, Sparkles } from 'lucide-react'
+import { ArrowDownUp, ArrowRight, Check, Loader2, X } from 'lucide-react'
 import { Button, cn } from '@data-peek/ui'
 import { getTypeColor } from '@/lib/type-colors'
 import { SortChipItem } from '@/components/sort/sort-chip'
+import type { SortScope } from '@/lib/sort-scope'
 import {
   defaultDirectionForType,
   makeChip,
@@ -16,11 +17,75 @@ import {
   type SortMode
 } from '@/lib/sort-model'
 
+function SortStatus({
+  scope,
+  isSortingOnServer,
+  onSortWholeSet
+}: {
+  scope: SortScope
+  isSortingOnServer?: boolean
+  onSortWholeSet?: () => void
+}) {
+  if (isSortingOnServer) {
+    return (
+      <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+        <Loader2 className="size-3 animate-spin" />
+        sorting…
+      </span>
+    )
+  }
+
+  if (scope.kind === 'server') {
+    return (
+      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <Check className="size-3 text-primary/70" />
+        sorted on server
+      </span>
+    )
+  }
+
+  if (scope.kind === 'complete') {
+    return (
+      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <Check className="size-3 text-primary/70" />
+        sorted {scope.rows.toLocaleString()} rows
+      </span>
+    )
+  }
+
+  const total = scope.total
+  return (
+    <span className="flex items-center gap-2">
+      <span className="text-[10px] text-amber-500/90">
+        {total === null
+          ? `sorting ${scope.loaded.toLocaleString()} loaded rows`
+          : `sorting ${scope.loaded.toLocaleString()} of ${total.toLocaleString()} loaded`}
+      </span>
+      {onSortWholeSet && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-6 px-1.5 text-[10px] text-primary/90 hover:text-primary gap-1"
+          onClick={onSortWholeSet}
+          title="Rewrite ORDER BY and re-run so the sort covers every row"
+        >
+          {total === null ? 'Sort all rows' : `Sort all ${total.toLocaleString()}`}
+          <ArrowRight className="size-3" />
+        </Button>
+      )}
+    </span>
+  )
+}
+
 interface SmartSortBarProps {
   columns: SortColumn[]
   chips: SortChip[]
   onChipsChange: (chips: SortChip[]) => void
-  onApplyToQuery?: () => void
+  scope: SortScope
+  /** True while a server-side sort re-run is debouncing or in flight. */
+  isSortingOnServer?: boolean
+  /** Rewrite ORDER BY and re-run so the sort covers rows not yet loaded. */
+  onSortWholeSet?: () => void
   className?: string
 }
 
@@ -28,7 +93,9 @@ export function SmartSortBar({
   columns,
   chips,
   onChipsChange,
-  onApplyToQuery,
+  scope,
+  isSortingOnServer,
+  onSortWholeSet,
   className
 }: SmartSortBarProps) {
   const [isPicking, setIsPicking] = React.useState(false)
@@ -409,7 +476,15 @@ export function SmartSortBar({
           />
         </div>
 
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+          {hasSort && (
+            <SortStatus
+              scope={scope}
+              isSortingOnServer={isSortingOnServer}
+              onSortWholeSet={onSortWholeSet}
+            />
+          )}
+
           {hasSort && (
             <Button
               variant="ghost"
@@ -419,19 +494,6 @@ export function SmartSortBar({
             >
               <X className="size-3" />
               Clear
-            </Button>
-          )}
-
-          {hasSort && onApplyToQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 px-1.5 text-[10px] text-primary/80 hover:text-primary gap-1"
-              onClick={onApplyToQuery}
-              title="Push sort into ORDER BY clause"
-            >
-              <Sparkles className="size-3" />
-              Apply
             </Button>
           )}
         </div>
