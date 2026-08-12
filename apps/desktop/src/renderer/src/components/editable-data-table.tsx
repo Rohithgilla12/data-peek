@@ -37,12 +37,8 @@ import { useSettingsStore } from '@/stores/settings-store'
 import { useMaskingStore } from '@/stores/masking-store'
 import { PaginationControls } from '@/components/pagination-controls'
 import { SmartFilterBar, chipMatchesRow, type FilterChip } from '@/components/smart-filter-bar'
-import {
-  SmartSortBar,
-  applySorts,
-  toggleColumnSort,
-  type SortChip
-} from '@/components/smart-sort-bar'
+import { SmartSortBar } from '@/components/smart-sort-bar'
+import { applySorts, toggleColumnSort, type SortChip } from '@/lib/sort-model'
 import type { ColumnInfo, ConnectionConfig, EditContext, ForeignKeyInfo } from '@data-peek/shared'
 import {
   flexRender,

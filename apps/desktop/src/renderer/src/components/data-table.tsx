@@ -33,12 +33,8 @@ import {
 import { JsonCellValue } from '@/components/json-cell-value'
 import { FKCellValue } from '@/components/fk-cell-value'
 import { SmartFilterBar, chipMatchesRow, type FilterChip } from '@/components/smart-filter-bar'
-import {
-  SmartSortBar,
-  applySorts,
-  toggleColumnSort,
-  type SortChip
-} from '@/components/smart-sort-bar'
+import { SmartSortBar } from '@/components/smart-sort-bar'
+import { applySorts, toggleColumnSort, type SortChip } from '@/lib/sort-model'
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getTypeColor } from '@/lib/type-colors'

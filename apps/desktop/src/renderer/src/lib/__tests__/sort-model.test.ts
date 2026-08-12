@@ -4,7 +4,7 @@ import {
   toggleColumnSort,
   type SortChip,
   type SortColumn
-} from '@/components/smart-sort-bar'
+} from '@/lib/sort-model'
 
 type ChipInit = {
   id?: string
