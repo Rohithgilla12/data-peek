@@ -33,8 +33,9 @@ import {
 import { JsonCellValue } from '@/components/json-cell-value'
 import { FKCellValue } from '@/components/fk-cell-value'
 import { SmartFilterBar, chipMatchesRow, type FilterChip } from '@/components/smart-filter-bar'
-import { SmartSortBar } from '@/components/smart-sort-bar'
+import { SmartSortBar } from '@/components/sort/smart-sort-bar'
 import { applySorts, toggleColumnSort, type SortChip } from '@/lib/sort-model'
+import type { SortScope } from '@/lib/sort-scope'
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { getTypeColor } from '@/lib/type-colors'
@@ -83,7 +84,18 @@ interface DataTableProps<TData> {
   onFiltersChange?: (filters: DataTableFilter[]) => void
   onSortingChange?: (sorting: DataTableSort[]) => void
   onPageSizeChange?: (size: number) => void
+  /** Push the active filters into the query's WHERE clause. Filter bar only. */
   onApplyToQuery?: () => void
+  /**
+   * Whether a client-side sort covers every row, or only the loaded slice.
+   * Defaults to `complete` over `data` — correct for callers that hand the table
+   * the entire result set. Paginated callers must pass their real scope.
+   */
+  sortScope?: SortScope
+  /** True while a server-side sort re-run is debouncing or in flight. */
+  isSortingOnServer?: boolean
+  /** Rewrite ORDER BY and re-run so the sort covers rows not yet loaded. */
+  onSortWholeSet?: () => void
   /** Called when user clicks a FK cell (opens panel) */
   onForeignKeyClick?: (foreignKey: ForeignKeyInfo, value: unknown) => void
   /** Called when user Cmd+clicks a FK cell (opens new tab) */
@@ -243,6 +255,9 @@ export function DataTable<TData extends Record<string, unknown>>({
   onSortingChange,
   onPageSizeChange,
   onApplyToQuery,
+  sortScope,
+  isSortingOnServer,
+  onSortWholeSet,
   onForeignKeyClick,
   onForeignKeyOpenTab,
   onColumnStatsClick,
@@ -639,7 +654,9 @@ export function DataTable<TData extends Record<string, unknown>>({
         columns={columnDefs}
         chips={sortChips}
         onChipsChange={setSortChips}
-        onApplyToQuery={onApplyToQuery}
+        scope={sortScope ?? { kind: 'complete', rows: data.length }}
+        isSortingOnServer={isSortingOnServer}
+        onSortWholeSet={onSortWholeSet}
         className="shrink-0"
       />
 
