@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  applySorts,
-  toggleColumnSort,
-  type SortChip,
-  type SortColumn
-} from '@/lib/sort-model'
+import { applySorts, toggleColumnSort, type SortChip, type SortColumn } from '@/lib/sort-model'
 
 type ChipInit = {
   id?: string

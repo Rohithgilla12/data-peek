@@ -30,7 +30,7 @@ import {
   generateWhereClause,
   generateOrderByClause
 } from '@/lib/table-query-builder'
-import { getSortScope } from '@/lib/sort-scope'
+import { getSortScope, type SortScope } from '@/lib/sort-scope'
 import { notify } from '@/stores/notification-store'
 import type { QueryResult as IpcQueryResult } from '@data-peek/shared'
 import { FKPanelStack } from '@/components/fk-panel-stack'
@@ -960,18 +960,12 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     ? getActiveResultPaginatedRows(tabId)
     : getTabPaginatedRows(tabId)
 
+  // Computed rather than memoised: this sits below an early return, so a hook here
+  // would break hook ordering. getSortScope is two regex matches — cheap enough.
   // `tab` can be undefined when a tab is closed while its query is still in flight.
-  const sortScope = useMemo(
-    () =>
-      tab
-        ? getSortScope({
-            tab,
-            dbType: tabConnection?.dbType,
-            loadedRows: paginatedRows.length
-          })
-        : ({ kind: 'complete', rows: 0 } as const),
-    [tab, tabConnection?.dbType, paginatedRows.length]
-  )
+  const sortScope: SortScope = tab
+    ? getSortScope({ tab, dbType: tabConnection?.dbType, loadedRows: paginatedRows.length })
+    : { kind: 'complete', rows: 0 }
 
   // Get columns from active statement result (for multi-statement) or legacy result
   const getActiveResultColumns = () => {

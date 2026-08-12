@@ -23,14 +23,7 @@ export type SortDirection = 'asc' | 'desc'
 export type NullsPosition = 'first' | 'last'
 
 export type SortMode =
-  | 'default'
-  | 'natural'
-  | 'length'
-  | 'absolute'
-  | 'byMonth'
-  | 'byDayOfWeek'
-  | 'byTime'
-  | 'random'
+  'default' | 'natural' | 'length' | 'absolute' | 'byMonth' | 'byDayOfWeek' | 'byTime' | 'random'
 
 interface SortChipBase {
   id: string

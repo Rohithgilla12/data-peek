@@ -592,4 +592,3 @@ export function SmartSortBar({
     </div>
   )
 }
-
