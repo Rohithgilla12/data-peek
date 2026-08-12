@@ -1,274 +1,20 @@
 import * as React from 'react'
-import {
-  ArrowDownUp,
-  ArrowUp,
-  ArrowDown,
-  X,
-  Dices,
-  CircleDashed,
-  CircleDot,
-  GripVertical,
-  Sparkles
-} from 'lucide-react'
+import { ArrowDownUp, X, Sparkles } from 'lucide-react'
 import { Button, cn } from '@data-peek/ui'
 import { getTypeColor } from '@/lib/type-colors'
+import { SortChipItem } from '@/components/sort/sort-chip'
 import {
   defaultDirectionForType,
   makeChip,
-  modeLabel,
   modesForType,
   newSeed,
   PRESETS,
+  type NullsPosition,
   type PresetDef,
   type SortChip,
-  type SortColumn
+  type SortColumn,
+  type SortMode
 } from '@/lib/sort-model'
-
-function PriorityBadge({ rank }: { rank: number }) {
-  const classes =
-    rank === 1
-      ? 'bg-primary text-primary-foreground'
-      : rank === 2
-        ? 'bg-primary/70 text-primary-foreground'
-        : rank === 3
-          ? 'bg-primary/50 text-primary-foreground'
-          : 'bg-primary/30 text-primary-foreground'
-
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center justify-center size-4 rounded-full',
-        'text-[9px] font-mono font-semibold tabular-nums shrink-0',
-        'transition-colors duration-200',
-        classes
-      )}
-      aria-label={`Priority ${rank}`}
-    >
-      {rank}
-    </span>
-  )
-}
-
-interface SortChipButtonProps {
-  chip: SortChip
-  rank: number
-  totalChips: number
-  column: SortColumn | undefined
-  isDragging: boolean
-  isDragTarget: boolean
-  onToggleDirection: () => void
-  onCycleMode: () => void
-  onToggleNulls: () => void
-  onReseed: () => void
-  onRemove: () => void
-  onMovePriority: (delta: number) => void
-  onDragStart: (e: React.DragEvent) => void
-  onDragOver: (e: React.DragEvent) => void
-  onDrop: (e: React.DragEvent) => void
-  onDragEnd: () => void
-}
-
-function SortChipButton({
-  chip,
-  rank,
-  totalChips,
-  column,
-  isDragging,
-  isDragTarget,
-  onToggleDirection,
-  onCycleMode,
-  onToggleNulls,
-  onReseed,
-  onRemove,
-  onMovePriority,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd
-}: SortChipButtonProps) {
-  const [isNew, setIsNew] = React.useState(true)
-  const [flipKey, setFlipKey] = React.useState(0)
-
-  React.useEffect(() => {
-    const raf = requestAnimationFrame(() => setIsNew(false))
-    return () => cancelAnimationFrame(raf)
-  }, [])
-
-  React.useEffect(() => {
-    setFlipKey((k) => k + 1)
-  }, [chip.direction, chip.mode])
-
-  const typeColor = column ? getTypeColor(column.dataType) : 'text-muted-foreground'
-  const isRandom = chip.mode === 'random'
-  const modeShort = modeLabel(chip, column)
-  const showMode = chip.mode !== 'default' || isRandom
-
-  const ariaLabel = `Sort ${chip.column} ${chip.direction}${
-    showMode ? ', mode ' + modeShort : ''
-  }, priority ${rank} of ${totalChips}`
-
-  const onKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'ArrowLeft' && (e.metaKey || e.ctrlKey || e.altKey)) {
-      e.preventDefault()
-      onMovePriority(-1)
-      return
-    }
-    if (e.key === 'ArrowRight' && (e.metaKey || e.ctrlKey || e.altKey)) {
-      e.preventDefault()
-      onMovePriority(1)
-      return
-    }
-    if (e.key === 'Backspace' || e.key === 'Delete') {
-      e.preventDefault()
-      onRemove()
-      return
-    }
-    if (e.key === ' ' || e.key === 'Enter') {
-      e.preventDefault()
-      onToggleDirection()
-      return
-    }
-    if (e.key === 'm' || e.key === 'M') {
-      e.preventDefault()
-      onCycleMode()
-    }
-  }
-
-  return (
-    <div
-      role="listitem"
-      tabIndex={0}
-      aria-label={ariaLabel}
-      draggable
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
-      onKeyDown={onKeyDown}
-      className={cn(
-        'group/chip relative flex items-center gap-1 pl-1 pr-1 py-0.5 rounded-md text-xs',
-        'border cursor-grab active:cursor-grabbing select-none',
-        'transition-[border-color,background-color,transform,opacity,box-shadow] duration-150',
-        'hover:border-primary/40 hover:bg-primary/5',
-        'focus-visible:outline-none focus-visible:border-primary/60 focus-visible:ring-1 focus-visible:ring-primary/40',
-        isNew &&
-          'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:zoom-in-90 motion-safe:slide-in-from-left-1 motion-safe:duration-200',
-        isDragging && 'opacity-40 scale-95',
-        isDragTarget && 'border-primary/60 bg-primary/10 ring-1 ring-primary/30 scale-[1.02]',
-        !isDragging && !isDragTarget && 'border-border/60 bg-muted/50'
-      )}
-    >
-      <span className="inline-flex items-center pl-0.5 opacity-0 group-hover/chip:opacity-100 transition-opacity duration-150">
-        <GripVertical className="size-3 text-muted-foreground/60" />
-      </span>
-
-      <PriorityBadge rank={rank} />
-
-      <span className={cn('font-medium px-0.5', typeColor)}>{chip.column}</span>
-
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          onToggleDirection()
-        }}
-        title={`Direction: ${chip.direction}${isRandom ? ' (n/a for shuffle)' : ''}`}
-        className={cn(
-          'inline-flex items-center justify-center size-4 rounded-sm',
-          'hover:bg-primary/10 text-foreground/80 hover:text-primary',
-          'transition-colors duration-100',
-          isRandom && 'opacity-40'
-        )}
-        disabled={isRandom}
-      >
-        <span
-          key={flipKey}
-          className="inline-flex motion-safe:animate-in motion-safe:spin-in-180 motion-safe:duration-200"
-        >
-          {chip.direction === 'asc' ? (
-            <ArrowUp className="size-3" />
-          ) : (
-            <ArrowDown className="size-3" />
-          )}
-        </span>
-      </button>
-
-      {showMode && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onCycleMode()
-          }}
-          title="Cycle sort mode"
-          className={cn(
-            'px-1 py-0 rounded-sm text-[9px] font-mono lowercase',
-            'text-primary/80 hover:text-primary bg-primary/[0.08] hover:bg-primary/15',
-            'transition-colors duration-100'
-          )}
-        >
-          {modeShort}
-        </button>
-      )}
-
-      {isRandom && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            onReseed()
-          }}
-          title={`Seed: ${chip.seed} — click to reroll`}
-          className={cn(
-            'inline-flex items-center justify-center size-4 rounded-sm',
-            'hover:bg-primary/10 text-foreground/70 hover:text-primary',
-            'transition-[color,background-color,transform] duration-150',
-            'hover:rotate-12'
-          )}
-        >
-          <Dices className="size-3" />
-        </button>
-      )}
-
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          onToggleNulls()
-        }}
-        title={`Nulls ${chip.nullsPosition}`}
-        className={cn(
-          'inline-flex items-center justify-center size-4 rounded-sm opacity-0 group-hover/chip:opacity-100',
-          'text-muted-foreground hover:text-foreground hover:bg-muted/80',
-          'transition-opacity duration-150'
-        )}
-      >
-        {chip.nullsPosition === 'first' ? (
-          <CircleDashed className="size-3" />
-        ) : (
-          <CircleDot className="size-3" />
-        )}
-      </button>
-
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation()
-          onRemove()
-        }}
-        className={cn(
-          'ml-0.5 inline-flex items-center justify-center size-4 rounded-sm',
-          'opacity-0 group-hover/chip:opacity-100',
-          'text-muted-foreground hover:text-foreground hover:bg-muted/80',
-          'transition-opacity duration-100'
-        )}
-        title="Remove sort"
-      >
-        <X className="size-3" />
-      </button>
-    </div>
-  )
-}
 
 interface SmartSortBarProps {
   columns: SortColumn[]
@@ -404,12 +150,27 @@ export function SmartSortBar({
     [columnByName, transformChip]
   )
 
-  const toggleNulls = React.useCallback(
-    (id: string) => {
-      transformChip(id, (c) => ({
-        ...c,
-        nullsPosition: c.nullsPosition === 'first' ? 'last' : 'first'
-      }))
+  const setMode = React.useCallback(
+    (id: string, mode: SortMode) => {
+      transformChip(id, (c) => {
+        const base = {
+          id: c.id,
+          column: c.column,
+          direction: c.direction,
+          nullsPosition: c.nullsPosition
+        }
+        if (mode === 'random') {
+          return { ...base, mode: 'random', seed: c.mode === 'random' ? c.seed : newSeed() }
+        }
+        return { ...base, mode }
+      })
+    },
+    [transformChip]
+  )
+
+  const setNulls = React.useCallback(
+    (id: string, position: NullsPosition) => {
+      transformChip(id, (c) => ({ ...c, nullsPosition: position }))
     },
     [transformChip]
   )
@@ -606,7 +367,7 @@ export function SmartSortBar({
           {chips.map((chip, idx) => {
             const col = columnByName.get(chip.column)
             return (
-              <SortChipButton
+              <SortChipItem
                 key={chip.id}
                 chip={chip}
                 rank={idx + 1}
@@ -615,8 +376,9 @@ export function SmartSortBar({
                 isDragging={dragId === chip.id}
                 isDragTarget={dragOverId === chip.id && dragId !== chip.id}
                 onToggleDirection={() => toggleDirection(chip.id)}
+                onSetMode={(mode) => setMode(chip.id, mode)}
+                onSetNulls={(pos) => setNulls(chip.id, pos)}
                 onCycleMode={() => cycleMode(chip.id)}
-                onToggleNulls={() => toggleNulls(chip.id)}
                 onReseed={() => reseed(chip.id)}
                 onRemove={() => removeChip(chip.id)}
                 onMovePriority={(delta) => movePriority(chip.id, delta)}
