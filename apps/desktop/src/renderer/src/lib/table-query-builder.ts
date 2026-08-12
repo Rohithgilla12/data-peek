@@ -67,6 +67,44 @@ export function stripTrailingOrderBy(sql: string): string {
 }
 
 /**
+ * Merge a generated WHERE clause into a query that may already have one.
+ *
+ * Both clauses are parenthesised so operator precedence cannot change the meaning of
+ * the user's original predicate. As with ORDER BY, a WHERE nested inside parens
+ * belongs to a subquery and is skipped.
+ */
+export function mergeWhereClause(sql: string, whereClause: string): string {
+  if (!whereClause) return sql
+
+  const newCondition = whereClause.replace(/^WHERE\s+/i, '')
+  const match = sql.match(/\sWHERE\s+[\s\S]*$/i)
+
+  if (match && match.index !== undefined) {
+    const tail = match[0]
+    let depth = 0
+    let nested = false
+    for (const ch of tail) {
+      if (ch === '(') depth++
+      else if (ch === ')') {
+        if (depth === 0) {
+          nested = true
+          break
+        }
+        depth--
+      }
+    }
+
+    if (!nested) {
+      const head = sql.slice(0, match.index).trimEnd()
+      const existing = tail.replace(/^\s*WHERE\s+/i, '').trim()
+      return `${head} WHERE (${existing}) AND (${newCondition})`
+    }
+  }
+
+  return `${sql.trimEnd()} ${whereClause}`
+}
+
+/**
  * Produce a new query with the current filters/sorting applied.
  *
  * For a table-preview tab whose editor SQL still targets the stored table, the query
@@ -146,6 +184,7 @@ export function buildQueryWithFilters(params: {
   if (topClause) {
     result = result.replace(/^SELECT\s+/i, `SELECT ${topClause}`)
   }
-  result = `${result} ${wherePart} ${orderPart}${limitClause};`.replace(/\s+/g, ' ').trim()
+  result = mergeWhereClause(result, wherePart)
+  result = `${result} ${orderPart}${limitClause};`.replace(/\s+/g, ' ').trim()
   return result
 }

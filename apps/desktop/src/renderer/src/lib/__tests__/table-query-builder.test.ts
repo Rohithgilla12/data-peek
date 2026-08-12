@@ -3,7 +3,8 @@ import {
   generateWhereClause,
   generateOrderByClause,
   buildQueryWithFilters,
-  stripTrailingOrderBy
+  stripTrailingOrderBy,
+  mergeWhereClause
 } from '@/lib/table-query-builder'
 import type { Tab } from '@/stores/tab-store'
 
@@ -164,5 +165,48 @@ describe('buildQueryWithFilters ORDER BY replacement', () => {
       sorting: []
     })
     expect(result).toBe('SELECT * FROM wallets LIMIT 100;')
+  })
+})
+
+describe('mergeWhereClause', () => {
+  it('appends a WHERE when the query has none', () => {
+    expect(mergeWhereClause('SELECT * FROM users', `WHERE "a" ILIKE '%1%'`)).toBe(
+      `SELECT * FROM users WHERE "a" ILIKE '%1%'`
+    )
+  })
+
+  it('ANDs into an existing WHERE', () => {
+    expect(
+      mergeWhereClause(`SELECT * FROM users WHERE active = true`, `WHERE "a" ILIKE '%1%'`)
+    ).toBe(`SELECT * FROM users WHERE (active = true) AND ("a" ILIKE '%1%')`)
+  })
+
+  it('returns the query unchanged when the new clause is empty', () => {
+    expect(mergeWhereClause('SELECT * FROM users WHERE active = true', '')).toBe(
+      'SELECT * FROM users WHERE active = true'
+    )
+  })
+
+  it('leaves a subquery WHERE alone', () => {
+    const sql = 'SELECT * FROM (SELECT * FROM users WHERE active = true) AS sub'
+    expect(mergeWhereClause(sql, `WHERE "a" ILIKE '%1%'`)).toBe(
+      `SELECT * FROM (SELECT * FROM users WHERE active = true) AS sub WHERE "a" ILIKE '%1%'`
+    )
+  })
+})
+
+describe('buildQueryWithFilters WHERE merging', () => {
+  const queryTab3 = (query: string): Tab => ({ type: 'query', query }) as unknown as Tab
+
+  it('does not emit two WHERE keywords', () => {
+    const result = buildQueryWithFilters({
+      tab: queryTab3('SELECT * FROM users WHERE active = true LIMIT 50'),
+      dbType: 'postgresql',
+      filters: [{ column: 'name', value: 'foo' }],
+      sorting: []
+    })
+    expect(result).toBe(
+      `SELECT * FROM users WHERE (active = true) AND ("name" ILIKE '%foo%') LIMIT 50;`
+    )
   })
 })
