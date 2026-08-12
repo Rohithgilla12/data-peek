@@ -195,6 +195,38 @@ describe('mergeWhereClause', () => {
   })
 })
 
+describe('buildQueryWithFilters page size', () => {
+  const previewTab = (): Tab =>
+    ({
+      type: 'table-preview',
+      schemaName: 'blocktree',
+      tableName: 'wallets',
+      query: 'SELECT * FROM "blocktree"."wallets" LIMIT 250;',
+      savedQuery: 'SELECT * FROM "blocktree"."wallets" LIMIT 250;'
+    }) as unknown as Tab
+
+  it('uses the supplied limit instead of the hardcoded 100', () => {
+    const result = buildQueryWithFilters({
+      tab: previewTab(),
+      dbType: 'postgresql',
+      filters: [],
+      sorting: [{ column: 'name', direction: 'asc' }],
+      limit: 250
+    })
+    expect(result).toBe('SELECT * FROM "blocktree"."wallets" ORDER BY "name" ASC LIMIT 250;')
+  })
+
+  it('defaults to 100 when no limit is supplied', () => {
+    const result = buildQueryWithFilters({
+      tab: previewTab(),
+      dbType: 'postgresql',
+      filters: [],
+      sorting: [{ column: 'name', direction: 'asc' }]
+    })
+    expect(result).toBe('SELECT * FROM "blocktree"."wallets" ORDER BY "name" ASC LIMIT 100;')
+  })
+})
+
 describe('buildQueryWithFilters WHERE merging', () => {
   const queryTab3 = (query: string): Tab => ({ type: 'query', query }) as unknown as Tab
 

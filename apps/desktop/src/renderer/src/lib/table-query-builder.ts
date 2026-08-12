@@ -117,8 +117,9 @@ export function buildQueryWithFilters(params: {
   dbType: DatabaseType | undefined
   filters: DataTableFilter[]
   sorting: DataTableSort[]
+  limit?: number
 }): string {
-  const { tab, dbType, filters, sorting } = params
+  const { tab, dbType, filters, sorting, limit = 100 } = params
   if (!isExecutableTab(tab)) return ''
 
   // For table preview tabs, rebuild from the stored table — but only when the
@@ -140,7 +141,7 @@ export function buildQueryWithFilters(params: {
     return buildSelectQuery(tableRef, dbType, {
       where: wherePart,
       orderBy: orderPart,
-      limit: 100
+      limit
     })
       .replace(/\s+/g, ' ')
       .trim()

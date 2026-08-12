@@ -734,7 +734,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       tab,
       dbType: tabConnection?.dbType,
       filters: tableFilters,
-      sorting: tableSorting
+      sorting: tableSorting,
+      limit: isExecutableTab(tab) ? tab.pageSize : 100
     })
     updateTabQuery(tabId, formatSQL(newQuery))
     // Automatically run the new query
