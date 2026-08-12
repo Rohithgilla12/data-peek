@@ -47,6 +47,7 @@ import type {
   PerformanceAnalysisResult
 } from '@data-peek/shared'
 import type { ExportData, ExportDestination, ExportFormat } from '@/lib/export'
+import type { SortScope } from '@/lib/sort-scope'
 
 type Percentile = 'avg' | 'p90' | 'p95' | 'p99'
 
@@ -68,6 +69,9 @@ interface QueryResultsProps {
   setTableSorting: (s: DataTableSort[]) => void
   hasActiveFiltersOrSorting: boolean
   handleApplyToQuery: () => void
+  sortScope: SortScope
+  isSortingOnServer: boolean
+  handleSortWholeSet: () => void
   handleFKClick: (fk: ForeignKeyInfo, value: unknown) => void
   handleFKOpenTab: (fk: ForeignKeyInfo, value: unknown) => void
   handleColumnStatsClick: (col: ResultColumn) => void
@@ -127,6 +131,9 @@ export function QueryResults({
   setTableSorting,
   hasActiveFiltersOrSorting,
   handleApplyToQuery,
+  sortScope,
+  isSortingOnServer,
+  handleSortWholeSet,
   handleFKClick,
   handleFKOpenTab,
   handleColumnStatsClick,
@@ -311,6 +318,11 @@ export function QueryResults({
                         onFiltersChange={setTableFilters}
                         onSortingChange={setTableSorting}
                         onApplyToQuery={hasActiveFiltersOrSorting ? handleApplyToQuery : undefined}
+                        sortScope={sortScope}
+                        isSortingOnServer={isSortingOnServer}
+                        onSortWholeSet={
+                          sortScope.kind === 'partial' ? handleSortWholeSet : undefined
+                        }
                         onForeignKeyClick={handleFKClick}
                         onForeignKeyOpenTab={handleFKOpenTab}
                         onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}
@@ -344,6 +356,9 @@ export function QueryResults({
                     onFiltersChange={setTableFilters}
                     onSortingChange={setTableSorting}
                     onApplyToQuery={hasActiveFiltersOrSorting ? handleApplyToQuery : undefined}
+                    sortScope={sortScope}
+                    isSortingOnServer={isSortingOnServer}
+                    onSortWholeSet={sortScope.kind === 'partial' ? handleSortWholeSet : undefined}
                     onForeignKeyClick={handleFKClick}
                     onForeignKeyOpenTab={handleFKOpenTab}
                     onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}

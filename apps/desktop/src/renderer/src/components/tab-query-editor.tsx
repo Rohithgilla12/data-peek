@@ -25,7 +25,13 @@ import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
 import { generateExportFilename } from '@/lib/export'
 import { buildQualifiedTableRef, buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
-import { buildQueryWithFilters } from '@/lib/table-query-builder'
+import {
+  buildQueryWithFilters,
+  generateWhereClause,
+  generateOrderByClause
+} from '@/lib/table-query-builder'
+import { getSortScope } from '@/lib/sort-scope'
+import { notify } from '@/stores/notification-store'
 import type { QueryResult as IpcQueryResult } from '@data-peek/shared'
 import { FKPanelStack } from '@/components/fk-panel-stack'
 import { ERDVisualization } from '@/components/erd-visualization'
@@ -185,6 +191,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Track client-side filters and sorting for "Apply to Query"
   const [tableFilters, setTableFilters] = useState<DataTableFilter[]>([])
   const [tableSorting, setTableSorting] = useState<DataTableSort[]>([])
+  const [isSortingOnServer, setIsSortingOnServer] = useState(false)
 
   // FK panel stack (extracted to hook)
   const { fkPanels, handleFKClick, handleFKOpenTab, handleCloseFKPanel, handleCloseAllFKPanels } =
@@ -566,6 +573,56 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     [tabConnection, tabId, updateTablePreviewPagination, handleRunQuery]
   )
 
+  // A table-preview tab owns its own SQL, so a sort belongs in the database rather
+  // than in the renderer — a client sort would only reorder the loaded page. Debounced
+  // so flipping a direction twice costs one query, not two.
+  useEffect(() => {
+    const current = useTabStore.getState().getTab(tabId)
+    if (!current || current.type !== 'table-preview' || !tabConnection) return
+    if (
+      !sqlMatchesStoredTable(
+        current.savedQuery ?? current.query,
+        { schema: current.schemaName, table: current.tableName },
+        tabConnection.dbType
+      )
+    )
+      return
+
+    setIsSortingOnServer(true)
+    const timer = setTimeout(() => {
+      const t = useTabStore.getState().getTab(tabId)
+      if (!t || t.type !== 'table-preview') {
+        setIsSortingOnServer(false)
+        return
+      }
+
+      const tableRef = buildQualifiedTableRef(t.schemaName, t.tableName, tabConnection.dbType)
+      // Order changed, so page N of the old ordering means nothing — go back to page 1.
+      const rebuilt = buildSelectQuery(tableRef, tabConnection.dbType, {
+        where: generateWhereClause(tableFilters, tabConnection.dbType),
+        orderBy: generateOrderByClause(tableSorting, tabConnection.dbType),
+        limit: t.pageSize,
+        offset: 0
+      })
+
+      updateTablePreviewPagination(tabId, 1, t.pageSize, rebuilt)
+      handleRunQuery()
+      setIsSortingOnServer(false)
+    }, 250)
+
+    return () => {
+      clearTimeout(timer)
+      setIsSortingOnServer(false)
+    }
+  }, [
+    tableSorting,
+    tableFilters,
+    tabConnection,
+    tabId,
+    updateTablePreviewPagination,
+    handleRunQuery
+  ])
+
   const handleFormatQuery = () => {
     if (!tab || !isExecutableTab(tab) || !tab.query.trim()) return
     const formatted = formatSQL(tab.query)
@@ -727,20 +784,48 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     getEnumValues
   })
 
-  // Generate SQL WHERE clause from filters
-  const handleApplyToQuery = () => {
-    if (!tab || (tableFilters.length === 0 && tableSorting.length === 0)) return
-    const newQuery = buildQueryWithFilters({
-      tab,
-      dbType: tabConnection?.dbType,
-      filters: tableFilters,
-      sorting: tableSorting,
-      limit: isExecutableTab(tab) ? tab.pageSize : 100
-    })
-    updateTabQuery(tabId, formatSQL(newQuery))
-    // Automatically run the new query
-    setTimeout(() => handleRunQuery(), 100)
-  }
+  // Rewrite the editor SQL from the current filter/sort chips and re-run it. The SQL is
+  // changed in place rather than run behind the user's back, so what is on screen always
+  // explains the rows below it.
+  const applyTableStateToQuery = useCallback(
+    (opts: { offerUndo: boolean }) => {
+      if (!tab || !isExecutableTab(tab)) return
+      if (tableFilters.length === 0 && tableSorting.length === 0) return
+      const previous = tab.query
+      const newQuery = buildQueryWithFilters({
+        tab,
+        dbType: tabConnection?.dbType,
+        filters: tableFilters,
+        sorting: tableSorting,
+        limit: tab.pageSize
+      })
+      updateTabQuery(tabId, formatSQL(newQuery))
+      setTimeout(() => handleRunQuery(), 100)
+
+      if (!opts.offerUndo) return
+      notify.success('ORDER BY replaced', 'The query now sorts every row.', {
+        action: {
+          label: 'Undo',
+          onClick: () => {
+            updateTabQuery(tabId, previous)
+            setTimeout(() => handleRunQuery(), 100)
+          }
+        }
+      })
+    },
+    [tab, tabConnection?.dbType, tableFilters, tableSorting, tabId, updateTabQuery, handleRunQuery]
+  )
+
+  const handleApplyToQuery = useCallback(
+    () => applyTableStateToQuery({ offerUndo: false }),
+    [applyTableStateToQuery]
+  )
+
+  // Push the sort into ORDER BY so it covers rows the client never loaded.
+  const handleSortWholeSet = useCallback(
+    () => applyTableStateToQuery({ offerUndo: true }),
+    [applyTableStateToQuery]
+  )
 
   const hasActiveFiltersOrSorting = tableFilters.length > 0 || tableSorting.length > 0
 
@@ -875,6 +960,19 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     ? getActiveResultPaginatedRows(tabId)
     : getTabPaginatedRows(tabId)
 
+  // `tab` can be undefined when a tab is closed while its query is still in flight.
+  const sortScope = useMemo(
+    () =>
+      tab
+        ? getSortScope({
+            tab,
+            dbType: tabConnection?.dbType,
+            loadedRows: paginatedRows.length
+          })
+        : ({ kind: 'complete', rows: 0 } as const),
+    [tab, tabConnection?.dbType, paginatedRows.length]
+  )
+
   // Get columns from active statement result (for multi-statement) or legacy result
   const getActiveResultColumns = () => {
     if (activeStatementResult) {
@@ -990,6 +1088,9 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         setTableSorting={setTableSorting}
         hasActiveFiltersOrSorting={hasActiveFiltersOrSorting}
         handleApplyToQuery={handleApplyToQuery}
+        sortScope={sortScope}
+        isSortingOnServer={isSortingOnServer}
+        handleSortWholeSet={handleSortWholeSet}
         handleFKClick={handleFKClick}
         handleFKOpenTab={handleFKOpenTab}
         handleColumnStatsClick={handleColumnStatsClick}
