@@ -41,6 +41,32 @@ export function generateOrderByClause(
 }
 
 /**
+ * Remove a trailing top-level ORDER BY so a new one can replace it.
+ *
+ * Only a trailing clause is stripped. An ORDER BY inside a window function or a
+ * subquery is always followed by a closing paren, so requiring the tail to have no
+ * unmatched ')' leaves those untouched.
+ */
+export function stripTrailingOrderBy(sql: string): string {
+  const match = sql.match(/\sORDER\s+BY\s+[\s\S]*$/i)
+  if (!match || match.index === undefined) return sql
+
+  const tail = match[0]
+  let depth = 0
+  for (const ch of tail) {
+    if (ch === '(') depth++
+    else if (ch === ')') {
+      // A ')' with nothing open before it closes a paren opened earlier in the
+      // statement — this ORDER BY belongs to a subquery or window function.
+      if (depth === 0) return sql
+      depth--
+    }
+  }
+
+  return sql.slice(0, match.index).trimEnd()
+}
+
+/**
  * Produce a new query with the current filters/sorting applied.
  *
  * For a table-preview tab whose editor SQL still targets the stored table, the query
@@ -109,6 +135,8 @@ export function buildQueryWithFilters(params: {
     topClause = topMatch[2] + ' '
     baseQuery = baseQuery.replace(/^SELECT\s+TOP\s+\d+\s+/i, 'SELECT ')
   }
+
+  baseQuery = stripTrailingOrderBy(baseQuery)
 
   const wherePart = generateWhereClause(filters, dbType)
   const orderPart = generateOrderByClause(sorting, dbType)

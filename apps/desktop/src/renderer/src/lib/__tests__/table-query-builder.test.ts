@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   generateWhereClause,
   generateOrderByClause,
-  buildQueryWithFilters
+  buildQueryWithFilters,
+  stripTrailingOrderBy
 } from '@/lib/table-query-builder'
 import type { Tab } from '@/stores/tab-store'
 
@@ -104,5 +105,64 @@ describe('buildQueryWithFilters', () => {
     expect(result).toBe(
       `SELECT TOP 100 * FROM users WHERE [name] LIKE '%foo%' ORDER BY [age] DESC;`
     )
+  })
+})
+
+describe('stripTrailingOrderBy', () => {
+  it('removes a trailing ORDER BY', () => {
+    expect(stripTrailingOrderBy('SELECT * FROM users ORDER BY "age" DESC')).toBe(
+      'SELECT * FROM users'
+    )
+  })
+
+  it('removes a multi-column trailing ORDER BY', () => {
+    expect(stripTrailingOrderBy('SELECT * FROM users ORDER BY "a" ASC, "b" DESC')).toBe(
+      'SELECT * FROM users'
+    )
+  })
+
+  it('leaves a window function ORDER BY alone', () => {
+    const sql = 'SELECT row_number() OVER (ORDER BY "age" DESC) AS rn FROM users'
+    expect(stripTrailingOrderBy(sql)).toBe(sql)
+  })
+
+  it('leaves a subquery ORDER BY alone', () => {
+    const sql = 'SELECT * FROM (SELECT * FROM users ORDER BY "age") AS sub'
+    expect(stripTrailingOrderBy(sql)).toBe(sql)
+  })
+
+  it('strips only the outer ORDER BY when both are present', () => {
+    const sql = 'SELECT row_number() OVER (ORDER BY "a") AS rn FROM users ORDER BY "b" DESC'
+    expect(stripTrailingOrderBy(sql)).toBe(
+      'SELECT row_number() OVER (ORDER BY "a") AS rn FROM users'
+    )
+  })
+
+  it('returns the query unchanged when there is no ORDER BY', () => {
+    expect(stripTrailingOrderBy('SELECT * FROM users')).toBe('SELECT * FROM users')
+  })
+})
+
+describe('buildQueryWithFilters ORDER BY replacement', () => {
+  const queryTab2 = (query: string): Tab => ({ type: 'query', query }) as unknown as Tab
+
+  it('replaces an existing ORDER BY rather than appending a second one', () => {
+    const result = buildQueryWithFilters({
+      tab: queryTab2('SELECT * FROM wallets ORDER BY "created_at" DESC LIMIT 100'),
+      dbType: 'postgresql',
+      filters: [],
+      sorting: [{ column: 'name', direction: 'asc' }]
+    })
+    expect(result).toBe('SELECT * FROM wallets ORDER BY "name" ASC LIMIT 100;')
+  })
+
+  it('drops the existing ORDER BY when the new sorting is empty', () => {
+    const result = buildQueryWithFilters({
+      tab: queryTab2('SELECT * FROM wallets ORDER BY "created_at" DESC LIMIT 100'),
+      dbType: 'postgresql',
+      filters: [],
+      sorting: []
+    })
+    expect(result).toBe('SELECT * FROM wallets LIMIT 100;')
   })
 })
