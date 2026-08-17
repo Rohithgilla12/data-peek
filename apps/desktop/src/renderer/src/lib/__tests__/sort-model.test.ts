@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { applySorts, toggleColumnSort, type SortChip, type SortColumn } from '@/lib/sort-model'
+import {
+  applySorts,
+  getTypeCategory,
+  toggleColumnSort,
+  type SortChip,
+  type SortColumn
+} from '@/lib/sort-model'
 
 type ChipInit = {
   id?: string
@@ -390,5 +396,25 @@ describe('toggleColumnSort', () => {
     expect(flippedDate).toHaveLength(2)
     expect(flippedDate.find((c) => c.column === 'created_at')?.direction).toBe('asc')
     expect(flippedDate.find((c) => c.column === 'price')?.direction).toBe('desc')
+  })
+})
+
+describe('getTypeCategory boundary matching', () => {
+  it('classifies the plain numeric types', () => {
+    for (const t of ['integer', 'int', 'int4', 'bigint', 'numeric(10,2)', 'double precision']) {
+      expect(getTypeCategory(t)).toBe('numeric')
+    }
+  })
+
+  it('does not treat interval, point or int4range as numeric', () => {
+    expect(getTypeCategory('interval')).not.toBe('numeric')
+    expect(getTypeCategory('point')).not.toBe('numeric')
+    expect(getTypeCategory('int4range')).not.toBe('numeric')
+  })
+
+  it('classifies the date types', () => {
+    for (const t of ['timestamp without time zone', 'timestamptz', 'date', 'time']) {
+      expect(getTypeCategory(t)).toBe('date')
+    }
   })
 })

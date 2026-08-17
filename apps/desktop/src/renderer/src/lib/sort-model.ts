@@ -38,22 +38,39 @@ export type SortChip =
 
 export type TypeCategory = 'bool' | 'numeric' | 'date' | 'string'
 
+/**
+ * Whether a chip's intent survives being turned into an ORDER BY clause.
+ *
+ * `generateOrderByClause` emits nothing but `column ASC|DESC`, so every other part of a
+ * chip is dropped on the way to the database. Sorting server-side while silently
+ * discarding the mode would order rows by the plain column and still report the sort as
+ * authoritative, which is the exact confusion the scope signal exists to prevent.
+ *
+ * Null placement is judged against the chip default rather than the dialect's: no clause
+ * is emitted either way, so only an explicit choice is being lost. Postgres orders nulls
+ * first on DESC regardless, and that mismatch is older than this check.
+ */
+export function isServerExpressibleSort(sort: {
+  mode?: SortMode
+  nullsPosition?: NullsPosition
+}): boolean {
+  return (sort.mode ?? 'default') === 'default' && (sort.nullsPosition ?? 'last') === 'last'
+}
+
+// Matched on word boundaries rather than as substrings: `includes('int')` also catches
+// `interval`, `point` and `int4range`, none of which sort as numbers — an interval
+// would be run through Number() and compare as NaN.
+const NUMERIC_TYPE =
+  /\b(smallint|integer|int|int2|int4|int8|bigint|numeric|decimal|dec|float|float4|float8|double|real|money|smallmoney|serial|smallserial|bigserial)\b/
+
+const DATE_TYPE =
+  /\b(timestamptz|timestamp|datetime2?|datetimeoffset|smalldatetime|date|time|timetz)\b/
+
 export function getTypeCategory(dataType: string): TypeCategory {
   const lower = dataType.toLowerCase()
-  if (lower.includes('bool')) return 'bool'
-  if (
-    lower.includes('int') ||
-    lower.includes('numeric') ||
-    lower.includes('decimal') ||
-    lower.includes('float') ||
-    lower.includes('double') ||
-    lower.includes('real') ||
-    lower.includes('money') ||
-    lower.includes('serial') ||
-    lower.includes('bigint')
-  )
-    return 'numeric'
-  if (lower.includes('timestamp') || lower.includes('date') || lower.includes('time')) return 'date'
+  if (/\bbool(ean)?\b/.test(lower)) return 'bool'
+  if (NUMERIC_TYPE.test(lower)) return 'numeric'
+  if (DATE_TYPE.test(lower)) return 'date'
   return 'string'
 }
 

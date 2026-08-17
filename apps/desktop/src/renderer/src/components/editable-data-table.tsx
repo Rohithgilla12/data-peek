@@ -95,10 +95,10 @@ export interface DataTableFilter {
   value: string
 }
 
-export interface DataTableSort {
-  column: string
-  direction: 'asc' | 'desc'
-}
+// Re-exported rather than redeclared: the two tables feed the same `onSortingChange`
+// consumers, and a second copy of the shape silently drifted out of sync once already.
+import type { DataTableSort } from '@/components/data-table'
+export type { DataTableSort }
 
 interface EditableDataTableProps<TData> {
   tabId: string
@@ -462,7 +462,9 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     if (onSortingChange) {
       const sorts: DataTableSort[] = sortChips.map((c) => ({
         column: c.column,
-        direction: c.direction
+        direction: c.direction,
+        mode: c.mode,
+        nullsPosition: c.nullsPosition
       }))
       onSortingChange(sorts)
     }

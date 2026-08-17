@@ -331,6 +331,9 @@ export function SmartSortBar({
       }
       if (e.key === 'ArrowDown') {
         e.preventDefault()
+        // With both lists empty there is no row to land on; clamping to -1 would make
+        // the next Enter index off the front of the presets array.
+        if (dropdownRowCount === 0) return
         setHighlighted((i) => Math.min(i + 1, dropdownRowCount - 1))
         return
       }
@@ -341,8 +344,10 @@ export function SmartSortBar({
       }
       if (e.key === 'Enter') {
         e.preventDefault()
+        if (highlighted < 0) return
         if (highlighted < availablePresets.length) {
-          applyPreset(availablePresets[highlighted])
+          const preset = availablePresets[highlighted]
+          if (preset) applyPreset(preset)
         } else {
           const colIdx = highlighted - availablePresets.length
           const col = filteredColumns[colIdx]

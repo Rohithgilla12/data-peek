@@ -321,7 +321,9 @@ export function QueryResults({
                         sortScope={sortScope}
                         isSortingOnServer={isSortingOnServer}
                         onSortWholeSet={
-                          sortScope.kind === 'partial' ? handleSortWholeSet : undefined
+                          sortScope.kind === 'partial' && sortScope.serverSortable
+                            ? handleSortWholeSet
+                            : undefined
                         }
                         onForeignKeyClick={handleFKClick}
                         onForeignKeyOpenTab={handleFKOpenTab}
@@ -358,7 +360,11 @@ export function QueryResults({
                     onApplyToQuery={hasActiveFiltersOrSorting ? handleApplyToQuery : undefined}
                     sortScope={sortScope}
                     isSortingOnServer={isSortingOnServer}
-                    onSortWholeSet={sortScope.kind === 'partial' ? handleSortWholeSet : undefined}
+                    onSortWholeSet={
+                      sortScope.kind === 'partial' && sortScope.serverSortable
+                        ? handleSortWholeSet
+                        : undefined
+                    }
                     onForeignKeyClick={handleFKClick}
                     onForeignKeyOpenTab={handleFKOpenTab}
                     onColumnStatsClick={tabConnection ? handleColumnStatsClick : undefined}

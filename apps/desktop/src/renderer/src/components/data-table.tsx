@@ -34,7 +34,13 @@ import { JsonCellValue } from '@/components/json-cell-value'
 import { FKCellValue } from '@/components/fk-cell-value'
 import { SmartFilterBar, chipMatchesRow, type FilterChip } from '@/components/smart-filter-bar'
 import { SmartSortBar } from '@/components/sort/smart-sort-bar'
-import { applySorts, toggleColumnSort, type SortChip } from '@/lib/sort-model'
+import {
+  applySorts,
+  toggleColumnSort,
+  type NullsPosition,
+  type SortChip,
+  type SortMode
+} from '@/lib/sort-model'
 import type { SortScope } from '@/lib/sort-scope'
 
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
@@ -68,6 +74,12 @@ export interface DataTableFilter {
 export interface DataTableSort {
   column: string
   direction: 'asc' | 'desc'
+  /**
+   * Carried so the consumer can tell whether this sort survives translation to SQL.
+   * Absent means a plain column sort, which always does.
+   */
+  mode?: SortMode
+  nullsPosition?: NullsPosition
 }
 
 export interface DataTableColumn {
@@ -330,7 +342,9 @@ export function DataTable<TData extends Record<string, unknown>>({
     if (onSortingChange) {
       const sorts: DataTableSort[] = sortChips.map((c) => ({
         column: c.column,
-        direction: c.direction
+        direction: c.direction,
+        mode: c.mode,
+        nullsPosition: c.nullsPosition
       }))
       onSortingChange(sorts)
     }
