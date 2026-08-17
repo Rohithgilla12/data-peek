@@ -41,29 +41,95 @@ export function generateOrderByClause(
 }
 
 /**
- * Remove a trailing top-level ORDER BY so a new one can replace it.
- *
- * Only a trailing clause is stripped. An ORDER BY inside a window function or a
- * subquery is always followed by a closing paren, so requiring the tail to have no
- * unmatched ')' leaves those untouched.
+ * Blank out string literals and quoted identifiers, and record the paren depth at
+ * every position. Clause keywords are only meaningful at depth zero and outside
+ * quotes, so scanning the masked copy keeps a subquery, a window function or a
+ * literal containing the word "where" from being mistaken for a real clause.
  */
-export function stripTrailingOrderBy(sql: string): string {
-  const match = sql.match(/\sORDER\s+BY\s+[\s\S]*$/i)
-  if (!match || match.index === undefined) return sql
+function maskAndDepths(sql: string): { masked: string; depth: number[] } {
+  const masked = sql.split('')
+  const depth = new Array<number>(sql.length).fill(0)
+  let current = 0
+  let quote: string | null = null
 
-  const tail = match[0]
-  let depth = 0
-  for (const ch of tail) {
-    if (ch === '(') depth++
-    else if (ch === ')') {
-      // A ')' with nothing open before it closes a paren opened earlier in the
-      // statement — this ORDER BY belongs to a subquery or window function.
-      if (depth === 0) return sql
-      depth--
+  for (let i = 0; i < sql.length; i++) {
+    const ch = sql[i]
+    depth[i] = current
+
+    if (quote) {
+      masked[i] = ' '
+      if (ch === quote) {
+        // A doubled quote is an escaped one, still inside the literal.
+        if (sql[i + 1] === quote) {
+          masked[i + 1] = ' '
+          depth[i + 1] = current
+          i++
+        } else {
+          quote = null
+        }
+      }
+      continue
+    }
+
+    if (ch === "'" || ch === '"' || ch === '`') {
+      quote = ch
+      masked[i] = ' '
+      continue
+    }
+    if (ch === '(') current++
+    else if (ch === ')' && current > 0) {
+      current--
+      depth[i] = current
     }
   }
 
-  return sql.slice(0, match.index).trimEnd()
+  return { masked: masked.join(''), depth }
+}
+
+/** Index of the last depth-zero match, or null when the keyword never appears there. */
+function lastTopLevelIndex(sql: string, pattern: RegExp): number | null {
+  const { masked, depth } = maskAndDepths(sql)
+  const scan = new RegExp(pattern.source, 'gi')
+  let last: number | null = null
+  let match: RegExpExecArray | null
+  while ((match = scan.exec(masked)) !== null) {
+    if (depth[match.index] === 0) last = match.index
+    scan.lastIndex = match.index + 1
+  }
+  return last
+}
+
+/** Index of the first depth-zero match at or after `from`, or null. */
+function firstTopLevelIndexAfter(sql: string, pattern: RegExp, from: number): number | null {
+  const { masked, depth } = maskAndDepths(sql)
+  const scan = new RegExp(pattern.source, 'gi')
+  let match: RegExpExecArray | null
+  while ((match = scan.exec(masked)) !== null) {
+    if (match.index >= from && depth[match.index] === 0) return match.index
+    scan.lastIndex = match.index + 1
+  }
+  return null
+}
+
+/** Clauses that may legally follow a WHERE and must not be swallowed into it. */
+const CLAUSE_AFTER_WHERE =
+  /\s(GROUP\s+BY|HAVING|WINDOW|ORDER\s+BY|LIMIT|OFFSET|FETCH|UNION|INTERSECT|EXCEPT|RETURNING)\s/
+
+/** Pagination keywords, extracted as a unit so a new ORDER BY lands before them. */
+const PAGINATION_CLAUSE = /\s(LIMIT|OFFSET|FETCH)\s/
+
+/**
+ * Remove the top-level ORDER BY so a new one can replace it.
+ *
+ * The *last* depth-zero occurrence is the statement's own clause; an ORDER BY inside
+ * a window function or a subquery sits at a deeper paren level and is left untouched.
+ * Matching the first occurrence instead would miss the real clause whenever a
+ * subquery precedes it, and the caller would then append a second ORDER BY.
+ */
+export function stripTrailingOrderBy(sql: string): string {
+  const index = lastTopLevelIndex(sql, /\sORDER\s+BY\s/)
+  if (index === null) return sql
+  return sql.slice(0, index).trimEnd()
 }
 
 /**
@@ -77,31 +143,23 @@ export function mergeWhereClause(sql: string, whereClause: string): string {
   if (!whereClause) return sql
 
   const newCondition = whereClause.replace(/^WHERE\s+/i, '')
-  const match = sql.match(/\sWHERE\s+[\s\S]*$/i)
+  const index = lastTopLevelIndex(sql, /\sWHERE\s/)
 
-  if (match && match.index !== undefined) {
-    const tail = match[0]
-    let depth = 0
-    let nested = false
-    for (const ch of tail) {
-      if (ch === '(') depth++
-      else if (ch === ')') {
-        if (depth === 0) {
-          nested = true
-          break
-        }
-        depth--
-      }
-    }
+  if (index === null) return `${sql.trimEnd()} ${whereClause}`
 
-    if (!nested) {
-      const head = sql.slice(0, match.index).trimEnd()
-      const existing = tail.replace(/^\s*WHERE\s+/i, '').trim()
-      return `${head} WHERE (${existing}) AND (${newCondition})`
-    }
-  }
+  // The predicate ends at the next top-level clause, not at the end of the statement.
+  // Running to the end would fold a GROUP BY or ORDER BY inside the parentheses.
+  const boundary = firstTopLevelIndexAfter(sql, CLAUSE_AFTER_WHERE, index + 1)
+  const end = boundary ?? sql.length
 
-  return `${sql.trimEnd()} ${whereClause}`
+  const head = sql.slice(0, index).trimEnd()
+  const existing = sql
+    .slice(index, end)
+    .replace(/^\s*WHERE\s+/i, '')
+    .trim()
+  const rest = sql.slice(end)
+
+  return `${head} WHERE (${existing}) AND (${newCondition})${rest}`
 }
 
 /**
@@ -158,21 +216,24 @@ export function buildQueryWithFilters(params: {
     baseQuery = baseQuery.slice(0, -1)
   }
 
-  // Remove existing LIMIT (PostgreSQL/MySQL) or TOP (MSSQL) for re-adding
-  // LIMIT is at the end: SELECT * FROM table LIMIT 100
+  // Detach existing pagination (PostgreSQL/MySQL) or TOP (MSSQL) so the rewritten
+  // WHERE/ORDER BY slot in ahead of it, then re-attach verbatim.
+  // Pagination trails the statement: SELECT * FROM table LIMIT 100 OFFSET 20
   // TOP is after SELECT: SELECT TOP 100 * FROM table
-  const limitMatch = baseQuery.match(/\s+LIMIT\s+\d+\s*$/i)
-  const topMatch = baseQuery.match(/^(SELECT)\s+(TOP\s+\d+)\s+/i)
+  const paginationIndex = lastTopLevelIndex(baseQuery, PAGINATION_CLAUSE)
+  const topMatch = baseQuery.match(/^(SELECT)\s+(TOP\s*\(?\s*\d+\s*\)?)\s+/i)
   let limitClause = ''
   let topClause = ''
 
-  if (limitMatch) {
-    limitClause = limitMatch[0]
-    baseQuery = baseQuery.slice(0, -limitMatch[0].length)
+  if (paginationIndex !== null) {
+    // Keep the earliest keyword of the run so `LIMIT n OFFSET m` moves as one piece.
+    const start = firstTopLevelIndexAfter(baseQuery, PAGINATION_CLAUSE, 0) ?? paginationIndex
+    limitClause = baseQuery.slice(start)
+    baseQuery = baseQuery.slice(0, start)
   }
   if (topMatch) {
     topClause = topMatch[2] + ' '
-    baseQuery = baseQuery.replace(/^SELECT\s+TOP\s+\d+\s+/i, 'SELECT ')
+    baseQuery = baseQuery.replace(/^SELECT\s+TOP\s*\(?\s*\d+\s*\)?\s+/i, 'SELECT ')
   }
 
   baseQuery = stripTrailingOrderBy(baseQuery)

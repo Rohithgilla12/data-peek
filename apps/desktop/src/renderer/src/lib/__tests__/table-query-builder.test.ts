@@ -242,3 +242,62 @@ describe('buildQueryWithFilters WHERE merging', () => {
     )
   })
 })
+
+describe('top-level clause detection', () => {
+  const queryTab4 = (query: string): Tab => ({ type: 'query', query }) as unknown as Tab
+
+  it('strips the outer ORDER BY when a subquery ORDER BY comes first', () => {
+    const sql = 'SELECT * FROM (SELECT * FROM users ORDER BY "a") AS sub ORDER BY "b" DESC'
+    expect(stripTrailingOrderBy(sql)).toBe(
+      'SELECT * FROM (SELECT * FROM users ORDER BY "a") AS sub'
+    )
+  })
+
+  it('ignores an ORDER BY inside a string literal', () => {
+    const sql = `SELECT * FROM users WHERE note = ' ORDER BY x '`
+    expect(stripTrailingOrderBy(sql)).toBe(sql)
+  })
+
+  it('ANDs into the outer WHERE when a subquery WHERE comes first', () => {
+    const sql = 'SELECT * FROM (SELECT * FROM users WHERE active = true) AS sub WHERE "b" = 1'
+    expect(mergeWhereClause(sql, `WHERE "a" ILIKE '%1%'`)).toBe(
+      'SELECT * FROM (SELECT * FROM users WHERE active = true) AS sub ' +
+        `WHERE ("b" = 1) AND ("a" ILIKE '%1%')`
+    )
+  })
+
+  it('keeps GROUP BY and HAVING outside the merged predicate', () => {
+    const sql = 'SELECT dept, count(*) FROM t WHERE a = 1 GROUP BY dept HAVING count(*) > 1'
+    expect(mergeWhereClause(sql, `WHERE "n" ILIKE '%x%'`)).toBe(
+      `SELECT dept, count(*) FROM t WHERE (a = 1) AND ("n" ILIKE '%x%') ` +
+        'GROUP BY dept HAVING count(*) > 1'
+    )
+  })
+
+  it('keeps a trailing ORDER BY outside the merged predicate', () => {
+    const sql = 'SELECT * FROM t WHERE a = 1 ORDER BY b'
+    expect(mergeWhereClause(sql, `WHERE "n" ILIKE '%x%'`)).toBe(
+      `SELECT * FROM t WHERE (a = 1) AND ("n" ILIKE '%x%') ORDER BY b`
+    )
+  })
+
+  it('preserves LIMIT with OFFSET and places ORDER BY before it', () => {
+    const result = buildQueryWithFilters({
+      tab: queryTab4('SELECT * FROM wallets ORDER BY "created_at" DESC LIMIT 100 OFFSET 20'),
+      dbType: 'postgresql',
+      filters: [],
+      sorting: [{ column: 'name', direction: 'asc' }]
+    })
+    expect(result).toBe('SELECT * FROM wallets ORDER BY "name" ASC LIMIT 100 OFFSET 20;')
+  })
+
+  it('preserves a parenthesised MSSQL TOP', () => {
+    const result = buildQueryWithFilters({
+      tab: queryTab4('SELECT TOP (100) * FROM wallets'),
+      dbType: 'mssql',
+      filters: [],
+      sorting: [{ column: 'name', direction: 'asc' }]
+    })
+    expect(result).toBe('SELECT TOP (100) * FROM wallets ORDER BY [name] ASC;')
+  })
+})
