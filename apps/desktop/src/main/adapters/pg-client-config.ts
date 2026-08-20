@@ -1,6 +1,22 @@
 import { readFileSync } from 'fs'
-import type { ClientConfig } from 'pg'
+import { types as pgTypes, type ClientConfig } from 'pg'
 import type { ConnectionConfig } from '@shared/index'
+
+/**
+ * Register the type parsers every Postgres connection in the app depends on.
+ *
+ * Return `timestamp without time zone` (OID 1114) as a raw ISO string so JavaScript's
+ * Date conversion can't shift a UTC-stored value to local time. (1184, timestamptz,
+ * is left alone — that one *should* shift.)
+ *
+ * pg keeps parsers in process-global state, so this is idempotent but every connection
+ * path has to call it: registration used to be a side effect of building the first
+ * pool, which meant a dedicated client opened before any pool existed rendered the same
+ * column differently from the pooled path.
+ */
+export function registerPgTypeParsers(): void {
+  pgTypes.setTypeParser(1114, (val: string) => val)
+}
 
 /**
  * Split a user-entered default schema into individual schema names.

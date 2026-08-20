@@ -34,6 +34,12 @@ interface StepSession {
   lastError: StepSessionError | null
   lastActivity: number
   startedAt: number
+  /**
+   * The backend went away underneath this session. Anything it had open — the
+   * transaction included — is already gone server-side, so teardown must not try to
+   * talk to it.
+   */
+  connectionLost: boolean
 }
 
 export interface StepSessionRegistryOptions {
@@ -76,8 +82,8 @@ export class StepSessionRegistry {
       throw new Error('No statements found in SQL')
     }
 
-    // The client arrives connected, so a dial failure throws here with nothing to
-    // clean up — the factory unwinds its own tunnel.
+    // The client arrives connected — see `createDedicatedClient` for the guarantee — so
+    // a dial failure throws here with nothing to clean up.
     const client = await this.createClient(input.config)
     try {
       if (input.inTransaction) {
@@ -85,7 +91,10 @@ export class StepSessionRegistry {
       }
     } catch (err) {
       await client.close().catch((closeErr) => {
-        log.warn(`Cleanup after failed start: client.close() also failed:`, closeErr)
+        log.error(
+          `Cleanup after failed start: client.close() also failed; connection may be orphaned:`,
+          closeErr
+        )
       })
       throw err
     }
@@ -105,7 +114,25 @@ export class StepSessionRegistry {
       state: 'paused',
       lastError: null,
       lastActivity: now,
-      startedAt: now
+      startedAt: now,
+      connectionLost: false
+    })
+
+    // Without this the session sits in the map looking paused, and the next step blames
+    // whichever statement the cursor happens to be on for a connection that had already
+    // died.
+    client.onDisconnect((err) => {
+      const session = this.sessions.get(sessionId)
+      if (!session) return
+      log.error(`Step session ${sessionId} lost its connection:`, err)
+      session.connectionLost = true
+      session.state = 'errored'
+      session.lastError = {
+        statementIndex: session.cursorIndex,
+        message: err
+          ? `Connection lost: ${err.message}. Stop and restart the session.`
+          : 'The database closed this connection. Stop and restart the session.'
+      }
     })
 
     log.debug(`Started step session ${sessionId} (tab=${input.tabId}, window=${input.windowId})`)
@@ -220,7 +247,11 @@ export class StepSessionRegistry {
     let rolledBack = false
     let rollbackError: string | undefined
 
-    if (session.inTransaction && (session.state === 'paused' || session.state === 'errored')) {
+    if (
+      session.inTransaction &&
+      !session.connectionLost &&
+      (session.state === 'paused' || session.state === 'errored')
+    ) {
       try {
         await session.client.query('ROLLBACK')
         rolledBack = true
@@ -231,7 +262,10 @@ export class StepSessionRegistry {
     }
 
     await session.client.close().catch((err) => {
-      log.warn(`Client.close() failed for session ${sessionId}:`, err)
+      log.error(
+        `Client.close() failed for session ${sessionId} (${session.config.host}/${session.config.database}); connection may be orphaned:`,
+        err
+      )
     })
 
     this.sessions.delete(sessionId)
@@ -338,10 +372,13 @@ export class StepSessionRegistry {
 /**
  * Open the connection a step session runs on.
  *
- * It has to be dedicated: the session holds a transaction open across many IPC calls,
- * so a pooled client — handed back after each call — would lose it. The adapter owns
- * how that connection is built, which is what keeps step sessions honouring the SSL,
- * SSH and `search_path` settings the rest of the app does.
+ * It is dedicated because the session accumulates backend state — an open transaction,
+ * temp tables, `SET`s — that has to survive between IPC calls, and because it stays
+ * open for as long as the user leaves the panel up. (`acquirePgSessionClient` also
+ * holds a client across calls, but its budget is small and meant for transactions the
+ * user is actively driving.) The adapter owns how the connection is built, which is
+ * what keeps step sessions honouring the SSL, SSH and `search_path` settings the rest
+ * of the app does.
  */
 async function defaultClientFactory(config: ConnectionConfig): Promise<DedicatedClient> {
   const adapter = getAdapter(config)

@@ -4,10 +4,14 @@ import type { ConnectionConfig } from '@shared/index'
 
 const { ClientCtor } = vi.hoisted(() => ({ ClientCtor: vi.fn() }))
 
-vi.mock('pg', () => ({ Client: ClientCtor }))
+// `types` is needed because opening a connection registers the shared type parsers.
+vi.mock('pg', () => ({ Client: ClientCtor, types: { setTypeParser: vi.fn() } }))
 vi.mock('../ssh-tunnel-service', () => ({
   createTunnel: vi.fn(),
   closeTunnel: vi.fn()
+}))
+vi.mock('../lib/logger', () => ({
+  createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }))
 
 import { createTunnel, closeTunnel, type TunnelSession } from '../ssh-tunnel-service'
@@ -167,6 +171,49 @@ describe('createPgDedicatedClient', () => {
     ])
   })
 
+  it('opens no tunnel when the connection is not over SSH', async () => {
+    const client = await createPgDedicatedClient(makeConfig())
+    expect(createTunnel).not.toHaveBeenCalled()
+    await client.close()
+    expect(closeTunnel).toHaveBeenCalledWith(null)
+  })
+
+  it('releases the tunnel even when end() rejects, and replays the rejection', async () => {
+    const client = await createPgDedicatedClient(makeConfig({ ssh: true }))
+    const c = onlyClient()
+    c.end = async () => {
+      c.endCalls++
+      throw new Error('socket already gone')
+    }
+
+    await expect(client.close()).rejects.toThrow('socket already gone')
+    // The tunnel must not survive a dirty close, or its bound local port leaks for the
+    // life of the process.
+    expect(closeTunnel).toHaveBeenCalledWith(tunnel)
+    // A failed teardown stays failed rather than silently retrying end().
+    await expect(client.close()).rejects.toThrow('socket already gone')
+    expect(c.endCalls).toBe(1)
+  })
+
+  it('makes concurrent close() calls await one teardown', async () => {
+    let release: () => void = () => {}
+    const client = await createPgDedicatedClient(makeConfig())
+    const c = onlyClient()
+    c.end = async () => {
+      c.endCalls++
+      await new Promise<void>((resolve) => {
+        release = resolve
+      })
+    }
+
+    const first = client.close()
+    const second = client.close()
+    release()
+    await Promise.all([first, second])
+    // A boolean guard would have let the second caller return before the socket closed.
+    expect(c.endCalls).toBe(1)
+  })
+
   it('closes idempotently', async () => {
     const client = await createPgDedicatedClient(makeConfig({ ssh: true }))
     await client.close()
@@ -224,14 +271,15 @@ describe('onDisconnect', () => {
     ClientCtor.mockImplementation(function (config: Record<string, unknown>) {
       const c = new FakePgClient(config)
       c.connectImpl = async () => {
-        c.emit('error', new Error('SSL negotiation failed'))
+        // Deliberately different text from the rejection: an EventEmitter with no
+        // 'error' listener throws the emitted error synchronously, so if the listener
+        // were not attached before connect(), *this* is the message that would surface.
+        c.emit('error', new Error('raw unhandled emit'))
         throw new Error('SSL negotiation failed')
       }
       return c
     })
 
-    // An EventEmitter with no 'error' listener throws on emit, so this rejecting with
-    // the connect error (rather than the raw emit) is the assertion.
     await expect(createPgDedicatedClient(makeConfig())).rejects.toThrow('SSL negotiation failed')
   })
 })
@@ -249,6 +297,20 @@ describe('createPgNotificationClient', () => {
       ['jobs', '{"id":1}'],
       ['ping', '']
     ])
+  })
+
+  it('replaces the notification handler rather than adding a second', async () => {
+    const client = await createPgNotificationClient(makeConfig())
+    const first: string[] = []
+    const second: string[] = []
+    client.onNotification((channel) => first.push(channel))
+    client.onNotification((channel) => second.push(channel))
+
+    onlyClient().emit('notification', { channel: 'jobs', payload: '' })
+
+    // Accumulating would persist and broadcast the same event once per registration.
+    expect(first).toEqual([])
+    expect(second).toEqual(['jobs'])
   })
 
   it('carries the same disconnect and close contract', async () => {

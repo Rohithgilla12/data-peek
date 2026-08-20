@@ -67,19 +67,31 @@ export interface DedicatedClient {
    * Register the handler for this connection dying underneath the caller — a socket
    * error, or a clean close from the server, which arrives as a null error.
    *
-   * Fires at most once per connection, and never for a `close()` the caller asked for.
-   * If the connection already died before the handler was registered, it fires
-   * immediately with whatever killed it.
+   * Single-handler: a later registration replaces the earlier one. The connection
+   * reports its death at most once, and never for a `close()` the caller asked for. A
+   * death that happened before registration is replayed to the handler immediately, so
+   * there is no window in which it can be missed.
    */
   onDisconnect(handler: (error: Error | null) => void): void
 
-  /** Close the connection and release whatever it rode on (SSH tunnel). Idempotent. */
+  /**
+   * Close the connection and release whatever it rode on (SSH tunnel).
+   *
+   * Idempotent: repeat calls await the same teardown rather than starting another. A
+   * teardown that failed stays failed — the rejection is replayed, not retried.
+   */
   close(): Promise<void>
 }
 
 /** A dedicated client that also delivers asynchronous notifications from the server. */
 export interface NotificationClient extends DedicatedClient {
-  /** Register the handler for notifications on any channel this client is LISTENing to. */
+  /**
+   * Register the handler for notifications on any channel this client is LISTENing to.
+   *
+   * Single-handler, like `onDisconnect`: a later registration replaces the earlier one.
+   * Unlike a disconnect, a notification that arrives before registration is dropped —
+   * register before issuing `LISTEN`.
+   */
   onNotification(handler: (channel: string, payload: string) => void): void
 }
 
@@ -154,6 +166,10 @@ export interface DatabaseAdapter {
    * Open a dedicated, unpooled connection for a caller that needs server-side session
    * state to survive across calls. Adapters that only ever serve pooled queries don't
    * implement it, and callers must handle its absence.
+   *
+   * The returned client is already connected — there is no separate connect step — and
+   * an implementation that fails partway releases whatever it had acquired (socket, SSH
+   * tunnel) before rejecting, so a caller has nothing to clean up on failure.
    */
   createDedicatedClient?(config: ConnectionConfig): Promise<DedicatedClient>
 

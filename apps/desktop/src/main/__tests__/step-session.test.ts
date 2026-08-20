@@ -31,7 +31,7 @@ class MockClient {
   responses: Array<{
     rows?: Record<string, unknown>[]
     fields?: QueryField[]
-    rowCount?: number
+    rowCount?: number | null
     error?: Error
   }> = []
   closed = false
@@ -44,14 +44,21 @@ class MockClient {
     return {
       rows: response.rows ?? [],
       fields: response.fields ?? [],
-      rowCount: response.rowCount ?? 0
+      // `in` rather than `??` so a deliberate null reaches the registry — pg reports a
+      // null rowCount for some commands and the fallback path depends on it.
+      rowCount: 'rowCount' in response ? (response.rowCount ?? null) : 0
     }
   }
-  onDisconnect() {
-    /* the registry surfaces connection death through the next query instead */
+  private disconnect: ((error: Error | null) => void) | null = null
+  onDisconnect(handler: (error: Error | null) => void) {
+    this.disconnect = handler
   }
   async close() {
     this.closed = true
+  }
+  /** Simulate the backend going away underneath the session. */
+  die(error: Error | null = new Error('read ECONNRESET')) {
+    this.disconnect?.(error)
   }
 }
 
@@ -521,6 +528,136 @@ describe('StepSessionRegistry', () => {
       await registry.stop(sessionId)
       const result = await registry.stop(sessionId)
       expect(result.rolledBack).toBe(false)
+    })
+  })
+
+  describe('statement result shape', () => {
+    it('labels a non-data-returning statement as affected rather than rows', async () => {
+      // Previously computed from the result (`rows.length > 0 || Array.isArray(fields)`),
+      // which pg makes unconditionally true — every stepped statement claimed to return
+      // data. Now derived from the SQL, like the normal query path.
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: "UPDATE users SET name = 'x';",
+        inTransaction: false
+      })
+      mockClients[0].responses.push({ rowCount: 3 })
+
+      const response = await registry.next(sessionId)
+      expect(response.result.isDataReturning).toBe(false)
+      expect(response.result.rowCount).toBe(3)
+    })
+
+    it('labels a SELECT as data-returning', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT * FROM users;',
+        inTransaction: false
+      })
+      mockClients[0].responses.push({ rows: [{ id: 1 }], rowCount: 1 })
+
+      const response = await registry.next(sessionId)
+      expect(response.result.isDataReturning).toBe(true)
+    })
+
+    it('labels UPDATE ... RETURNING as data-returning', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'UPDATE users SET name = $1 RETURNING id;',
+        inTransaction: false
+      })
+      mockClients[0].responses.push({ rows: [{ id: 1 }], rowCount: 1 })
+
+      const response = await registry.next(sessionId)
+      expect(response.result.isDataReturning).toBe(true)
+    })
+
+    it('passes the adapter-resolved field types straight through', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT id FROM users;',
+        inTransaction: false
+      })
+      mockClients[0].responses.push({
+        rows: [{ id: 1 }],
+        fields: [{ name: 'id', dataType: 'integer', dataTypeID: 23 }],
+        rowCount: 1
+      })
+
+      const response = await registry.next(sessionId)
+      // Used to be flattened to dataType: 'unknown' for every column.
+      expect(response.result.fields).toEqual([{ name: 'id', dataType: 'integer', dataTypeID: 23 }])
+    })
+
+    it('falls back to the row count when the driver reports a null rowCount', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1;',
+        inTransaction: false
+      })
+      mockClients[0].responses.push({ rows: [{ a: 1 }, { a: 2 }], rowCount: null })
+
+      const response = await registry.next(sessionId)
+      expect(response.result.rowCount).toBe(2)
+    })
+  })
+
+  describe('connection loss', () => {
+    it('marks the session errored with a connection message, not a statement error', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1; SELECT 2;',
+        inTransaction: false
+      })
+
+      mockClients[0].die(new Error('read ECONNRESET'))
+
+      await expect(registry.next(sessionId)).rejects.toThrow(/Cannot advance session in state/)
+      const stopped = await registry.stop(sessionId)
+      expect(stopped.rolledBack).toBe(false)
+    })
+
+    it('does not ROLLBACK down a dead socket', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1;',
+        inTransaction: true
+      })
+      const callsBefore = [...mockClients[0].calls]
+
+      mockClients[0].die()
+      const stopped = await registry.stop(sessionId)
+
+      expect(stopped.rolledBack).toBe(false)
+      expect(mockClients[0].calls).toEqual(callsBefore)
+      expect(mockClients[0].closed).toBe(true)
+    })
+
+    it('still rolls back when the connection is healthy', async () => {
+      const { sessionId } = await registry.start({
+        config: mockConfig,
+        tabId: 'tab-1',
+        windowId: 1,
+        sql: 'SELECT 1;',
+        inTransaction: true
+      })
+      const stopped = await registry.stop(sessionId)
+      expect(stopped.rolledBack).toBe(true)
+      expect(mockClients[0].calls).toContain('ROLLBACK')
     })
   })
 

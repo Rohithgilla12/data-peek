@@ -1,7 +1,7 @@
-import { types as pgTypes, Pool, type ClientConfig, type PoolClient } from 'pg'
+import { Pool, type ClientConfig, type PoolClient } from 'pg'
 import type { ConnectionConfig } from '@shared/index'
 import { createLogger } from '../lib/logger'
-import { buildClientConfig } from './pg-client-config'
+import { buildClientConfig, registerPgTypeParsers } from './pg-client-config'
 import { PoolRegistry, poolIdentity } from './pool-registry'
 
 const log = createLogger('pg-pool')
@@ -49,10 +49,7 @@ const registry = new PoolRegistry<PgPools>({
       connectionTimeoutMillis: CONNECT_TIMEOUT_MS
     })
 
-    // Return timestamp (without tz) values as raw ISO strings so JavaScript's Date
-    // auto-conversion doesn't shift UTC-stored timestamps to local time.
-    // OID 1114 = timestamp, 1184 = timestamptz (timestamptz SHOULD be shifted).
-    pgTypes.setTypeParser(1114, (val: string) => val)
+    registerPgTypeParsers()
 
     // pg.Pool emits 'error' for idle clients that die between checkouts (e.g. server-side
     // timeout). Without a listener the process crashes on unhandled error.
