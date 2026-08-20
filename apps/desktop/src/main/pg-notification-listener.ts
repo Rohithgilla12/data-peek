@@ -1,8 +1,6 @@
 import { randomUUID } from 'crypto'
-import { Client, type ClientConfig } from 'pg'
 import { BrowserWindow, app } from 'electron'
 import { join } from 'path'
-import { readFileSync } from 'fs'
 import Database from 'better-sqlite3'
 import type {
   ConnectionConfig,
@@ -11,8 +9,7 @@ import type {
   PgNotificationConnectionStatus,
   PgNotificationConnectionState
 } from '@shared/index'
-import { createTunnel, closeTunnel, TunnelSession } from './ssh-tunnel-service'
-import { buildSearchPathOption } from './adapters/pg-client-config'
+import { getAdapter, type NotificationClient } from './db-adapter'
 import { createLogger } from './lib/logger'
 
 const log = createLogger('pg-notification-listener')
@@ -20,52 +17,23 @@ const log = createLogger('pg-notification-listener')
 const MAX_EVENTS_PER_CONNECTION = 10000
 const MAX_BACKOFF_MS = 30_000
 
-function buildClientConfig(
-  config: ConnectionConfig,
-  overrides?: { host: string; port: number }
-): ClientConfig {
-  const clientConfig: ClientConfig = {
-    host: overrides?.host ?? config.host,
-    port: overrides?.port ?? config.port,
-    database: config.database,
-    user: config.user,
-    password: config.password
+/**
+ * Open the long-lived connection a listener parks on.
+ *
+ * LISTEN registers against one backend session, so this connection can't come out of
+ * the pool. The adapter owns building it — SSL, SSH tunnel, `search_path` — so a
+ * listener connects exactly the way a query does.
+ */
+async function openNotificationClient(config: ConnectionConfig): Promise<NotificationClient> {
+  const adapter = getAdapter(config)
+  if (!adapter.createNotificationClient) {
+    throw new Error(`LISTEN/NOTIFY is not supported for ${adapter.dbType} connections`)
   }
-
-  const searchPathOption = buildSearchPathOption(config.schema)
-  if (searchPathOption) {
-    clientConfig.options = searchPathOption
-  }
-
-  if (config.ssl) {
-    const sslOptions = config.sslOptions || {}
-
-    if (sslOptions.ca) {
-      try {
-        clientConfig.ssl = {
-          rejectUnauthorized: sslOptions.rejectUnauthorized !== false,
-          ca: readFileSync(sslOptions.ca, 'utf-8')
-        }
-      } catch (err) {
-        throw new Error(
-          `Failed to read CA certificate file: ${sslOptions.ca}. ${(err as Error).message}`
-        )
-      }
-    } else {
-      // Default to rejectUnauthorized: false (matches adapters) so cloud DBs
-      // with self-signed certs work. Opt-in strict verification via UI.
-      clientConfig.ssl = {
-        rejectUnauthorized: sslOptions.rejectUnauthorized === true
-      }
-    }
-  }
-
-  return clientConfig
+  return adapter.createNotificationClient(config)
 }
 
 interface ListenerEntry {
-  client: Client
-  tunnelSession: TunnelSession | null
+  client: NotificationClient
   channels: Set<string>
   connectedSince: number
   reconnectTimer?: ReturnType<typeof setTimeout>
@@ -147,12 +115,9 @@ async function connectListener(
   if (existing) {
     existing.destroyed = true
     if (existing.reconnectTimer) clearTimeout(existing.reconnectTimer)
-    try {
-      await existing.client.end()
-    } catch {
+    await existing.client.close().catch(() => {
       // ignore close errors
-    }
-    closeTunnel(existing.tunnelSession)
+    })
   }
 
   const prior = statuses.get(connectionId)
@@ -162,21 +127,12 @@ async function connectListener(
     backoffMs: undefined
   })
 
-  let tunnelSession: TunnelSession | null = null
+  let client: NotificationClient | null = null
   try {
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-
-    const overrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-
-    const client = new Client(buildClientConfig(config, overrides))
+    client = await openNotificationClient(config)
 
     const entry: ListenerEntry = {
       client,
-      tunnelSession,
       channels: new Set(channels),
       connectedSince: Date.now(),
       destroyed: false,
@@ -185,12 +141,12 @@ async function connectListener(
     }
     listeners.set(connectionId, entry)
 
-    client.on('notification', (msg) => {
+    client.onNotification((channel, payload) => {
       const event: PgNotificationEvent = {
         id: randomUUID(),
         connectionId,
-        channel: msg.channel,
-        payload: msg.payload ?? '',
+        channel,
+        payload,
         receivedAt: Date.now()
       }
 
@@ -198,24 +154,17 @@ async function connectListener(
       broadcastEvent(event)
     })
 
-    client.on('error', (err) => {
+    client.onDisconnect((err) => {
       if (entry.destroyed) return
-      log.error(`pg notification client error for ${connectionId}:`, err)
-      setStatus(connectionId, {
-        state: 'error',
-        lastError: err instanceof Error ? err.message : String(err)
-      })
+      if (err) {
+        log.error(`pg notification client error for ${connectionId}:`, err)
+        setStatus(connectionId, { state: 'error', lastError: err.message })
+      } else {
+        log.warn(`pg notification client disconnected for ${connectionId}, reconnecting...`)
+        setStatus(connectionId, { state: 'disconnected' })
+      }
       scheduleReconnect(connectionId, config, entry.channels, backoffMs)
     })
-
-    client.on('end', () => {
-      if (entry.destroyed) return
-      log.warn(`pg notification client disconnected for ${connectionId}, reconnecting...`)
-      setStatus(connectionId, { state: 'disconnected' })
-      scheduleReconnect(connectionId, config, entry.channels, backoffMs)
-    })
-
-    await client.connect()
 
     for (const channel of channels) {
       await client.query(`LISTEN ${quoteIdent(channel)}`)
@@ -232,7 +181,14 @@ async function connectListener(
     })
   } catch (err) {
     log.error(`Failed to connect listener for ${connectionId}:`, err)
-    closeTunnel(tunnelSession)
+    // A LISTEN that failed after the dial succeeded leaves a live connection behind.
+    // Retire the entry first so its disconnect handler doesn't schedule a second retry
+    // on top of the one below.
+    const entry = listeners.get(connectionId)
+    if (entry && entry.client === client) entry.destroyed = true
+    await client?.close().catch(() => {
+      // ignore close errors
+    })
     setStatus(connectionId, {
       state: 'error',
       lastError: err instanceof Error ? err.message : String(err)
@@ -375,26 +331,9 @@ export async function send(
   channel: string,
   payload: string
 ): Promise<void> {
-  let tunnelSession: TunnelSession | null = null
-  try {
-    if (config.ssh) {
-      tunnelSession = await createTunnel(config)
-    }
-
-    const overrides = tunnelSession
-      ? { host: tunnelSession.localHost, port: tunnelSession.localPort }
-      : undefined
-
-    const client = new Client(buildClientConfig(config, overrides))
-    await client.connect()
-    try {
-      await client.query('SELECT pg_notify($1, $2)', [channel, payload])
-    } finally {
-      await client.end().catch(() => {})
-    }
-  } finally {
-    closeTunnel(tunnelSession)
-  }
+  // One-shot, so this goes through the pool rather than opening (and tunnelling) a
+  // connection of its own. Only a listener needs a session it can park on.
+  await getAdapter(config).execute(config, 'SELECT pg_notify($1, $2)', [channel, payload])
 }
 
 export function getChannels(connectionId: string): PgNotificationChannel[] {
@@ -450,12 +389,9 @@ export async function cleanup(): Promise<void> {
   for (const [connectionId, entry] of listeners.entries()) {
     entry.destroyed = true
     if (entry.reconnectTimer) clearTimeout(entry.reconnectTimer)
-    try {
-      await entry.client.end()
-    } catch {
+    await entry.client.close().catch(() => {
       // ignore close errors
-    }
-    closeTunnel(entry.tunnelSession)
+    })
     listeners.delete(connectionId)
     statuses.delete(connectionId)
   }

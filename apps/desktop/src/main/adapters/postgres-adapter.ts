@@ -34,7 +34,9 @@ import type {
   DatabaseAdapter,
   AdapterQueryResult,
   AdapterMultiQueryResult,
+  DedicatedClient,
   ExplainResult,
+  NotificationClient,
   QueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
@@ -47,6 +49,8 @@ import {
   pgPoolIdentity,
   type PgSessionLease
 } from './pg-pool-manager'
+
+import { createPgDedicatedClient, createPgNotificationClient } from './pg-dedicated-client'
 
 export { buildClientConfig } from './pg-client-config'
 
@@ -435,6 +439,14 @@ export class PostgresAdapter implements DatabaseAdapter {
     } finally {
       lease.release(poisoned ? true : undefined)
     }
+  }
+
+  createDedicatedClient(config: ConnectionConfig): Promise<DedicatedClient> {
+    return createPgDedicatedClient(config)
+  }
+
+  createNotificationClient(config: ConnectionConfig): Promise<NotificationClient> {
+    return createPgNotificationClient(config)
   }
 
   async getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]> {

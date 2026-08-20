@@ -23,16 +23,19 @@ vi.mock('electron', () => ({
 }))
 
 import { StepSessionRegistry } from '../step-session'
-import type { ConnectionConfig } from '@shared/index'
+import type { ConnectionConfig, QueryField } from '@shared/index'
 
+/** Stands in for the connected DedicatedClient the adapter hands the registry. */
 class MockClient {
   calls: string[] = []
-  responses: Array<{ rows?: unknown[]; fields?: unknown[]; rowCount?: number; error?: Error }> = []
-  ended = false
+  responses: Array<{
+    rows?: Record<string, unknown>[]
+    fields?: QueryField[]
+    rowCount?: number
+    error?: Error
+  }> = []
+  closed = false
 
-  async connect() {
-    /* no-op mock */
-  }
   async query(sql: string) {
     this.calls.push(sql)
     const response = this.responses.shift()
@@ -44,8 +47,11 @@ class MockClient {
       rowCount: response.rowCount ?? 0
     }
   }
-  async end() {
-    this.ended = true
+  onDisconnect() {
+    /* the registry surfaces connection death through the next query instead */
+  }
+  async close() {
+    this.closed = true
   }
 }
 
@@ -67,7 +73,7 @@ describe('StepSessionRegistry', () => {
   beforeEach(() => {
     mockClients = []
     registry = new StepSessionRegistry({
-      createClient: (() => {
+      createClient: (async () => {
         const client = new MockClient()
         mockClients.push(client)
         return client
@@ -112,15 +118,13 @@ describe('StepSessionRegistry', () => {
   })
 
   describe('start error handling', () => {
-    it('rejects and cleans up client when connect fails', async () => {
+    it('rejects when the connection cannot be opened', async () => {
+      // The factory hands back an already-connected client, so a dial failure surfaces
+      // here with nothing for the registry to clean up — the factory unwinds its own
+      // socket and tunnel.
       const failingRegistry = new StepSessionRegistry({
-        createClient: (() => {
-          const c = new MockClient()
-          c.connect = async () => {
-            throw new Error('connection refused')
-          }
-          mockClients.push(c)
-          return c
+        createClient: (async () => {
+          throw new Error('connection refused')
         }) as never
       })
       await expect(
@@ -132,12 +136,12 @@ describe('StepSessionRegistry', () => {
           inTransaction: false
         })
       ).rejects.toThrow('connection refused')
-      expect(mockClients[0].ended).toBe(true)
+      expect(mockClients).toHaveLength(0)
     })
 
     it('rejects and cleans up client when BEGIN fails in transaction mode', async () => {
       const failingRegistry = new StepSessionRegistry({
-        createClient: (() => {
+        createClient: (async () => {
           const c = new MockClient()
           c.responses.push({ error: new Error('permission denied for BEGIN') })
           mockClients.push(c)
@@ -153,13 +157,13 @@ describe('StepSessionRegistry', () => {
           inTransaction: true
         })
       ).rejects.toThrow('permission denied')
-      expect(mockClients[0].ended).toBe(true)
+      expect(mockClients[0].closed).toBe(true)
     })
 
     it('rejects on empty SQL without creating a client', async () => {
       const capturedClients: MockClient[] = []
       const emptyRegistry = new StepSessionRegistry({
-        createClient: (() => {
+        createClient: (async () => {
           const c = new MockClient()
           capturedClients.push(c)
           return c
@@ -180,7 +184,7 @@ describe('StepSessionRegistry', () => {
     it('rejects on whitespace-only SQL without creating a client', async () => {
       const capturedClients: MockClient[] = []
       const wsRegistry = new StepSessionRegistry({
-        createClient: (() => {
+        createClient: (async () => {
           const c = new MockClient()
           capturedClients.push(c)
           return c
@@ -475,7 +479,7 @@ describe('StepSessionRegistry', () => {
       const response = await registry.stop(sessionId)
       expect(response.rolledBack).toBe(true)
       expect(mockClients[0].calls).toContain('ROLLBACK')
-      expect(mockClients[0].ended).toBe(true)
+      expect(mockClients[0].closed).toBe(true)
     })
 
     it('just closes client in auto-commit mode', async () => {
@@ -489,7 +493,7 @@ describe('StepSessionRegistry', () => {
       const response = await registry.stop(sessionId)
       expect(response.rolledBack).toBe(false)
       expect(mockClients[0].calls).not.toContain('ROLLBACK')
-      expect(mockClients[0].ended).toBe(true)
+      expect(mockClients[0].closed).toBe(true)
     })
 
     it('removes session from registry', async () => {

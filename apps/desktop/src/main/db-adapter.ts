@@ -52,6 +52,38 @@ export interface QueryOptions {
 }
 
 /**
+ * A connection the caller holds open and drives itself, outside any pool.
+ *
+ * Pooled access (`query`, `execute`, `executeTransaction`) borrows a client for the
+ * length of one call. Some features need the opposite: a connection that stays put
+ * across many calls because server-side state lives on it — a stepped script's open
+ * transaction, a LISTEN registration. Those get one of these, and own closing it.
+ */
+export interface DedicatedClient {
+  /** Run one statement on this connection. */
+  query(sql: string, params?: unknown[]): Promise<AdapterQueryResult>
+
+  /**
+   * Register the handler for this connection dying underneath the caller — a socket
+   * error, or a clean close from the server, which arrives as a null error.
+   *
+   * Fires at most once per connection, and never for a `close()` the caller asked for.
+   * If the connection already died before the handler was registered, it fires
+   * immediately with whatever killed it.
+   */
+  onDisconnect(handler: (error: Error | null) => void): void
+
+  /** Close the connection and release whatever it rode on (SSH tunnel). Idempotent. */
+  close(): Promise<void>
+}
+
+/** A dedicated client that also delivers asynchronous notifications from the server. */
+export interface NotificationClient extends DedicatedClient {
+  /** Register the handler for notifications on any channel this client is LISTENing to. */
+  onNotification(handler: (channel: string, payload: string) => void): void
+}
+
+/**
  * Explain plan result
  */
 export interface ExplainResult {
@@ -117,6 +149,19 @@ export interface DatabaseAdapter {
    * server-side. Adapters that don't park clients don't need to implement it.
    */
   drainSessions?(config: ConnectionConfig): Promise<void>
+
+  /**
+   * Open a dedicated, unpooled connection for a caller that needs server-side session
+   * state to survive across calls. Adapters that only ever serve pooled queries don't
+   * implement it, and callers must handle its absence.
+   */
+  createDedicatedClient?(config: ConnectionConfig): Promise<DedicatedClient>
+
+  /**
+   * Open a dedicated connection that also delivers asynchronous notifications
+   * (PostgreSQL LISTEN/NOTIFY). Only implemented where the server has the feature.
+   */
+  createNotificationClient?(config: ConnectionConfig): Promise<NotificationClient>
 
   /** Fetch database schemas, tables, and columns */
   getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]>

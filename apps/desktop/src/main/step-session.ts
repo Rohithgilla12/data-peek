@@ -1,5 +1,4 @@
 import { randomUUID } from 'crypto'
-import { Client } from 'pg'
 import type {
   ConnectionConfig,
   StatementResult,
@@ -13,29 +12,20 @@ import type {
   RetryStepResponse,
   StopStepResponse
 } from '@shared/index'
-import { buildSearchPathOption } from './adapters/pg-client-config'
 import { STEP_SESSION_IDLE_TIMEOUT_MS, STEP_SESSION_CLEANUP_INTERVAL_MS } from '@shared/index'
+import { getAdapter, type DedicatedClient } from './db-adapter'
+import { isDataReturningStatement } from './adapters/postgres-adapter'
 import { parseStatementsWithLines } from './lib/parse-statements'
 import { createLogger } from './lib/logger'
 
 const log = createLogger('step-session')
-
-export interface MinimalDbClient {
-  connect(): Promise<void>
-  query(sql: string): Promise<{
-    rows: unknown[]
-    fields?: Array<{ name: string; dataTypeID?: number }>
-    rowCount: number | null
-  }>
-  end(): Promise<void>
-}
 
 interface StepSession {
   id: string
   windowId: number
   tabId: string
   config: ConnectionConfig
-  client: MinimalDbClient
+  client: DedicatedClient
   statements: ParsedStatement[]
   cursorIndex: number
   breakpoints: Set<number>
@@ -47,13 +37,14 @@ interface StepSession {
 }
 
 export interface StepSessionRegistryOptions {
-  createClient?: (config: ConnectionConfig) => MinimalDbClient
+  /** Injection seam for tests. Production opens a dedicated client via the adapter. */
+  createClient?: (config: ConnectionConfig) => Promise<DedicatedClient>
 }
 
 export class StepSessionRegistry {
   private sessions = new Map<string, StepSession>()
   private cleanupTimer: ReturnType<typeof setInterval> | null = null
-  private createClient: (config: ConnectionConfig) => MinimalDbClient
+  private createClient: (config: ConnectionConfig) => Promise<DedicatedClient>
 
   constructor(options: StepSessionRegistryOptions = {}) {
     this.createClient = options.createClient ?? defaultClientFactory
@@ -85,15 +76,16 @@ export class StepSessionRegistry {
       throw new Error('No statements found in SQL')
     }
 
-    const client = this.createClient(input.config)
+    // The client arrives connected, so a dial failure throws here with nothing to
+    // clean up — the factory unwinds its own tunnel.
+    const client = await this.createClient(input.config)
     try {
-      await client.connect()
       if (input.inTransaction) {
         await client.query('BEGIN')
       }
     } catch (err) {
-      await client.end().catch((endErr) => {
-        log.warn(`Cleanup after failed start: client.end() also failed:`, endErr)
+      await client.close().catch((closeErr) => {
+        log.warn(`Cleanup after failed start: client.close() also failed:`, closeErr)
       })
       throw err
     }
@@ -238,8 +230,8 @@ export class StepSessionRegistry {
       }
     }
 
-    await session.client.end().catch((err) => {
-      log.warn(`Client.end() failed for session ${sessionId}:`, err)
+    await session.client.close().catch((err) => {
+      log.warn(`Client.close() failed for session ${sessionId}:`, err)
     })
 
     this.sessions.delete(sessionId)
@@ -297,20 +289,15 @@ export class StepSessionRegistry {
     try {
       const res = await session.client.query(statement.sql)
       const durationMs = Date.now() - stmtStart
-      const fields = (res.fields ?? []).map((f) => ({
-        name: f.name,
-        dataType: 'unknown',
-        dataTypeID: f.dataTypeID ?? 0
-      }))
 
       const result: StatementResult = {
         statement: statement.sql,
         statementIndex,
-        rows: (res.rows ?? []) as Record<string, unknown>[],
-        fields,
-        rowCount: res.rowCount ?? res.rows?.length ?? 0,
+        rows: res.rows,
+        fields: res.fields,
+        rowCount: res.rowCount ?? res.rows.length,
         durationMs,
-        isDataReturning: (res.rows ?? []).length > 0 || Array.isArray(res.fields)
+        isDataReturning: isDataReturningStatement(statement.sql)
       }
 
       if (opts.advance) {
@@ -348,28 +335,18 @@ export class StepSessionRegistry {
   }
 }
 
-function defaultClientFactory(config: ConnectionConfig): MinimalDbClient {
-  const client = new Client({
-    host: config.host,
-    port: config.port,
-    database: config.database,
-    user: config.user,
-    password: config.password,
-    options: buildSearchPathOption(config.schema),
-    ssl: config.ssl ? { rejectUnauthorized: false } : undefined
-  })
-  return {
-    connect: async () => {
-      await client.connect()
-    },
-    query: async (sql: string) => {
-      const res = await client.query(sql)
-      return {
-        rows: res.rows,
-        fields: res.fields as unknown as Array<{ name: string; dataTypeID?: number }>,
-        rowCount: res.rowCount
-      }
-    },
-    end: () => client.end()
+/**
+ * Open the connection a step session runs on.
+ *
+ * It has to be dedicated: the session holds a transaction open across many IPC calls,
+ * so a pooled client — handed back after each call — would lose it. The adapter owns
+ * how that connection is built, which is what keeps step sessions honouring the SSL,
+ * SSH and `search_path` settings the rest of the app does.
+ */
+async function defaultClientFactory(config: ConnectionConfig): Promise<DedicatedClient> {
+  const adapter = getAdapter(config)
+  if (!adapter.createDedicatedClient) {
+    throw new Error(`Step-through execution is not supported for ${adapter.dbType} connections`)
   }
+  return adapter.createDedicatedClient(config)
 }
