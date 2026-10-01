@@ -1,115 +1,123 @@
 ---
 title: Keyboard Shortcuts
-description: All keyboard shortcuts for data-peek
+description: Complete reference for all keyboard shortcuts in data-peek
 ---
 
 # Keyboard Shortcuts
 
-data-peek is designed for keyboard-first navigation. Here are all available shortcuts.
+data-peek is designed for keyboard-first navigation. Nearly every action in the editor, grid, sidebar, and tab bar can be driven from the keyboard.
 
-## Command Palette & AI
+---
 
-| Action                   | macOS   | Windows/Linux |
-| ------------------------ | ------- | ------------- |
-| Open command palette     | `Cmd+K` | `Ctrl+K`      |
-| Open connection switcher | `Cmd+P` | `Ctrl+P`      |
-| Open AI assistant        | `Cmd+I` | `Ctrl+I`      |
+## Global & Navigation
 
-## Query Execution
+These shortcuts work from anywhere in the application.
 
-| Action                       | macOS             | Windows/Linux      |
-| ---------------------------- | ----------------- | ------------------ |
-| Execute query                | `Cmd+Enter`       | `Ctrl+Enter`       |
-| Start step-through execution | `Cmd+Shift+Enter` | `Ctrl+Shift+Enter` |
-| Run next statement (step)    | `Shift+Enter`     | `Shift+Enter`      |
-| Format SQL                   | `Shift+Alt+F`     | `Shift+Alt+F`      |
-| Open saved queries           | `Cmd+Shift+S`     | `Ctrl+Shift+S`     |
-| Toggle Watch Mode            | `Cmd+Shift+W`     | `Ctrl+Shift+W`     |
-| Toggle Time Machine          | `Cmd+Shift+H`     | `Ctrl+Shift+H`     |
-| Clear results                | `Cmd+K`           | `Ctrl+K`           |
+| Action | macOS | Windows/Linux |
+| :--- | :--- | :--- |
+| **Command Palette** | `Cmd+K` | `Ctrl+K` |
+| **Connection Switcher** | `Cmd+P` | `Ctrl+P` |
+| **Toggle AI Assistant** | `Cmd+I` | `Ctrl+I` |
+| **Toggle Sidebar** | `Cmd+B` | `Ctrl+B` |
+| **Focus Sidebar Omnibar** | `/` | `/` |
+| **Open Saved Queries** | `Cmd+Shift+S` | `Ctrl+Shift+S` |
+| **Open Settings** | `Cmd+,` | `Ctrl+,` |
+| **Toggle DevTools** | `F12` | `F12` |
+| **Zoom In** | `Cmd++` | `Ctrl++` |
+| **Zoom Out** | `Cmd+-` | `Ctrl+-` |
+| **Reset Zoom** | `Cmd+0` | `Ctrl+0` |
+| **Toggle Fullscreen** | `Cmd+Ctrl+F` | `F11` |
 
-## Tab Management
+<Callout type="info">
+  Pressing `/` focuses the sidebar omnibar when you are not currently editing text inside an input or the SQL editor.
+</Callout>
 
-| Action            | macOS              | Windows/Linux        |
-| ----------------- | ------------------ | -------------------- |
-| New tab           | `Cmd+T`            | `Ctrl+T`             |
-| Close tab         | `Cmd+W`            | `Ctrl+W`             |
-| Switch to tab 1-9 | `Cmd+1` to `Cmd+9` | `Ctrl+1` to `Ctrl+9` |
-| Next tab          | `Cmd+Option+→`     | `Ctrl+Alt+→`         |
-| Previous tab      | `Cmd+Option+←`     | `Ctrl+Alt+←`         |
+---
 
-## Window Management
+## SQL Query Editor
 
-| Action       | macOS         | Windows/Linux  |
-| ------------ | ------------- | -------------- |
-| New window   | `Cmd+Shift+N` | `Ctrl+Shift+N` |
-| Close window | `Cmd+W`       | `Alt+F4`       |
+Shortcuts active when the Monaco SQL editor is focused.
 
-## Connection Management
+| Action | macOS | Windows/Linux |
+| :--- | :--- | :--- |
+| **Execute Query** | `Cmd+Enter` | `Ctrl+Enter` |
+| **Start Step-Through Execution** | `Cmd+Shift+Enter` | `Ctrl+Shift+Enter` |
+| **Run Next Step** | `Shift+Enter` | `Shift+Enter` |
+| **Stop Step-Through** | `Escape` | `Escape` |
+| **Format SQL** | `Cmd+Shift+F` or `Shift+Option+F` | `Ctrl+Shift+F` or `Shift+Alt+F` |
+| **Trigger Autocomplete** | `Ctrl+Space` | `Ctrl+Space` |
+| **Find in Editor** | `Cmd+F` | `Ctrl+F` |
+| **Replace in Editor** | `Cmd+Option+F` | `Ctrl+H` |
+| **Clear Results** | `Cmd+K` | `Ctrl+K` |
+| **Toggle Watch Mode** | `Cmd+Shift+W` | `Ctrl+Shift+W` |
+| **Toggle Time Machine** | `Cmd+Shift+H` | `Ctrl+Shift+H` |
+| **Undo** | `Cmd+Z` | `Ctrl+Z` |
+| **Redo** | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |
+| **Select All** | `Cmd+A` | `Ctrl+A` |
 
-| Action                   | macOS                          | Windows/Linux                    |
-| ------------------------ | ------------------------------ | -------------------------------- |
-| Switch to connection 1-9 | `Cmd+Shift+1` to `Cmd+Shift+9` | `Ctrl+Shift+1` to `Ctrl+Shift+9` |
+---
 
-## View
+## Results, Filtering & Sorting
 
-| Action           | macOS        | Windows/Linux |
-| ---------------- | ------------ | ------------- |
-| Toggle sidebar   | `Cmd+B`      | `Ctrl+B`      |
-| Open settings    | `Cmd+,`      | `Ctrl+,`      |
-| Toggle dev tools | `F12`        | `F12`         |
-| Zoom in          | `Cmd++`      | `Ctrl++`      |
-| Zoom out         | `Cmd+-`      | `Ctrl+-`      |
-| Reset zoom       | `Cmd+0`      | `Ctrl+0`      |
-| Full screen      | `Cmd+Ctrl+F` | `F11`         |
+Shortcuts for navigating results and filtering or sorting table data.
 
-## Editor
+| Action | macOS | Windows/Linux |
+| :--- | :--- | :--- |
+| **Focus Smart Filter Bar** | `Cmd+F` | `Ctrl+F` |
+| **Open Smart Sort Bar** | `Cmd+Shift+S` | `Ctrl+Shift+S` |
+| **Move Between Cells** | `↑` `↓` `←` `→` | `↑` `↓` `←` `→` |
+| **First / Last Cell in Row** | `Home` / `End` | `Home` / `End` |
+| **First / Last Cell Overall** | `Cmd+Home` / `Cmd+End` | `Ctrl+Home` / `Ctrl+End` |
+| **Jump 20 Rows** | `PageUp` / `PageDown` | `PageUp` / `PageDown` |
+| **Copy Focused Cell** | `Cmd+C` | `Ctrl+C` |
+| **Open Cell Inspector** | `Enter` | `Enter` |
+| **Close Cell Inspector** | `Escape` | `Escape` |
+| **Navigate Foreign Key** | `Cmd+Click` | `Ctrl+Click` |
 
-| Action               | macOS         | Windows/Linux  |
-| -------------------- | ------------- | -------------- |
-| Undo                 | `Cmd+Z`       | `Ctrl+Z`       |
-| Redo                 | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |
-| Cut                  | `Cmd+X`       | `Ctrl+X`       |
-| Copy                 | `Cmd+C`       | `Ctrl+C`       |
-| Paste                | `Cmd+V`       | `Ctrl+V`       |
-| Select all           | `Cmd+A`       | `Ctrl+A`       |
-| Find                 | `Cmd+F`       | `Ctrl+F`       |
-| Trigger autocomplete | `Ctrl+Space`  | `Ctrl+Space`   |
+<Callout type="info">
+  - **`Cmd/Ctrl+F` context**: When the SQL editor has focus, `Cmd/Ctrl+F` opens editor search. When results or table previews are focused, `Cmd/Ctrl+F` focuses the Smart Filter bar.
+  - **`Cmd/Ctrl+Shift+S` accelerator overlap**: `Cmd/Ctrl+Shift+S` is bound to opening the Smart Sort bar when a sort bar is visible on the active table tab. Note that this shortcut currently overlaps with the global Saved Queries menu accelerator.
+</Callout>
 
-## Application
+---
 
-| Action   | macOS   | Windows/Linux |
-| -------- | ------- | ------------- |
-| Quit     | `Cmd+Q` | `Alt+F4`      |
-| Hide     | `Cmd+H` | -             |
-| Minimize | `Cmd+M` | -             |
+## Inline Data Editing
 
-## Results Navigation
+Shortcuts active when editing cells directly within table preview results.
 
-| Action                    | macOS                  | Windows/Linux            |
-| ------------------------- | ---------------------- | ------------------------ |
-| Move between cells        | `↑` `↓` `←` `→`        | `↑` `↓` `←` `→`          |
-| First / last cell in row  | `Home` / `End`         | `Home` / `End`           |
-| First / last cell overall | `Cmd+Home` / `Cmd+End` | `Ctrl+Home` / `Ctrl+End` |
-| Jump 20 rows              | `PageUp` / `PageDown`  | `PageUp` / `PageDown`    |
-| Copy focused cell         | `Cmd+C`                | `Ctrl+C`                 |
-| Open cell inspector       | `Enter`                | `Enter`                  |
-| Close cell inspector      | `Escape`               | `Escape`                 |
-| Navigate FK               | `Cmd+Click`            | `Ctrl+Click`             |
-| Copy cell                 | Click cell             | Click cell               |
+| Action | macOS | Windows/Linux |
+| :--- | :--- | :--- |
+| **Save Pending Changes** | `Cmd+S` | `Ctrl+S` |
+| **Discard All Changes** | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |
+| **Add New Row** | `Cmd+Shift+A` | `Ctrl+Shift+A` |
+| **Confirm Cell Edit** | `Enter` | `Enter` |
+| **Cancel Cell Edit** | `Escape` | `Escape` |
+| **Move to Next Cell** | `Tab` | `Tab` |
 
-## Data Editing
+---
 
-| Action               | macOS         | Windows/Linux  |
-| -------------------- | ------------- | -------------- |
-| Save pending changes | `Cmd+S`       | `Ctrl+S`       |
-| Discard all changes  | `Cmd+Shift+Z` | `Ctrl+Shift+Z` |
-| Add new row          | `Cmd+Shift+A` | `Ctrl+Shift+A` |
-| Exit edit mode       | `Escape`      | `Escape`       |
+## Tabs & Windows
 
-## Tips
+| Action | macOS | Windows/Linux |
+| :--- | :--- | :--- |
+| **New Tab** | `Cmd+T` | `Ctrl+T` |
+| **Close Tab** | `Cmd+W` | `Ctrl+W` |
+| **Jump to Tab 1–9** | `Cmd+1` to `Cmd+9` | `Ctrl+1` to `Ctrl+9` |
+| **Next Tab** | `Cmd+Option+→` | `Ctrl+Alt+→` |
+| **Previous Tab** | `Cmd+Option+←` | `Ctrl+Alt+←` |
+| **New Window** | `Cmd+Shift+N` | `Ctrl+Shift+N` |
+| **Close Window** | `Cmd+W` | `Alt+F4` |
+| **Switch Connection 1–9** | `Cmd+Shift+1` to `Cmd+Shift+9` | `Ctrl+Shift+1` to `Ctrl+Shift+9` |
 
-- Press `Cmd+K` / `Ctrl+K` to access the command palette for quick access to all features
-- Most shortcuts work when the editor is focused
-- Tab and window shortcuts work globally
-- Connection shortcuts work globally
+---
+
+## Dashboard
+
+Shortcuts active when viewing a dashboard tab.
+
+| Action | macOS | Windows/Linux |
+| :--- | :--- | :--- |
+| **Refresh Dashboard** | `R` | `R` |
+| **Toggle Edit Mode** | `E` | `E` |
+| **Add Widget** | `N` or `A` | `N` or `A` |
+| **Exit Edit Mode** | `Escape` | `Escape` |
