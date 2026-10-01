@@ -37,6 +37,18 @@ import { splitStatements } from '../lib/sql-parser'
 // casting) means a SQLite version that returns an unexpected shape fails loudly at
 // the boundary instead of silently flowing `undefined` into the schema model.
 const SqliteMasterRow = z.object({ name: z.string(), type: z.string() })
+const SqliteTableSizeRow = z.object({
+  table_name: z.string(),
+  data_size_bytes: z.number(),
+  index_size_bytes: z.number()
+})
+
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 bytes'
+  const units = ['bytes', 'kB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(1024))
+  return `${(bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0)} ${units[i]}`
+}
 
 const SqliteTriggerRow = z.object({
   name: z.string(),
@@ -630,11 +642,57 @@ export class SQLiteAdapter implements DatabaseAdapter {
   }
 
   async getTableSizes(
-    _config: ConnectionConfig,
+    config: ConnectionConfig,
 
     _schema?: string
   ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }> {
-    throw new Error('getTableSizes not implemented for SQLite')
+    const db = this.getDb(config)
+    try {
+      const totalSizeBytes =
+        Number(db.pragma('page_count', { simple: true })) *
+        Number(db.pragma('page_size', { simple: true }))
+
+      // dbstat names each b-tree, so an index is counted toward the table that
+      // sqlite_master says it belongs to.
+      const sizeRows = z.array(SqliteTableSizeRow).parse(
+        db
+          .prepare(
+            `SELECT m.tbl_name AS table_name,
+                    SUM(CASE WHEN m.type = 'table' THEN s.bytes ELSE 0 END) AS data_size_bytes,
+                    SUM(CASE WHEN m.type = 'index' THEN s.bytes ELSE 0 END) AS index_size_bytes
+             FROM (SELECT name, SUM(pgsize) AS bytes FROM dbstat GROUP BY name) s
+             JOIN sqlite_master m ON m.name = s.name
+             WHERE m.type IN ('table', 'index')
+               AND m.tbl_name NOT LIKE 'sqlite_%'
+             GROUP BY m.tbl_name
+             ORDER BY SUM(s.bytes) DESC, m.tbl_name`
+          )
+          .all()
+      )
+
+      const tables: TableSizeInfo[] = sizeRows.map((row) => {
+        // SQLite keeps no row estimate without ANALYZE, so this is the real count.
+        const count = db
+          .prepare(`SELECT COUNT(*) AS n FROM "${row.table_name.replace(/"/g, '""')}"`)
+          .get() as { n: number }
+        const rowTotal = row.data_size_bytes + row.index_size_bytes
+        return {
+          schema: 'main',
+          table: row.table_name,
+          rowCountEstimate: Number(count.n),
+          dataSize: formatBytes(row.data_size_bytes),
+          dataSizeBytes: row.data_size_bytes,
+          indexSize: formatBytes(row.index_size_bytes),
+          indexSizeBytes: row.index_size_bytes,
+          totalSize: formatBytes(rowTotal),
+          totalSizeBytes: rowTotal
+        }
+      })
+
+      return { dbSize: { totalSize: formatBytes(totalSizeBytes), totalSizeBytes }, tables }
+    } finally {
+      db.close()
+    }
   }
 
   async getCacheStats(_config: ConnectionConfig): Promise<CacheStats> {

@@ -581,6 +581,54 @@ describe('SQLiteAdapter', () => {
     })
   })
 
+  describe('getTableSizes', () => {
+    it('reports the database size as its pages times the page size', async () => {
+      const db = new Database(testDbPath, { readonly: true })
+      const expected =
+        Number(db.pragma('page_count', { simple: true })) *
+        Number(db.pragma('page_size', { simple: true }))
+      db.close()
+
+      const { dbSize } = await adapter.getTableSizes(testConfig)
+
+      expect(dbSize.totalSizeBytes).toBe(expected)
+      expect(dbSize.totalSizeBytes).toBeGreaterThan(0)
+      expect(dbSize.totalSize).toMatch(/kB$/)
+    })
+
+    it('reports a size and a row count for each table', async () => {
+      const { tables } = await adapter.getTableSizes(testConfig)
+      const users = tables.find((t) => t.table === 'users')!
+
+      expect(users.schema).toBe('main')
+      expect(users.rowCountEstimate).toBe(3)
+      expect(users.dataSizeBytes).toBeGreaterThan(0)
+      expect(users.totalSizeBytes).toBe(users.dataSizeBytes + users.indexSizeBytes)
+      expect(users.totalSize).toMatch(/kB$/)
+    })
+
+    it('counts an index toward the table it belongs to', async () => {
+      const { tables } = await adapter.getTableSizes(testConfig)
+      const orders = tables.find((t) => t.table === 'orders')!
+
+      // idx_orders_user and idx_orders_status each hold at least one page.
+      expect(orders.indexSizeBytes).toBeGreaterThanOrEqual(2 * 4096)
+      expect(tables.map((t) => t.table)).not.toContain('idx_orders_user')
+    })
+
+    it('lists tables only, largest first', async () => {
+      const { tables } = await adapter.getTableSizes(testConfig)
+      const names = tables.map((t) => t.table)
+
+      expect(names).toContain('users')
+      expect(names).toContain('orders')
+      expect(names).not.toContain('active_users')
+      expect(names.some((name) => name.startsWith('sqlite_'))).toBe(false)
+      const sizes = tables.map((t) => t.totalSizeBytes)
+      expect(sizes).toEqual([...sizes].sort((x, y) => y - x))
+    })
+  })
+
   describe('error handling', () => {
     it('should throw on invalid SQL syntax', async () => {
       await expect(adapter.query(testConfig, 'SELEC * FORM users')).rejects.toThrow()
