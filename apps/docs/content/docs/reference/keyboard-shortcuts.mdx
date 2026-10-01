@@ -17,6 +17,7 @@ These shortcuts work from anywhere in the application.
 | :--- | :--- | :--- |
 | **Command Palette** | `Cmd+K` | `Ctrl+K` |
 | **Connection Switcher** | `Cmd+P` | `Ctrl+P` |
+| **Switch Connection 1–9** | `Cmd+Shift+1` to `Cmd+Shift+9` | `Ctrl+Shift+1` to `Ctrl+Shift+9` |
 | **Toggle AI Assistant** | `Cmd+I` | `Ctrl+I` |
 | **Toggle Sidebar** | `Cmd+B` | `Ctrl+B` |
 | **Focus Sidebar Omnibar** | `/` | `/` |
@@ -29,7 +30,7 @@ These shortcuts work from anywhere in the application.
 | **Toggle Fullscreen** | `Cmd+Ctrl+F` | `F11` |
 
 <Callout type="info">
-  Pressing `/` focuses the sidebar omnibar when you are not currently editing text inside an input or the SQL editor.
+  Pressing `/` focuses the sidebar omnibar when you are not currently editing text inside an input, textarea, or the SQL editor.
 </Callout>
 
 ---
@@ -75,8 +76,8 @@ Shortcuts for navigating results and filtering or sorting table data.
 | **Navigate Foreign Key** | `Cmd+Click` | `Ctrl+Click` |
 
 <Callout type="info">
-  - **`Cmd/Ctrl+F` context**: When the SQL editor has focus, `Cmd/Ctrl+F` opens editor search. When results or table previews are focused, `Cmd/Ctrl+F` focuses the Smart Filter bar.
-  - **`Cmd/Ctrl+Shift+S` accelerator overlap**: `Cmd/Ctrl+Shift+S` is bound to opening the Smart Sort bar when a sort bar is visible on the active table tab. Note that this shortcut currently overlaps with the global Saved Queries menu accelerator.
+  - **`Cmd/Ctrl+F` focus conditions**: When the SQL editor has focus, `Cmd/Ctrl+F` opens editor search. Whenever focus is outside the SQL editor (including the results grid, sidebar, and other non-editor areas), `Cmd/Ctrl+F` focuses the mounted Smart Filter bar.
+  - **`Cmd/Ctrl+Shift+S` focus & menu overlap**: When focus is outside the SQL editor and unrelated input, textarea, or contenteditable elements, `Cmd/Ctrl+Shift+S` activates the Smart Sort bar on tabs where sorting is available. Note that this shortcut currently overlaps with the application menu accelerator for Saved Queries.
 </Callout>
 
 ---
@@ -107,7 +108,6 @@ Shortcuts active when editing cells directly within table preview results.
 | **Previous Tab** | `Cmd+Option+←` | `Ctrl+Alt+←` |
 | **New Window** | `Cmd+Shift+N` | `Ctrl+Shift+N` |
 | **Close Window** | `Cmd+W` | `Alt+F4` |
-| **Switch Connection 1–9** | `Cmd+Shift+1` to `Cmd+Shift+9` | `Ctrl+Shift+1` to `Ctrl+Shift+9` |
 
 ---
 
@@ -121,3 +121,23 @@ Shortcuts active when viewing a dashboard tab.
 | **Toggle Edit Mode** | `E` | `E` |
 | **Add Widget** | `N` or `A` | `N` or `A` |
 | **Exit Edit Mode** | `Escape` | `Escape` |
+
+---
+
+## Application
+
+System and window management shortcuts.
+
+| Action | macOS | Windows/Linux |
+| :--- | :--- | :--- |
+| **Quit** | `Cmd+Q` | `Alt+F4` |
+| **Hide Application** | `Cmd+H` | - |
+| **Minimize Window** | `Cmd+M` | - |
+
+---
+
+## Tips
+
+- Press `Cmd+K` / `Ctrl+K` to open the Command Palette for quick access to all features, actions, and settings.
+- Global and connection shortcuts work from anywhere in the window regardless of which panel currently has focus.
+- Editor-specific shortcuts (execution, formatting, find) require active cursor focus inside the SQL editor.
