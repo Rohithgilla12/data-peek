@@ -219,7 +219,7 @@ export function createMenu(): void {
         { type: 'separator' },
         {
           label: 'Clear Results',
-          accelerator: 'CmdOrCtrl+K',
+          accelerator: 'CmdOrCtrl+Shift+Backspace',
           click: (): void => {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {

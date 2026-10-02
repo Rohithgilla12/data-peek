@@ -23,6 +23,7 @@ import type { ResolveForRunSummary } from '@/lib/cross-tab-integration'
 import { CrossTabSubmitDialog } from '@/components/cross-tab/cross-tab-submit-dialog'
 import { SQLEditor } from '@/components/sql-editor'
 import { formatSQL } from '@/lib/sql-formatter'
+import { getSelectedSql } from '@/lib/editor-selection'
 import { generateExportFilename } from '@/lib/export'
 import { buildQualifiedTableRef, buildSelectQuery, buildCountQuery } from '@/lib/sql-helpers'
 import {
@@ -890,13 +891,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   // Query menu items. Execute mirrors the editor's ⌘↵: run the selection if
   // there is one, otherwise the whole query.
   const handleMenuExecute = useCallback(() => {
-    const editor = editorRef.current
-    const selection = editor?.getSelection()
-    const selected =
-      selection && !selection.isEmpty()
-        ? editor?.getModel()?.getValueInRange(selection)?.trim()
-        : undefined
-    handleRunQuery(selected || undefined)
+    handleRunQuery(getSelectedSql(editorRef.current))
   }, [handleRunQuery])
 
   const handleClearResults = useCallback(() => {

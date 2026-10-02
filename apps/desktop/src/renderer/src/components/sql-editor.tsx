@@ -3,6 +3,7 @@ import Editor, { loader, type Monaco, type OnMount } from '@monaco-editor/react'
 import * as monaco from 'monaco-editor'
 import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 import { formatSQL } from '@/lib/sql-formatter'
+import { getSelectedSql } from '@/lib/editor-selection'
 import { cn } from '@data-peek/ui'
 import { useTheme } from '@/components/theme-provider'
 import type { DatabaseType, SchemaInfo, Snippet, TableInfo } from '@data-peek/shared'
@@ -642,12 +643,7 @@ export function SQLEditor({
     // Add keyboard shortcuts
     // Use refs to avoid stale closures - callbacks may change but Monaco commands are registered once
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      const selection = editor.getSelection()
-      const selected =
-        selection && !selection.isEmpty()
-          ? editor.getModel()?.getValueInRange(selection)?.trim()
-          : undefined
-      onRunRef.current?.(selected || undefined)
+      onRunRef.current?.(getSelectedSql(editor))
     })
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {

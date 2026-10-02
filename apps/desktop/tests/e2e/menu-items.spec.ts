@@ -4,8 +4,8 @@ import { test, expect } from './fixtures/electron-app'
 /**
  * Native menu items send `menu:*` IPC events to the renderer; these specs click
  * the real menu items and assert the renderer reacts. No database is needed:
- * the connection points at a closed port, so Execute Query produces a
- * connection error, which is enough to exercise Clear Results.
+ * the connection points at a closed port, and the query specs replace the
+ * `db:query-with-telemetry` handler with a stub that records the SQL it receives.
  */
 
 const DEAD_CONNECTION = {
@@ -16,7 +16,7 @@ const DEAD_CONNECTION = {
   port: 1,
   database: 'postgres',
   user: 'postgres',
-  password: 'postgres',
+  password: '',
   ssl: false as const,
   dstPort: 1
 }
@@ -49,6 +49,37 @@ async function clickMenuItem(app: ElectronApplication, label: string): Promise<v
   expect(found, `menu item "${label}" exists`).toBe(true)
 }
 
+type MenuAccelerators = Record<string, string | undefined>
+
+async function menuAccelerators(app: ElectronApplication): Promise<MenuAccelerators> {
+  return app.evaluate(({ Menu }) => {
+    const out: Record<string, string | undefined> = {}
+    const walk = (items: Electron.MenuItem[]): void => {
+      for (const item of items) {
+        if (item.label) out[item.label] = item.accelerator ?? undefined
+        if (item.submenu) walk(item.submenu.items)
+      }
+    }
+    walk(Menu.getApplicationMenu()?.items ?? [])
+    return out
+  })
+}
+
+/** Replace the editor's query handler so runs fail with `ran: <sql>` and the SQL is recorded. */
+async function stubQueryHandler(app: ElectronApplication): Promise<() => Promise<string[]>> {
+  await app.evaluate(({ ipcMain }) => {
+    const ran: string[] = []
+    ;(globalThis as { __ranQueries?: string[] }).__ranQueries = ran
+    ipcMain.removeHandler('db:query-with-telemetry')
+    ipcMain.handle('db:query-with-telemetry', (_event, { query }: { query: string }) => {
+      ran.push(query)
+      return { success: false, error: `ran: ${query}` }
+    })
+  })
+  return () =>
+    app.evaluate(() => [...((globalThis as { __ranQueries?: string[] }).__ranQueries ?? [])])
+}
+
 // exact: the tab itself is a button whose accessible name also contains "Close tab"
 const closeTabButtons = (window: Page) =>
   window.getByRole('button', { name: 'Close tab', exact: true })
@@ -65,6 +96,25 @@ test('File > New Tab and File > Close Tab open and close a tab', async ({
 
   await clickMenuItem(electronApp, 'Close Tab')
   await expect(closeTabButtons(window)).toHaveCount(before)
+})
+
+test('menu accelerators match the editor and do not collide', async ({ electronApp, window }) => {
+  // The app replaces Electron's default menu once the renderer is up.
+  await expect(window.getByText('Loading...')).toBeHidden({ timeout: 8000 })
+  await expect
+    .poll(async () => (await menuAccelerators(electronApp))['New Tab'])
+    .toBe('CmdOrCtrl+T')
+  const accelerators = await menuAccelerators(electronApp)
+  expect(accelerators['Format SQL']).toBe('CmdOrCtrl+Shift+F')
+  // Cmd/Ctrl+K belongs to the Command Palette.
+  expect(accelerators['Clear Results']).toBe('CmdOrCtrl+Shift+Backspace')
+
+  const seen = new Map<string, string>()
+  for (const [label, accelerator] of Object.entries(accelerators)) {
+    if (!accelerator) continue
+    expect(seen.get(accelerator), `${label} reuses ${accelerator}`).toBeUndefined()
+    seen.set(accelerator, label)
+  }
 })
 
 test.describe('Query menu', () => {
@@ -105,17 +155,31 @@ test.describe('Query menu', () => {
     electronApp,
     window
   }) => {
+    const ranQueries = await stubQueryHandler(electronApp)
     await typeQuery(window, 'select 1')
 
-    // The sidebar already shows the schema-load error; a failed run adds a second copy
-    // in the results pane, and Clear Results removes it again.
-    const errors = window.getByText(/ECONNREFUSED/)
-    await expect(errors).toHaveCount(1, { timeout: 15_000 })
-
     await clickMenuItem(electronApp, 'Execute Query')
-    await expect(errors).toHaveCount(2, { timeout: 15_000 })
+    const result = window.getByText('ran: select 1')
+    await expect(result).toBeVisible({ timeout: 15_000 })
+    expect(await ranQueries()).toEqual(['select 1'])
 
     await clickMenuItem(electronApp, 'Clear Results')
-    await expect(errors).toHaveCount(1)
+    await expect(result).toBeHidden()
+  })
+
+  test('Query > Execute Query runs only the selection when there is one', async ({
+    electronApp,
+    window
+  }) => {
+    const ranQueries = await stubQueryHandler(electronApp)
+    await typeQuery(window, 'select 1;')
+    await window.keyboard.press('Enter')
+    await window.keyboard.type('select 2;')
+    // Cursor is at the end of line 2; select back to its start.
+    await window.keyboard.press('Shift+Home')
+
+    await clickMenuItem(electronApp, 'Execute Query')
+    await expect(window.getByText('ran: select 2;')).toBeVisible({ timeout: 15_000 })
+    expect(await ranQueries()).toEqual(['select 2;'])
   })
 })
