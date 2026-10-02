@@ -33,10 +33,30 @@ function callFakerMethod(method: string): unknown {
   return result
 }
 
+const YEAR_MS = 365 * 24 * 60 * 60 * 1000
+// Where a seeded run's default date window ends, so that the same seed gives
+// the same dates whatever day it runs on.
+const SEEDED_REFERENCE_MS = Date.UTC(2025, 0, 1)
+
+function dateWindow(col: ColumnGenerator, seeded: boolean): { from: Date; to: Date } {
+  const { minValue, maxValue } = col
+  if (!seeded) {
+    return {
+      from: new Date(minValue ?? Date.now() - YEAR_MS),
+      to: new Date(maxValue ?? Date.now())
+    }
+  }
+  // A seeded run never reads the clock: a missing bound is a year from the
+  // other one, and with neither the window ends at the fixed reference.
+  const to = maxValue ?? (minValue != null ? minValue + YEAR_MS : SEEDED_REFERENCE_MS)
+  return { from: new Date(minValue ?? to - YEAR_MS), to: new Date(to) }
+}
+
 function generateValue(
   col: ColumnGenerator,
   fkData: Map<string, unknown[]>,
-  counters: Map<string, number>
+  counters: Map<string, number>,
+  seeded: boolean
 ): unknown {
   if (col.skip) return undefined
 
@@ -69,11 +89,8 @@ function generateValue(
     case 'random-boolean':
       return faker.datatype.boolean()
 
-    case 'random-date': {
-      const from = new Date(col.minValue ?? Date.now() - 365 * 24 * 60 * 60 * 1000)
-      const to = new Date(col.maxValue ?? Date.now())
-      return faker.date.between({ from, to }).toISOString()
-    }
+    case 'random-date':
+      return faker.date.between(dateWindow(col, seeded)).toISOString()
 
     case 'random-enum': {
       const values = col.enumValues ?? []
@@ -103,6 +120,7 @@ function generateValue(
 }
 
 export function generateRows(config: DataGenConfig, fkData: Map<string, unknown[]>): unknown[][] {
+  const seeded = config.seed != null
   if (config.seed != null) {
     faker.seed(config.seed)
   }
@@ -112,7 +130,7 @@ export function generateRows(config: DataGenConfig, fkData: Map<string, unknown[
   const rows: unknown[][] = []
 
   for (let i = 0; i < config.rowCount; i++) {
-    const row = activeColumns.map((col) => generateValue(col, fkData, counters))
+    const row = activeColumns.map((col) => generateValue(col, fkData, counters, seeded))
     rows.push(row)
   }
 

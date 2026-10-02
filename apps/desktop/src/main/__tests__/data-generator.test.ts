@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ColumnGenerator, DataGenConfig } from '@shared/index'
 import { generateRows } from '../data-generator'
 
@@ -65,5 +65,83 @@ describe('generateRows', () => {
 
     expect(rows).toHaveLength(200)
     expect(rows[0]).toHaveLength(3)
+  })
+})
+
+describe('generateRows with random-date columns', () => {
+  const DAY = 24 * 60 * 60 * 1000
+
+  function dates(seed: number | undefined, bounds: Partial<ColumnGenerator> = {}): string[] {
+    const rows = generateRows(
+      {
+        schema: 'public',
+        table: 'orders',
+        rowCount: 50,
+        seed,
+        batchSize: 100,
+        columns: [column({ columnName: 'created_at', generatorType: 'random-date', ...bounds })]
+      },
+      fkData
+    )
+    return rows.map((row) => row[0] as string)
+  }
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('generates identical dates for the same seed whatever the clock says', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-01T00:00:00Z'))
+    const first = dates(42)
+    vi.setSystemTime(new Date('2031-07-15T12:34:56Z'))
+    const second = dates(42)
+
+    expect(second).toEqual(first)
+    expect(new Set(first).size).toBeGreaterThan(1)
+  })
+
+  it('keeps a seeded run reproducible when only one bound is set', () => {
+    const min = Date.UTC(2030, 0, 1)
+    const max = Date.UTC(2001, 5, 1)
+
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-01T00:00:00Z'))
+    const fromMin = dates(42, { minValue: min })
+    const toMax = dates(42, { maxValue: max })
+    vi.setSystemTime(new Date('2031-07-15T12:34:56Z'))
+
+    expect(dates(42, { minValue: min })).toEqual(fromMin)
+    expect(dates(42, { maxValue: max })).toEqual(toMax)
+    // The missing bound is a year from the given one, never the clock.
+    for (const value of fromMin) {
+      expect(Date.parse(value)).toBeGreaterThanOrEqual(min)
+      expect(Date.parse(value)).toBeLessThanOrEqual(min + 365 * DAY)
+    }
+    for (const value of toMax) {
+      expect(Date.parse(value)).toBeGreaterThanOrEqual(max - 365 * DAY)
+      expect(Date.parse(value)).toBeLessThanOrEqual(max)
+    }
+  })
+
+  it('keeps both bounds when they are set', () => {
+    const min = Date.UTC(2020, 0, 1)
+    const max = Date.UTC(2020, 0, 31)
+
+    for (const value of dates(42, { minValue: min, maxValue: max })) {
+      expect(Date.parse(value)).toBeGreaterThanOrEqual(min)
+      expect(Date.parse(value)).toBeLessThanOrEqual(max)
+    }
+  })
+
+  it('still draws from the last year up to now without a seed', () => {
+    const now = Date.parse('2026-03-01T00:00:00Z')
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(now))
+
+    for (const value of dates(undefined)) {
+      expect(Date.parse(value)).toBeGreaterThanOrEqual(now - 365 * DAY)
+      expect(Date.parse(value)).toBeLessThanOrEqual(now)
+    }
   })
 })
