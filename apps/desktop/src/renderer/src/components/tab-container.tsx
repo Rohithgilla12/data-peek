@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@data-peek/ui'
 import { TabBar } from '@/components/tab-bar'
@@ -22,16 +22,18 @@ export function TabContainer() {
     createQueryTab(activeConnectionId)
   }, [createQueryTab, activeConnectionId])
 
+  const handleCloseTab = useCallback(() => {
+    if (activeTabId) closeTab(activeTabId)
+  }, [activeTabId, closeTab])
+
+  useEffect(() => window.api.menu.onNewTab(handleNewTab), [handleNewTab])
+  useEffect(() => window.api.menu.onCloseTab(handleCloseTab), [handleCloseTab])
+
   // Keyboard shortcuts
   const tabHotkeys = useMemo<UseHotkeyDefinition[]>(
     () => [
       { hotkey: 'Mod+T', callback: handleNewTab },
-      {
-        hotkey: 'Mod+W',
-        callback: () => {
-          if (activeTabId) closeTab(activeTabId)
-        }
-      },
+      { hotkey: 'Mod+W', callback: handleCloseTab },
       {
         hotkey: 'Mod+Alt+ArrowRight',
         callback: () => {
@@ -57,7 +59,7 @@ export function TabContainer() {
         }
       }))
     ],
-    [tabs, activeTabId, handleNewTab, closeTab, setActiveTab]
+    [tabs, activeTabId, handleNewTab, handleCloseTab, setActiveTab]
   )
   useHotkeys(tabHotkeys)
 

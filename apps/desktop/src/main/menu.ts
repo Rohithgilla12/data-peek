@@ -208,7 +208,7 @@ export function createMenu(): void {
         },
         {
           label: 'Format SQL',
-          accelerator: 'Shift+Alt+F',
+          accelerator: 'CmdOrCtrl+Shift+F',
           click: (): void => {
             const focusedWindow = BrowserWindow.getFocusedWindow()
             if (focusedWindow) {
