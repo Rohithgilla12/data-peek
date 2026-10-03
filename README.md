@@ -1,322 +1,215 @@
-# data-peek
-
-![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/Rohithgilla12/data-peek/total?style=for-the-badge)
-
-A minimal, fast SQL client desktop application with AI-powered querying. Built for developers who want to quickly peek at their data without the bloat. Supports PostgreSQL, MySQL, Microsoft SQL Server, and SQLite.
-
 <p align="center">
-  <img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/hero.png" alt="Data Peek - SQL Client" width="100%" />
+  <img src="apps/desktop/build/icon.png" alt="data-peek" width="96" />
 </p>
 
-## Screenshots
+<h1 align="center">data-peek</h1>
+
+<p align="center">
+  A fast, keyboard-first SQL client for PostgreSQL, MySQL, SQL Server, and SQLite.<br />
+  Open it, run the query, get the answer, get back to work.
+</p>
+
+<p align="center">
+  <a href="https://github.com/Rohithgilla12/data-peek/releases/latest"><img src="https://img.shields.io/github/v/release/Rohithgilla12/data-peek?style=flat-square&label=release" alt="Latest release" /></a>
+  <a href="https://github.com/Rohithgilla12/data-peek/releases"><img src="https://img.shields.io/github/downloads/Rohithgilla12/data-peek/total?style=flat-square" alt="Downloads" /></a>
+  <a href="https://www.npmjs.com/package/@data-peek/cli"><img src="https://img.shields.io/npm/v/@data-peek/cli?style=flat-square&label=cli" alt="npm @data-peek/cli" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/source-MIT-blue?style=flat-square" alt="MIT licensed source" /></a>
+</p>
+
+<p align="center">
+  <a href="https://www.datapeek.dev">Website</a> ·
+  <a href="https://www.datapeek.dev/download">Download</a> ·
+  <a href="https://docs.datapeek.dev/docs">Docs</a> ·
+  <a href="https://github.com/Rohithgilla12/data-peek/releases">Changelog</a>
+</p>
+
+<p align="center">
+  <a href="https://www.datapeek.dev">
+    <img src="apps/web/public/motion/hero.webp" alt="A SQL query types itself in data-peek and returns 8 rows in 38 ms, then the view pulls back through the schema's tables into the data-peek logo" width="100%" />
+  </a>
+</p>
+
+## Why data-peek
+
+- **Fast.** Opens in about two seconds and stays light on memory. No splash screens, no project setup.
+- **Keyboard-first.** `Cmd/Ctrl+K` reaches every action. [Every shortcut](https://docs.datapeek.dev/docs/reference/keyboard-shortcuts) is documented.
+- **Local and private.** Credentials are encrypted with your OS keychain. No telemetry, no account, no cloud sync.
+- **Grows with the task.** A quick `SELECT` stays quick, and query plans, live diffs, ER diagrams, and an AI assistant are there when the job gets bigger.
+
+## Install
+
+| Platform             | Command                                                        |
+| -------------------- | -------------------------------------------------------------- |
+| macOS, Linux         | `curl -fsSL https://install.cat/Rohithgilla12/data-peek \| sh` |
+| Windows (PowerShell) | `irm https://install.cat/Rohithgilla12/data-peek \| iex`       |
+| macOS (Homebrew)     | `brew install --cask Rohithgilla12/tap/data-peek`              |
+
+Or grab a build from [Releases](https://github.com/Rohithgilla12/data-peek/releases/latest): `.dmg` for macOS (signed and notarised), `.exe` for Windows, and `.AppImage`, `.deb`, or `.tar.gz` for Linux.
 
 <details>
-<summary>AI Assistant - Generate charts and insights</summary>
-<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/ai-assitant.png" alt="AI Assistant Charts" width="100%" />
+<summary>Platform notes</summary>
+
+**macOS.** Builds are signed and notarised, so they open without warnings. The quick installer installs the matching `.dmg` and clears the quarantine flag for you. If an older manual install says the app is "damaged", run `xattr -cr "/Applications/Data Peek.app"`.
+
+**Linux.** Auto-updates only work with the AppImage. The quick installer puts it at `~/.local/bin/data-peek`. `.deb` and `.tar.gz` installs need a manual download for each new release.
+
 </details>
 
-<details>
-<summary>AI Assistant - Natural language to SQL</summary>
-<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/ai-assitant-2.png" alt="AI Assistant Queries" width="100%" />
-</details>
+### No install: `npx @data-peek/cli doctor`
 
-<details>
-<summary>ER Diagrams - Visualize relationships</summary>
-<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/erd.png" alt="ER Diagrams" width="100%" />
-</details>
-
-<details>
-<summary>Command Palette - Quick actions</summary>
-<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/command-bar.png" alt="Command Palette" width="100%" />
-</details>
-
-<details>
-<summary>Light Mode</summary>
-<img src="https://pub-84538e6ab6f94b80b94b8aa308ad1270.r2.dev/light-mode.png" alt="Light Mode" width="100%" />
-</details>
-
-## Features
-
-### Core
-
-- **Fast** - Opens in under 2 seconds, low memory footprint
-- **Multi-Database** - PostgreSQL, MySQL, Microsoft SQL Server, SQLite
-- **SSH Tunnels** - Connect securely through bastion hosts with password or key auth
-- **Default Schema** - Pin a PostgreSQL connection's `search_path` and focus the sidebar on one schema
-- **Secure** - Connection credentials encrypted locally using OS keychain, no telemetry
-
-### AI Assistant
-
-- **Natural Language Queries** - Ask questions in plain English, get SQL
-- **Multi-Provider** - OpenAI, Anthropic, Google, Groq, and local Ollama models (BYOK)
-- **Charts & Insights** - Generate visualizations and metrics from query results
-- **Schema-Aware** - AI understands your database structure for accurate queries
-
-### MCP Server
-
-- **MCP server** - expose your connections to AI agents (read-only queries free, writes gated by in-app approval)
-- **Streamable HTTP** - local server on `127.0.0.1:4722` (configurable), secured with a bearer token, off by default
-- **Read-only tools** - `list_connections`, `list_schemas`, `run_query` (500-row cap, rollback-wrapped, Postgres additionally runs `READ ONLY` at the DB level), `explain_query`
-- **Approved writes** - `execute_statement` prompts an in-app Approve/Reject dialog for every write; 60s timeout auto-rejects
-- **One-command setup** - copy the ready-made `claude mcp add` snippet straight from Settings → MCP server
-- **Bring your own agent** - point the AI assistant at your locally installed Claude Code, Codex, or Antigravity (`agy`) CLI; it uses your existing subscription and sign-in, and data-peek never stores a key. Claude Code grounds answers against your live database via MCP; Codex and Antigravity grounding follows once headless tool approval lands upstream.
-
-### Audit Log
-
-- **Audit log** - tamper-evident (hash-chained) local record of every executed statement, with CSV/JSON export and integrity verification. Off by default. Stored locally, never uploaded; SQL text can contain data values.
-
-### Query Editor
-
-- **Monaco Editor** - SQL syntax highlighting with smart autocomplete
-- **Table Aliases** - Autocomplete understands aliases for complex queries
-- **Multi-tab & Multi-window** - Work with multiple queries and databases simultaneously
-- **Cross-Tab References** - Name a tab and reference its result from other tabs with `@name`, inlined as a CTE at run time
-- **Manual Transactions** - Turn off auto-commit on PostgreSQL, then commit or roll back explicitly; open transactions auto-rollback on tab close or disconnect
-- **Step-Through Execution** - Run multi-statement scripts one statement at a time, optionally inside a transaction
-- **Saved Queries** - Bookmark and organize queries with folders and tags
-- **Command Palette** - `Cmd+K` to access everything instantly
-
-### Performance Analysis
-
-- **Query Telemetry** - Detailed timing breakdown with waterfall visualization
-- **Benchmark Mode** - Run queries multiple times, get p50/p90/p99 statistics
-- **EXPLAIN Viewer** - Analyze query plans with interactive node breakdown
-- **Performance Indicator** - Detect missing indexes, N+1 patterns, and slow queries with auto-generated fix suggestions
-- **Cancel Queries** - Stop long-running queries mid-execution
-
-### Watch Mode
-
-- **Pin a SELECT, see it move** - Re-run any read-only query on a cadence (500ms → 5min) with live diff highlights
-- **Cell-level change detection** - Changed cells flash amber, new rows enter with a green band, fades over a configurable window
-- **Smart row keying** - Diffs survive sorting / pagination by keying on explicit primary keys, then a heuristic `id`/`uuid`/`*_id` column, then row position
-- **Refuses to poll mutations** - Pre-execution gate refuses `INSERT/UPDATE/DELETE/DDL/transaction/multi-statement` queries with a tooltip explaining why
-- **Pause when window hidden** - Background tabs don't burn CPU or pound the database
-- **Tab-bar pulse indicator** - Switch tabs and the amber dot keeps pulsing on watched ones
-
-### Time Machine
-
-- **Every query gets a memory** - Successful SELECT results are snapshotted locally; a timeline strip (`Cmd/Ctrl+Shift+H`) scrubs back through past runs
-- **View any past run read-only** - Load an old result into the grid with a clear "viewing the past" banner and row-count sparkline
-- **Diff any two runs** - Cell-level highlights show what changed between runs, plus added/removed row counts, keyed the same way Watch Mode diffs
-- **Privacy-aware by construction** - Masked columns are stored redacted, storage is capped (50 runs per query, 512 MB global budget), and Settings has a one-click wipe
-
-### Data Management
-
-- **Schema Explorer** - Browse tables, views, stored procedures, functions, and triggers
-- **Triggers** - View trigger definitions and alter, enable/disable, or drop them from the schema sidebar
-- **Inline Editing** - Edit table data directly with INSERT/UPDATE/DELETE
-- **Table Designer** - Create and alter tables with full DDL support (columns, indexes, constraints, partitions)
-- **JSON Editor** - Dedicated editor for JSON/JSONB columns
-- **Export** - Export results to CSV, JSON, or Excel
-- **CSV Import** - Import CSV files with column mapping, type inference, and conflict handling
-- **Data Generator** - Generate realistic fake data with Faker.js, FK-aware, in a dedicated tab
-- **Column Statistics** - One-click data profiling per column (min/max/avg, histograms, top values)
-- **Data Masking** - Blur sensitive columns for demos and screenshots with auto-mask rules
-
-### Visualization
-
-- **ERD Diagrams** - See table relationships with interactive entity-relationship diagrams
-- **Foreign Key Navigation** - Jump to related records with one click
-
-### Database Monitoring
-
-- **Connection Health Monitor** - Dashboard with active queries, table sizes, cache hit ratios, and lock detection
-- **PostgreSQL Notifications** - Subscribe to LISTEN/NOTIFY channels with real-time event log
-- **Kill Queries** - Terminate long-running or blocking queries from the health dashboard
-
-### User Experience
-
-- **Dark/Light Mode** - Easy on the eyes, follows system preference
-- **Keyboard-First** - Power users shouldn't need a mouse
-- **Auto-Updates** - Automatic updates with toast notifications
-
-## Installation
-
-### Quick Install
-
-#### macOS and Linux
-
-```bash
-curl -fsSL https://install.cat/Rohithgilla12/data-peek | sh
-```
-
-The installer detects your platform, downloads the latest GitHub release, and installs:
-
-- **macOS**: the matching `.dmg`, copies `Data Peek.app`, and runs `xattr -cr` automatically
-- **Linux**: the latest `x86_64.AppImage` into `~/.local/bin/data-peek`
-
-#### Windows PowerShell
-
-```powershell
-irm https://install.cat/Rohithgilla12/data-peek | iex
-```
-
-The PowerShell installer downloads the latest `setup.exe` release and runs it for you.
-
-### Terminal: `npx @data-peek/cli doctor`
-
-No install needed. Eight Postgres schema checks from the terminal, each finding with the SQL that fixes it:
+Eight Postgres schema checks from the terminal. Each finding comes with the SQL that fixes it.
 
 ```bash
 npx @data-peek/cli doctor postgres://user:pass@localhost:5432/app
-npx @data-peek/cli doctor "$DATABASE_URL" --fail-on warning   # as a CI gate
+npx @data-peek/cli doctor "$DATABASE_URL" --fail-on warning   # fail CI on warnings
 ```
 
-Tables without a primary key, foreign keys without an index, duplicate, unused, and invalid indexes, bloat, never-vacuumed tables, and nullable FKs. Same queries as Schema Intel in the app. See [`packages/cli`](packages/cli/README.md).
+It finds tables without a primary key, foreign keys without an index, duplicate, unused, and invalid indexes, bloat, never-vacuumed tables, and nullable foreign keys. These are the same checks as Schema Intel in the app. See [`packages/cli`](packages/cli/README.md).
 
-### Alternative Install Methods
+<p align="center">
+  <img src="apps/web/public/motion/doctor-cli.webp" alt="npx @data-peek/cli doctor reporting an invalid index, a foreign key without an index, and nullable foreign keys, each with the SQL that fixes it" width="100%" />
+</p>
 
-#### macOS: Homebrew
+## See it work
 
-```bash
-brew install --cask Rohithgilla12/tap/data-peek
-```
+<table>
+  <tr>
+    <td width="50%">
+      <a href="https://www.datapeek.dev/#watch-mode"><img src="apps/web/public/motion/watch-mode.webp" alt="Watch Mode re-running a query: changed cells flash amber and a new row slides in on a green band" /></a>
+      <br /><b>Watch Mode</b>: pin a <code>SELECT</code> and watch cells change live.
+    </td>
+    <td width="50%">
+      <a href="https://www.datapeek.dev/#query-plans"><img src="apps/web/public/motion/query-plan.webp" alt="An EXPLAIN ANALYZE plan growing into a tree, with the slow sequential scan flagged and the CREATE INDEX that fixes it" /></a>
+      <br /><b>Query plans</b>: <code>EXPLAIN ANALYZE</code> as a tree, with the slow node and its fix.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <a href="https://www.datapeek.dev/#mcp-approval"><img src="apps/web/public/motion/mcp-approval.webp" alt="An agent asks to run an UPDATE over MCP and data-peek shows an approval dialog before it runs" /></a>
+      <br /><b>MCP server</b>: agents can read freely; every write waits for your approval.
+    </td>
+    <td width="50%">
+      <a href="https://docs.datapeek.dev/docs/features/time-machine"><img src="apps/web/public/motion/time-machine.webp" alt="Time Machine scrubbing back to an earlier run of a query and diffing two runs cell by cell" /></a>
+      <br /><b>Time Machine</b>: scrub back through past results and diff any two runs.
+    </td>
+  </tr>
+</table>
 
-#### Download
+More clips (command palette, ER diagrams, the AI assistant, inline editing) are on [datapeek.dev](https://www.datapeek.dev/#see-it-work).
 
-Download the latest release for your platform from [Releases](https://github.com/Rohithgilla12/data-peek/releases).
+## Features
 
-- **macOS**: `.dmg` (Intel & Apple Silicon)
-- **Windows**: `.exe` installer
-- **Linux**: `.AppImage`, `.deb`, or `.tar.gz`
+### Query editor
 
-### macOS: Code Signing
+- Monaco editor with schema-aware autocomplete that understands table aliases
+- Multiple tabs and windows, plus [cross-tab references](https://docs.datapeek.dev/docs/features/cross-tab-references): name a tab and query its result from another as `@name`
+- Step through multi-statement scripts one statement at a time, with manual transactions on PostgreSQL
+- Saved queries with folders and tags, reusable snippets, and SQL notebooks that mix SQL cells with Markdown
+- A sidebar omnibar (`/`) that searches tables, columns, functions, saved queries, and history
 
-Starting from v0.4.0, data-peek is code signed and notarized for macOS. You should be able to open it directly without any warnings.
+### Results and data
 
-If you install with the quick installer, it already runs the `xattr` cleanup for you.
+- Inline editing with a preview of the generated `INSERT`/`UPDATE`/`DELETE` before you commit
+- Smart filters and sorting on results without re-running the query
+- Foreign key navigation, a JSON/JSONB editor, and one-click column statistics
+- Export to CSV, JSON, or Excel, or share a result as an image
+- CSV import with column mapping and type inference, PostgreSQL `.sql` dump import, and an FK-aware fake data generator
+- Data masking that blurs sensitive columns for demos and screenshots
 
-If you're using an older version or a manual install and see an "App is damaged" warning:
+### Performance
 
-**Option 1: Terminal command**
+- `EXPLAIN` viewer with an interactive plan tree
+- Query telemetry with a timing waterfall, and a benchmark mode reporting p50/p90/p99
+- Performance hints for missing indexes, N+1 patterns, and slow queries, each with a suggested fix
+- Cancel a running query, or kill a blocking one from the health monitor
 
-```bash
-xattr -cr "/Applications/Data Peek.app"
-```
+### Live data
 
-**Option 2: Right-click to open**
+- **Watch Mode** re-runs a read-only query every 500 ms to 5 min and highlights changed cells. It refuses to poll anything that writes.
+- **Time Machine** snapshots past results locally, so you can scrub back and diff any two runs (`Cmd/Ctrl+Shift+H`)
+- Scheduled queries on a cron, with run history and desktop notifications
+- PostgreSQL `LISTEN`/`NOTIFY` with a live event log
+- Dashboards built from your queries, with charts, KPIs, and tables
 
-1. Right-click (or Control+click) on `Data Peek.app`
-2. Select "Open" from the menu
-3. Click "Open" in the dialog
+### Schema and monitoring
 
-### Linux: Auto-Updates
+- Schema explorer for tables, views, functions, procedures, and triggers
+- Table designer for creating and altering tables: columns, indexes, constraints, and partitions
+- Interactive ER diagrams
+- Health monitor with active queries, table sizes, cache hit ratios, and lock detection
 
-Auto-updates only work with the **AppImage** format. If you installed via `.deb` or `.tar.gz`, you'll need to manually download new releases from the [Releases page](https://github.com/Rohithgilla12/data-peek/releases).
+### AI and agents
 
-| Format   | Auto-Update        |
-| -------- | ------------------ |
-| AppImage | Yes                |
-| .deb     | No (manual update) |
-| .tar.gz  | No (manual update) |
+- AI assistant that turns plain English into SQL and builds charts from results. It knows your schema.
+- Bring your own key (OpenAI, Anthropic, Google, Groq, or local Ollama models), or bring your own agent: point it at your installed Claude Code, Codex, or Antigravity CLI and use the subscription you already have
+- A built-in [MCP server](https://docs.datapeek.dev/docs/features/mcp-server) (off by default) that exposes your connections to AI agents. Reads are capped and rolled back, and every write needs your approval in the app.
 
-For the best experience with automatic updates, we recommend using the AppImage.
+### Connections and security
 
-### Build from Source
+- PostgreSQL, MySQL, Microsoft SQL Server, and SQLite
+- SSH tunnels through bastion hosts, using a password or a key
+- Credentials encrypted with the OS keychain, and no telemetry
+- An optional tamper-evident audit log of every statement you run. It stays local.
 
-```bash
-# Clone the repository
-git clone https://github.com/Rohithgilla12/data-peek.git
-cd data-peek
+The [docs](https://docs.datapeek.dev/docs) cover every feature in depth.
 
-# Install dependencies
-pnpm install
+## Pricing
 
-# Run in development mode
-pnpm dev
+The source is MIT licensed. The pre-built app is **free for personal use**: side projects, learning, open source, students, educators, non-profits, and solo founders, with every feature included. Using it at a company of two or more people, or for client work, needs a [Pro licence](https://www.datapeek.dev/pricing). Details are in [LICENSE.md](LICENSE.md).
 
-# Build for your platform
-pnpm build:mac    # macOS
-pnpm build:win    # Windows
-pnpm build:linux  # Linux
-```
+data-peek is a single-maintainer project, and two commitments in [SUSTAINABILITY.md](SUSTAINABILITY.md) say so up front:
 
-### Troubleshooting: Electron not found
-
-If you get errors about Electron not being found after `pnpm install`:
-
-```bash
-# Option 1: Run the setup script
-pnpm setup:electron
-
-# Option 2: Rebuild native modules
-pnpm rebuild
-
-# Option 3: Clean install (nuclear option)
-pnpm clean:install
-```
-
-This can happen when pnpm's cache skips Electron's postinstall script that downloads platform-specific binaries.
-
-## Tech Stack
-
-| Layer        | Technology                                                                   |
-| ------------ | ---------------------------------------------------------------------------- |
-| Desktop      | Electron                                                                     |
-| Frontend     | React 19 + TypeScript                                                        |
-| UI           | shadcn/ui + Tailwind CSS                                                     |
-| State        | Zustand                                                                      |
-| Query Editor | Monaco                                                                       |
-| Database     | pg (PostgreSQL), mysql2 (MySQL), mssql (SQL Server), better-sqlite3 (SQLite) |
-
-## Project Structure
-
-```
-apps/
-  desktop/     # Electron desktop application
-  web/         # Marketing website + licensing
-packages/
-  shared/      # Shared types for IPC
-```
-
-## Development
-
-```bash
-# Install dependencies
-pnpm install
-
-# Start desktop app with hot reload
-pnpm dev
-
-# Start web app
-pnpm dev:web
-
-# Lint all workspaces
-pnpm lint
-
-# Build desktop app
-pnpm build
-```
-
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
-
-Pre-built binaries require a license for commercial use. See the license file for details on free vs. commercial use.
-
-## Project continuity
-
-data-peek is a single-maintainer project, and we treat that honestly rather
-than hiding it. Two commitments are written down in
-[SUSTAINABILITY.md](SUSTAINABILITY.md): a **kill-switch-free guarantee** (if
-the licence server ever disappears, your activated version keeps working
-forever, offline) and a **dormancy pledge** (12 months of maintainer
-inactivity waives the commercial-licence requirement for all released
-versions). Releases are built by CI, and the MIT source means you can always
-build from source.
+- **No kill switch.** If the licence server ever goes away, your activated version keeps working forever, offline.
+- **Dormancy pledge.** After 12 months of maintainer inactivity, the commercial-licence requirement is waived for every released version.
 
 ## Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome, and **data-peek is taking part in Hacktoberfest**. Issues labelled [`good first issue`](https://github.com/Rohithgilla12/data-peek/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) say what to change and how to tell when it's done. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a PR.
+
+```bash
+git clone https://github.com/Rohithgilla12/data-peek.git
+cd data-peek
+pnpm install
+pnpm dev          # desktop app with hot reload
+```
+
+<details>
+<summary>Repository layout, scripts, and troubleshooting</summary>
+
+```
+apps/
+  desktop/     Electron app (main process, preload, React renderer)
+  docs/        docs.datapeek.dev
+  web/         datapeek.dev marketing site and licence API
+packages/
+  cli/         @data-peek/cli, the `doctor` command
+  shared/      Types and logic shared across apps (IPC contract, Schema Intel checks)
+  ui/          Shared shadcn/ui components
+```
+
+| Script                                         | What it does                                   |
+| ---------------------------------------------- | ---------------------------------------------- |
+| `pnpm dev`                                     | Desktop app with hot reload                    |
+| `pnpm dev:web`                                 | Marketing site                                 |
+| `pnpm lint`                                    | Lint every workspace                           |
+| `pnpm build`                                   | Build the desktop app for the current platform |
+| `pnpm build:mac` / `build:win` / `build:linux` | Platform builds                                |
+
+Built with Electron, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Zustand, and Monaco. Database drivers are `pg`, `mysql2`, `mssql`, and `better-sqlite3`.
+
+**"Electron not found" after `pnpm install`?** pnpm's cache can skip Electron's postinstall step, which downloads the platform binary. Run `pnpm setup:electron`, then `pnpm rebuild`. If that doesn't fix it, `pnpm clean:install` starts from scratch.
+
+</details>
 
 ## Support
 
-- [GitHub Issues](https://github.com/Rohithgilla12/data-peek/issues) - Bug reports and feature requests
-- [GitHub Sponsors](https://github.com/sponsors/Rohithgilla12) - Support development
-- Twitter/X: [@gillarohith](https://x.com/gillarohith)
+- [GitHub Issues](https://github.com/Rohithgilla12/data-peek/issues) for bugs and feature requests
+- [GitHub Sponsors](https://github.com/sponsors/Rohithgilla12) to support development
+- [@gillarohith](https://x.com/gillarohith) on X
 
-<br />
-<br />
-<a href="https://vercel.com/oss">
-  <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
-</a>
+<p align="center">
+  <br />
+  <a href="https://vercel.com/oss">
+    <img alt="Vercel OSS Program" src="https://vercel.com/oss/program-badge.svg" />
+  </a>
+</p>

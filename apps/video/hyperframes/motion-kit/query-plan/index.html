@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1200" />
+    <title>data-peek query plan</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        src: url('fonts/geist.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Geist Mono Variable';
+        src: url('fonts/geist-mono.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #101216;
+        --raised: #171a20;
+        --fg: #ebecee;
+        --muted: #9aa0ad;
+        --accent: #6b8cf5;
+        --accent-deep: #3b52c4;
+        --success: #4ade80;
+        --destructive: #f2555a;
+        --hairline: #2a2f3a;
+
+        --row-pitch: 146px;
+        --card-h: 124px;
+        --indent: 72px;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Variable', sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+      .mono {
+        font-family: 'Geist Mono Variable', monospace;
+      }
+      #scene {
+        position: absolute;
+        inset: 0;
+      }
+
+      .glow {
+        position: absolute;
+        width: 1500px;
+        height: 1500px;
+        top: -620px;
+        left: -520px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          color-mix(in srgb, var(--accent-deep) 26%, transparent) 0%,
+          transparent 62%
+        );
+        pointer-events: none;
+      }
+      .dotgrid {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(
+          color-mix(in srgb, var(--muted) 14%, transparent) 2px,
+          transparent 2px
+        );
+        background-size: 56px 56px;
+        background-position: 28px 28px;
+        pointer-events: none;
+      }
+
+      .topbar {
+        position: absolute;
+        top: 84px;
+        left: 120px;
+        right: 120px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .cmd {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        height: 64px;
+        padding: 0 24px;
+        border: 2px solid color-mix(in srgb, var(--accent) 45%, var(--hairline));
+        background: var(--raised);
+        border-radius: 12px;
+        font-size: 28px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        color: var(--accent);
+      }
+      .chip {
+        position: relative;
+      }
+      .chip-glow {
+        position: absolute;
+        inset: -2px;
+        border-radius: 12px;
+        border: 2px solid var(--accent);
+        box-shadow: 0 0 48px 4px color-mix(in srgb, var(--accent) 35%, transparent);
+        pointer-events: none;
+        opacity: 0;
+      }
+      .query {
+        font-size: 26px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .query .kw {
+        color: var(--accent);
+      }
+      .query .id {
+        color: var(--fg);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .brand img {
+        width: 44px;
+        height: 44px;
+        display: block;
+      }
+
+      #tree {
+        position: absolute;
+        left: 120px;
+        top: 236px;
+        width: 1680px;
+        height: 854px;
+      }
+      #wires {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1680px;
+        height: 854px;
+        overflow: visible;
+      }
+      #wires path {
+        fill: none;
+        stroke: color-mix(in srgb, var(--muted) 42%, var(--hairline));
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      #wires #w-hint {
+        stroke: var(--destructive);
+      }
+
+      .node {
+        position: absolute;
+        left: calc(var(--d) * var(--indent));
+        top: calc(var(--r) * var(--row-pitch));
+        height: var(--card-h);
+        min-width: 640px;
+      }
+      .card {
+        position: relative;
+        height: 100%;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        padding: 14px 26px 14px 20px;
+        background: var(--raised);
+        border: 2px solid var(--hairline);
+        border-radius: 14px;
+      }
+      .chev {
+        flex: 0 0 28px;
+        width: 28px;
+        height: 28px;
+        margin-top: 9px;
+        display: block;
+        color: var(--muted);
+      }
+      .chev.spacer {
+        visibility: hidden;
+      }
+      .body {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+      }
+      .line1 {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 46px;
+        white-space: nowrap;
+      }
+      .badge {
+        display: flex;
+        align-items: center;
+        height: 44px;
+        padding: 0 14px;
+        border-radius: 9px;
+        border: 2px solid var(--tone-border);
+        background: var(--tone-bg);
+        color: var(--tone);
+        font-size: 28px;
+        font-weight: 600;
+      }
+      .tone-muted {
+        --tone: var(--muted);
+        --tone-bg: color-mix(in srgb, var(--muted) 10%, transparent);
+        --tone-border: color-mix(in srgb, var(--muted) 30%, transparent);
+      }
+      .tone-accent {
+        --tone: var(--accent);
+        --tone-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+        --tone-border: color-mix(in srgb, var(--accent) 35%, transparent);
+      }
+      .tone-success {
+        --tone: var(--success);
+        --tone-bg: color-mix(in srgb, var(--success) 10%, transparent);
+        --tone-border: color-mix(in srgb, var(--success) 32%, transparent);
+      }
+      .tone-destructive {
+        --tone: var(--destructive);
+        --tone-bg: color-mix(in srgb, var(--destructive) 12%, transparent);
+        --tone-border: color-mix(in srgb, var(--destructive) 38%, transparent);
+      }
+      .jt {
+        display: flex;
+        align-items: center;
+        height: 36px;
+        padding: 0 12px;
+        border-radius: 8px;
+        border: 2px solid var(--hairline);
+        color: var(--muted);
+        font-size: 26px;
+      }
+      .rel {
+        font-size: 28px;
+        color: var(--muted);
+      }
+      .rel b {
+        color: var(--fg);
+        font-weight: 600;
+      }
+      .warn {
+        width: 34px;
+        height: 34px;
+        display: block;
+        color: var(--destructive);
+      }
+      .line2 {
+        display: flex;
+        gap: 36px;
+        font-size: 26px;
+        line-height: 31px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .line2 b {
+        color: var(--fg);
+        font-weight: 500;
+      }
+      .bar {
+        position: relative;
+        width: 340px;
+        height: 8px;
+        border-radius: 4px;
+        background: var(--hairline);
+        overflow: hidden;
+      }
+      .fill {
+        position: absolute;
+        inset: 0;
+        border-radius: 4px;
+        transform-origin: left center;
+      }
+      .fill.red {
+        background: var(--destructive);
+      }
+      .fill.green {
+        background: var(--success);
+      }
+
+      .hot-border,
+      .hot-glow {
+        position: absolute;
+        inset: -2px;
+        border-radius: 14px;
+        pointer-events: none;
+      }
+      .hot-border {
+        border: 2px solid var(--destructive);
+      }
+      .hot-glow {
+        box-shadow: 0 0 80px 8px color-mix(in srgb, var(--destructive) 40%, transparent);
+      }
+
+      #hint {
+        position: absolute;
+        left: 980px;
+        top: 396px;
+        width: 640px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 24px 26px 26px;
+        background: var(--raised);
+        border: 2px solid color-mix(in srgb, var(--destructive) 45%, var(--hairline));
+        border-radius: 16px;
+      }
+      .hint-msg span {
+        max-width: 500px;
+      }
+      .hint-msg {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        font-size: 28px;
+        line-height: 38px;
+        color: var(--destructive);
+      }
+      .hint-msg .warn {
+        flex: 0 0 32px;
+        width: 32px;
+        height: 32px;
+        margin-top: 3px;
+      }
+      .sql {
+        background: var(--bg);
+        border: 2px solid var(--hairline);
+        border-radius: 12px;
+        padding: 18px 22px;
+        font-size: 26px;
+        line-height: 38px;
+        color: var(--success);
+      }
+      .sql .ln {
+        display: block;
+        white-space: nowrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="stage"
+      data-composition-id="query-plan"
+      data-start="0"
+      data-duration="6"
+      data-fps="30"
+      data-width="1920"
+      data-height="1200"
+    >
+      <div id="scene">
+        <div class="glow" id="glow"></div>
+        <div class="dotgrid"></div>
+
+        <div class="topbar">
+          <div class="cmd" id="cmd">
+            <div class="chip mono" id="chip">EXPLAIN ANALYZE<span class="chip-glow" id="chip-glow"></span></div>
+            <div class="query mono">
+              <span class="kw">SELECT</span> … <span class="kw">FROM</span>
+              <span class="id">orders</span> o <span class="kw">JOIN</span>
+              <span class="id">customers</span> c … <span class="kw">LIMIT</span>
+              <span class="id">50</span>
+            </div>
+          </div>
+          <div class="brand">
+            <img src="logo.svg" alt="" />
+            <span>Query Execution Plan</span>
+          </div>
+        </div>
+
+        <div id="tree">
+          <svg id="wires" viewBox="0 0 1680 854" aria-hidden="true">
+            <g id="wires-tree">
+              <path id="w1" d="" />
+              <path id="w2" d="" />
+              <path id="w3" d="" />
+              <path id="w4" d="" />
+              <path id="w5" d="" />
+            </g>
+            <path id="w-hint" d="" />
+          </svg>
+
+          <div class="node" id="n0" style="--d: 0; --r: 0">
+            <div class="card">
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+              <div class="body">
+                <div class="line1"><span class="badge mono tone-muted">Limit</span></div>
+                <div class="line2 mono"><span><b>50</b> rows</span><span><b>1702.31</b> ms</span></div>
+                <div class="bar"><div class="fill red" data-pct="100"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="node" id="n1" style="--d: 1; --r: 1">
+            <div class="card">
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+              <div class="body">
+                <div class="line1"><span class="badge mono tone-muted">Sort</span></div>
+                <div class="line2 mono"><span><b>50</b> rows</span><span><b>1702.27</b> ms</span></div>
+                <div class="bar"><div class="fill red" data-pct="99.998"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="node" id="n2" style="--d: 2; --r: 2">
+            <div class="card">
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+              <div class="body">
+                <div class="line1"><span class="badge mono tone-accent">Hash Join</span><span class="jt">Inner</span></div>
+                <div class="line2 mono"><span><b>60,412</b> rows</span><span><b>1689.54</b> ms</span></div>
+                <div class="bar"><div class="fill red" data-pct="99.25"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="node" id="n3" style="--d: 3; --r: 3">
+            <div class="hot-glow" id="hot-glow"></div>
+            <div class="card">
+              <svg class="chev spacer" viewBox="0 0 24 24"></svg>
+              <div class="body">
+                <div class="line1">
+                  <span class="badge mono tone-destructive">Seq Scan</span>
+                  <span class="rel">on <b>orders</b> as o</span>
+                  <svg class="warn" id="warn-node" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+                </div>
+                <div class="line2 mono"><span><b>241,318</b> rows</span><span><b>1612.08</b> ms</span></div>
+                <div class="bar"><div class="fill red" id="hot-fill" data-pct="94.70"></div></div>
+              </div>
+              <div class="hot-border" id="hot-border"></div>
+            </div>
+          </div>
+
+          <div class="node" id="n4" style="--d: 3; --r: 4">
+            <div class="card">
+              <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+              <div class="body">
+                <div class="line1"><span class="badge mono tone-accent">Hash</span></div>
+                <div class="line2 mono"><span><b>12,406</b> rows</span><span><b>9.86</b> ms</span></div>
+                <div class="bar"><div class="fill green" data-pct="0.58"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="node" id="n5" style="--d: 4; --r: 5">
+            <div class="card">
+              <svg class="chev spacer" viewBox="0 0 24 24"></svg>
+              <div class="body">
+                <div class="line1">
+                  <span class="badge mono tone-success">Index Scan</span>
+                  <span class="rel">on <b>customers</b> as c</span>
+                  <span class="rel">using <b>customers_region_idx</b></span>
+                </div>
+                <div class="line2 mono"><span><b>12,406</b> rows</span><span><b>7.41</b> ms</span></div>
+                <div class="bar"><div class="fill green" data-pct="0.44"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="hint">
+            <div class="hint-msg" id="hint-msg">
+              <svg class="warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+              <span>Sequential scan on large table - consider adding an index</span>
+            </div>
+            <div class="sql mono" id="sql">
+              <span class="ln" id="sql1">CREATE INDEX CONCURRENTLY</span>
+              <span class="ln" id="sql2">idx_orders_status</span>
+              <span class="ln" id="sql3">ON "public"."orders" ("status");</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const ROW = 146
+      const CARD_H = 124
+      const INDENT = 72
+      const RAIL = 20 + 2 + 14
+      const R = 14
+      const HINT_X = 980
+      const HOT_W = 640
+
+      const nodes = [
+        { d: 0, r: 0, pct: 100 },
+        { d: 1, r: 1, pct: 99.998 },
+        { d: 2, r: 2, pct: 99.25 },
+        { d: 3, r: 3, pct: 94.7 },
+        { d: 3, r: 4, pct: 0.58 },
+        { d: 4, r: 5, pct: 0.44 }
+      ]
+      const parentOf = [null, 0, 1, 2, 2, 4]
+      const HOT = 3
+
+      function elbow(parent, child) {
+        const x = parent.d * INDENT + RAIL
+        const y0 = parent.r * ROW + CARD_H
+        const yMid = child.r * ROW + CARD_H / 2
+        const x1 = child.d * INDENT
+        return `M ${x} ${y0} V ${yMid - R} Q ${x} ${yMid} ${x + R} ${yMid} H ${x1}`
+      }
+
+      const wires = [null]
+      for (let i = 1; i < nodes.length; i++) {
+        const w = document.getElementById('w' + i)
+        w.setAttribute('d', elbow(nodes[parentOf[i]], nodes[i]))
+        wires.push(w)
+      }
+      const hotY = HOT * ROW + CARD_H / 2
+      const wHint = document.getElementById('w-hint')
+      wHint.setAttribute('d', `M ${nodes[HOT].d * INDENT + HOT_W} ${hotY} H ${HINT_X}`)
+
+      const lengths = new Map()
+      for (const w of [...wires.slice(1), wHint]) {
+        const len = Math.ceil(w.getTotalLength()) + 2
+        lengths.set(w, len)
+        w.style.strokeDasharray = `${len} ${len}`
+      }
+
+      const nodeEls = nodes.map((_, i) => document.getElementById('n' + i))
+      const cardEls = nodeEls.map((n) => n.querySelector('.card'))
+      const fillEls = nodeEls.map((n) => n.querySelector('.fill'))
+      const chevEls = nodeEls.map((n) => n.querySelector('.chev:not(.spacer)'))
+      const scaleFor = (i) => Math.max(nodes[i].pct / 100, 0.012)
+
+      const tl = gsap.timeline({ paused: true })
+
+      tl.fromTo(
+        '#glow',
+        { scale: 1 },
+        { scale: 1.08, duration: 3, ease: 'sine.inOut', yoyo: true, repeat: 1 },
+        0
+      )
+
+      const GROW_AT = 0.4
+      const STEP = 0.36
+      const opened = new Set()
+      nodes.forEach((n, i) => {
+        const at = GROW_AT + i * STEP
+        if (i > 0) {
+          const w = wires[i]
+          const len = lengths.get(w)
+          tl.fromTo(
+            w,
+            { strokeDashoffset: len },
+            { strokeDashoffset: 0, duration: 0.34, ease: 'power3.out' },
+            at - 0.18
+          )
+          const p = parentOf[i]
+          if (!opened.has(p)) {
+            opened.add(p)
+            tl.fromTo(
+              chevEls[p],
+              { rotation: 0 },
+              { rotation: 90, duration: 0.3, ease: 'power3.out', transformOrigin: '50% 50%' },
+              at - 0.24
+            )
+          }
+        }
+        tl.fromTo(
+          nodeEls[i],
+          { autoAlpha: 0, x: -28, y: 0, scale: 1 },
+          { autoAlpha: 1, x: 0, y: 0, scale: 1, duration: 0.5, ease: 'expo.out' },
+          at
+        )
+        if (i !== HOT) {
+          tl.fromTo(
+            fillEls[i],
+            { scaleX: 0 },
+            { scaleX: scaleFor(i), duration: 0.7, ease: 'power3.out' },
+            at + 0.18
+          )
+        }
+      })
+
+      const HOT_AT = 3.2
+      tl.fromTo(
+        fillEls[HOT],
+        { scaleX: 0 },
+        { scaleX: scaleFor(HOT), duration: 0.8, ease: 'expo.out' },
+        HOT_AT
+      )
+      tl.fromTo('#hot-border', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power3.out' }, HOT_AT)
+      tl.fromTo('#hot-glow', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power3.out' }, HOT_AT + 0.02)
+      tl.fromTo(
+        '#hot-glow',
+        { opacity: 1 },
+        { opacity: 0.35, duration: 0.8, ease: 'sine.inOut', immediateRender: false },
+        HOT_AT + 0.32
+      )
+      tl.fromTo(
+        '#warn-node',
+        { opacity: 0, scale: 0.6 },
+        { opacity: 1, scale: 1, duration: 0.35, ease: 'power3.out', transformOrigin: '50% 50%' },
+        HOT_AT + 0.1
+      )
+      const dimmed = cardEls.filter((_, i) => i !== HOT)
+      tl.fromTo(dimmed, { opacity: 1 }, { opacity: 0.55, duration: 0.45, ease: 'power2.out' }, HOT_AT + 0.1)
+      tl.fromTo('#wires-tree', { opacity: 1 }, { opacity: 0.55, duration: 0.45, ease: 'power2.out' }, HOT_AT + 0.1)
+      tl.fromTo(
+        wHint,
+        { strokeDashoffset: lengths.get(wHint) },
+        { strokeDashoffset: 0, duration: 0.26, ease: 'power3.out' },
+        HOT_AT + 0.2
+      )
+      tl.fromTo(
+        '#hint',
+        { autoAlpha: 0, x: 36 },
+        { autoAlpha: 1, x: 0, duration: 0.45, ease: 'expo.out' },
+        HOT_AT + 0.3
+      )
+      tl.fromTo(
+        '#sql',
+        { opacity: 0, y: 8 },
+        { opacity: 1, y: 0, duration: 0.22, ease: 'power3.out' },
+        HOT_AT + 0.42
+      )
+      const typing = [
+        ['#sql1', 25, 0.2, HOT_AT + 0.44],
+        ['#sql2', 17, 0.14, HOT_AT + 0.64],
+        ['#sql3', 32, 0.24, HOT_AT + 0.78]
+      ]
+      for (const [sel, chars, dur, at] of typing) {
+        tl.fromTo(
+          sel,
+          { clipPath: 'inset(0 100% 0 0)' },
+          { clipPath: 'inset(0 0% 0 0)', duration: dur, ease: `steps(${chars})` },
+          at
+        )
+      }
+
+      const OUT_AT = 4.7
+      tl.fromTo(
+        '#hint',
+        { autoAlpha: 1, x: 0 },
+        { autoAlpha: 0, x: 24, duration: 0.26, ease: 'power2.in', immediateRender: false },
+        OUT_AT
+      )
+      tl.fromTo(
+        wHint,
+        { strokeDashoffset: 0 },
+        { strokeDashoffset: lengths.get(wHint), duration: 0.24, ease: 'power2.in', immediateRender: false },
+        OUT_AT + 0.06
+      )
+      tl.fromTo(
+        '#hot-glow',
+        { opacity: 0.35 },
+        { opacity: 0, duration: 0.24, ease: 'power2.in', immediateRender: false },
+        OUT_AT
+      )
+
+      tl.fromTo(
+        dimmed,
+        { opacity: 0.55 },
+        { opacity: 1, duration: 0.24, ease: 'power2.out', immediateRender: false },
+        OUT_AT
+      )
+      tl.fromTo(
+        '#wires-tree',
+        { opacity: 0.55 },
+        { opacity: 1, duration: 0.24, ease: 'power2.out', immediateRender: false },
+        OUT_AT
+      )
+      tl.fromTo(
+        '#hot-border',
+        { opacity: 1 },
+        { opacity: 0, duration: 0.24, ease: 'power2.in', immediateRender: false },
+        OUT_AT + 0.04
+      )
+
+      const EXIT_AT = 4.9
+      const EXIT_STEP = 0.12
+      const closed = new Set()
+      for (let k = 0; k < nodes.length - 1; k++) {
+        const i = nodes.length - 1 - k
+        const at = EXIT_AT + k * EXIT_STEP
+        tl.fromTo(
+          nodeEls[i],
+          { autoAlpha: 1, x: 0, y: 0 },
+          { autoAlpha: 0, x: -20, y: -18, duration: 0.28, ease: 'power2.in', immediateRender: false },
+          at
+        )
+        const w = wires[i]
+        tl.fromTo(
+          w,
+          { strokeDashoffset: 0 },
+          { strokeDashoffset: lengths.get(w), duration: 0.26, ease: 'power2.in', immediateRender: false },
+          at + 0.04
+        )
+        const p = parentOf[i]
+        const siblingsLeft = parentOf.some((pp, j) => pp === p && j < i)
+        if (!siblingsLeft && !closed.has(p)) {
+          closed.add(p)
+          tl.fromTo(
+            chevEls[p],
+            { rotation: 90 },
+            { rotation: 0, duration: 0.24, ease: 'power2.in', immediateRender: false, transformOrigin: '50% 50%' },
+            at + 0.1
+          )
+        }
+      }
+
+      const ROOT_OUT = EXIT_AT + (nodes.length - 1) * EXIT_STEP + 0.04
+      tl.fromTo(
+        nodeEls[0],
+        { autoAlpha: 1, x: 0, y: 0, scale: 1 },
+        {
+          autoAlpha: 0,
+          x: 0,
+          y: -96,
+          scale: 0.94,
+          duration: 0.3,
+          ease: 'power2.in',
+          transformOrigin: '0% 0%',
+          immediateRender: false
+        },
+        ROOT_OUT
+      )
+      tl.fromTo('#chip-glow', { opacity: 0 }, { opacity: 1, duration: 0.1, ease: 'power3.out' }, ROOT_OUT + 0.2)
+      tl.fromTo(
+        '#chip-glow',
+        { opacity: 1 },
+        { opacity: 0, duration: 0.14, ease: 'sine.inOut', immediateRender: false },
+        ROOT_OUT + 0.3
+      )
+
+      window.__timelines['query-plan'] = tl
+      tl.seek(0)
+    </script>
+  </body>
+</html>

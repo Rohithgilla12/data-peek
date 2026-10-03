@@ -1,0 +1,1401 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1200" />
+    <title>data-peek hero</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        src: url('fonts/geist.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Geist Mono Variable';
+        src: url('fonts/geist-mono.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #101216;
+        --raised: #171a20;
+        --fg: #ebecee;
+        --muted: #9aa0ad;
+        --accent: #6b8cf5;
+        --accent-deep: #3b52c4;
+        --success: #4ade80;
+        --hairline: #2a2f3a;
+        --accent-a10: rgba(107, 140, 245, 0.1);
+        --accent-a18: rgba(107, 140, 245, 0.18);
+        --accent-a30: rgba(107, 140, 245, 0.3);
+        --accent-a45: rgba(107, 140, 245, 0.45);
+        --accent-a70: rgba(107, 140, 245, 0.7);
+        --deep-a0: rgba(59, 82, 196, 0);
+        --deep-a24: rgba(59, 82, 196, 0.24);
+        --deep-a40: rgba(59, 82, 196, 0.4);
+        --muted-a16: rgba(154, 160, 173, 0.16);
+        --fg-a06: rgba(235, 236, 238, 0.06);
+        --fg-a30: rgba(235, 236, 238, 0.3);
+        --shadow: rgba(0, 0, 0, 0.55);
+        --shadow-deep: rgba(0, 0, 0, 0.8);
+        --clear: rgba(0, 0, 0, 0);
+        --lh: 54px;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Variable', sans-serif;
+      }
+      .mono {
+        font-family: 'Geist Mono Variable', monospace;
+        font-variant-numeric: tabular-nums;
+      }
+      #scene {
+        position: absolute;
+        inset: 0;
+      }
+
+      /* atmosphere */
+      .bg-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      #dotgrid {
+        position: absolute;
+        inset: -60px;
+        background-image: radial-gradient(var(--muted-a16) 2px, var(--clear) 2px);
+        background-size: 56px 56px;
+      }
+      #glow {
+        position: absolute;
+        left: 160px;
+        top: -100px;
+        width: 1600px;
+        height: 1400px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, var(--deep-a24), var(--deep-a0));
+      }
+      #vignette {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse 75% 75% at 50% 50%, var(--clear) 55%, var(--shadow) 100%);
+        pointer-events: none;
+      }
+
+      /* 3D camera rig */
+      #scene3d {
+        position: absolute;
+        inset: 0;
+        perspective: 1200px;
+        perspective-origin: 960px 600px;
+      }
+      #camera,
+      #world {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1200px;
+        transform-style: preserve-3d;
+        transform-origin: 960px 600px;
+      }
+      .layer {
+        position: absolute;
+        left: 960px;
+        top: 600px;
+        width: 0;
+        height: 0;
+      }
+      #layer-far {
+        transform: translateZ(-7000px);
+      }
+      #layer-back {
+        transform: translateZ(-2600px);
+      }
+      #layer-fg {
+        transform: translateZ(1000px);
+      }
+      .star {
+        position: absolute;
+        border-radius: 50%;
+        background: var(--muted);
+      }
+      .star.blue {
+        background: var(--accent);
+      }
+      .edges {
+        position: absolute;
+        overflow: visible;
+      }
+      .edge {
+        fill: none;
+        stroke: var(--accent-a45);
+        stroke-width: 8;
+        stroke-linecap: round;
+      }
+      .edge.q {
+        stroke: var(--accent);
+        stroke-width: 14;
+      }
+      .edge.dim {
+        stroke: var(--accent-a30);
+        stroke-width: 10;
+      }
+      .pulse {
+        fill: none;
+        stroke: var(--fg);
+        stroke-width: 24;
+        stroke-linecap: round;
+      }
+      .pulse-tail,
+      .pulse-mid {
+        fill: none;
+        stroke-linecap: round;
+      }
+      .pulse-tail {
+        stroke: var(--accent);
+        stroke-width: 26;
+        stroke-opacity: 0.32;
+      }
+      .pulse-mid {
+        stroke: var(--accent);
+        stroke-width: 22;
+        stroke-opacity: 0.8;
+      }
+      .pulses {
+        filter: drop-shadow(0 0 40px var(--accent)) drop-shadow(0 0 110px var(--accent));
+      }
+      .node {
+        position: absolute;
+        width: 0;
+        height: 0;
+      }
+      .card {
+        position: absolute;
+        left: 0;
+        top: 0;
+        transform: translate(-50%, -50%);
+        padding: 46px 64px 50px;
+        border-radius: 44px;
+        background: var(--raised);
+        border: 7px solid var(--hairline);
+        white-space: nowrap;
+        box-shadow: 0 50px 120px var(--shadow);
+      }
+      .card .nm {
+        font-size: 124px;
+        line-height: 1.05;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+      }
+      .card .sub {
+        margin-top: 18px;
+        font-size: 78px;
+        line-height: 1.1;
+        color: var(--muted);
+      }
+      .card.q {
+        border-color: var(--accent-a70);
+      }
+      .card.q .nm {
+        color: var(--accent);
+      }
+      #layer-back .card {
+        opacity: 0.55;
+        filter: blur(14px);
+      }
+      #layer-fg .card {
+        opacity: 0.75;
+        filter: blur(46px);
+      }
+
+      /* the data-peek window */
+      #win-shell {
+        position: absolute;
+        left: -800px;
+        top: -500px;
+        width: 1600px;
+        height: 1000px;
+      }
+      #win-halo {
+        position: absolute;
+        inset: 0;
+        border-radius: 24px;
+        box-shadow:
+          0 0 160px 40px var(--accent-a45),
+          0 0 520px 160px var(--deep-a40);
+        opacity: 0;
+      }
+      #win {
+        position: absolute;
+        inset: 0;
+        border-radius: 24px;
+        border: 2px solid var(--hairline);
+        background: var(--bg);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 60px 160px var(--shadow);
+      }
+      .titlebar {
+        height: 64px;
+        flex: 0 0 64px;
+        display: flex;
+        align-items: center;
+        gap: 34px;
+        padding: 0 26px;
+        background: var(--raised);
+        border-bottom: 2px solid var(--hairline);
+      }
+      .dots {
+        display: flex;
+        gap: 12px;
+      }
+      .dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--muted);
+        opacity: 0.3;
+      }
+      .tab {
+        position: relative;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 26px;
+        font-size: 24px;
+        color: var(--fg);
+        background: var(--bg);
+        border-left: 2px solid var(--hairline);
+        border-right: 2px solid var(--hairline);
+      }
+      .tab::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 3px;
+        background: var(--accent);
+      }
+      .tab-icon {
+        width: 22px;
+        height: 22px;
+        color: var(--accent);
+      }
+      .tab-plus {
+        font-size: 28px;
+        color: var(--muted);
+        opacity: 0.6;
+      }
+      .body {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+      .sidebar {
+        width: 300px;
+        flex: 0 0 300px;
+        background: var(--raised);
+        border-right: 2px solid var(--hairline);
+        padding: 26px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .sb-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 26px 12px;
+        font-size: 22px;
+        color: var(--muted);
+        letter-spacing: 0.04em;
+      }
+      .sb-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 9px 26px 9px 44px;
+        font-size: 24px;
+        color: var(--muted);
+      }
+      .sb-row svg {
+        width: 22px;
+        height: 22px;
+        flex: 0 0 22px;
+        opacity: 0.7;
+      }
+      .sb-row .hl {
+        position: absolute;
+      }
+      .sb-row.used {
+        position: relative;
+      }
+      .sb-mark {
+        position: absolute;
+        left: 0;
+        top: 6px;
+        bottom: 6px;
+        width: 4px;
+        background: var(--accent);
+        opacity: 0;
+      }
+      .sb-name {
+        position: relative;
+      }
+      .sb-name-hi {
+        position: absolute;
+        left: 0;
+        top: 0;
+        color: var(--fg);
+        opacity: 0;
+      }
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+      }
+      .toolbar {
+        height: 64px;
+        flex: 0 0 64px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 24px;
+        border-bottom: 2px solid var(--hairline);
+      }
+      .btn-run {
+        position: relative;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 14px 0 16px;
+        border-radius: 10px;
+        background: var(--accent);
+        color: var(--bg);
+        font-size: 22px;
+        font-weight: 600;
+        overflow: hidden;
+      }
+      .btn-run .play {
+        width: 18px;
+        height: 18px;
+      }
+      .kbd {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: var(--fg-a30);
+      }
+      .kbd svg {
+        width: 16px;
+        height: 16px;
+      }
+      #run-flash {
+        position: absolute;
+        inset: 0;
+        background: var(--fg);
+        opacity: 0;
+      }
+      .btn-ghost {
+        height: 42px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        border-radius: 10px;
+        border: 2px solid var(--hairline);
+        color: var(--muted);
+        font-size: 22px;
+      }
+      .editor {
+        position: relative;
+        height: 372px;
+        flex: 0 0 372px;
+        border-bottom: 2px solid var(--hairline);
+        overflow: hidden;
+      }
+      .gutter {
+        position: absolute;
+        left: 0;
+        top: 26px;
+        width: 76px;
+        text-align: right;
+        font-size: 28px;
+        line-height: var(--lh);
+        color: var(--muted);
+        opacity: 0.45;
+      }
+      .gutter div {
+        height: var(--lh);
+      }
+      .code {
+        position: absolute;
+        left: 104px;
+        top: 26px;
+        font-size: 34px;
+        line-height: var(--lh);
+        white-space: pre;
+        color: var(--fg);
+      }
+      .code .line {
+        height: var(--lh);
+      }
+      .code span {
+        opacity: 0;
+      }
+      .code .kw {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .code .pn {
+        color: var(--muted);
+      }
+      .code .nu {
+        color: var(--muted);
+      }
+      .code .fn {
+        color: var(--fg);
+        font-weight: 600;
+      }
+      #caret {
+        --col: 0;
+        --row: 0;
+        position: absolute;
+        left: calc(104px + var(--col) * 1ch);
+        top: calc(26px + var(--row) * var(--lh) + 6px);
+        width: 1ch;
+        height: 42px;
+        font-size: 34px;
+        background: var(--accent);
+        box-shadow: 0 0 22px var(--accent-a45);
+      }
+      #ripple-anchor {
+        position: absolute;
+        left: calc(104px + 8ch);
+        top: calc(26px + 5 * var(--lh) + 27px);
+        width: 0;
+        height: 0;
+        font-size: 34px;
+      }
+      .ripple-ring,
+      .ripple-fill {
+        position: absolute;
+        left: -40px;
+        top: -40px;
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        opacity: 0;
+      }
+      .ripple-ring {
+        border: 3px solid var(--accent);
+      }
+      .ripple-fill {
+        background: radial-gradient(closest-side, var(--accent-a30), var(--clear));
+      }
+      .results {
+        position: relative;
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+      }
+      .grid-head,
+      .grid-row {
+        display: grid;
+        grid-template-columns: 560px 220px;
+        align-items: center;
+        padding: 0 28px;
+      }
+      .grid-head {
+        height: 54px;
+        border-bottom: 2px solid var(--hairline);
+        background: var(--raised);
+        font-size: 24px;
+        color: var(--muted);
+        opacity: 0;
+      }
+      .grid-head .cell {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .grid-head .cell.num {
+        justify-content: flex-end;
+      }
+      .badge {
+        font-size: 17px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        border: 2px solid var(--hairline);
+        color: var(--accent);
+      }
+      .grid-row {
+        height: 44px;
+        font-size: 28px;
+        border-bottom: 1px solid var(--hairline);
+        opacity: 0;
+      }
+      .grid-row .num {
+        text-align: right;
+        color: var(--fg);
+      }
+      .grid-row .name {
+        color: var(--fg);
+      }
+      #scan {
+        position: absolute;
+        left: 0;
+        width: 840px;
+        top: 54px;
+        height: 3px;
+        background: var(--accent);
+        box-shadow: 0 0 18px var(--accent);
+        opacity: 0;
+      }
+      .footer {
+        position: relative;
+        height: 52px;
+        flex: 0 0 52px;
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        background: var(--raised);
+        border-top: 2px solid var(--hairline);
+        font-size: 22px;
+        color: var(--muted);
+      }
+      .status-empty,
+      .status-done {
+        position: absolute;
+        left: 28px;
+        top: 0;
+        bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+      }
+      .status-done {
+        opacity: 0;
+      }
+      .ok-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+      .status-done .rows {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--fg);
+      }
+
+      /* 2D overlay */
+      .overlay {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+      #keys {
+        position: absolute;
+        left: 1392px;
+        top: 316px;
+        display: flex;
+        gap: 26px;
+        opacity: 0;
+      }
+      .key {
+        position: relative;
+        width: 132px;
+        height: 142px;
+      }
+      .key-side {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: 132px;
+        border-radius: 26px;
+        background: var(--bg);
+        border: 2px solid var(--hairline);
+        box-shadow: 0 26px 50px var(--shadow-deep);
+      }
+      .key-face {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 132px;
+        border-radius: 26px;
+        background: var(--raised);
+        border: 2px solid var(--hairline);
+        box-shadow: inset 0 2px 0 var(--fg-a06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--fg);
+      }
+      .key-face svg {
+        width: 60px;
+        height: 60px;
+      }
+      .key-lit {
+        position: absolute;
+        inset: -2px;
+        border-radius: 26px;
+        border: 3px solid var(--accent);
+        box-shadow: 0 0 40px var(--accent-a45);
+        opacity: 0;
+      }
+      #callout {
+        position: absolute;
+        left: 1318px;
+        top: 676px;
+        width: 400px;
+        padding: 30px 36px 32px;
+        border-radius: 22px;
+        background: var(--raised);
+        border: 2px solid var(--accent-a45);
+        box-shadow:
+          0 40px 100px var(--shadow),
+          0 0 80px var(--accent-a18);
+        opacity: 0;
+      }
+      .co-ms {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        font-size: 104px;
+        line-height: 1;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        color: var(--fg);
+      }
+      .co-ms .unit {
+        font-size: 48px;
+        color: var(--accent);
+        letter-spacing: 0;
+      }
+      .co-rows {
+        margin-top: 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 28px;
+        color: var(--muted);
+      }
+      #bloom {
+        position: absolute;
+        left: 360px;
+        top: 0;
+        width: 1200px;
+        height: 1200px;
+        border-radius: 50%;
+        background: radial-gradient(closest-side, var(--accent-a45), var(--deep-a24) 45%, var(--deep-a0));
+        opacity: 0;
+      }
+      #logo-ring {
+        position: absolute;
+        left: 860px;
+        top: 500px;
+        width: 200px;
+        height: 200px;
+        border-radius: 50%;
+        border: 3px solid var(--accent);
+        box-shadow: 0 0 30px var(--accent-a45);
+        opacity: 0;
+      }
+      #lockup {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+      }
+      #logo-lift {
+        width: 196px;
+        height: 196px;
+      }
+      #logo {
+        display: block;
+        width: 196px;
+        height: 196px;
+        opacity: 0;
+      }
+      #wordmark {
+        margin-top: 46px;
+        display: flex;
+        font-size: 156px;
+        line-height: 1;
+        font-weight: 800;
+        letter-spacing: -0.045em;
+        color: var(--fg);
+      }
+      #wordmark span {
+        display: inline-block;
+        opacity: 0;
+      }
+      #tagline {
+        margin-top: 30px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 38px;
+        color: var(--muted);
+        opacity: 0;
+      }
+      #tag-caret {
+        display: inline-block;
+        width: 22px;
+        height: 42px;
+        background: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="stage"
+      data-composition-id="hero"
+      data-start="0"
+      data-duration="10"
+      data-fps="30"
+      data-width="1920"
+      data-height="1200"
+    >
+      <div id="scene">
+        <div class="bg-layer">
+          <div id="glow"></div>
+          <div id="dotgrid"></div>
+        </div>
+
+        <div id="scene3d" data-layout-allow-overflow="true">
+          <div id="camera">
+            <div id="world">
+              <div id="layer-far" class="layer"></div>
+              <div id="layer-back" class="layer"></div>
+              <div id="layer-main" class="layer">
+                <svg id="edges-main" class="edges"></svg>
+                <div id="nodes-main"></div>
+                <div id="win-shell">
+                  <div id="win-halo"></div>
+                  <div id="win">
+                    <div class="titlebar">
+                      <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+                      <div class="tab mono">
+                        <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.66 3.58 3 8 3s8-1.34 8-3V5"/><path d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3"/></svg>
+                        <span>top-customers.sql</span>
+                      </div>
+                      <span class="tab-plus mono">+</span>
+                    </div>
+                    <div class="body">
+                      <div class="sidebar mono">
+                        <div class="sb-head">
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                          <span>public</span>
+                        </div>
+                        <div id="sb-tables"></div>
+                      </div>
+                      <div class="main">
+                        <div class="toolbar">
+                          <div class="btn-run">
+                            <svg class="play" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l12-7.5z"/></svg>
+                            <span>Run</span>
+                            <span class="kbd">
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></svg>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+                            </span>
+                            <div id="run-flash"></div>
+                          </div>
+                          <div class="btn-ghost">Format</div>
+                        </div>
+                        <div class="editor mono">
+                          <div class="gutter" id="gutter"></div>
+                          <div class="code" id="code"></div>
+                          <div id="caret"></div>
+                          <div id="ripple-anchor">
+                            <div class="ripple-fill" id="ripple-fill"></div>
+                            <div class="ripple-ring" id="ripple-ring"></div>
+                          </div>
+                        </div>
+                        <div class="results mono">
+                          <div class="grid-head" id="grid-head">
+                            <div class="cell">name <span class="badge">text</span></div>
+                            <div class="cell num">orders <span class="badge">int8</span></div>
+                          </div>
+                          <div id="grid-rows"></div>
+                          <div id="scan"></div>
+                        </div>
+                        <div class="footer mono">
+                          <div class="status-empty" id="status-empty">No results</div>
+                          <div class="status-done" id="status-done">
+                            <span class="rows"><span class="ok-dot"></span><span id="st-rows">0</span> rows</span>
+                            <span><span id="st-ms">0</span>ms</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="layer-fg" class="layer"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="vignette"></div>
+
+        <div class="overlay">
+          <div id="keys">
+            <div class="key" id="key-cmd">
+              <div class="key-side"></div>
+              <div class="key-face">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></svg>
+                <div class="key-lit"></div>
+              </div>
+            </div>
+            <div class="key" id="key-enter">
+              <div class="key-side"></div>
+              <div class="key-face">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+                <div class="key-lit"></div>
+              </div>
+            </div>
+          </div>
+
+          <div id="callout" class="mono">
+            <div class="co-ms"><span id="co-ms">0</span><span class="unit">ms</span></div>
+            <div class="co-rows"><span class="ok-dot"></span><span id="co-rows">0</span> rows returned</div>
+          </div>
+
+          <div id="bloom"></div>
+          <div id="logo-ring"></div>
+
+          <div id="lockup">
+            <div id="logo-lift"><img id="logo" src="logo.svg" alt="data-peek logo" /></div>
+            <div id="wordmark"></div>
+            <div id="tagline" class="mono"><span>fast, keyboard-first SQL client</span><span id="tag-caret"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const SVG_NS = 'http://www.w3.org/2000/svg'
+      const P = 1200
+      const Z_END = 4650
+      const sAt = (z) => P / (P + Z_END - z)
+      const S_MAIN = sAt(0)
+      const S_BACK = sAt(-2600)
+      const S_FAR = sAt(-7000)
+      const S_FG = sAt(1000)
+
+      function mulberry32(a) {
+        return function () {
+          a |= 0
+          a = (a + 0x6d2b79f5) | 0
+          let t = Math.imul(a ^ (a >>> 15), 1 | a)
+          t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+          return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+        }
+      }
+      const rand = mulberry32(20261002)
+
+      const tableIcon =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/></svg>'
+
+      // Sidebar: the schema the query lives in
+      const sbTables = ['customers', 'orders', 'order_items', 'products', 'payments', 'shipments', 'reviews', 'users', 'inventory', 'carts']
+      const usedTables = ['customers', 'orders']
+      const sb = document.getElementById('sb-tables')
+      sbTables.forEach((name) => {
+        const row = document.createElement('div')
+        row.className = 'sb-row' + (usedTables.includes(name) ? ' used' : '')
+        const used = usedTables.includes(name)
+        row.innerHTML =
+          (used ? '<span class="sb-mark"></span>' : '') +
+          tableIcon +
+          '<span class="sb-name">' +
+          name +
+          (used ? '<span class="sb-name-hi">' + name + '</span>' : '') +
+          '</span>'
+        sb.appendChild(row)
+      })
+
+      // SQL, tokenised for colour, one span per character
+      const SQL = [
+        'SELECT c.name, count(o.id) AS orders',
+        'FROM customers c',
+        'JOIN orders o ON o.customer_id = c.id',
+        'GROUP BY c.name',
+        'ORDER BY orders DESC',
+        'LIMIT 8;'
+      ]
+      const KW = new Set(['SELECT', 'FROM', 'JOIN', 'ON', 'GROUP', 'BY', 'ORDER', 'DESC', 'LIMIT', 'AS'])
+      const FN = new Set(['count'])
+      const code = document.getElementById('code')
+      const gutter = document.getElementById('gutter')
+      const chars = []
+      SQL.forEach((text, row) => {
+        const g = document.createElement('div')
+        g.textContent = String(row + 1)
+        g.className = row === 0 ? 'g0' : 'gn'
+        gutter.appendChild(g)
+        const line = document.createElement('div')
+        line.className = 'line'
+        const tokens = text.match(/[A-Za-z_]+|\d+|\s+|./g)
+        let col = 0
+        tokens.forEach((tok) => {
+          let cls = 'id'
+          if (KW.has(tok)) cls = 'kw'
+          else if (FN.has(tok)) cls = 'fn'
+          else if (/^\d+$/.test(tok)) cls = 'nu'
+          else if (/^[^\w\s]$/.test(tok)) cls = 'pn'
+          for (const ch of tok) {
+            const s = document.createElement('span')
+            s.className = cls
+            s.textContent = ch
+            line.appendChild(s)
+            col += 1
+            chars.push({ el: s, row, col })
+          }
+        })
+        code.appendChild(line)
+      })
+
+      // Results
+      const ROWS = [
+        ['Mara Okafor', 142],
+        ['Jonas Feld', 131],
+        ['Priya Raman', 118],
+        ['Theo Marchetti', 104],
+        ['Lena Sorensen', 97],
+        ['Kofi Mensah', 89],
+        ['Ines Duarte', 82],
+        ['Hugo Brandt', 76]
+      ]
+      const gridRows = document.getElementById('grid-rows')
+      ROWS.forEach(([n, o]) => {
+        const r = document.createElement('div')
+        r.className = 'grid-row'
+        r.innerHTML = '<div class="name">' + n + '</div><div class="num">' + o + '</div>'
+        gridRows.appendChild(r)
+      })
+
+      // Wordmark letters
+      const wordmark = document.getElementById('wordmark')
+      for (const ch of 'data-peek') {
+        const s = document.createElement('span')
+        s.textContent = ch
+        wordmark.appendChild(s)
+      }
+
+      // Constellation: main plane (screen offsets at the end pose)
+      const MAIN = {
+        customers: [-430, -195],
+        orders: [360, -250],
+        users: [-745, -390],
+        coupons: [-290, -445],
+        shipments: [40, -435],
+        payments: [640, -160],
+        order_items: [600, 110],
+        inventory: [575, 385],
+        products: [200, 390],
+        reviews: [-290, 400],
+        carts: [-655, 265],
+        addresses: [-770, 20]
+      }
+      const FKS = [
+        ['orders', 'customers'],
+        ['order_items', 'orders'],
+        ['order_items', 'products'],
+        ['payments', 'orders'],
+        ['shipments', 'orders'],
+        ['shipments', 'addresses'],
+        ['reviews', 'products'],
+        ['reviews', 'customers'],
+        ['addresses', 'customers'],
+        ['carts', 'customers'],
+        ['orders', 'coupons'],
+        ['inventory', 'products'],
+        ['customers', 'users']
+      ]
+      const relCount = {}
+      FKS.forEach(([a, b]) => {
+        relCount[a] = (relCount[a] || 0) + 1
+        relCount[b] = (relCount[b] || 0) + 1
+      })
+
+      function makeCard(layerEl, name, wx, wy, isQuery, sub) {
+        const node = document.createElement('div')
+        node.className = 'node'
+        node.style.left = wx + 'px'
+        node.style.top = wy + 'px'
+        node.innerHTML =
+          '<div class="card mono' +
+          (isQuery ? ' q' : '') +
+          '"><div class="nm" data-layout-allow-overlap="true">' +
+          name +
+          '</div><div class="sub" data-layout-allow-overlap="true">' +
+          sub +
+          '</div></div>'
+        layerEl.appendChild(node)
+        return node
+      }
+      const nodesMain = document.getElementById('nodes-main')
+      const mainPos = { window: [0, 0] }
+      const mainNodes = []
+      Object.entries(MAIN).forEach(([name, [sx, sy]]) => {
+        const wx = sx / S_MAIN
+        const wy = sy / S_MAIN
+        mainPos[name] = [wx, wy]
+        const n = relCount[name] || 0
+        const el = makeCard(nodesMain, name, wx, wy, usedTables.includes(name), 'public · ' + n + ' relation' + (n === 1 ? '' : 's'))
+        mainNodes.push({ name, el, wx, wy, dist: Math.hypot(sx, sy) })
+      })
+
+      // Edge geometry in world space
+      function edgePath(a, b, bend) {
+        const [x1, y1] = a
+        const [x2, y2] = b
+        const mx = (x1 + x2) / 2
+        const my = (y1 + y2) / 2
+        const dx = x2 - x1
+        const dy = y2 - y1
+        const cx = mx - dy * bend
+        const cy = my + dx * bend
+        return 'M' + x1.toFixed(1) + ' ' + y1.toFixed(1) + ' Q' + cx.toFixed(1) + ' ' + cy.toFixed(1) + ' ' + x2.toFixed(1) + ' ' + y2.toFixed(1)
+      }
+      function sizeSvg(svg, half) {
+        svg.setAttribute('width', half[0] * 2)
+        svg.setAttribute('height', half[1] * 2)
+        svg.setAttribute('viewBox', -half[0] + ' ' + -half[1] + ' ' + half[0] * 2 + ' ' + half[1] * 2)
+        svg.style.left = -half[0] + 'px'
+        svg.style.top = -half[1] + 'px'
+      }
+      const edgesMain = document.getElementById('edges-main')
+      sizeSvg(edgesMain, [4600, 2900])
+      const gLines = document.createElementNS(SVG_NS, 'g')
+      const gPulses = document.createElementNS(SVG_NS, 'g')
+      gPulses.setAttribute('class', 'pulses')
+      edgesMain.appendChild(gLines)
+      edgesMain.appendChild(gPulses)
+
+      const allEdges = [
+        ['customers', 'window', true],
+        ['orders', 'window', true],
+        ...FKS.map(([a, b]) => [a, b, false])
+      ]
+      const mainEdges = allEdges.map(([a, b, q], i) => {
+        const d = edgePath(mainPos[a], mainPos[b], (i % 2 ? 1 : -1) * (q ? 0.08 : 0.14))
+        const line = document.createElementNS(SVG_NS, 'path')
+        line.setAttribute('d', d)
+        line.setAttribute('class', 'edge' + (q ? ' q' : ''))
+        gLines.appendChild(line)
+        const len = line.getTotalLength()
+        line.style.strokeDasharray = len + ' ' + len
+        line.style.strokeDashoffset = len
+        // tapered comet: three dashes whose leading edges travel together
+        const TRAIL = 520
+        const comet = [
+          ['pulse-tail', TRAIL],
+          ['pulse-mid', 260],
+          ['pulse', 90]
+        ].map(([cls, seg]) => {
+          const p = document.createElementNS(SVG_NS, 'path')
+          p.setAttribute('d', d)
+          p.setAttribute('class', cls)
+          p.style.strokeDasharray = seg + ' ' + (len + TRAIL * 2)
+          p.style.strokeDashoffset = seg
+          p.style.opacity = 0
+          gPulses.appendChild(p)
+          return { p, from: seg, to: -len - TRAIL + seg }
+        })
+        const pa = mainPos[a]
+        const pb = mainPos[b]
+        const mid = Math.hypot((pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2) * S_MAIN
+        return { a, b, q, line, comet, len, mid }
+      })
+
+      // Back plane: more of the schema, dimmer and softer
+      const BACK = {
+        sessions: [-830, -530],
+        events: [-120, -590],
+        audit_log: [470, -560],
+        invoices: [905, -420],
+        refunds: [940, 70],
+        suppliers: [870, 540],
+        warehouses: [420, 590],
+        categories: [-70, 590],
+        tags: [-520, 575],
+        wishlists: [-905, 410],
+        returns: [-940, -150],
+        notifications: [230, -320],
+        tax_rates: [-470, 95]
+      }
+      const BACK_FKS = [
+        ['sessions', 'events'],
+        ['events', 'audit_log'],
+        ['audit_log', 'invoices'],
+        ['invoices', 'refunds'],
+        ['refunds', 'suppliers'],
+        ['suppliers', 'warehouses'],
+        ['warehouses', 'categories'],
+        ['categories', 'tags'],
+        ['tags', 'wishlists'],
+        ['wishlists', 'returns'],
+        ['returns', 'sessions'],
+        ['notifications', 'events'],
+        ['tax_rates', 'returns'],
+        ['tax_rates', 'categories']
+      ]
+      const layerBack = document.getElementById('layer-back')
+      const edgesBack = document.createElementNS(SVG_NS, 'svg')
+      edgesBack.setAttribute('class', 'edges')
+      sizeSvg(edgesBack, [7200, 4600])
+      layerBack.appendChild(edgesBack)
+      const backPos = {}
+      Object.entries(BACK).forEach(([name, [sx, sy]]) => {
+        backPos[name] = [sx / S_BACK, sy / S_BACK]
+      })
+      BACK_FKS.forEach(([a, b], i) => {
+        const p = document.createElementNS(SVG_NS, 'path')
+        p.setAttribute('d', edgePath(backPos[a], backPos[b], (i % 2 ? 1 : -1) * 0.05))
+        p.setAttribute('class', 'edge dim')
+        edgesBack.appendChild(p)
+      })
+      Object.entries(backPos).forEach(([name, [wx, wy]]) => {
+        makeCard(layerBack, name, wx, wy, false, 'public')
+      })
+
+      // Foreground: a few out-of-focus cards close to the lens
+      const FG = {
+        price_history: [-905, -485],
+        carriers: [880, -520],
+        gift_cards: [930, 470],
+        loyalty_points: [-890, 520]
+      }
+      const layerFg = document.getElementById('layer-fg')
+      Object.entries(FG).forEach(([name, [sx, sy]]) => {
+        makeCard(layerFg, name, sx / S_FG, sy / S_FG, false, 'public')
+      })
+
+      // Far plane: seeded star field
+      const layerFar = document.getElementById('layer-far')
+      for (let i = 0; i < 170; i++) {
+        const sx = (rand() * 2 - 1) * 1080
+        const sy = (rand() * 2 - 1) * 700
+        const r = (1.2 + rand() * 2.6) / S_FAR
+        const st = document.createElement('div')
+        st.className = 'star' + (rand() < 0.28 ? ' blue' : '')
+        st.style.left = sx / S_FAR - r + 'px'
+        st.style.top = sy / S_FAR - r + 'px'
+        st.style.width = r * 2 + 'px'
+        st.style.height = r * 2 + 'px'
+        st.style.opacity = (0.25 + rand() * 0.6).toFixed(2)
+        layerFar.appendChild(st)
+      }
+
+      const tl = gsap.timeline({ paused: true })
+      const caret = document.getElementById('caret')
+
+      // Beat 1: idle cursor, then one-breath typing
+      const T_TYPE0 = 0.42
+      const T_TYPE1 = 2.4
+      const gaps = []
+      let acc = 0
+      chars.forEach((c, i) => {
+        let g = 0.8 + rand() * 0.5
+        if (i > 0 && chars[i - 1].row !== c.row) g += 4.5
+        acc += g
+        gaps.push(acc)
+      })
+      const k = (T_TYPE1 - T_TYPE0) / acc
+      const gutterNums = gutter.querySelectorAll('.gn')
+      gutterNums.forEach((g) => (g.style.opacity = 0))
+      chars.forEach((c, i) => {
+        const t = T_TYPE0 + gaps[i] * k
+        tl.set(c.el, { opacity: 1 }, t)
+        tl.set(caret, { '--col': c.col, '--row': c.row }, t)
+        if (c.col === 1 && c.row > 0) tl.set(gutterNums[c.row - 1], { opacity: 1 }, t)
+      })
+
+      // Beat 2: the chord
+      const keys = document.getElementById('keys')
+      const faceCmd = document.querySelector('#key-cmd .key-face')
+      const faceEnter = document.querySelector('#key-enter .key-face')
+      const litCmd = document.querySelector('#key-cmd .key-lit')
+      const litEnter = document.querySelector('#key-enter .key-lit')
+      tl.fromTo(keys, { autoAlpha: 0, y: 34 }, { autoAlpha: 1, y: 0, duration: 0.26, ease: 'expo.out' }, 2.24)
+      tl.to(faceCmd, { y: 10, duration: 0.07, ease: 'power2.in' }, 2.44)
+      tl.fromTo(litCmd, { opacity: 0 }, { opacity: 1, duration: 0.07, ease: 'power2.in' }, 2.44)
+      tl.to(faceEnter, { y: 10, duration: 0.07, ease: 'power2.in' }, 2.53)
+      tl.fromTo(litEnter, { opacity: 0 }, { opacity: 1, duration: 0.07, ease: 'power2.in' }, 2.53)
+      tl.to([faceCmd, faceEnter], { y: 0, duration: 0.22, ease: 'power3.out' }, 2.72)
+      tl.to([litCmd, litEnter], { opacity: 0, duration: 0.3, ease: 'power2.out' }, 2.72)
+      tl.to(keys, { autoAlpha: 0, y: -16, duration: 0.24, ease: 'power2.in' }, 2.9)
+      tl.fromTo('#run-flash', { opacity: 0 }, { opacity: 0.4, duration: 0.06, ease: 'power2.out' }, 2.6)
+      tl.to('#run-flash', { opacity: 0, duration: 0.35, ease: 'power2.out' }, 2.66)
+      tl.fromTo('#ripple-ring', { scale: 0, opacity: 0.85 }, { scale: 16, opacity: 0, duration: 0.85, ease: 'expo.out' }, 2.6)
+      tl.fromTo('#ripple-fill', { scale: 0, opacity: 1 }, { scale: 12, opacity: 0, duration: 0.9, ease: 'expo.out' }, 2.6)
+      tl.fromTo('.sb-mark', { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out' }, 2.66)
+      tl.fromTo('.sb-name-hi', { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out' }, 2.66)
+
+      // Beat 3: answer
+      tl.fromTo('#grid-head', { opacity: 0 }, { opacity: 1, duration: 0.2, ease: 'power2.out' }, 2.74)
+      tl.fromTo('.grid-row', { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: 0.36, ease: 'expo.out', stagger: 0.065 }, 2.8)
+      tl.fromTo('#scan', { opacity: 0 }, { opacity: 1, duration: 0.05, ease: 'none' }, 2.78)
+      tl.to('#scan', { y: 8 * 44, duration: 0.56, ease: 'power1.inOut' }, 2.8)
+      tl.to('#scan', { opacity: 0, duration: 0.2, ease: 'power2.out' }, 3.32)
+      tl.fromTo('#status-empty', { opacity: 1 }, { opacity: 0, duration: 0.12, ease: 'power2.out' }, 2.76)
+      tl.fromTo('#status-done', { opacity: 0 }, { opacity: 1, duration: 0.18, ease: 'power2.out' }, 2.8)
+      tl.fromTo('#callout', { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 0.4, ease: 'expo.out' }, 2.9)
+      const stRows = document.getElementById('st-rows')
+      const stMs = document.getElementById('st-ms')
+      const coRows = document.getElementById('co-rows')
+      const coMs = document.getElementById('co-ms')
+      const counter = { v: 0 }
+      const paint = () => {
+        const r = Math.round(8 * Math.min(1, counter.v * 1.6))
+        const m = Math.round(38 * counter.v)
+        stRows.textContent = r
+        coRows.textContent = r
+        stMs.textContent = m
+        coMs.textContent = m
+      }
+      tl.fromTo(counter, { v: 0 }, { v: 1, duration: 0.6, ease: 'power1.out', onUpdate: paint }, 2.84)
+      tl.to('#callout', { autoAlpha: 0, y: -14, duration: 0.24, ease: 'power2.in' }, 4.3)
+
+      // cursor blink while the answer is read
+      for (let t = 2.7; t < 4.4; t += 0.54) {
+        tl.set(caret, { opacity: 0 }, t)
+        tl.set(caret, { opacity: 1 }, t + 0.27)
+      }
+
+      // Beat 4: the pull-back
+      const T_PB = 4.4
+      const T_PB_END = 7.75
+      tl.fromTo('#camera', { z: 0 }, { z: -Z_END - 60, duration: T_PB_END - T_PB, ease: 'power2.inOut' }, T_PB)
+      tl.fromTo(
+        '#world',
+        { rotationX: 0, rotationY: 0, rotationZ: 0 },
+        { rotationX: 7, rotationY: -10, rotationZ: -2.5, duration: T_PB_END - T_PB, ease: 'sine.inOut' },
+        T_PB
+      )
+      tl.to('#dotgrid', { opacity: 0, duration: 0.5, ease: 'power2.out' }, T_PB + 0.05)
+      tl.to('#glow', { scale: 0.7, opacity: 0.8, duration: 2.6, ease: 'sine.inOut' }, T_PB)
+      tl.to('#win', { borderColor: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(), duration: 0.6, ease: 'power2.out' }, 4.9)
+      tl.fromTo('#win-halo', { opacity: 0 }, { opacity: 1, duration: 1.0, ease: 'sine.inOut' }, 4.9)
+      tl.to('#win-halo', { opacity: 0.6, duration: 0.45, ease: 'sine.inOut', yoyo: true, repeat: 1 }, 6.2)
+      mainNodes
+        .slice()
+        .sort((a, b) => a.dist - b.dist)
+        .forEach((n, i) => {
+          tl.fromTo(n.el, { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power2.out' }, 4.65 + i * 0.06)
+        })
+      tl.fromTo('#layer-back', { opacity: 0 }, { opacity: 1, duration: 1.2, ease: 'sine.out' }, 4.9)
+      tl.fromTo('#layer-far', { opacity: 0 }, { opacity: 1, duration: 1.4, ease: 'sine.out' }, 5.1)
+      tl.fromTo('#layer-fg', { opacity: 0 }, { opacity: 1, duration: 0.7, ease: 'sine.out' }, 4.75)
+
+      // edges draw outward from the query, then light pulses run along them
+      const T_PULSE_END = 7.3
+      mainEdges
+        .slice()
+        .sort((a, b) => (a.q === b.q ? a.mid - b.mid : a.q ? -1 : 1))
+        .forEach((e, i) => {
+          const t0 = 5.15 + i * 0.07
+          tl.to(e.line, { strokeDashoffset: 0, duration: 0.6, ease: 'power2.inOut' }, t0)
+          const dur = e.q ? 0.5 : 0.7
+          let t = t0 + 0.5 + ((i * 0.173) % 0.35)
+          while (t + dur <= T_PULSE_END) {
+            e.comet.forEach((c) => {
+              tl.set(c.p, { strokeDashoffset: c.from, opacity: 1 }, t)
+              tl.to(c.p, { strokeDashoffset: c.to, duration: dur, ease: 'power1.inOut' }, t)
+              tl.set(c.p, { opacity: 0 }, t + dur)
+            })
+            t += dur + (e.q ? 0.1 : 0.24)
+          }
+        })
+
+      // Beat 5: converge into the logo
+      const T_CV = 7.3
+      tl.to('#edges-main', { opacity: 0, duration: 0.24, ease: 'power2.in' }, T_CV)
+      mainNodes.forEach((n, i) => {
+        tl.to(n.el, { x: -n.wx, y: -n.wy, scale: 0.25, duration: 0.4, ease: 'power3.in' }, T_CV + ((i * 7) % 12) * 0.008)
+        tl.to(n.el, { opacity: 0, duration: 0.12, ease: 'power2.in' }, T_CV + 0.24 + ((i * 7) % 12) * 0.008)
+      })
+      tl.to(['#layer-back', '#layer-far', '#layer-fg'], { opacity: 0, duration: 0.4, ease: 'power2.in' }, T_CV)
+      tl.to('#win-shell', { scale: 0.18, duration: 0.42, ease: 'power3.in' }, T_CV + 0.06)
+      tl.to('#win-shell', { opacity: 0, duration: 0.14, ease: 'power2.in' }, T_CV + 0.34)
+      tl.to('#glow', { scale: 1, opacity: 1, duration: 0.6, ease: 'sine.inOut' }, T_CV)
+
+      const T_LOGO = 7.68
+      tl.fromTo('#bloom', { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.18, ease: 'power2.out' }, T_LOGO)
+      tl.to('#bloom', { opacity: 0.2, scale: 1.1, duration: 0.8, ease: 'sine.out' }, T_LOGO + 0.18)
+      tl.set('#logo-ring', { opacity: 0.9, scale: 0.5 }, T_LOGO + 0.04)
+      tl.to('#logo-ring', { opacity: 0, scale: 4.2, duration: 0.85, ease: 'expo.out' }, T_LOGO + 0.04)
+      tl.fromTo('#logo', { opacity: 0, scale: 0.2 }, { opacity: 1, scale: 1, duration: 0.5, ease: 'expo.out' }, T_LOGO)
+      tl.fromTo('#logo-lift', { y: 139 }, { y: 0, duration: 0.55, ease: 'power3.inOut' }, T_LOGO + 0.28)
+      tl.fromTo(
+        '#wordmark span',
+        { opacity: 0, y: 46 },
+        { opacity: 1, y: 0, duration: 0.45, ease: 'expo.out', stagger: 0.028 },
+        T_LOGO + 0.42
+      )
+      tl.fromTo('#tagline', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power3.out' }, T_LOGO + 0.7)
+      tl.set('#tag-caret', { opacity: 0 }, 8.95)
+      tl.set('#tag-caret', { opacity: 1 }, 9.17)
+
+      // Beat 6: dissolve and return to frame 0
+      const T_OUT = 9.3
+      tl.to('#lockup', { opacity: 0, y: -18, filter: 'blur(10px)', duration: 0.22, ease: 'power2.in' }, T_OUT)
+      tl.to('#bloom', { opacity: 0, duration: 0.26, ease: 'power2.in' }, T_OUT)
+
+      const T_RESET = 9.42
+      tl.set('#code', { opacity: 0 }, T_RESET)
+      tl.set(gutterNums, { opacity: 0 }, T_RESET)
+      tl.set(caret, { '--col': 0, '--row': 0, opacity: 1 }, T_RESET)
+      tl.set(['#grid-head', '.grid-row'], { opacity: 0 }, T_RESET)
+      tl.set('#status-empty', { opacity: 1 }, T_RESET)
+      tl.set('#status-done', { opacity: 0 }, T_RESET)
+      tl.set(['.sb-mark', '.sb-name-hi'], { opacity: 0 }, T_RESET)
+      tl.set('#win', { borderColor: getComputedStyle(document.documentElement).getPropertyValue('--hairline').trim() }, T_RESET)
+      tl.set('#win-halo', { opacity: 0 }, T_RESET)
+      tl.set('#world', { rotationX: 0, rotationY: 0, rotationZ: 0 }, T_RESET)
+      tl.set('#win-shell', { scale: 1 }, T_RESET)
+      tl.set('#camera', { z: -700 }, 9.44)
+      tl.to('#camera', { z: 0, duration: 0.46, ease: 'expo.out' }, 9.44)
+      tl.to('#win-shell', { opacity: 1, duration: 0.32, ease: 'power2.out' }, 9.45)
+      tl.to('#dotgrid', { opacity: 1, duration: 0.42, ease: 'sine.out' }, 9.45)
+
+      window.__timelines['hero'] = tl
+      tl.seek(0)
+    </script>
+  </body>
+</html>

@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1200" />
+    <title>data-peek doctor CLI</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        src: url('fonts/geist.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Geist Mono Variable';
+        src: url('fonts/geist-mono.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #101216;
+        --raised: #171a20;
+        --fg: #ebecee;
+        --muted: #9aa0ad;
+        --accent: #6b8cf5;
+        --accent-deep: #3b52c4;
+        --success: #4ade80;
+        --destructive: #f2555a;
+        --hairline: #2a2f3a;
+        --amber: #f5b14c;
+        --lh: 42px;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Variable', sans-serif;
+      }
+      #glow {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 2200px;
+        height: 2200px;
+        margin: -1100px 0 0 -1100px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle,
+          color-mix(in srgb, var(--accent-deep) 30%, transparent) 0%,
+          color-mix(in srgb, var(--accent-deep) 0%, transparent) 60%
+        );
+        pointer-events: none;
+      }
+      #scene {
+        position: absolute;
+        inset: 0;
+      }
+      .terminal {
+        position: absolute;
+        left: 100px;
+        top: 80px;
+        width: 1720px;
+        height: 1040px;
+        background: var(--raised);
+        border: 3px solid var(--hairline);
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow:
+          0 40px 120px color-mix(in srgb, var(--bg) 70%, transparent),
+          0 0 160px color-mix(in srgb, var(--accent-deep) 22%, transparent);
+      }
+      .term-head {
+        position: relative;
+        height: 56px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 26px;
+        border-bottom: 2px solid var(--hairline);
+      }
+      .dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--muted);
+        opacity: 0.3;
+      }
+      .kchip {
+        position: absolute;
+        right: 22px;
+        top: 6px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+        border: 2px solid var(--hairline);
+        border-radius: 9px;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 26px;
+        font-weight: 600;
+        opacity: 0;
+      }
+      .viewport {
+        height: 978px;
+        padding: 36px 12px;
+      }
+      .vp-inner {
+        position: relative;
+        height: 906px;
+        padding: 0 40px;
+        overflow: hidden;
+      }
+      #scroll {
+        position: relative;
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 30px;
+        font-weight: 450;
+        font-variant-numeric: tabular-nums;
+        font-variant-ligatures: none;
+      }
+      .ln {
+        height: var(--lh);
+        line-height: var(--lh);
+        white-space: pre;
+      }
+      .gap {
+        height: 21px;
+      }
+      .gap.full {
+        height: var(--lh);
+      }
+      .b {
+        font-weight: 700;
+      }
+      .dim {
+        color: var(--muted);
+      }
+      .red {
+        color: var(--destructive);
+      }
+      .yel {
+        color: var(--amber);
+      }
+      .blu {
+        color: var(--accent);
+      }
+      .grn {
+        color: var(--success);
+      }
+      .sql {
+        color: var(--accent);
+      }
+      .prompt {
+        color: var(--muted);
+      }
+      .mark {
+        position: relative;
+        display: inline-block;
+      }
+      .halo {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 38px;
+        height: 38px;
+        margin: -19px 0 0 -19px;
+        border-radius: 50%;
+        background: currentColor;
+        filter: blur(9px);
+        opacity: 0;
+        pointer-events: none;
+      }
+      .cur {
+        display: inline-block;
+        width: 18px;
+        height: 34px;
+        vertical-align: -6px;
+        background: var(--accent);
+      }
+      #curWait {
+        position: absolute;
+        left: 0;
+        top: 46px;
+        opacity: 0;
+      }
+      .hl {
+        position: relative;
+        display: inline-block;
+      }
+      .hl-text {
+        position: relative;
+      }
+      .band {
+        position: absolute;
+        left: -14px;
+        right: -14px;
+        top: 2px;
+        bottom: 2px;
+        border-radius: 8px;
+        background: color-mix(in srgb, var(--accent-deep) 34%, transparent);
+        box-shadow: 0 0 40px color-mix(in srgb, var(--accent) 22%, transparent);
+      }
+      .uline {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 3px;
+        height: 3px;
+        border-radius: 2px;
+        background: var(--accent);
+      }
+      .uline.red-line {
+        background: var(--destructive);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="stage"
+      data-composition-id="doctor-cli"
+      data-start="0"
+      data-duration="9"
+      data-fps="30"
+      data-width="1920"
+      data-height="1200"
+    >
+      <div id="glow"></div>
+      <div id="scene">
+        <div class="terminal">
+          <div class="term-head">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <div class="kchip" id="kchip">⌘K</div>
+          </div>
+          <div class="viewport">
+            <div class="vp-inner">
+              <div id="content" data-layout-allow-overflow="true">
+                <div id="scroll">
+                  <span class="cur" id="curWait"></span>
+                  <div class="ln" id="ln-cmd1"><span class="prompt">$ </span><span id="cmd1">npx @data-peek/cli doctor postgres://localhost:5432/app</span><span class="cur" id="cur1"></span></div>
+
+                  <div class="grp" id="g-head">
+                    <div class="ln"><span class="b">data-peek doctor</span><span class="dim"> · </span>app @ localhost:5432<span class="dim"> · </span>PostgreSQL 16.4<span class="dim"> · </span>8 checks in 31 ms</div>
+                    <div class="gap full"></div>
+                  </div>
+
+                  <div class="grp" id="g-crit">
+                    <div class="ln"><span class="mark red" id="m-crit"><span class="halo" data-layout-allow-overflow="true"></span>✖</span> <span class="b">1 invalid index</span></div>
+                    <div class="ln dim">  The planner ignores these. Drop, then rebuild with CREATE INDEX CONCURRENTLY.</div>
+                    <div class="gap"></div>
+                    <div class="ln">  idx_orders_email<span class="dim">  on orders</span></div>
+                    <div class="ln sql">    DROP INDEX "public"."idx_orders_email";</div>
+                    <div class="ln sql">    -- Then rebuild with: CREATE INDEX CONCURRENTLY ...</div>
+                    <div class="gap"></div>
+                  </div>
+
+                  <div class="grp" id="g-warn">
+                    <div class="ln"><span class="mark yel" id="m-warn"><span class="halo" data-layout-allow-overflow="true"></span>▲</span> <span class="b">1 foreign key without a supporting index</span></div>
+                    <div class="ln dim">  Deletes on the parent and joins over the key scan the whole child table.</div>
+                    <div class="gap"></div>
+                    <div class="ln" id="ln-fix-label">  payments(invoice_id)</div>
+                    <div class="ln sql" id="ln-fix-sql">    <span class="hl" id="fix"><span class="band" id="fix-band"></span><span class="hl-text">CREATE INDEX "idx_payments_invoice_id" ON "public"."payments" ("invoice_id");</span><span class="uline" id="fix-uline"></span></span></div>
+                    <div class="gap"></div>
+                  </div>
+
+                  <div class="grp" id="g-info">
+                    <div class="ln"><span class="mark blu" id="m-info"><span class="halo" data-layout-allow-overflow="true"></span>●</span> <span class="b">3 nullable foreign keys</span></div>
+                    <div class="ln dim">  Fine when NULL means "no reference". Otherwise add NOT NULL to keep out orphans.</div>
+                    <div class="gap"></div>
+                    <div class="ln">  memberships(invited_by), projects(created_by), events(user_id)</div>
+                    <div class="gap"></div>
+                  </div>
+
+                  <div class="grp" id="g-clean">
+                    <div class="ln"><span class="grn">✔</span> <span class="b">clean</span><span class="dim">  primary keys, duplicate indexes, unused indexes, bloat, vacuum</span></div>
+                    <div class="gap"></div>
+                  </div>
+
+                  <div class="grp" id="g-sum">
+                    <div class="ln" id="summary"><span class="red">1 critical</span><span class="dim"> · </span><span class="yel">1 warning</span><span class="dim"> · </span><span class="blu">3 info</span><span class="dim"> · 5 findings</span></div>
+                  </div>
+                  <div class="grp" id="g-fixline">
+                    <div class="ln dim">Fix with a click: open app in data-peek → https://datapeek.dev</div>
+                  </div>
+
+                  <div class="grp" id="g-cmd2">
+                    <div class="ln"><span class="prompt">$ </span><span id="cmd2">npx @data-peek/cli doctor "$DATABASE_URL" --fail-on warning >/dev/null; echo "exit $?"</span><span class="cur" id="cur2"></span></div>
+                  </div>
+                  <div class="grp" id="g-exit">
+                    <div class="ln"><span class="hl" id="exitwrap"><span class="hl-text">exit 1</span><span class="uline red-line" id="exit-uline"></span></span></div>
+                  </div>
+                  <div class="grp" id="g-p3">
+                    <div class="ln"><span class="prompt">$ </span><span class="cur" id="cur3"></span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      (function () {
+        const D = 9
+        const T_TYPE1 = 0.3
+        const T_TYPE1_END = 1.55
+        const T_ENTER1 = 1.7
+        const T_PRINT = 1.95
+        const T_CRIT = 2.2
+        const T_WARN = 2.85
+        const T_FIX = 3.25
+        const T_FIX_END = 4.25
+        const T_INFO = 4.45
+        const T_CLEAN = 4.95
+        const T_SUM = 5.2
+        const SUM_DUR = 0.55
+        const T_FIXLINE = 5.8
+        const T_CMD2 = 5.98
+        const T_TYPE2 = 6.06
+        const T_TYPE2_END = 7.0
+        const T_EXIT = 7.15
+        const T_P3 = 7.3
+        const T_CHIP = 7.55
+        const T_CLEAR = 7.95
+        const T_RESET = 8.15
+        const BLINK = 0.8
+        const LH = 42
+
+        const cmd1El = document.getElementById('cmd1')
+        const cmd2El = document.getElementById('cmd2')
+        const cmd1 = cmd1El.textContent
+        const cmd2 = cmd2El.textContent
+        const cur1 = document.getElementById('cur1')
+        const cur2 = document.getElementById('cur2')
+        const cur3 = document.getElementById('cur3')
+        const curWait = document.getElementById('curWait')
+        const summary = document.getElementById('summary')
+
+        // Fixed-seed LCG: the only source of variation, consumed once during this synchronous build.
+        let seed = 0x0d0c7012
+        function rnd() {
+          seed = (Math.imul(1664525, seed) + 1013904223) >>> 0
+          return seed / 4294967296
+        }
+
+        // Chars-at-time table, fitted exactly into [start, end]; the timeline only reads it.
+        function typingRows(text, start, end) {
+          const steps = []
+          let i = 0
+          while (i < text.length) {
+            const n = 1 + Math.floor(rnd() * 3)
+            const chunk = text.slice(i, i + n)
+            const pause = /\s/.test(chunk) ? 1.6 : 1
+            steps.push({ gap: chunk.length * (0.8 + rnd() * 0.5) * pause, n: Math.min(text.length, i + n) })
+            i += n
+          }
+          const total = steps.reduce((a, s) => a + s.gap, 0)
+          let t = start
+          return [{ t: 0, n: 0 }].concat(
+            steps.map((s) => {
+              t += (s.gap / total) * (end - start)
+              return { t, n: s.n }
+            })
+          )
+        }
+        const rows1 = typingRows(cmd1, T_TYPE1, T_TYPE1_END)
+        const rows2 = typingRows(cmd2, T_TYPE2, T_TYPE2_END)
+        function charsAt(rows, t) {
+          for (let i = rows.length - 1; i >= 0; i--) if (t >= rows[i].t - 0.001) return rows[i].n
+          return 0
+        }
+
+        function blinkOn(t, anchor) {
+          const p = (((t - anchor) % BLINK) + BLINK) % BLINK
+          return p < BLINK / 2
+        }
+
+        const sumEase = gsap.parseEase('power2.out')
+        let lastSum = -1
+        function renderSummary(n) {
+          if (n === lastSum) return
+          lastSum = n
+          const parts = []
+          if (n >= 1) parts.push('<span class="red">1 critical</span>')
+          if (n >= 2) parts.push('<span class="yel">1 warning</span>')
+          if (n >= 3) parts.push('<span class="blu">' + (n - 2) + ' info</span>')
+          summary.innerHTML = n
+            ? parts.join('<span class="dim"> · </span>') +
+              '<span class="dim"> · ' + n + ' finding' + (n === 1 ? '' : 's') + '</span>'
+            : ''
+        }
+
+        // Pure function of time: typed text, cursor placement and blink, summary count.
+        function render(t) {
+          const reset = t >= T_RESET
+          cmd1El.textContent = cmd1.slice(0, reset ? 0 : charsAt(rows1, t))
+          cmd2El.textContent = cmd2.slice(0, charsAt(rows2, t))
+
+          let c1 = false
+          if (reset) c1 = blinkOn(t, T_RESET)
+          else if (t < T_TYPE1_END) c1 = true
+          else if (t < T_ENTER1) c1 = blinkOn(t, T_TYPE1_END)
+          cur1.style.opacity = c1 ? 1 : 0
+          curWait.style.opacity = t >= T_ENTER1 && t < T_PRINT ? 1 : 0
+          cur2.style.opacity = t >= T_CMD2 && t < T_EXIT && (t < T_TYPE2_END || blinkOn(t, T_TYPE2_END)) ? 1 : 0
+          cur3.style.opacity = t >= T_P3 && t < T_RESET && blinkOn(t, T_P3) ? 1 : 0
+
+          const k = Math.min(1, Math.max(0, (t - T_SUM) / SUM_DUR))
+          renderSummary(t < T_SUM ? 0 : Math.round(sumEase(k) * 5))
+        }
+
+        const tl = gsap.timeline({ paused: true })
+
+        // Master driver: one proxy, seeked with the timeline, drives every text and cursor frame.
+        const clock = { t: 0 }
+        tl.fromTo(clock, { t: 0 }, { t: D, duration: D, ease: 'none', onUpdate: () => render(clock.t) }, 0)
+
+        // Ambient: glow breathes once across the loop and lands back on its frame-0 scale.
+        tl.fromTo('#glow', { scale: 1, opacity: 0.85 }, { scale: 1.07, opacity: 1, duration: D / 2, ease: 'sine.inOut' }, 0)
+        tl.to('#glow', { scale: 1, opacity: 0.85, duration: D / 2, ease: 'sine.inOut' }, D / 2)
+
+        function snap(sel, at, dy) {
+          tl.fromTo(sel, { autoAlpha: 0, y: dy }, { autoAlpha: 1, y: 0, duration: 0.25, ease: 'expo.out' }, at)
+        }
+        function pulse(sel, at) {
+          tl.fromTo(sel, { scale: 1 }, { keyframes: [{ scale: 1.45, duration: 0.12, ease: 'power3.out' }, { scale: 1, duration: 0.3, ease: 'power2.inOut' }] }, at)
+          tl.fromTo(sel + ' .halo', { autoAlpha: 0, scale: 0.5 }, { keyframes: [{ autoAlpha: 0.55, scale: 1.2, duration: 0.12, ease: 'power3.out' }, { autoAlpha: 0, scale: 1.7, duration: 0.4, ease: 'power2.out' }] }, at)
+        }
+
+        snap('#g-head', T_PRINT, 6)
+        snap('#g-crit', T_CRIT, 14)
+        pulse('#m-crit', T_CRIT + 0.05)
+        snap('#g-warn', T_WARN, 14)
+        pulse('#m-warn', T_WARN + 0.05)
+
+        // Dominant motif: everything but the problem and its fix recedes, the fix SQL gets swept.
+        const others = gsap.utils.toArray('#scroll .ln').filter((el) => el.id !== 'ln-fix-label' && el.id !== 'ln-fix-sql')
+        tl.fromTo(others, { opacity: 1 }, { opacity: 0.3, duration: 0.25, ease: 'power2.out', immediateRender: false }, T_FIX)
+        tl.fromTo('#fix-band', { scaleX: 0, autoAlpha: 1, transformOrigin: 'left center' }, { scaleX: 1, duration: 0.5, ease: 'expo.out' }, T_FIX + 0.05)
+        tl.fromTo('#fix-uline', { scaleX: 0, transformOrigin: 'left center' }, { scaleX: 1, duration: 0.55, ease: 'power3.out' }, T_FIX + 0.12)
+        tl.to(others, { opacity: 1, duration: 0.25, ease: 'power2.out' }, T_FIX_END)
+        tl.to('#fix-band', { autoAlpha: 0, duration: 0.3, ease: 'power2.out' }, T_FIX_END)
+
+        snap('#g-info', T_INFO, 14)
+        pulse('#m-info', T_INFO + 0.05)
+        snap('#g-clean', T_CLEAN, 10)
+        snap('#g-sum', T_SUM, 6)
+        snap('#g-fixline', T_FIXLINE, 6)
+
+        // Pattern interrupt: the same command as a CI gate. The terminal scrolls by whole lines.
+        snap('#g-cmd2', T_CMD2, 0)
+        tl.fromTo('#scroll', { y: 0 }, { y: -LH, duration: 0.14, ease: 'power3.out', immediateRender: false }, T_CMD2)
+        snap('#g-exit', T_EXIT, 0)
+        tl.to('#scroll', { y: -2 * LH, duration: 0.14, ease: 'power3.out' }, T_EXIT)
+        tl.fromTo('#exit-uline', { scaleX: 0, transformOrigin: 'left center' }, { scaleX: 1, duration: 0.3, ease: 'power3.out' }, T_EXIT + 0.06)
+        snap('#g-p3', T_P3, 0)
+        tl.to('#scroll', { y: -3 * LH, duration: 0.14, ease: 'power3.out' }, T_P3)
+
+        // Clear (⌘K) back to the empty prompt: the loop point.
+        tl.fromTo('#kchip', { autoAlpha: 0, y: 6 }, { autoAlpha: 1, y: 0, duration: 0.2, ease: 'power3.out' }, T_CHIP)
+        tl.to('#kchip', { keyframes: [{ scale: 0.88, duration: 0.07, ease: 'power2.in' }, { scale: 1, duration: 0.16, ease: 'power3.out' }] }, T_CLEAR - 0.07)
+        tl.to('#kchip', { autoAlpha: 0, duration: 0.25, ease: 'power2.in' }, T_RESET + 0.05)
+        tl.fromTo('#content', { opacity: 1 }, { opacity: 0, duration: 0.16, ease: 'power2.in', immediateRender: false }, T_CLEAR)
+        tl.set('.grp', { autoAlpha: 0 }, T_RESET)
+        tl.set('#scroll', { y: 0 }, T_RESET)
+        tl.set(['#fix-uline', '#exit-uline'], { scaleX: 0 }, T_RESET)
+        tl.set('#content', { opacity: 1 }, T_RESET)
+
+        render(0)
+        window.__timelines['doctor-cli'] = tl
+        tl.seek(0)
+      })()
+    </script>
+  </body>
+</html>

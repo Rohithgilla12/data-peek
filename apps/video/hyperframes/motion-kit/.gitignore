@@ -1,0 +1,7 @@
+# Generated output: re-render with export.sh (see KIT.md)
+renders/
+exports/
+snapshots/
+# Scaffold boilerplate written by `hyperframes init`
+AGENTS.md
+CLAUDE.md

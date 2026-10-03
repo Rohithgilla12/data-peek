@@ -1,0 +1,108 @@
+{
+  "category": "ui-demo",
+  "category_note": "Hand-built product UI from repo source (no URL capture), so the search-driven webpage category does not apply. Closest vocabulary: webpage cursor + callout primitives.",
+  "duration_s": 6,
+  "fps": 30,
+  "canvas": {
+    "w": 1920,
+    "h": 1200,
+    "aspect": "16:10"
+  },
+  "style": "data-peek motion kit: dark devtool, monospace-native, quiet confidence. Consistent with the v0.26 teaser approval scene, tighter and looped.",
+  "palette": [
+    "#101216",
+    "#171a20",
+    "#ebecee",
+    "#9aa0ad",
+    "#6b8cf5",
+    "#3b52c4",
+    "#4ade80",
+    "#f2555a",
+    "#2a2f3a"
+  ],
+  "font": "Geist Variable + Geist Mono Variable (local woff2)",
+  "beats": [
+    0.4,
+    1.6,
+    2.9,
+    3.65,
+    4.8,
+    5.3
+  ],
+  "export": "mp4",
+  "seamless_loop": true,
+  "asset_needs": [],
+  "block": null,
+  "reused_techniques": {
+    "oversized-cursor": "macOS arrow path, tip-anchored transform origin, glide then press scale 0.9 and release",
+    "tracing-beam": "glowing dash travelling an SVG path via stroke-dashoffset (MCP link pulse)",
+    "code-terminal-run": "mono step-typed reveal and solid caret on the idle prompt"
+  },
+  "catalog_queries": [
+    "dialog slide in",
+    "countdown ring",
+    "cursor click button",
+    "terminal typing",
+    "connector beam line pulse"
+  ],
+  "content": {
+    "layout": {
+      "header": "meta row at y 80: 'data-peek \u00b7 MCP server' left, 'reads run free \u00b7 writes wait for you' right",
+      "terminal": "left panel x 100 to 830, generic 'agent' terminal, transcript + bottom prompt",
+      "window": "right panel from x 960, bleeds off right and bottom edges (cropped data-peek window)",
+      "dialog": "centred over the window, vertically aligned with the terminal, >= 80 px from edges"
+    },
+    "copy": {
+      "dialog_title": "Agent wants to run a write statement",
+      "dialog_description": "An MCP client is asking to execute this on prod-orders. It auto-rejects in 60 seconds.",
+      "sql": "UPDATE orders\nSET status = 'refunded'\nWHERE id = 4182;",
+      "buttons": [
+        "Reject",
+        "Approve & run"
+      ],
+      "tool_call": "execute_statement",
+      "history_tool": "run_query",
+      "result": "{ \"rowCount\": 1 }"
+    },
+    "beats": [
+      {
+        "id": "idle",
+        "start": 0.0,
+        "end": 0.4,
+        "motion": "hold; caret solid on prompt (loop point)"
+      },
+      {
+        "id": "call",
+        "start": 0.4,
+        "end": 1.6,
+        "motion": "tool header slide_left; SQL typewriter steps; status line fade; MCP beam dash travels terminal -> window"
+      },
+      {
+        "id": "dialog",
+        "start": 1.6,
+        "end": 2.4,
+        "motion": "window dims; dialog scale 0.94 -> 1 + y 36 -> 0, expo.out 0.45 s"
+      },
+      {
+        "id": "approve",
+        "start": 2.4,
+        "end": 3.4,
+        "motion": "pointer glides in (power3.out), press (button 0.96, cursor 0.9), success green flash + ring burst, dialog resolves (power2.in)"
+      },
+      {
+        "id": "result",
+        "start": 3.4,
+        "end": 4.8,
+        "motion": "beam returns window -> terminal in green; tag flips to approved; result line slide_left with green check"
+      },
+      {
+        "id": "settle",
+        "start": 4.8,
+        "end": 6.0,
+        "motion": "write block fades up and out (power2.in); caret returns solid; exact frame-0 state from 5.3 s"
+      }
+    ],
+    "ambient": "one radial glow breathing on sine.inOut, yoyo over the full 6 s so it returns to its frame-0 scale"
+  },
+  "removed": "countdown ring chip (2026-10-02): showed UI the app does not have; the dialog copy carries the timeout"
+}

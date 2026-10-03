@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1200" />
+    <title>data-peek: MCP approval</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        src: url('fonts/geist.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Geist Mono Variable';
+        src: url('fonts/geist-mono.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #101216;
+        --raised: #171a20;
+        --fg: #ebecee;
+        --muted: #9aa0ad;
+        --accent: #6b8cf5;
+        --accent-deep: #3b52c4;
+        --success: #4ade80;
+        --destructive: #f2555a;
+        --hairline: #2a2f3a;
+        --scrim: rgba(16, 18, 22, 0.84);
+        --accent-glow: rgba(59, 82, 196, 0.24);
+        --success-soft: rgba(74, 222, 128, 0.14);
+        --shadow: rgba(0, 0, 0, 0.55);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Variable', sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+      .mono {
+        font-family: 'Geist Mono Variable', monospace;
+      }
+      #scene {
+        position: absolute;
+        inset: 0;
+      }
+      .glow {
+        position: absolute;
+        width: 1500px;
+        height: 1500px;
+        left: 160px;
+        top: -260px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--accent-glow) 0%, rgba(59, 82, 196, 0) 62%);
+        pointer-events: none;
+      }
+      .dotgrid {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(154, 160, 173, 0.13) 2px, transparent 2px);
+        background-size: 56px 56px;
+        pointer-events: none;
+      }
+
+      .topbar {
+        position: absolute;
+        left: 100px;
+        right: 100px;
+        top: 84px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+      .lockup img {
+        width: 48px;
+        height: 48px;
+        display: block;
+      }
+      .lockup .name {
+        font-size: 34px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+      }
+      .lockup .sub {
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .tagline {
+        font-size: 28px;
+        color: var(--muted);
+      }
+      .tagline .you {
+        color: var(--fg);
+      }
+      .tagline .you em {
+        font-style: normal;
+        color: var(--accent);
+      }
+
+      .content {
+        position: absolute;
+        inset: 0;
+        padding: 196px 0 0 100px;
+        display: flex;
+        align-items: flex-start;
+        gap: 130px;
+      }
+
+      .terminal {
+        flex: 0 0 730px;
+        height: 700px;
+        margin-top: 100px;
+        background: var(--raised);
+        border: 3px solid var(--hairline);
+        border-radius: 20px;
+        box-shadow: 0 40px 120px var(--shadow);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .term-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 22px 28px;
+        border-bottom: 2px solid var(--hairline);
+      }
+      .dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--muted);
+        opacity: 0.3;
+      }
+      .term-title {
+        margin-left: 14px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .term-body {
+        flex: 1;
+        padding: 34px 36px 0;
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        font-size: 28px;
+        line-height: 1.5;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        white-space: nowrap;
+      }
+      .tag {
+        font-size: 26px;
+        padding: 2px 14px;
+        border-radius: 8px;
+        border: 2px solid var(--hairline);
+        color: var(--muted);
+        line-height: 1.4;
+      }
+      .tag.gated {
+        color: var(--destructive);
+        border-color: rgba(242, 85, 90, 0.45);
+      }
+      .tag.okay {
+        color: var(--success);
+        border-color: rgba(74, 222, 128, 0.45);
+      }
+      .hist {
+        color: var(--muted);
+      }
+      .ico {
+        width: 28px;
+        height: 28px;
+        flex: 0 0 28px;
+        display: block;
+      }
+      .ico path {
+        fill: none;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .ico.ok path {
+        stroke: var(--success);
+      }
+      .ico.dim path {
+        stroke: var(--muted);
+      }
+      .bullet {
+        width: 16px;
+        height: 16px;
+        margin: 0 6px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex: 0 0 16px;
+      }
+      .call {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .tagslot {
+        position: relative;
+        display: flex;
+        margin-left: auto;
+      }
+      .tagslot .okay {
+        position: absolute;
+        right: 0;
+        top: 0;
+      }
+      .sql {
+        padding-left: 44px;
+        display: flex;
+        flex-direction: column;
+      }
+      .sqlline {
+        display: block;
+        width: max-content;
+        white-space: pre;
+      }
+      .kw {
+        color: var(--accent);
+      }
+      .str {
+        color: var(--success);
+      }
+      .status {
+        position: relative;
+        height: 48px;
+        margin-top: 10px;
+        padding-left: 44px;
+      }
+      .status > div {
+        position: absolute;
+        left: 44px;
+        top: 0;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        white-space: nowrap;
+      }
+      .wait {
+        color: var(--muted);
+      }
+      .spin {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 3px solid var(--hairline);
+        border-top-color: var(--accent);
+        display: block;
+      }
+      .result {
+        color: var(--fg);
+      }
+      .term-input {
+        border-top: 2px solid var(--hairline);
+        padding: 26px 36px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 28px;
+      }
+      .prompt {
+        color: var(--accent);
+        font-weight: 700;
+      }
+      .caret {
+        width: 16px;
+        height: 34px;
+        background: var(--accent);
+        display: block;
+      }
+
+      #link {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 1920px;
+        height: 1200px;
+        pointer-events: none;
+        overflow: visible;
+      }
+      #link .base {
+        fill: none;
+        stroke: var(--hairline);
+        stroke-width: 3;
+      }
+      #link .pulse {
+        fill: none;
+        stroke-width: 4;
+        stroke-linecap: round;
+      }
+      #pulseOut {
+        stroke: var(--accent);
+        filter: drop-shadow(0 0 8px var(--accent));
+      }
+      #pulseBack {
+        stroke: var(--success);
+        filter: drop-shadow(0 0 8px var(--success));
+      }
+      #link .port {
+        fill: var(--bg);
+        stroke: var(--hairline);
+        stroke-width: 3;
+      }
+      #link .port-hot {
+        fill: var(--accent);
+      }
+      .mcp-label {
+        position: absolute;
+        font-size: 26px;
+        color: var(--muted);
+        letter-spacing: 0.06em;
+      }
+
+      .window {
+        flex: 0 0 1080px;
+        height: 1080px;
+        position: relative;
+        background: var(--bg);
+        border: 3px solid var(--hairline);
+        border-radius: 20px 0 0 0;
+        box-shadow: 0 50px 140px var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .win-bar {
+        height: 72px;
+        flex: 0 0 72px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 28px;
+        background: var(--raised);
+        border-bottom: 2px solid var(--hairline);
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .win-bar .app {
+        margin-left: 18px;
+      }
+      .win-bar .sep {
+        color: var(--muted);
+      }
+      .conn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: var(--fg);
+      }
+      .conn .live {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+      .win-body {
+        flex: 1;
+        display: flex;
+        font-size: 26px;
+      }
+      .sidebar {
+        flex: 0 0 300px;
+        border-right: 2px solid var(--hairline);
+        padding: 26px 0 0 26px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        color: var(--muted);
+      }
+      .sidebar .label {
+        font-size: 24px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+      }
+      .sidebar .tbl {
+        padding-left: 30px;
+      }
+      .sidebar .tbl.on {
+        color: var(--fg);
+      }
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      .tabs {
+        display: flex;
+        border-bottom: 2px solid var(--hairline);
+      }
+      .tab {
+        padding: 16px 28px;
+        color: var(--fg);
+        border-right: 2px solid var(--hairline);
+        border-bottom: 3px solid var(--accent);
+        margin-bottom: -2px;
+      }
+      .editor {
+        padding: 26px 28px;
+        border-bottom: 2px solid var(--hairline);
+        color: var(--fg);
+        white-space: nowrap;
+      }
+      .grid {
+        display: flex;
+        flex-direction: column;
+      }
+      .grid .gr {
+        display: grid;
+        grid-template-columns: 130px 210px 1fr;
+        padding: 14px 28px;
+        border-bottom: 2px solid var(--hairline);
+        white-space: nowrap;
+      }
+      .grid .gh {
+        color: var(--muted);
+        background: var(--raised);
+      }
+      .grid .num {
+        color: var(--accent);
+      }
+
+      .overlay {
+        position: absolute;
+        inset: 0;
+        background: var(--scrim);
+        opacity: 0;
+      }
+      .dlg-layer {
+        position: absolute;
+        left: 0;
+        top: 72px;
+        width: 916px;
+        height: 760px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 30px;
+      }
+      .dialog {
+        width: 830px;
+        background: var(--raised);
+        border: 3px solid var(--hairline);
+        border-radius: 18px;
+        box-shadow: 0 50px 140px var(--shadow);
+        padding: 46px 44px 44px;
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+      }
+      .d-title {
+        font-size: 33px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+      }
+      .d-desc {
+        font-size: 27px;
+        line-height: 1.45;
+        color: var(--muted);
+      }
+      .d-desc strong {
+        color: var(--fg);
+        font-weight: 700;
+      }
+      .d-sql {
+        background: var(--bg);
+        border-radius: 10px;
+        padding: 24px 28px;
+        font-size: 28px;
+        line-height: 1.5;
+        color: var(--fg);
+        white-space: pre;
+      }
+      .d-foot {
+        display: flex;
+        justify-content: flex-end;
+        gap: 16px;
+        margin-top: 4px;
+      }
+      .btn {
+        position: relative;
+        display: block;
+        border-radius: 10px;
+        padding: 18px 32px;
+        font-size: 28px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .btn.reject {
+        border: 2px solid var(--hairline);
+        color: var(--fg);
+      }
+      .btn.approve {
+        border: 2px solid var(--accent);
+        background: var(--accent);
+        color: var(--bg);
+      }
+      .btn .flash {
+        position: absolute;
+        inset: -2px;
+        border-radius: 10px;
+        background: var(--success);
+        opacity: 0;
+      }
+      .btn .label {
+        position: relative;
+      }
+      .btn .burst {
+        position: absolute;
+        inset: -10px;
+        border-radius: 16px;
+        border: 3px solid var(--success);
+        opacity: 0;
+      }
+
+      #pointer {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 76px;
+        height: 76px;
+        filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.45));
+        z-index: 20;
+        pointer-events: none;
+      }
+      #pointer svg {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      #pointer path {
+        fill: var(--fg);
+        stroke: var(--bg);
+        stroke-width: 1.4;
+        stroke-linejoin: round;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="stage"
+      data-composition-id="mcp-approval"
+      data-start="0"
+      data-duration="6"
+      data-fps="30"
+      data-width="1920"
+      data-height="1200"
+    >
+      <div id="scene">
+        <div class="glow" id="glow"></div>
+        <div class="dotgrid"></div>
+
+        <header class="topbar">
+          <div class="lockup">
+            <img src="logo.svg" alt="" />
+            <span class="name">data-peek</span>
+            <span class="sub mono">· MCP server</span>
+          </div>
+          <div class="tagline mono">
+            reads run free · <span class="you">writes wait <em>for you</em></span>
+          </div>
+        </header>
+
+        <div class="content">
+          <section class="terminal mono" id="term">
+            <div class="term-head">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="term-title">agent</span>
+            </div>
+            <div class="term-body">
+              <div class="row hist">
+                <svg class="ico dim" viewBox="0 0 28 28"><path d="M6 14.5l5 5L22 8.5" /></svg>
+                <span>list_schemas</span>
+                <span class="tagslot"><span class="tag">read-only</span></span>
+              </div>
+              <div class="row hist">
+                <svg class="ico dim" viewBox="0 0 28 28"><path d="M6 14.5l5 5L22 8.5" /></svg>
+                <span>run_query</span>
+                <span class="tagslot"><span class="tag">read-only</span></span>
+              </div>
+              <div class="call" id="call">
+                <div class="row" id="callHead">
+                  <span class="bullet"></span>
+                  <span>execute_statement</span>
+                  <span class="tagslot">
+                    <span class="tag gated" id="tagGated">needs approval</span>
+                    <span class="tag okay" id="tagOk">approved</span>
+                  </span>
+                </div>
+                <div class="sql">
+                  <span class="sqlline" id="sq1"><span class="kw">UPDATE</span> orders</span>
+                  <span class="sqlline" id="sq2"><span class="kw">SET</span> status = <span class="str">'refunded'</span></span>
+                  <span class="sqlline" id="sq3"><span class="kw">WHERE</span> id = 4182;</span>
+                </div>
+                <div class="status">
+                  <div class="wait" id="wait"><span class="spin" id="spin"></span><span>waiting for approval</span></div>
+                  <div class="result" id="result">
+                    <svg class="ico ok" id="resCheck" viewBox="0 0 28 28"><path d="M6 14.5l5 5L22 8.5" /></svg>
+                    <span>{ "rowCount": 1 }</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="term-input">
+              <span class="prompt">&gt;</span><span class="caret" id="caret"></span>
+            </div>
+          </section>
+
+          <section class="window mono" id="win" data-layout-allow-overflow="true">
+            <div class="win-bar" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">
+              <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+              <span class="app" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">data-peek</span>
+              <span class="sep" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">/</span>
+              <span class="conn" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="live"></span>prod-orders</span>
+            </div>
+            <div class="win-body" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">
+              <aside class="sidebar">
+                <span class="label" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">Schema</span>
+                <span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">public</span>
+                <span class="tbl" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">customers</span>
+                <span class="tbl" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">order_items</span>
+                <span class="tbl on" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">orders</span>
+                <span class="tbl" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">products</span>
+                <span class="tbl" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">refunds</span>
+              </aside>
+              <div class="main" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">
+                <div class="tabs" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="tab" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">orders</span></div>
+                <div class="editor" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="kw" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">SELECT</span> * <span class="kw" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">FROM</span> orders <span class="kw" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">LIMIT</span> 100;</div>
+                <div class="grid" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">
+                  <div class="gr gh" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">id</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">status</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">total</span></div>
+                  <div class="gr" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="num" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">4197</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">paid</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">42.00</span></div>
+                  <div class="gr" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="num" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">4196</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">shipped</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">18.50</span></div>
+                  <div class="gr" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="num" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">4195</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">paid</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">96.20</span></div>
+                  <div class="gr" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="num" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">4194</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">paid</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">129.00</span></div>
+                  <div class="gr" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="num" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">4193</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">refunded</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">64.00</span></div>
+                  <div class="gr" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="num" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">4192</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">paid</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">23.75</span></div>
+                  <div class="gr" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="num" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">4191</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">shipped</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">310.40</span></div>
+                  <div class="gr" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="num" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">4190</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">paid</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">57.10</span></div>
+                  <div class="gr" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="num" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">4189</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">paid</span><span data-layout-allow-occlusion="true" data-layout-allow-overlap="true">12.99</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="overlay" id="overlay" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"></div>
+            <div class="dlg-layer">
+              <div class="dialog" id="dialog" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">
+                <div class="d-title" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">Agent wants to run a write statement</div>
+                <div class="d-desc" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">An MCP client is asking to execute this on <strong data-layout-allow-occlusion="true" data-layout-allow-overlap="true">prod-orders</strong>. It auto-rejects in 60 seconds.</div>
+                <div class="d-sql" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">UPDATE orders
+SET status = 'refunded'
+WHERE id = 4182;</div>
+                <div class="d-foot">
+                  <span class="btn reject" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">Reject</span>
+                  <span class="btn approve" id="approve" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"><span class="burst" id="burst" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"></span><span class="flash" id="flash" data-layout-allow-occlusion="true" data-layout-allow-overlap="true"></span><span class="label" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">Approve &amp; run</span></span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <svg id="link" viewBox="0 0 1920 1200">
+          <path class="base" id="linkPath" d="M830 500 C895 500 895 640 960 640" />
+          <path class="pulse" id="pulseOut" d="M830 500 C895 500 895 640 960 640" />
+          <path class="pulse" id="pulseBack" d="M830 500 C895 500 895 640 960 640" />
+          <circle class="port" id="portA" cx="830" cy="500" r="8" />
+          <circle class="port" id="portB" cx="960" cy="640" r="8" />
+        </svg>
+        <span class="mcp-label mono" id="mcpLabel">MCP</span>
+
+        <div id="pointer" data-layout-allow-overflow="true">
+          <svg viewBox="0 0 24 24"><path d="M5 3 L5 19 L9 15 L12 22 L15 20.5 L11.5 14 L18 14 Z" /></svg>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const COMP_ID = 'mcp-approval'
+      const stage = document.getElementById('stage')
+
+      function rectIn(el) {
+        const s = stage.getBoundingClientRect()
+        const k = s.width / 1920 || 1
+        const r = el.getBoundingClientRect()
+        return {
+          x: (r.left - s.left) / k,
+          y: (r.top - s.top) / k,
+          w: r.width / k,
+          h: r.height / k
+        }
+      }
+
+      function build() {
+        const term = rectIn(document.getElementById('term'))
+        const head = rectIn(document.getElementById('callHead'))
+        const win = rectIn(document.getElementById('win'))
+        const dlg = rectIn(document.getElementById('dialog'))
+        const btn = rectIn(document.getElementById('approve'))
+
+        const ax = term.x + term.w
+        const ay = head.y + head.h / 2
+        const bx = win.x
+        const by = dlg.y + dlg.h * 0.42
+        const mid = (ax + bx) / 2
+        const d = `M${ax} ${ay} C${mid} ${ay} ${mid} ${by} ${bx} ${by}`
+        ;['linkPath', 'pulseOut', 'pulseBack'].forEach((id) =>
+          document.getElementById(id).setAttribute('d', d)
+        )
+        const portA = document.getElementById('portA')
+        const portB = document.getElementById('portB')
+        portA.setAttribute('cx', ax)
+        portA.setAttribute('cy', ay)
+        portB.setAttribute('cx', bx)
+        portB.setAttribute('cy', by)
+        const label = document.getElementById('mcpLabel')
+        label.style.left = mid - 24 + 'px'
+        label.style.top = Math.min(ay, by) - 46 + 'px'
+
+        const pathLen = document.getElementById('linkPath').getTotalLength()
+        const dash = 56
+        const dashArr = `${dash} ${pathLen + dash * 2}`
+
+        const tipX = btn.x + btn.w * 0.58
+        const tipY = btn.y + btn.h * 0.84
+        const POINTER_TIP = { xPercent: -20.83, yPercent: -12.5 }
+        const TIP_ORIGIN = '20.83% 12.5%'
+
+        const tl = gsap.timeline({ paused: true })
+
+        tl.fromTo(
+          '#glow',
+          { scale: 1, opacity: 0.85 },
+          { scale: 1.08, opacity: 1, duration: 3, ease: 'sine.inOut', yoyo: true, repeat: 1 },
+          0
+        )
+
+        tl.set('#caret', { opacity: 0 }, 0.4)
+        tl.set('#caret', { opacity: 1 }, 5.3)
+        tl.set('#caret', { opacity: 0 }, 5.58)
+        tl.set('#caret', { opacity: 1 }, 5.82)
+
+        tl.fromTo(
+          '#callHead',
+          { autoAlpha: 0, x: -24 },
+          { autoAlpha: 1, x: 0, duration: 0.3, ease: 'power3.out' },
+          0.4
+        )
+        tl.fromTo('#tagGated', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: 'power2.out' }, 1.34)
+        tl.fromTo('#tagOk', { autoAlpha: 0 }, { autoAlpha: 0, duration: 0.01 }, 0)
+        tl.fromTo(
+          '#sq1',
+          { clipPath: 'inset(0 100% 0 0)' },
+          { clipPath: 'inset(0 0% 0 0)', duration: 0.2, ease: 'steps(13)' },
+          0.56
+        )
+        tl.fromTo(
+          '#sq2',
+          { clipPath: 'inset(0 100% 0 0)' },
+          { clipPath: 'inset(0 0% 0 0)', duration: 0.32, ease: 'steps(23)' },
+          0.78
+        )
+        tl.fromTo(
+          '#sq3',
+          { clipPath: 'inset(0 100% 0 0)' },
+          { clipPath: 'inset(0 0% 0 0)', duration: 0.22, ease: 'steps(16)' },
+          1.12
+        )
+        tl.fromTo('#wait', { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.2, ease: 'power2.out' }, 1.36)
+        tl.fromTo('#spin', { rotation: 0 }, { rotation: 900, duration: 2.3, ease: 'none' }, 1.36)
+        tl.fromTo('#result', { autoAlpha: 0, x: -20 }, { autoAlpha: 0, x: -20, duration: 0.01 }, 0)
+
+        tl.fromTo(
+          '#pulseOut',
+          { strokeDasharray: dashArr, strokeDashoffset: dash, opacity: 1 },
+          { strokeDashoffset: -pathLen, duration: 0.36, ease: 'power1.inOut' },
+          1.26
+        )
+        tl.fromTo(
+          '#pulseBack',
+          { strokeDasharray: dashArr, strokeDashoffset: -pathLen, opacity: 1 },
+          { strokeDashoffset: dash, duration: 0.34, ease: 'power1.inOut' },
+          3.36
+        )
+        tl.fromTo('#portA', { fill: 'var(--bg)' }, { fill: 'var(--accent)', duration: 0.12 }, 1.24)
+        tl.to('#portA', { fill: 'var(--bg)', duration: 0.3 }, 1.5)
+        tl.fromTo('#portB', { fill: 'var(--bg)' }, { fill: 'var(--accent)', duration: 0.12 }, 1.56)
+        tl.to('#portB', { fill: 'var(--bg)', duration: 0.3 }, 1.8)
+
+        tl.fromTo('#overlay', { opacity: 0 }, { opacity: 1, duration: 0.28, ease: 'power2.out' }, 1.52)
+        tl.fromTo(
+          '#dialog',
+          { autoAlpha: 0, scale: 0.94, y: 36 },
+          { autoAlpha: 1, scale: 1, y: 0, duration: 0.45, ease: 'expo.out' },
+          1.6
+        )
+
+        tl.fromTo(
+          '#pointer',
+          { ...POINTER_TIP, x: tipX + 240, y: 1290, scale: 1, transformOrigin: TIP_ORIGIN },
+          { ...POINTER_TIP, x: tipX, y: tipY, duration: 0.56, ease: 'power3.out' },
+          2.14
+        )
+        tl.to('#pointer', { scale: 0.88, duration: 0.1, ease: 'power2.in' }, 2.82)
+        tl.to('#pointer', { scale: 1, duration: 0.22, ease: 'power2.out' }, 2.92)
+        tl.fromTo('#approve', { scale: 1 }, { scale: 0.96, duration: 0.1, ease: 'power2.in' }, 2.82)
+        tl.to('#approve', { scale: 1, duration: 0.22, ease: 'power2.out' }, 2.92)
+        tl.fromTo('#flash', { opacity: 0 }, { opacity: 1, duration: 0.1, ease: 'power2.out' }, 2.92)
+        tl.fromTo(
+          '#burst',
+          { opacity: 0, scale: 1 },
+          { keyframes: [{ opacity: 0.9, scale: 1, duration: 0.05 }, { opacity: 0, scale: 1.22, duration: 0.38, ease: 'power2.out' }] },
+          2.92
+        )
+
+        tl.to('#dialog', { autoAlpha: 0, scale: 0.96, duration: 0.18, ease: 'power2.in' }, 3.12)
+        tl.to('#overlay', { opacity: 0, duration: 0.32, ease: 'power2.out' }, 3.26)
+        tl.to('#pointer', { x: tipX + 120, y: 1290, duration: 0.32, ease: 'power2.in' }, 3.12)
+
+        tl.fromTo('#portB', { fill: 'var(--bg)' }, { fill: 'var(--success)', duration: 0.1, immediateRender: false }, 3.34)
+        tl.to('#portB', { fill: 'var(--bg)', duration: 0.3 }, 3.56)
+        tl.fromTo('#portA', { fill: 'var(--bg)' }, { fill: 'var(--success)', duration: 0.1, immediateRender: false }, 3.64)
+        tl.to('#portA', { fill: 'var(--bg)', duration: 0.3 }, 3.86)
+
+        tl.to('#wait', { autoAlpha: 0, duration: 0.14, ease: 'power2.in' }, 3.62)
+        tl.to('#tagGated', { autoAlpha: 0, duration: 0.14, ease: 'power2.in' }, 3.62)
+        tl.to('#tagOk', { autoAlpha: 1, duration: 0.22, ease: 'power2.out' }, 3.72)
+        tl.to('#result', { autoAlpha: 1, x: 0, duration: 0.36, ease: 'power3.out' }, 3.72)
+        tl.fromTo('#resCheck', { scale: 0.5 }, { scale: 1, duration: 0.36, ease: 'expo.out' }, 3.72)
+
+        tl.fromTo(
+          '#call',
+          { autoAlpha: 1, y: 0 },
+          { autoAlpha: 0, y: -18, duration: 0.4, ease: 'power2.in', immediateRender: false },
+          4.86
+        )
+
+        window.__timelines[COMP_ID] = tl
+        tl.seek(0)
+      }
+
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(build)
+      } else {
+        build()
+      }
+    </script>
+  </body>
+</html>

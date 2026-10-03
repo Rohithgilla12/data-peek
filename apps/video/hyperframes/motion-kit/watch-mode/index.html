@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1200" />
+    <title>data-peek · Watch Mode</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        src: url('fonts/geist.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Geist Mono Variable';
+        src: url('fonts/geist-mono.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #101216;
+        --raised: #171a20;
+        --fg: #ebecee;
+        --muted: #9aa0ad;
+        --accent: #6b8cf5;
+        --accent-deep: #3b52c4;
+        --success: #4ade80;
+        --hairline: #2a2f3a;
+        --amber: #f5b14c;
+        --ink: #0b0d12;
+        --glow: rgba(59, 82, 196, 0.22);
+        --amber-soft: rgba(245, 177, 76, 0.12);
+        --amber-ring: rgba(245, 177, 76, 0.55);
+        --cell-diff-fill: rgba(245, 177, 76, 0.5);
+        --cell-diff-stripe: rgba(245, 177, 76, 0.95);
+        --cell-diff-added: rgba(74, 222, 128, 0.22);
+        --cell-diff-added-stripe: rgba(74, 222, 128, 0.8);
+        --head-fill: rgba(16, 18, 22, 0.7);
+        --hairline-soft: rgba(42, 47, 58, 0.6);
+        --kbd-fill: rgba(255, 255, 255, 0.26);
+        --shadow: rgba(0, 0, 0, 0.55);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Variable', sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+      .mono {
+        font-family: 'Geist Mono Variable', monospace;
+      }
+      .glow {
+        position: absolute;
+        width: 1600px;
+        height: 1600px;
+        left: -520px;
+        top: -760px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--glow) 0%, rgba(59, 82, 196, 0) 62%);
+        pointer-events: none;
+      }
+      .frame {
+        position: absolute;
+        inset: 0;
+        padding: 80px;
+        display: flex;
+      }
+      .win {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--raised);
+        border: 3px solid var(--hairline);
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 40px 120px var(--shadow);
+      }
+
+      .tabbar {
+        height: 84px;
+        flex: 0 0 84px;
+        display: flex;
+        background: var(--bg);
+        border-bottom: 2px solid var(--hairline);
+      }
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        padding: 0 38px;
+        border-right: 2px solid var(--hairline);
+        font-size: 28px;
+        color: var(--muted);
+      }
+      .tab.active {
+        background: var(--raised);
+        color: var(--fg);
+        border-bottom: 4px solid var(--accent);
+        margin-bottom: -2px;
+      }
+      .tab svg {
+        width: 30px;
+        height: 30px;
+        flex: 0 0 30px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .tab .ico-muted {
+        color: var(--muted);
+      }
+      .tab .ico-table {
+        color: var(--accent);
+      }
+      .ref {
+        color: var(--accent);
+      }
+      .pdot {
+        position: relative;
+        width: 22px;
+        height: 22px;
+        flex: 0 0 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .pdot .ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: var(--amber-ring);
+        opacity: 0;
+      }
+      .pdot .core {
+        position: relative;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--amber);
+      }
+
+      .editor {
+        height: 110px;
+        flex: 0 0 110px;
+        display: flex;
+        align-items: center;
+        gap: 34px;
+        padding: 0 44px;
+        font-size: 30px;
+        white-space: nowrap;
+      }
+      .editor .ln {
+        color: var(--muted);
+        opacity: 0.6;
+      }
+      .kw {
+        color: var(--accent);
+      }
+      .pn {
+        color: var(--muted);
+      }
+
+      .toolbar {
+        height: 86px;
+        flex: 0 0 86px;
+        display: flex;
+        align-items: center;
+        gap: 22px;
+        padding: 0 44px 2px;
+        border-bottom: 2px solid var(--hairline);
+      }
+      .btn-run {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        height: 58px;
+        padding: 0 24px;
+        border-radius: 12px;
+        background: var(--accent);
+        color: var(--ink);
+        font-size: 26px;
+        font-weight: 600;
+      }
+      .btn-run svg {
+        width: 24px;
+        height: 24px;
+        fill: currentColor;
+      }
+      .btn-run kbd {
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 20px;
+        font-weight: 500;
+        padding: 4px 10px;
+        border-radius: 7px;
+        background: var(--kbd-fill);
+      }
+      .watch-pill {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 58px;
+        padding: 0 24px;
+        border-radius: 12px;
+        background: var(--amber-soft);
+        color: var(--amber);
+        font-size: 26px;
+        font-weight: 600;
+      }
+
+      .swap {
+        display: inline-grid;
+        vertical-align: top;
+      }
+      .swap > .ver {
+        grid-area: 1 / 1;
+        opacity: 0;
+      }
+      .swap > .ver.on {
+        opacity: 1;
+      }
+
+      .resbar {
+        height: 64px;
+        flex: 0 0 64px;
+        display: flex;
+        align-items: center;
+        gap: 30px;
+        padding: 0 44px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .resbar .ok {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .resbar .gdot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+
+      .ghead,
+      .row {
+        display: flex;
+      }
+      .ghead {
+        height: 74px;
+        flex: 0 0 74px;
+        background: var(--head-fill);
+        border-top: 2px solid var(--hairline);
+        border-bottom: 2px solid var(--hairline);
+      }
+      .col-id {
+        flex: 0 0 160px;
+      }
+      .col-host {
+        flex: 0 0 410px;
+      }
+      .col-status {
+        flex: 0 0 330px;
+      }
+      .col-inflight {
+        flex: 0 0 360px;
+      }
+      .col-lag {
+        flex: 1 1 auto;
+      }
+      .hc {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding-left: 40px;
+        font-size: 26px;
+        font-weight: 500;
+        border-right: 2px solid var(--hairline);
+      }
+      .hc:last-child {
+        border-right: 0;
+      }
+      .badge {
+        font-size: 19px;
+        color: var(--muted);
+        border: 2px solid var(--hairline);
+        border-radius: 7px;
+        padding: 1px 9px;
+      }
+      .gbody {
+        flex: 1 1 auto;
+        position: relative;
+        overflow: hidden;
+      }
+      .stack {
+        margin-top: -88px;
+      }
+      .row {
+        position: relative;
+        height: 88px;
+        border-bottom: 2px solid var(--hairline);
+        font-size: 30px;
+      }
+      .row.new {
+        opacity: 0;
+      }
+      .c {
+        position: relative;
+        display: flex;
+        align-items: center;
+        padding-left: 40px;
+        border-right: 2px solid var(--hairline-soft);
+      }
+      .c:last-child {
+        border-right: 0;
+      }
+      .c .num {
+        color: var(--muted);
+      }
+      .flash {
+        position: absolute;
+        inset: 0;
+        background: var(--cell-diff-fill);
+        box-shadow: inset 6px 0 0 var(--cell-diff-stripe);
+        opacity: 0;
+        pointer-events: none;
+      }
+      .band {
+        position: absolute;
+        inset: 0;
+        background: var(--cell-diff-added);
+        box-shadow: inset 6px 0 0 var(--cell-diff-added-stripe);
+        opacity: 0;
+        pointer-events: none;
+      }
+      .val {
+        position: relative;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="stage"
+      data-composition-id="watch-mode"
+      data-start="0"
+      data-duration="6"
+      data-fps="30"
+      data-width="1920"
+      data-height="1200"
+    >
+      <div class="glow"></div>
+      <div class="frame">
+        <div class="win">
+          <div class="tabbar">
+            <div class="tab active">
+              <svg class="ico-muted" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z" />
+                <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                <path d="M10 12.5 8 15l2 2.5" />
+                <path d="m14 12.5 2 2.5-2 2.5" />
+              </svg>
+              <span class="pdot" id="tab-dot"><span class="ring"></span><span class="core"></span></span>
+              <span class="ref">@workers</span>
+            </div>
+            <div class="tab">
+              <svg class="ico-table" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"
+                />
+              </svg>
+              <span>jobs</span>
+            </div>
+          </div>
+
+          <div class="editor mono">
+            <span class="ln">1</span>
+            <span class="sql"
+              ><span class="kw">SELECT</span> id<span class="pn">,</span> host<span class="pn">,</span> status<span
+                class="pn"
+                >,</span
+              > in_flight<span class="pn">,</span> lag_ms <span class="kw">FROM</span> workers
+              <span class="kw">ORDER BY</span> id <span class="kw">DESC</span><span class="pn">;</span></span
+            >
+          </div>
+
+          <div class="toolbar">
+            <div class="btn-run">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="6 3 20 12 6 21 6 3" /></svg>
+              <span>Run</span>
+              <kbd>⌘↵</kbd>
+            </div>
+            <div class="watch-pill">
+              <span class="pdot" id="pill-dot"><span class="ring"></span><span class="core"></span></span>
+              <span
+                >Watching · <span class="swap" id="cd"
+                  ><span class="ver on" id="cd-1">1s</span><span class="ver" id="cd-2">2s</span></span
+                ></span
+              >
+            </div>
+          </div>
+
+          <div class="resbar mono">
+            <span class="ok"
+              ><span class="gdot"></span
+              ><span
+                ><span class="swap"
+                  ><span class="ver on" id="rc-7">7</span><span class="ver" id="rc-8">8</span></span
+                >
+                rows returned</span
+              ></span
+            >
+            <span
+              ><span class="swap"
+                ><span class="ver on" id="ms-5">5</span><span class="ver" id="ms-4">4</span
+                ><span class="ver" id="ms-6">6</span></span
+              >ms</span
+            >
+          </div>
+
+          <div class="ghead mono">
+            <div class="hc col-id">id <span class="badge">int4</span></div>
+            <div class="hc col-host">host <span class="badge">text</span></div>
+            <div class="hc col-status">status <span class="badge">text</span></div>
+            <div class="hc col-inflight">in_flight <span class="badge">int4</span></div>
+            <div class="hc col-lag">lag_ms <span class="badge">int4</span></div>
+          </div>
+
+          <div class="gbody mono">
+            <div class="stack" id="stack" data-layout-allow-overflow="true">
+              <div class="row new" id="r8">
+                <div class="band" id="r8-band"></div>
+                <div class="c col-id"><span class="val num">8</span></div>
+                <div class="c col-host"><span class="val">ingest-08</span></div>
+                <div class="c col-status"><span class="val">busy</span></div>
+                <div class="c col-inflight"><span class="val">1</span></div>
+                <div class="c col-lag"><span class="val">14</span></div>
+              </div>
+              <div class="row" id="r7">
+                <div class="c col-id"><span class="val num">7</span></div>
+                <div class="c col-host"><span class="val">ingest-07</span></div>
+                <div class="c col-status"><span class="val">busy</span></div>
+                <div class="c col-inflight"><span class="val">4</span></div>
+                <div class="c col-lag"><span class="val">38</span></div>
+              </div>
+              <div class="row" id="r6">
+                <div class="c col-id"><span class="val num">6</span></div>
+                <div class="c col-host"><span class="val">ingest-06</span></div>
+                <div class="c col-status">
+                  <div class="flash" id="f6s"></div>
+                  <span class="val swap"
+                    ><span class="ver on" id="r6s-a">idle</span><span class="ver" id="r6s-b">busy</span></span
+                  >
+                </div>
+                <div class="c col-inflight">
+                  <div class="flash" id="f6i"></div>
+                  <span class="val swap"
+                    ><span class="ver on" id="r6i-a">0</span><span class="ver" id="r6i-b">2</span></span
+                  >
+                </div>
+                <div class="c col-lag">
+                  <div class="flash" id="f6l"></div>
+                  <span class="val swap"
+                    ><span class="ver on" id="r6l-a">12</span><span class="ver" id="r6l-b">18</span></span
+                  >
+                </div>
+              </div>
+              <div class="row" id="r5">
+                <div class="c col-id"><span class="val num">5</span></div>
+                <div class="c col-host"><span class="val">ingest-05</span></div>
+                <div class="c col-status"><span class="val">busy</span></div>
+                <div class="c col-inflight"><span class="val">2</span></div>
+                <div class="c col-lag"><span class="val">41</span></div>
+              </div>
+              <div class="row" id="r4">
+                <div class="c col-id"><span class="val num">4</span></div>
+                <div class="c col-host"><span class="val">ingest-04</span></div>
+                <div class="c col-status"><span class="val">busy</span></div>
+                <div class="c col-inflight"><span class="val">6</span></div>
+                <div class="c col-lag"><span class="val">97</span></div>
+              </div>
+              <div class="row" id="r3">
+                <div class="c col-id"><span class="val num">3</span></div>
+                <div class="c col-host"><span class="val">ingest-03</span></div>
+                <div class="c col-status"><span class="val">idle</span></div>
+                <div class="c col-inflight"><span class="val">0</span></div>
+                <div class="c col-lag"><span class="val">9</span></div>
+              </div>
+              <div class="row" id="r2">
+                <div class="c col-id"><span class="val num">2</span></div>
+                <div class="c col-host"><span class="val">ingest-02</span></div>
+                <div class="c col-status"><span class="val">busy</span></div>
+                <div class="c col-inflight"><span class="val">3</span></div>
+                <div class="c col-lag">
+                  <div class="flash" id="f2l"></div>
+                  <span class="val swap"
+                    ><span class="ver on" id="r2l-a">52</span><span class="ver" id="r2l-b">47</span></span
+                  >
+                </div>
+              </div>
+              <div class="row" id="r1">
+                <div class="c col-id"><span class="val num">1</span></div>
+                <div class="c col-host"><span class="val">ingest-01</span></div>
+                <div class="c col-status"><span class="val">busy</span></div>
+                <div class="c col-inflight"><span class="val">1</span></div>
+                <div class="c col-lag"><span class="val">23</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const tl = gsap.timeline({ paused: true })
+
+      // Watch cadence is the real 2s preset; ticks land at these seconds and the
+      // loop seam sits mid-countdown so frame 0 and the last frame both read "1s".
+      const T1 = 0.5
+      const T2 = 2.5
+      const T3 = 4.5
+      const ROW_H = 88
+
+      // Only set() and to() are used: CSS holds the frame-0 state, so seeking in
+      // either direction restores it without from-value flashes.
+      function swapTo(hideId, showId, t) {
+        tl.set('#' + hideId, { opacity: 0 }, t)
+        tl.set('#' + showId, { opacity: 1, y: 12 }, t)
+        tl.to('#' + showId, { y: 0, duration: 0.32, ease: 'expo.out' }, t)
+      }
+      // Peak at full fill, settle near the app's resting diff fill, then fade.
+      function flash(id, t) {
+        tl.to('#' + id, { opacity: 1, duration: 0.06, ease: 'power2.out' }, t)
+        tl.to('#' + id, { opacity: 0.6, duration: 0.32, ease: 'power2.out' }, t + 0.06)
+        tl.to('#' + id, { opacity: 0, duration: 0.72, ease: 'sine.inOut' }, t + 0.5)
+      }
+
+      // Ambient: ping ring on the tab dot and the pill dot, four 1.5s breaths.
+      // The ring is invisible at both ends of every cycle, so the seam is clean.
+      ;['#tab-dot .ring', '#pill-dot .ring'].forEach((sel) => {
+        tl.set(sel, { scale: 1, force3D: false }, 0)
+        tl.to(
+          sel,
+          {
+            keyframes: [
+              { scale: 2.3, duration: 1.25, ease: 'sine.out' },
+              { scale: 1, duration: 0.02, ease: 'none' },
+              { scale: 1, duration: 0.23, ease: 'none' }
+            ],
+            repeat: 3,
+            force3D: false
+          },
+          0
+        )
+        tl.to(
+          sel,
+          {
+            keyframes: [
+              { opacity: 0.85, duration: 0.25, ease: 'sine.out' },
+              { opacity: 0, duration: 1.0, ease: 'sine.out' },
+              { opacity: 0, duration: 0.25, ease: 'none' }
+            ],
+            repeat: 3
+          },
+          0
+        )
+      })
+
+      // Countdown label: ceil(ms until next tick).
+      ;[0.5, 1.5, 2.5, 3.5, 4.5, 5.5].forEach((t, i) => {
+        const show = i % 2 === 0 ? 'cd-2' : 'cd-1'
+        const hide = i % 2 === 0 ? 'cd-1' : 'cd-2'
+        tl.set('#' + hide, { opacity: 0 }, t)
+        tl.set('#' + show, { opacity: 1 }, t)
+      })
+
+      // Tick 1: worker 6 picks up work, worker 2 catches up a little.
+      swapTo('ms-5', 'ms-4', T1)
+      swapTo('r6s-a', 'r6s-b', T1)
+      swapTo('r6i-a', 'r6i-b', T1)
+      swapTo('r6l-a', 'r6l-b', T1)
+      swapTo('r2l-a', 'r2l-b', T1)
+      flash('f6s', T1)
+      flash('f6i', T1)
+      flash('f6l', T1)
+      flash('f2l', T1)
+
+      // Tick 2 (pattern interrupt): ingest-08 joins at the top on a green band.
+      swapTo('ms-4', 'ms-6', T2)
+      swapTo('rc-7', 'rc-8', T2)
+      tl.to('#stack', { y: ROW_H, duration: 0.45, ease: 'expo.out' }, T2)
+      tl.to('#r8', { opacity: 1, duration: 0.3, ease: 'power3.out' }, T2 + 0.04)
+      tl.to('#r8-band', { opacity: 1, duration: 0.1, ease: 'power2.out' }, T2)
+      tl.to('#r8-band', { opacity: 0.7, duration: 0.4, ease: 'power2.out' }, T2 + 0.1)
+      tl.to('#r8-band', { opacity: 0, duration: 1.1, ease: 'sine.inOut' }, T2 + 0.7)
+
+      // Tick 3: ingest-08 leaves, rows slide back, worker 6 goes idle again.
+      swapTo('ms-6', 'ms-5', T3)
+      swapTo('rc-8', 'rc-7', T3)
+      tl.to('#r8', { opacity: 0, duration: 0.14, ease: 'power2.in' }, T3)
+      tl.to('#stack', { y: 0, duration: 0.45, ease: 'expo.out' }, T3 + 0.04)
+      swapTo('r6s-b', 'r6s-a', T3)
+      swapTo('r6i-b', 'r6i-a', T3)
+      swapTo('r6l-b', 'r6l-a', T3)
+      swapTo('r2l-b', 'r2l-a', T3)
+      flash('f6s', T3)
+      flash('f6i', T3)
+      flash('f6l', T3)
+      flash('f2l', T3)
+
+      window.__timelines['watch-mode'] = tl
+      tl.seek(0)
+    </script>
+  </body>
+</html>

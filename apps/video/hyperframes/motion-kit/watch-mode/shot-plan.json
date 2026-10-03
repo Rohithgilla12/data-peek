@@ -1,0 +1,75 @@
+{
+  "category": "webpage",
+  "category_note": "Hand-built product UI animation (no capture, no search). Closest catalog category is webpage (UI animation); content is product-supplied from the repo source.",
+  "duration_s": 6,
+  "fps": 30,
+  "canvas": { "w": 1920, "h": 1200, "aspect": "16:10" },
+  "style": "data-peek motion kit: dark canvas #101216, one raised window panel (3px hairline border, 22px radius) filling the frame with an 80px safe margin, soft static radial accent-deep glow. Geist Mono carries SQL and data. Quiet confidence: expo.out / power3.out for UI, power2.in for the one exit, sine for the ambient ping. No bounce, no elastic.",
+  "palette": ["#101216", "#171a20", "#ebecee", "#9aa0ad", "#6b8cf5", "#3b52c4", "#4ade80", "#2a2f3a", "#f5b14c"],
+  "font": "Geist Variable (UI labels) + Geist Mono Variable (SQL, grid, chips), local woff2",
+  "beats": [0.5, 1.5, 2.5, 3.5, 4.5, 5.5],
+  "export": "mp4",
+  "loop": "seamless; frame 0 and t=5.967 show the same seven rows, no diff highlights, pill 'Watching · 1s', ping ring invisible",
+
+  "asset_needs": [],
+
+  "catalog_search": {
+    "queries": [
+      "table cell highlight flash fade",
+      "data table new row insert slide down",
+      "pulsing status dot ping",
+      "live updating dashboard grid ticker"
+    ],
+    "considered": ["code-highlight", "inline-highlight", "editorial-flash-overlay", "news-ticker", "ticker-takeover", "dynamic-grid"],
+    "decision": "Hand-author. No registry item animates a data-grid cell diff, a keyed row insert or a status ping. The hits are text highlights, camera flashes and broadcast tickers. Technique borrowed from code-highlight: a band that snaps on and then decays, applied per cell."
+  },
+
+  "block": null,
+  "customize": {},
+
+  "content": {
+    "window": {
+      "tabs": [
+        { "title": "@workers", "icon": "file-code", "active": true, "watching": true },
+        { "title": "jobs", "icon": "table (blue)", "active": false }
+      ],
+      "sql": "SELECT id, host, status, in_flight, lag_ms FROM workers ORDER BY id DESC;",
+      "toolbar": ["Run ⌘↵ (accent)", "Watching · {1s|2s} (amber pill, ping dot)"],
+      "results_bar": "● {7|8} rows returned · {5|4|6|5}ms",
+      "columns": [
+        { "name": "id", "type": "int4" },
+        { "name": "host", "type": "text" },
+        { "name": "status", "type": "text" },
+        { "name": "in_flight", "type": "int4" },
+        { "name": "lag_ms", "type": "int4" }
+      ],
+      "rows_s0": [
+        [7, "ingest-07", "busy", 4, 38],
+        [6, "ingest-06", "idle", 0, 12],
+        [5, "ingest-05", "busy", 2, 41],
+        [4, "ingest-04", "busy", 6, 97],
+        [3, "ingest-03", "idle", 0, 9],
+        [2, "ingest-02", "busy", 3, 52],
+        [1, "ingest-01", "busy", 1, 23]
+      ],
+      "transient_row": [8, "ingest-08", "busy", 1, 14],
+      "viewport_rows": 7
+    },
+    "ticks": [
+      { "t": 0.5, "changes": ["r6.status idle→busy", "r6.in_flight 0→2", "r6.lag_ms 12→18", "r2.lag_ms 52→47"], "ms": 4, "rows": 7 },
+      { "t": 2.5, "changes": ["insert r8 at top (green band)", "rows slide down one slot", "r1 scrolls out of viewport"], "ms": 6, "rows": 8 },
+      { "t": 4.5, "changes": ["remove r8, rows slide up", "r6.status busy→idle", "r6.in_flight 2→0", "r6.lag_ms 18→12", "r2.lag_ms 47→52"], "ms": 5, "rows": 7 }
+    ],
+    "countdown": "pill reads ceil(ms to next tick): 1s on [0,0.5), 2s on [0.5,1.5), 1s on [1.5,2.5), … 1s on [5.5,6)"
+  },
+
+  "shots": [
+    { "t": [0.0, 0.5], "what": "Watched grid at rest; the ping breathes on the tab dot and the pill." },
+    { "t": [0.5, 1.7], "what": "Tick 1: four cells flash amber (fill + left stripe) at once, the new values settle in, and the flashes fade." },
+    { "t": [2.5, 4.0], "what": "PATTERN INTERRUPT, tick 2: rows slide down one slot (expo.out 0.5s), and ingest-08 fades in at the top with a full-width green band that then decays. Footer reads 8 rows." },
+    { "t": [4.5, 5.7], "what": "Tick 3: ingest-08 fades out (power2.in), rows slide back up, and worker 6 and worker 2 flash amber as their values return." },
+    { "t": [5.7, 6.0], "what": "Clean hold equal to frame 0." }
+  ],
+
+  "brief": "One watched query, three re-runs, no narration. The data-peek grid sits under a tab whose amber dot quietly breathes. Every two seconds the query runs again. Cells that changed light up amber and fade, and once a brand-new row pushes in at the top on a green band. By the last frame, everything has settled back to where it started, so the loop never shows a seam. Dominant motif: the amber cell flash. Pattern interrupt: the green-band row entrance at 2.5 s."
+}

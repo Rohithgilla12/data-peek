@@ -1,0 +1,80 @@
+{
+  "category": "webpage",
+  "category_note": "Hand-built product UI animation (no capture, no search) ending in a logo-reveal lockup. Closest catalog categories: webpage (UI animation) + logo-reveal.",
+  "duration_s": 10,
+  "fps": 30,
+  "canvas": { "w": 1920, "h": 1200, "aspect": "16:10" },
+  "style": "Dark, mono-native devtool. Quiet confidence: expo.out / power3.out entrances, power2.in exits, sine ambient, no bounce or elastic. Accent glows are radial only, 15-25% opacity; focal hits at full saturation. Signature move is a real CSS-3D camera dolly (perspective + translateZ) through layered depth planes.",
+  "palette": ["#101216", "#171a20", "#ebecee", "#9aa0ad", "#6b8cf5", "#3b52c4", "#4ade80", "#2a2f3a"],
+  "font": "Geist Variable (display) + Geist Mono Variable (SQL, data, labels), local woff2",
+  "beats": [0.4, 2.55, 2.8, 4.5, 5.2, 6.4, 7.6, 8.0, 9.3, 9.85],
+  "export": "mp4",
+  "loop": "seamless; frame 0 and t=9.967 are both the empty editor with the cursor on",
+
+  "asset_needs": [],
+
+  "catalog_search": {
+    "queries": [
+      "typewriter code typing syntax highlight",
+      "network graph constellation nodes edges draw",
+      "camera pull back zoom out depth parallax",
+      "logo lockup reveal glow",
+      "keyboard key press",
+      "count up number"
+    ],
+    "considered": ["code-typing", "typewriter", "constellation-hub", "pull-back-reveal", "camera-rig-depth-stack", "logo-outro", "press-ripple", "count-up"],
+    "decision": "Hand-author. The hits are generic 1920x1080 scenes with their own chrome and palettes; the hero needs the real data-peek window, a true 3D dolly through several depth planes, and a seamless loop back to frame 0. Techniques borrowed: token-stepped typing with a frontier caret (code-typing), stroke-dashoffset connector draw from a hub (constellation-hub), decelerating pull-back (pull-back-reveal), proxy count-up (count-up)."
+  },
+
+  "block": null,
+  "customize": {},
+
+  "content": {
+    "window": {
+      "size": [1600, 1000],
+      "tab": "top-customers.sql",
+      "sidebar": { "schema": "public", "tables": ["customers", "orders", "order_items", "products", "payments", "shipments", "reviews", "users"] },
+      "toolbar": ["Run ⌘↵ (accent)", "Format"],
+      "sql": [
+        "SELECT c.name, count(o.id) AS orders",
+        "FROM customers c",
+        "JOIN orders o ON o.customer_id = c.id",
+        "GROUP BY c.name",
+        "ORDER BY orders DESC",
+        "LIMIT 8;"
+      ],
+      "result_columns": [{ "name": "name", "type": "text" }, { "name": "orders", "type": "int8" }],
+      "rows": [
+        ["Mara Okafor", 142], ["Jonas Feld", 131], ["Priya Raman", 118], ["Theo Marchetti", 104],
+        ["Lena Sorensen", 97], ["Kofi Mensah", 89], ["Ines Duarte", 82], ["Hugo Brandt", 76]
+      ],
+      "status": "8 rows · 38ms (empty state: No results)"
+    },
+    "constellation": {
+      "main_plane_z": 0,
+      "tables": ["customers", "orders", "order_items", "products", "payments", "shipments", "reviews", "users", "inventory", "carts", "addresses", "coupons"],
+      "fks": [
+        ["orders", "customers"], ["order_items", "orders"], ["order_items", "products"], ["payments", "orders"],
+        ["shipments", "orders"], ["shipments", "addresses"], ["reviews", "products"], ["reviews", "customers"],
+        ["addresses", "customers"], ["carts", "customers"], ["orders", "coupons"], ["inventory", "products"], ["customers", "users"]
+      ],
+      "query_edges": [["window", "customers"], ["window", "orders"]],
+      "depth_planes": { "fg_z": 800, "back_z": -2600, "far_z": -7000 },
+      "card": "ERD-node structure: table name over 'public · N relations'"
+    },
+    "lockup": { "logo": "logo.svg (unaltered)", "wordmark": "data-peek", "tagline": "fast, keyboard-first SQL client" }
+  },
+
+  "shots": [
+    { "t": [0.0, 0.4], "what": "Empty editor, blue block cursor on. Loop point." },
+    { "t": [0.4, 2.5], "what": "SQL types itself, per-character stepped reveal, syntax coloured; caret rides the frontier; gutter numbers appear per line." },
+    { "t": [2.35, 2.95], "what": "Physical ⌘ ↵ keycaps rise, press at 2.55 (face drops onto its side, shadow tightens), Run button flashes, blue ripple from the caret." },
+    { "t": [2.8, 4.5], "what": "Header then 8 rows cascade top-down; status swaps 'No results' for '8 rows · 38ms' with a proxy count-up; hold to read." },
+    { "t": [4.5, 7.6], "what": "SIGNATURE: camera dollies back (translateZ, power3.inOut) with slow orbit drift (rotationX/Y/Z, sine). Window gains an accent border + halo and becomes the hub node; table cards slide in from beyond the frame; back plane and star field fade up behind; blurred foreground cards give near-depth; FK edges draw on, then light pulses travel along them." },
+    { "t": [7.6, 8.15], "what": "Converge: edges retract, cards and window collapse to the centre (power3.in), bloom." },
+    { "t": [8.0, 9.3], "what": "Logo grows out of the bloom, rises; wordmark 'data-peek' and mono tagline settle. Hold." },
+    { "t": [9.3, 10.0], "what": "Lockup dissolves (power2.in); the empty window fades back in at identity and settles by 9.85; cursor on through the loop seam." }
+  ],
+
+  "brief": "A single data-peek window, nothing else. A blue block cursor blinks; SQL types itself in one breath, ⌘↵ presses like a real key, and eight rows drop in with '8 rows · 38ms'. Then the camera pulls back through real depth: the window shrinks into a glowing hub inside a constellation of the schema's tables, foreign keys drawing themselves and pulses of light travelling between them, while the whole field slowly orbits. Everything collapses into the logo lockup, which dissolves back into the empty editor so the loop never shows a seam. Dominant motif: the dolly-out reframing one query as one node in the whole database."
+}

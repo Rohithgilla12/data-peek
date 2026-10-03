@@ -1,0 +1,38 @@
+{
+  "category": "webpage",
+  "duration_s": 6,
+  "fps": 30,
+  "canvas": { "w": 1920, "h": 1200, "aspect": "16:10" },
+  "style": "data-peek motion kit: dark devtool UI, Geist + Geist Mono, quiet confidence, expo/power3 entrances, power2.in exits, no bounce",
+  "palette": ["#101216", "#171a20", "#ebecee", "#9aa0ad", "#6b8cf5", "#3b52c4", "#4ade80", "#f2555a", "#2a2f3a", "#f5b14c"],
+  "font": "Geist Variable / Geist Mono Variable (local woff2)",
+  "beats": [0.7, 1.65, 2.48, 2.95, 4.33, 5.3],
+  "export": "mp4",
+  "asset_needs": [],
+  "block": "number-wheel (adapted: bidirectional 0-9 strips) + oversized-cursor arrow glyph (adapted: hand-timed multi-click)",
+  "customize": {
+    "number-wheel": "one 0-9 strip per digit, yPercent = -digit*10, fromTo between run values so rolls go both ways",
+    "oversized-cursor": "reuse the macOS arrow path only, at 2.5x scale; motion hand-authored for three clicks"
+  },
+  "content": {
+    "url": "data-peek desktop app (synthetic UI, truthful to source)",
+    "capture": "hand-built HTML replica of the result view + Time Machine strip",
+    "query": "SELECT plan, count(*) AS users FROM accounts GROUP BY plan;",
+    "runs": [
+      { "time": "09:04:12", "rows": 5 },
+      { "time": "10:02:15", "rows": 5, "ms": 41, "values": [11872, 3104, 1768, 452, 71] },
+      { "time": "11:18:51", "rows": 5, "unchanged": true },
+      { "time": "12:47:09", "rows": 6, "values": [12215, 3104, 1851, 470, 71, 38] },
+      { "time": "14:41:37", "rows": 6, "values": [12480, 3159, 1902, 486, 74, 52] }
+    ],
+    "live_values": [12480, 3159, 1902, 486, 74, 52],
+    "diff": { "older": "10:02:15", "newer": "12:47:09", "added": 1, "removed": 0, "changed_cells": 3, "keyed_by": "position" },
+    "highlights": [
+      { "region": "strip selection pill", "label": "scrub back to 10:02:15" },
+      { "region": "banner", "label": "Viewing run from Oct 2 10:02:15" },
+      { "region": "users cells rows 1,3,4 + row 6", "label": "amber changed cells, green added row" },
+      { "region": "banner Back to live", "label": "return to frame-0 state" }
+    ]
+  },
+  "brief": "A cropped data-peek result view with the Time Machine strip open. The cursor clicks an older run, and the selection pill glides back through the newer runs while the grid's tabular digits roll to each one. The real 'Viewing run from' banner then pushes the grid down. An option-click on a newer run turns it into a diff: changed cells light amber, the added row bands green, and the banner badges count +1 added, -0 removed, and 3 cells changed. Back to live reverses everything and lands on the exact frame-0 state. The dominant motif is the selection travelling back through time while the numbers roll."
+}

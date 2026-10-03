@@ -1,0 +1,39 @@
+{
+  "category": "charts",
+  "duration_s": 6,
+  "fps": 30,
+  "canvas": { "w": 1920, "h": 1200, "aspect": "16:10" },
+  "style": "data-peek motion kit: dark canvas, raised hairline cards, Geist + Geist Mono, OKLCH blue accent, quiet confident motion, seamless loop",
+  "palette": ["#101216", "#171a20", "#ebecee", "#9aa0ad", "#6b8cf5", "#3b52c4", "#4ade80", "#f2555a", "#2a2f3a"],
+  "font": "Geist Variable / Geist Mono Variable (local woff2)",
+  "beats": [0.4, 3.2, 4.6, 6.0],
+  "export": "mp4",
+  "asset_needs": [],
+  "block": null,
+  "customize": {
+    "note": "Catalog searched ('tree diagram draw', 'svg path draw connector lines', 'flowchart nodes connectors', 'progress bar fill'). flowchart is sticky-note/cursor styled and does not match the real indented plan tree; svg-stroke-trace's measured-length dashoffset mechanism is reused inline for connectors. Hand-authored."
+  },
+  "content": {
+    "type": "tree",
+    "headline": "EXPLAIN ANALYZE",
+    "query": "SELECT … FROM orders o JOIN customers c … ORDER BY o.created_at DESC LIMIT 50",
+    "nodes": [
+      { "row": 0, "depth": 0, "type": "Limit", "rows": 50, "ms": 1702.31, "bar_pct": 100, "bar": "destructive" },
+      { "row": 1, "depth": 1, "type": "Sort", "rows": 50, "ms": 1702.27, "bar_pct": 100, "bar": "destructive" },
+      { "row": 2, "depth": 2, "type": "Hash Join", "join": "Inner", "rows": 60412, "ms": 1689.54, "bar_pct": 99.25, "bar": "destructive" },
+      { "row": 3, "depth": 3, "type": "Seq Scan", "relation": "orders", "alias": "o", "rows": 241318, "ms": 1612.08, "bar_pct": 94.7, "bar": "destructive", "hot": true },
+      { "row": 4, "depth": 3, "type": "Hash", "rows": 12406, "ms": 9.86, "bar_pct": 0.58, "bar": "success" },
+      { "row": 5, "depth": 4, "type": "Index Scan", "relation": "customers", "alias": "c", "index": "customers_region_idx", "rows": 12406, "ms": 7.41, "bar_pct": 0.44, "bar": "success" }
+    ],
+    "hint": {
+      "warning": "Sequential scan on large table - consider adding an index",
+      "index_sql": "CREATE INDEX CONCURRENTLY idx_orders_status ON \"public\".\"orders\" (\"status\");"
+    },
+    "motion": {
+      "grow": "0.4-3.2 s: per node connector draw (stroke-dashoffset, power3.out) leads the card (x -28 -> 0, expo.out), chevron rotates open, bar fills (power3.out)",
+      "hot": "3.2-4.6 s: Seq Scan bar fills red (expo.out), border + glow pulse once, others dim, hint connector draws, hint slides in, SQL typed via steps clip reveal",
+      "collapse": "4.6-6.0 s: reverse order power2.in, connectors retract, chevrons close, root folds up into the chip, chip pulse, empty hold",
+      "ambient": "one radial accent glow breathing (sine.inOut yoyo, returns to start at 6.0 s)"
+    }
+  }
+}

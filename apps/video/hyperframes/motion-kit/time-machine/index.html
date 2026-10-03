@@ -1,0 +1,934 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1200" />
+    <title>data-peek: Time Machine</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        src: url('fonts/geist.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Geist Mono Variable';
+        src: url('fonts/geist-mono.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #101216;
+        --raised: #171a20;
+        --fg: #ebecee;
+        --muted: #9aa0ad;
+        --accent: #6b8cf5;
+        --accent-deep: #3b52c4;
+        --success: #4ade80;
+        --destructive: #f2555a;
+        --hairline: #2a2f3a;
+        --amber: #f5b14c;
+
+        --primary-fg: var(--bg);
+        --accent-06: rgba(107, 140, 245, 0.06);
+        --accent-20: rgba(107, 140, 245, 0.2);
+        --accent-35: rgba(107, 140, 245, 0.35);
+        --accent-55: rgba(107, 140, 245, 0.55);
+        --glow: rgba(59, 82, 196, 0.26);
+        --muted-05: rgba(154, 160, 173, 0.05);
+        --muted-08: rgba(154, 160, 173, 0.08);
+        --muted-14: rgba(154, 160, 173, 0.14);
+        --fg-10: rgba(235, 236, 238, 0.1);
+        --success-15: rgba(74, 222, 128, 0.15);
+        --success-band: rgba(74, 222, 128, 0.13);
+        --success-stripe: rgba(74, 222, 128, 0.7);
+        --destructive-15: rgba(242, 85, 90, 0.15);
+        --amber-15: rgba(245, 177, 76, 0.15);
+        --amber-fill: rgba(245, 177, 76, 0.24);
+        --amber-stripe: rgba(245, 177, 76, 0.92);
+        --shadow: rgba(0, 0, 0, 0.55);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Variable', sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+      .mono {
+        font-family: 'Geist Mono Variable', monospace;
+      }
+      #scene {
+        position: absolute;
+        inset: 0;
+      }
+      .glow {
+        position: absolute;
+        width: 1500px;
+        height: 1500px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--glow) 0%, rgba(59, 82, 196, 0) 62%);
+        pointer-events: none;
+      }
+      .dotgrid {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(154, 160, 173, 0.14) 2px, transparent 2px);
+        background-size: 56px 56px;
+        pointer-events: none;
+      }
+      .scene-content {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        padding: 80px;
+        display: flex;
+      }
+
+      .panel {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--raised);
+        border: 3px solid var(--hairline);
+        border-radius: 22px;
+        box-shadow: 0 50px 140px var(--shadow);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .topbar {
+        height: 64px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 32px;
+        border-bottom: 2px solid var(--hairline);
+      }
+      .dots {
+        display: flex;
+        gap: 12px;
+      }
+      .dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--muted);
+        opacity: 0.3;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .brand img {
+        width: 34px;
+        height: 34px;
+      }
+
+      .editor {
+        height: 104px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 40px;
+      }
+      .sql {
+        display: flex;
+        align-items: center;
+        gap: 28px;
+        font-size: 30px;
+        white-space: nowrap;
+      }
+      .ln {
+        color: var(--muted);
+        opacity: 0.5;
+      }
+      .kw {
+        color: var(--accent);
+      }
+      .pn {
+        color: var(--muted);
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .tm-btn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 52px;
+        padding: 0 18px;
+        border-radius: 10px;
+        background: var(--hairline);
+        font-size: 26px;
+        font-weight: 500;
+      }
+      .tm-btn svg,
+      .strip-label svg,
+      .back svg,
+      .diff-icon {
+        width: 26px;
+        height: 26px;
+        flex: none;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+      .count-badge {
+        font-size: 22px;
+        line-height: 1;
+        padding: 6px 10px;
+        border-radius: 7px;
+        background: var(--fg-10);
+      }
+      .keycap {
+        display: inline-flex;
+        align-items: center;
+        height: 52px;
+        padding: 0 16px;
+        border: 2px solid var(--hairline);
+        border-radius: 10px;
+        background: var(--bg);
+        font-size: 26px;
+        color: var(--fg);
+        letter-spacing: 0.08em;
+      }
+
+      .strip {
+        height: 120px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 0 40px;
+        border-top: 2px solid var(--hairline);
+        border-bottom: 2px solid var(--hairline);
+        background: var(--muted-05);
+      }
+      .strip-label {
+        width: 210px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 26px;
+        font-weight: 500;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .spark {
+        width: 280px;
+        flex: none;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .spark-box {
+        position: relative;
+        width: 280px;
+        height: 50px;
+        border: 2px solid var(--hairline);
+        border-radius: 7px;
+        background: var(--muted-08);
+        overflow: hidden;
+      }
+      .spark-box svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+      .spark-line {
+        fill: none;
+        stroke: var(--amber);
+        stroke-width: 3;
+        stroke-linejoin: round;
+      }
+      #playhead {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 3px;
+        height: 100%;
+        margin-left: -1px;
+        background: var(--accent);
+        box-shadow: 0 0 12px var(--accent-55);
+      }
+      .spark-meta {
+        display: flex;
+        justify-content: space-between;
+        font-size: 24px;
+        line-height: 1;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .spark-meta b {
+        color: var(--fg);
+        font-weight: 500;
+      }
+
+      .rail {
+        position: relative;
+        width: 1090px;
+        height: 52px;
+        flex: none;
+      }
+      .chips {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        gap: 8px;
+      }
+      .chip {
+        width: 186px;
+        height: 52px;
+        flex: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        border-radius: 10px;
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 26px;
+        color: var(--muted);
+        white-space: nowrap;
+      }
+      .chip .n {
+        opacity: 0.6;
+      }
+      .chip.unchanged {
+        opacity: 0.5;
+      }
+      .chip.live {
+        width: 120px;
+        font-family: 'Geist Variable', sans-serif;
+        gap: 10px;
+        background: var(--bg);
+        box-shadow: inset 0 0 0 2px var(--hairline);
+      }
+      .live-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+      #hover {
+        opacity: 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 186px;
+        height: 52px;
+        border-radius: 10px;
+        background: var(--muted-14);
+      }
+      .back-hover {
+        opacity: 0;
+        position: absolute;
+        inset: 0;
+        border-radius: 10px;
+        background: var(--fg-10);
+      }
+      .back > svg,
+      .back > span {
+        position: relative;
+      }
+      #ring {
+        opacity: 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 186px;
+        height: 52px;
+        border-radius: 10px;
+        background: var(--accent-20);
+        box-shadow: inset 0 0 0 2px var(--accent-55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 26px;
+        color: var(--fg);
+        white-space: nowrap;
+      }
+      #ring .n {
+        opacity: 0.6;
+      }
+      #pill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 186px;
+        height: 52px;
+        border-radius: 10px;
+        background: var(--accent);
+        overflow: hidden;
+      }
+      #pill-copy {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1090px;
+        height: 52px;
+        display: flex;
+        gap: 8px;
+      }
+      #pill-copy .chip {
+        color: var(--primary-fg);
+        opacity: 1;
+      }
+      #pill-copy .chip .n {
+        opacity: 0.8;
+      }
+      #pill-copy .chip.live {
+        background: transparent;
+        box-shadow: none;
+      }
+
+      .view {
+        flex: 1;
+        position: relative;
+        padding: 24px 40px 0;
+        overflow: hidden;
+      }
+      #banner {
+        opacity: 0;
+        position: absolute;
+        top: 24px;
+        left: 40px;
+        right: 40px;
+        height: 84px;
+        border: 2px solid var(--accent-35);
+        border-radius: 12px;
+        background: var(--accent-06);
+      }
+      .banner-layer {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 248px 0 22px;
+        font-size: 26px;
+        white-space: nowrap;
+      }
+      .banner-title {
+        font-weight: 500;
+      }
+      .banner-sub {
+        color: var(--muted);
+      }
+      .ping {
+        position: relative;
+        width: 14px;
+        height: 14px;
+        flex: none;
+      }
+      .ping span {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: var(--accent);
+      }
+      #ping-wave {
+        opacity: 0;
+      }
+      #banner-diff {
+        opacity: 0;
+      }
+      .diff-icon {
+        color: var(--accent);
+      }
+      .badges {
+        display: flex;
+        gap: 10px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        height: 40px;
+        padding: 0 12px;
+        border-radius: 8px;
+        font-size: 24px;
+        font-weight: 500;
+        line-height: 1;
+      }
+      .badge.add {
+        background: var(--success-15);
+        color: var(--success);
+      }
+      .badge.rem {
+        background: var(--destructive-15);
+        color: var(--destructive);
+      }
+      .badge.chg {
+        background: var(--amber-15);
+        color: var(--amber);
+      }
+      .keyed {
+        color: var(--muted);
+        opacity: 0.75;
+      }
+      .back {
+        position: absolute;
+        top: 50%;
+        right: 16px;
+        width: 216px;
+        height: 52px;
+        margin-top: -26px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        border-radius: 10px;
+        background: var(--hairline);
+        font-size: 26px;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+
+      .wheel {
+        display: inline-flex;
+        font-variant-numeric: tabular-nums;
+      }
+      .wd {
+        display: inline-block;
+        height: 1.1em;
+        line-height: 1.1em;
+        overflow: hidden;
+      }
+      .ws {
+        display: flex;
+        flex-direction: column;
+      }
+      .ws span {
+        height: 1.1em;
+        line-height: 1.1em;
+      }
+
+      #tablewrap {
+        position: relative;
+        height: 760px;
+        border: 2px solid var(--hairline);
+        border-radius: 14px;
+        overflow: hidden;
+      }
+      .thead {
+        display: flex;
+        height: 68px;
+        align-items: center;
+        background: var(--muted-08);
+        border-bottom: 2px solid var(--hairline);
+      }
+      .th {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 0 32px;
+        font-size: 26px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      .type {
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 20px;
+        line-height: 1;
+        padding: 5px 8px;
+        border: 2px solid var(--hairline);
+        border-radius: 6px;
+        color: var(--muted);
+      }
+      .row {
+        position: relative;
+        display: flex;
+        height: 84px;
+        border-bottom: 1px solid var(--hairline);
+      }
+      .td {
+        position: relative;
+        flex: 1;
+        display: flex;
+        align-items: center;
+        padding: 0 32px;
+        font-family: 'Geist Mono Variable', monospace;
+      }
+      .td.plan {
+        font-size: 34px;
+        color: var(--fg);
+      }
+      .td.users {
+        font-size: 44px;
+        color: var(--fg);
+      }
+      .td > .wheel,
+      .td > .txt {
+        position: relative;
+      }
+      .band {
+        opacity: 0;
+        position: absolute;
+        inset: 0;
+        background: var(--success-band);
+        box-shadow: inset 4px 0 0 var(--success-stripe);
+      }
+      .fill {
+        opacity: 0;
+        position: absolute;
+        inset: 0;
+        background: var(--amber-fill);
+        box-shadow: inset 4px 0 0 var(--amber-stripe);
+      }
+
+      #cursor {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+        z-index: 40;
+      }
+      #cursor-arrow {
+        position: absolute;
+        left: -12.5px;
+        top: -7.5px;
+        width: 60px;
+        height: 60px;
+        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.5));
+      }
+      #cursor-arrow path {
+        fill: var(--fg);
+        stroke: var(--bg);
+        stroke-width: 1.4;
+        stroke-linejoin: round;
+      }
+      #opt-key {
+        opacity: 0;
+        position: absolute;
+        left: 46px;
+        top: 20px;
+        width: 50px;
+        height: 50px;
+        padding: 0;
+        justify-content: center;
+        font-size: 30px;
+        white-space: nowrap;
+        box-shadow: 0 10px 30px var(--shadow);
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="stage"
+      data-composition-id="time-machine"
+      data-start="0"
+      data-duration="6"
+      data-fps="30"
+      data-width="1920"
+      data-height="1200"
+    >
+      <div id="scene">
+        <div class="glow" data-layout-ignore style="top: -760px; left: -640px"></div>
+        <div class="glow" data-layout-ignore style="bottom: -900px; right: -700px; opacity: 0.6"></div>
+        <div class="dotgrid" data-layout-ignore></div>
+
+        <div class="scene-content">
+          <div class="panel">
+            <div class="topbar">
+              <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+              <div class="brand"><img src="logo.svg" alt="" /><span>data-peek</span></div>
+            </div>
+
+            <div class="editor">
+              <div class="sql mono">
+                <span class="ln">1</span>
+                <span
+                  ><span class="kw">SELECT</span> plan<span class="pn">,</span> count<span class="pn">(*)</span>
+                  <span class="kw">AS</span> users <span class="kw">FROM</span> accounts
+                  <span class="kw">GROUP BY</span> plan<span class="pn">;</span></span
+                >
+              </div>
+              <div class="toolbar">
+                <div class="tm-btn">
+                  <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></svg>
+                  <span>Time Machine</span>
+                  <span class="count-badge mono">5</span>
+                </div>
+                <span class="keycap mono">⌘⇧H</span>
+              </div>
+            </div>
+
+            <div class="strip">
+              <div class="strip-label">
+                <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" /></svg>
+                <span>Time Machine</span>
+              </div>
+              <div class="spark">
+                <div class="spark-box" data-layout-allow-overflow>
+                  <svg viewBox="0 0 280 50" preserveAspectRatio="none">
+                    <path class="spark-line" d="M6,42 L73,42 L140,42 L207,8 L274,8" />
+                  </svg>
+                  <div id="playhead"></div>
+                </div>
+                <div class="spark-meta"><span>min 5 · max 6</span><b>6 rows</b></div>
+              </div>
+              <div class="rail">
+                <div id="hover"></div>
+                <div class="chips">
+                  <div class="chip"><span data-layout-allow-overlap data-layout-allow-occlusion>09:04:12</span><span class="n" data-layout-allow-overlap data-layout-allow-occlusion>5</span></div>
+                  <div class="chip"><span data-layout-allow-overlap data-layout-allow-occlusion>10:02:15</span><span class="n" data-layout-allow-overlap data-layout-allow-occlusion>5</span></div>
+                  <div class="chip unchanged"><span data-layout-allow-overlap data-layout-allow-occlusion>11:18:51</span><span class="n" data-layout-allow-overlap data-layout-allow-occlusion>5</span></div>
+                  <div class="chip"><span data-layout-allow-overlap data-layout-allow-occlusion>12:47:09</span><span class="n" data-layout-allow-overlap data-layout-allow-occlusion>6</span></div>
+                  <div class="chip"><span data-layout-allow-overlap data-layout-allow-occlusion>14:41:37</span><span class="n" data-layout-allow-overlap data-layout-allow-occlusion>6</span></div>
+                  <div class="chip live"><span class="live-dot"></span><span data-layout-allow-overlap data-layout-allow-occlusion>Live</span></div>
+                </div>
+                <div id="ring"><span data-layout-allow-overlap data-layout-allow-occlusion>10:02:15</span><span class="n" data-layout-allow-overlap data-layout-allow-occlusion>5</span></div>
+                <div id="pill">
+                  <div id="pill-copy" data-layout-ignore></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="view">
+              <div id="banner">
+                <div class="banner-layer" id="banner-single">
+                  <span class="ping"><span id="ping-wave"></span><span></span></span>
+                  <span class="banner-title">Viewing run from Oct 2 10:02:15</span>
+                  <span class="banner-sub">5 rows · 41ms · read-only</span>
+                </div>
+                <div class="banner-layer" id="banner-diff">
+                  <svg class="diff-icon" viewBox="0 0 24 24"><circle cx="5" cy="6" r="3" /><path d="M12 6h5a2 2 0 0 1 2 2v7" /><path d="m15 9-3-3 3-3" /><circle cx="19" cy="18" r="3" /><path d="M12 18H7a2 2 0 0 1-2-2V9" /><path d="m9 15 3 3-3 3" /></svg>
+                  <span class="banner-title">Oct 2 10:02:15 → Oct 2 12:47:09</span>
+                  <span class="badges">
+                    <span class="badge add">+<span class="wheel" id="w-added" data-value="0"></span>&nbsp;added</span>
+                    <span class="badge rem">−0 removed</span>
+                    <span class="badge chg"><span class="wheel" id="w-changed" data-value="0"></span>&nbsp;cells changed</span>
+                  </span>
+                  <span class="keyed">keyed by position</span>
+                </div>
+                <div class="back">
+                  <span class="back-hover" id="back-hover"></span>
+                  <svg viewBox="0 0 24 24"><path d="m12 19-7-7 7-7" /><path d="M19 12H5" /></svg>
+                  <span>Back to live</span>
+                </div>
+              </div>
+
+              <div id="tablewrap" data-layout-allow-overflow>
+                <div class="thead">
+                  <div class="th">plan <span class="type">text</span></div>
+                  <div class="th">users <span class="type">bigint</span></div>
+                </div>
+                <div class="row" id="row0">
+                  <div class="td plan"><span class="txt">free</span></div>
+                  <div class="td users"><span class="fill" id="fill0"></span><span class="wheel" data-value="12480"></span></div>
+                </div>
+                <div class="row" id="row1">
+                  <div class="td plan"><span class="txt">starter</span></div>
+                  <div class="td users"><span class="wheel" data-value="3159"></span></div>
+                </div>
+                <div class="row" id="row2">
+                  <div class="td plan"><span class="txt">pro</span></div>
+                  <div class="td users"><span class="fill" id="fill2"></span><span class="wheel" data-value="1902"></span></div>
+                </div>
+                <div class="row" id="row3">
+                  <div class="td plan"><span class="txt">team</span></div>
+                  <div class="td users"><span class="fill" id="fill3"></span><span class="wheel" data-value="486"></span></div>
+                </div>
+                <div class="row" id="row4">
+                  <div class="td plan"><span class="txt">enterprise</span></div>
+                  <div class="td users"><span class="wheel" data-value="74"></span></div>
+                </div>
+                <div class="row" id="row5">
+                  <span class="band" id="band5"></span>
+                  <div class="td plan"><span class="txt">business</span></div>
+                  <div class="td users"><span class="wheel" data-value="52"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cursor">
+          <svg id="cursor-arrow" viewBox="0 0 24 24"><path d="M5 3 L5 19 L9 15 L12 22 L15 20.5 L11.5 14 L18 14 Z" /></svg>
+          <span id="opt-key" class="keycap mono">⌥</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* Run data mirrors shot-plan.json. Rows key by position, as an aggregate has no id column. */
+      const LIVE = ['12480', '3159', '1902', '486', '74', '52']
+      const R4 = ['12215', '3104', '1851', '470', '71', '38']
+      const R2 = ['11872', '3104', '1768', '452', '71', '38']
+
+      /* number-wheel (registry), adapted: full 0-9 strip per digit so rolls run both ways */
+      document.querySelectorAll('.wheel').forEach((el) => {
+        const value = el.dataset.value
+        el.textContent = ''
+        for (const ch of value) {
+          const frame = document.createElement('span')
+          frame.className = 'wd'
+          frame.setAttribute('data-layout-allow-overflow', '')
+          const strip = document.createElement('span')
+          strip.className = 'ws'
+          for (let i = 0; i < 10; i++) {
+            const s = document.createElement('span')
+            s.textContent = String(i)
+            strip.appendChild(s)
+          }
+          frame.appendChild(strip)
+          el.appendChild(frame)
+          gsap.set(strip, { yPercent: -Number(ch) * 10 })
+        }
+      })
+      /* the selection pill carries a clipped dark-text copy of the chip row */
+      const copy = document.querySelector('.chips').cloneNode(true)
+      copy.querySelectorAll('[data-layout-allow-overlap]').forEach((n) => n.removeAttribute('data-layout-allow-overlap'))
+      document.getElementById('pill-copy').append(...copy.children)
+      const rowStrips = [0, 1, 2, 3, 4, 5].map((r) => [...document.querySelectorAll('#row' + r + ' .ws')])
+
+      /* Rail geometry is fixed in CSS: run chips 186px wide on a 194px pitch, Live at 970px, 120px wide. */
+      const RUN_X = (i) => i * 194
+      const LIVE_X = 970
+      const SPARK_X = (i) => 6 + 67 * i
+
+      /* Cursor tip targets, in stage pixels */
+      const [REST, AT_R2] = [{ x: 1500, y: 930 }, { x: 958, y: 322 }]
+      const [AT_R4, AT_BACK] = [{ x: 1346, y: 322 }, { x: 1676, y: 446 }]
+      const settle = (p) => ({ x: p.x + 34, y: p.y + 30 })
+
+      gsap.set('#pill', { x: LIVE_X, width: 120 })
+      gsap.set('#pill-copy', { x: -LIVE_X })
+      gsap.set('#ring', { x: RUN_X(1) })
+      gsap.set('#hover', { x: RUN_X(1) })
+      gsap.set('#playhead', { x: SPARK_X(5) })
+      gsap.set('#cursor', REST)
+      gsap.set('#cursor-arrow', { transformOrigin: '12.5px 7.5px' })
+
+      const tl = gsap.timeline({ paused: true })
+
+      function roll(fromVals, toVals, t, dur, ease, colStagger = 0) {
+        rowStrips.forEach((strips, r) => {
+          strips.forEach((strip, j) => {
+            const a = Number(fromVals[r][j])
+            const b = Number(toVals[r][j])
+            if (a === b) return
+            const lag = (strips.length - 1 - j) * colStagger
+            tl.fromTo(strip, { yPercent: -a * 10 }, { yPercent: -b * 10, duration: dur, ease, immediateRender: false }, t + lag)
+          })
+        })
+      }
+      function hover(sel, x, tIn, tOut) {
+        if (x !== null) tl.set(sel, { x }, tIn)
+        tl.fromTo(sel, { opacity: 0 }, { opacity: 1, duration: 0.12, ease: 'power2.out', immediateRender: false }, tIn)
+        tl.fromTo(sel, { opacity: 1 }, { opacity: 0, duration: 0.2, ease: 'power2.in', immediateRender: false }, tOut)
+      }
+      function move(from, to, t, dur, ease) {
+        tl.fromTo('#cursor', { x: from.x, y: from.y }, { x: to.x, y: to.y, duration: dur, ease, immediateRender: false }, t)
+      }
+      function press(t) {
+        tl.fromTo('#cursor-arrow', { scale: 1 }, { scale: 0.84, duration: 0.07, ease: 'power2.in', immediateRender: false }, t)
+        tl.fromTo('#cursor-arrow', { scale: 0.84 }, { scale: 1, duration: 0.16, ease: 'power3.out', immediateRender: false }, t + 0.07)
+      }
+      function glide(fromX, toX, fromSpark, toSpark, t, dur, ease) {
+        tl.fromTo('#pill', { x: fromX }, { x: toX, duration: dur, ease, immediateRender: false }, t)
+        tl.fromTo('#pill-copy', { x: -fromX }, { x: -toX, duration: dur, ease, immediateRender: false }, t)
+        tl.fromTo('#playhead', { x: fromSpark }, { x: toSpark, duration: dur, ease, immediateRender: false }, t)
+      }
+      /* time at which an eased glide reaches progress p (bisection, deterministic) */
+      function crossAt(t, dur, ease, p) {
+        const fn = gsap.parseEase(ease)
+        let [lo, hi] = [0, 1]
+        for (let k = 0; k < 40; k++) fn((lo + hi) / 2) < p ? (lo = (lo + hi) / 2) : (hi = (lo + hi) / 2)
+        return t + dur * ((lo + hi) / 2)
+      }
+
+      /* Beat 1 (0.35-2.0): click 10:02:15, the selection scrubs back through newer runs */
+      move(REST, AT_R2, 0.35, 0.38, 'power3.inOut')
+      press(0.74)
+      hover('#hover', RUN_X(1), 0.64, 1.75)
+      move(AT_R2, settle(AT_R2), 0.95, 0.4, 'power2.out')
+      const G1 = 0.8
+      const G1D = 0.9
+      glide(LIVE_X, RUN_X(1), SPARK_X(5), SPARK_X(1), G1, G1D, 'sine.inOut')
+      tl.fromTo('#pill', { width: 120 }, { width: 186, duration: 0.22, ease: 'power2.out', immediateRender: false }, G1)
+      const span1 = LIVE_X - RUN_X(1)
+      const atR4 = crossAt(G1, G1D, 'sine.inOut', (LIVE_X - RUN_X(3)) / span1)
+      const atR3 = crossAt(G1, G1D, 'sine.inOut', (LIVE_X - RUN_X(2)) / span1)
+      roll(LIVE, R4, atR4, Math.min(0.16, atR3 - atR4 - 0.005), 'power2.out')
+      roll(R4, R2, atR3, 0.2, 'power2.out')
+      tl.fromTo('#row5', { opacity: 1 }, { opacity: 0, duration: 0.18, ease: 'power2.in', immediateRender: false }, atR3)
+      /* the real banner arrives and pushes the grid down */
+      const B1 = G1 + G1D - 0.06
+      tl.fromTo('#banner', { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: 0.45, ease: 'expo.out', immediateRender: false }, B1)
+      tl.fromTo('#tablewrap', { y: 0 }, { y: 108, duration: 0.5, ease: 'expo.out', immediateRender: false }, B1)
+      tl.fromTo('#ping-wave', { scale: 1, opacity: 0.6 }, { scale: 2.6, opacity: 0, duration: 0.8, ease: 'sine.out', immediateRender: false }, B1 + 0.3)
+
+      /* Beat 2 (2.0-4.3): option-click 12:47:09, the newer run becomes selected and the older one the compare side */
+      tl.fromTo('#opt-key', { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out', immediateRender: false }, 2.05)
+      move(settle(AT_R2), AT_R4, 2.12, 0.34, 'power3.inOut')
+      press(2.48)
+      hover('#hover', RUN_X(3), 2.38, 3.05)
+      move(AT_R4, settle(AT_R4), 2.7, 0.4, 'power2.out')
+      const G2 = 2.54
+      glide(RUN_X(1), RUN_X(3), SPARK_X(1), SPARK_X(3), G2, 0.42, 'power3.inOut')
+      tl.fromTo('#ring', { opacity: 0 }, { opacity: 1, duration: 0.22, ease: 'power2.out', immediateRender: false }, G2 + 0.02)
+      tl.fromTo('#banner-single', { opacity: 1, y: 0 }, { opacity: 0, y: -10, duration: 0.16, ease: 'power2.in', immediateRender: false }, G2 + 0.02)
+      tl.fromTo('#banner-diff', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.35, ease: 'expo.out', immediateRender: false }, G2 + 0.14)
+      roll(R2, R4, 2.7, 0.42, 'power3.out', 0.04)
+      tl.fromTo('#row5', { opacity: 0, x: -24 }, { opacity: 1, x: 0, duration: 0.35, ease: 'expo.out', immediateRender: false }, 2.74)
+      tl.fromTo('#band5', { opacity: 0 }, { opacity: 1, duration: 0.3, ease: 'power2.out', immediateRender: false }, 2.74)
+      tl.fromTo(['#fill0', '#fill2', '#fill3'], { opacity: 0 }, { opacity: 1, duration: 0.25, ease: 'power2.out', stagger: 0.07, immediateRender: false }, 2.9)
+      tl.fromTo('#w-added .ws', { yPercent: 0 }, { yPercent: -10, duration: 0.35, ease: 'power3.out', immediateRender: false }, 2.8)
+      tl.fromTo('#w-changed .ws', { yPercent: 0 }, { yPercent: -30, duration: 0.5, ease: 'power3.out', immediateRender: false }, 2.86)
+      tl.fromTo('#opt-key', { opacity: 1, y: 0 }, { opacity: 0, y: 6, duration: 0.22, ease: 'power2.in', immediateRender: false }, 3.05)
+
+      /* Beat 3 (3.98-5.35): Back to live reverses everything onto the frame-0 state */
+      move(settle(AT_R4), AT_BACK, 3.98, 0.34, 'power3.inOut')
+      press(4.34)
+      hover('#back-hover', null, 4.24, 4.44)
+      const G3 = 4.42
+      const G3D = 0.6
+      glide(RUN_X(3), LIVE_X, SPARK_X(3), SPARK_X(5), G3, G3D, 'sine.inOut')
+      tl.fromTo('#pill', { width: 186 }, { width: 120, duration: 0.22, ease: 'power2.inOut', immediateRender: false }, G3 + G3D - 0.22)
+      tl.fromTo('#ring', { opacity: 1 }, { opacity: 0, duration: 0.18, ease: 'power2.in', immediateRender: false }, G3 - 0.04)
+      tl.fromTo(['#fill0', '#fill2', '#fill3', '#band5'], { opacity: 1 }, { opacity: 0, duration: 0.18, ease: 'power2.in', immediateRender: false }, G3 - 0.04)
+      tl.fromTo('#banner', { opacity: 1, y: 0 }, { opacity: 0, y: -12, duration: 0.2, ease: 'power2.in', immediateRender: false }, G3 - 0.02)
+      tl.fromTo('#tablewrap', { y: 108 }, { y: 0, duration: 0.42, ease: 'power3.inOut', immediateRender: false }, G3 + 0.04)
+      roll(R4, LIVE, crossAt(G3, G3D, 'sine.inOut', (RUN_X(4) - RUN_X(3)) / (LIVE_X - RUN_X(3))), 0.3, 'power3.out', 0.03)
+      move(AT_BACK, REST, 4.62, 0.7, 'power2.inOut')
+
+      /* invisible resets so the banner internals also match frame 0 */
+      tl.set('#banner-single', { opacity: 1, y: 0 }, 5.6)
+      tl.set('#banner-diff', { opacity: 0, y: 10 }, 5.6)
+      tl.set(['#w-added .ws', '#w-changed .ws'], { yPercent: 0 }, 5.6)
+
+      window.__timelines['time-machine'] = tl
+      tl.seek(0)
+    </script>
+  </body>
+</html>

@@ -46,4 +46,4 @@ of two or more people.
 This licensing model is inspired by Yaak and other sustainable indie software
 projects that balance open source values with sustainable development.
 
-Learn more at https://data-peek.dev/license
+Learn more at https://www.datapeek.dev/pricing

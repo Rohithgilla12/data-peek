@@ -1,0 +1,29 @@
+{
+  "category": "lower-thirds",
+  "category_note": "No category fits a terminal UI animation exactly; closest form category is a UI callout piece. Content is product-supplied (the real CLI output), so no search.",
+  "duration_s": 9,
+  "fps": 30,
+  "canvas": { "w": 1920, "h": 1200, "aspect": "16:10" },
+  "style": "data-peek motion kit: dark canvas #101216, raised terminal panel with 3px hairline border, traffic-light dots at 30% opacity, Geist Mono for all terminal text, accent blue block cursor, soft radial accent-deep glow behind the panel. Quiet, precise, no bounce.",
+  "palette": ["#101216", "#171a20", "#ebecee", "#9aa0ad", "#6b8cf5", "#3b52c4", "#4ade80", "#f2555a", "#2a2f3a", "#f5b14c"],
+  "font": "Geist Mono Variable (local fonts/geist-mono.woff2), Geist Variable (local fonts/geist.woff2)",
+  "beats": [0.3, 1.7, 1.95, 2.2, 2.85, 3.25, 4.45, 5.2, 5.95, 7.05, 7.6, 7.8],
+  "export": "mp4",
+  "asset_needs": [],
+  "block": null,
+  "customize": {
+    "catalog_searched": ["terminal typing", "terminal command output", "highlight sweep underline code", "count up number"],
+    "considered": ["code-terminal-run", "terminal-simulator", "code-highlight", "count-up"],
+    "decision": "Hand-author. code-terminal-run runs one command with faded output lines and a holding end-state; this piece needs two commands, grouped snap-ins, a dim-and-sweep fix highlight, an in-line count-up and a clear back to frame 0. Borrowed from code-terminal-run: the chars-at-time typing table built synchronously with a fixed-seed LCG, and a time-derived caret. Borrowed from code-highlight: dim the surrounding context while the band sweeps the target line."
+  },
+  "content": {
+    "scenes": [
+      { "id": "idle-open", "start": 0.0, "end": 0.3, "text": "$ ▍", "motion": "cursor solid (blink phase continues from loop end)" },
+      { "id": "type-cmd", "start": 0.3, "end": 1.95, "text": "$ npx @data-peek/cli doctor postgres://localhost:5432/app", "motion": "typewriter, seeded 1-3 char chunks; Enter at 1.7, cursor waits on next line" },
+      { "id": "findings", "start": 1.95, "end": 5.2, "text": "header, ✖ invalid index group, ▲ FK-index group, ● nullable FKs group, ✔ clean", "emphasis_words": ["CREATE INDEX \"idx_payments_invoice_id\" ON \"public\".\"payments\" (\"invoice_id\");"], "motion": "each group snaps in (expo.out 0.25 s, y 14 → 0) with its severity mark pulsing once; at 3.25 the context dims to 35% and an accent band + underline sweep the fix SQL, restore at 4.3" },
+      { "id": "summary-gate", "start": 5.2, "end": 7.6, "text": "1 critical · 1 warning · 3 info · 5 findings / Fix with a click… / $ npx @data-peek/cli doctor \"$DATABASE_URL\" --fail-on warning >/dev/null; echo \"exit $?\" / exit 1 / $", "motion": "proxy count-up 0→5 drives which summary segments exist; second command types fast; terminal scrolls by whole lines; red underline sweep under exit 1; ⌘K chip presses" },
+      { "id": "clear-loop", "start": 7.6, "end": 9.0, "text": "$ ▍", "motion": "clear: content drops out (power2.in 0.16 s), prompt returns at top, cursor blinks with a 1.2 s period phased so 9.0 == 0.0" }
+    ]
+  },
+  "shot_brief": "One terminal, one story: a command goes in, the report comes out in its real format, and the eye is pulled to the single line that matters, the CREATE INDEX that fixes the problem. The summary counts itself up, the same command becomes a CI gate that honestly exits 1, and ⌘K wipes the slate back to an empty prompt so the loop is invisible."
+}
