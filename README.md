@@ -75,17 +75,17 @@ It finds tables without a primary key, foreign keys without an index, duplicate,
 <table>
   <tr>
     <td width="50%">
-      <a href="https://www.datapeek.dev/#watch-mode"><img src="apps/web/public/motion/watch-mode.webp" alt="Watch Mode re-running a query: changed cells flash amber and a new row slides in on a green band" /></a>
+      <a href="https://www.datapeek.dev/#feature-watch-mode"><img src="apps/web/public/motion/watch-mode.webp" alt="Watch Mode re-running a query: changed cells flash amber and a new row slides in on a green band" /></a>
       <br /><b>Watch Mode</b>: pin a <code>SELECT</code> and watch cells change live.
     </td>
     <td width="50%">
-      <a href="https://www.datapeek.dev/#query-plans"><img src="apps/web/public/motion/query-plan.webp" alt="An EXPLAIN ANALYZE plan growing into a tree, with the slow sequential scan flagged and the CREATE INDEX that fixes it" /></a>
+      <a href="https://www.datapeek.dev/#feature-query-plans"><img src="apps/web/public/motion/query-plan.webp" alt="An EXPLAIN ANALYZE plan growing into a tree, with the slow sequential scan flagged and the CREATE INDEX that fixes it" /></a>
       <br /><b>Query plans</b>: <code>EXPLAIN ANALYZE</code> as a tree, with the slow node and its fix.
     </td>
   </tr>
   <tr>
     <td width="50%">
-      <a href="https://www.datapeek.dev/#mcp-approval"><img src="apps/web/public/motion/mcp-approval.webp" alt="An agent asks to run an UPDATE over MCP and data-peek shows an approval dialog before it runs" /></a>
+      <a href="https://www.datapeek.dev/#feature-mcp-approval"><img src="apps/web/public/motion/mcp-approval.webp" alt="An agent asks to run an UPDATE over MCP and data-peek shows an approval dialog before it runs" /></a>
       <br /><b>MCP server</b>: agents can read freely; every write waits for your approval.
     </td>
     <td width="50%">
@@ -155,7 +155,7 @@ The [docs](https://docs.datapeek.dev/docs) cover every feature in depth.
 
 ## Pricing
 
-The source is MIT licensed. The pre-built app is **free for personal use**: side projects, learning, open source, students, educators, non-profits, and solo founders, with every feature included. Using it at a company of two or more people, or for client work, needs a [Pro licence](https://www.datapeek.dev/pricing). Details are in [LICENSE.md](LICENSE.md).
+The source is MIT licensed. The pre-built app is **free for personal use**: side projects, learning, open source, students, educators, non-profits, and solo founders, with every feature included. Using it at a for-profit company of two or more people, or for client work, needs a [Pro licence](https://www.datapeek.dev/pricing). Details are in [LICENSE.md](LICENSE.md).
 
 data-peek is a single-maintainer project, and two commitments in [SUSTAINABILITY.md](SUSTAINABILITY.md) say so up front:
 
