@@ -1,23 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef } from "react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { mp4Url, posterUrl, webmUrl, type FeatureClip } from "./feature-clips";
-
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-
-function subscribeReducedMotion(onChange: () => void) {
-  const mq = window.matchMedia(REDUCED_MOTION_QUERY);
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
-}
-
-function getReducedMotion() {
-  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
-}
-
-function getServerReducedMotion() {
-  return false;
-}
 
 /**
  * Lazily-loaded looping clip. Only the selected clip mounts a <video>, and it
@@ -33,21 +18,7 @@ export function ClipPlayer({
   active: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
-  // useSyncExternalStore, not a lazy useState initializer: a lazy initializer
-  // reads window.matchMedia during the hydration render itself, which
-  // differs from the SSR pass (no `window`) — React does not repair a
-  // mismatched `controls` attribute after the fact, permanently stranding a
-  // reduced-motion visitor with no way to play the clip at all. This hook's
-  // getServerSnapshot keeps the first client render identical to what the
-  // server sent (no mismatch warning), then re-renders with the real value
-  // immediately after hydration, and again live if the OS setting changes
-  // mid-session. react-hooks/set-state-in-effect forbids going back to a
-  // plain effect + setState for this.
-  const reduced = useSyncExternalStore(
-    subscribeReducedMotion,
-    getReducedMotion,
-    getServerReducedMotion,
-  );
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     const video = ref.current;

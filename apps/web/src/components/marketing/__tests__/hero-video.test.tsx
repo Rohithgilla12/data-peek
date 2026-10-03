@@ -1,0 +1,62 @@
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { HeroVideo } from "../hero-video";
+import { observers, setReducedMotion } from "../../../../vitest.setup";
+
+describe("HeroVideo", () => {
+  beforeEach(() => {
+    observers.length = 0;
+    setReducedMotion(false);
+    vi.clearAllMocks();
+  });
+
+  it("renders both sources, a poster, and explicit dimensions", () => {
+    render(<HeroVideo />);
+    const video = screen.getByTestId("hero-video") as HTMLVideoElement;
+
+    expect(video).toHaveAttribute("poster", "/motion/hero-poster.webp");
+    // Explicit dimensions reserve the 16:10 box before the poster loads, so the
+    // hero doesn't shift the page.
+    expect(video).toHaveAttribute("width", "1920");
+    expect(video).toHaveAttribute("height", "1200");
+    expect(video.muted).toBe(true);
+    expect(video).toHaveAttribute("loop");
+
+    const sources = Array.from(video.querySelectorAll("source")).map((s) => [
+      s.getAttribute("src"),
+      s.getAttribute("type"),
+    ]);
+    expect(sources).toEqual([
+      ["/motion/hero.webm", "video/webm"],
+      ["/motion/hero.mp4", "video/mp4"],
+    ]);
+  });
+
+  it("plays when scrolled into view and pauses when it leaves", () => {
+    render(<HeroVideo />);
+    const video = screen.getByTestId("hero-video") as HTMLVideoElement;
+
+    expect(video.play).not.toHaveBeenCalled();
+
+    observers[0].emit(true);
+    expect(video.play).toHaveBeenCalledTimes(1);
+
+    observers[0].emit(false);
+    expect(video.pause).toHaveBeenCalledTimes(1);
+  });
+
+  it("never autoplays under prefers-reduced-motion, and exposes native controls instead", () => {
+    setReducedMotion(true);
+    render(<HeroVideo />);
+    const video = screen.getByTestId("hero-video") as HTMLVideoElement;
+
+    observers[0].emit(true);
+    expect(video.play).not.toHaveBeenCalled();
+    expect(video).toHaveAttribute("controls");
+  });
+
+  it("does not expose controls when motion is not reduced", () => {
+    render(<HeroVideo />);
+    expect(screen.getByTestId("hero-video")).not.toHaveAttribute("controls");
+  });
+});

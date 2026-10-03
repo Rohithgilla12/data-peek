@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AppSurface } from "./app-surface";
+import { HeroVideo } from "./hero-video";
 
 export function Hero() {
   return (
@@ -21,15 +21,17 @@ export function Hero() {
                 className="inline-block h-1.5 w-1.5 rounded-full"
                 style={{ background: "var(--n-accent)" }}
               />
-              v0.23 — Watch Mode: pin a SELECT, see it move
+              v0.30 — Doctor is in: schema checks from the terminal
               <span aria-hidden className="text-[var(--n-fg-faint)]">
                 →
               </span>
               <Link
-                href="/blog"
+                href="https://github.com/Rohithgilla12/data-peek/releases/tag/v0.30.0"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-[var(--n-fg-muted)] hover:text-[var(--n-fg)]"
               >
-                changelog
+                release notes
               </Link>
             </div>
 
@@ -140,7 +142,7 @@ export function Hero() {
         </div>
 
         <div className="mt-14 sm:mt-20">
-          <AppSurface />
+          <HeroVideo />
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-[11px] text-[var(--n-fg-faint)]">
