@@ -21,6 +21,7 @@ describe("HeroVideo", () => {
     expect(video).toHaveAttribute("height", "1200");
     expect(video.muted).toBe(true);
     expect(video).toHaveAttribute("loop");
+    expect(video.getAttribute("preload")).toBe("metadata");
 
     const sources = Array.from(video.querySelectorAll("source")).map((s) => [
       s.getAttribute("src"),
@@ -50,9 +51,24 @@ describe("HeroVideo", () => {
     render(<HeroVideo />);
     const video = screen.getByTestId("hero-video") as HTMLVideoElement;
 
-    observers[0].emit(true);
+    // No visibility observer at all, so nothing can start playback.
+    expect(observers).toHaveLength(0);
     expect(video.play).not.toHaveBeenCalled();
     expect(video).toHaveAttribute("controls");
+  });
+
+  it("pauses straight away when reduced motion is turned on mid-playback", () => {
+    const { rerender } = render(<HeroVideo />);
+    const video = screen.getByTestId("hero-video") as HTMLVideoElement;
+    observers[0].emit(true);
+    expect(video.play).toHaveBeenCalledTimes(1);
+
+    setReducedMotion(true);
+    rerender(<HeroVideo />);
+
+    expect(video.pause).toHaveBeenCalledTimes(1);
+    expect(observers[0].disconnect).toHaveBeenCalled();
+    expect(video.play).toHaveBeenCalledTimes(1);
   });
 
   it("does not expose controls when motion is not reduced", () => {

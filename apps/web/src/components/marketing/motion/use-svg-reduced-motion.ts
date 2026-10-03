@@ -1,22 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
-
-const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
-
-function subscribeReducedMotion(onChange: () => void) {
-  const mq = window.matchMedia(REDUCED_MOTION_QUERY);
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
-}
-
-function getReducedMotion() {
-  return window.matchMedia(REDUCED_MOTION_QUERY).matches;
-}
-
-function getServerReducedMotion() {
-  return false;
-}
+import { useEffect, useRef } from "react";
+import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
 /**
  * These motion graphics animate with SMIL (<animate>, <animateMotion>,
@@ -24,20 +9,12 @@ function getServerReducedMotion() {
  * applies to CSS animations, and `display: none` does not stop a running
  * SMIL timeline. The only way to actually stop them is the SVG DOM API, so
  * this hook calls `pauseAnimations`/`unpauseAnimations` on the ref'd <svg>
- * directly.
- *
- * useSyncExternalStore, not a lazy useState initializer, for the same reason
- * documented in apps/web/src/components/marketing/clip-player.tsx: reading
- * matchMedia during the hydration render itself diverges from the SSR pass
- * (no `window` there), and React never repairs the mismatch afterwards.
+ * directly. The preference itself comes from the shared, hydration-safe
+ * useReducedMotion in apps/web/src/hooks/use-reduced-motion.ts.
  */
 export function useSvgReducedMotionPause<T extends SVGSVGElement>() {
   const ref = useRef<T>(null);
-  const reduced = useSyncExternalStore(
-    subscribeReducedMotion,
-    getReducedMotion,
-    getServerReducedMotion,
-  );
+  const reduced = useReducedMotion();
 
   useEffect(() => {
     const svg = ref.current;

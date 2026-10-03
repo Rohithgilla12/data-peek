@@ -20,11 +20,17 @@ export function HeroVideo() {
   useEffect(() => {
     const video = ref.current;
     if (!video) return;
+    // Turning on reduced motion mid-playback stops the loop now, rather than
+    // waiting for the observer's next callback. Nothing restarts it from here.
+    if (reduced) {
+      video.pause();
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
         const visible = entries.some((e) => e.isIntersecting);
-        if (visible && !reduced) {
+        if (visible) {
           void video.play().catch(() => {
             // Autoplay can be refused (power saving, driver policy). The poster
             // stays up, which is an acceptable degradation.

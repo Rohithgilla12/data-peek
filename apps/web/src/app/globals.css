@@ -622,53 +622,6 @@ a[role="button"]:active {
   );
 }
 
-.neat-sql .k {
-  color: var(--n-accent);
-  font-weight: 500;
-}
-.neat-sql .s {
-  color: oklch(0.8 0.09 120);
-}
-.neat-sql .n {
-  color: oklch(0.78 0.09 35);
-}
-.neat-sql .c {
-  color: var(--n-fg-faint);
-  font-style: italic;
-}
-.neat-sql .p {
-  color: var(--n-fg-muted);
-}
-
-@keyframes neat-caret {
-  0%,
-  55% {
-    opacity: 1;
-  }
-  56%,
-  100% {
-    opacity: 0;
-  }
-}
-.neat-caret::after {
-  content: "";
-  display: inline-block;
-  width: 0.55ch;
-  height: 1em;
-  margin-left: 2px;
-  background: var(--n-accent);
-  vertical-align: -0.12em;
-  animation: neat-caret 1.1s steps(1) infinite;
-}
-
-/* Row hover for dense tables */
-.neat-row {
-  transition: background-color 120ms ease;
-}
-.neat-row:hover {
-  background: oklch(0.22 0.006 260 / 0.6);
-}
-
 /* Dotted decorative divider */
 .neat-dots {
   background-image: radial-gradient(circle, var(--n-line) 1px, transparent 1px);
