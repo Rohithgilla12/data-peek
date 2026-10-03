@@ -155,7 +155,7 @@ The [docs](https://docs.datapeek.dev/docs) cover every feature in depth.
 
 ## Pricing
 
-The source is MIT licensed. The pre-built app is **free for personal use**: side projects, learning, open source, students, educators, non-profits, and solo founders, with every feature included. Using it at a for-profit company of two or more people, or for client work, needs a [Pro licence](https://www.datapeek.dev/pricing). Details are in [LICENSE.md](LICENSE.md).
+The source is MIT licensed. The pre-built app is **free for personal use**: side projects, learning, open source, students, educators, non-profits, and solo founders, with every feature included. Using it at a for-profit company of two or more people, or as a freelancer or agency billing clients, needs a [Pro licence](https://www.datapeek.dev/pricing). Details are in [LICENSE.md](LICENSE.md).
 
 data-peek is a single-maintainer project, and two commitments in [SUSTAINABILITY.md](SUSTAINABILITY.md) say so up front:
 
