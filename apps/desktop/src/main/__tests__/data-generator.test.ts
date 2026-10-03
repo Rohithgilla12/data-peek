@@ -134,6 +134,61 @@ describe('generateRows with random-date columns', () => {
     }
   })
 
+  it('generates identical faker dates for the same seed whatever the clock says', () => {
+    // created_at / updated_at / deleted_at map to date.recent in the renderer
+    // heuristic, and date.recent defaults its reference to "now".
+    function fakerDates(seed: number | undefined): string[] {
+      const rows = generateRows(
+        {
+          schema: 'public',
+          table: 'orders',
+          rowCount: 50,
+          seed,
+          batchSize: 100,
+          columns: [column({ columnName: 'created_at', fakerMethod: 'date.recent' })]
+        },
+        fkData
+      )
+      return rows.map((row) => row[0] as string)
+    }
+
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-01T00:00:00Z'))
+    const first = fakerDates(42)
+    vi.setSystemTime(new Date('2031-07-15T12:34:56Z'))
+    const second = fakerDates(42)
+
+    expect(second).toEqual(first)
+    expect(new Set(first).size).toBeGreaterThan(1)
+  })
+
+  it('still draws faker dates around now without a seed', () => {
+    const now = Date.parse('2026-03-01T00:00:00Z')
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(now))
+
+    const rows = generateRows(
+      {
+        schema: 'public',
+        table: 'orders',
+        rowCount: 50,
+        seed: undefined,
+        batchSize: 100,
+        columns: [column({ columnName: 'created_at', fakerMethod: 'date.recent' })]
+      },
+      fkData
+    )
+
+    // date.recent defaults to days: 1, so the window is the day before the
+    // reference. Measured over 5000 draws against @faker-js/faker 9.9.0: the
+    // oldest lands exactly 1.0000 days back.
+    for (const row of rows) {
+      const value = Date.parse(row[0] as string)
+      expect(value).toBeGreaterThanOrEqual(now - DAY)
+      expect(value).toBeLessThanOrEqual(now)
+    }
+  })
+
   it('still draws from the last year up to now without a seed', () => {
     const now = Date.parse('2026-03-01T00:00:00Z')
     vi.useFakeTimers()

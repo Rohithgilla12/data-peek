@@ -123,15 +123,26 @@ export function generateRows(config: DataGenConfig, fkData: Map<string, unknown[
   const seeded = config.seed != null
   if (config.seed != null) {
     faker.seed(config.seed)
+    // faker's own date methods (date.recent, date.past, ...) default their
+    // reference to "now", so a seeded run would still move with the clock.
+    // The renderer heuristic maps created_at / updated_at / deleted_at to
+    // exactly those, so this is the common case, not a corner one.
+    faker.setDefaultRefDate(SEEDED_REFERENCE_MS)
   }
 
   const activeColumns = config.columns.filter((c) => !c.skip)
   const counters = new Map<string, number>()
   const rows: unknown[][] = []
 
-  for (let i = 0; i < config.rowCount; i++) {
-    const row = activeColumns.map((col) => generateValue(col, fkData, counters, seeded))
-    rows.push(row)
+  try {
+    for (let i = 0; i < config.rowCount; i++) {
+      const row = activeColumns.map((col) => generateValue(col, fkData, counters, seeded))
+      rows.push(row)
+    }
+  } finally {
+    // Back to the clock, so an unseeded run after a seeded one is relative
+    // to now again.
+    if (seeded) faker.setDefaultRefDate()
   }
 
   return rows
