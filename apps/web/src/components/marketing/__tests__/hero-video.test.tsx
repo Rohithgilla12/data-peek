@@ -46,6 +46,31 @@ describe("HeroVideo", () => {
     expect(video.pause).toHaveBeenCalledTimes(1);
   });
 
+  it("follows the newest entry when one notification batches several", () => {
+    render(<HeroVideo />);
+    const video = screen.getByTestId("hero-video") as HTMLVideoElement;
+
+    observers[0].emit(true, false);
+    expect(video.play).not.toHaveBeenCalled();
+    expect(video.pause).toHaveBeenCalledTimes(1);
+
+    observers[0].emit(false, true);
+    expect(video.play).toHaveBeenCalledTimes(1);
+  });
+
+  it("ignores entries delivered after cleanup", () => {
+    const { rerender } = render(<HeroVideo />);
+    const video = screen.getByTestId("hero-video") as HTMLVideoElement;
+    const stale = observers[0];
+
+    setReducedMotion(true);
+    rerender(<HeroVideo />);
+    // A visible entry that was already queued when the observer disconnected.
+    stale.emit(true);
+
+    expect(video.play).not.toHaveBeenCalled();
+  });
+
   it("never autoplays under prefers-reduced-motion, and exposes native controls instead", () => {
     setReducedMotion(true);
     render(<HeroVideo />);

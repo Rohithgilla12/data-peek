@@ -27,9 +27,15 @@ export function HeroVideo() {
       return;
     }
 
+    // disconnect() doesn't drop entries already queued for delivery, so a
+    // stale callback could otherwise restart playback after cleanup.
+    let live = true;
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries.some((e) => e.isIntersecting);
+        if (!live) return;
+        // One notification can batch several entries for this element; only
+        // the newest says whether it is on screen now.
+        const visible = entries[entries.length - 1]?.isIntersecting ?? false;
         if (visible) {
           void video.play().catch(() => {
             // Autoplay can be refused (power saving, driver policy). The poster
@@ -43,7 +49,10 @@ export function HeroVideo() {
     );
 
     observer.observe(video);
-    return () => observer.disconnect();
+    return () => {
+      live = false;
+      observer.disconnect();
+    };
   }, [reduced]);
 
   return (

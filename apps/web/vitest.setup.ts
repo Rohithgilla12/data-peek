@@ -13,10 +13,12 @@ class MockIntersectionObserver implements IntersectionObserver {
   unobserve = vi.fn();
   disconnect = vi.fn();
   takeRecords = () => [];
-  /** Test hook: drive the callback by hand. */
-  emit(isIntersecting: boolean) {
+  /** Test hook: drive the callback by hand, one entry per state, in order. */
+  emit(...states: boolean[]) {
     this.cb(
-      [{ isIntersecting } as IntersectionObserverEntry],
+      states.map(
+        (isIntersecting) => ({ isIntersecting }) as IntersectionObserverEntry,
+      ),
       this as unknown as IntersectionObserver,
     );
   }
