@@ -57,7 +57,10 @@ The check set on Postgres covers:
    often unintentional
 
 On MySQL the checks run over `information_schema` (core set). On MSSQL
-it is currently just tables-without-PK. SQLite returns skipped entries.
+it is currently just tables-without-PK. On SQLite the four structural
+checks (tables without a primary key, foreign keys without an index,
+duplicate indexes, nullable foreign keys) are read from PRAGMAs, and the
+statistics-based ones are skipped.
 
 [bloat]: https://www.postgresql.org/docs/current/pgstattuple.html
 

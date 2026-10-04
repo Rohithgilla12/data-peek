@@ -32,6 +32,7 @@ import type {
   QueryOptions
 } from '../db-adapter'
 import { splitStatements } from '../lib/sql-parser'
+import { runSqliteSchemaIntel } from '../schema-intel/sqlite'
 
 // Runtime shapes for SQLite catalog/PRAGMA introspection. Parsing (rather than
 // casting) means a SQLite version that returns an unexpected shape fails loudly at
@@ -772,18 +773,14 @@ export class SQLiteAdapter implements DatabaseAdapter {
   }
 
   async runSchemaIntel(
-    _config: ConnectionConfig,
+    config: ConnectionConfig,
     requested?: SchemaIntelCheckId[]
   ): Promise<SchemaIntelReport> {
-    const checks = requested ?? []
-    return {
-      findings: [],
-      skipped: checks.map((checkId) => ({
-        checkId,
-        reason: 'Schema Intel is not yet implemented for SQLite'
-      })),
-      durationMs: 0,
-      ranAt: Date.now()
+    const db = this.getDb(config)
+    try {
+      return runSqliteSchemaIntel(db, requested)
+    } finally {
+      db.close()
     }
   }
 }

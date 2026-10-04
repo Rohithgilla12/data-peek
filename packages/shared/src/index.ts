@@ -2729,7 +2729,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Tables without a primary key make replication, de-duplication, and row-level edits more difficult.",
     severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql", "mssql"],
+    supportedDbTypes: ["postgresql", "mysql", "mssql", "sqlite"],
   },
   {
     id: "missing_fk_indexes",
@@ -2737,7 +2737,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Foreign key columns without a supporting index force sequential scans during joins and deletes on the parent table.",
     severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql"],
+    supportedDbTypes: ["postgresql", "mysql", "sqlite"],
   },
   {
     id: "duplicate_indexes",
@@ -2745,7 +2745,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Multiple indexes that cover the same leading columns waste disk space and slow writes.",
     severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql"],
+    supportedDbTypes: ["postgresql", "mysql", "sqlite"],
   },
   {
     id: "unused_indexes",
@@ -2785,7 +2785,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Foreign key columns that allow NULL can silently orphan rows. Decide whether NULL is really allowed.",
     severity: "info",
-    supportedDbTypes: ["postgresql", "mysql"],
+    supportedDbTypes: ["postgresql", "mysql", "sqlite"],
   },
 ];
 
