@@ -137,6 +137,59 @@ describe.skipIf(!sqliteAvailable)('runSqliteSchemaIntel', () => {
     expect(findings[0].suggestedSql).toBe('DROP INDEX "idx_orders_referrer_dup";')
   })
 
+  it('never suggests dropping a unique index in favour of a plain one', () => {
+    const unique = new Database(':memory:')
+    try {
+      unique.exec(`
+        CREATE TABLE t (id INTEGER PRIMARY KEY, a TEXT, b TEXT);
+        CREATE INDEX idx_a_plain ON t(a);
+        CREATE UNIQUE INDEX idx_z_unique ON t(a);
+        CREATE UNIQUE INDEX idx_b_unique ON t(b);
+        CREATE UNIQUE INDEX idx_b_unique_again ON t(b);
+      `)
+      const findings = runSqliteSchemaIntel(unique, ['duplicate_indexes']).findings
+
+      expect(findings.map((f) => f.metadata)).toEqual([
+        { keptIndex: 'idx_b_unique', duplicates: ['idx_b_unique_again'], columns: ['b'] },
+        { keptIndex: 'idx_z_unique', duplicates: ['idx_a_plain'], columns: ['a'] }
+      ])
+    } finally {
+      unique.close()
+    }
+  })
+
+  it('reports a nullable primary key or generated column that is a foreign key', () => {
+    const quirks = new Database(':memory:')
+    try {
+      quirks.exec(`
+        CREATE TABLE parent (id INTEGER PRIMARY KEY, code TEXT UNIQUE);
+        CREATE TABLE text_pk (code TEXT PRIMARY KEY REFERENCES parent(code));
+        CREATE TABLE text_pk_not_null (code TEXT PRIMARY KEY NOT NULL REFERENCES parent(code));
+        CREATE TABLE rowid_pk (id INTEGER PRIMARY KEY REFERENCES parent(id));
+        CREATE TABLE without_rowid (code TEXT PRIMARY KEY REFERENCES parent(code)) WITHOUT ROWID;
+        CREATE TABLE generated (
+          id INTEGER PRIMARY KEY,
+          raw TEXT,
+          virtual_parent INTEGER GENERATED ALWAYS AS (CAST(raw AS INTEGER)) VIRTUAL
+            REFERENCES parent(id),
+          stored_parent INTEGER GENERATED ALWAYS AS (CAST(raw AS INTEGER)) STORED NOT NULL
+            REFERENCES parent(id)
+        );
+      `)
+      // SQLite lets a non-INTEGER primary key of an ordinary table hold NULL.
+      quirks.exec('INSERT INTO text_pk (code) VALUES (NULL)')
+
+      const findings = runSqliteSchemaIntel(quirks, ['nullable_fks']).findings
+
+      expect(findings.map((f) => [f.entity?.name, f.metadata?.columns])).toEqual([
+        ['generated', ['virtual_parent']],
+        ['text_pk', ['code']]
+      ])
+    } finally {
+      quirks.close()
+    }
+  })
+
   it('runs the four structural checks when none are requested', () => {
     const report = runSqliteSchemaIntel(db)
 

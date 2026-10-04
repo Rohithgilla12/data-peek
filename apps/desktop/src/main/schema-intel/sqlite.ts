@@ -40,6 +40,7 @@ interface ForeignKeyRow {
 
 interface IndexListRow {
   name: string
+  unique: number
   origin: string
   partial: number
 }
@@ -60,6 +61,7 @@ interface ForeignKey {
 interface IndexKey {
   name: string
   origin: string
+  unique: boolean
   columns: string[]
   /** Columns with their sort order and collation, to tell real duplicates apart. */
   signature: string
@@ -80,6 +82,11 @@ function listTables(db: Database.Database): string[] {
     .filter((t) => t.schema === SCHEMA && t.type === 'table' && !t.name.startsWith('sqlite_'))
     .map((t) => t.name)
     .sort()
+}
+
+/** Every column, generated ones included: table_info leaves those out. */
+function listColumns(db: Database.Database, table: string): TableInfoRow[] {
+  return pragma<TableInfoRow>(db, 'table_xinfo', table)
 }
 
 function primaryKeyColumns(columns: TableInfoRow[]): string[] {
@@ -117,6 +124,7 @@ function listFullColumnIndexes(db: Database.Database, table: string): IndexKey[]
     indexes.push({
       name: index.name,
       origin: index.origin,
+      unique: index.unique === 1,
       columns: keys.map((k) => k.name as string),
       signature: keys.map((k) => `${k.name}\u0000${k.desc}\u0000${k.coll ?? ''}`).join('\u0001')
     })
@@ -133,7 +141,7 @@ function leadsWith(indexColumns: string[], columns: string[]): boolean {
 function checkTablesWithoutPk(db: Database.Database): SchemaIntelFinding[] {
   const findings: SchemaIntelFinding[] = []
   for (const table of listTables(db)) {
-    const columns = pragma<TableInfoRow>(db, 'table_info', table)
+    const columns = listColumns(db, table)
     if (primaryKeyColumns(columns).length > 0) continue
     findings.push({
       checkId: 'tables_without_pk',
@@ -155,7 +163,7 @@ function checkMissingFkIndexes(db: Database.Database): SchemaIntelFinding[] {
     // The primary key is searchable too, including an INTEGER PRIMARY KEY,
     // which is the rowid and so has no entry in index_list.
     const searchable = [
-      primaryKeyColumns(pragma<TableInfoRow>(db, 'table_info', table)),
+      primaryKeyColumns(listColumns(db, table)),
       ...listFullColumnIndexes(db, table).map((i) => i.columns)
     ]
     for (const fk of foreignKeys) {
@@ -181,24 +189,27 @@ function checkNullableFks(db: Database.Database): SchemaIntelFinding[] {
   for (const table of listTables(db)) {
     const foreignKeys = listForeignKeys(db, table)
     if (foreignKeys.length === 0) continue
-    // A primary key column is left out: table_info reports notnull = 0 for an
-    // INTEGER PRIMARY KEY although it can never hold NULL.
+    const columns = listColumns(db, table)
+    // An INTEGER PRIMARY KEY is the rowid and can never hold NULL, although it
+    // is listed with notnull = 0. It is the one primary key with no index of
+    // its own. Any other primary key column of an ordinary table can be NULL.
+    const rowidAlias =
+      primaryKeyColumns(columns).length === 1 &&
+      !pragma<IndexListRow>(db, 'index_list', table).some((i) => i.origin === 'pk')
     const nullable = new Set(
-      pragma<TableInfoRow>(db, 'table_info', table)
-        .filter((c) => c.notnull === 0 && c.pk === 0)
-        .map((c) => c.name)
+      columns.filter((c) => c.notnull === 0 && !(c.pk > 0 && rowidAlias)).map((c) => c.name)
     )
     for (const fk of foreignKeys) {
-      const columns = fk.columns.filter((c) => nullable.has(c))
-      if (columns.length === 0) continue
+      const nullableColumns = fk.columns.filter((c) => nullable.has(c))
+      if (nullableColumns.length === 0) continue
       findings.push({
         checkId: 'nullable_fks',
         severity: 'info',
-        title: `${SCHEMA}.${table}(${columns.join(', ')}) is a nullable foreign key`,
+        title: `${SCHEMA}.${table}(${nullableColumns.join(', ')}) is a nullable foreign key`,
         detail:
           'If NULL is not a valid "no parent" for this column, declare it NOT NULL to avoid silently orphaned rows.',
         entity: { schema: SCHEMA, name: table, kind: 'foreign_key' },
-        metadata: { columns, referencedTable: fk.referencedTable }
+        metadata: { columns: nullableColumns, referencedTable: fk.referencedTable }
       })
     }
   }
@@ -212,18 +223,22 @@ function checkDuplicateIndexes(db: Database.Database): SchemaIntelFinding[] {
     for (const index of listFullColumnIndexes(db, table)) {
       bySignature.set(index.signature, [...(bySignature.get(index.signature) ?? []), index])
     }
+    const tableFindings: SchemaIntelFinding[] = []
     for (const group of bySignature.values()) {
       if (group.length < 2) continue
       // An index that backs a PRIMARY KEY or UNIQUE constraint cannot be
-      // dropped, so it is the one to keep.
+      // dropped, so it is the one to keep. After that a unique index is kept
+      // before a plain one: dropping it would drop the uniqueness it enforces.
       const ordered = [...group].sort(
         (a, b) =>
-          Number(a.origin === 'c') - Number(b.origin === 'c') || a.name.localeCompare(b.name)
+          Number(a.origin === 'c') - Number(b.origin === 'c') ||
+          Number(b.unique) - Number(a.unique) ||
+          a.name.localeCompare(b.name)
       )
       const [kept, ...rest] = ordered
       const duplicates = rest.filter((i) => i.origin === 'c').map((i) => i.name)
       if (duplicates.length === 0) continue
-      findings.push({
+      tableFindings.push({
         checkId: 'duplicate_indexes',
         severity: 'warning',
         title: `${SCHEMA}.${table} has duplicate index${duplicates.length > 1 ? 'es' : ''}: ${duplicates.join(', ')}`,
@@ -234,6 +249,11 @@ function checkDuplicateIndexes(db: Database.Database): SchemaIntelFinding[] {
         suggestedSql: duplicates.map((name) => `DROP INDEX ${qid(name)};`).join('\n')
       })
     }
+    // index_list has no documented order, so sort for a stable report.
+    tableFindings.sort((a, b) =>
+      String(a.metadata?.keptIndex).localeCompare(String(b.metadata?.keptIndex))
+    )
+    findings.push(...tableFindings)
   }
   return findings
 }
