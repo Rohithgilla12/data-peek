@@ -323,6 +323,23 @@ describe('applySorts', () => {
     expect(sorted.map((r) => r.d)).toEqual(['2024-02-01', '2024-05-01', 'not-a-date'])
   })
 
+  it('routes out-of-range date-only values through the null path instead of rolling them over', () => {
+    // new Date(2024, 12, 1) is January 2025 and new Date(2024, 1, 30) is March 1;
+    // neither is a real calendar day, so neither may borrow another month's place.
+    const rows = [
+      { d: '2024-13-01' },
+      { d: '2024-05-01' },
+      { d: '2024-02-30' },
+      { d: '2024-02-01' }
+    ]
+    const sorted = applySorts(
+      rows,
+      [chip({ column: 'd', direction: 'asc', mode: 'byMonth', nullsPosition: 'last' })],
+      COL_D
+    )
+    expect(sorted.map((r) => r.d)).toEqual(['2024-02-01', '2024-05-01', '2024-13-01', '2024-02-30'])
+  })
+
   it('preserves input order for ties (stable sort)', () => {
     const rows = [
       { g: 'a', k: 1 },
