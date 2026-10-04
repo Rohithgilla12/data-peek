@@ -189,6 +189,46 @@ describe('generateRows with random-date columns', () => {
     }
   })
 
+  it('leaves the clock reference alone when a seeded run throws', () => {
+    const now = Date.parse('2026-03-01T00:00:00Z')
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(now))
+
+    // Nothing validates the IPC payload at runtime, so a renderer bug can send
+    // a non-array column list and the filter is what throws.
+    expect(() =>
+      generateRows(
+        {
+          schema: 'public',
+          table: 'orders',
+          rowCount: 1,
+          seed: 42,
+          batchSize: 100,
+          columns: '' as unknown as DataGenConfig['columns']
+        },
+        fkData
+      )
+    ).toThrow()
+
+    const rows = generateRows(
+      {
+        schema: 'public',
+        table: 'orders',
+        rowCount: 50,
+        seed: undefined,
+        batchSize: 100,
+        columns: [column({ columnName: 'created_at', fakerMethod: 'date.recent' })]
+      },
+      fkData
+    )
+
+    for (const row of rows) {
+      const value = Date.parse(row[0] as string)
+      expect(value).toBeGreaterThanOrEqual(now - DAY)
+      expect(value).toBeLessThanOrEqual(now)
+    }
+  })
+
   it('still draws from the last year up to now without a seed', () => {
     const now = Date.parse('2026-03-01T00:00:00Z')
     vi.useFakeTimers()

@@ -121,6 +121,9 @@ function generateValue(
 
 export function generateRows(config: DataGenConfig, fkData: Map<string, unknown[]>): unknown[][] {
   const seeded = config.seed != null
+  // Read the column list before touching faker, so a malformed config throws
+  // while the module-level reference date is still the clock.
+  const activeColumns = config.columns.filter((c) => !c.skip)
   if (config.seed != null) {
     faker.seed(config.seed)
     // faker's own date methods (date.recent, date.past, ...) default their
@@ -130,7 +133,6 @@ export function generateRows(config: DataGenConfig, fkData: Map<string, unknown[
     faker.setDefaultRefDate(SEEDED_REFERENCE_MS)
   }
 
-  const activeColumns = config.columns.filter((c) => !c.skip)
   const counters = new Map<string, number>()
   const rows: unknown[][] = []
 
