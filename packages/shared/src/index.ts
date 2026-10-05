@@ -2753,7 +2753,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Indexes that have never served a scan since stats were reset. They add maintenance overhead without speeding up reads.",
     severity: "info",
-    supportedDbTypes: ["postgresql"],
+    supportedDbTypes: ["postgresql", "mysql"],
   },
   {
     id: "invalid_indexes",

@@ -56,7 +56,9 @@ The check set on Postgres covers:
 8. **Nullable foreign keys** — FK column with `NOT NULL` missing,
    often unintentional
 
-On MySQL the checks run over `information_schema` (core set). On MSSQL
+On MySQL the structural checks run over `information_schema`, and
+unused indexes come from `performance_schema`'s read counts (the check
+is skipped when it is off). On MSSQL
 it is currently just tables-without-PK. On SQLite the four structural
 checks (tables without a primary key, foreign keys without an index,
 duplicate indexes, nullable foreign keys) are read from PRAGMAs, and the
