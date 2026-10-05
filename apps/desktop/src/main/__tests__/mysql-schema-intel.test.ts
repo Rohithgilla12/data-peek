@@ -462,12 +462,14 @@ describe.skipIf(!url)('MySQL unused_indexes on a real server', () => {
   it('says nothing about a table whose reads are not being counted', async () => {
     const conn = await seeded()
     try {
-      // A setup_objects rule turns counting off for one table. Its counts stay
+      // setup_objects turns counting off for the schema and back on for one
+      // table; the most specific rule decides. An uncounted table's counts stay
       // at 0 whatever reads it, so they say nothing about its indexes.
       await conn.query(`
         INSERT INTO performance_schema.setup_objects
           (OBJECT_TYPE, OBJECT_SCHEMA, OBJECT_NAME, ENABLED, TIMED)
-          VALUES ('TABLE', '${database}', 'uncounted', 'NO', 'NO');
+          VALUES ('TABLE', '${database}', '%', 'NO', 'NO'),
+                 ('TABLE', '${database}', 'customers', 'YES', 'YES');
         CREATE TABLE uncounted (id INT PRIMARY KEY, a INT, KEY idx_a (a));
         INSERT INTO uncounted VALUES (1, 1), (2, 2);
         SELECT COUNT(*) FROM uncounted FORCE INDEX (idx_a) WHERE a = 1;
@@ -475,9 +477,14 @@ describe.skipIf(!url)('MySQL unused_indexes on a real server', () => {
 
       const report = await runMysqlSchemaIntel(conn, database, ['unused_indexes'])
 
-      expect(report.findings.map((f) => `${f.metadata?.table}.${f.entity?.name}`)).toEqual([
-        'customers.idx_nick'
-      ])
+      const reported = report.findings.map((f) => `${f.metadata?.table}.${f.entity?.name}`)
+      expect(reported).not.toContain('uncounted.idx_a')
+      // MariaDB 11.4 stops listing a table's unread indexes once a rule has
+      // changed, so only MySQL still has the counted table's finding to give.
+      const [[server]] = (await conn.query('SELECT VERSION() AS version')) as unknown as [Row[]]
+      if (!String(server.version).includes('MariaDB')) {
+        expect(reported).toEqual(['customers.idx_nick'])
+      }
     } finally {
       await conn.query(`
         DELETE FROM performance_schema.setup_objects WHERE OBJECT_SCHEMA = '${database}';
@@ -504,11 +511,42 @@ describe.skipIf(!url)('MySQL unused_indexes on a real server', () => {
     }
   })
 
+  it('says nothing about a table whose counting was turned off after it was in use', async () => {
+    // Its earlier counts stay on record, but a read from another connection is
+    // no longer added to them, so an index in use would look unread.
+    const first = await seeded()
+    const second = await mysql.createConnection({ uri: url as string, multipleStatements: true })
+    const third = await mysql.createConnection({ uri: url as string, multipleStatements: true })
+    try {
+      await second.query(`
+        INSERT INTO performance_schema.setup_objects
+          (OBJECT_TYPE, OBJECT_SCHEMA, OBJECT_NAME, ENABLED, TIMED)
+          VALUES ('TABLE', '${database}', '%', 'NO', 'NO');
+        SELECT COUNT(*) FROM ${database}.customers FORCE INDEX (idx_nick) WHERE nick = 'aa';
+      `)
+
+      const report = await runMysqlSchemaIntel(third, database, ['unused_indexes'])
+
+      expect(report.skipped).toEqual([])
+      expect(report.findings).toEqual([])
+    } finally {
+      await third.query(`
+        DELETE FROM performance_schema.setup_objects WHERE OBJECT_SCHEMA = '${database}';
+        ${dropBoth}
+      `)
+      await Promise.all([first.end(), second.end(), third.end()])
+    }
+  })
+
   it('is skipped while the global consumer is off', async () => {
     const conn = await seeded()
     const consumer = (enabled: string): string =>
       `UPDATE performance_schema.setup_consumers SET ENABLED = '${enabled}'
         WHERE NAME = 'global_instrumentation'`
+    // The setting is the whole server's, so put back whatever it was.
+    const [before] = (await conn.query(
+      "SELECT ENABLED FROM performance_schema.setup_consumers WHERE NAME = 'global_instrumentation'"
+    )) as unknown as [Row[]]
     try {
       await conn.query(consumer('NO'))
 
@@ -517,7 +555,7 @@ describe.skipIf(!url)('MySQL unused_indexes on a real server', () => {
       expect(report.findings).toEqual([])
       expect(report.skipped.map((s) => s.checkId)).toEqual(['unused_indexes'])
     } finally {
-      await conn.query(consumer('YES'))
+      await conn.query(consumer(String(before[0].ENABLED)))
       await conn.query(dropBoth)
       await conn.end()
     }

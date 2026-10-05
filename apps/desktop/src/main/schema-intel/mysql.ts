@@ -230,9 +230,11 @@ function leads(index: string[], columns: string[]): boolean {
 // Non-unique indexes with no counted read, from either source. `fk_columns` is
 // what a foreign key can match: an expression part has no column name and a
 // prefix part cannot serve a key, so '' keeps each one's place. Full-text
-// indexes are left out because reads through them are never counted, and so
-// is a table with nothing counted at all: its counts restarted and nothing has
-// touched it since, or a setup_objects rule keeps it from being counted.
+// indexes are left out because reads through them are never counted. So is a
+// table that setup_objects keeps from being counted (the most specific of
+// schema.table, schema.% and %.% decides), since its earlier counts stay on
+// record while new reads are not added. And so is a table with nothing
+// counted at all, whose counts have restarted and say nothing yet.
 function unusedIndexesSql(source: string, schema: string, table: string, index: string): string {
   return `
     SELECT
@@ -250,6 +252,17 @@ function unusedIndexesSql(source: string, schema: string, table: string, index: 
      AND s.INDEX_NAME   = u.${index}
     WHERE u.${schema} = ?
       ${source.startsWith('sys.') ? '' : 'AND u.COUNT_STAR = 0'}
+      AND 'YES' = (
+        SELECT o.ENABLED
+        FROM performance_schema.setup_objects o
+        WHERE o.OBJECT_TYPE = 'TABLE'
+          AND (
+            (o.OBJECT_SCHEMA = u.${schema} AND o.OBJECT_NAME IN (u.${table}, '%'))
+            OR (o.OBJECT_SCHEMA = '%' AND o.OBJECT_NAME = '%')
+          )
+        ORDER BY o.OBJECT_SCHEMA = u.${schema} DESC, o.OBJECT_NAME = u.${table} DESC
+        LIMIT 1
+      )
       AND EXISTS (
         SELECT 1
         FROM performance_schema.table_io_waits_summary_by_index_usage counted
@@ -374,7 +387,7 @@ async function checkUnusedIndexes(
       severity: 'info',
       title: `${s}.${t}.${indexName} has no recorded reads`,
       detail:
-        'performance_schema has counted no reads through this index since its counts last restarted: when MySQL started, when the table was last altered, or when the summary table was truncated. If that covers a normal workload, it is a candidate to drop. Altering the table, which dropping one of its indexes does, restarts the count for the others. Unique and full-text indexes, indexes a foreign key needs, and tables with nothing counted at all are not listed.',
+        'performance_schema has counted no reads through this index since its counts last restarted: when MySQL started, when the table was last altered, or when the summary table was truncated. If that covers a normal workload, it is a candidate to drop. Altering the table, which dropping one of its indexes does, restarts the count for the others. Unique and full-text indexes, indexes a foreign key needs, and tables whose reads are not being counted are not listed.',
       entity: { schema: s, name: indexName, kind: 'index' },
       metadata: { table: t, columns: names(row.columns) },
       suggestedSql: `ALTER TABLE ${qualified(s, t)} DROP INDEX ${qid(indexName)};`
