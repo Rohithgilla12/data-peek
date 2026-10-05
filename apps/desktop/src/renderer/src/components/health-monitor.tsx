@@ -200,21 +200,23 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                   {!isEmbedded && isLoading.activeQueries && (
                     <Loader2 className="size-3 animate-spin" />
                   )}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => setShareCard('activeQueries')}
-                      >
-                        <Share2 className="size-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <p className="text-xs">Share as image</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  {!isEmbedded && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => setShareCard('activeQueries')}
+                        >
+                          <Share2 className="size-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs">Share as image</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
               </CardTitle>
             </CardHeader>
@@ -394,21 +396,23 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                   {!isEmbedded && isLoading.cacheStats && (
                     <Loader2 className="size-3 animate-spin" />
                   )}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => setShareCard('cacheStats')}
-                      >
-                        <Share2 className="size-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <p className="text-xs">Share as image</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  {!isEmbedded && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => setShareCard('cacheStats')}
+                        >
+                          <Share2 className="size-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs">Share as image</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
               </CardTitle>
             </CardHeader>
@@ -482,21 +486,23 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                 Locks &amp; Blocking
                 <div className="flex items-center gap-1">
                   {!isEmbedded && isLoading.locks && <Loader2 className="size-3 animate-spin" />}
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => setShareCard('locks')}
-                      >
-                        <Share2 className="size-3" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <p className="text-xs">Share as image</p>
-                    </TooltipContent>
-                  </Tooltip>
+                  {!isEmbedded && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => setShareCard('locks')}
+                        >
+                          <Share2 className="size-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs">Share as image</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
               </CardTitle>
             </CardHeader>

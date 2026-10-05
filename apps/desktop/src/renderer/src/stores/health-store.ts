@@ -139,6 +139,21 @@ export const useHealthStore = create<HealthState>()((set, get) => ({
 
   fetchAll: async (config, schema?) => {
     const { fetchActiveQueries, fetchTableSizes, fetchCacheStats, fetchLocks } = get()
+
+    // SQLite has no server process, so active queries, cache stats and locks have
+    // nothing to read from. Skip those calls and clear whatever a previously
+    // viewed connection left in the store.
+    if (config.dbType === 'sqlite') {
+      set((s) => ({
+        activeQueries: [],
+        cacheStats: null,
+        locks: [],
+        errors: { ...s.errors, activeQueries: null, cacheStats: null, locks: null }
+      }))
+      await fetchTableSizes(config, schema)
+      return
+    }
+
     await Promise.allSettled([
       fetchActiveQueries(config),
       fetchTableSizes(config, schema),
