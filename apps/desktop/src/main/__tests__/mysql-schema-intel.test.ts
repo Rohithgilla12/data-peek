@@ -8,6 +8,7 @@ type Row = Record<string, unknown>
 interface Server {
   performanceSchema?: number
   instrumented?: string | null
+  collecting?: string | null
   /** Throwing stands in for a server with no sys schema, or no right to read it. */
   sysView?: Row[] | Error
   indexUsage?: Row[]
@@ -25,7 +26,8 @@ function connection(server: Server): { conn: mysql.Connection; asked: string[] }
           [
             {
               enabled: server.performanceSchema ?? 1,
-              instrumented: server.instrumented === undefined ? 'YES' : server.instrumented
+              instrumented: server.instrumented === undefined ? 'YES' : server.instrumented,
+              collecting: server.collecting === undefined ? 'YES' : server.collecting
             }
           ]
         ]
@@ -250,7 +252,7 @@ describe('MySQL unused_indexes', () => {
   it('skips the check when performance_schema is off, and says why', async () => {
     // Off, both sources answer with no rows and no error, which would read as
     // "every index is used".
-    const { conn } = connection({ performanceSchema: 0, instrumented: null })
+    const { conn } = connection({ performanceSchema: 0, instrumented: null, collecting: null })
 
     const report = await runMysqlSchemaIntel(conn, 'shop', ['unused_indexes'])
 
@@ -268,6 +270,21 @@ describe('MySQL unused_indexes', () => {
     expect(report.findings).toEqual([])
     expect(report.skipped).toEqual([
       { checkId: 'unused_indexes', reason: expect.stringContaining('wait/io/table/sql/handler') }
+    ])
+  })
+})
+
+describe('MySQL unused_indexes with collection switched off', () => {
+  it('skips the check when the global consumer is off', async () => {
+    // The instrument can be on while nothing is collected: reads then leave
+    // every count at 0, and an index just read looks unused.
+    const { conn } = connection({ collecting: 'NO', sysView: [unused('t', 'idx_a', 'a')] })
+
+    const report = await runMysqlSchemaIntel(conn, 'shop', ['unused_indexes'])
+
+    expect(report.findings).toEqual([])
+    expect(report.skipped).toEqual([
+      { checkId: 'unused_indexes', reason: expect.stringContaining('global_instrumentation') }
     ])
   })
 })
@@ -332,9 +349,14 @@ describe.skipIf(!url)('MySQL unused_indexes on a real server', () => {
         'customers.idx_nick'
       ])
 
-      // The suggested statement runs. ALTER TABLE restarts the table's counts,
-      // so the index a query had read is listed until something reads it again.
+      // The suggested statement runs. ALTER TABLE restarts the table's counts:
+      // with nothing counted on the table yet, nothing is said about it, and
+      // once it is in use again the index a query had read is listed until
+      // something reads it again.
       await conn.query(report.findings[0].suggestedSql as string)
+      const quiet = await runMysqlSchemaIntel(conn, database, ['unused_indexes'])
+      expect(quiet.findings).toEqual([])
+      await conn.query("INSERT INTO customers VALUES (3, 'c@x', 'Chicago', 'cc')")
       const after = await runMysqlSchemaIntel(conn, database, ['unused_indexes'])
       expect(after.findings.map((f) => f.entity?.name)).toEqual(['idx_city'])
       await conn.query(
@@ -359,7 +381,8 @@ describe.skipIf(!url)('MySQL unused_indexes on a real server', () => {
             body VARCHAR(20),
             KEY idx_expr ((LOWER(body)), customer_id),
             CONSTRAINT fk_notes_customer FOREIGN KEY (customer_id) REFERENCES customers (id)
-          )
+          );
+          INSERT INTO notes VALUES (1, 1, 'Hello');
         `)
       } catch {
         // MariaDB has no expression key parts.
@@ -406,6 +429,10 @@ describe.skipIf(!url)('MySQL unused_indexes on a real server', () => {
           CONSTRAINT fk_taggings FOREIGN KEY (label) REFERENCES tags (label)
         );
         CREATE TABLE docs (id INT PRIMARY KEY, body TEXT, FULLTEXT KEY ft_body (body));
+        INSERT INTO codes VALUES (1, 'a');
+        INSERT INTO code_uses VALUES (1, 'a', 1);
+        INSERT INTO tags VALUES (1, 'red');
+        INSERT INTO taggings VALUES (1, 'red');
         INSERT INTO docs VALUES (1, 'hello world'), (2, 'unused index check'), (3, 'a third row');
         SELECT COUNT(*) FROM docs WHERE MATCH (body) AGAINST ('hello');
       `)
@@ -427,6 +454,70 @@ describe.skipIf(!url)('MySQL unused_indexes on a real server', () => {
       ])
       await conn.query(reported[0].suggestedSql as string)
     } finally {
+      await conn.query(dropBoth)
+      await conn.end()
+    }
+  })
+
+  it('says nothing about a table whose reads are not being counted', async () => {
+    const conn = await seeded()
+    try {
+      // A setup_objects rule turns counting off for one table. Its counts stay
+      // at 0 whatever reads it, so they say nothing about its indexes.
+      await conn.query(`
+        INSERT INTO performance_schema.setup_objects
+          (OBJECT_TYPE, OBJECT_SCHEMA, OBJECT_NAME, ENABLED, TIMED)
+          VALUES ('TABLE', '${database}', 'uncounted', 'NO', 'NO');
+        CREATE TABLE uncounted (id INT PRIMARY KEY, a INT, KEY idx_a (a));
+        INSERT INTO uncounted VALUES (1, 1), (2, 2);
+        SELECT COUNT(*) FROM uncounted FORCE INDEX (idx_a) WHERE a = 1;
+      `)
+
+      const report = await runMysqlSchemaIntel(conn, database, ['unused_indexes'])
+
+      expect(report.findings.map((f) => `${f.metadata?.table}.${f.entity?.name}`)).toEqual([
+        'customers.idx_nick'
+      ])
+    } finally {
+      await conn.query(`
+        DELETE FROM performance_schema.setup_objects WHERE OBJECT_SCHEMA = '${database}';
+        ${dropBoth}
+      `)
+      await conn.end()
+    }
+  })
+
+  it('starts over when the counts are truncated', async () => {
+    const conn = await seeded()
+    try {
+      await conn.query('TRUNCATE TABLE performance_schema.table_io_waits_summary_by_index_usage')
+      const quiet = await runMysqlSchemaIntel(conn, database, ['unused_indexes'])
+      expect(quiet.findings).toEqual([])
+
+      // In use again, the index read before the truncation has no read on record.
+      await conn.query("INSERT INTO customers VALUES (3, 'c@x', 'Chicago', 'cc')")
+      const after = await runMysqlSchemaIntel(conn, database, ['unused_indexes'])
+      expect(after.findings.map((f) => f.entity?.name)).toEqual(['idx_city', 'idx_nick'])
+    } finally {
+      await conn.query(dropBoth)
+      await conn.end()
+    }
+  })
+
+  it('is skipped while the global consumer is off', async () => {
+    const conn = await seeded()
+    const consumer = (enabled: string): string =>
+      `UPDATE performance_schema.setup_consumers SET ENABLED = '${enabled}'
+        WHERE NAME = 'global_instrumentation'`
+    try {
+      await conn.query(consumer('NO'))
+
+      const report = await runMysqlSchemaIntel(conn, database, ['unused_indexes'])
+
+      expect(report.findings).toEqual([])
+      expect(report.skipped.map((s) => s.checkId)).toEqual(['unused_indexes'])
+    } finally {
+      await conn.query(consumer('YES'))
       await conn.query(dropBoth)
       await conn.end()
     }

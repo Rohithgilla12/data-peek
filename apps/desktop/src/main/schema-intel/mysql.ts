@@ -230,7 +230,9 @@ function leads(index: string[], columns: string[]): boolean {
 // Non-unique indexes with no counted read, from either source. `fk_columns` is
 // what a foreign key can match: an expression part has no column name and a
 // prefix part cannot serve a key, so '' keeps each one's place. Full-text
-// indexes are left out because reads through them are never counted.
+// indexes are left out because reads through them are never counted, and so
+// is a table with nothing counted at all: its counts restarted and nothing has
+// touched it since, or a setup_objects rule keeps it from being counted.
 function unusedIndexesSql(source: string, schema: string, table: string, index: string): string {
   return `
     SELECT
@@ -248,6 +250,13 @@ function unusedIndexesSql(source: string, schema: string, table: string, index: 
      AND s.INDEX_NAME   = u.${index}
     WHERE u.${schema} = ?
       ${source.startsWith('sys.') ? '' : 'AND u.COUNT_STAR = 0'}
+      AND EXISTS (
+        SELECT 1
+        FROM performance_schema.table_io_waits_summary_by_index_usage counted
+        WHERE counted.OBJECT_SCHEMA = u.${schema}
+          AND counted.OBJECT_NAME   = u.${table}
+          AND counted.COUNT_STAR > 0
+      )
     GROUP BY u.${schema}, u.${table}, u.${index}
     HAVING MAX(s.NON_UNIQUE) = 1 -- neither PRIMARY nor a unique index
        AND MAX(s.INDEX_TYPE = 'FULLTEXT') = 0
@@ -259,15 +268,19 @@ async function checkUnusedIndexes(
   conn: mysql.Connection,
   schema: string
 ): Promise<SchemaIntelFinding[]> {
-  // With performance_schema off, or table reads not instrumented, both sources
-  // below answer with no rows and no error, which would read as "all used".
+  // With performance_schema off, both sources below answer with no rows and
+  // no error, which would read as "all used". With table reads not
+  // instrumented, or the global consumer off, every count stays at 0 and an
+  // index in use reads as unused.
   const [state] = await runQuery(
     conn,
     `
     SELECT
       @@performance_schema AS enabled,
       (SELECT ENABLED FROM performance_schema.setup_instruments
-        WHERE NAME = 'wait/io/table/sql/handler') AS instrumented
+        WHERE NAME = 'wait/io/table/sql/handler') AS instrumented,
+      (SELECT ENABLED FROM performance_schema.setup_consumers
+        WHERE NAME = 'global_instrumentation') AS collecting
     `
   )
   if (Number(state?.enabled) !== 1) {
@@ -276,6 +289,11 @@ async function checkUnusedIndexes(
   if (String(state?.instrumented) !== 'YES') {
     throw new Error(
       'The wait/io/table/sql/handler instrument is disabled, so MySQL is not counting index reads'
+    )
+  }
+  if (String(state?.collecting) !== 'YES') {
+    throw new Error(
+      'The global_instrumentation consumer is disabled, so MySQL is not counting index reads'
     )
   }
 
@@ -356,7 +374,7 @@ async function checkUnusedIndexes(
       severity: 'info',
       title: `${s}.${t}.${indexName} has no recorded reads`,
       detail:
-        'performance_schema has counted no reads through this index since MySQL started or the table was last altered, whichever is later. If that covers a normal workload, it is a candidate to drop. Altering the table, which dropping one of its indexes does, restarts the count for the others. Unique and full-text indexes and indexes a foreign key needs are not listed.',
+        'performance_schema has counted no reads through this index since its counts last restarted: when MySQL started, when the table was last altered, or when the summary table was truncated. If that covers a normal workload, it is a candidate to drop. Altering the table, which dropping one of its indexes does, restarts the count for the others. Unique and full-text indexes, indexes a foreign key needs, and tables with nothing counted at all are not listed.',
       entity: { schema: s, name: indexName, kind: 'index' },
       metadata: { table: t, columns: names(row.columns) },
       suggestedSql: `ALTER TABLE ${qualified(s, t)} DROP INDEX ${qid(indexName)};`
