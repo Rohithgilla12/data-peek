@@ -169,11 +169,11 @@ jobs:
         working-directory: apps/desktop
         run: |
           pnpm exec electron-vite build
-          pnpm exec electron-builder --linux --publish never
+          pnpm exec electron-builder --linux -c.productName=data-peek --publish never
 
       - name: Build deb package
         working-directory: apps/desktop
-        run: pnpm exec electron-builder --linux deb --publish never
+        run: pnpm exec electron-builder --linux deb -c.productName=data-peek --publish never
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7

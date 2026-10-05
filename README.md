@@ -51,7 +51,7 @@ Or grab a build from [Releases](https://github.com/Rohithgilla12/data-peek/relea
 
 **macOS.** Builds are signed and notarised, so they open without warnings. The quick installer installs the matching `.dmg` and clears the quarantine flag for you. If an older manual install says the app is "damaged", run `xattr -cr "/Applications/Data Peek.app"`.
 
-**Linux.** Auto-updates only work with the AppImage. The quick installer puts it at `~/.local/bin/data-peek`. `.deb` and `.tar.gz` installs need a manual download for each new release.
+**Linux.** The AppImage and the `.deb` update themselves; `.tar.gz` installs need a manual download for each new release. The quick installer puts the AppImage at `~/.local/bin/data-peek`. The `.deb` installs to `/opt/data-peek` with an AppArmor profile, which Ubuntu 24.04+ needs for Electron's sandbox.
 
 </details>
 

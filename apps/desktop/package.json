@@ -26,7 +26,7 @@
     "build:unpack": "pnpm run build && electron-builder --dir",
     "build:win": "pnpm run build && electron-builder --win",
     "build:mac": "pnpm run build && electron-builder --mac",
-    "build:linux": "pnpm run build && electron-builder --linux"
+    "build:linux": "pnpm run build && electron-builder --linux -c.productName=data-peek"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.85",
@@ -116,7 +116,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "^4.1.10",
     "electron": "38.7.1",
-    "electron-builder": "^25.1.8",
+    "electron-builder": "^26.17.0",
     "electron-vite": "^4.0.1",
     "eslint": "^9.39.4",
     "eslint-plugin-react": "^7.37.5",

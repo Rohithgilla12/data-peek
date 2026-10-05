@@ -41,6 +41,12 @@ mac:
         - arm64
 dmg:
   artifactName: data-peek-${version}-${arch}.${ext}
+# Linux builds override productName to `data-peek` on the command line (see the
+# build:linux script and the Linux CI jobs), so the .deb installs to
+# /opt/data-peek. A space in /opt/Data Peek breaks Electron's SUID sandbox
+# fallback (electron/electron#44414). The menu entry keeps the display name.
+# electron-builder 26+ also ships an AppArmor profile in the .deb, which Ubuntu
+# 24.04+ needs before Electron's sandbox can start (issue #297).
 linux:
   target:
     - AppImage
@@ -48,6 +54,9 @@ linux:
     - tar.gz
   maintainer: Rohith Gilla
   category: Development
+  desktop:
+    entry:
+      Name: Data Peek
 appImage:
   artifactName: data-peek-${version}-${arch}.${ext}
 deb:

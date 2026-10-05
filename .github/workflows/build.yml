@@ -254,7 +254,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           pnpm exec electron-vite build
-          pnpm exec electron-builder --linux --publish ${{ startsWith(github.ref, 'refs/tags/') && 'always' || 'never' }}
+          pnpm exec electron-builder --linux -c.productName=data-peek --publish ${{ startsWith(github.ref, 'refs/tags/') && 'always' || 'never' }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
@@ -267,8 +267,31 @@ jobs:
             apps/desktop/dist/latest-linux.yml
           if-no-files-found: error
 
+  # The release waits on this: the .deb has to install and launch on a stock
+  # Ubuntu, with the user-namespace restriction on, before a draft is made.
+  linux-smoke:
+    name: linux .deb smoke test
+    needs: build-linux
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Download the Linux build
+        uses: actions/download-artifact@v8
+        with:
+          name: data-peek-linux
+          path: dist
+
+      - name: Install xvfb
+        run: sudo apt-get update -q && sudo apt-get install -y -q xvfb
+
+      - name: Smoke test the .deb
+        run: apps/desktop/scripts/smoke-test-linux-deb.sh dist/data-peek-*-amd64.deb
+
   release:
-    needs: [build-mac, build-windows, build-linux]
+    needs: [build-mac, build-windows, build-linux, linux-smoke]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
 
