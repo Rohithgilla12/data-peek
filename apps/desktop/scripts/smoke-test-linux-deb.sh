@@ -6,9 +6,9 @@
 # Ubuntu 24.04+ blocks unprivileged user namespaces through AppArmor unless the
 # binary has a profile allowing them. Without one, Electron's sandbox can't
 # start and the app aborts on launch (issue #297). The e2e suite never caught
-# this: it runs Electron from node_modules, and CI runners ship with the
-# restriction turned off. So this script turns it on, installs the real
-# package, and launches the installed binary as a normal user.
+# this because it runs Electron from node_modules, never the installed package.
+# So this script installs the real package, makes sure the restriction is on,
+# and launches the installed binary as a normal user.
 #
 # Needs sudo, AppArmor, and xvfb-run (Ubuntu runners have all three).
 set -euo pipefail
@@ -59,8 +59,9 @@ status=$?
 set -e
 
 # A healthy app is still running when timeout stops it (exit 124). Anything
-# else means it exited or crashed on its own.
-if grep -qE 'SUID sandbox helper|setuid_sandbox_host|FATAL:' "$log" || [ "$status" -ne 124 ]; then
+# else means it exited or crashed on its own. Only sandbox failures count:
+# Electron also logs a FATAL "Failed to shutdown" when timeout kills it.
+if grep -qE 'SUID sandbox helper|setuid_sandbox_host|No usable sandbox|zygote_host' "$log" || [ "$status" -ne 124 ]; then
   echo "--- app output (exit $status) ---"
   cat "$log"
   fail "the installed app did not stay up under the user-namespace restriction"

@@ -1,9 +1,9 @@
 name: Linux package
 
 # Builds the .deb and launches the installed app on Ubuntu with the
-# user-namespace restriction turned on, the way Ubuntu 24.04+ ships. The e2e
-# suite runs Electron from node_modules on a runner with the restriction off,
-# so it could not catch a package that crashes on a stock Ubuntu (issue #297).
+# user-namespace restriction on, the way Ubuntu 24.04+ ships. The e2e suite
+# runs Electron from node_modules, never the installed package, so it could not
+# catch a package that crashes on a stock Ubuntu (issue #297).
 on:
   pull_request:
     branches: [main]
@@ -58,34 +58,3 @@ jobs:
 
       - name: Smoke test the .deb
         run: apps/desktop/scripts/smoke-test-linux-deb.sh apps/desktop/dist/data-peek-*-amd64.deb
-
-  # Temporary, removed before merge: proves the launch check fails on the
-  # broken v0.31.0 package, so a pass above means something.
-  negative-control:
-    name: v0.31.0 .deb must crash (negative control)
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - name: Install v0.31.0 and xvfb
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release download v0.31.0 --repo "${{ github.repository }}" -p '*-amd64.deb' -D old
-          sudo apt-get update -q && sudo apt-get install -y -q xvfb
-          sudo apt-get install -y --no-install-recommends "$(realpath old/data-peek-0.31.0-amd64.deb)"
-
-      - name: Launch under the restriction and expect a crash
-        run: |
-          echo "restriction was $(cat /proc/sys/kernel/apparmor_restrict_unprivileged_userns)"
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=1
-          set +e
-          timeout 25 xvfb-run --auto-servernum "/opt/Data Peek/data-peek" --user-data-dir="$(mktemp -d)" > log 2>&1
-          status=$?
-          set -e
-          cat log
-          echo "exit status: $status"
-          if [ "$status" -eq 124 ] && ! grep -qE 'SUID sandbox helper|FATAL:' log; then
-            echo "::error::v0.31.0 stayed up, so this runner does not reproduce #297"
-            exit 1
-          fi
-          echo "v0.31.0 crashed as expected"
