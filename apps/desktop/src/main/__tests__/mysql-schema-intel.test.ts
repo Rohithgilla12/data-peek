@@ -42,8 +42,15 @@ function connection(server: Server): { conn: mysql.Connection; asked: string[] }
   return { conn: conn as unknown as mysql.Connection, asked }
 }
 
-function unused(table: string, index: string, columns: string): Row {
-  return { schema_name: 'shop', table_name: table, index_name: index, columns }
+/** `fkColumns` is what a foreign key can match: '' for a prefix or expression part. */
+function unused(table: string, index: string, columns: string, fkColumns = columns): Row {
+  return {
+    schema_name: 'shop',
+    table_name: table,
+    index_name: index,
+    columns,
+    fk_columns: fkColumns
+  }
 }
 
 function foreignKey(table: string, columns: string, parent: string, parentColumns: string): Row {
@@ -142,6 +149,46 @@ describe('MySQL unused_indexes', () => {
     expect(report.findings.map((f) => f.entity?.name)).toEqual(['idx_sku_order', 'idx_order'])
   })
 
+  it('leaves out an index that starts the columns a foreign key points at', async () => {
+    // InnoDB ends every secondary index with the clustered key, so (code)
+    // serves a key that references (code, id), and MySQL refuses to drop it.
+    const { conn } = connection({
+      sysView: [unused('codes', 'idx_code', 'code'), unused('codes', 'idx_other', 'other')],
+      foreignKeys: [foreignKey('code_uses', 'code,code_id', 'codes', 'code,id')]
+    })
+
+    const report = await runMysqlSchemaIntel(conn, 'shop', ['unused_indexes'])
+
+    expect(report.findings.map((f) => f.entity?.name)).toEqual(['idx_other'])
+  })
+
+  it('does not extend that to the table the foreign key is declared on', async () => {
+    // There MySQL builds its own index over every column of the key.
+    const { conn } = connection({
+      sysView: [unused('code_uses', 'idx_code', 'code')],
+      foreignKeys: [foreignKey('code_uses', 'code,code_id', 'codes', 'code,id')]
+    })
+
+    const report = await runMysqlSchemaIntel(conn, 'shop', ['unused_indexes'])
+
+    expect(report.findings.map((f) => f.entity?.name)).toEqual(['idx_code'])
+  })
+
+  it('reports a prefix index on a foreign key column', async () => {
+    // A prefix part cannot serve a foreign key, so MySQL keeps another index
+    // for it and this one can go.
+    const { conn } = connection({
+      sysView: [unused('taggings', 'idx_label_prefix', 'label', '')],
+      foreignKeys: [foreignKey('taggings', 'label', 'tags', 'label')]
+    })
+
+    const report = await runMysqlSchemaIntel(conn, 'shop', ['unused_indexes'])
+
+    expect(report.findings.map((f) => [f.entity?.name, f.metadata?.columns])).toEqual([
+      ['idx_label_prefix', ['label']]
+    ])
+  })
+
   it('is not put off by a foreign key on another table', async () => {
     const { conn } = connection({
       sysView: [unused('orders', 'idx_customer', 'customer_id')],
@@ -174,7 +221,7 @@ describe('MySQL unused_indexes', () => {
     // MySQL lists an expression part with no column name, and such an index
     // cannot serve a foreign key on the column after it.
     const { conn } = connection({
-      sysView: [unused('orders', 'idx_expr', ',customer_id')],
+      sysView: [unused('orders', 'idx_expr', ',customer_id', ',customer_id')],
       foreignKeys: [foreignKey('orders', 'customer_id', 'customers', 'id')]
     })
 
@@ -326,6 +373,59 @@ describe.skipIf(!url)('MySQL unused_indexes on a real server', () => {
         ['idx_expr', ['customer_id']]
       ])
       await conn.query(notes[0].suggestedSql as string)
+    } finally {
+      await conn.query(dropBoth)
+      await conn.end()
+    }
+  })
+
+  it('keeps what a foreign key leans on and what the counters cannot see', async () => {
+    const conn = await seeded()
+    try {
+      // MySQL 8.4 refuses a foreign key to a non-unique index unless told
+      // otherwise; MariaDB has no such switch.
+      await conn.query('SET SESSION restrict_fk_on_non_standard_key = OFF').catch(() => {})
+      await conn.query(`
+        CREATE TABLE codes (
+          id INT NOT NULL,
+          code VARCHAR(20) NOT NULL,
+          PRIMARY KEY (id),
+          KEY idx_code (code)
+        );
+        CREATE TABLE code_uses (
+          id INT PRIMARY KEY,
+          code VARCHAR(20),
+          code_id INT,
+          CONSTRAINT fk_code_uses FOREIGN KEY (code, code_id) REFERENCES codes (code, id)
+        );
+        CREATE TABLE tags (id INT PRIMARY KEY, label VARCHAR(100), KEY idx_label (label));
+        CREATE TABLE taggings (
+          id INT PRIMARY KEY,
+          label VARCHAR(100),
+          KEY idx_label_prefix (label(10)),
+          CONSTRAINT fk_taggings FOREIGN KEY (label) REFERENCES tags (label)
+        );
+        CREATE TABLE docs (id INT PRIMARY KEY, body TEXT, FULLTEXT KEY ft_body (body));
+        INSERT INTO docs VALUES (1, 'hello world'), (2, 'unused index check'), (3, 'a third row');
+        SELECT COUNT(*) FROM docs WHERE MATCH (body) AGAINST ('hello');
+      `)
+      // (code) serves the key to (code, id) through the primary key InnoDB
+      // appends, so the server will not let it go.
+      await expect(conn.query('ALTER TABLE codes DROP INDEX idx_code')).rejects.toThrow(
+        /needed in a foreign key constraint/
+      )
+
+      const report = await runMysqlSchemaIntel(conn, database, ['unused_indexes'])
+
+      // Of these tables' six plain indexes only the prefix one is reported:
+      // not the two a key points at, not the two MySQL built for the keys, and
+      // not the full-text index, whose reads performance_schema never counts.
+      const mine = ['codes', 'code_uses', 'tags', 'taggings', 'docs']
+      const reported = report.findings.filter((f) => mine.includes(String(f.metadata?.table)))
+      expect(reported.map((f) => `${f.metadata?.table}.${f.entity?.name}`)).toEqual([
+        'taggings.idx_label_prefix'
+      ])
+      await conn.query(reported[0].suggestedSql as string)
     } finally {
       await conn.query(dropBoth)
       await conn.end()
