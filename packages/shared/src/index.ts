@@ -2737,7 +2737,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Foreign key columns without a supporting index force sequential scans during joins and deletes on the parent table.",
     severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql", "sqlite"],
+    supportedDbTypes: ["postgresql", "mysql", "mssql", "sqlite"],
   },
   {
     id: "duplicate_indexes",
@@ -2785,7 +2785,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Foreign key columns that allow NULL can silently orphan rows. Decide whether NULL is really allowed.",
     severity: "info",
-    supportedDbTypes: ["postgresql", "mysql", "sqlite"],
+    supportedDbTypes: ["postgresql", "mysql", "mssql", "sqlite"],
   },
 ];
 
