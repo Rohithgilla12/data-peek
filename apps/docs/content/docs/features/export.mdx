@@ -1,12 +1,12 @@
 ---
 title: Export
-description: Export query results to CSV, JSON, and SQL formats
+description: Export query results to CSV, JSON, SQL, and Markdown formats
 ---
 
 # Export
 
-Export your query results to CSV, JSON, or SQL for use in other applications. You can download
-the export as a file or copy the generated content directly to your clipboard.
+Export your query results to CSV, JSON, SQL, or Markdown for use in other applications. You can
+download the export as a file or copy the generated content directly to your clipboard.
 
 ## Export Formats
 
@@ -34,6 +34,14 @@ SQL INSERT statements, compatible with:
 - Seed files
 - Moving selected result data between environments
 
+### Markdown
+
+GitHub Flavored Markdown tables, compatible with:
+
+- Pull request and issue descriptions
+- Documentation and README files
+- Notes, wikis, and chat apps that render Markdown tables
+
 ## Exporting Results
 
 1. Run your query
@@ -42,6 +50,7 @@ SQL INSERT statements, compatible with:
    - **CSV**
    - **JSON**
    - **SQL**
+   - **Markdown**
 4. Choose **Download file** or **Copy to clipboard**
 
 ## File Naming
@@ -51,6 +60,7 @@ Files are named with timestamp:
 - `query_result_2024-01-15T14-30-45.csv`
 - `query_result_2024-01-15T14-30-45.json`
 - `query_result_2024-01-15T14-30-45.sql`
+- `query_result_2024-01-15T14-30-45.md`
 
 For table previews:
 
@@ -118,6 +128,24 @@ INSERT INTO users (id, name, email) VALUES (2, 'Jane Smith', 'jane@example.com')
 - INSERT statements with escaped identifiers
 - SQL NULL values for missing data
 - Dialect-aware value formatting where connection context is available
+
+## Markdown Format
+
+### Structure
+
+```markdown
+| id | name  | email             |
+| --- | --- | --- |
+| 1  | John Doe | john@example.com |
+| 2  | Jane Smith | jane@example.com |
+```
+
+### Features
+
+- GitHub Flavored Markdown table with header and separator rows
+- Pipes (`|`) escaped as `\|` so cell content cannot break the table
+- Newlines in cells replaced with a space
+- NULL values as empty cells
 
 ## Tips
 

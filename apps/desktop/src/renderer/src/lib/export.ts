@@ -1,4 +1,4 @@
-// Export utilities for CSV, JSON, SQL, and Excel formats
+// Export utilities for CSV, JSON, SQL, Markdown, and Excel formats
 
 export { escapeSQLValue, escapeSQLIdentifier, isSQLKeyword } from '@shared/sql-escape'
 export type { SQLDialect } from '@shared/sql-escape'
@@ -6,7 +6,7 @@ export type { SQLDialect } from '@shared/sql-escape'
 import { escapeSQLIdentifier, escapeSQLValue } from '@shared/sql-escape'
 import type { SQLDialect } from '@shared/sql-escape'
 
-export type ExportFormat = 'csv' | 'json' | 'sql'
+export type ExportFormat = 'csv' | 'json' | 'sql' | 'markdown'
 export type ExportDestination = 'download' | 'clipboard'
 
 export interface ExportOptions {
@@ -50,6 +50,36 @@ export function exportToJSON(data: ExportData, pretty: boolean = true): string {
     return obj
   })
   return pretty ? JSON.stringify(jsonData, null, 2) : JSON.stringify(jsonData)
+}
+
+export interface MarkdownExportOptions {
+  /** Text rendered for NULL cells. Defaults to an empty string. */
+  nullValue?: string
+}
+
+function escapeMarkdownValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
+
+  return stringValue.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ')
+}
+
+export function exportToMarkdown(data: ExportData, options?: MarkdownExportOptions): string {
+  const nullValue = options?.nullValue ?? ''
+  const headers = data.columns.map((col) => escapeMarkdownValue(col.name)).join(' | ')
+  const separator = data.columns.map(() => '---').join(' | ')
+  const rows = data.rows.map((row) =>
+    data.columns
+      .map((col) => {
+        const cell = row[col.name]
+        return cell === null || cell === undefined ? nullValue : escapeMarkdownValue(cell)
+      })
+      .join(' | ')
+  )
+  return [`| ${headers} |`, `| ${separator} |`, ...rows.map((row) => `| ${row} |`)].join('\n')
 }
 
 export interface SQLExportOptions {
@@ -134,6 +164,8 @@ export function serializeExport(
       return exportToJSON(data)
     case 'sql':
       return exportToSQL(data, options ?? { tableName: 'query_result' })
+    case 'markdown':
+      return exportToMarkdown(data)
   }
 }
 
@@ -155,7 +187,12 @@ export function maskExportData(data: ExportData, maskedColumns: Set<string>): Ex
 }
 
 function getExportExtension(format: ExportFormat): string {
-  return format
+  switch (format) {
+    case 'markdown':
+      return 'md'
+    default:
+      return format
+  }
 }
 
 function getExportMimeType(format: ExportFormat): string {
@@ -166,6 +203,8 @@ function getExportMimeType(format: ExportFormat): string {
       return 'application/json'
     case 'sql':
       return 'text/sql'
+    case 'markdown':
+      return 'text/markdown'
   }
 }
 

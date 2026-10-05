@@ -6,6 +6,7 @@ import {
   isSQLKeyword,
   exportToCSV,
   exportToJSON,
+  exportToMarkdown,
   exportToSQL,
   serializeExport,
   maskExportData,
@@ -383,6 +384,130 @@ describe('exportToJSON', () => {
   })
 })
 
+describe('exportToMarkdown', () => {
+  it('should render header and separator rows', () => {
+    const data: ExportData = {
+      columns: [
+        { name: 'id', dataType: 'integer' },
+        { name: 'name', dataType: 'varchar' }
+      ],
+      rows: [
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' }
+      ]
+    }
+
+    const md = exportToMarkdown(data)
+    expect(md).toBe('| id | name |\n| --- | --- |\n| 1 | Alice |\n| 2 | Bob |')
+  })
+
+  it('should render an empty table when there are no rows', () => {
+    const data: ExportData = {
+      columns: [{ name: 'id', dataType: 'integer' }],
+      rows: []
+    }
+
+    const md = exportToMarkdown(data)
+    expect(md).toBe('| id |\n| --- |')
+  })
+
+  it('should escape pipes in cell values', () => {
+    const data: ExportData = {
+      columns: [{ name: 'value', dataType: 'varchar' }],
+      rows: [{ value: 'a | b' }]
+    }
+
+    const md = exportToMarkdown(data)
+    expect(md).toBe('| value |\n| --- |\n| a \\| b |')
+  })
+
+  it('should escape pipes in header names', () => {
+    const data: ExportData = {
+      columns: [{ name: 'a|b', dataType: 'varchar' }],
+      rows: [{ 'a|b': 'x' }]
+    }
+
+    const md = exportToMarkdown(data)
+    expect(md).toBe('| a\\|b |\n| --- |\n| x |')
+  })
+
+  it('should replace newlines in cells with a space', () => {
+    const data: ExportData = {
+      columns: [{ name: 'notes', dataType: 'text' }],
+      rows: [{ notes: 'line one\nline two' }]
+    }
+
+    const md = exportToMarkdown(data)
+    expect(md).toBe('| notes |\n| --- |\n| line one line two |')
+  })
+
+  it('should replace carriage return + newline in cells with a space', () => {
+    const data: ExportData = {
+      columns: [{ name: 'notes', dataType: 'text' }],
+      rows: [{ notes: 'line one\r\nline two' }]
+    }
+
+    const md = exportToMarkdown(data)
+    expect(md).toBe('| notes |\n| --- |\n| line one line two |')
+  })
+
+  it('should render null values as empty cells by default', () => {
+    const data: ExportData = {
+      columns: [
+        { name: 'id', dataType: 'integer' },
+        { name: 'name', dataType: 'varchar' }
+      ],
+      rows: [{ id: 1, name: null }]
+    }
+
+    const md = exportToMarkdown(data)
+    expect(md).toBe('| id | name |\n| --- | --- |\n| 1 |  |')
+  })
+
+  it('should render null values as NULL when nullValue is set', () => {
+    const data: ExportData = {
+      columns: [
+        { name: 'id', dataType: 'integer' },
+        { name: 'name', dataType: 'varchar' }
+      ],
+      rows: [{ id: 1, name: null }]
+    }
+
+    const md = exportToMarkdown(data, { nullValue: 'NULL' })
+    expect(md).toBe('| id | name |\n| --- | --- |\n| 1 | NULL |')
+  })
+
+  it('should render undefined values using nullValue', () => {
+    const data: ExportData = {
+      columns: [{ name: 'id', dataType: 'integer' }],
+      rows: [{}]
+    }
+
+    const md = exportToMarkdown(data, { nullValue: 'NULL' })
+    expect(md).toBe('| id |\n| --- |\n| NULL |')
+  })
+
+  it('should serialize objects to JSON in cells', () => {
+    const data: ExportData = {
+      columns: [{ name: 'payload', dataType: 'json' }],
+      rows: [{ payload: { a: 1 } }]
+    }
+
+    const md = exportToMarkdown(data)
+    expect(md).toBe('| payload |\n| --- |\n| {"a":1} |')
+  })
+
+  it('should only include columns in output', () => {
+    const data: ExportData = {
+      columns: [{ name: 'id', dataType: 'integer' }],
+      rows: [{ id: 1, extra: 'ignored' }]
+    }
+
+    const md = exportToMarkdown(data)
+    expect(md).toBe('| id |\n| --- |\n| 1 |')
+  })
+})
+
 describe('exportToSQL', () => {
   const sampleData: ExportData = {
     columns: [
@@ -519,6 +644,10 @@ describe('serializeExport', () => {
 
     expect(sql).toContain('INSERT INTO query_result (id, name)')
   })
+
+  it('should serialize Markdown exports', () => {
+    expect(serializeExport(data, 'markdown')).toBe('| id | name |\n| --- | --- |\n| 1 | Alice |')
+  })
 })
 
 describe('maskExportData', () => {
@@ -537,6 +666,9 @@ describe('maskExportData', () => {
     expect(JSON.parse(serializeExport(masked, 'json'))).toEqual([{ id: 1, secret: '[MASKED]' }])
     expect(serializeExport(masked, 'sql', { tableName: 'users' })).toContain(
       "VALUES (1, '[MASKED]');"
+    )
+    expect(serializeExport(masked, 'markdown')).toBe(
+      '| id | secret |\n| --- | --- |\n| 1 | [MASKED] |'
     )
   })
 

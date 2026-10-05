@@ -1,4 +1,12 @@
-import { Copy, Download, FileCode2, FileJson, FileSpreadsheet, type LucideIcon } from 'lucide-react'
+import {
+  Copy,
+  Download,
+  FileCode2,
+  FileJson,
+  FileSpreadsheet,
+  FileText,
+  type LucideIcon
+} from 'lucide-react'
 import {
   DropdownMenuItem,
   DropdownMenuSub,
@@ -14,7 +22,8 @@ const exportFormats: Array<{
 }> = [
   { format: 'csv', label: 'CSV', Icon: FileSpreadsheet },
   { format: 'json', label: 'JSON', Icon: FileJson },
-  { format: 'sql', label: 'SQL', Icon: FileCode2 }
+  { format: 'sql', label: 'SQL', Icon: FileCode2 },
+  { format: 'markdown', label: 'Markdown', Icon: FileText }
 ]
 
 interface ExportMenuItemsProps {
