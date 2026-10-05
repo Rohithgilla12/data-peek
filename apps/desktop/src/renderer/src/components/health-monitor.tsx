@@ -77,6 +77,12 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
   const connections = useConnectionStore((s) => s.connections)
   const connection = connections.find((c) => c.id === tab?.connectionId)
 
+  // SQLite is embedded and in-process: there is no server process to introspect, so
+  // the adapter's active-query, lock and cache methods throw. Those panels render a
+  // quiet empty state instead of the error text the store carries back. Table Sizes
+  // is unaffected — the adapter computes it from the database file itself.
+  const isEmbedded = connection?.dbType === 'sqlite'
+
   const activeQueries = useHealthStore((s) => s.activeQueries)
   const tableSizes = useHealthStore((s) => s.tableSizes)
   const dbSize = useHealthStore((s) => s.dbSize)
@@ -191,7 +197,9 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               <CardTitle className="flex items-center justify-between text-sm">
                 Active Queries
                 <div className="flex items-center gap-1">
-                  {isLoading.activeQueries && <Loader2 className="size-3 animate-spin" />}
+                  {!isEmbedded && isLoading.activeQueries && (
+                    <Loader2 className="size-3 animate-spin" />
+                  )}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -211,7 +219,11 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
-              {errors.activeQueries ? (
+              {isEmbedded ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">
+                  SQLite has no server process, so there are no active queries to show
+                </p>
+              ) : errors.activeQueries ? (
                 <p className="text-xs text-destructive">{errors.activeQueries}</p>
               ) : activeQueries.length === 0 ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">No active queries</p>
@@ -379,7 +391,9 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               <CardTitle className="flex items-center justify-between text-sm">
                 Cache Hit Ratios
                 <div className="flex items-center gap-1">
-                  {isLoading.cacheStats && <Loader2 className="size-3 animate-spin" />}
+                  {!isEmbedded && isLoading.cacheStats && (
+                    <Loader2 className="size-3 animate-spin" />
+                  )}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -399,7 +413,11 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto px-3 pb-3">
-              {errors.cacheStats ? (
+              {isEmbedded ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">
+                  SQLite has no server process, so there is no cache to report
+                </p>
+              ) : errors.cacheStats ? (
                 <p className="text-xs text-destructive">{errors.cacheStats}</p>
               ) : !cacheStats ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">Loading...</p>
@@ -463,7 +481,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               <CardTitle className="flex items-center justify-between text-sm">
                 Locks &amp; Blocking
                 <div className="flex items-center gap-1">
-                  {isLoading.locks && <Loader2 className="size-3 animate-spin" />}
+                  {!isEmbedded && isLoading.locks && <Loader2 className="size-3 animate-spin" />}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -483,7 +501,11 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
-              {errors.locks ? (
+              {isEmbedded ? (
+                <p className="py-4 text-center text-xs text-muted-foreground">
+                  SQLite has no server process, so there are no locks to show
+                </p>
+              ) : errors.locks ? (
                 <p className="text-xs text-destructive">{errors.locks}</p>
               ) : locks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 py-8">
