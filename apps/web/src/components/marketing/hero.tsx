@@ -21,12 +21,12 @@ export function Hero() {
                 className="inline-block h-1.5 w-1.5 rounded-full"
                 style={{ background: "var(--n-accent)" }}
               />
-              v0.30 — Doctor is in: schema checks from the terminal
+              v0.31 — Built by the community: Schema Intel on SQLite
               <span aria-hidden className="text-[var(--n-fg-faint)]">
                 →
               </span>
               <Link
-                href="https://github.com/Rohithgilla12/data-peek/releases/tag/v0.30.0"
+                href="https://github.com/Rohithgilla12/data-peek/releases/tag/v0.31.0"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--n-fg-muted)] hover:text-[var(--n-fg)]"
