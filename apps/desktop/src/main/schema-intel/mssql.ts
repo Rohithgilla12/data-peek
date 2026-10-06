@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type sql from 'mssql'
 import type { SchemaIntelCheckId, SchemaIntelFinding, SchemaIntelReport } from '@shared/index'
 
@@ -58,21 +59,56 @@ async function checkTablesWithoutPk(pool: sql.ConnectionPool): Promise<SchemaInt
 }
 
 /**
- * The FK's columns, in constraint order, as one comma-separated string. FOR XML
- * PATH keeps the order deterministic on every supported SQL Server version
- * (STRING_AGG only accepts ORDER BY from 2022 on).
+ * The FK's columns, in constraint order, as a JSON array of `{"name": ...}`.
+ *
+ * A comma-separated string is ambiguous: SQL Server allows a comma inside an
+ * identifier, so `[a,b]` cannot be told apart from the two columns `a` and `b`.
+ * `FOR XML PATH` keeps the order deterministic on every supported version
+ * (STRING_AGG only accepts ORDER BY from 2022 on) and `FOR JSON PATH` gives an
+ * unambiguous payload.
  */
 function columnList(objectIdAlias: string, filter = ''): string {
-  return `STUFF((
-      SELECT ',' + c.name
+  return `(
+      SELECT c.name AS name
       FROM sys.foreign_key_columns fkc
       JOIN sys.columns c
         ON c.object_id = fkc.parent_object_id AND c.column_id = fkc.parent_column_id
       WHERE fkc.constraint_object_id = ${objectIdAlias}.object_id
         ${filter}
       ORDER BY fkc.constraint_column_id
-      FOR XML PATH(''), TYPE
-    ).value('.', 'nvarchar(max)'), 1, 1, '')`
+      FOR JSON PATH
+    )`
+}
+
+/** Parses the payload from {@link columnList}; tolerant of NULL, empty and junk. */
+export function parseFkColumns(raw: unknown): string[] {
+  if (typeof raw !== 'string' || raw === '') return []
+  try {
+    const parsed: unknown = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .map((entry) => String((entry as { name?: unknown } | undefined)?.name ?? ''))
+      .filter(Boolean)
+  } catch {
+    return []
+  }
+}
+
+/**
+ * A deterministic name for the suggested index.
+ *
+ * Naively truncating a long name makes different (table, column) combinations
+ * collide, so the DDL a user copy-pastes can clash with an index that already
+ * exists. The digest keeps the name unique while staying a comfortable length.
+ */
+export function suggestIndexName(table: string, cols: string[]): string {
+  const base = `idx_${table}_${cols.join('_')}`
+  if (base.length <= 60) return base
+  const digest = createHash('sha1')
+    .update(`${table}\u0000${cols.join('\u0000')}`)
+    .digest('hex')
+    .slice(0, 8)
+  return `${base.slice(0, 51)}_${digest}`
 }
 
 async function checkMissingFkIndexes(pool: sql.ConnectionPool): Promise<SchemaIntelFinding[]> {
@@ -87,7 +123,7 @@ async function checkMissingFkIndexes(pool: sql.ConnectionPool): Promise<SchemaIn
       s.name AS schema_name,
       t.name AS table_name,
       fk.name AS constraint_name,
-      ${columnList('fk')} AS columns
+      ${columnList('fk')} AS columns_json
     FROM sys.foreign_keys fk
     JOIN sys.tables t ON t.object_id = fk.parent_object_id
     JOIN sys.schemas s ON s.schema_id = t.schema_id
@@ -115,13 +151,16 @@ async function checkMissingFkIndexes(pool: sql.ConnectionPool): Promise<SchemaIn
     ORDER BY s.name, t.name, fk.name
     `
   )
+  return toMissingFkIndexFindings(rows)
+}
+
+/** Shapes the query's rows into findings. Exported so the shaping is testable. */
+export function toMissingFkIndexFindings(rows: Row[]): SchemaIntelFinding[] {
   return rows.map((row) => {
     const s = String(row.schema_name)
     const t = String(row.table_name)
-    const cols = String(row.columns ?? '')
-      .split(',')
-      .filter(Boolean)
-    const idxName = `idx_${t}_${cols.join('_')}`.slice(0, 60)
+    const cols = parseFkColumns(row.columns_json)
+    const idxName = suggestIndexName(t, cols)
     return {
       checkId: 'missing_fk_indexes',
       severity: 'warning',
@@ -145,7 +184,7 @@ async function checkNullableFks(pool: sql.ConnectionPool): Promise<SchemaIntelFi
       s.name AS schema_name,
       t.name AS table_name,
       fk.name AS constraint_name,
-      ${columnList('fk', 'AND c.is_nullable = 1')} AS columns
+      ${columnList('fk', 'AND c.is_nullable = 1')} AS columns_json
     FROM sys.foreign_keys fk
     JOIN sys.tables t ON t.object_id = fk.parent_object_id
     JOIN sys.schemas s ON s.schema_id = t.schema_id
@@ -160,12 +199,15 @@ async function checkNullableFks(pool: sql.ConnectionPool): Promise<SchemaIntelFi
     ORDER BY s.name, t.name, fk.name
     `
   )
+  return toNullableFkFindings(rows)
+}
+
+/** Shapes the query's rows into findings. Exported so the shaping is testable. */
+export function toNullableFkFindings(rows: Row[]): SchemaIntelFinding[] {
   return rows.map((row) => {
     const s = String(row.schema_name)
     const t = String(row.table_name)
-    const cols = String(row.columns ?? '')
-      .split(',')
-      .filter(Boolean)
+    const cols = parseFkColumns(row.columns_json)
     return {
       checkId: 'nullable_fks',
       severity: 'info',

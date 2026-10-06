@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import type sql from 'mssql'
 import { SCHEMA_INTEL_CHECKS } from '@shared/index'
-import { runMssqlSchemaIntel } from '../schema-intel/mssql'
+import {
+  parseFkColumns,
+  runMssqlSchemaIntel,
+  suggestIndexName,
+  toMissingFkIndexFindings
+} from '../schema-intel/mssql'
 
 type Row = Record<string, unknown>
 
@@ -31,8 +36,13 @@ function fakePool(server: Server): { pool: sql.ConnectionPool; asked: string[] }
   return { pool: pool as unknown as sql.ConnectionPool, asked }
 }
 
+/** The `columns_json` payload the query produces (see columnList in mssql.ts). */
+function cols(...names: string[]): string {
+  return JSON.stringify(names.map((name) => ({ name })))
+}
+
 function fk(table: string, constraint: string, columns: string): Row {
-  return { schema_name: 'dbo', table_name: table, constraint_name: constraint, columns }
+  return { schema_name: 'dbo', table_name: table, constraint_name: constraint, columns_json: columns }
 }
 
 describe('SQL Server missing_fk_indexes', () => {
@@ -40,14 +50,16 @@ describe('SQL Server missing_fk_indexes', () => {
     const check = SCHEMA_INTEL_CHECKS.find((c) => c.id === 'missing_fk_indexes')
     expect(check?.supportedDbTypes).toContain('mssql')
 
-    const { pool } = fakePool({ fkIndexes: [fk('orders', 'fk_orders_user', 'user_id')] })
+    const { pool } = fakePool({ fkIndexes: [fk('orders', 'fk_orders_user', cols('user_id'))] })
     const report = await runMssqlSchemaIntel(pool)
 
     expect(report.findings.map((f) => f.checkId)).toContain('missing_fk_indexes')
   })
 
   it('reports a foreign key with no index leading with its columns', async () => {
-    const { pool, asked } = fakePool({ fkIndexes: [fk('orders', 'fk_orders_user', 'user_id')] })
+    const { pool, asked } = fakePool({
+      fkIndexes: [fk('orders', 'fk_orders_user', cols('user_id'))]
+    })
 
     const report = await runMssqlSchemaIntel(pool, ['missing_fk_indexes'])
 
@@ -68,7 +80,7 @@ describe('SQL Server missing_fk_indexes', () => {
 
   it('keeps every column of a composite foreign key', async () => {
     const { pool } = fakePool({
-      fkIndexes: [fk('orders', 'fk_orders_tenant_user', 'tenant_id,user_id')]
+      fkIndexes: [fk('orders', 'fk_orders_tenant_user', cols('tenant_id', 'user_id'))]
     })
 
     const report = await runMssqlSchemaIntel(pool, ['missing_fk_indexes'])
@@ -82,7 +94,7 @@ describe('SQL Server missing_fk_indexes', () => {
   })
 
   it('quotes a bracket in a name', async () => {
-    const { pool } = fakePool({ fkIndexes: [fk('order]items', 'fk', 'user_id')] })
+    const { pool } = fakePool({ fkIndexes: [fk('order]items', 'fk', cols('user_id'))] })
 
     const report = await runMssqlSchemaIntel(pool, ['missing_fk_indexes'])
 
@@ -97,14 +109,14 @@ describe('SQL Server nullable_fks', () => {
     const check = SCHEMA_INTEL_CHECKS.find((c) => c.id === 'nullable_fks')
     expect(check?.supportedDbTypes).toContain('mssql')
 
-    const { pool } = fakePool({ nullableFks: [fk('orders', 'fk_orders_user', 'user_id')] })
+    const { pool } = fakePool({ nullableFks: [fk('orders', 'fk_orders_user', cols('user_id'))] })
     const report = await runMssqlSchemaIntel(pool)
 
     expect(report.findings.map((f) => f.checkId)).toContain('nullable_fks')
   })
 
   it('reports a foreign key column that allows NULL', async () => {
-    const { pool } = fakePool({ nullableFks: [fk('orders', 'fk_orders_user', 'user_id')] })
+    const { pool } = fakePool({ nullableFks: [fk('orders', 'fk_orders_user', cols('user_id'))] })
 
     const report = await runMssqlSchemaIntel(pool, ['nullable_fks'])
 
@@ -130,6 +142,53 @@ describe('SQL Server skipped checks', () => {
 
     expect(report.findings).toEqual([])
     expect(report.skipped).toEqual([{ checkId: 'missing_fk_indexes', reason: denied.message }])
+  })
+})
+
+describe('SQL Server FK column parsing', () => {
+  it('parses the JSON payload the query produces', () => {
+    expect(parseFkColumns(cols('a', 'b'))).toEqual(['a', 'b'])
+  })
+
+  it('keeps a comma inside a column name intact', () => {
+    // The old comma-joined payload turned this single column into two.
+    expect(parseFkColumns(cols('a,b'))).toEqual(['a,b'])
+    expect(toMissingFkIndexFindings([fk('t', 'fk_t', cols('a,b'))])[0].suggestedSql).toBe(
+      'CREATE INDEX [idx_t_a,b] ON [dbo].[t] ([a,b]);'
+    )
+  })
+
+  it('is tolerant of NULL, empty and junk payloads', () => {
+    expect(parseFkColumns(null)).toEqual([])
+    expect(parseFkColumns(undefined)).toEqual([])
+    expect(parseFkColumns('')).toEqual([])
+    expect(parseFkColumns('not json')).toEqual([])
+    expect(parseFkColumns('{"name":"a"}')).toEqual([])
+    expect(parseFkColumns('[{"other":1},{"name":"a"}]')).toEqual(['a'])
+  })
+
+  it('drops a foreign key whose column list came back empty', () => {
+    // An unreadable payload must not yield a `CREATE INDEX ()` suggestion.
+    const [finding] = toMissingFkIndexFindings([fk('orders', 'fk_orders_x', '')])
+    expect(finding.suggestedSql).toBeUndefined()
+  })
+})
+
+describe('SQL Server suggested index names', () => {
+  it('keeps a short name readable', () => {
+    expect(suggestIndexName('orders', ['tenant_id', 'user_id'])).toBe(
+      'idx_orders_tenant_id_user_id'
+    )
+  })
+
+  it('does not collide when a long name has to be truncated', () => {
+    const long = (suffix: string) => 'c'.repeat(60) + suffix
+    const a = suggestIndexName('t', [long('1'), long('2')])
+    const b = suggestIndexName('t', [long('1'), long('3')])
+
+    expect(a).not.toBe(b)
+    expect(a.length).toBeLessThanOrEqual(60)
+    expect(b.length).toBeLessThanOrEqual(60)
   })
 })
 
