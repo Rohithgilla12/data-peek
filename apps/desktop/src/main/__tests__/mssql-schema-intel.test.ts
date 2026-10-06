@@ -42,7 +42,12 @@ function cols(...names: string[]): string {
 }
 
 function fk(table: string, constraint: string, columns: string): Row {
-  return { schema_name: 'dbo', table_name: table, constraint_name: constraint, columns_json: columns }
+  return {
+    schema_name: 'dbo',
+    table_name: table,
+    constraint_name: constraint,
+    columns_json: columns
+  }
 }
 
 describe('SQL Server missing_fk_indexes', () => {
@@ -204,5 +209,19 @@ describe('SQL Server tables_without_pk', () => {
     expect(report.findings[0].suggestedSql).toBe(
       '-- Review and pick a unique column before running:\n-- ALTER TABLE [dbo].[audit] ADD id BIGINT IDENTITY(1,1) PRIMARY KEY;'
     )
+  })
+
+  it('keeps a line break in a table name from ending the comment', async () => {
+    const { pool } = fakePool({
+      tablesWithoutPk: [
+        { schema_name: 'dbo', table_name: 'audit\nDROP TABLE users;--', estimated_rows: 1 }
+      ]
+    })
+
+    const report = await runMssqlSchemaIntel(pool, ['tables_without_pk'])
+
+    // The injected statement must not become executable SQL in the suggestion.
+    const suggested = report.findings[0].suggestedSql ?? ''
+    expect(suggested.split('\n').every((line) => line.startsWith('-- '))).toBe(true)
   })
 })

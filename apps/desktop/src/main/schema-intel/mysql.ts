@@ -1,5 +1,11 @@
 import type mysql from 'mysql2/promise'
 import type { SchemaIntelCheckId, SchemaIntelFinding, SchemaIntelReport } from '@shared/index'
+import { commentedSql, parseAggList } from '@shared/schema-intel/sql-safety'
+
+// Every GROUP_CONCAT below passes `SEPARATOR CHAR(31)` so its payload can be
+// split back apart unambiguously: a MySQL identifier may contain a comma
+// (`` `region,code` ``), so the default separator cannot reconstruct the list.
+// CHAR(31) is what `AGG_SEPARATOR` in `@shared/schema-intel/sql-safety` holds.
 
 const DEFAULT_MYSQL_CHECKS: SchemaIntelCheckId[] = [
   'tables_without_pk',
@@ -67,7 +73,10 @@ async function checkTablesWithoutPk(
         estimatedRows: Number(row.estimated_rows ?? 0),
         totalSizeBytes: Number(row.total_size_bytes ?? 0)
       },
-      suggestedSql: `-- Review and pick a unique column before running:\n-- ALTER TABLE ${qualified(s, t)} ADD COLUMN id BIGINT AUTO_INCREMENT PRIMARY KEY;`
+      suggestedSql: commentedSql([
+        'Review and pick a unique column before running:',
+        `ALTER TABLE ${qualified(s, t)} ADD COLUMN id BIGINT AUTO_INCREMENT PRIMARY KEY;`
+      ])
     } satisfies SchemaIntelFinding
   })
 }
@@ -138,12 +147,12 @@ async function checkDuplicateIndexes(
       TABLE_SCHEMA AS schema_name,
       TABLE_NAME   AS table_name,
       cols,
-      GROUP_CONCAT(INDEX_NAME ORDER BY INDEX_NAME) AS index_names,
+      GROUP_CONCAT(INDEX_NAME ORDER BY INDEX_NAME SEPARATOR CHAR(31)) AS index_names,
       COUNT(*) AS dup_count
     FROM (
       SELECT
         TABLE_SCHEMA, TABLE_NAME, INDEX_NAME,
-        GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS cols
+        GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR CHAR(31)) AS cols
       FROM information_schema.STATISTICS
       WHERE TABLE_SCHEMA = ?
       GROUP BY TABLE_SCHEMA, TABLE_NAME, INDEX_NAME
@@ -156,9 +165,7 @@ async function checkDuplicateIndexes(
   return rows.map((row) => {
     const s = String(row.schema_name)
     const t = String(row.table_name)
-    const names = String(row.index_names ?? '')
-      .split(',')
-      .filter(Boolean)
+    const names = parseAggList(row.index_names)
     const [kept, ...duplicates] = names
     return {
       checkId: 'duplicate_indexes',
@@ -185,7 +192,7 @@ async function checkNullableFks(
       kcu.TABLE_SCHEMA AS schema_name,
       kcu.TABLE_NAME   AS table_name,
       kcu.CONSTRAINT_NAME AS constraint_name,
-      GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION) AS columns
+      GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR CHAR(31)) AS columns
     FROM information_schema.KEY_COLUMN_USAGE kcu
     JOIN information_schema.COLUMNS c
       ON c.TABLE_SCHEMA = kcu.TABLE_SCHEMA
@@ -201,9 +208,7 @@ async function checkNullableFks(
   return rows.map((row) => {
     const s = String(row.schema_name)
     const t = String(row.table_name)
-    const cols = String(row.columns ?? '')
-      .split(',')
-      .filter(Boolean)
+    const cols = parseAggList(row.columns)
     return {
       checkId: 'nullable_fks',
       severity: 'info',
@@ -217,9 +222,7 @@ async function checkNullableFks(
 }
 
 function names(list: unknown): string[] {
-  return String(list ?? '')
-    .split(',')
-    .filter(Boolean)
+  return parseAggList(list)
 }
 
 /** Whether `columns` are the first columns of `index`, in order. */
@@ -241,9 +244,9 @@ function unusedIndexesSql(source: string, schema: string, table: string, index: 
       u.${schema} AS schema_name,
       u.${table}  AS table_name,
       u.${index}  AS index_name,
-      GROUP_CONCAT(IFNULL(s.COLUMN_NAME, '') ORDER BY s.SEQ_IN_INDEX) AS columns,
+      GROUP_CONCAT(IFNULL(s.COLUMN_NAME, '') ORDER BY s.SEQ_IN_INDEX SEPARATOR CHAR(31)) AS columns,
       GROUP_CONCAT(
-        IF(s.SUB_PART IS NULL, IFNULL(s.COLUMN_NAME, ''), '') ORDER BY s.SEQ_IN_INDEX
+        IF(s.SUB_PART IS NULL, IFNULL(s.COLUMN_NAME, ''), '') ORDER BY s.SEQ_IN_INDEX SEPARATOR CHAR(31)
       ) AS fk_columns
     FROM ${source} u
     JOIN information_schema.STATISTICS s
@@ -345,10 +348,10 @@ async function checkUnusedIndexes(
     SELECT
       kcu.TABLE_SCHEMA            AS schema_name,
       kcu.TABLE_NAME              AS table_name,
-      GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION) AS columns,
+      GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR CHAR(31)) AS columns,
       kcu.REFERENCED_TABLE_SCHEMA AS referenced_schema_name,
       kcu.REFERENCED_TABLE_NAME   AS referenced_table_name,
-      GROUP_CONCAT(kcu.REFERENCED_COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION) AS referenced_columns
+      GROUP_CONCAT(kcu.REFERENCED_COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR CHAR(31)) AS referenced_columns
     FROM information_schema.KEY_COLUMN_USAGE kcu
     WHERE kcu.REFERENCED_TABLE_NAME IS NOT NULL
       AND (kcu.TABLE_SCHEMA = ? OR kcu.REFERENCED_TABLE_SCHEMA = ?)
@@ -378,7 +381,7 @@ async function checkUnusedIndexes(
     const s = String(row.schema_name)
     const t = String(row.table_name)
     const indexName = String(row.index_name)
-    const keyParts = String(row.fk_columns ?? '').split(',')
+    const keyParts = parseAggList(row.fk_columns, true)
     const serves = (n: (typeof needed)[number]): boolean =>
       leads(keyParts, n.columns) || (n.referenced && leads(n.columns, keyParts))
     if (needed.some((n) => n.schema === s && n.table === t && serves(n))) continue

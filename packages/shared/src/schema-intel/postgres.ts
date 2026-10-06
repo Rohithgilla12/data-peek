@@ -4,6 +4,7 @@ import type {
   SchemaIntelFinding,
   SchemaIntelReport,
 } from "../index";
+import { commentedSql } from "./sql-safety";
 
 /**
  * Default set of checks run when the caller doesn't pass an explicit list.
@@ -73,7 +74,10 @@ async function checkTablesWithoutPk(
         estimatedRows: Number(row.estimated_rows ?? 0),
         totalSizeBytes: Number(row.total_size_bytes ?? 0),
       },
-      suggestedSql: `-- Review and pick a unique column before running:\n-- ALTER TABLE ${qualified(schema, table)} ADD COLUMN id BIGSERIAL PRIMARY KEY;`,
+      suggestedSql: commentedSql([
+        "Review and pick a unique column before running:",
+        `ALTER TABLE ${qualified(schema, table)} ADD COLUMN id BIGSERIAL PRIMARY KEY;`,
+      ]),
     };
   });
 }

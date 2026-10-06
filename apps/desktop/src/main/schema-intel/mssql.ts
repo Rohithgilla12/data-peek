@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import type sql from 'mssql'
 import type { SchemaIntelCheckId, SchemaIntelFinding, SchemaIntelReport } from '@shared/index'
+import { commentedSql } from '@shared/schema-intel/sql-safety'
 
 const DEFAULT_MSSQL_CHECKS: SchemaIntelCheckId[] = [
   'tables_without_pk',
@@ -53,7 +54,10 @@ async function checkTablesWithoutPk(pool: sql.ConnectionPool): Promise<SchemaInt
         'SQL Server can still use a clustered index, but rows without a PK are harder to uniquely identify for edits and replication.',
       entity: { schema: s, name: t, kind: 'table' },
       metadata: { estimatedRows: Number(row.estimated_rows ?? 0) },
-      suggestedSql: `-- Review and pick a unique column before running:\n-- ALTER TABLE ${qualified(s, t)} ADD id BIGINT IDENTITY(1,1) PRIMARY KEY;`
+      suggestedSql: commentedSql([
+        'Review and pick a unique column before running:',
+        `ALTER TABLE ${qualified(s, t)} ADD id BIGINT IDENTITY(1,1) PRIMARY KEY;`
+      ])
     } satisfies SchemaIntelFinding
   })
 }
