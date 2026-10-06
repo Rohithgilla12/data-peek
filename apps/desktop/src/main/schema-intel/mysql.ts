@@ -177,7 +177,7 @@ async function checkDuplicateIndexes(
       title: `${s}.${t} has duplicate index${duplicates.length > 1 ? 'es' : ''}: ${duplicates.join(', ')}`,
       detail: 'Keeping one index is usually enough. Duplicates inflate disk usage and slow writes.',
       entity: { schema: s, name: t, kind: 'table' },
-      metadata: { keptIndex: kept, duplicates, columns: row.cols },
+      metadata: { keptIndex: kept, duplicates, columns: parseAggList(row.cols) },
       suggestedSql: duplicates
         .map((idxName) => `ALTER TABLE ${qualified(s, t)} DROP INDEX ${qid(idxName)};`)
         .join('\n')
