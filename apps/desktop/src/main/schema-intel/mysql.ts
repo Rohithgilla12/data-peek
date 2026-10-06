@@ -2,10 +2,14 @@ import type mysql from 'mysql2/promise'
 import type { SchemaIntelCheckId, SchemaIntelFinding, SchemaIntelReport } from '@shared/index'
 import { commentedSql, parseAggList } from '@shared/schema-intel/sql-safety'
 
-// Every GROUP_CONCAT below passes `SEPARATOR CHAR(31)` so its payload can be
+// Every GROUP_CONCAT below passes `SEPARATOR 0x1F` so its payload can be
 // split back apart unambiguously: a MySQL identifier may contain a comma
 // (`` `region,code` ``), so the default separator cannot reconstruct the list.
-// CHAR(31) is what `AGG_SEPARATOR` in `@shared/schema-intel/sql-safety` holds.
+// `0x1F` is what `AGG_SEPARATOR` in `@shared/schema-intel/sql-safety` holds.
+// The literal form matters: MySQL's `SEPARATOR` clause accepts only a string or
+// a hex literal, so `CHAR(31)` is a syntax error (`ERROR 1064`) — and because a
+// failing catalog query degrades to a skipped check, that error would hide the
+// check rather than surface it.
 
 const DEFAULT_MYSQL_CHECKS: SchemaIntelCheckId[] = [
   'tables_without_pk',
@@ -147,12 +151,12 @@ async function checkDuplicateIndexes(
       TABLE_SCHEMA AS schema_name,
       TABLE_NAME   AS table_name,
       cols,
-      GROUP_CONCAT(INDEX_NAME ORDER BY INDEX_NAME SEPARATOR CHAR(31)) AS index_names,
+      GROUP_CONCAT(INDEX_NAME ORDER BY INDEX_NAME SEPARATOR 0x1F) AS index_names,
       COUNT(*) AS dup_count
     FROM (
       SELECT
         TABLE_SCHEMA, TABLE_NAME, INDEX_NAME,
-        GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR CHAR(31)) AS cols
+        GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX SEPARATOR 0x1F) AS cols
       FROM information_schema.STATISTICS
       WHERE TABLE_SCHEMA = ?
       GROUP BY TABLE_SCHEMA, TABLE_NAME, INDEX_NAME
@@ -192,7 +196,7 @@ async function checkNullableFks(
       kcu.TABLE_SCHEMA AS schema_name,
       kcu.TABLE_NAME   AS table_name,
       kcu.CONSTRAINT_NAME AS constraint_name,
-      GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR CHAR(31)) AS columns
+      GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR 0x1F) AS columns
     FROM information_schema.KEY_COLUMN_USAGE kcu
     JOIN information_schema.COLUMNS c
       ON c.TABLE_SCHEMA = kcu.TABLE_SCHEMA
@@ -244,9 +248,9 @@ function unusedIndexesSql(source: string, schema: string, table: string, index: 
       u.${schema} AS schema_name,
       u.${table}  AS table_name,
       u.${index}  AS index_name,
-      GROUP_CONCAT(IFNULL(s.COLUMN_NAME, '') ORDER BY s.SEQ_IN_INDEX SEPARATOR CHAR(31)) AS columns,
+      GROUP_CONCAT(IFNULL(s.COLUMN_NAME, '') ORDER BY s.SEQ_IN_INDEX SEPARATOR 0x1F) AS columns,
       GROUP_CONCAT(
-        IF(s.SUB_PART IS NULL, IFNULL(s.COLUMN_NAME, ''), '') ORDER BY s.SEQ_IN_INDEX SEPARATOR CHAR(31)
+        IF(s.SUB_PART IS NULL, IFNULL(s.COLUMN_NAME, ''), '') ORDER BY s.SEQ_IN_INDEX SEPARATOR 0x1F
       ) AS fk_columns
     FROM ${source} u
     JOIN information_schema.STATISTICS s
@@ -348,10 +352,10 @@ async function checkUnusedIndexes(
     SELECT
       kcu.TABLE_SCHEMA            AS schema_name,
       kcu.TABLE_NAME              AS table_name,
-      GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR CHAR(31)) AS columns,
+      GROUP_CONCAT(kcu.COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR 0x1F) AS columns,
       kcu.REFERENCED_TABLE_SCHEMA AS referenced_schema_name,
       kcu.REFERENCED_TABLE_NAME   AS referenced_table_name,
-      GROUP_CONCAT(kcu.REFERENCED_COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR CHAR(31)) AS referenced_columns
+      GROUP_CONCAT(kcu.REFERENCED_COLUMN_NAME ORDER BY kcu.ORDINAL_POSITION SEPARATOR 0x1F) AS referenced_columns
     FROM information_schema.KEY_COLUMN_USAGE kcu
     WHERE kcu.REFERENCED_TABLE_NAME IS NOT NULL
       AND (kcu.TABLE_SCHEMA = ? OR kcu.REFERENCED_TABLE_SCHEMA = ?)

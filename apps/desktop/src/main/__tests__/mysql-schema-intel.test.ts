@@ -50,7 +50,7 @@ function connection(server: Server): { conn: mysql.Connection; asked: string[] }
 }
 
 /**
- * Renders a name list the way `GROUP_CONCAT ... SEPARATOR CHAR(31)` does.
+ * Renders a name list the way `GROUP_CONCAT ... SEPARATOR 0x1F` does.
  *
  * The fixtures keep writing `a,b` for readability, where `,` stands for the
  * separator and not for part of a name. A name that really contains a comma is
@@ -669,5 +669,48 @@ describe('MySQL suggested SQL safety', () => {
     const [finding] = report.findings
     expect(finding?.metadata?.columns).toEqual(['region,code'])
     expect(finding?.title).toBe('shop.orders(region,code) is a nullable foreign key')
+  })
+})
+
+describe('MySQL aggregate separator', () => {
+  it('passes a separator literal rather than an expression MySQL rejects', async () => {
+    // `GROUP_CONCAT ... SEPARATOR` accepts only a string or hex literal. An
+    // expression such as `CHAR(31)` is a syntax error (ERROR 1064), and because
+    // a failing catalog query degrades into a skipped check, that mistake would
+    // hide the check rather than fail it — the canned rows below cannot catch it,
+    // since they never reach a server. So drive every check and assert on the SQL
+    // that actually goes out.
+    const checks = [
+      'tables_without_pk',
+      'missing_fk_indexes',
+      'duplicate_indexes',
+      'unused_indexes',
+      'nullable_fks'
+    ] as const
+    const sent: string[] = []
+
+    for (const check of checks) {
+      const { conn, asked } = connection({})
+      try {
+        await runMysqlSchemaIntel(conn, 'shop', [check])
+      } catch {
+        // A check whose follow-up query the canned connection does not answer
+        // still renders its aggregate first; keep whatever reached the server.
+      }
+      sent.push(...asked)
+    }
+
+    const aggregates = sent.filter((sql) => sql.includes('GROUP_CONCAT'))
+    expect(aggregates.length).toBeGreaterThan(0)
+
+    for (const sql of aggregates) {
+      const literals = [...sql.matchAll(/SEPARATOR\s+(\S+?)\)/g)].map(([, literal]) => literal)
+      expect(literals.length).toBeGreaterThan(0)
+      for (const literal of literals) {
+        expect(literal, `SEPARATOR must be a literal, got "${literal}" in: ${sql}`).toMatch(
+          /^(0x[0-9A-Fa-f]+|'[^']*')$/
+        )
+      }
+    }
   })
 })
