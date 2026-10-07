@@ -1,4 +1,5 @@
 import https from 'https'
+import tls from 'tls'
 import { describe, it, expect, vi } from 'vitest'
 import type { ConnectionConfig } from '@shared/index'
 
@@ -332,6 +333,28 @@ describe('toClickHouseClientConfig', () => {
     })
     expect(direct.http_agent).toBeUndefined()
     expect((tunnelledIp.http_agent as https.Agent | undefined)?.options.servername).toBeUndefined()
+  })
+
+  it('checks the certificate against the real host through a tunnel, IP or hostname', () => {
+    const tunnel = { host: '127.0.0.1', port: 54321 }
+    const identityCheck = (
+      host: string
+    ): NonNullable<tls.ConnectionOptions['checkServerIdentity']> => {
+      const cfg = toClickHouseClientConfig(makeConfig({ host, ssl: true }), tunnel)
+      const check = (cfg.http_agent as https.Agent | undefined)?.options.checkServerIdentity
+      expect(check).toBeTypeOf('function')
+      return check!
+    }
+    const cert = (subjectaltname: string): tls.PeerCertificate =>
+      ({ subject: { CN: '' }, subjectaltname }) as unknown as tls.PeerCertificate
+
+    const ipCheck = identityCheck('10.0.0.5')
+    expect(ipCheck('127.0.0.1', cert('IP Address:10.0.0.5'))).toBeUndefined()
+    expect(ipCheck('127.0.0.1', cert('IP Address:10.0.0.6'))).toBeInstanceOf(Error)
+
+    const hostCheck = identityCheck('ch.example.com')
+    expect(hostCheck('127.0.0.1', cert('DNS:ch.example.com'))).toBeUndefined()
+    expect(hostCheck('127.0.0.1', cert('DNS:other.example.com'))).toBeInstanceOf(Error)
   })
 
   it('defaults user and database', () => {

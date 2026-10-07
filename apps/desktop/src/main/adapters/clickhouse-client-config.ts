@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import https from 'https'
 import { isIP } from 'net'
+import tls from 'tls'
 import type { ClickHouseClientConfigOptions } from '@clickhouse/client'
 import type { ConnectionConfig } from '@shared/index'
 
@@ -56,13 +57,22 @@ export function toClickHouseClientConfig(
       }
     }
     const rejectUnauthorized = sslOptions.rejectUnauthorized !== false
-    // Through a tunnel the URL host is 127.0.0.1, so the certificate must be checked against
-    // the real host. SNI cannot carry an IP literal, so an IP host has nothing to pin.
-    const servername = overrides && isIP(config.host) === 0 ? config.host : undefined
-    if (!rejectUnauthorized || servername) {
-      // The client's `tls` option has neither a verification switch nor a servername, so
+    if (!rejectUnauthorized || overrides) {
+      // The client's `tls` option has no verification switch, servername, or identity check, so
       // both cases need a custom agent.
-      options.http_agent = new https.Agent({ rejectUnauthorized, ca, servername, keepAlive: true })
+      options.http_agent = new https.Agent({
+        rejectUnauthorized,
+        ca,
+        keepAlive: true,
+        // Through a tunnel the URL host is 127.0.0.1, so the identity check is pinned to the
+        // real host. SNI cannot carry an IP literal, so it is sent only for a hostname.
+        ...(overrides && isIP(config.host) === 0 && { servername: config.host }),
+        ...(overrides &&
+          rejectUnauthorized && {
+            checkServerIdentity: (_host: string, cert: tls.PeerCertificate) =>
+              tls.checkServerIdentity(config.host, cert)
+          })
+      })
     } else if (ca) {
       options.tls = { ca_cert: ca }
     }
