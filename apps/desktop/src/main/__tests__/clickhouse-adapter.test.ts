@@ -1,3 +1,4 @@
+import https from 'https'
 import { describe, it, expect, vi } from 'vitest'
 import type { ConnectionConfig } from '@shared/index'
 
@@ -290,6 +291,47 @@ describe('toClickHouseClientConfig', () => {
   it('points at the SSH tunnel endpoint when overrides are given', () => {
     const cfg = toClickHouseClientConfig(makeConfig(), { host: '127.0.0.1', port: 54321 })
     expect(cfg.url).toBe('http://127.0.0.1:54321')
+  })
+
+  it('verifies TLS against the real host through a tunnel, with or without a CA', () => {
+    const tunnel = { host: '127.0.0.1', port: 54321 }
+    const withCa = toClickHouseClientConfig(
+      makeConfig({ ssl: true, sslOptions: { ca: '/path/ca.pem' } }),
+      tunnel
+    )
+    const withoutCa = toClickHouseClientConfig(makeConfig({ ssl: true }), tunnel)
+
+    const withCaOptions = (withCa.http_agent as https.Agent | undefined)?.options
+    expect(withCa.url).toBe('https://127.0.0.1:54321')
+    expect(withCaOptions).toMatchObject({ servername: 'ch.example.com', rejectUnauthorized: true })
+    expect(withCaOptions?.ca?.toString()).toBe('CA_CERT_CONTENT')
+    expect((withoutCa.http_agent as https.Agent | undefined)?.options).toMatchObject({
+      servername: 'ch.example.com',
+      rejectUnauthorized: true
+    })
+  })
+
+  it('keeps verification off through a tunnel when the user turned it off', () => {
+    const cfg = toClickHouseClientConfig(
+      makeConfig({ ssl: true, sslOptions: { rejectUnauthorized: false } }),
+      { host: '127.0.0.1', port: 54321 }
+    )
+    expect((cfg.http_agent as https.Agent | undefined)?.options).toMatchObject({
+      servername: 'ch.example.com',
+      rejectUnauthorized: false
+    })
+  })
+
+  it('sets no servername without a tunnel or when the real host is an IP', () => {
+    const direct = toClickHouseClientConfig(
+      makeConfig({ ssl: true, sslOptions: { ca: '/path/ca.pem' } })
+    )
+    const tunnelledIp = toClickHouseClientConfig(makeConfig({ host: '10.0.0.5', ssl: true }), {
+      host: '127.0.0.1',
+      port: 54321
+    })
+    expect(direct.http_agent).toBeUndefined()
+    expect((tunnelledIp.http_agent as https.Agent | undefined)?.options.servername).toBeUndefined()
   })
 
   it('defaults user and database', () => {

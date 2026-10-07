@@ -1,5 +1,6 @@
 import { readFileSync } from 'fs'
 import https from 'https'
+import { isIP } from 'net'
 import type { ClickHouseClientConfigOptions } from '@clickhouse/client'
 import type { ConnectionConfig } from '@shared/index'
 
@@ -54,10 +55,14 @@ export function toClickHouseClientConfig(
         )
       }
     }
-    if (sslOptions.rejectUnauthorized === false) {
-      // The client's `tls` option has no verification switch; a custom agent is the
-      // documented way to accept a self-signed certificate.
-      options.http_agent = new https.Agent({ rejectUnauthorized: false, ca, keepAlive: true })
+    const rejectUnauthorized = sslOptions.rejectUnauthorized !== false
+    // Through a tunnel the URL host is 127.0.0.1, so the certificate must be checked against
+    // the real host. SNI cannot carry an IP literal, so an IP host has nothing to pin.
+    const servername = overrides && isIP(config.host) === 0 ? config.host : undefined
+    if (!rejectUnauthorized || servername) {
+      // The client's `tls` option has neither a verification switch nor a servername, so
+      // both cases need a custom agent.
+      options.http_agent = new https.Agent({ rejectUnauthorized, ca, servername, keepAlive: true })
     } else if (ca) {
       options.tls = { ca_cert: ca }
     }
