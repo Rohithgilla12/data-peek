@@ -47,7 +47,9 @@ test('connection dialog creates a ClickHouse connection', async ({ window }, tes
   await window.getByRole('button', { name: /add connection/i }).click()
   await expect(connectionDialog(window)).toBeVisible({ timeout: 5000 })
 
-  await connectionDialog(window).getByRole('button', { name: 'ClickHouse', exact: true }).click()
+  await connectionDialog(window)
+    .getByRole('button', { name: /^ClickHouse/ })
+    .click()
   await expect(connectionDialog(window).locator('#port')).toHaveValue('8123')
 
   const d = connectionDialog(window)

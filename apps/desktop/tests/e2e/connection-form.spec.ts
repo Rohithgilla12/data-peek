@@ -296,7 +296,9 @@ test('a slow test connection from a dismissed dialog never shows its result', as
 }) => {
   test.setTimeout(60_000)
   await openAddDialog(window)
-  await dialog(window).getByRole('button', { name: 'ClickHouse', exact: true }).click()
+  await dialog(window)
+    .getByRole('button', { name: /^ClickHouse/ })
+    .click()
   // Unroutable address: the connect probe hangs until its 15 s timeout.
   await dialog(window).locator('#host').fill('10.255.255.1')
   await dialog(window).getByRole('button', { name: 'Test Connection' }).click()

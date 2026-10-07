@@ -21,12 +21,12 @@ export function Hero() {
                 className="inline-block h-1.5 w-1.5 rounded-full"
                 style={{ background: "var(--n-accent)" }}
               />
-              v0.31 — Built by the community: Schema Intel on SQLite
+              v0.33 — ClickHouse support, now in beta
               <span aria-hidden className="text-[var(--n-fg-faint)]">
                 →
               </span>
               <Link
-                href="https://github.com/Rohithgilla12/data-peek/releases/tag/v0.31.0"
+                href="https://github.com/Rohithgilla12/data-peek/releases/tag/v0.33.0"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-[var(--n-fg-muted)] hover:text-[var(--n-fg)]"
@@ -50,7 +50,7 @@ export function Hero() {
 
             <p className="mt-6 max-w-[56ch] text-[15px] leading-[1.65] text-[var(--n-fg-muted)]">
               Connect, query, and edit data across Postgres, MySQL, SQL Server,
-              and SQLite, and query ClickHouse too. Inline edits, AI assist
+              and SQLite, and query ClickHouse (beta). Inline edits, AI assist
               with your own key, and a command palette that knows every action.
             </p>
 

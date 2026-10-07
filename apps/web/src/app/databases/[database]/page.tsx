@@ -84,7 +84,7 @@ const DATABASES = {
   clickhouse: {
     name: "ClickHouse",
     description:
-      "Query and explore ClickHouse over its HTTP interface. Multi-statement scripts, exact 64-bit results, and a schema browser that knows views from materialized views.",
+      "Beta. Query and explore ClickHouse over its HTTP interface. Multi-statement scripts, exact 64-bit results, and a schema browser that knows views from materialized views.",
     features: [
       "HTTP interface, with SSL and SSH tunnels",
       "Multi-statement scripts that keep SET for the whole run",

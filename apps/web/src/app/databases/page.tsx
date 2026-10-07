@@ -53,7 +53,7 @@ const databases = [
     slug: "clickhouse",
     name: "ClickHouse",
     description:
-      "Query and browse ClickHouse over HTTP. Multi-statement scripts, exact 64-bit results, and text EXPLAIN plans.",
+      "Beta. Query and browse ClickHouse over HTTP. Multi-statement scripts, exact 64-bit results, and text EXPLAIN plans.",
     icon: "📊",
     color: "#ffcc01",
     href: "/databases/clickhouse",

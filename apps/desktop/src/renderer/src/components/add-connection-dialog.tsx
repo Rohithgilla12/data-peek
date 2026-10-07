@@ -41,12 +41,12 @@ interface AddConnectionDialogProps {
 
 type InputMode = 'manual' | 'connection-string'
 
-const DB_TYPE_OPTIONS: { type: DatabaseType; Icon: typeof PostgreSQLIcon }[] = [
+const DB_TYPE_OPTIONS: { type: DatabaseType; Icon: typeof PostgreSQLIcon; beta?: true }[] = [
   { type: 'postgresql', Icon: PostgreSQLIcon },
   { type: 'mysql', Icon: MySQLIcon },
   { type: 'mssql', Icon: MSSQLIcon },
   { type: 'sqlite', Icon: SQLiteIcon },
-  { type: 'clickhouse', Icon: ClickHouseIcon }
+  { type: 'clickhouse', Icon: ClickHouseIcon, beta: true }
 ]
 
 export function AddConnectionDialog({
@@ -514,7 +514,7 @@ export function AddConnectionDialog({
             aria-label="Database type"
             className="flex flex-col gap-0.5 border-r bg-muted/30 p-2"
           >
-            {DB_TYPE_OPTIONS.map(({ type, Icon }) => (
+            {DB_TYPE_OPTIONS.map(({ type, Icon, beta }) => (
               <button
                 key={type}
                 type="button"
@@ -528,6 +528,11 @@ export function AddConnectionDialog({
               >
                 <Icon className="size-4 shrink-0" />
                 {DB_TYPE_LABELS[type]}
+                {beta && (
+                  <span className="ml-auto rounded border px-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                    Beta
+                  </span>
+                )}
               </button>
             ))}
           </nav>

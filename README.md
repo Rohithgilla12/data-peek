@@ -5,7 +5,7 @@
 <h1 align="center">data-peek</h1>
 
 <p align="center">
-  A fast, keyboard-first SQL client for PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse.<br />
+  A fast, keyboard-first SQL client for PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse (beta).<br />
   Open it, run the query, get the answer, get back to work.
 </p>
 
@@ -146,7 +146,7 @@ More clips (command palette, ER diagrams, the AI assistant, inline editing) are 
 
 ### Connections and security
 
-- PostgreSQL, MySQL, Microsoft SQL Server, SQLite, and ClickHouse. ClickHouse connections are for querying and browsing, so inline editing and the table designer stay off for them.
+- PostgreSQL, MySQL, Microsoft SQL Server, SQLite, and ClickHouse. ClickHouse support is in beta and covers querying and browsing, so inline editing and the table designer stay off for ClickHouse connections.
 - SSH tunnels through bastion hosts, using a password or a key
 - Credentials encrypted with the OS keychain, and no telemetry
 - An optional tamper-evident audit log of every statement you run. It stays local.
