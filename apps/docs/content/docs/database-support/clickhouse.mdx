@@ -94,6 +94,10 @@ Each statement that returns rows gets its own result tab. A `SET` does not carry
 
 data-peek formats results itself. If a query ends with a `FORMAT` clause, such as `FORMAT CSV`, data-peek refuses it and asks you to remove the clause. To save results to a file, use [Export](/docs/features/export).
 
+## Autocomplete
+
+The editor suggests common ClickHouse functions, such as `uniqExact`, `toStartOfInterval`, and `arrayJoin`, and ClickHouse types, such as `UInt64`, `LowCardinality`, and `DateTime64`. Most ClickHouse function and type names are case-sensitive, so suggestions are inserted with ClickHouse's own casing.
+
 ## Types
 
 - `Int64`, `UInt64`, and `Decimal` values display exactly as the server returns them. data-peek never rounds them through JavaScript numbers, and these columns still sort numerically.
