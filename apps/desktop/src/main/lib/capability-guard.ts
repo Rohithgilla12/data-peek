@@ -2,7 +2,6 @@ import {
   CapabilityError,
   hasCapability,
   type Capability,
-  type ConnectionConfig,
   type DatabaseType,
   type DbTypesWith
 } from '@shared/index'
@@ -12,15 +11,10 @@ import {
  * whose capability cell is true, which is the key type the dialect builders accept, so
  * a handler that forgets the guard fails to type-check against the builder.
  */
-export function requireCapability<C extends Capability>(
-  config: ConnectionConfig,
+export function requireCapability<T extends { dbType?: DatabaseType }, C extends Capability>(
+  config: T,
   cap: C
-): asserts config is ConnectionConfig & { dbType: DbTypesWith<C> } {
+): asserts config is T & { dbType: DbTypesWith<C> } {
   const dbType = config.dbType || 'postgresql'
   if (!hasCapability(dbType, cap)) throw new CapabilityError(dbType, cap)
-}
-
-/** For adapter bodies: `throw unsupported('clickhouse', 'transactions')`. Same message. */
-export function unsupported(dbType: DatabaseType, cap: Capability): CapabilityError {
-  return new CapabilityError(dbType, cap)
 }

@@ -1,5 +1,11 @@
 import { ipcMain } from 'electron'
-import type { ConnectionConfig, TableDefinition, AlterTableBatch, DDLResult } from '@shared/index'
+import type {
+  ConnectionConfig,
+  DatabaseType,
+  TableDefinition,
+  AlterTableBatch,
+  DDLResult
+} from '@shared/index'
 import { getAdapter } from '../db-adapter'
 import {
   buildCreateTable,
@@ -282,9 +288,9 @@ export function registerDDLHandlers(): void {
   // Preview DDL without executing
   ipcMain.handle(
     'db:preview-ddl',
-    (_, { definition, dbType }: { definition: TableDefinition; dbType?: string }) => {
+    (_, { definition, dbType }: { definition: TableDefinition; dbType?: DatabaseType }) => {
       try {
-        const target = { dbType: dbType || 'postgresql' } as ConnectionConfig
+        const target = { dbType: dbType || 'postgresql' }
         requireCapability(target, 'tableDesigner')
         const sql = buildPreviewDDL(definition, target.dbType)
         return { success: true, data: sql }

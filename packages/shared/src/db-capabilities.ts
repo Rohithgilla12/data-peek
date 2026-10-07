@@ -166,13 +166,6 @@ export function hasCapability<C extends Capability>(
   return dbType !== undefined && DB_CAPABILITIES[dbType][cap];
 }
 
-export function capabilityErrorMessage(
-  dbType: DatabaseType,
-  cap: Capability,
-): string {
-  return `${CAPABILITY_LABELS[cap]} is not available for ${DB_TYPE_LABELS[dbType]} connections.`;
-}
-
 /** Thrown by main (IPC guard and adapter backstops). */
 export class CapabilityError extends Error {
   readonly code = "CAPABILITY_UNAVAILABLE" as const;
@@ -180,7 +173,9 @@ export class CapabilityError extends Error {
     readonly dbType: DatabaseType,
     readonly capability: Capability,
   ) {
-    super(capabilityErrorMessage(dbType, capability));
+    super(
+      `${CAPABILITY_LABELS[capability]} is not available for ${DB_TYPE_LABELS[dbType]} connections.`,
+    );
     this.name = "CapabilityError";
   }
 }

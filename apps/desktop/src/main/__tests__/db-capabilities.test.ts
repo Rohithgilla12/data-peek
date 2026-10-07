@@ -17,7 +17,7 @@ vi.mock('../lib/logger', () => ({
 }))
 
 import { getAdapterByType } from '../db-adapter'
-import { requireCapability, unsupported } from '../lib/capability-guard'
+import { requireCapability } from '../lib/capability-guard'
 
 const DB_TYPES = Object.keys(DB_CAPABILITIES) as DatabaseType[]
 const CAPABILITIES = Object.keys(CAPABILITY_LABELS) as Capability[]
@@ -75,17 +75,5 @@ describe('requireCapability', () => {
 
   it('defaults a missing dbType to postgresql', () => {
     expect(() => requireCapability({} as ConnectionConfig, 'pgDump')).not.toThrow()
-  })
-
-  it('adapter backstops produce the same message as the guard', () => {
-    const fromGuard = (() => {
-      try {
-        requireCapability(config('sqlite'), 'killQuery')
-      } catch (error) {
-        return (error as Error).message
-      }
-      return ''
-    })()
-    expect(unsupported('sqlite', 'killQuery').message).toBe(fromGuard)
   })
 })

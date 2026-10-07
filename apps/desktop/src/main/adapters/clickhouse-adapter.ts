@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import { ClickHouseError, type ClickHouseClient } from '@clickhouse/client'
 import {
+  CapabilityError,
   SCHEMA_INTEL_CHECKS,
   type ActiveQuery,
   type CacheStats,
@@ -25,7 +26,6 @@ import type {
   ExplainResult,
   QueryOptions
 } from '../db-adapter'
-import { unsupported } from '../lib/capability-guard'
 import { splitStatements } from '../lib/sql-parser'
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
@@ -105,7 +105,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     sql: string,
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult> {
-    if (options?.sessionId) throw unsupported('clickhouse', 'transactions')
+    if (options?.sessionId) throw new CapabilityError('clickhouse', 'transactions')
 
     const collectTelemetry = options?.collectTelemetry ?? false
     const executionId = options?.executionId ?? randomUUID()
@@ -264,7 +264,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     sql: string,
     params: unknown[]
   ): Promise<{ rowCount: number | null }> {
-    if (params.length > 0) throw unsupported('clickhouse', 'inlineEdit')
+    if (params.length > 0) throw new CapabilityError('clickhouse', 'inlineEdit')
     return withClickHouseClient(config, async (client) => {
       try {
         const res = await client.command({ query: sql, clickhouse_settings: WAIT_END })
@@ -276,7 +276,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   }
 
   async executeTransaction(): Promise<never> {
-    throw unsupported('clickhouse', 'transactions')
+    throw new CapabilityError('clickhouse', 'transactions')
   }
 
   async getSchemas(config: ConnectionConfig): Promise<SchemaInfo[]> {
@@ -350,11 +350,11 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   }
 
   async getColumnStats(): Promise<ColumnStats> {
-    throw unsupported('clickhouse', 'columnStats')
+    throw new CapabilityError('clickhouse', 'columnStats')
   }
 
   async getActiveQueries(): Promise<ActiveQuery[]> {
-    throw unsupported('clickhouse', 'healthActiveQueries')
+    throw new CapabilityError('clickhouse', 'healthActiveQueries')
   }
 
   /** Active parts from system.parts, per table; `schema` narrows to one database. */
@@ -380,15 +380,15 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   }
 
   async getCacheStats(): Promise<CacheStats> {
-    throw unsupported('clickhouse', 'healthCacheStats')
+    throw new CapabilityError('clickhouse', 'healthCacheStats')
   }
 
   async getLocks(): Promise<LockInfo[]> {
-    throw unsupported('clickhouse', 'healthLocks')
+    throw new CapabilityError('clickhouse', 'healthLocks')
   }
 
   async killQuery(): Promise<{ success: boolean; error?: string }> {
-    throw unsupported('clickhouse', 'killQuery')
+    throw new CapabilityError('clickhouse', 'killQuery')
   }
 
   /** No check supports ClickHouse: every requested check is reported as skipped. */
@@ -397,7 +397,6 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     checks?: SchemaIntelCheckId[]
   ): Promise<SchemaIntelReport> {
     const requested = checks && checks.length > 0 ? checks : SCHEMA_INTEL_CHECKS.map((c) => c.id)
-    const now = Date.now()
     return {
       findings: [],
       skipped: requested.map((checkId) => ({
@@ -405,7 +404,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
         reason: 'Schema Intel is not available for ClickHouse connections.'
       })),
       durationMs: 0,
-      ranAt: now
+      ranAt: Date.now()
     }
   }
 

@@ -84,9 +84,6 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
   // is unaffected — the adapter computes it from the database file itself.
   const isEmbedded = connection?.dbType === 'sqlite'
   const can = useCapabilities(connection?.dbType)
-  const noActiveQueries = !can.healthActiveQueries
-  const noCacheStats = !can.healthCacheStats
-  const noLocks = !can.healthLocks
 
   const activeQueries = useHealthStore((s) => s.activeQueries)
   const tableSizes = useHealthStore((s) => s.tableSizes)
@@ -202,10 +199,10 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               <CardTitle className="flex items-center justify-between text-sm">
                 Active Queries
                 <div className="flex items-center gap-1">
-                  {!noActiveQueries && isLoading.activeQueries && (
+                  {can.healthActiveQueries && isLoading.activeQueries && (
                     <Loader2 className="size-3 animate-spin" />
                   )}
-                  {!noActiveQueries && (
+                  {can.healthActiveQueries && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -226,7 +223,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
-              {noActiveQueries ? (
+              {!can.healthActiveQueries ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">
                   {isEmbedded
                     ? 'SQLite has no server process, so there are no active queries to show'
@@ -400,10 +397,10 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               <CardTitle className="flex items-center justify-between text-sm">
                 Cache Hit Ratios
                 <div className="flex items-center gap-1">
-                  {!noCacheStats && isLoading.cacheStats && (
+                  {can.healthCacheStats && isLoading.cacheStats && (
                     <Loader2 className="size-3 animate-spin" />
                   )}
-                  {!noCacheStats && (
+                  {can.healthCacheStats && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -424,7 +421,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto px-3 pb-3">
-              {noCacheStats ? (
+              {!can.healthCacheStats ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">
                   {isEmbedded
                     ? 'SQLite has no server process, so there is no cache to report'
@@ -494,8 +491,10 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               <CardTitle className="flex items-center justify-between text-sm">
                 Locks &amp; Blocking
                 <div className="flex items-center gap-1">
-                  {!noLocks && isLoading.locks && <Loader2 className="size-3 animate-spin" />}
-                  {!noLocks && (
+                  {can.healthLocks && isLoading.locks && (
+                    <Loader2 className="size-3 animate-spin" />
+                  )}
+                  {can.healthLocks && (
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -516,7 +515,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex-1 overflow-auto p-0 px-3 pb-3">
-              {noLocks ? (
+              {!can.healthLocks ? (
                 <p className="py-4 text-center text-xs text-muted-foreground">
                   {isEmbedded
                     ? 'SQLite has no server process, so there are no locks to show'

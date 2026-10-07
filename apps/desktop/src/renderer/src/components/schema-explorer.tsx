@@ -130,8 +130,6 @@ interface TriggerActions {
   supportsEnableDisable: boolean
 }
 
-// Number of detail rows shown when a trigger is expanded (kept in sync with
-// TriggerSubItem so the virtualizer can estimate row height accurately).
 /** The per-table "..." menu, shared by the plain and virtualized schema lists. */
 function TableActionsMenu({
   can,
@@ -190,6 +188,8 @@ function TableActionsMenu({
   )
 }
 
+// Number of detail rows shown when a trigger is expanded (kept in sync with
+// TriggerSubItem so the virtualizer can estimate row height accurately).
 function triggerDetailCount(trigger: TriggerInfo): number {
   let count = 3 // table, timing, level (orientation)
   if (trigger.functionName) count += 1
@@ -332,6 +332,7 @@ interface VirtualizedSchemaItemsProps {
   onToggleRoutine: (routineKey: string) => void
   onToggleTrigger: (triggerKey: string) => void
   triggerActions: TriggerActions
+  can: CapabilityRow
   onTableClick: (schemaName: string, table: TableInfo) => void
   onEditTable: (schemaName: string, tableName: string) => void
   onExportTable: (
@@ -360,6 +361,7 @@ function VirtualizedSchemaItems({
   onToggleRoutine,
   onToggleTrigger,
   triggerActions,
+  can,
   onTableClick,
   onEditTable,
   onExportTable,
@@ -368,9 +370,6 @@ function VirtualizedSchemaItems({
   onExecuteRoutine
 }: VirtualizedSchemaItemsProps) {
   const parentRef = React.useRef<HTMLDivElement>(null)
-  const can = useCapabilities(
-    useConnectionStore((s) => s.connections.find((c) => c.id === s.activeConnectionId)?.dbType)
-  )
 
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -1500,6 +1499,7 @@ export function SchemaExplorer() {
                             onToggleRoutine={toggleRoutine}
                             onToggleTrigger={toggleTrigger}
                             triggerActions={triggerActions}
+                            can={can}
                             onTableClick={handleTableClick}
                             onEditTable={handleEditTable}
                             onExportTable={handleExportTable}

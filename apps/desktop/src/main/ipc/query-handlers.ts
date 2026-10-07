@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron'
 import type {
   ConnectionConfig,
+  DatabaseType,
   EditBatch,
   EditResult,
   QueryTelemetry,
@@ -412,9 +413,9 @@ export function registerQueryHandlers(): void {
   // Preview SQL for edit operations (without executing)
   ipcMain.handle(
     'db:preview-sql',
-    (_, { batch, dbType }: { batch: EditBatch; dbType?: string }) => {
+    (_, { batch, dbType }: { batch: EditBatch; dbType?: DatabaseType }) => {
       try {
-        const target = { dbType: dbType || 'postgresql' } as ConnectionConfig
+        const target = { dbType: dbType || 'postgresql' }
         requireCapability(target, 'inlineEdit')
         const previews = batch.operations.map((op) => ({
           operationId: op.id,

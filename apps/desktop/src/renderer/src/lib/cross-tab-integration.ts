@@ -155,7 +155,6 @@ export function resolveForRun(sql: string, ctx: ResolveForRunContext): ResolveFo
       summary: { refCount: 0, rowsInlined: 0, bytesAdded: 0, references: [] }
     }
   }
-  const dbType = ctx.dbType
   // Include the current tab's name so a self-reference (@self) is still parsed
   // as a cross-tab ref on mysql/mssql and reaches the resolver's circular check,
   // rather than being mistaken for a bare @variable and passed through.
@@ -177,7 +176,7 @@ export function resolveForRun(sql: string, ctx: ResolveForRunContext): ResolveFo
   const resolved = resolveReferences(sql, parsed, {
     lookup,
     currentTabId: ctx.currentTabId,
-    dialect: toSQLDialect(dbType)
+    dialect: toSQLDialect(ctx.dbType)
   })
   if (!resolved.ok) return { ok: false, error: resolved.error }
 
