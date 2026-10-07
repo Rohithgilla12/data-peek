@@ -71,6 +71,14 @@ const DIALECTS: Record<DatabaseType, DialectConfig> = {
     backslashEscape: false,
     hashLineComment: false,
     bracketIdentifiers: true
+  },
+  clickhouse: {
+    dollarQuotes: false,
+    nestedBlockComments: true,
+    backtickIdentifiers: true,
+    backslashEscape: true,
+    hashLineComment: true,
+    bracketIdentifiers: false
   }
 }
 

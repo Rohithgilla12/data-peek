@@ -4,14 +4,16 @@ export const DB_DEFAULTS: Record<DatabaseType, { port: string; user: string; dat
   postgresql: { port: '5432', user: 'postgres', database: 'postgres' },
   mysql: { port: '3306', user: 'root', database: '' },
   sqlite: { port: '', user: '', database: '' },
-  mssql: { port: '1433', user: 'sa', database: '' }
+  mssql: { port: '1433', user: 'sa', database: '' },
+  clickhouse: { port: '8123', user: 'default', database: 'default' }
 }
 
 export const DB_PROTOCOLS: Record<DatabaseType, string[]> = {
   postgresql: ['postgres', 'postgresql'],
   mysql: ['mysql'],
   sqlite: [],
-  mssql: ['mssql', 'sqlserver']
+  mssql: ['mssql', 'sqlserver'],
+  clickhouse: ['clickhouse', 'clickhouses']
 }
 
 export interface ParsedConnectionConfig {
@@ -251,8 +253,13 @@ export function parseConnectionString(
     const password = decodeURIComponent(url.password || '')
 
     // Check for SSL in query params
-    const sslParam = url.searchParams.get('sslmode') || url.searchParams.get('ssl')
-    const ssl = sslParam ? !['disable', 'false', '0'].includes(sslParam.toLowerCase()) : false
+    const sslParam =
+      url.searchParams.get('sslmode') ||
+      url.searchParams.get('ssl') ||
+      url.searchParams.get('secure')
+    const ssl =
+      protocol === 'clickhouses' ||
+      (sslParam ? !['disable', 'false', '0'].includes(sslParam.toLowerCase()) : false)
 
     // MySQL has no schema-vs-database distinction and SQLite has no schemas at all,
     // so the default schema is only meaningful for PostgreSQL.

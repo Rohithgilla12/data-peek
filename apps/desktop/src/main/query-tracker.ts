@@ -15,6 +15,12 @@ export type CancellableHandle =
   | { type: 'mysql'; connection: Connection }
   | { type: 'mssql'; request: MSSQLRequest }
   | { type: 'sqlite' } // SQLite is synchronous and cannot be cancelled mid-query
+  /** Aborts the in-flight HTTP request and issues KILL QUERY for the running statement. */
+  | { type: 'clickhouse'; cancel: () => Promise<void> }
+
+function assertNever(handle: never): never {
+  throw new Error(`Unhandled cancellable handle: ${JSON.stringify(handle)}`)
+}
 
 interface ActiveQuery {
   executionId: string
@@ -92,6 +98,12 @@ export async function cancelQuery(
         log.debug(`SQLite query ${executionId} cannot be cancelled (synchronous API)`)
         break
       }
+      case 'clickhouse': {
+        await query.handle.cancel()
+        break
+      }
+      default:
+        assertNever(query.handle)
     }
 
     activeQueries.delete(executionId)

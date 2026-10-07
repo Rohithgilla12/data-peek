@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { buildQuery, buildBatchQueries, buildPreviewSql, validateOperation } from '../sql-builder'
-import type { RowUpdate, RowInsert, RowDelete, EditContext, DatabaseType } from '@data-peek/shared'
+import type { RowUpdate, RowInsert, RowDelete, EditContext, DbTypesWith } from '@data-peek/shared'
 
 // Test fixtures
 const createContext = (overrides: Partial<EditContext> = {}): EditContext => ({
@@ -567,7 +567,7 @@ describe('validateOperation', () => {
 })
 
 describe('dialect consistency', () => {
-  const dbTypes: DatabaseType[] = ['postgresql', 'mysql', 'sqlite', 'mssql']
+  const dbTypes: DbTypesWith<'inlineEdit'>[] = ['postgresql', 'mysql', 'sqlite', 'mssql']
 
   it('should generate valid SQL for all supported database types', () => {
     const updateOp: RowUpdate = {

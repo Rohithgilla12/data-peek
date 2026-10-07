@@ -258,5 +258,10 @@ would send. Omit (null) if nothing useful comes to mind.
       ? `
 - SQLite specifics: Use double-quotes for identifiers, booleans are 0/1 integers, no RIGHT JOIN (reverse tables with LEFT JOIN), use COALESCE instead of IFNULL for portability`
       : ''
+  }${
+    dbType === 'clickhouse'
+      ? `
+- ClickHouse specifics: quote identifiers with backticks, use count() rather than COUNT(*), bucket time with toStartOfDay()/toStartOfInterval(), never emit UPDATE or DELETE (ClickHouse tables are append-only here), never add a FORMAT clause, LIMIT is fine, there are no foreign keys so join on the matching id columns`
+      : ''
   }`
 }

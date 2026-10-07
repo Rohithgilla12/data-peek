@@ -759,7 +759,12 @@ export interface SSHConfig {
 /**
  * Supported database types
  */
-export type DatabaseType = "postgresql" | "mysql" | "sqlite" | "mssql";
+export type DatabaseType =
+  | "postgresql"
+  | "mysql"
+  | "sqlite"
+  | "mssql"
+  | "clickhouse";
 
 /**
  * Field metadata from query results

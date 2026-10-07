@@ -1,21 +1,26 @@
 import { ipcMain } from 'electron'
-import type { ConnectionConfig } from '@shared/index'
+import type { ConnectionConfig, DatabaseType } from '@shared/index'
 import type { PersistentStore } from '../storage'
 import { windowManager } from '../window-manager'
 import { closePgPool } from '../adapters/pg-pool-manager'
 import { getAdapterByType } from '../db-adapter'
 import { closeMySQLPool } from '../adapters/mysql-pool-manager'
 import { closeMSSQLPool } from '../adapters/mssql-pool-manager'
+import { closeClickHousePool } from '../adapters/clickhouse-pool-manager'
 import { invalidateSchemaCache } from '../schema-cache'
 import { createLogger } from '../lib/logger'
 
 const log = createLogger('connection-handlers')
 
 // Every pooled driver. SQLite opens the file per call and holds nothing to tear down.
-const POOL_CLOSERS: Partial<Record<string, (config: ConnectionConfig) => Promise<void>>> = {
+const POOL_CLOSERS: Record<
+  Exclude<DatabaseType, 'sqlite'>,
+  (config: ConnectionConfig) => Promise<void>
+> = {
   postgresql: closePgPool,
   mysql: closeMySQLPool,
-  mssql: closeMSSQLPool
+  mssql: closeMSSQLPool,
+  clickhouse: closeClickHousePool
 }
 
 // Pool teardown happens after the IPC has already returned success — the connection is
@@ -24,8 +29,8 @@ const POOL_CLOSERS: Partial<Record<string, (config: ConnectionConfig) => Promise
 function teardownConnection(connection: ConnectionConfig): void {
   invalidateSchemaCache(connection)
   const dbType = connection.dbType ?? 'postgresql'
+  if (dbType === 'sqlite') return
   const close = POOL_CLOSERS[dbType]
-  if (!close) return
 
   // Drain this connection's manual transactions before its pool goes, mirroring what
   // quit does globally: a parked session client keeps the pool's teardown pending, so

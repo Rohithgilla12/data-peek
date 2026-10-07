@@ -159,6 +159,7 @@ export function registerDataGenHandlers(): void {
     'db:generate-preview',
     async (_event, connectionConfig: ConnectionConfig, genConfig: DataGenConfig) => {
       try {
+        requireCapability(connectionConfig, 'dataGenerator')
         const adapter = getAdapter(connectionConfig)
         const fkData = new Map<string, unknown[]>()
 

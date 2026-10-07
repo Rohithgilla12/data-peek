@@ -40,6 +40,7 @@ import { cleanup as cleanupPgNotify } from './pg-notification-listener'
 import { closeAllPgPools } from './adapters/pg-pool-manager'
 import { closeAllMySQLPools } from './adapters/mysql-pool-manager'
 import { closeAllMSSQLPools } from './adapters/mssql-pool-manager'
+import { closeAllClickHousePools } from './adapters/clickhouse-pool-manager'
 import { PostgresAdapter } from './adapters/postgres-adapter'
 import { getAdapterByType } from './db-adapter'
 import { StepSessionRegistry } from './step-session'
@@ -355,7 +356,8 @@ app.on('before-quit', (event) => {
       stepSessionRegistry.cleanupAll(),
       drainPgSessions().then(() => closeAllPgPools()),
       closeAllMySQLPools(),
-      closeAllMSSQLPools()
+      closeAllMSSQLPools(),
+      closeAllClickHousePools()
     ]),
     new Promise((resolve) => setTimeout(resolve, 3000))
   ])

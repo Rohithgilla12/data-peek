@@ -48,6 +48,11 @@ export async function runReadOnlyQuery(
   const adapter = getAdapter(config)
   const cap = Math.min(Math.max(1, maxRows), MCP_MAX_ROWS)
 
+  if (adapter.queryReadOnly) {
+    const result = await adapter.queryReadOnly(config, stmt, { timeoutMs: MCP_READ_TIMEOUT_MS })
+    return { ...result, rows: result.rows.slice(0, cap) }
+  }
+
   if (adapter.beginTransaction && adapter.queryInTransaction && adapter.rollbackTransaction) {
     const sessionId = `mcp-ro-${randomUUID()}`
     await adapter.beginTransaction(config, sessionId)

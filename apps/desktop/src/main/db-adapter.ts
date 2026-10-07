@@ -123,6 +123,16 @@ export interface DatabaseAdapter {
     options?: QueryOptions
   ): Promise<AdapterMultiQueryResult>
 
+  /**
+   * Server-enforced read-only execution, when the engine has a cheaper mechanism than a
+   * READ ONLY transaction. The MCP read guard prefers it when present.
+   */
+  queryReadOnly?(
+    config: ConnectionConfig,
+    sql: string,
+    options: { timeoutMs: number }
+  ): Promise<AdapterQueryResult>
+
   /** Execute a statement (for INSERT/UPDATE/DELETE in transactions) */
   execute(
     config: ConnectionConfig,
@@ -236,13 +246,15 @@ import { PostgresAdapter } from './adapters/postgres-adapter'
 import { MySQLAdapter } from './adapters/mysql-adapter'
 import { MSSQLAdapter } from './adapters/mssql-adapter'
 import { SQLiteAdapter } from './adapters/sqlite-adapter'
+import { ClickHouseAdapter } from './adapters/clickhouse-adapter'
 
 // Adapter instances (singletons)
 const adapters: Record<DatabaseType, DatabaseAdapter> = {
   postgresql: new PostgresAdapter(),
   mysql: new MySQLAdapter(),
   sqlite: new SQLiteAdapter(),
-  mssql: new MSSQLAdapter()
+  mssql: new MSSQLAdapter(),
+  clickhouse: new ClickHouseAdapter()
 }
 
 /**

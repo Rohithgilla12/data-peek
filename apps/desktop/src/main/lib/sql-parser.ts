@@ -8,6 +8,7 @@
  * - PostgreSQL: dollar-quoted strings, nested block comments
  * - MySQL: backtick identifiers, backslash escapes, # comments
  * - MSSQL: bracket identifiers
+ * - ClickHouse: backtick identifiers, backslash escapes, # comments, nested block comments
  */
 
 import type { DatabaseType } from '@shared/index'
@@ -76,6 +77,15 @@ export const SQL_PARSER_CONFIGS: Record<DatabaseType, SqlParserConfig> = {
     hashLineComment: false,
     bracketIdentifiers: true,
     routineBodyBlocks: true
+  },
+  clickhouse: {
+    dollarQuotes: false,
+    nestedBlockComments: true,
+    backtickIdentifiers: true,
+    backslashEscape: true,
+    hashLineComment: true,
+    bracketIdentifiers: false,
+    routineBodyBlocks: false
   }
 }
 

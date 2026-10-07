@@ -103,6 +103,24 @@ export const DB_CAPABILITIES = {
     healthLocks: false,
     killQuery: false,
   },
+  clickhouse: {
+    inlineEdit: false,
+    tableDesigner: false,
+    csvImport: false,
+    dataGenerator: false,
+    transactions: false,
+    stepThrough: false,
+    notifications: false,
+    pgDump: false,
+    performanceAnalysis: false,
+    columnStats: false,
+    crossTabRefs: false,
+    healthActiveQueries: false,
+    healthTableSizes: true,
+    healthCacheStats: false,
+    healthLocks: false,
+    killQuery: false,
+  },
 } as const satisfies Record<DatabaseType, CapabilityRow>;
 
 /** Database types whose cell for `C` is literally `true`. */
@@ -115,16 +133,16 @@ export const CAPABILITY_LABELS: Readonly<Record<Capability, string>> = {
   tableDesigner: "Table designer",
   csvImport: "CSV import",
   dataGenerator: "Data generator",
-  transactions: "Transactions",
+  transactions: "Transaction support",
   stepThrough: "Step-through execution",
   notifications: "LISTEN/NOTIFY",
   pgDump: "Database export and import",
   performanceAnalysis: "Performance analysis",
-  columnStats: "Column statistics",
-  crossTabRefs: "Cross-tab references",
-  healthActiveQueries: "Active queries",
-  healthTableSizes: "Table sizes",
-  healthCacheStats: "Cache statistics",
+  columnStats: "Column profiling",
+  crossTabRefs: "Cross-tab referencing",
+  healthActiveQueries: "Active query monitoring",
+  healthTableSizes: "Table size monitoring",
+  healthCacheStats: "Cache monitoring",
   healthLocks: "Lock monitoring",
   killQuery: "Kill query",
 };
@@ -134,6 +152,7 @@ export const DB_TYPE_LABELS: Readonly<Record<DatabaseType, string>> = {
   mysql: "MySQL",
   mssql: "SQL Server",
   sqlite: "SQLite",
+  clickhouse: "ClickHouse",
 };
 
 export const NO_CAPABILITIES: CapabilityRow = Object.freeze(
