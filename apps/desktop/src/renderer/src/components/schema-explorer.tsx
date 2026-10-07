@@ -1472,27 +1472,21 @@ export function SchemaExplorer() {
                       if (shouldVirtualize) {
                         // Build unified items list for virtualization
                         const items: SchemaItem[] = [
-                          ...schema.tables.map(
-                            (table): SchemaItem => ({
-                              type: 'table',
-                              data: table,
-                              schemaName: schema.name
-                            })
-                          ),
-                          ...(schema.routines ?? []).map(
-                            (routine): SchemaItem => ({
-                              type: 'routine',
-                              data: routine,
-                              schemaName: schema.name
-                            })
-                          ),
-                          ...(schema.triggers ?? []).map(
-                            (trigger): SchemaItem => ({
-                              type: 'trigger',
-                              data: trigger,
-                              schemaName: schema.name
-                            })
-                          )
+                          ...schema.tables.map((table): SchemaItem => ({
+                            type: 'table',
+                            data: table,
+                            schemaName: schema.name
+                          })),
+                          ...(schema.routines ?? []).map((routine): SchemaItem => ({
+                            type: 'routine',
+                            data: routine,
+                            schemaName: schema.name
+                          })),
+                          ...(schema.triggers ?? []).map((trigger): SchemaItem => ({
+                            type: 'trigger',
+                            data: trigger,
+                            schemaName: schema.name
+                          }))
                         ]
 
                         return (
