@@ -71,7 +71,8 @@ import type {
   TableInfo,
   RoutineInfo,
   TriggerInfo,
-  QueryResult as IpcQueryResult
+  QueryResult as IpcQueryResult,
+  CapabilityRow
 } from '@shared/index'
 import {
   copyExportToClipboard,
@@ -131,6 +132,64 @@ interface TriggerActions {
 
 // Number of detail rows shown when a trigger is expanded (kept in sync with
 // TriggerSubItem so the virtualizer can estimate row height accurately).
+/** The per-table "..." menu, shared by the plain and virtualized schema lists. */
+function TableActionsMenu({
+  can,
+  onView,
+  onEdit,
+  onImportCsv,
+  onGenerateData,
+  onExport
+}: {
+  can: CapabilityRow
+  onView: () => void
+  onEdit: () => void
+  onImportCsv: () => void
+  onGenerateData: () => void
+  onExport: React.ComponentProps<typeof ExportMenuItems>['onSelect']
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-5 p-0 opacity-0 group-hover/table:opacity-100 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="size-3.5" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuItem onClick={onView}>
+          <Table2 className="size-4 mr-2" />
+          View Data
+        </DropdownMenuItem>
+        {can.tableDesigner && (
+          <DropdownMenuItem onClick={onEdit}>
+            <Pencil className="size-4 mr-2" />
+            Edit Table
+          </DropdownMenuItem>
+        )}
+        {can.csvImport && (
+          <DropdownMenuItem onClick={onImportCsv}>
+            <Upload className="size-4 mr-2" />
+            Import CSV
+          </DropdownMenuItem>
+        )}
+        {can.dataGenerator && (
+          <DropdownMenuItem onClick={onGenerateData}>
+            <Shuffle className="size-4 mr-2" />
+            Generate Data
+          </DropdownMenuItem>
+        )}
+        <DropdownMenuSeparator />
+        <ExportMenuItems onSelect={onExport} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 function triggerDetailCount(trigger: TriggerInfo): number {
   let count = 3 // table, timing, level (orientation)
   if (trigger.functionName) count += 1
@@ -426,48 +485,16 @@ function VirtualizedSchemaItems({
                     <Play className="size-3" />
                   </Button>
                   {table.type === 'table' && (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="size-5 p-0 opacity-0 group-hover/table:opacity-100 transition-opacity"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="size-3.5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
-                        <DropdownMenuItem onClick={() => onTableClick(schemaName, table)}>
-                          <Table2 className="size-4 mr-2" />
-                          View Data
-                        </DropdownMenuItem>
-                        {can.tableDesigner && (
-                          <DropdownMenuItem onClick={() => onEditTable(schemaName, table.name)}>
-                            <Pencil className="size-4 mr-2" />
-                            Edit Table
-                          </DropdownMenuItem>
-                        )}
-                        {can.csvImport && (
-                          <DropdownMenuItem onClick={() => onImportCsv(schemaName, table.name)}>
-                            <Upload className="size-4 mr-2" />
-                            Import CSV
-                          </DropdownMenuItem>
-                        )}
-                        {can.dataGenerator && (
-                          <DropdownMenuItem onClick={() => onGenerateData(schemaName, table.name)}>
-                            <Shuffle className="size-4 mr-2" />
-                            Generate Data
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <ExportMenuItems
-                          onSelect={(format, destination) =>
-                            onExportTable(schemaName, table.name, format, destination)
-                          }
-                        />
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <TableActionsMenu
+                      can={can}
+                      onView={() => onTableClick(schemaName, table)}
+                      onEdit={() => onEditTable(schemaName, table.name)}
+                      onImportCsv={() => onImportCsv(schemaName, table.name)}
+                      onGenerateData={() => onGenerateData(schemaName, table.name)}
+                      onExport={(format, destination) =>
+                        onExportTable(schemaName, table.name, format, destination)
+                      }
+                    />
                   )}
                 </div>
                 {isExpanded && (
@@ -1445,21 +1472,27 @@ export function SchemaExplorer() {
                       if (shouldVirtualize) {
                         // Build unified items list for virtualization
                         const items: SchemaItem[] = [
-                          ...schema.tables.map((table): SchemaItem => ({
-                            type: 'table',
-                            data: table,
-                            schemaName: schema.name
-                          })),
-                          ...(schema.routines ?? []).map((routine): SchemaItem => ({
-                            type: 'routine',
-                            data: routine,
-                            schemaName: schema.name
-                          })),
-                          ...(schema.triggers ?? []).map((trigger): SchemaItem => ({
-                            type: 'trigger',
-                            data: trigger,
-                            schemaName: schema.name
-                          }))
+                          ...schema.tables.map(
+                            (table): SchemaItem => ({
+                              type: 'table',
+                              data: table,
+                              schemaName: schema.name
+                            })
+                          ),
+                          ...(schema.routines ?? []).map(
+                            (routine): SchemaItem => ({
+                              type: 'routine',
+                              data: routine,
+                              schemaName: schema.name
+                            })
+                          ),
+                          ...(schema.triggers ?? []).map(
+                            (trigger): SchemaItem => ({
+                              type: 'trigger',
+                              data: trigger,
+                              schemaName: schema.name
+                            })
+                          )
                         ]
 
                         return (
@@ -1561,57 +1594,23 @@ export function SchemaExplorer() {
                                       <Play className="size-3" />
                                     </Button>
                                     {table.type === 'table' && (
-                                      <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="size-5 p-0 opacity-0 group-hover/table:opacity-100 transition-opacity"
-                                            onClick={(e) => e.stopPropagation()}
-                                          >
-                                            <MoreHorizontal className="size-3.5" />
-                                          </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="end" className="w-40">
-                                          <DropdownMenuItem
-                                            onClick={() => handleTableClick(schema.name, table)}
-                                          >
-                                            <Table2 className="size-4 mr-2" />
-                                            View Data
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() => handleEditTable(schema.name, table.name)}
-                                          >
-                                            <Pencil className="size-4 mr-2" />
-                                            Edit Table
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() => handleImportCsv(schema.name, table.name)}
-                                          >
-                                            <Upload className="size-4 mr-2" />
-                                            Import CSV
-                                          </DropdownMenuItem>
-                                          <DropdownMenuItem
-                                            onClick={() =>
-                                              handleGenerateData(schema.name, table.name)
-                                            }
-                                          >
-                                            <Shuffle className="size-4 mr-2" />
-                                            Generate Data
-                                          </DropdownMenuItem>
-                                          <DropdownMenuSeparator />
-                                          <ExportMenuItems
-                                            onSelect={(format, destination) =>
-                                              handleExportTable(
-                                                schema.name,
-                                                table.name,
-                                                format,
-                                                destination
-                                              )
-                                            }
-                                          />
-                                        </DropdownMenuContent>
-                                      </DropdownMenu>
+                                      <TableActionsMenu
+                                        can={can}
+                                        onView={() => handleTableClick(schema.name, table)}
+                                        onEdit={() => handleEditTable(schema.name, table.name)}
+                                        onImportCsv={() => handleImportCsv(schema.name, table.name)}
+                                        onGenerateData={() =>
+                                          handleGenerateData(schema.name, table.name)
+                                        }
+                                        onExport={(format, destination) =>
+                                          handleExportTable(
+                                            schema.name,
+                                            table.name,
+                                            format,
+                                            destination
+                                          )
+                                        }
+                                      />
                                     )}
                                   </div>
                                   <CollapsibleContent>
