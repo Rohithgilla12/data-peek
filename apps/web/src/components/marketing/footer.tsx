@@ -20,6 +20,7 @@ const cols: {
       { label: "MySQL", href: "/databases/mysql" },
       { label: "SQL Server", href: "/databases/sql-server" },
       { label: "SQLite", href: "/databases/sqlite" },
+      { label: "ClickHouse", href: "/databases/clickhouse" },
     ],
   },
   {

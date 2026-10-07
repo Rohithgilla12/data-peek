@@ -49,17 +49,27 @@ const databases = [
     color: "#003b57",
     href: "/databases/sqlite",
   },
+  {
+    slug: "clickhouse",
+    name: "ClickHouse",
+    description:
+      "Query and browse ClickHouse over HTTP. Multi-statement scripts, exact 64-bit results, and text EXPLAIN plans.",
+    icon: "📊",
+    color: "#ffcc01",
+    href: "/databases/clickhouse",
+  },
 ];
 
 export const metadata: Metadata = generateSeoMetadata({
   title: "Supported Databases",
   description:
-    "data-peek supports PostgreSQL, MySQL, SQL Server, and SQLite. One client for all your database needs.",
+    "data-peek supports PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse. One client for all your database needs.",
   keywords: [
     "PostgreSQL client",
     "MySQL client",
     "SQL Server client",
     "SQLite client",
+    "ClickHouse client",
     "multi-database client",
     "database management",
   ],
@@ -97,7 +107,8 @@ export default function DatabasesPage() {
               </h1>
               <p className="text-base sm:text-xl text-(--color-text-muted) max-w-2xl mx-auto font-mono leading-relaxed">
                 One client for all your database needs. Connect to PostgreSQL,
-                MySQL, SQL Server, and SQLite with a unified experience.
+                MySQL, SQL Server, SQLite, and ClickHouse with a unified
+                experience.
               </p>
             </section>
           </FadeIn>
