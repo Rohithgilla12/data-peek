@@ -261,3 +261,28 @@ test('delete connection → removed from UI and from connections.list', async ({
   const names = (listResult.data ?? []).map((c: { name: string }) => c.name)
   expect(names).not.toContain(pg.config.name)
 })
+
+// ---------------------------------------------------------------------------
+// Test 5: Dismissing the dialog discards the draft
+// ---------------------------------------------------------------------------
+
+for (const dismiss of ['Cancel', 'Escape'] as const) {
+  test(`${dismiss} discards the draft → reopening shows a blank form`, async ({ window }) => {
+    await openAddDialog(window)
+    await dialog(window).locator('#name').fill('draft-should-vanish')
+    await dialog(window).locator('#host').fill('draft.example.com')
+    await dialog(window).locator('#password').fill('draft-secret')
+
+    if (dismiss === 'Cancel') {
+      await dialog(window).getByRole('button', { name: 'Cancel', exact: true }).click()
+    } else {
+      await window.keyboard.press('Escape')
+    }
+    await expect(dialog(window)).toBeHidden({ timeout: 5000 })
+
+    await openAddDialog(window)
+    await expect(dialog(window).locator('#name')).toHaveValue('')
+    await expect(dialog(window).locator('#host')).toHaveValue('localhost')
+    await expect(dialog(window).locator('#password')).toHaveValue('')
+  })
+}
