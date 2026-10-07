@@ -288,7 +288,44 @@ for (const dismiss of ['Cancel', 'Escape'] as const) {
 }
 
 // ---------------------------------------------------------------------------
-// Test 6: A test that finishes after the dialog closed does not leak into it
+// Test 6: Database field is consistently populated with 'postgres' on open/reset
+// ---------------------------------------------------------------------------
+
+test('database field shows postgres value on first open and after reset/reopen', async ({
+  window
+}) => {
+  // First open: the Database field should have the value 'postgres', not just a placeholder.
+  await openAddDialog(window)
+  await expect(dialog(window).locator('#database')).toHaveValue('postgres')
+
+  // Close the dialog (triggers resetForm)
+  await window.keyboard.press('Escape')
+  await expect(dialog(window)).toBeHidden({ timeout: 5000 })
+
+  // Reopen: the reset state must match the initial state — still 'postgres'
+  await openAddDialog(window)
+  await expect(dialog(window).locator('#database')).toHaveValue('postgres')
+})
+
+// ---------------------------------------------------------------------------
+// Test 7: Switching ClickHouse → SQLite clears the file path (no leftover 'default')
+// ---------------------------------------------------------------------------
+
+test('switching ClickHouse → SQLite clears the database file path field', async ({ window }) => {
+  await openAddDialog(window)
+
+  // Switch to ClickHouse — the database field should receive 'default'
+  await dialog(window).getByRole('button', { name: /^ClickHouse/ }).click()
+  await expect(dialog(window).locator('#database')).toHaveValue('default')
+
+  // Switch to SQLite — the file path field must be empty, not carry over 'default'
+  await dialog(window).getByRole('button', { name: /^SQLite/ }).click()
+  await expect(dialog(window).locator('#database')).toHaveValue('')
+  await expect(dialog(window).locator('#database')).not.toHaveValue('default')
+})
+
+// ---------------------------------------------------------------------------
+// Test 8: A test that finishes after the dialog closed does not leak into it
 // ---------------------------------------------------------------------------
 
 test('a slow test connection from a dismissed dialog never shows its result', async ({

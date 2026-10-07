@@ -76,7 +76,7 @@ export function AddConnectionDialog({
   const [name, setName] = useState('')
   const [host, setHost] = useState('localhost')
   const [port, setPort] = useState('5432')
-  const [database, setDatabase] = useState('')
+  const [database, setDatabase] = useState(DB_DEFAULTS.postgresql.database)
   const [schema, setSchema] = useState('')
   const [user, setUser] = useState('postgres')
   const [password, setPassword] = useState('')
@@ -189,9 +189,7 @@ export function AddConnectionDialog({
     } else {
       setUser(defaults.user)
     }
-    if (defaults.database) {
-      setDatabase(defaults.database)
-    }
+    setDatabase(defaults.database)
     // Clear MSSQL options when switching away from MSSQL
     if (newType !== 'mssql') {
       setMssqlOptions(undefined)
@@ -260,7 +258,7 @@ export function AddConnectionDialog({
     setName('')
     setHost('localhost')
     setPort('5432')
-    setDatabase('')
+    setDatabase(DB_DEFAULTS.postgresql.database)
     setSchema('')
     setUser('postgres')
     setPassword('')
