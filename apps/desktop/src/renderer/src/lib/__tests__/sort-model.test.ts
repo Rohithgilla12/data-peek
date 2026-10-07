@@ -493,3 +493,25 @@ describe('getTypeCategory boundary matching', () => {
     }
   })
 })
+
+describe('getTypeCategory for ClickHouse type names', () => {
+  it.each([
+    ['UInt64', 'numeric'],
+    ['Int8', 'numeric'],
+    ['UInt256', 'numeric'],
+    ['Float32', 'numeric'],
+    ['Decimal(18, 4)', 'numeric'],
+    ['Decimal64(4)', 'numeric'],
+    ['Nullable(UInt64)', 'numeric'],
+    ['LowCardinality(Nullable(Float64))', 'numeric'],
+    ["DateTime64(3, 'UTC')", 'date'],
+    ['Date32', 'date'],
+    ["DateTime('UTC')", 'date'],
+    ['Bool', 'bool'],
+    ['LowCardinality(String)', 'string'],
+    ['Array(UInt64)', 'string'],
+    ['Map(String, String)', 'string']
+  ])('%s -> %s', (type, category) => {
+    expect(getTypeCategory(type)).toBe(category)
+  })
+})
