@@ -55,6 +55,7 @@ import {
 export { closeClickHousePool, closeAllClickHousePools }
 
 const ABORT_BACKSTOP_MS = 5000
+const CONNECT_TIMEOUT_MS = 15_000
 
 /**
  * Without this the server starts streaming a 200 as soon as the first block is ready and
@@ -77,16 +78,30 @@ const COLUMNS_SQL = `
 export class ClickHouseAdapter implements DatabaseAdapter {
   readonly dbType = 'clickhouse' as const
 
-  /** `SELECT version()` authenticates; `/ping` does not. */
+  /**
+   * `SELECT version()` authenticates; `/ping` does not. The probe gets its own deadline
+   * because the pooled client's request_timeout is sized for long analytical queries.
+   */
   async connect(config: ConnectionConfig): Promise<void> {
+    const deadline = new AbortController()
+    const timer = setTimeout(() => deadline.abort(), CONNECT_TIMEOUT_MS)
     try {
       await withClickHouseClient(config, async (client) => {
-        const rs = await client.query({ query: 'SELECT version()', format: 'JSON' })
+        const rs = await client.query({
+          query: 'SELECT version()',
+          format: 'JSON',
+          abort_signal: deadline.signal
+        })
         await rs.json()
       })
     } catch (error) {
       await closeClickHousePool(config).catch(() => undefined)
+      if (deadline.signal.aborted) {
+        throw new Error(`Connection timed out after ${CONNECT_TIMEOUT_MS / 1000} s`)
+      }
       throw new Error(describeError(error))
+    } finally {
+      clearTimeout(timer)
     }
   }
 
