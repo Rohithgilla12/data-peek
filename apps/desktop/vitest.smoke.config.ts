@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    include: ['scripts/pool-smoke.test.ts'],
+    include: ['scripts/pool-smoke.test.ts', 'scripts/clickhouse-smoke.test.ts'],
     testTimeout: 60_000
   },
   resolve: {
