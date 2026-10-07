@@ -13,6 +13,13 @@ import { startSeededPostgres, type SeededPostgres } from './fixtures/postgres'
  * by visible text.
  */
 
+// Opt the main process into test-only behaviour and shrink the ClickHouse
+// connect-probe deadline so the stale-request test settles in seconds. Scoped
+// to this spec file's worker processes; other spec files keep production
+// timeouts.
+process.env.DP_E2E = '1'
+process.env.DP_E2E_CONNECT_TIMEOUT_MS = String(2_000)
+
 let pg: SeededPostgres
 
 test.beforeAll(async () => {
@@ -336,7 +343,8 @@ test('a slow test connection from a dismissed dialog never shows its result', as
   await dialog(window)
     .getByRole('button', { name: /^ClickHouse/ })
     .click()
-  // Unroutable address: the connect probe hangs until its 15 s timeout.
+  // Unroutable address: the connect probe hangs until the probe deadline
+  // (shortened to 2 s under the e2e environment above).
   await dialog(window).locator('#host').fill('10.255.255.1')
   await dialog(window).getByRole('button', { name: 'Test Connection' }).click()
   await expect(dialog(window).getByRole('button', { name: /testing/i })).toBeVisible()
@@ -345,7 +353,9 @@ test('a slow test connection from a dismissed dialog never shows its result', as
   await expect(dialog(window)).toBeHidden({ timeout: 5000 })
   await openAddDialog(window)
 
-  await window.waitForTimeout(18_000)
+  // Settle past the shortened probe deadline (2 s) plus IPC margin; once the
+  // stale attempt has finished, no result may appear in the reopened dialog.
+  await window.waitForTimeout(3_000)
   await expect(dialog(window).getByTestId('connection-dialog-test-result')).toHaveCount(0)
   await expect(dialog(window).getByRole('button', { name: 'Test Connection' })).toBeVisible()
 })
