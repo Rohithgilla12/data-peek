@@ -478,7 +478,13 @@ export function AddConnectionDialog({
         : host && port && database && (isUserRequired ? user : true) && isSSHValid()
 
   return (
-    <Dialog open={open} onOpenChange={(next) => (next ? onOpenChange(true) : handleClose())}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (next) onOpenChange(true)
+        else if (!isSaving) handleClose()
+      }}
+    >
       <DialogContent
         data-testid="connection-dialog"
         className="flex h-[min(680px,88vh)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
@@ -1064,7 +1070,7 @@ export function AddConnectionDialog({
               'Test Connection'
             )}
           </Button>
-          <Button variant="ghost" onClick={handleClose}>
+          <Button variant="ghost" onClick={handleClose} disabled={isSaving}>
             Cancel
           </Button>
           <Button
