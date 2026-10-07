@@ -6,8 +6,8 @@ import { startSeededPostgres, type SeededPostgres } from './fixtures/postgres'
  * live in connections.spec.ts; this one proves the renderer wires up the form
  * to those IPCs end-to-end.
  *
- * Note: data-testid attributes on Radix UI portal elements (SheetContent) are
- * stripped in the production build. We use data-slot="sheet-content" and
+ * Note: data-testid attributes on Radix UI portal elements (DialogContent) are
+ * stripped in the production build. We use the dialog role and
  * accessible-name selectors instead. The Test/Save buttons (standard HTML
  * <button>) also lose data-testid in the production bundle, so we target them
  * by visible text.
@@ -52,14 +52,14 @@ async function openAddDialog(window: Page) {
     await window.getByRole('menuitem', { name: /add connection/i }).click()
   }
 
-  // SheetContent is portalled to <body>; data-slot="sheet-content" survives
-  // the production build whereas data-testid is stripped.
-  await expect(window.locator('[data-slot="sheet-content"]')).toBeVisible({ timeout: 5000 })
+  // DialogContent is portalled to <body>; its role survives the production build
+  // whereas data-testid is stripped.
+  await expect(window.getByRole('dialog')).toBeVisible({ timeout: 5000 })
 }
 
-/** Locate the currently-open Sheet dialog panel. */
+/** Locate the currently-open connection dialog. */
 function dialog(window: Page) {
-  return window.locator('[data-slot="sheet-content"]')
+  return window.getByRole('dialog')
 }
 
 /**
@@ -122,7 +122,7 @@ test('fill, test-connection, save → connection appears in connections.list', a
   // Click the Test Connection button (targeted by visible label text)
   await dialog(window).getByRole('button', { name: 'Test Connection' }).click()
 
-  // Expect a success banner to appear inside the sheet. Scoped to the banner itself
+  // Expect a success banner to appear inside the dialog. Scoped to the banner itself
   // rather than any matching text in the sheet — see the note on the error assertion below.
   await expect(dialog(window).getByRole('status')).toContainText(/connection successful/i, {
     timeout: 10000
@@ -134,7 +134,7 @@ test('fill, test-connection, save → connection appears in connections.list', a
     .click()
 
   // Dialog must close
-  await expect(window.locator('[data-slot="sheet-content"]')).toBeHidden({ timeout: 5000 })
+  await expect(window.getByRole('dialog')).toBeHidden({ timeout: 5000 })
 
   // Verify the connection was persisted via IPC
   const listResult = await window.evaluate(async () => window.api.connections.list())
@@ -159,10 +159,10 @@ test('wrong password → test connection shows an error', async ({ window }) => 
     password: 'definitely-wrong-password'
   })
 
-  // Click Test and expect an error banner inside the sheet
+  // Click Test and expect an error banner inside the dialog
   await dialog(window).getByRole('button', { name: 'Test Connection' }).click()
 
-  // Scoped to the result banner. The previous sheet-wide getByText matched the
+  // Scoped to the result banner. The previous dialog-wide getByText matched the
   // always-present "Password" field label, so it passed the moment the dialog rendered
   // and never actually observed the error — then hit a strict-mode violation (2 matches)
   // whenever the error banner won the race and appeared before the assertion ran.
@@ -202,7 +202,7 @@ test('edit connection → rename is reflected in connections.list', async ({ win
   await connectionItem.locator('button[title="Edit connection"]').click()
 
   // The AddConnectionDialog should open in edit mode
-  await expect(window.locator('[data-slot="sheet-content"]')).toBeVisible({ timeout: 5000 })
+  await expect(window.getByRole('dialog')).toBeVisible({ timeout: 5000 })
 
   // Change the connection name
   const renamedName = pg.config.name + '-renamed'
@@ -213,7 +213,7 @@ test('edit connection → rename is reflected in connections.list', async ({ win
   await dialog(window)
     .getByRole('button', { name: /update connection/i })
     .click()
-  await expect(window.locator('[data-slot="sheet-content"]')).toBeHidden({ timeout: 5000 })
+  await expect(window.getByRole('dialog')).toBeHidden({ timeout: 5000 })
 
   // Verify via IPC
   const listResult = await window.evaluate(async () => window.api.connections.list())

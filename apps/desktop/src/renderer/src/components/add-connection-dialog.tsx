@@ -17,12 +17,11 @@ import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
 } from '@data-peek/ui'
 
 import { useConnectionStore, type Connection } from '@/stores'
@@ -30,7 +29,7 @@ import { DB_DEFAULTS, parseConnectionString } from '@/lib/connection-string-pars
 import { PostgreSQLIcon, MySQLIcon, MSSQLIcon, ClickHouseIcon, SQLiteIcon } from './database-icons'
 import { SSHConfigSection } from './ssh-config-section'
 import type { SSHConfig, SSLConnectionOptions } from '@shared/index'
-import type { DatabaseType } from '@shared/index'
+import { DB_TYPE_LABELS, type DatabaseType } from '@shared/index'
 import type { ConnectionEnvironment, EnvironmentPreset } from '@shared/index'
 import { ENVIRONMENT_PRESETS, CUSTOM_COLOR_PALETTE } from '@/lib/environment'
 
@@ -41,6 +40,14 @@ interface AddConnectionDialogProps {
 }
 
 type InputMode = 'manual' | 'connection-string'
+
+const DB_TYPE_OPTIONS: { type: DatabaseType; Icon: typeof PostgreSQLIcon }[] = [
+  { type: 'postgresql', Icon: PostgreSQLIcon },
+  { type: 'mysql', Icon: MySQLIcon },
+  { type: 'mssql', Icon: MSSQLIcon },
+  { type: 'sqlite', Icon: SQLiteIcon },
+  { type: 'clickhouse', Icon: ClickHouseIcon }
+]
 
 export function AddConnectionDialog({
   open,
@@ -471,617 +478,582 @@ export function AddConnectionDialog({
         : host && port && database && (isUserRequired ? user : true) && isSSHValid()
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent data-testid="connection-dialog" className="sm:max-w-lg flex flex-col">
-        <SheetHeader>
-          <SheetTitle className="flex items-center gap-2">
-            <Database className="size-5" />
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        data-testid="connection-dialog"
+        className="flex h-[min(680px,88vh)] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+      >
+        <DialogHeader className="border-b px-5 py-4 text-left">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <Database className="size-4" />
             {isEditMode ? 'Edit Connection' : 'Add Connection'}
-          </SheetTitle>
-          <SheetDescription>
+          </DialogTitle>
+          <DialogDescription className="text-xs">
             {isEditMode
               ? 'Update your database connection settings.'
               : 'Add a new database connection. Your credentials are stored securely on your device.'}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <div className="flex flex-col gap-4 py-4 px-4 flex-1 overflow-y-auto">
-          {/* Database Type Selector */}
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">Database Type</span>
-            <div className="grid grid-cols-5 rounded-lg border bg-muted p-1">
+        <div className="grid min-h-0 flex-1 grid-cols-[176px_1fr]">
+          <nav
+            aria-label="Database type"
+            className="flex flex-col gap-0.5 border-r bg-muted/30 p-2"
+          >
+            {DB_TYPE_OPTIONS.map(({ type, Icon }) => (
               <button
+                key={type}
                 type="button"
-                onClick={() => handleDbTypeChange('postgresql')}
-                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-                  dbType === 'postgresql'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
+                aria-pressed={dbType === type}
+                onClick={() => handleDbTypeChange(type)}
+                className={`flex items-center gap-2 rounded-md px-2.5 py-1.5 text-left text-sm transition-[background-color,color,transform] duration-150 ease-out active:scale-[0.98] ${
+                  dbType === type
+                    ? 'bg-accent font-medium text-foreground'
+                    : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
                 }`}
               >
-                <PostgreSQLIcon className="size-4" />
-                PostgreSQL
+                <Icon className="size-4 shrink-0" />
+                {DB_TYPE_LABELS[type]}
               </button>
-              <button
-                type="button"
-                onClick={() => handleDbTypeChange('mysql')}
-                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-                  dbType === 'mysql'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <MySQLIcon className="size-4" />
-                MySQL
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDbTypeChange('sqlite')}
-                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-                  dbType === 'sqlite'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <SQLiteIcon className="size-4" />
-                SQLite
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDbTypeChange('mssql')}
-                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-                  dbType === 'mssql'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <MSSQLIcon className="size-4" />
-                SQL Server
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDbTypeChange('clickhouse')}
-                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
-                  dbType === 'clickhouse'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <ClickHouseIcon className="size-4" />
-                ClickHouse
-              </button>
-            </div>
-          </div>
+            ))}
+          </nav>
 
-          {/* Input Mode Toggle - hidden for SQLite */}
-          {dbType !== 'sqlite' && (
-            <div className="flex rounded-lg border bg-muted p-1">
-              <button
-                type="button"
-                onClick={() => setInputMode('manual')}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  inputMode === 'manual'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Settings2 className="size-4" />
-                Manual
-              </button>
-              <button
-                type="button"
-                onClick={() => setInputMode('connection-string')}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-                  inputMode === 'connection-string'
-                    ? 'bg-background text-foreground shadow-sm'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <Link className="size-4" />
-                Connection String
-              </button>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <label htmlFor="name" className="text-sm font-medium">
-              Connection Name
-            </label>
-            <Input
-              id="name"
-              placeholder="My Database"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <p className="text-xs text-muted-foreground">
-              Optional. Defaults to host/database if empty.
-            </p>
-          </div>
-
-          {/* Environment Tag */}
-          <div className="flex flex-col gap-2">
-            <span className="text-sm font-medium">Environment</span>
-            <p className="text-xs text-muted-foreground">
-              Optional. Adds a visual indicator to help identify this connection.
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {(Object.keys(ENVIRONMENT_PRESETS) as EnvironmentPreset[]).map((preset) => {
-                const { label, color } = ENVIRONMENT_PRESETS[preset]
-                const isSelected = environment?.preset === preset
-                return (
-                  <button
-                    key={preset}
-                    type="button"
-                    onClick={() => handleEnvironmentSelect(preset)}
-                    className="rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wide font-mono transition-colors border"
-                    style={
-                      isSelected
-                        ? {
-                            backgroundColor: `color-mix(in oklch, ${color} 15%, transparent)`,
-                            borderColor: `color-mix(in oklch, ${color} 30%, transparent)`,
-                            color: color
-                          }
-                        : {
-                            backgroundColor: 'transparent',
-                            borderColor: 'var(--border)',
-                            color: 'var(--muted-foreground)'
-                          }
-                    }
-                  >
-                    {label}
-                  </button>
-                )
-              })}
-              <button
-                type="button"
-                onClick={handleCustomEnvironment}
-                className="rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wide font-mono transition-colors border"
-                style={
-                  showCustomEnv
-                    ? {
-                        backgroundColor: `color-mix(in oklch, ${customEnvColor} 15%, transparent)`,
-                        borderColor: `color-mix(in oklch, ${customEnvColor} 30%, transparent)`,
-                        color: customEnvColor
-                      }
-                    : {
-                        backgroundColor: 'transparent',
-                        borderColor: 'var(--border)',
-                        color: 'var(--muted-foreground)'
-                      }
-                }
-              >
-                Custom
-              </button>
-            </div>
-
-            {showCustomEnv && (
-              <div className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3">
-                <div className="flex flex-col gap-1.5">
-                  <label htmlFor="custom-env-label" className="text-xs font-medium">
-                    Label
-                  </label>
-                  <Input
-                    id="custom-env-label"
-                    value={customEnvLabel}
-                    onChange={(e) => handleCustomLabelChange(e.target.value)}
-                    placeholder="CUSTOM"
-                    maxLength={10}
-                    className="font-mono text-xs uppercase h-8"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium">Color</span>
-                  <div className="flex gap-1.5">
-                    {CUSTOM_COLOR_PALETTE.map((color) => (
-                      <button
-                        key={color}
-                        type="button"
-                        onClick={() => handleCustomColorChange(color)}
-                        className="size-6 rounded-full border-2 transition-transform hover:scale-110"
-                        style={{
-                          backgroundColor: color,
-                          borderColor:
-                            customEnvColor === color ? 'var(--foreground)' : 'transparent'
-                        }}
-                        title={color}
-                      />
-                    ))}
-                  </div>
-                </div>
+          <div className="flex min-h-0 flex-col gap-4 overflow-y-auto px-5 py-4">
+            {/* Input Mode Toggle - hidden for SQLite */}
+            {dbType !== 'sqlite' && (
+              <div className="flex rounded-lg border bg-muted p-1">
+                <button
+                  type="button"
+                  onClick={() => setInputMode('manual')}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    inputMode === 'manual'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Settings2 className="size-4" />
+                  Manual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setInputMode('connection-string')}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                    inputMode === 'connection-string'
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <Link className="size-4" />
+                  Connection String
+                </button>
               </div>
             )}
-          </div>
 
-          {/* SQLite-specific form */}
-          {dbType === 'sqlite' ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2">
-                <label htmlFor="database" className="text-sm font-medium">
-                  Database File Path
-                </label>
-                <div className="flex gap-2">
-                  <Input
-                    id="database"
-                    placeholder="/path/to/database.db or :memory:"
-                    value={database}
-                    onChange={(e) => setDatabase(e.target.value)}
-                    className="font-mono text-sm flex-1"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={async () => {
-                      const filePath = await window.api.files.openFilePicker()
-                      if (filePath) {
-                        setDatabase(filePath)
-                      }
-                    }}
-                    title="Browse for SQLite database file"
-                  >
-                    <FolderOpen className="size-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Enter the path to your SQLite database file, or use :memory: for an in-memory
-                  database.
-                </p>
-              </div>
-              <div className="rounded-md bg-muted/50 border border-border/50 px-3 py-2">
-                <p className="text-xs text-muted-foreground">
-                  <span className="font-medium text-foreground">
-                    Turso / libSQL support coming soon.
-                  </span>{' '}
-                  We&apos;re working on resolving some native module issues.
-                </p>
-              </div>
-            </div>
-          ) : inputMode === 'connection-string' ? (
             <div className="flex flex-col gap-2">
-              <label htmlFor="connection-string" className="text-sm font-medium">
-                Connection String
+              <label htmlFor="name" className="text-sm font-medium">
+                Connection Name
               </label>
               <Input
-                id="connection-string"
-                placeholder={
-                  dbType === 'mysql'
-                    ? 'mysql://user:password@host:3306/database'
-                    : dbType === 'mssql'
-                      ? 'mssql://user:password@host:1433/database'
-                      : dbType === 'clickhouse'
-                        ? 'clickhouse://user:password@host:8123/database'
-                        : 'postgresql://user:password@host:5432/database'
-                }
-                value={connectionString}
-                onChange={(e) => handleConnectionStringChange(e.target.value)}
-                className="font-mono text-sm"
+                id="name"
+                placeholder="My Database"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                Format:{' '}
-                {dbType === 'mysql'
-                  ? 'mysql://user:password@host:port/database'
-                  : dbType === 'mssql'
-                    ? 'sqlserver://host:port;database=name;encrypt=false;trustServerCertificate=true'
-                    : dbType === 'clickhouse'
-                      ? 'clickhouse://user:password@host:port/database (clickhouses:// or ?secure=1 for HTTPS)'
-                      : 'postgresql://user:password@host:port/database'}
+                Optional. Defaults to host/database if empty.
               </p>
-              {parseError && <p className="text-xs text-destructive">{parseError}</p>}
-              {connectionString && !parseError && (
-                <div className="rounded-md bg-muted p-3 text-xs">
-                  <p className="font-medium mb-1">Parsed values:</p>
-                  <div className="grid grid-cols-2 gap-1 text-muted-foreground">
-                    <span>Host:</span>
-                    <span className="font-mono">{host}</span>
-                    <span>Port:</span>
-                    <span className="font-mono">{port}</span>
-                    <span>Database:</span>
-                    <span className="font-mono">{database}</span>
-                    {dbType === 'postgresql' && schema && (
-                      <>
-                        <span>Default schema:</span>
-                        <span className="font-mono">{schema}</span>
-                      </>
-                    )}
-                    <span>User:</span>
-                    <span className="font-mono">{user}</span>
-                    <span>Password:</span>
-                    <span className="font-mono">{password ? '••••••••' : '(none)'}</span>
-                    <span>SSL:</span>
-                    <span className="font-mono">{ssl ? 'Yes' : 'No'}</span>
+            </div>
+
+            {/* Environment Tag */}
+            <div className="flex flex-col gap-2">
+              <span className="text-sm font-medium">Environment</span>
+              <p className="text-xs text-muted-foreground">
+                Optional. Adds a visual indicator to help identify this connection.
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {(Object.keys(ENVIRONMENT_PRESETS) as EnvironmentPreset[]).map((preset) => {
+                  const { label, color } = ENVIRONMENT_PRESETS[preset]
+                  const isSelected = environment?.preset === preset
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => handleEnvironmentSelect(preset)}
+                      className="rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wide font-mono transition-colors border"
+                      style={
+                        isSelected
+                          ? {
+                              backgroundColor: `color-mix(in oklch, ${color} 15%, transparent)`,
+                              borderColor: `color-mix(in oklch, ${color} 30%, transparent)`,
+                              color: color
+                            }
+                          : {
+                              backgroundColor: 'transparent',
+                              borderColor: 'var(--border)',
+                              color: 'var(--muted-foreground)'
+                            }
+                      }
+                    >
+                      {label}
+                    </button>
+                  )
+                })}
+                <button
+                  type="button"
+                  onClick={handleCustomEnvironment}
+                  className="rounded px-2.5 py-1 text-xs font-semibold uppercase tracking-wide font-mono transition-colors border"
+                  style={
+                    showCustomEnv
+                      ? {
+                          backgroundColor: `color-mix(in oklch, ${customEnvColor} 15%, transparent)`,
+                          borderColor: `color-mix(in oklch, ${customEnvColor} 30%, transparent)`,
+                          color: customEnvColor
+                        }
+                      : {
+                          backgroundColor: 'transparent',
+                          borderColor: 'var(--border)',
+                          color: 'var(--muted-foreground)'
+                        }
+                  }
+                >
+                  Custom
+                </button>
+              </div>
+
+              {showCustomEnv && (
+                <div className="flex flex-col gap-2 rounded-md border bg-muted/30 p-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="custom-env-label" className="text-xs font-medium">
+                      Label
+                    </label>
+                    <Input
+                      id="custom-env-label"
+                      value={customEnvLabel}
+                      onChange={(e) => handleCustomLabelChange(e.target.value)}
+                      placeholder="CUSTOM"
+                      maxLength={10}
+                      className="font-mono text-xs uppercase h-8"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-xs font-medium">Color</span>
+                    <div className="flex gap-1.5">
+                      {CUSTOM_COLOR_PALETTE.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => handleCustomColorChange(color)}
+                          className="size-6 rounded-full border-2 transition-transform hover:scale-110"
+                          style={{
+                            backgroundColor: color,
+                            borderColor:
+                              customEnvColor === color ? 'var(--foreground)' : 'transparent'
+                          }}
+                          title={color}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
               )}
             </div>
-          ) : (
-            <>
-              <div className="flex flex-col gap-2">
-                <label htmlFor="host" className="text-sm font-medium">
-                  Host
-                </label>
-                <Input
-                  id="host"
-                  placeholder="localhost"
-                  value={host}
-                  onChange={(e) => setHost(e.target.value)}
-                />
-              </div>
 
-              <div className="flex flex-col gap-2">
-                <label htmlFor="port" className="text-sm font-medium">
-                  Port
-                </label>
-                <Input
-                  id="port"
-                  type="number"
-                  placeholder="5432"
-                  value={port}
-                  onChange={(e) => setPort(e.target.value)}
-                />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label htmlFor="database" className="text-sm font-medium">
-                  Database
-                </label>
-                <Input
-                  id="database"
-                  placeholder="postgres"
-                  value={database}
-                  onChange={(e) => setDatabase(e.target.value)}
-                />
-              </div>
-
-              {dbType === 'postgresql' && (
+            {/* SQLite-specific form */}
+            {dbType === 'sqlite' ? (
+              <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="schema" className="text-sm font-medium">
-                    Default Schema
-                    <span className="text-xs text-muted-foreground font-normal ml-1">
-                      (optional)
-                    </span>
+                  <label htmlFor="database" className="text-sm font-medium">
+                    Database File Path
                   </label>
-                  <Input
-                    id="schema"
-                    placeholder="public"
-                    value={schema}
-                    onChange={(e) => setSchema(e.target.value)}
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="database"
+                      placeholder="/path/to/database.db or :memory:"
+                      value={database}
+                      onChange={(e) => setDatabase(e.target.value)}
+                      className="font-mono text-sm flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={async () => {
+                        const filePath = await window.api.files.openFilePicker()
+                        if (filePath) {
+                          setDatabase(filePath)
+                        }
+                      }}
+                      title="Browse for SQLite database file"
+                    >
+                      <FolderOpen className="size-4" />
+                    </Button>
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    Sets <code className="font-mono">search_path</code> so unqualified table names
-                    resolve here, and focuses the sidebar on this schema. Comma-separate for a
-                    fallback chain (e.g. <code className="font-mono">bbl, public</code>). Leave
-                    empty to use the server default.
+                    Enter the path to your SQLite database file, or use :memory: for an in-memory
+                    database.
                   </p>
                 </div>
-              )}
-
+                <div className="rounded-md bg-muted/50 border border-border/50 px-3 py-2">
+                  <p className="text-xs text-muted-foreground">
+                    <span className="font-medium text-foreground">
+                      Turso / libSQL support coming soon.
+                    </span>{' '}
+                    We&apos;re working on resolving some native module issues.
+                  </p>
+                </div>
+              </div>
+            ) : inputMode === 'connection-string' ? (
               <div className="flex flex-col gap-2">
-                <label htmlFor="user" className="text-sm font-medium">
-                  Username
-                  {dbType === 'mssql' &&
-                    mssqlOptions?.authentication === 'ActiveDirectoryIntegrated' && (
-                      <span className="text-xs text-muted-foreground font-normal ml-1">
-                        (optional for Active Directory Integrated)
-                      </span>
-                    )}
+                <label htmlFor="connection-string" className="text-sm font-medium">
+                  Connection String
                 </label>
                 <Input
-                  id="user"
+                  id="connection-string"
                   placeholder={
-                    dbType === 'mssql' &&
-                    mssqlOptions?.authentication === 'ActiveDirectoryIntegrated'
-                      ? 'Not required for Active Directory Integrated'
+                    dbType === 'mysql'
+                      ? 'mysql://user:password@host:3306/database'
                       : dbType === 'mssql'
-                        ? 'sa'
-                        : 'postgres'
+                        ? 'mssql://user:password@host:1433/database'
+                        : dbType === 'clickhouse'
+                          ? 'clickhouse://user:password@host:8123/database'
+                          : 'postgresql://user:password@host:5432/database'
                   }
-                  value={user}
-                  onChange={(e) => setUser(e.target.value)}
+                  value={connectionString}
+                  onChange={(e) => handleConnectionStringChange(e.target.value)}
+                  className="font-mono text-sm"
                 />
-              </div>
-
-              <div className="flex flex-col gap-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Password
-                </label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="password"
-                    type={showDatabasePassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDatabasePasswordToggle}
-                    className="px-3"
-                    title={showDatabasePassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showDatabasePassword ? <EyeOff /> : <Eye />}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-3">
-                <div className="flex space-x-4">
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="ssl"
-                      type="checkbox"
-                      checked={ssl}
-                      onChange={(e) => setSsl(e.target.checked)}
-                      className="size-4 rounded border-input"
-                    />
-                    <label htmlFor="ssl" className="text-sm font-medium">
-                      {dbType === 'clickhouse' ? 'Use HTTPS' : 'Use SSL'}
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      id="ssh"
-                      type="checkbox"
-                      checked={ssh}
-                      onChange={() => setSsh(!ssh)}
-                      className="size-4 rounded border-input"
-                    />
-                    <label htmlFor="ssh" className="text-sm font-medium">
-                      Use SSH
-                    </label>
-                  </div>
-                </div>
-
-                {ssl && dbType !== 'mssql' && (
-                  <div className="ml-6 flex flex-col gap-3 rounded-md border bg-muted/30 p-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          id="sslRejectUnauthorized"
-                          type="checkbox"
-                          checked={sslOptions.rejectUnauthorized === true}
-                          onChange={(e) =>
-                            setSslOptions((prev) => ({
-                              ...prev,
-                              rejectUnauthorized: e.target.checked
-                            }))
-                          }
-                          className="size-4 rounded border-input"
-                        />
-                        <label htmlFor="sslRejectUnauthorized" className="text-sm font-medium">
-                          Verify server certificate (strict)
-                        </label>
-                      </div>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Off by default — most cloud DBs (AWS RDS, Supabase, Neon, DigitalOcean) use
-                        self-signed or private-CA certs that fail strict verification. Enable only
-                        if you have the CA certificate below or a public CA cert.
-                      </p>
-                    </div>
-
-                    <div>
-                      <label htmlFor="sslCaPath" className="text-sm font-medium">
-                        CA Certificate Path (optional)
-                      </label>
-                      <Input
-                        id="sslCaPath"
-                        type="text"
-                        value={sslOptions.ca || ''}
-                        onChange={(e) =>
-                          setSslOptions((prev) => ({
-                            ...prev,
-                            ca: e.target.value || undefined
-                          }))
-                        }
-                        placeholder="/path/to/ca-certificate.pem"
-                        className="mt-1"
-                      />
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Path to a CA certificate file for servers with private CA certificates.
-                      </p>
+                <p className="text-xs text-muted-foreground">
+                  Format:{' '}
+                  {dbType === 'mysql'
+                    ? 'mysql://user:password@host:port/database'
+                    : dbType === 'mssql'
+                      ? 'sqlserver://host:port;database=name;encrypt=false;trustServerCertificate=true'
+                      : dbType === 'clickhouse'
+                        ? 'clickhouse://user:password@host:port/database (clickhouses:// or ?secure=1 for HTTPS)'
+                        : 'postgresql://user:password@host:port/database'}
+                </p>
+                {parseError && <p className="text-xs text-destructive">{parseError}</p>}
+                {connectionString && !parseError && (
+                  <div className="rounded-md bg-muted p-3 text-xs">
+                    <p className="font-medium mb-1">Parsed values:</p>
+                    <div className="grid grid-cols-2 gap-1 text-muted-foreground">
+                      <span>Host:</span>
+                      <span className="font-mono">{host}</span>
+                      <span>Port:</span>
+                      <span className="font-mono">{port}</span>
+                      <span>Database:</span>
+                      <span className="font-mono">{database}</span>
+                      {dbType === 'postgresql' && schema && (
+                        <>
+                          <span>Default schema:</span>
+                          <span className="font-mono">{schema}</span>
+                        </>
+                      )}
+                      <span>User:</span>
+                      <span className="font-mono">{user}</span>
+                      <span>Password:</span>
+                      <span className="font-mono">{password ? '••••••••' : '(none)'}</span>
+                      <span>SSL:</span>
+                      <span className="font-mono">{ssl ? 'Yes' : 'No'}</span>
                     </div>
                   </div>
                 )}
               </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-[1fr_7rem] gap-3">
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="host" className="text-sm font-medium">
+                      Host
+                    </label>
+                    <Input
+                      id="host"
+                      placeholder="localhost"
+                      value={host}
+                      onChange={(e) => setHost(e.target.value)}
+                    />
+                  </div>
 
-              {/* MSSQL Advanced Options */}
-              {dbType === 'mssql' && (
-                <Collapsible open={mssqlAdvancedOpen} onOpenChange={setMssqlAdvancedOpen}>
-                  <CollapsibleTrigger asChild>
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-between rounded-md border bg-muted/50 px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
-                    >
-                      <span>Advanced Options</span>
-                      <ChevronDown
-                        className={`size-4 transition-transform ${mssqlAdvancedOpen ? 'rotate-180' : ''}`}
-                      />
-                    </button>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent className="pt-3 space-y-4">
-                    <div className="flex items-center gap-2">
-                      <input
-                        id="encrypt"
-                        type="checkbox"
-                        checked={mssqlOptions?.encrypt ?? false}
-                        onChange={(e) =>
-                          setMssqlOptions((prev) => ({
-                            ...prev,
-                            encrypt: e.target.checked
-                          }))
-                        }
-                        className="size-4 rounded border-input"
-                      />
-                      <label htmlFor="encrypt" className="text-sm font-medium">
-                        Encrypt Connection
-                      </label>
-                    </div>
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="port" className="text-sm font-medium">
+                      Port
+                    </label>
+                    <Input
+                      id="port"
+                      type="number"
+                      placeholder="5432"
+                      value={port}
+                      onChange={(e) => setPort(e.target.value)}
+                    />
+                  </div>
+                </div>
 
-                    <div className="flex items-center gap-2">
-                      <input
-                        id="trustServerCertificate"
-                        type="checkbox"
-                        checked={mssqlOptions?.trustServerCertificate ?? true}
-                        onChange={(e) =>
-                          setMssqlOptions((prev) => ({
-                            ...prev,
-                            trustServerCertificate: e.target.checked
-                          }))
-                        }
-                        className="size-4 rounded border-input"
-                      />
-                      <label htmlFor="trustServerCertificate" className="text-sm font-medium">
-                        Trust Server Certificate
-                      </label>
-                    </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="database" className="text-sm font-medium">
+                    Database
+                  </label>
+                  <Input
+                    id="database"
+                    placeholder="postgres"
+                    value={database}
+                    onChange={(e) => setDatabase(e.target.value)}
+                  />
+                </div>
 
+                {dbType === 'postgresql' && (
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="schema" className="text-sm font-medium">
+                      Default Schema
+                      <span className="text-xs text-muted-foreground font-normal ml-1">
+                        (optional)
+                      </span>
+                    </label>
+                    <Input
+                      id="schema"
+                      placeholder="public"
+                      value={schema}
+                      onChange={(e) => setSchema(e.target.value)}
+                    />
                     <p className="text-xs text-muted-foreground">
-                      Query timeout can be configured in Settings → Database.
+                      Sets <code className="font-mono">search_path</code> so unqualified table names
+                      resolve here, and focuses the sidebar on this schema. Comma-separate for a
+                      fallback chain (e.g. <code className="font-mono">bbl, public</code>). Leave
+                      empty to use the server default.
                     </p>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-            </>
-          )}
+                  </div>
+                )}
 
-          {ssh && dbType !== 'sqlite' && (
-            <SSHConfigSection config={sshConfig} onConfigChange={setSshConfig} />
-          )}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="user" className="text-sm font-medium">
+                      Username
+                      {dbType === 'mssql' &&
+                        mssqlOptions?.authentication === 'ActiveDirectoryIntegrated' && (
+                          <span className="text-xs text-muted-foreground font-normal ml-1">
+                            (optional for Active Directory Integrated)
+                          </span>
+                        )}
+                    </label>
+                    <Input
+                      id="user"
+                      placeholder={
+                        dbType === 'mssql' &&
+                        mssqlOptions?.authentication === 'ActiveDirectoryIntegrated'
+                          ? 'Not required for Active Directory Integrated'
+                          : dbType === 'mssql'
+                            ? 'sa'
+                            : 'postgres'
+                      }
+                      value={user}
+                      onChange={(e) => setUser(e.target.value)}
+                    />
+                  </div>
 
-          {testResult && (
-            <div
-              ref={testResultRef}
-              data-testid="connection-dialog-test-result"
-              // A failure is worth interrupting a screen reader for; a success is not.
-              role={testResult === 'success' ? 'status' : 'alert'}
-              className={`flex items-center gap-2 rounded-md p-3 text-sm ${
-                testResult === 'success'
-                  ? 'bg-green-500/10 text-green-500'
-                  : 'bg-destructive/10 text-destructive'
-              }`}
-            >
-              {testResult === 'success' ? (
-                <>
-                  <CheckCircle2 className="size-4" />
-                  Connection successful!
-                </>
-              ) : (
-                <>
-                  <XCircle className="size-4" />
-                  {testError}
-                </>
-              )}
-            </div>
-          )}
+                  <div className="flex flex-col gap-2">
+                    <label htmlFor="password" className="text-sm font-medium">
+                      Password
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="password"
+                        type={showDatabasePassword ? 'text' : 'password'}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDatabasePasswordToggle}
+                        className="px-3"
+                        title={showDatabasePassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showDatabasePassword ? <EyeOff /> : <Eye />}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex space-x-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="ssl"
+                        type="checkbox"
+                        checked={ssl}
+                        onChange={(e) => setSsl(e.target.checked)}
+                        className="size-4 rounded border-input"
+                      />
+                      <label htmlFor="ssl" className="text-sm font-medium">
+                        {dbType === 'clickhouse' ? 'Use HTTPS' : 'Use SSL'}
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="ssh"
+                        type="checkbox"
+                        checked={ssh}
+                        onChange={() => setSsh(!ssh)}
+                        className="size-4 rounded border-input"
+                      />
+                      <label htmlFor="ssh" className="text-sm font-medium">
+                        Use SSH
+                      </label>
+                    </div>
+                  </div>
+
+                  {ssl && dbType !== 'mssql' && (
+                    <div className="ml-6 flex flex-col gap-3 rounded-md border bg-muted/30 p-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="sslRejectUnauthorized"
+                            type="checkbox"
+                            checked={sslOptions.rejectUnauthorized === true}
+                            onChange={(e) =>
+                              setSslOptions((prev) => ({
+                                ...prev,
+                                rejectUnauthorized: e.target.checked
+                              }))
+                            }
+                            className="size-4 rounded border-input"
+                          />
+                          <label htmlFor="sslRejectUnauthorized" className="text-sm font-medium">
+                            Verify server certificate (strict)
+                          </label>
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Off by default — most cloud DBs (AWS RDS, Supabase, Neon, DigitalOcean)
+                          use self-signed or private-CA certs that fail strict verification. Enable
+                          only if you have the CA certificate below or a public CA cert.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label htmlFor="sslCaPath" className="text-sm font-medium">
+                          CA Certificate Path (optional)
+                        </label>
+                        <Input
+                          id="sslCaPath"
+                          type="text"
+                          value={sslOptions.ca || ''}
+                          onChange={(e) =>
+                            setSslOptions((prev) => ({
+                              ...prev,
+                              ca: e.target.value || undefined
+                            }))
+                          }
+                          placeholder="/path/to/ca-certificate.pem"
+                          className="mt-1"
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Path to a CA certificate file for servers with private CA certificates.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* MSSQL Advanced Options */}
+                {dbType === 'mssql' && (
+                  <Collapsible open={mssqlAdvancedOpen} onOpenChange={setMssqlAdvancedOpen}>
+                    <CollapsibleTrigger asChild>
+                      <button
+                        type="button"
+                        className="flex w-full items-center justify-between rounded-md border bg-muted/50 px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                      >
+                        <span>Advanced Options</span>
+                        <ChevronDown
+                          className={`size-4 transition-transform ${mssqlAdvancedOpen ? 'rotate-180' : ''}`}
+                        />
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent className="pt-3 space-y-4">
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="encrypt"
+                          type="checkbox"
+                          checked={mssqlOptions?.encrypt ?? false}
+                          onChange={(e) =>
+                            setMssqlOptions((prev) => ({
+                              ...prev,
+                              encrypt: e.target.checked
+                            }))
+                          }
+                          className="size-4 rounded border-input"
+                        />
+                        <label htmlFor="encrypt" className="text-sm font-medium">
+                          Encrypt Connection
+                        </label>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="trustServerCertificate"
+                          type="checkbox"
+                          checked={mssqlOptions?.trustServerCertificate ?? true}
+                          onChange={(e) =>
+                            setMssqlOptions((prev) => ({
+                              ...prev,
+                              trustServerCertificate: e.target.checked
+                            }))
+                          }
+                          className="size-4 rounded border-input"
+                        />
+                        <label htmlFor="trustServerCertificate" className="text-sm font-medium">
+                          Trust Server Certificate
+                        </label>
+                      </div>
+
+                      <p className="text-xs text-muted-foreground">
+                        Query timeout can be configured in Settings → Database.
+                      </p>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+              </>
+            )}
+
+            {ssh && dbType !== 'sqlite' && (
+              <SSHConfigSection config={sshConfig} onConfigChange={setSshConfig} />
+            )}
+          </div>
         </div>
 
-        <SheetFooter className="flex-row gap-2 shrink-0 border-t pt-4">
+        {testResult && (
+          <div
+            ref={testResultRef}
+            data-testid="connection-dialog-test-result"
+            // A failure is worth interrupting a screen reader for; a success is not.
+            role={testResult === 'success' ? 'status' : 'alert'}
+            className={`mx-5 mb-3 flex items-center gap-2 rounded-md p-3 text-sm ${
+              testResult === 'success'
+                ? 'bg-green-500/10 text-green-500'
+                : 'bg-destructive/10 text-destructive'
+            }`}
+          >
+            {testResult === 'success' ? (
+              <>
+                <CheckCircle2 className="size-4" />
+                Connection successful!
+              </>
+            ) : (
+              <>
+                <XCircle className="size-4" />
+                {testError}
+              </>
+            )}
+          </div>
+        )}
+
+        <div className="flex shrink-0 items-center justify-end gap-2 border-t px-5 py-3">
           <Button
             data-testid="connection-dialog-test"
             variant="outline"
             onClick={handleTestConnection}
             disabled={!isValid || isTesting}
+            className="mr-auto"
           >
             {isTesting ? (
               <>
@@ -1091,6 +1063,9 @@ export function AddConnectionDialog({
             ) : (
               'Test Connection'
             )}
+          </Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancel
           </Button>
           <Button
             data-testid="connection-dialog-save"
@@ -1108,8 +1083,8 @@ export function AddConnectionDialog({
               'Save Connection'
             )}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

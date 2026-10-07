@@ -13,8 +13,8 @@ test.afterAll(async () => {
   await ch?.stop()
 })
 
-function sheet(window: Page) {
-  return window.locator('[data-slot="sheet-content"]')
+function connectionDialog(window: Page) {
+  return window.getByRole('dialog')
 }
 
 async function activateSeededConnection(window: Page) {
@@ -45,12 +45,12 @@ async function revealTable(window: Page, name: string) {
 test('connection dialog creates a ClickHouse connection', async ({ window }, testInfo) => {
   await expect(window.getByText('Loading...')).toBeHidden({ timeout: 5000 })
   await window.getByRole('button', { name: /add connection/i }).click()
-  await expect(sheet(window)).toBeVisible({ timeout: 5000 })
+  await expect(connectionDialog(window)).toBeVisible({ timeout: 5000 })
 
-  await sheet(window).getByRole('button', { name: 'ClickHouse', exact: true }).click()
-  await expect(sheet(window).locator('#port')).toHaveValue('8123')
+  await connectionDialog(window).getByRole('button', { name: 'ClickHouse', exact: true }).click()
+  await expect(connectionDialog(window).locator('#port')).toHaveValue('8123')
 
-  const d = sheet(window)
+  const d = connectionDialog(window)
   await d.locator('#name').fill(ch.config.name)
   await d.locator('#host').fill(ch.config.host)
   await d.locator('#port').fill(String(ch.config.port))
@@ -63,7 +63,7 @@ test('connection dialog creates a ClickHouse connection', async ({ window }, tes
   await expect(d.getByRole('status')).toContainText(/connection successful/i, { timeout: 15000 })
 
   await d.getByRole('button', { name: /save connection/i }).click()
-  await expect(sheet(window)).toBeHidden({ timeout: 5000 })
+  await expect(connectionDialog(window)).toBeHidden({ timeout: 5000 })
 
   const list = await window.evaluate(() => window.api.connections.list())
   const saved = (list.data ?? []).find((c: { name: string }) => c.name === ch.config.name)
