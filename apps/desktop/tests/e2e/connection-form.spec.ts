@@ -286,3 +286,27 @@ for (const dismiss of ['Cancel', 'Escape'] as const) {
     await expect(dialog(window).locator('#password')).toHaveValue('')
   })
 }
+
+// ---------------------------------------------------------------------------
+// Test 6: A test that finishes after the dialog closed does not leak into it
+// ---------------------------------------------------------------------------
+
+test('a slow test connection from a dismissed dialog never shows its result', async ({
+  window
+}) => {
+  test.setTimeout(60_000)
+  await openAddDialog(window)
+  await dialog(window).getByRole('button', { name: 'ClickHouse', exact: true }).click()
+  // Unroutable address: the connect probe hangs until its 15 s timeout.
+  await dialog(window).locator('#host').fill('10.255.255.1')
+  await dialog(window).getByRole('button', { name: 'Test Connection' }).click()
+  await expect(dialog(window).getByRole('button', { name: /testing/i })).toBeVisible()
+
+  await window.keyboard.press('Escape')
+  await expect(dialog(window)).toBeHidden({ timeout: 5000 })
+  await openAddDialog(window)
+
+  await window.waitForTimeout(18_000)
+  await expect(dialog(window).getByTestId('connection-dialog-test-result')).toHaveCount(0)
+  await expect(dialog(window).getByRole('button', { name: 'Test Connection' })).toBeVisible()
+})

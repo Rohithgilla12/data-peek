@@ -116,6 +116,9 @@ export function AddConnectionDialog({
   const [testResult, setTestResult] = useState<'success' | 'error' | null>(null)
   const [testError, setTestError] = useState<string | null>(null)
   const testResultRef = useRef<HTMLDivElement>(null)
+  // Bumped on every close, so a Test Connection still in flight from a dismissed
+  // dialog cannot write its result into the next one.
+  const dialogSessionRef = useRef(0)
 
   // Populate form when editing
   useEffect(() => {
@@ -285,6 +288,8 @@ export function AddConnectionDialog({
   }
 
   const handleClose = () => {
+    dialogSessionRef.current += 1
+    setIsTesting(false)
     resetForm()
     onOpenChange(false)
   }
@@ -369,6 +374,7 @@ export function AddConnectionDialog({
   }
 
   const handleTestConnection = async () => {
+    const session = dialogSessionRef.current
     setIsTesting(true)
     setTestResult(null)
     setTestError(null)
@@ -376,6 +382,7 @@ export function AddConnectionDialog({
     try {
       const config = getConnectionConfig()
       const result = await window.api.db.connect(config)
+      if (session !== dialogSessionRef.current) return
 
       if (result.success) {
         setTestResult('success')
@@ -387,6 +394,7 @@ export function AddConnectionDialog({
         testResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       }, 100)
     } catch (error) {
+      if (session !== dialogSessionRef.current) return
       setTestResult('error')
       setTestError(error instanceof Error ? error.message : 'Unknown error')
 
@@ -394,7 +402,7 @@ export function AddConnectionDialog({
         testResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
       }, 100)
     } finally {
-      setIsTesting(false)
+      if (session === dialogSessionRef.current) setIsTesting(false)
     }
   }
 
@@ -1033,7 +1041,7 @@ export function AddConnectionDialog({
             data-testid="connection-dialog-test-result"
             // A failure is worth interrupting a screen reader for; a success is not.
             role={testResult === 'success' ? 'status' : 'alert'}
-            className={`mx-5 mb-3 flex items-center gap-2 rounded-md p-3 text-sm ${
+            className={`mx-5 mb-3 flex max-h-32 shrink-0 items-start gap-2 overflow-y-auto rounded-md p-3 text-sm ${
               testResult === 'success'
                 ? 'bg-green-500/10 text-green-500'
                 : 'bg-destructive/10 text-destructive'
@@ -1041,13 +1049,13 @@ export function AddConnectionDialog({
           >
             {testResult === 'success' ? (
               <>
-                <CheckCircle2 className="size-4" />
+                <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
                 Connection successful!
               </>
             ) : (
               <>
-                <XCircle className="size-4" />
-                {testError}
+                <XCircle className="mt-0.5 size-4 shrink-0" />
+                <span className="min-w-0 break-words">{testError}</span>
               </>
             )}
           </div>
