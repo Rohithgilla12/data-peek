@@ -559,12 +559,52 @@ describe('createStatementSplitter', () => {
   })
 })
 
+describe('ClickHouse-specific features', () => {
+  it('keeps a semicolon inside a string with a backslash-escaped quote', () => {
+    const sql = "INSERT INTO t VALUES (2, 'it\\'s; here'); SELECT 1"
+    expect(splitStatements(sql, 'clickhouse')).toEqual([
+      "INSERT INTO t VALUES (2, 'it\\'s; here')",
+      'SELECT 1'
+    ])
+  })
+
+  it('keeps a semicolon inside a backtick identifier', () => {
+    const sql = 'SELECT `a;b`, `has space` FROM `odd-names`; SELECT 2'
+    expect(splitStatements(sql, 'clickhouse')).toEqual([
+      'SELECT `a;b`, `has space` FROM `odd-names`',
+      'SELECT 2'
+    ])
+  })
+
+  it('treats # as a line comment', () => {
+    const sql = 'SELECT 1 # not; a split\nFROM t; SELECT 2'
+    expect(splitStatements(sql, 'clickhouse')).toEqual([
+      'SELECT 1 # not; a split\nFROM t',
+      'SELECT 2'
+    ])
+  })
+
+  it('handles nested block comments', () => {
+    const sql = 'SELECT /* outer /* inner; */ still; */ 1; SELECT 2'
+    expect(splitStatements(sql, 'clickhouse')).toEqual([
+      'SELECT /* outer /* inner; */ still; */ 1',
+      'SELECT 2'
+    ])
+  })
+
+  it('does not treat $$ as a dollar quote', () => {
+    const sql = "SELECT '$$'; SELECT 2"
+    expect(splitStatements(sql, 'clickhouse')).toEqual(["SELECT '$$'", 'SELECT 2'])
+  })
+})
+
 describe('SQL_PARSER_CONFIGS', () => {
   it('should have config for all database types', () => {
     expect(SQL_PARSER_CONFIGS.postgresql).toBeDefined()
     expect(SQL_PARSER_CONFIGS.mysql).toBeDefined()
     expect(SQL_PARSER_CONFIGS.mssql).toBeDefined()
     expect(SQL_PARSER_CONFIGS.sqlite).toBeDefined()
+    expect(SQL_PARSER_CONFIGS.clickhouse).toBeDefined()
   })
 
   it('should have correct PostgreSQL config', () => {

@@ -18,6 +18,7 @@ vi.mock('../db-adapter', () => ({
 }))
 
 import { assertSingleReadStatement, runReadOnlyQuery, MCP_MAX_ROWS } from '../mcp/read-guard'
+import { getAdapter } from '../db-adapter'
 
 const pgConfig = {
   id: 'c1',
@@ -95,6 +96,20 @@ describe('runReadOnlyQuery', () => {
     mockAdapter.beginTransaction.mockResolvedValue(undefined)
     mockAdapter.queryInTransaction.mockResolvedValue({ rows: [], fields: [], rowCount: 0 })
     mockAdapter.rollbackTransaction.mockResolvedValue(undefined)
+  })
+
+  it('prefers a server-enforced queryReadOnly over the transaction path when the adapter has one', async () => {
+    const queryReadOnly = vi
+      .fn()
+      .mockResolvedValue({ rows: [{ n: 1 }, { n: 2 }], fields: [], rowCount: 2 })
+    const withReadOnly = { ...mockAdapter, queryReadOnly }
+    vi.mocked(getAdapter).mockReturnValueOnce(withReadOnly as never)
+
+    const result = await runReadOnlyQuery(pgConfig, 'SELECT 1', 1)
+
+    expect(queryReadOnly).toHaveBeenCalledWith(pgConfig, 'SELECT 1', { timeoutMs: 30_000 })
+    expect(mockAdapter.beginTransaction).not.toHaveBeenCalled()
+    expect(result.rows).toEqual([{ n: 1 }])
   })
 
   it('runs postgres queries read-only, bounds them with a statement timeout, and rolls back', async () => {
