@@ -48,10 +48,15 @@ export async function startSeededClickHouse(): Promise<SeededClickHouse> {
       }
     ])
     .withExposedPorts(8123)
+    // The init server listens only inside the container, so /ping on the mapped port
+    // answers once the real server is up and the seed has finished.
     .withWaitStrategy(
-      Wait.forSuccessfulCommand(
-        'clickhouse-client --user e2e --password e2e -q "SELECT count() FROM acme_analytics.\\`odd-names\\`" | grep -q 3'
-      )
+      Wait.forAll([
+        Wait.forSuccessfulCommand(
+          'clickhouse-client --user e2e --password e2e -q "SELECT count() FROM acme_analytics.\\`odd-names\\`" | grep -q 3'
+        ),
+        Wait.forHttp('/ping', 8123).forStatusCode(200)
+      ])
     )
     .start()
 
