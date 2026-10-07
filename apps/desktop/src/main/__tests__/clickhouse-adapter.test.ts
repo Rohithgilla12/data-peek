@@ -120,6 +120,12 @@ describe('result mapping', () => {
     })
   })
 
+  it('throws when the server embedded an exception in a 200 body', () => {
+    expect(() =>
+      toStatementResult('SELECT 1', 0, { data: [], exception: 'Code: 159. Timeout exceeded' }, 1)
+    ).toThrow('Timeout exceeded')
+  })
+
   it('reads written_rows from the summary and falls back to 0', () => {
     expect(rowCountFromSummary({ written_rows: '42' })).toBe(42)
     expect(rowCountFromSummary(undefined)).toBe(0)

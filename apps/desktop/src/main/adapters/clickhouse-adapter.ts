@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto'
-import type { ClickHouseClient } from '@clickhouse/client'
+import { ClickHouseError, type ClickHouseClient } from '@clickhouse/client'
 import {
   SCHEMA_INTEL_CHECKS,
   type ActiveQuery,
@@ -57,6 +57,19 @@ export { closeClickHousePool, closeAllClickHousePools }
 /** Grace after the server deadline before the client gives up on the socket itself. */
 const ABORT_BACKSTOP_MS = 5000
 
+/**
+ * Without this the server starts streaming a 200 as soon as the first block is ready and
+ * an error that happens later (a timeout, a bad row) is embedded in the body, which the
+ * client reports as a normal result. Buffering makes every error an HTTP error.
+ */
+const WAIT_END = { wait_end_of_query: 1 } as const
+
+/** The server's error name (READONLY, TIMEOUT_EXCEEDED) belongs in the message the user sees. */
+function describeError(error: unknown): string {
+  if (error instanceof ClickHouseError && error.type) return `${error.message} (${error.type})`
+  return error instanceof Error ? error.message : String(error)
+}
+
 const COLUMNS_SQL = `
   SELECT database, table, name, type, position, default_kind, default_expression,
          is_in_primary_key, comment
@@ -75,7 +88,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
       })
     } catch (error) {
       await closeClickHousePool(config).catch(() => undefined)
-      throw error
+      throw new Error(describeError(error))
     }
   }
 
@@ -161,7 +174,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
                 query_id: currentQueryId,
                 session_id: sessionId,
                 abort_signal: abort.signal,
-                clickhouse_settings: settings
+                clickhouse_settings: { ...settings, ...WAIT_END }
               })
               if (collectTelemetry) {
                 telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.EXECUTION)
@@ -180,7 +193,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
                 query_id: currentQueryId,
                 session_id: sessionId,
                 abort_signal: abort.signal,
-                clickhouse_settings: { ...settings, wait_end_of_query: 1 }
+                clickhouse_settings: { ...settings, ...WAIT_END }
               })
               if (collectTelemetry) {
                 telemetryCollector.endPhase(executionId, TELEMETRY_PHASES.EXECUTION)
@@ -200,8 +213,9 @@ export class ClickHouseAdapter implements DatabaseAdapter {
           } catch (error) {
             if (collectTelemetry) telemetryCollector.cancel(executionId)
             if (cancelled) throw new Error('Query cancelled')
-            const message = error instanceof Error ? error.message : String(error)
-            throw new Error(`Error in statement ${i + 1}: ${message}\n\nStatement:\n${statement}`)
+            throw new Error(
+              `Error in statement ${i + 1}: ${describeError(error)}\n\nStatement:\n${statement}`
+            )
           } finally {
             if (backstop) clearTimeout(backstop)
           }
@@ -229,14 +243,18 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   ): Promise<AdapterQueryResult> {
     if (hasTrailingFormatClause(sql)) throw new Error(FORMAT_CLAUSE_MESSAGE)
     return withClickHouseClient(config, async (client) => {
-      const rs = await client.query({
-        query: sql,
-        format: 'JSON',
-        clickhouse_settings: { readonly: '1', ...timeoutSettings(options.timeoutMs) }
-      })
-      const json = await rs.json<Record<string, unknown>>()
-      const result = toStatementResult(sql, 0, json, 0)
-      return { rows: result.rows, fields: result.fields, rowCount: result.rowCount }
+      try {
+        const rs = await client.query({
+          query: sql,
+          format: 'JSON',
+          clickhouse_settings: { readonly: '1', ...timeoutSettings(options.timeoutMs), ...WAIT_END }
+        })
+        const json = await rs.json<Record<string, unknown>>()
+        const result = toStatementResult(sql, 0, json, 0)
+        return { rows: result.rows, fields: result.fields, rowCount: result.rowCount }
+      } catch (error) {
+        throw new Error(describeError(error))
+      }
     })
   }
 
@@ -248,11 +266,12 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   ): Promise<{ rowCount: number | null }> {
     if (params.length > 0) throw unsupported('clickhouse', 'inlineEdit')
     return withClickHouseClient(config, async (client) => {
-      const res = await client.command({
-        query: sql,
-        clickhouse_settings: { wait_end_of_query: 1 }
-      })
-      return { rowCount: rowCountFromSummary(res.summary) }
+      try {
+        const res = await client.command({ query: sql, clickhouse_settings: WAIT_END })
+        return { rowCount: rowCountFromSummary(res.summary) }
+      } catch (error) {
+        throw new Error(describeError(error))
+      }
     })
   }
 

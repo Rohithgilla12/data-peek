@@ -16,6 +16,8 @@ export interface ChJsonResponse {
   meta?: Array<{ name: string; type: string }>
   data: Record<string, unknown>[]
   rows?: number
+  /** Present when the server hit an error after it had already started the response. */
+  exception?: string
 }
 
 export interface SystemTableRow {
@@ -99,6 +101,7 @@ export function toStatementResult(
   response: ChJsonResponse,
   durationMs: number
 ): StatementResult {
+  if (typeof response.exception === 'string') throw new Error(response.exception)
   const rows = response.data ?? []
   return {
     statement,
