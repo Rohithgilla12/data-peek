@@ -258,6 +258,18 @@ describe('health', () => {
     expect(events.dataSizeBytes).toBeGreaterThan(100_000)
     expect(r.dbSize.totalSizeBytes).toBeGreaterThan(events.dataSizeBytes)
   })
+
+  it('totals bytes_on_disk without counting index files twice', async () => {
+    const r = await adapter.getTableSizes(config)
+    const [expected] = await selectRows<{ total: string }>(
+      `SELECT sum(bytes_on_disk) AS total FROM system.parts
+       WHERE active AND database NOT IN ('system', 'INFORMATION_SCHEMA', 'information_schema')`
+    )
+    expect(r.dbSize.totalSizeBytes).toBe(Number(expected.total))
+    for (const t of r.tables) {
+      expect(t.dataSizeBytes + t.indexSizeBytes).toBe(t.totalSizeBytes)
+    }
+  })
 })
 
 describe('gating', () => {

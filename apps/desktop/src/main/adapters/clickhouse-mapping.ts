@@ -224,9 +224,9 @@ export function formatBytes(bytes: number): string {
 
 export function mapPartsRows(rows: SystemPartsRow[]): TableSizeInfo[] {
   return rows.map((r) => {
-    const dataSizeBytes = Number(r.bytes_on_disk)
+    const totalSizeBytes = Number(r.bytes_on_disk)
     const indexSizeBytes = Number(r.index_bytes)
-    const totalSizeBytes = dataSizeBytes + indexSizeBytes
+    const dataSizeBytes = totalSizeBytes - indexSizeBytes
     return {
       schema: r.database,
       table: r.table,

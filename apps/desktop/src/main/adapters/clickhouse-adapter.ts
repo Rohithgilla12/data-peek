@@ -372,8 +372,11 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   ): Promise<{ dbSize: DatabaseSizeInfo; tables: TableSizeInfo[] }> {
     const rows = await withClickHouseClient(config, (client) =>
       this.rows<SystemPartsRow>(client, {
+        // bytes_on_disk already contains every index file, so index_bytes is a slice of it.
         query: `SELECT database, table, sum(rows) AS rows, sum(bytes_on_disk) AS bytes_on_disk,
-                       sum(marks_bytes) + sum(primary_key_bytes_in_memory) AS index_bytes
+                       sum(marks_bytes) + sum(primary_key_size)
+                         + sum(secondary_indices_compressed_bytes)
+                         + sum(secondary_indices_marks_bytes) AS index_bytes
                 FROM system.parts
                 WHERE active AND database NOT IN {hidden:Array(String)}
                   AND ({db:String} = '' OR database = {db:String})

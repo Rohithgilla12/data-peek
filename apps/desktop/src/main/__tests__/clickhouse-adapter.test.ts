@@ -239,21 +239,25 @@ describe('mapSystemRows', () => {
 })
 
 describe('mapPartsRows', () => {
-  it('formats sizes and sums data and index bytes', () => {
+  it('takes bytes_on_disk as the total and carves the index bytes out of it', () => {
     const [row] = mapPartsRows([
       {
         database: 'acme',
         table: 'events',
         rows: '50000',
         bytes_on_disk: '1348962',
-        index_bytes: '1024'
+        index_bytes: '517'
       }
     ])
-    expect(row.schema).toBe('acme')
-    expect(row.rowCountEstimate).toBe(50000)
-    expect(row.totalSizeBytes).toBe(1349986)
-    expect(row.dataSize).toBe('1.3 MB')
-    expect(row.indexSize).toBe('1.0 kB')
+    expect(row).toMatchObject({
+      schema: 'acme',
+      rowCountEstimate: 50000,
+      totalSizeBytes: 1348962,
+      indexSizeBytes: 517,
+      dataSizeBytes: 1348445,
+      dataSize: '1.3 MB',
+      indexSize: '517 bytes'
+    })
   })
 })
 
