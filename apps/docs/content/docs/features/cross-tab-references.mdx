@@ -73,6 +73,7 @@ For heavier inlines (over 1,000 rows or 256 KB), data-peek shows a confirm dialo
 - References work across tabs on the **same connection** only
 - The referenced tab must have been **run successfully** — you'll get a clear error otherwise (`@draft hasn't been run yet — run it first.`)
 - A tab can't reference itself
+- References work on PostgreSQL, MySQL, SQL Server, and SQLite connections. ClickHouse connections don't offer `@name` references.
 
 <Callout type="tip">
   Named results are just CTEs — use them anywhere a table works: `FROM @name`,

@@ -27,7 +27,7 @@ Here's the whole flow in under 20 seconds — connect, enable the server, and ap
 
 ## What the agent gets
 
-Once connected, the agent has five tools. The four read tools run freely — inside a rolled-back, row-capped transaction. The one write tool can't touch your data until you approve it in the app.
+Once connected, the agent has five tools. The four read tools run freely, read-only and row-capped. The one write tool can't touch your data until you approve it in the app.
 
 | Tool                | Access          | What it does                                        |
 | ------------------- | --------------- | --------------------------------------------------- |
@@ -61,7 +61,7 @@ Paste the command into your terminal to register data-peek with Claude Code. Any
 
 ## Ask your agent
 
-Now just ask questions. The agent calls `list_connections`, then `run_query` — reads run in a read-only, rolled-back transaction. Every tool returns JSON, which your client typically renders as a table. Credentials are never included:
+Now just ask questions. The agent calls `list_connections`, then `run_query`, and reads always run read-only. Every tool returns JSON, which your client typically renders as a table. Credentials are never included:
 
 ```jsonc
 // list_connections — no passwords or connection secrets
@@ -102,7 +102,7 @@ Rejected statements never execute and are never logged — only executed SQL is.
 
 - **Off by default.** The server runs only while the toggle is on, and stops the moment you turn it off.
 - **Localhost + bearer token.** Bound to `127.0.0.1` only. Every request needs the token; regenerate it any time to revoke existing clients.
-- **Reads can't mutate.** `run_query` runs in a rolled-back transaction (PostgreSQL also runs `SET TRANSACTION READ ONLY`), capped at 500 rows.
+- **Reads can't mutate.** `run_query` runs in a rolled-back transaction (PostgreSQL also runs `SET TRANSACTION READ ONLY`), capped at 500 rows. ClickHouse has no transactions, so data-peek sends ClickHouse reads with the `readonly = 1` setting, and the server refuses writes and table functions such as `url()`.
 - **Writes are gated.** `execute_statement` shows you the exact SQL and blocks until you approve — no silent writes.
 - **Credentials never leave.** No connection password is exposed through any tool, and nothing is uploaded.
 

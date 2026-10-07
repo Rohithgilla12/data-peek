@@ -2,7 +2,7 @@ export const DOCS_CONFIG = {
   name: "data-peek Documentation",
   title: "data-peek Docs",
   description:
-    "Complete documentation for data-peek - A minimal, fast, lightweight SQL client for PostgreSQL, MySQL, SQL Server, and SQLite.",
+    "Complete documentation for data-peek - A minimal, fast, lightweight SQL client for PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse.",
   url: "https://docs.datapeek.dev",
   ogImage: "https://docs.datapeek.dev/og-image.png",
   twitterHandle: "@gillarohith",

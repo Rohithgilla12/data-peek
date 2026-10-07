@@ -62,7 +62,7 @@ const sections: Section[] = [
     blurb:
       "Feature matrix and connection specifics for every supported engine.",
     href: "/docs/database-support",
-    leaves: ["PostgreSQL", "MySQL", "SQL Server", "SQLite"],
+    leaves: ["PostgreSQL", "MySQL", "SQL Server", "SQLite", "ClickHouse"],
   },
   {
     number: "04",
@@ -113,7 +113,8 @@ function Home() {
 
           <p className="mt-5 max-w-[58ch] text-[14px] leading-[1.65] text-[var(--n-fg-muted)]">
             Everything you need to install, connect, query, and configure
-            data-peek across Postgres, MySQL, SQL Server, and SQLite. If a page
+            data-peek across Postgres, MySQL, SQL Server, SQLite, and
+            ClickHouse. If a page
             is wrong or missing, the edit link goes straight to GitHub.
           </p>
 
