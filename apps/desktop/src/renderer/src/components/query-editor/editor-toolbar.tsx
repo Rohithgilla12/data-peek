@@ -23,6 +23,7 @@ import {
   TooltipTrigger
 } from '@data-peek/ui'
 import { BenchmarkButton } from '@/components/benchmark-button'
+import { useCapabilities } from '@/hooks/use-capabilities'
 import { isExecutableTab, type Tab } from '@/stores/tab-store'
 import type { StepSessionState } from '@/stores/step-store'
 import type { ConnectionWithStatus } from '@/stores/connection-store'
@@ -98,6 +99,7 @@ export function EditorToolbar({
   const query = executable?.query ?? ''
   const isExecuting = executable?.isExecuting ?? false
   const hasQuery = query.trim().length > 0
+  const can = useCapabilities(tabConnection?.dbType)
 
   return (
     <div className="flex items-center justify-between bg-muted/20 px-3 py-2">
@@ -140,7 +142,7 @@ export function EditorToolbar({
             </kbd>
           </Button>
         )}
-        {tab.type === 'query' && tabConnection?.dbType === 'postgresql' && (
+        {tab.type === 'query' && can.stepThrough && (
           <>
             <Button
               size="sm"
@@ -165,7 +167,7 @@ export function EditorToolbar({
             </label>
           </>
         )}
-        {tab.type === 'query' && tabConnection?.dbType === 'postgresql' && !stepSession && (
+        {tab.type === 'query' && can.transactions && !stepSession && (
           <div className="flex items-center gap-2 border-l border-border/60 pl-2 ml-1">
             <label
               className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer"

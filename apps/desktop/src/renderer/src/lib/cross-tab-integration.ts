@@ -6,7 +6,12 @@
  * tested; React/store wiring lives in the components that call resolveForRun.
  */
 
-import type { DatabaseType, SQLDialect } from '@data-peek/shared'
+import {
+  hasCapability,
+  type DatabaseType,
+  type DbTypesWith,
+  type SQLDialect
+} from '@data-peek/shared'
 import { parseTabReferences } from './cross-tab-parser'
 import { resolveReferences, type ResolvableTab } from './cross-tab-resolver'
 import type { ResolveErrorKind, ResolveResult } from './cross-tab-types'
@@ -17,7 +22,7 @@ import type { QueryTab, Tab } from '../stores/tab-store'
  * DatabaseType has 'sqlite' (no escaper dialect) — 'standard' gives bare
  * VALUES and no ::type casts, which SQLite accepts.
  */
-export function toSQLDialect(dbType: DatabaseType): SQLDialect {
+export function toSQLDialect(dbType: DbTypesWith<'crossTabRefs'>): SQLDialect {
   switch (dbType) {
     case 'postgresql':
       return 'postgresql'
@@ -141,6 +146,16 @@ export interface ResolveForRunContext {
 
 /** Parse + resolve a query's @name references into a runnable SQL string. Pure. */
 export function resolveForRun(sql: string, ctx: ResolveForRunContext): ResolveForRunResult {
+  // A database that cannot take a VALUES-backed CTE runs the SQL as written; `@name`
+  // is then whatever the server makes of it, as it was before cross-tab refs existed.
+  if (!hasCapability(ctx.dbType, 'crossTabRefs')) {
+    return {
+      ok: true,
+      finalSql: sql,
+      summary: { refCount: 0, rowsInlined: 0, bytesAdded: 0, references: [] }
+    }
+  }
+  const dbType = ctx.dbType
   // Include the current tab's name so a self-reference (@self) is still parsed
   // as a cross-tab ref on mysql/mssql and reaches the resolver's circular check,
   // rather than being mistaken for a bare @variable and passed through.
@@ -162,7 +177,7 @@ export function resolveForRun(sql: string, ctx: ResolveForRunContext): ResolveFo
   const resolved = resolveReferences(sql, parsed, {
     lookup,
     currentTabId: ctx.currentTabId,
-    dialect: toSQLDialect(ctx.dbType)
+    dialect: toSQLDialect(dbType)
   })
   if (!resolved.ok) return { ok: false, error: resolved.error }
 

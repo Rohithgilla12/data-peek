@@ -15,6 +15,8 @@ import { FunAnalytics } from '@/components/fun-analytics'
 
 import { useConnectionStore, useTabStore } from '@/stores'
 import { useSettingsStore } from '@/stores/settings-store'
+import { useCapabilities } from '@/hooks/use-capabilities'
+import { supportsSchemaIntel } from '@shared/index'
 import {
   cn,
   Sidebar,
@@ -46,7 +48,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const createPgNotificationsTab = useTabStore((s) => s.createPgNotificationsTab)
   const createHealthMonitorTab = useTabStore((s) => s.createHealthMonitorTab)
   const createSchemaIntelTab = useTabStore((s) => s.createSchemaIntelTab)
-  const isPostgres = activeConnection?.dbType === 'postgresql'
+  const can = useCapabilities(activeConnection?.dbType)
+  const hasSchemaIntel = supportsSchemaIntel(activeConnection?.dbType)
   const pokemonBuddyEnabled = useSettingsStore((s) => s.pokemonBuddyEnabled)
 
   const handleOpenNotifications = () => {
@@ -102,34 +105,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <ScheduledQueries />
             <Dashboards />
 
-            {(isPostgres || activeConnectionId) && (
-              <SidebarGroup>
-                <SidebarGroupContent>
-                  <SidebarMenu>
-                    {isPostgres && (
-                      <SidebarMenuItem>
-                        <SidebarMenuButton onClick={handleOpenNotifications}>
-                          <Bell className="size-4" />
-                          <span>Notifications</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    )}
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {can.notifications && (
                     <SidebarMenuItem>
-                      <SidebarMenuButton onClick={handleOpenHealthMonitor}>
-                        <Activity className="size-4" />
-                        <span>Health Monitor</span>
+                      <SidebarMenuButton onClick={handleOpenNotifications}>
+                        <Bell className="size-4" />
+                        <span>Notifications</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
+                  )}
+                  <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleOpenHealthMonitor}>
+                      <Activity className="size-4" />
+                      <span>Health Monitor</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {hasSchemaIntel && (
                     <SidebarMenuItem>
                       <SidebarMenuButton onClick={handleOpenSchemaIntel}>
                         <SearchCode className="size-4" />
                         <span>Schema Intel</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
-                  </SidebarMenu>
-                </SidebarGroupContent>
-              </SidebarGroup>
-            )}
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
           </>
         )}
 

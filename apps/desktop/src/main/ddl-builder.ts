@@ -13,7 +13,7 @@ import type {
   AlterConstraintOperation,
   AlterIndexOperation,
   ParameterizedQuery,
-  DatabaseType
+  DbTypesWith
 } from '@data-peek/shared'
 import { formatColumnType } from '@data-peek/shared'
 import { quoteIdentifier as quoteIdentifierUtil } from './sql-utils'
@@ -29,7 +29,9 @@ interface DdlDialect {
   supportsConcurrent: boolean
 }
 
-const DIALECTS: Record<DatabaseType, DdlDialect> = {
+export type DdlDbType = DbTypesWith<'tableDesigner'>
+
+const DIALECTS: Record<DdlDbType, DdlDialect> = {
   postgresql: {
     identifierQuote: '"',
     stringQuote: "'",
@@ -236,7 +238,7 @@ function buildConstraintDef(constraint: ConstraintDefinition, dialect: DdlDialec
  */
 export function buildCreateTable(
   definition: TableDefinition,
-  dbType: DatabaseType = 'postgresql'
+  dbType: DdlDbType = 'postgresql'
 ): ParameterizedQuery {
   const dialect = DIALECTS[dbType]
   const lines: string[] = []
@@ -353,7 +355,7 @@ export function buildCreateIndex(
   schema: string,
   table: string,
   index: IndexDefinition,
-  dbType: DatabaseType = 'postgresql'
+  dbType: DdlDbType = 'postgresql'
 ): ParameterizedQuery {
   const dialect = DIALECTS[dbType]
   const parts: string[] = ['CREATE']
@@ -418,7 +420,7 @@ export function buildDropTable(
   schema: string,
   table: string,
   cascade: boolean = false,
-  dbType: DatabaseType = 'postgresql'
+  dbType: DdlDbType = 'postgresql'
 ): ParameterizedQuery {
   const dialect = DIALECTS[dbType]
   const tableRef = buildTableRef(schema, table, dialect)
@@ -529,7 +531,7 @@ function buildIndexOp(
   table: string,
   op: AlterIndexOperation,
   dialect: DdlDialect,
-  dbType: DatabaseType
+  dbType: DdlDbType
 ): string {
   switch (op.type) {
     case 'create_index':
@@ -568,7 +570,7 @@ function buildIndexOp(
  */
 export function buildAlterTable(
   batch: AlterTableBatch,
-  dbType: DatabaseType = 'postgresql'
+  dbType: DdlDbType = 'postgresql'
 ): ParameterizedQuery[] {
   const dialect = DIALECTS[dbType]
   const tableRef = buildTableRef(batch.schema, batch.table, dialect)
@@ -637,7 +639,7 @@ export function buildAlterTable(
  */
 export function buildPreviewDDL(
   definition: TableDefinition,
-  dbType: DatabaseType = 'postgresql'
+  dbType: DdlDbType = 'postgresql'
 ): string {
   return buildCreateTable(definition, dbType).sql
 }
@@ -647,7 +649,7 @@ export function buildPreviewDDL(
  */
 export function buildAlterPreviewDDL(
   batch: AlterTableBatch,
-  dbType: DatabaseType = 'postgresql'
+  dbType: DdlDbType = 'postgresql'
 ): string[] {
   return buildAlterTable(batch, dbType).map((q) => q.sql)
 }

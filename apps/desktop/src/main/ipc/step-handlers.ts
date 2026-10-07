@@ -1,12 +1,14 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import type { StepSessionRegistry } from '../step-session'
 import type { ConnectionConfig, StartStepRequest } from '@shared/index'
+import { requireCapability } from '../lib/capability-guard'
 
 export function registerStepHandlers(registry: StepSessionRegistry): void {
   ipcMain.handle(
     'step:start',
     async (event, { config, request }: { config: ConnectionConfig; request: StartStepRequest }) => {
       try {
+        requireCapability(config, 'stepThrough')
         const win = BrowserWindow.fromWebContents(event.sender)
         const windowId = win?.id ?? -1
         const data = await registry.start({

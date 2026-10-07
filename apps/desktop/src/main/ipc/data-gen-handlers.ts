@@ -4,6 +4,7 @@ import { getAdapter } from '../db-adapter'
 import { generateRows, resolveFK } from '../data-generator'
 import { batchInsert, requestCancelBatchInsert, resetCancelBatchInsert } from '../batch-insert'
 import { createLogger } from '../lib/logger'
+import { requireCapability } from '../lib/capability-guard'
 
 const log = createLogger('data-gen-handlers')
 
@@ -17,6 +18,11 @@ export function registerDataGenHandlers(): void {
       cancelDataGen = false
       resetCancelBatchInsert()
 
+      try {
+        requireCapability(connectionConfig, 'dataGenerator')
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
       const adapter = getAdapter(connectionConfig)
 
       const sendProgress = (progress: DataGenProgress): void => {

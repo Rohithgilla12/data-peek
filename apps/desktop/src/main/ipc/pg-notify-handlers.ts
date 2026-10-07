@@ -12,6 +12,7 @@ import {
   getAllStatuses
 } from '../pg-notification-listener'
 import { createLogger } from '../lib/logger'
+import { requireCapability } from '../lib/capability-guard'
 
 const log = createLogger('pg-notify-handlers')
 
@@ -20,6 +21,7 @@ export function registerPgNotifyHandlers(): void {
     'pg-notify:subscribe',
     async (_event, connectionId: string, config: ConnectionConfig, channel: string) => {
       try {
+        requireCapability(config, 'notifications')
         await subscribe(connectionId, config, channel)
         return { success: true }
       } catch (error) {

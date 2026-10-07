@@ -34,6 +34,7 @@ import { CsvImportDialog } from '@/components/csv-import-dialog'
 import { PgExportDialog } from '@/components/pg-export-dialog'
 import { PgImportDialog } from '@/components/pg-import-dialog'
 import { useImportStore, usePgDumpStore } from '@/stores'
+import { useCapabilities } from '@/hooks/use-capabilities'
 
 import {
   Badge,
@@ -308,6 +309,9 @@ function VirtualizedSchemaItems({
   onExecuteRoutine
 }: VirtualizedSchemaItemsProps) {
   const parentRef = React.useRef<HTMLDivElement>(null)
+  const can = useCapabilities(
+    useConnectionStore((s) => s.connections.find((c) => c.id === s.activeConnectionId)?.dbType)
+  )
 
   const virtualizer = useVirtualizer({
     count: items.length,
@@ -438,18 +442,24 @@ function VirtualizedSchemaItems({
                           <Table2 className="size-4 mr-2" />
                           View Data
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onEditTable(schemaName, table.name)}>
-                          <Pencil className="size-4 mr-2" />
-                          Edit Table
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onImportCsv(schemaName, table.name)}>
-                          <Upload className="size-4 mr-2" />
-                          Import CSV
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onGenerateData(schemaName, table.name)}>
-                          <Shuffle className="size-4 mr-2" />
-                          Generate Data
-                        </DropdownMenuItem>
+                        {can.tableDesigner && (
+                          <DropdownMenuItem onClick={() => onEditTable(schemaName, table.name)}>
+                            <Pencil className="size-4 mr-2" />
+                            Edit Table
+                          </DropdownMenuItem>
+                        )}
+                        {can.csvImport && (
+                          <DropdownMenuItem onClick={() => onImportCsv(schemaName, table.name)}>
+                            <Upload className="size-4 mr-2" />
+                            Import CSV
+                          </DropdownMenuItem>
+                        )}
+                        {can.dataGenerator && (
+                          <DropdownMenuItem onClick={() => onGenerateData(schemaName, table.name)}>
+                            <Shuffle className="size-4 mr-2" />
+                            Generate Data
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <ExportMenuItems
                           onSelect={(format, destination) =>
@@ -693,6 +703,10 @@ export function SchemaExplorer() {
     (s) => s.connections.find((c) => c.id === s.activeConnectionId)?.schema
   )
   const getActiveConnection = useConnectionStore((s) => s.getActiveConnection)
+  const activeDbType = useConnectionStore(
+    (s) => s.connections.find((c) => c.id === s.activeConnectionId)?.dbType
+  )
+  const can = useCapabilities(activeDbType)
   const fetchSchemas = useConnectionStore((s) => s.fetchSchemas)
   const schemaFromCache = useConnectionStore((s) => s.schemaFromCache)
   const isRefreshingSchema = useConnectionStore((s) => s.isRefreshingSchema)
@@ -1209,15 +1223,17 @@ export function SchemaExplorer() {
       <SidebarGroupLabel className="flex items-center justify-between">
         <span>Schema</span>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-5 p-0 hover:bg-sidebar-accent"
-            onClick={() => handleCreateTable()}
-            title="Create new table"
-          >
-            <Plus className="size-3.5" />
-          </Button>
+          {can.tableDesigner && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-5 p-0 hover:bg-sidebar-accent"
+              onClick={() => handleCreateTable()}
+              title="Create new table"
+            >
+              <Plus className="size-3.5" />
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
@@ -1227,7 +1243,7 @@ export function SchemaExplorer() {
           >
             <Network className="size-3.5" />
           </Button>
-          {getActiveConnection()?.dbType === 'postgresql' && (
+          {can.pgDump && (
             <>
               <Button
                 variant="ghost"
@@ -1429,27 +1445,21 @@ export function SchemaExplorer() {
                       if (shouldVirtualize) {
                         // Build unified items list for virtualization
                         const items: SchemaItem[] = [
-                          ...schema.tables.map(
-                            (table): SchemaItem => ({
-                              type: 'table',
-                              data: table,
-                              schemaName: schema.name
-                            })
-                          ),
-                          ...(schema.routines ?? []).map(
-                            (routine): SchemaItem => ({
-                              type: 'routine',
-                              data: routine,
-                              schemaName: schema.name
-                            })
-                          ),
-                          ...(schema.triggers ?? []).map(
-                            (trigger): SchemaItem => ({
-                              type: 'trigger',
-                              data: trigger,
-                              schemaName: schema.name
-                            })
-                          )
+                          ...schema.tables.map((table): SchemaItem => ({
+                            type: 'table',
+                            data: table,
+                            schemaName: schema.name
+                          })),
+                          ...(schema.routines ?? []).map((routine): SchemaItem => ({
+                            type: 'routine',
+                            data: routine,
+                            schemaName: schema.name
+                          })),
+                          ...(schema.triggers ?? []).map((trigger): SchemaItem => ({
+                            type: 'trigger',
+                            data: trigger,
+                            schemaName: schema.name
+                          }))
                         ]
 
                         return (

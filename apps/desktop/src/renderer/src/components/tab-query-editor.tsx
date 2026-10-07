@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Database } from 'lucide-react'
 import { usePanelCollapse } from '@/hooks/use-panel-collapse'
+import { useCapabilities } from '@/hooks/use-capabilities'
 
 import {
   useTabStore,
@@ -127,6 +128,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const tabConnection = tab?.connectionId
     ? connections.find((c) => c.id === tab.connectionId)
     : null
+  const can = useCapabilities(tabConnection?.dbType)
 
   // Telemetry, benchmark, EXPLAIN, and performance-analysis state (extracted to hook)
   const {
@@ -661,7 +663,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     const editor = editorRef.current
     const monaco = monacoRef.current
     if (!editor || !monaco || !editorMounted) return
-    if (tabConnection?.dbType !== 'postgresql') return
+    if (!can.stepThrough) return
 
     const disposable = editor.addAction({
       id: 'datapeek.start-step',
@@ -673,7 +675,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     })
 
     return () => disposable.dispose()
-  }, [handleStartStep, editorMounted, tabConnection?.dbType])
+  }, [handleStartStep, editorMounted, can.stepThrough])
 
   useEffect(() => {
     const editor = editorRef.current
@@ -1053,8 +1055,8 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
               snippets={allSnippets}
               readOnly={!!stepSession}
               glyphMargin={!!stepSession}
-              crossTabRefs={crossTabRefs}
-              crossTabDialect={tabConnection?.dbType}
+              crossTabRefs={can.crossTabRefs ? crossTabRefs : []}
+              crossTabDialect={can.crossTabRefs ? tabConnection?.dbType : undefined}
               onMount={(editor, monaco) => {
                 editorRef.current = editor
                 monacoRef.current = monaco

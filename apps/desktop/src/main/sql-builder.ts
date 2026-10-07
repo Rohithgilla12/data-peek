@@ -10,7 +10,7 @@ import type {
   RowDelete,
   EditContext,
   ParameterizedQuery,
-  DatabaseType
+  DbTypesWith
 } from '@data-peek/shared'
 import { quoteIdentifier as quoteIdentifierUtil } from './sql-utils'
 
@@ -26,7 +26,9 @@ interface SqlDialect {
   supportsReturning: boolean
 }
 
-const DIALECTS: Record<DatabaseType, SqlDialect> = {
+export type EditDbType = DbTypesWith<'inlineEdit'>
+
+const DIALECTS: Record<EditDbType, SqlDialect> = {
   postgresql: {
     parameterPlaceholder: (i) => `$${i}`,
     identifierQuote: '"',
@@ -210,7 +212,7 @@ function buildDelete(
 export function buildQuery(
   operation: EditOperation,
   context: EditContext,
-  dbType: DatabaseType = 'postgresql'
+  dbType: EditDbType = 'postgresql'
 ): ParameterizedQuery {
   const dialect = DIALECTS[dbType]
 
@@ -232,7 +234,7 @@ export function buildQuery(
 export function buildBatchQueries(
   operations: EditOperation[],
   context: EditContext,
-  dbType: DatabaseType = 'postgresql'
+  dbType: EditDbType = 'postgresql'
 ): ParameterizedQuery[] {
   return operations.map((op) => buildQuery(op, context, dbType))
 }
@@ -244,7 +246,7 @@ export function buildBatchQueries(
 export function buildPreviewSql(
   operation: EditOperation,
   context: EditContext,
-  dbType: DatabaseType = 'postgresql'
+  dbType: EditDbType = 'postgresql'
 ): string {
   const { sql, params } = buildQuery(operation, context, dbType)
 

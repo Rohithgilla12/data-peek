@@ -1,18 +1,7 @@
 import { faker } from '@faker-js/faker/locale/en'
 import type { ColumnGenerator, DataGenConfig, GeneratorType, ConnectionConfig } from '@shared/index'
 import type { DatabaseAdapter } from './db-adapter'
-import { quoteIdentifier } from './sql-utils'
-
-const IDENTIFIER_QUOTES: Record<string, string> = {
-  postgresql: '"',
-  mysql: '`',
-  sqlite: '"',
-  mssql: '['
-}
-
-function quoteId(name: string, dbType: string): string {
-  return quoteIdentifier(name, IDENTIFIER_QUOTES[dbType] ?? '"')
-}
+import { buildTableRef, quoteId, type BulkInsertDbType } from './batch-insert'
 
 function callFakerMethod(method: string): unknown {
   const parts = method.split('.')
@@ -152,17 +141,13 @@ export function generateRows(config: DataGenConfig, fkData: Map<string, unknown[
 
 export async function resolveFK(
   adapter: DatabaseAdapter,
-  connectionConfig: ConnectionConfig,
+  connectionConfig: ConnectionConfig & { dbType: BulkInsertDbType },
   schema: string,
   fkTable: string,
   fkColumn: string
 ): Promise<unknown[]> {
   const dbType = connectionConfig.dbType
-  const quotedTable = quoteId(fkTable, dbType)
-  const tableRef =
-    schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo'
-      ? `${quoteId(schema, dbType)}.${quotedTable}`
-      : quotedTable
+  const tableRef = buildTableRef(schema, fkTable, dbType)
   const sql =
     dbType === 'mssql'
       ? `SELECT TOP 1000 ${quoteId(fkColumn, dbType)} FROM ${tableRef}`

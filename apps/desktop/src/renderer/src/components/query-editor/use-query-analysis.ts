@@ -3,6 +3,7 @@ import { useExecutionPlanResize } from '@/hooks/use-execution-plan-resize'
 import { useQueryStore, useTabTelemetry, useTabPerfIndicator, notify } from '@/stores'
 import type { ConnectionWithStatus } from '@/stores/connection-store'
 import { isExecutableTab, type Tab } from '@/stores/tab-store'
+import { hasCapability } from '@shared/index'
 
 interface ExecutionPlanState {
   plan: unknown[]
@@ -129,8 +130,7 @@ export function useQueryAnalysis(
       return
     }
 
-    // Only support PostgreSQL for now
-    if (tabConnection.dbType && tabConnection.dbType !== 'postgresql') {
+    if (!hasCapability(tabConnection.dbType, 'performanceAnalysis')) {
       notify.info(
         'Not Supported',
         'Performance analysis is currently only available for PostgreSQL databases.'

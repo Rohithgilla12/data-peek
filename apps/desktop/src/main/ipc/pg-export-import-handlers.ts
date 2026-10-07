@@ -9,6 +9,7 @@ import type {
 import { pgExport } from '../pg-export'
 import { pgImport } from '../pg-import'
 import { createLogger } from '../lib/logger'
+import { requireCapability } from '../lib/capability-guard'
 
 const log = createLogger('pg-export-import-handlers')
 
@@ -20,6 +21,11 @@ export function registerPgExportImportHandlers(): void {
   ipcMain.handle(
     'db:pg-export',
     async (event, config: ConnectionConfig, options: PgExportOptions) => {
+      try {
+        requireCapability(config, 'pgDump')
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
       const senderId = event.sender.id
       const exportCancelToken = { cancelled: false }
       exportCancelTokens.set(senderId, exportCancelToken)
@@ -75,6 +81,11 @@ export function registerPgExportImportHandlers(): void {
   ipcMain.handle(
     'db:pg-import',
     async (event, config: ConnectionConfig, options: PgImportOptions) => {
+      try {
+        requireCapability(config, 'pgDump')
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
       const senderId = event.sender.id
       const importCancelToken = { cancelled: false }
       importCancelTokens.set(senderId, importCancelToken)

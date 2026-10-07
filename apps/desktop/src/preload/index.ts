@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import type {
   ConnectionConfig,
+  DatabaseType,
   IpcResponse,
   DatabaseSchemaResponse,
   EditBatch,
@@ -153,9 +154,10 @@ const api = {
     execute: (config: ConnectionConfig, batch: EditBatch): Promise<IpcResponse<EditResult>> =>
       ipcRenderer.invoke('db:execute', { config, batch }),
     previewSql: (
-      batch: EditBatch
+      batch: EditBatch,
+      dbType?: DatabaseType
     ): Promise<IpcResponse<Array<{ operationId: string; sql: string }>>> =>
-      ipcRenderer.invoke('db:preview-sql', { batch }),
+      ipcRenderer.invoke('db:preview-sql', { batch, dbType }),
     explain: (
       config: ConnectionConfig,
       query: string,

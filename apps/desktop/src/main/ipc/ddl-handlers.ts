@@ -10,6 +10,7 @@ import {
 } from '../ddl-builder'
 import { invalidateSchemaCache } from '../schema-cache'
 import { createLogger } from '../lib/logger'
+import { requireCapability } from '../lib/capability-guard'
 import { recordAudit } from '../audit-service'
 
 const log = createLogger('ddl-handlers')
@@ -26,6 +27,12 @@ export function registerDDLHandlers(): void {
       { config, definition }: { config: ConnectionConfig; definition: TableDefinition }
     ) => {
       log.info('Creating table:', definition.schema, definition.name)
+
+      try {
+        requireCapability(config, 'tableDesigner')
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
 
       // Validate table definition
       const validation = validateTableDefinition(definition)
@@ -100,6 +107,11 @@ export function registerDDLHandlers(): void {
     async (_, { config, batch }: { config: ConnectionConfig; batch: AlterTableBatch }) => {
       log.info('Altering table:', batch.schema, batch.table)
 
+      try {
+        requireCapability(config, 'tableDesigner')
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
       const adapter = getAdapter(config)
       const dbType = config.dbType || 'postgresql'
       const result: DDLResult = {
@@ -166,6 +178,11 @@ export function registerDDLHandlers(): void {
     ) => {
       log.info('Dropping table:', schema, table)
 
+      try {
+        requireCapability(config, 'tableDesigner')
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
       const adapter = getAdapter(config)
       const dbType = config.dbType || 'postgresql'
       let sql = ''
@@ -267,8 +284,9 @@ export function registerDDLHandlers(): void {
     'db:preview-ddl',
     (_, { definition, dbType }: { definition: TableDefinition; dbType?: string }) => {
       try {
-        const targetDbType = (dbType || 'postgresql') as 'postgresql' | 'mysql' | 'sqlite' | 'mssql'
-        const sql = buildPreviewDDL(definition, targetDbType)
+        const target = { dbType: dbType || 'postgresql' } as ConnectionConfig
+        requireCapability(target, 'tableDesigner')
+        const sql = buildPreviewDDL(definition, target.dbType)
         return { success: true, data: sql }
       } catch (error: unknown) {
         const errorMessage = error instanceof Error ? error.message : String(error)

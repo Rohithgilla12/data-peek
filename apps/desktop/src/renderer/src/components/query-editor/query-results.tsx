@@ -31,6 +31,7 @@ import { ExportMenuItems } from '@/components/export-menu-items'
 import { TimeMachineStrip } from '@/components/time-machine/time-machine-strip'
 import { TimeMachineView } from '@/components/time-machine/time-machine-view'
 import { useTimeMachineStore } from '@/stores/time-machine-store'
+import { useCapabilities } from '@/hooks/use-capabilities'
 
 import { isExecutableTab, type Tab } from '@/stores/tab-store'
 import { useSettingsStore } from '@/stores/settings-store'
@@ -169,6 +170,7 @@ export function QueryResults({
   handleExport,
   generateExportFilename
 }: QueryResultsProps) {
+  const can = useCapabilities(tabConnection?.dbType)
   const executable = isExecutableTab(tab) ? tab : null
   const tabResult = executable?.result
   const tabMultiResult = executable?.multiResult
@@ -430,8 +432,7 @@ export function QueryResults({
                       </Tooltip>
                     </TooltipProvider>
                   )}
-                  {tabResult &&
-                    (!tabConnection?.dbType || tabConnection.dbType === 'postgresql') && (
+                  {tabResult && can.performanceAnalysis && (
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>

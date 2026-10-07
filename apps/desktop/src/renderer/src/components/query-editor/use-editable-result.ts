@@ -5,6 +5,7 @@ import type { Schema } from '@/stores/connection-store'
 import type { DataTableColumn } from '@/components/data-table'
 import type { DataTableColumn as EditableDataTableColumn } from '@/components/editable-data-table'
 import { analyzeEditableSelect } from '@/lib/editable-select'
+import { hasCapability } from '@data-peek/shared'
 
 /** Safely coerce a value to string[] or undefined. Handles pg driver returning array_agg as a raw string. */
 function ensureArray(value: unknown): string[] | undefined {
@@ -88,6 +89,7 @@ export function useEditableResult({
     tableInfo: TableInfo
   } | null => {
     if (!tab || !isExecutableTab(tab) || !tabConnection) return null
+    if (!hasCapability(tabConnection.dbType, 'inlineEdit')) return null
 
     const idx = tab.activeResultIndex ?? 0
     const stmts = tab.multiResult?.statements

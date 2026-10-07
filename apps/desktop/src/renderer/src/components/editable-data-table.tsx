@@ -599,7 +599,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     if (!batch) return
 
     try {
-      const response = await window.api.db.previewSql(batch)
+      const response = await window.api.db.previewSql(batch, connection?.dbType)
       if (response.success && response.data) {
         const statements = response.data.map((preview) => {
           const op = batch.operations.find((o) => o.id === preview.operationId)

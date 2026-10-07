@@ -1,6 +1,7 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 import type {
   ConnectionConfig,
+  DatabaseType,
   IpcResponse,
   DatabaseSchemaResponse,
   EditBatch,
@@ -232,7 +233,8 @@ interface DataPeekApi {
     rollbackTransaction: (config: ConnectionConfig, sessionId: string) => Promise<IpcResponse<void>>
     execute: (config: ConnectionConfig, batch: EditBatch) => Promise<IpcResponse<EditResult>>
     previewSql: (
-      batch: EditBatch
+      batch: EditBatch,
+      dbType?: DatabaseType
     ) => Promise<IpcResponse<Array<{ operationId: string; sql: string }>>>
     explain: (
       config: ConnectionConfig,

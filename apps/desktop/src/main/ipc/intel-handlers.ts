@@ -1,9 +1,10 @@
 import { ipcMain } from 'electron'
-import type {
-  ConnectionConfig,
-  IpcResponse,
-  SchemaIntelCheckId,
-  SchemaIntelReport
+import {
+  supportsSchemaIntel,
+  type ConnectionConfig,
+  type IpcResponse,
+  type SchemaIntelCheckId,
+  type SchemaIntelReport
 } from '@shared/index'
 import { getAdapter } from '../db-adapter'
 import { createLogger } from '../lib/logger'
@@ -18,6 +19,13 @@ export function registerIntelHandlers(): void {
       payload: { config: ConnectionConfig; checks?: SchemaIntelCheckId[] }
     ): Promise<IpcResponse<SchemaIntelReport>> => {
       try {
+        const dbType = payload.config.dbType || 'postgresql'
+        if (!supportsSchemaIntel(dbType)) {
+          return {
+            success: false,
+            error: `Schema Intel is not available for ${dbType} connections.`
+          }
+        }
         const adapter = getAdapter(payload.config)
         const report = await adapter.runSchemaIntel(payload.config, payload.checks)
         return { success: true, data: report }

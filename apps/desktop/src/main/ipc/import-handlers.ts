@@ -8,39 +8,23 @@ import type {
 import { getAdapter } from '../db-adapter'
 import {
   batchInsert,
+  buildTableRef,
   effectiveBatchSize,
+  quoteId,
   requestCancelBatchInsert,
-  resetCancelBatchInsert
+  resetCancelBatchInsert,
+  type BulkInsertDbType
 } from '../batch-insert'
 import { createLogger } from '../lib/logger'
-import { quoteIdentifier } from '../sql-utils'
+import { requireCapability } from '../lib/capability-guard'
 
 const log = createLogger('import-handlers')
-
-const IDENTIFIER_QUOTES: Record<string, string> = {
-  postgresql: '"',
-  mysql: '`',
-  sqlite: '"',
-  mssql: '['
-}
-
-function quoteId(name: string, dbType: string): string {
-  return quoteIdentifier(name, IDENTIFIER_QUOTES[dbType] ?? '"')
-}
-
-function buildTableRef(schema: string, table: string, dbType: string): string {
-  const quoted = quoteId(table, dbType)
-  if (schema && schema !== 'public' && schema !== 'main' && schema !== 'dbo') {
-    return `${quoteId(schema, dbType)}.${quoted}`
-  }
-  return quoted
-}
 
 function buildCreateTableSql(
   schema: string,
   table: string,
   columns: Array<{ name: string; dataType: string; isNullable: boolean }>,
-  dbType: string
+  dbType: BulkInsertDbType
 ): string {
   const tableRef = buildTableRef(schema, table, dbType)
   const colDefs = columns
@@ -60,6 +44,11 @@ export function registerImportHandlers(): void {
       const startTime = Date.now()
       resetCancelBatchInsert()
 
+      try {
+        requireCapability(config, 'csvImport')
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : String(error) }
+      }
       const dbType = config.dbType || 'postgresql'
       const adapter = getAdapter(config)
 
@@ -91,9 +80,7 @@ export function registerImportHandlers(): void {
 
         if (request.options.truncateFirst) {
           const tableRef = buildTableRef(request.schema, request.table, dbType)
-          const truncateSql =
-            dbType === 'mssql' ? `TRUNCATE TABLE ${tableRef}` : `TRUNCATE TABLE ${tableRef}`
-          await adapter.execute(config, truncateSql, [])
+          await adapter.execute(config, `TRUNCATE TABLE ${tableRef}`, [])
         }
 
         const mappedColumns = request.mappings

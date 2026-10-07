@@ -9,7 +9,7 @@ import {
   resetCancelBatchInsert
 } from '../batch-insert'
 
-const config = {} as ConnectionConfig
+const config = { dbType: 'mssql' } as ConnectionConfig & { dbType: 'mssql' }
 
 function makeOptions(columns: string[]): BatchInsertOptions {
   return {
@@ -30,9 +30,8 @@ describe('effectiveBatchSize', () => {
     ['mssql', 2, 2000, 1000],
     ['postgresql', 20, 5000, 3276],
     ['mysql', 1, 70000, 65535],
-    ['sqlite', 2, 500, 499],
-    ['other', 2, 500, 500]
-  ])('%s clamps %i columns at %i rows to %i', (dialect, columnCount, requested, expected) => {
+    ['sqlite', 2, 500, 499]
+  ] as const)('%s clamps %i columns at %i rows to %i', (dialect, columnCount, requested, expected) => {
     expect(effectiveBatchSize(dialect, columnCount, requested)).toBe(expected)
   })
 

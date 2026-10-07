@@ -2,12 +2,14 @@ import { ipcMain } from 'electron'
 import type { ConnectionConfig, IpcResponse } from '@shared/index'
 import { getAdapter } from '../db-adapter'
 import { createLogger } from '../lib/logger'
+import { requireCapability } from '../lib/capability-guard'
 
 const log = createLogger('health-handlers')
 
 export function registerHealthHandlers(): void {
   ipcMain.handle('db:active-queries', async (_, config: ConnectionConfig) => {
     try {
+      requireCapability(config, 'healthActiveQueries')
       const adapter = getAdapter(config)
       const queries = await adapter.getActiveQueries(config)
       return { success: true, data: queries } as IpcResponse<typeof queries>
@@ -19,6 +21,7 @@ export function registerHealthHandlers(): void {
 
   ipcMain.handle('db:table-sizes', async (_, config: ConnectionConfig, schema?: string) => {
     try {
+      requireCapability(config, 'healthTableSizes')
       const adapter = getAdapter(config)
       const result = await adapter.getTableSizes(config, schema)
       return { success: true, data: result } as IpcResponse<typeof result>
@@ -30,6 +33,7 @@ export function registerHealthHandlers(): void {
 
   ipcMain.handle('db:cache-stats', async (_, config: ConnectionConfig) => {
     try {
+      requireCapability(config, 'healthCacheStats')
       const adapter = getAdapter(config)
       const stats = await adapter.getCacheStats(config)
       return { success: true, data: stats } as IpcResponse<typeof stats>
@@ -41,6 +45,7 @@ export function registerHealthHandlers(): void {
 
   ipcMain.handle('db:locks', async (_, config: ConnectionConfig) => {
     try {
+      requireCapability(config, 'healthLocks')
       const adapter = getAdapter(config)
       const locks = await adapter.getLocks(config)
       return { success: true, data: locks } as IpcResponse<typeof locks>
@@ -52,6 +57,7 @@ export function registerHealthHandlers(): void {
 
   ipcMain.handle('db:kill-query', async (_, config: ConnectionConfig, pid: number) => {
     try {
+      requireCapability(config, 'killQuery')
       const adapter = getAdapter(config)
       const result = await adapter.killQuery(config, pid)
       return { success: true, data: result } as IpcResponse<typeof result>

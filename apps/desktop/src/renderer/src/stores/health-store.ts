@@ -7,6 +7,7 @@ import type {
   DatabaseSizeInfo,
   ConnectionConfig
 } from '@data-peek/shared'
+import { hasCapability } from '@data-peek/shared'
 
 interface HealthState {
   activeQueries: ActiveQuery[]
@@ -140,25 +141,31 @@ export const useHealthStore = create<HealthState>()((set, get) => ({
   fetchAll: async (config, schema?) => {
     const { fetchActiveQueries, fetchTableSizes, fetchCacheStats, fetchLocks } = get()
 
-    // SQLite has no server process, so active queries, cache stats and locks have
-    // nothing to read from. Skip those calls and clear whatever a previously
-    // viewed connection left in the store.
-    if (config.dbType === 'sqlite') {
-      set((s) => ({
-        activeQueries: [],
-        cacheStats: null,
-        locks: [],
-        errors: { ...s.errors, activeQueries: null, cacheStats: null, locks: null }
-      }))
-      await fetchTableSizes(config, schema)
-      return
-    }
+    // A panel the database cannot serve is skipped, and whatever a previously viewed
+    // connection left in the store is cleared so the panel shows its empty state.
+    const dbType = config.dbType
+    const activeQueries = hasCapability(dbType, 'healthActiveQueries')
+    const cacheStats = hasCapability(dbType, 'healthCacheStats')
+    const locks = hasCapability(dbType, 'healthLocks')
+    set((s) => ({
+      ...(activeQueries ? {} : { activeQueries: [] }),
+      ...(cacheStats ? {} : { cacheStats: null }),
+      ...(locks ? {} : { locks: [] }),
+      errors: {
+        ...s.errors,
+        ...(activeQueries ? {} : { activeQueries: null }),
+        ...(cacheStats ? {} : { cacheStats: null }),
+        ...(locks ? {} : { locks: null })
+      }
+    }))
 
     await Promise.allSettled([
-      fetchActiveQueries(config),
-      fetchTableSizes(config, schema),
-      fetchCacheStats(config),
-      fetchLocks(config)
+      activeQueries ? fetchActiveQueries(config) : Promise.resolve(),
+      hasCapability(dbType, 'healthTableSizes')
+        ? fetchTableSizes(config, schema)
+        : Promise.resolve(),
+      cacheStats ? fetchCacheStats(config) : Promise.resolve(),
+      locks ? fetchLocks(config) : Promise.resolve()
     ])
   },
 
