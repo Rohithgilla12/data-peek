@@ -260,10 +260,22 @@ export class ClickHouseAdapter implements DatabaseAdapter {
         ? {}
         : { max_result_rows: String(options.maxRows), result_overflow_mode: 'break' as const }
     return withClickHouseClient(config, async (client) => {
-      try {
+      const abort = new AbortController()
+      const timeoutMessage = `Query timed out after ${options.timeoutMs / 1000} s`
+      let timer: ReturnType<typeof setTimeout> | undefined
+      // The client may stop watching abort_signal once headers arrive, so a stalled body
+      // would outlive the abort; the race settles the call regardless.
+      const deadline = new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          abort.abort()
+          reject(new Error(timeoutMessage))
+        }, options.timeoutMs + ABORT_BACKSTOP_MS)
+      })
+      const run = async (): Promise<AdapterQueryResult> => {
         const rs = await client.query({
           query: sql,
           format: 'JSON',
+          abort_signal: abort.signal,
           clickhouse_settings: {
             readonly: '1',
             ...timeoutSettings(options.timeoutMs),
@@ -274,8 +286,14 @@ export class ClickHouseAdapter implements DatabaseAdapter {
         const json = await rs.json<Record<string, unknown>>()
         const result = toStatementResult(sql, 0, json, 0)
         return { rows: result.rows, fields: result.fields, rowCount: result.rowCount }
+      }
+      try {
+        return await Promise.race([run(), deadline])
       } catch (error) {
+        if (abort.signal.aborted) throw new Error(timeoutMessage)
         throw new Error(describeError(error))
+      } finally {
+        clearTimeout(timer)
       }
     })
   }

@@ -60,3 +60,35 @@ describe('ClickHouseAdapter.connect', () => {
     expect(closePool).toHaveBeenCalledTimes(1)
   })
 })
+
+describe('ClickHouseAdapter.queryReadOnly', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    hangingQuery.mockClear()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('times out a response whose body never arrives, and aborts the request', async () => {
+    let signal: AbortSignal | undefined
+    hangingQuery.mockImplementationOnce(async (params) => {
+      signal = params.abort_signal
+      return { json: () => new Promise(() => undefined) }
+    })
+    const outcome = new ClickHouseAdapter()
+      .queryReadOnly(config, 'SELECT 1', { timeoutMs: 30_000 })
+      .then(
+        () => 'resolved',
+        (error: Error) => error.message
+      )
+    const settled = (): Promise<string> => Promise.race([outcome, Promise.resolve('pending')])
+
+    await vi.advanceTimersByTimeAsync(34_999)
+    expect(await settled()).toBe('pending')
+
+    await vi.advanceTimersByTimeAsync(1)
+    expect(await settled()).toBe('Query timed out after 30 s')
+    expect(signal?.aborted).toBe(true)
+  })
+})
