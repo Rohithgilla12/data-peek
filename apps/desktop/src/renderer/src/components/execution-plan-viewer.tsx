@@ -25,6 +25,7 @@ import {
   CollapsibleTrigger,
   cn
 } from '@data-peek/ui'
+import { isTextExplainPlan, type TextExplainPlan } from '@data-peek/shared'
 
 // PostgreSQL EXPLAIN JSON plan node structure
 interface PlanNode {
@@ -82,9 +83,41 @@ interface ExplainPlan {
 }
 
 interface ExecutionPlanViewerProps {
-  plan: ExplainPlan[]
+  plan: ExplainPlan[] | TextExplainPlan
   durationMs: number
   onClose: () => void
+}
+
+function TextPlanView({
+  plan,
+  durationMs,
+  onClose
+}: {
+  plan: TextExplainPlan
+  durationMs: number
+  onClose: () => void
+}) {
+  return (
+    <div className="flex flex-col h-full bg-background border-l border-border">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30 shrink-0">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="size-4 text-primary" />
+          <span className="font-medium text-sm">Query Execution Plan</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            Total: <span className="font-mono text-foreground">{durationMs}ms</span>
+          </span>
+          <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
+            <X className="size-4" />
+          </Button>
+        </div>
+      </div>
+      <pre className="flex-1 overflow-auto p-4 font-mono text-xs leading-5 whitespace-pre">
+        {plan.lines.join('\n')}
+      </pre>
+    </div>
+  )
 }
 
 // Get node type color and icon
@@ -550,9 +583,10 @@ function PlanNodeView({
 }
 
 export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlanViewerProps) {
-  const rootPlan = plan[0]?.Plan
-  const planningTime = plan[0]?.['Planning Time']
-  const executionTime = plan[0]?.['Execution Time']
+  const nodes = isTextExplainPlan(plan) ? [] : plan
+  const rootPlan = nodes[0]?.Plan
+  const planningTime = nodes[0]?.['Planning Time']
+  const executionTime = nodes[0]?.['Execution Time']
 
   // Calculate totals for percentage calculations and aggregate stats
   const stats = useMemo(() => {
@@ -609,6 +643,10 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
   }, [rootPlan])
 
   const { totalCost, maxTime } = stats
+
+  if (isTextExplainPlan(plan)) {
+    return <TextPlanView plan={plan} durationMs={durationMs} onClose={onClose} />
+  }
 
   if (!rootPlan) {
     return (

@@ -27,7 +27,7 @@ import {
 
 import { useConnectionStore, type Connection } from '@/stores'
 import { DB_DEFAULTS, parseConnectionString } from '@/lib/connection-string-parser'
-import { PostgreSQLIcon, MySQLIcon, MSSQLIcon, SQLiteIcon } from './database-icons'
+import { PostgreSQLIcon, MySQLIcon, MSSQLIcon, ClickHouseIcon, SQLiteIcon } from './database-icons'
 import { SSHConfigSection } from './ssh-config-section'
 import type { SSHConfig, SSLConnectionOptions } from '@shared/index'
 import type { DatabaseType } from '@shared/index'
@@ -230,6 +230,8 @@ export function AddConnectionDialog({
       let expectedFormat: string
       if (dbType === 'mysql') {
         expectedFormat = 'mysql://user:password@host:3306/database'
+      } else if (dbType === 'clickhouse') {
+        expectedFormat = 'clickhouse://user:password@host:8123/database'
       } else if (dbType === 'mssql') {
         expectedFormat =
           'sqlserver://host:1433;database=name;authentication=...;encrypt=True;trustServerCertificate=true'
@@ -487,7 +489,7 @@ export function AddConnectionDialog({
           {/* Database Type Selector */}
           <div className="flex flex-col gap-2">
             <span className="text-sm font-medium">Database Type</span>
-            <div className="grid grid-cols-4 rounded-lg border bg-muted p-1">
+            <div className="grid grid-cols-5 rounded-lg border bg-muted p-1">
               <button
                 type="button"
                 onClick={() => handleDbTypeChange('postgresql')}
@@ -535,6 +537,18 @@ export function AddConnectionDialog({
               >
                 <MSSQLIcon className="size-4" />
                 SQL Server
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDbTypeChange('clickhouse')}
+                className={`flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors ${
+                  dbType === 'clickhouse'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                <ClickHouseIcon className="size-4" />
+                ClickHouse
               </button>
             </div>
           </div>
@@ -734,7 +748,9 @@ export function AddConnectionDialog({
                     ? 'mysql://user:password@host:3306/database'
                     : dbType === 'mssql'
                       ? 'mssql://user:password@host:1433/database'
-                      : 'postgresql://user:password@host:5432/database'
+                      : dbType === 'clickhouse'
+                        ? 'clickhouse://user:password@host:8123/database'
+                        : 'postgresql://user:password@host:5432/database'
                 }
                 value={connectionString}
                 onChange={(e) => handleConnectionStringChange(e.target.value)}
@@ -746,7 +762,9 @@ export function AddConnectionDialog({
                   ? 'mysql://user:password@host:port/database'
                   : dbType === 'mssql'
                     ? 'sqlserver://host:port;database=name;encrypt=false;trustServerCertificate=true'
-                    : 'postgresql://user:password@host:port/database'}
+                    : dbType === 'clickhouse'
+                      ? 'clickhouse://user:password@host:port/database (clickhouses:// or ?secure=1 for HTTPS)'
+                      : 'postgresql://user:password@host:port/database'}
               </p>
               {parseError && <p className="text-xs text-destructive">{parseError}</p>}
               {connectionString && !parseError && (
@@ -898,7 +916,7 @@ export function AddConnectionDialog({
                       className="size-4 rounded border-input"
                     />
                     <label htmlFor="ssl" className="text-sm font-medium">
-                      Use SSL
+                      {dbType === 'clickhouse' ? 'Use HTTPS' : 'Use SSL'}
                     </label>
                   </div>
                   <div className="flex items-center gap-2">

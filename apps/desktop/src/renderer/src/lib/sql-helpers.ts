@@ -7,14 +7,15 @@ function isWrapped(value: string, start: string, end: string): boolean {
 /**
  * Quote an identifier (schema/table/column/etc) using database-appropriate quoting.
  * - PostgreSQL/SQLite: "identifier"
- * - MySQL: `identifier`
+ * - MySQL, ClickHouse: `identifier`
  * - MSSQL: [identifier]
  */
 export function quoteIdentifier(name: string, dbType: DatabaseType | undefined): string {
   if (!name) return name
 
   switch (dbType) {
-    case 'mysql': {
+    case 'mysql':
+    case 'clickhouse': {
       if (isWrapped(name, '`', '`')) return name
       return `\`${name.replace(/`/g, '``')}\``
     }
@@ -34,14 +35,14 @@ export function quoteIdentifier(name: string, dbType: DatabaseType | undefined):
 
 /**
  * Build a qualified table reference with identifier quoting, omitting the default schema
- * (dbo for MSSQL, public for others) to preserve existing behavior.
+ * (dbo for MSSQL, default for ClickHouse, public for others) to preserve existing behavior.
  */
 export function buildQualifiedTableRef(
   schemaName: string,
   tableName: string,
   dbType: DatabaseType | undefined
 ): string {
-  const defaultSchema = dbType === 'mssql' ? 'dbo' : 'public'
+  const defaultSchema = dbType === 'mssql' ? 'dbo' : dbType === 'clickhouse' ? 'default' : 'public'
   if (!schemaName || schemaName === defaultSchema) {
     return quoteIdentifier(tableName, dbType)
   }

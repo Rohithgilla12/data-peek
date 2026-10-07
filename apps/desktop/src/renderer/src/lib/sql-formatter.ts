@@ -1,7 +1,8 @@
 import { format } from 'sql-formatter'
+import type { DatabaseType } from '@shared/index'
 
 export interface FormatOptions {
-  language?: 'sql' | 'postgresql' | 'mysql' | 'sqlite'
+  language?: 'sql' | 'postgresql' | 'mysql' | 'sqlite' | 'clickhouse'
   tabWidth?: number
   useTabs?: boolean
   keywordCase?: 'upper' | 'lower' | 'preserve'
@@ -14,6 +15,11 @@ const defaultOptions: FormatOptions = {
   useTabs: false,
   keywordCase: 'upper',
   linesBetweenQueries: 2
+}
+
+/** The formatter dialect for a connection. Postgres was the historical default for all. */
+export function formatterLanguage(dbType: DatabaseType | undefined): FormatOptions['language'] {
+  return dbType === 'clickhouse' ? 'clickhouse' : 'postgresql'
 }
 
 /**

@@ -178,6 +178,18 @@ export function SQLiteIcon({ className }: { className?: string }) {
   )
 }
 
+export function ClickHouseIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className}>
+      <rect x="2" y="2" width="3" height="20" rx="0.5" fill="#FAFF69" />
+      <rect x="7" y="2" width="3" height="20" rx="0.5" fill="#FAFF69" />
+      <rect x="12" y="2" width="3" height="20" rx="0.5" fill="#FAFF69" />
+      <rect x="17" y="2" width="3" height="20" rx="0.5" fill="#FAFF69" />
+      <rect x="22" y="9" width="2" height="6" rx="0.5" fill="#FF3333" />
+    </svg>
+  )
+}
+
 export function DatabaseIcon({
   dbType,
   className
@@ -192,6 +204,8 @@ export function DatabaseIcon({
       return <MSSQLIcon className={className} />
     case 'sqlite':
       return <SQLiteIcon className={className} />
+    case 'clickhouse':
+      return <ClickHouseIcon className={className} />
     case 'postgresql':
     default:
       return <PostgreSQLIcon className={className} />
