@@ -107,7 +107,7 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
     items: [
       {
         title: "Multi-database",
-        body: "Postgres, MySQL, SQL Server, and SQLite. Same interface across all.",
+        body: "Postgres, MySQL, SQL Server, SQLite, and ClickHouse. Same interface across all.",
         href: "/databases",
       },
       {

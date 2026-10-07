@@ -12,12 +12,13 @@ import { generateMetadata as generateSeoMetadata } from "@/lib/seo";
 export const metadata: Metadata = generateSeoMetadata({
   title: "data-peek | Fast PostgreSQL Client for Developers",
   description:
-    "A lightning-fast, AI-powered database client for PostgreSQL, MySQL, SQL Server, and SQLite. Query, explore, and edit your data with a keyboard-first experience. Free for personal use.",
+    "A lightning-fast, AI-powered database client for PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse. Query, explore, and edit your data with a keyboard-first experience. Free for personal use.",
   keywords: [
     "PostgreSQL client",
     "MySQL client",
     "SQL Server client",
     "SQLite client",
+    "ClickHouse client",
     "database client",
     "SQL editor",
     "database management tool",

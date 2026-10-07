@@ -10,7 +10,7 @@ const personal = {
   features: [
     "All features unlocked",
     "AI assistant (bring your own key)",
-    "Postgres, MySQL, SQL Server, SQLite",
+    "Postgres, MySQL, SQL Server, SQLite, ClickHouse",
     "Unlimited connections & history",
     "All future updates",
   ],

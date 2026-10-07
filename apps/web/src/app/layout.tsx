@@ -19,6 +19,7 @@ export const metadata: Metadata = generateSeoMetadata({
     "MySQL",
     "SQL Server",
     "SQLite",
+    "ClickHouse",
     "database client",
     "SQL editor",
     "database management",

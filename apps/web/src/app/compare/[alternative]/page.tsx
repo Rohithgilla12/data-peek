@@ -52,7 +52,7 @@ const ALTERNATIVES = {
       {
         question: "Does data-peek only support PostgreSQL?",
         answer:
-          "No. data-peek also supports MySQL, Microsoft SQL Server, and SQLite, so a single client covers most of the databases a developer touches.",
+          "No. data-peek also supports MySQL, Microsoft SQL Server, SQLite, and ClickHouse, so a single client covers most of the databases a developer touches.",
       },
       {
         question: "Do I need to change my database to switch?",
@@ -81,7 +81,7 @@ const ALTERNATIVES = {
       },
       {
         feature: "Multi-Database",
-        datapeek: "PostgreSQL, MySQL, SQL Server, SQLite",
+        datapeek: "PostgreSQL, MySQL, SQL Server, SQLite, ClickHouse",
         alternative: "PostgreSQL only",
         datapeekWins: true,
       },
@@ -107,7 +107,7 @@ const ALTERNATIVES = {
     description:
       "A lightweight, native alternative to DBeaver. data-peek trades everything-tool breadth for speed, a clean UI, and built-in AI.",
     intro:
-      "DBeaver is a genuinely powerful universal client — it connects to dozens of databases through JDBC and packs in ER modelling, data transfer, and a deep plugin ecosystem. That breadth is its strength. data-peek makes the opposite trade: it supports the four databases most developers actually use day to day, and spends its effort on being fast, native, and quiet so that the data stays the centre of attention.",
+      "DBeaver is a genuinely powerful universal client — it connects to dozens of databases through JDBC and packs in ER modelling, data transfer, and a deep plugin ecosystem. That breadth is its strength. data-peek makes the opposite trade: it supports a focused set of five databases, and spends its effort on being fast, native, and quiet so that the data stays the centre of attention.",
     whenAltTitle: "When DBeaver is the better fit",
     whenAlt: [
       "You need niche or enterprise databases — Oracle, Snowflake, MongoDB, and many more via JDBC.",
@@ -127,7 +127,7 @@ const ALTERNATIVES = {
       {
         question: "Does data-peek support as many databases as DBeaver?",
         answer:
-          "No — and that is deliberate. data-peek focuses on PostgreSQL, MySQL, SQL Server, and SQLite. DBeaver supports far more database types via JDBC, so if you need Oracle, Snowflake, MongoDB, or similar, DBeaver is the better choice.",
+          "No — and that is deliberate. data-peek focuses on PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse. DBeaver supports far more database types via JDBC, so if you need Oracle, Snowflake, MongoDB, or similar, DBeaver is the better choice.",
       },
       {
         question: "Why would I switch from DBeaver?",
@@ -216,7 +216,7 @@ const ALTERNATIVES = {
       {
         question: "Does data-peek support as many databases as TablePlus?",
         answer:
-          "TablePlus supports a wider range of database engines. data-peek focuses on PostgreSQL, MySQL, SQL Server, and SQLite, which covers most developers' day-to-day needs.",
+          "TablePlus supports a wider range of database engines. data-peek focuses on PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse, which covers most developers' day-to-day needs.",
       },
       {
         question: "What does data-peek add over TablePlus?",

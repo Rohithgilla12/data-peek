@@ -177,7 +177,7 @@ export default function CommunityPage() {
               {[
                 "Full Pro license",
                 "All features unlocked",
-                "PostgreSQL, MySQL, SQL Server",
+                "PostgreSQL, MySQL, SQL Server, SQLite, ClickHouse",
                 "Unlimited connections",
                 "AI Assistant (BYOK)",
                 "All future updates",

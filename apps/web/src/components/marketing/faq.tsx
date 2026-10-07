@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "Which databases are supported?",
-    a: "PostgreSQL, MySQL, Microsoft SQL Server, and SQLite. Same interface, same shortcuts, same results grid across all four.",
+    a: "PostgreSQL, MySQL, Microsoft SQL Server, SQLite, and ClickHouse. Same interface, same shortcuts, same results grid across all five. ClickHouse connections are for querying and browsing, so inline editing and the table designer cover the other four.",
   },
   {
     q: "What counts as commercial use?",
