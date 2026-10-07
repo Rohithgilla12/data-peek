@@ -130,7 +130,7 @@ export interface DatabaseAdapter {
   queryReadOnly?(
     config: ConnectionConfig,
     sql: string,
-    options: { timeoutMs: number }
+    options: { timeoutMs: number; maxRows?: number }
   ): Promise<AdapterQueryResult>
 
   /** Execute a statement (for INSERT/UPDATE/DELETE in transactions) */

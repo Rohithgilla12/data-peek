@@ -339,6 +339,16 @@ describe('mcp read guard', () => {
     const r = await runReadOnlyQuery(config, `SELECT number FROM numbers(1000)`, 5)
     expect(r.rows).toHaveLength(5)
   })
+
+  it('stops a huge SELECT on the server instead of fetching every row', async () => {
+    const sql = `SELECT number FROM numbers(10000000)`
+    const started = Date.now()
+    const raw = await adapter.queryReadOnly(config, sql, { timeoutMs: 30_000, maxRows: 500 })
+    expect(raw.rows.length).toBeLessThan(1_000_000)
+    const capped = await runReadOnlyQuery(config, sql)
+    expect(capped.rows.length).toBeLessThanOrEqual(500)
+    expect(Date.now() - started).toBeLessThan(5_000)
+  })
 })
 
 describe('nothing gated reached the server', () => {

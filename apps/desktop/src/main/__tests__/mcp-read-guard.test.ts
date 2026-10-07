@@ -107,7 +107,10 @@ describe('runReadOnlyQuery', () => {
 
     const result = await runReadOnlyQuery(pgConfig, 'SELECT 1', 1)
 
-    expect(queryReadOnly).toHaveBeenCalledWith(pgConfig, 'SELECT 1', { timeoutMs: 30_000 })
+    expect(queryReadOnly).toHaveBeenCalledWith(pgConfig, 'SELECT 1', {
+      timeoutMs: 30_000,
+      maxRows: 1
+    })
     expect(mockAdapter.beginTransaction).not.toHaveBeenCalled()
     expect(result.rows).toEqual([{ n: 1 }])
   })

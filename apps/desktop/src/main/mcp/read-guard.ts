@@ -49,7 +49,10 @@ export async function runReadOnlyQuery(
   const cap = Math.min(Math.max(1, maxRows), MCP_MAX_ROWS)
 
   if (adapter.queryReadOnly) {
-    const result = await adapter.queryReadOnly(config, stmt, { timeoutMs: MCP_READ_TIMEOUT_MS })
+    const result = await adapter.queryReadOnly(config, stmt, {
+      timeoutMs: MCP_READ_TIMEOUT_MS,
+      maxRows: cap
+    })
     return { ...result, rows: result.rows.slice(0, cap) }
   }
 

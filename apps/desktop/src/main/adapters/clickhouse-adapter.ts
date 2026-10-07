@@ -251,15 +251,25 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   async queryReadOnly(
     config: ConnectionConfig,
     sql: string,
-    options: { timeoutMs: number }
+    options: { timeoutMs: number; maxRows?: number }
   ): Promise<AdapterQueryResult> {
     if (hasTrailingFormatClause(sql)) throw new Error(FORMAT_CLAUSE_MESSAGE)
+    // 'break' stops at a block boundary, so the server may still send more than maxRows.
+    const rowLimit =
+      options.maxRows === undefined
+        ? {}
+        : { max_result_rows: String(options.maxRows), result_overflow_mode: 'break' as const }
     return withClickHouseClient(config, async (client) => {
       try {
         const rs = await client.query({
           query: sql,
           format: 'JSON',
-          clickhouse_settings: { readonly: '1', ...timeoutSettings(options.timeoutMs), ...WAIT_END }
+          clickhouse_settings: {
+            readonly: '1',
+            ...timeoutSettings(options.timeoutMs),
+            ...rowLimit,
+            ...WAIT_END
+          }
         })
         const json = await rs.json<Record<string, unknown>>()
         const result = toStatementResult(sql, 0, json, 0)
