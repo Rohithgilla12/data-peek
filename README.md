@@ -5,7 +5,7 @@
 <h1 align="center">data-peek</h1>
 
 <p align="center">
-  A fast, keyboard-first SQL client for PostgreSQL, MySQL, SQL Server, and SQLite.<br />
+  A fast, keyboard-first SQL client for PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse.<br />
   Open it, run the query, get the answer, get back to work.
 </p>
 
@@ -142,11 +142,11 @@ More clips (command palette, ER diagrams, the AI assistant, inline editing) are 
 
 - AI assistant that turns plain English into SQL and builds charts from results. It knows your schema.
 - Bring your own key (OpenAI, Anthropic, Google, Groq, or local Ollama models), or bring your own agent: point it at your installed Claude Code, Codex, or Antigravity CLI and use the subscription you already have
-- A built-in [MCP server](https://docs.datapeek.dev/docs/features/mcp-server) (off by default) that exposes your connections to AI agents. Reads are capped and rolled back, and every write needs your approval in the app.
+- A built-in [MCP server](https://docs.datapeek.dev/docs/features/mcp-server) (off by default) that exposes your connections to AI agents. Reads are capped and run read-only, and every write needs your approval in the app.
 
 ### Connections and security
 
-- PostgreSQL, MySQL, Microsoft SQL Server, and SQLite
+- PostgreSQL, MySQL, Microsoft SQL Server, SQLite, and ClickHouse. ClickHouse connections are for querying and browsing, so inline editing and the table designer stay off for them.
 - SSH tunnels through bastion hosts, using a password or a key
 - Credentials encrypted with the OS keychain, and no telemetry
 - An optional tamper-evident audit log of every statement you run. It stays local.
@@ -195,7 +195,7 @@ packages/
 | `pnpm build`                                   | Build the desktop app for the current platform |
 | `pnpm build:mac` / `build:win` / `build:linux` | Platform builds                                |
 
-Built with Electron, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Zustand, and Monaco. Database drivers are `pg`, `mysql2`, `mssql`, and `better-sqlite3`.
+Built with Electron, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Zustand, and Monaco. Database drivers are `pg`, `mysql2`, `mssql`, `better-sqlite3`, and `@clickhouse/client`.
 
 **"Electron not found" after `pnpm install`?** pnpm's cache can skip Electron's postinstall step, which downloads the platform binary. Run `pnpm setup:electron`, then `pnpm rebuild`. If that doesn't fix it, `pnpm clean:install` starts from scratch.
 

@@ -10,7 +10,7 @@
 
 **Target Audience:** Developers, data engineers, backend engineers, and anyone who needs to quickly query and explore databases without the overhead of enterprise tools.
 
-**Supported Databases:** PostgreSQL, MySQL (SQLite coming soon)
+**Supported Databases:** PostgreSQL, MySQL, Microsoft SQL Server, SQLite, and ClickHouse (query and browse)
 
 **Platforms:** macOS (Apple Silicon + Intel), Windows, Linux
 
@@ -385,7 +385,7 @@ To set clear expectations:
 
 - **Not a database admin tool** — Focus is on querying and exploring, not server management
 - **Not a data migration tool** — CSV import is supported, but not full database migration
-- **Limited multi-database** — PostgreSQL and MySQL supported (SQLite coming soon)
+- **Not a universal client.** It supports PostgreSQL, MySQL, Microsoft SQL Server, SQLite, and ClickHouse. ClickHouse support covers querying and browsing, not editing or schema changes.
 - **Not enterprise software** — Built for individual developers (team features coming with Cloud tier)
 
 ---
@@ -411,7 +411,6 @@ To set clear expectations:
 
 Features planned for future releases:
 
-- SQLite support
 - Connection groups/folders
 - More AI visualization types (scatter, heatmap)
 - AI query explanations and optimization suggestions
