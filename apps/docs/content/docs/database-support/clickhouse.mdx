@@ -1,0 +1,141 @@
+---
+title: ClickHouse
+description: Using data-peek with ClickHouse
+---
+
+# ClickHouse
+
+data-peek connects to ClickHouse over its HTTP interface. ClickHouse support is for querying and browsing. You can run scripts, read typed results, explore databases and tables, and read query plans. Editing data and changing table structure are not available on ClickHouse connections.
+
+## Connection Setup
+
+1. Click **Add Connection** in the sidebar
+2. Select **ClickHouse** as the database type
+3. Enter your connection details:
+   - **Host**: Your ClickHouse hostname or IP
+   - **Port**: Default is `8123`. ClickHouse usually serves HTTPS on `8443`.
+   - **Database**: Default is `default`
+   - **Username**: Default is `default`
+   - **Password**: Your password
+
+### Use the HTTP Port
+
+data-peek uses the ClickHouse HTTP interface, not the native TCP protocol. Ports `9000` and `9440` are native-protocol ports. If you enter one of them, data-peek refuses the connection and suggests the HTTP port instead: usually `8123`, or `8443` for TLS.
+
+### Connection Strings
+
+Paste a URL that starts with `clickhouse://` or `clickhouses://` to fill in the form:
+
+```
+clickhouse://default:password@localhost:8123/default
+```
+
+A `clickhouses://` URL, or a `?secure=true` parameter, turns on SSL.
+
+### SSL and SSH Tunnels
+
+Turn on **SSL** to connect over HTTPS. To reach a server behind a bastion host, use an SSH tunnel. See [SSH Tunnels](/docs/features/ssh-tunnels) for configuration details.
+
+## Supported Features
+
+| Feature                      |     Support      |
+| ---------------------------- | :--------------: |
+| Query execution              |        ✓         |
+| Multiple statements          |        ✓         |
+| Schema explorer              |        ✓         |
+| Table preview and pagination |        ✓         |
+| Views and materialized views |        ✓         |
+| Enum types                   |        ✓         |
+| Query plans                  |    Text plans    |
+| Cancel and timeouts          |        ✓         |
+| Health Monitor               | Table Sizes only |
+| AI assistant                 |        ✓         |
+| MCP server                   |        ✓         |
+| SSH tunnels                  |        ✓         |
+| Inline editing               |        -         |
+| Table designer               |        -         |
+| Transactions                 |        -         |
+
+### Not Available on ClickHouse
+
+data-peek hides these features on ClickHouse connections:
+
+- Inline editing
+- Table designer
+- CSV import
+- Data generator
+- Transactions and step-through debugging
+- LISTEN/NOTIFY
+- Triggers
+- SQL dump export and import
+- Schema Intel
+- Column statistics
+- Health Monitor panels for active queries, locks, and cache stats
+- Cross-tab `@name` references
+
+## Query Execution
+
+### Multiple Statements
+
+data-peek runs a script one statement at a time on a single ClickHouse session. A `SET` applies to every statement after it in the same run:
+
+```sql
+SET max_threads = 2;
+SELECT getSetting('max_threads');
+```
+
+Each statement that returns rows gets its own result tab. A `SET` does not carry over to your next run.
+
+### FORMAT Clauses
+
+data-peek formats results itself. If a query ends with a `FORMAT` clause, such as `FORMAT CSV`, data-peek refuses it and asks you to remove the clause. To save results to a file, use [Export](/docs/features/export).
+
+## Types
+
+- `Int64`, `UInt64`, and `Decimal` values display exactly as the server returns them. data-peek never rounds them through JavaScript numbers, and these columns still sort numerically.
+- The results grid shows each column's ClickHouse type as written, for example `LowCardinality(String)` or `Nullable(DateTime64(3))`.
+- `Nullable(T)` columns show as nullable in the schema explorer, including when wrapped in `LowCardinality`.
+- `Enum8` and `Enum16` columns list their allowed values.
+
+## Schema Explorer
+
+- Each ClickHouse database appears as a schema. The connection's own database is listed first.
+- Tables, views, and materialized views appear with their columns and types.
+- The `.inner` tables that back materialized views are hidden.
+- The `system`, `INFORMATION_SCHEMA`, and `information_schema` databases are hidden. You can still query them in the editor.
+- Columns in a table's primary key are marked as key columns. In ClickHouse, the primary key defaults to the sorting key.
+- Row counts come from the `total_rows` estimate in `system.tables`.
+
+ClickHouse has no foreign keys, so ER diagrams show tables and columns without relationship lines.
+
+## Query Plans
+
+The **Explain** button runs `EXPLAIN indexes = 1` on the current statement and shows the plan as text. ClickHouse has no `EXPLAIN ANALYZE`, so the analyze option does nothing on ClickHouse connections.
+
+You can also write `EXPLAIN` yourself. It returns one row per plan line:
+
+```sql
+EXPLAIN indexes = 1
+SELECT count() FROM events WHERE event_date >= today() - 7;
+```
+
+## Cancel and Timeouts
+
+**Cancel** stops the request and sends `KILL QUERY` for it, so the server stops the work too. The query timeout setting becomes ClickHouse's `max_execution_time`, so the server ends a query that runs past it.
+
+## MCP Server
+
+When an agent calls `run_query` on a ClickHouse connection, data-peek sends the query with the `readonly = 1` setting. ClickHouse then refuses writes and table functions such as `url()`. See [MCP Server](/docs/features/mcp-server).
+
+## Troubleshooting
+
+### Connection Refused or a Native-Port Error
+
+- Check that you are using the HTTP port: `8123`, or `8443` with SSL
+- Verify the server is reachable from your network
+- Check firewall rules allow connections on that port
+
+### Authentication Failures
+
+- Verify your username and password. A fresh ClickHouse install has a user named `default`.
+- Ensure the user can read the database you entered
