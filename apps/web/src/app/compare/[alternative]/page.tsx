@@ -172,7 +172,7 @@ const ALTERNATIVES = {
       },
       {
         feature: "Database Support",
-        datapeek: "4 core databases",
+        datapeek: "5 databases (ClickHouse: query and browse)",
         alternative: "Dozens via JDBC",
         datapeekWins: false,
       },
@@ -256,7 +256,7 @@ const ALTERNATIVES = {
       },
       {
         feature: "Database Support",
-        datapeek: "4 core databases",
+        datapeek: "5 databases (ClickHouse: query and browse)",
         alternative: "Wider range",
         datapeekWins: false,
       },

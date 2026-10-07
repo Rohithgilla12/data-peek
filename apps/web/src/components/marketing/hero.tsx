@@ -99,7 +99,7 @@ export function Hero() {
                   Databases
                 </dt>
                 <dd className="mt-1 text-[20px] text-[var(--n-fg)] tabular-nums">
-                  4
+                  5
                 </dd>
               </div>
               <div>
