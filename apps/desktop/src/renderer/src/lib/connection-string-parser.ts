@@ -247,7 +247,6 @@ export function parseConnectionString(
 
     const defaults = DB_DEFAULTS[dbType]
     const host = url.hostname || 'localhost'
-    const port = url.port || defaults.port
     const database = url.pathname.replace(/^\//, '') || defaults.database
     const user = url.username || defaults.user
     const password = decodeURIComponent(url.password || '')
@@ -260,6 +259,7 @@ export function parseConnectionString(
     const ssl =
       protocol === 'clickhouses' ||
       (sslParam ? !['disable', 'false', '0'].includes(sslParam.toLowerCase()) : false)
+    const port = url.port || (dbType === 'clickhouse' && ssl ? '8443' : defaults.port)
 
     // MySQL has no schema-vs-database distinction and SQLite has no schemas at all,
     // so the default schema is only meaningful for PostgreSQL.

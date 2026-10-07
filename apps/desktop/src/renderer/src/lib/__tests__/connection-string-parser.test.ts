@@ -141,6 +141,21 @@ describe('parseConnectionString — ClickHouse', () => {
     expect(parseConnectionString('clickhouse://h/db?secure=0', 'clickhouse')?.ssl).toBe(false)
   })
 
+  it('defaults to the HTTPS port 8443 when TLS is on and no port is given', () => {
+    expect(parseConnectionString('clickhouses://h/db', 'clickhouse')?.port).toBe('8443')
+    expect(parseConnectionString('clickhouse://h/db?secure=1', 'clickhouse')?.port).toBe('8443')
+    expect(parseConnectionString('clickhouse://h/db?secure=true', 'clickhouse')?.port).toBe('8443')
+    expect(parseConnectionString('clickhouse://h/db?secure=0', 'clickhouse')?.port).toBe('8123')
+    expect(parseConnectionString('clickhouse://h/db', 'clickhouse')?.port).toBe('8123')
+  })
+
+  it('keeps an explicit port over the TLS default', () => {
+    expect(parseConnectionString('clickhouses://h:9440/db', 'clickhouse')?.port).toBe('9440')
+    expect(parseConnectionString('clickhouse://h:8124/db?secure=1', 'clickhouse')?.port).toBe(
+      '8124'
+    )
+  })
+
   it('rejects a non-ClickHouse protocol', () => {
     expect(parseConnectionString('postgresql://h/db', 'clickhouse')).toBeNull()
   })
