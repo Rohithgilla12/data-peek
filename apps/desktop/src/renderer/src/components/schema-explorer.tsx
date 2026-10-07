@@ -130,7 +130,6 @@ interface TriggerActions {
   supportsEnableDisable: boolean
 }
 
-/** The per-table "..." menu, shared by the plain and virtualized schema lists. */
 function TableActionsMenu({
   can,
   onView,

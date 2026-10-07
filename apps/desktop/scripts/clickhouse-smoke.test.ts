@@ -1,8 +1,3 @@
-// Live smoke test against a real ClickHouse (Docker container). Not part of `pnpm test`.
-// Run with: pnpm --filter @data-peek/desktop smoke:clickhouse
-//
-// Env (defaults match seeds/clickhouse/compose.yml):
-//   CH_HOST=localhost CH_PORT=58123 CH_USER=datapeek CH_PASSWORD=smoketest CH_DATABASE=acme_analytics
 import { describe, it, expect, afterAll, beforeAll, vi } from 'vitest'
 import {
   CAPABILITY_LABELS,
@@ -12,7 +7,6 @@ import {
   type ConnectionConfig
 } from '@shared/index'
 
-// The main-process logger imports `electron` which isn't available outside Electron.
 vi.mock('../src/main/lib/logger', () => ({
   createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }))
@@ -49,7 +43,6 @@ async function selectRows<T>(sql: string): Promise<T[]> {
   })
 }
 
-/** Everything the gated paths send is tagged so query_log can prove nothing ran. */
 const GATED_TAG = `smoke-gated-${Date.now()}`
 
 beforeAll(async () => {
@@ -312,8 +305,6 @@ describe('gating', () => {
 
 describe('mcp read guard', () => {
   it('rejects an INSERT with the server READONLY error, not only the keyword guard', async () => {
-    // Straight to the adapter: the keyword guard in runReadOnlyQuery would refuse INSERT
-    // before the server ever saw it, and this test is about the server refusing.
     await expect(
       adapter.queryReadOnly(
         config,

@@ -32,7 +32,6 @@ export interface SeededClickHouse {
   stop: () => Promise<void>
 }
 
-/** Boots ClickHouse with the same seed as seeds/clickhouse/compose.yml. */
 export async function startSeededClickHouse(): Promise<SeededClickHouse> {
   const container = await new GenericContainer('clickhouse/clickhouse-server:24.8')
     .withEnvironment({
@@ -49,7 +48,6 @@ export async function startSeededClickHouse(): Promise<SeededClickHouse> {
       }
     ])
     .withExposedPorts(8123)
-    // The entrypoint answers /ping while init scripts still run; wait for the last seeded row.
     .withWaitStrategy(
       Wait.forSuccessfulCommand(
         'clickhouse-client --user e2e --password e2e -q "SELECT count() FROM acme_analytics.\\`odd-names\\`" | grep -q 3'

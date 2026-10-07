@@ -146,8 +146,6 @@ export interface ResolveForRunContext {
 
 /** Parse + resolve a query's @name references into a runnable SQL string. Pure. */
 export function resolveForRun(sql: string, ctx: ResolveForRunContext): ResolveForRunResult {
-  // A database that cannot take a VALUES-backed CTE runs the SQL as written; `@name`
-  // is then whatever the server makes of it, as it was before cross-tab refs existed.
   if (!hasCapability(ctx.dbType, 'crossTabRefs')) {
     return {
       ok: true,

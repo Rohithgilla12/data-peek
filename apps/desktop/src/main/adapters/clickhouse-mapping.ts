@@ -8,10 +8,8 @@ import type {
   TextExplainPlan
 } from '@shared/index'
 
-/** Databases hidden from the explorer. */
 export const HIDDEN_DATABASES = ['system', 'INFORMATION_SCHEMA', 'information_schema']
 
-/** The slice of @clickhouse/client's ResponseJSON the adapter reads. */
 export interface ChJsonResponse {
   meta?: Array<{ name: string; type: string }>
   data: Record<string, unknown>[]
@@ -51,7 +49,6 @@ export type StatementKind = 'query' | 'command'
 
 const ROW_RETURNING = new Set(['SELECT', 'WITH', 'SHOW', 'DESC', 'DESCRIBE', 'EXPLAIN', 'EXISTS'])
 
-/** Drop leading line and block comments, whitespace, and opening parens. */
 export function stripLeading(sql: string): string {
   let s = sql
   for (;;) {
@@ -68,11 +65,6 @@ export function stripLeading(sql: string): string {
   }
 }
 
-/**
- * Row-returning statements go through client.query (JSON body); everything else
- * (INSERT, DDL, SET, SYSTEM, KILL, OPTIMIZE) through client.command. `INSERT ... SELECT`
- * is a command because its first word is INSERT.
- */
 export function classifyStatement(statement: string): StatementKind {
   const first =
     stripLeading(statement)
@@ -114,13 +106,11 @@ export function toStatementResult(
   }
 }
 
-/** `written_rows` from the X-ClickHouse-Summary header, or 0 when absent. */
 export function rowCountFromSummary(summary: { written_rows?: string } | undefined): number {
   const n = Number(summary?.written_rows)
   return Number.isFinite(n) ? n : 0
 }
 
-/** `max_execution_time` is whole seconds; a sub-second request still gets one. */
 export function timeoutSettings(
   queryTimeoutMs: number | undefined
 ): { max_execution_time: number; timeout_overflow_mode: 'throw' } | Record<string, never> {
@@ -134,12 +124,10 @@ export function timeoutSettings(
   return { max_execution_time: Math.ceil(queryTimeoutMs / 1000), timeout_overflow_mode: 'throw' }
 }
 
-/** `Nullable(T)` or `LowCardinality(Nullable(T))` -> true. */
 export function isNullableType(type: string): boolean {
   return /^(LowCardinality\()?Nullable\(/.test(type)
 }
 
-/** `Enum8('free' = 1, 'pro' = 2)` -> ['free', 'pro'], also under Nullable/LowCardinality. */
 export function parseEnumValues(type: string): string[] | undefined {
   const body = type.match(/Enum(?:8|16)?\((.*)\)/)?.[1]
   if (body === undefined) return undefined
@@ -158,7 +146,6 @@ export function tableTypeFromEngine(engine: string): TableInfo['type'] {
   return 'table'
 }
 
-/** MATERIALIZED/ALIAS/EPHEMERAL defaults keep their kind so the user can tell them apart. */
 export function columnDefault(kind: string, expression: string): string | undefined {
   if (!expression) return undefined
   return kind === 'DEFAULT' ? expression : `${kind} ${expression}`
@@ -176,15 +163,10 @@ export function toColumnInfo(row: SystemColumnRow): ColumnInfo {
   }
 }
 
-/** Storage tables of a materialized view without a TO target. */
-function isInnerTable(name: string): boolean {
+function isMaterializedViewStorage(name: string): boolean {
   return name.startsWith('.inner.') || name.startsWith('.inner_id.')
 }
 
-/**
- * Group system rows into SchemaInfo[] (one per database). The connection's own
- * database sorts first, the rest alphabetically; tables alphabetically within.
- */
 export function mapSystemRows(
   tables: SystemTableRow[],
   columns: SystemColumnRow[],
@@ -200,7 +182,7 @@ export function mapSystemRows(
 
   const byDatabase = new Map<string, TableInfo[]>()
   for (const t of tables) {
-    if (isInnerTable(t.name)) continue
+    if (isMaterializedViewStorage(t.name)) continue
     const cols = (columnsByTable.get(`${t.database}\u0000${t.name}`) ?? []).sort(
       (a, b) => a.ordinalPosition - b.ordinalPosition
     )

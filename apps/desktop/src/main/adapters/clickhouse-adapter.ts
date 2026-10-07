@@ -54,7 +54,6 @@ import {
 
 export { closeClickHousePool, closeAllClickHousePools }
 
-/** Grace after the server deadline before the client gives up on the socket itself. */
 const ABORT_BACKSTOP_MS = 5000
 
 /**
@@ -64,7 +63,6 @@ const ABORT_BACKSTOP_MS = 5000
  */
 const WAIT_END = { wait_end_of_query: 1 } as const
 
-/** The server's error name (READONLY, TIMEOUT_EXCEEDED) belongs in the message the user sees. */
 function describeError(error: unknown): string {
   if (error instanceof ClickHouseError && error.type) return `${error.message} (${error.type})`
   return error instanceof Error ? error.message : String(error)
@@ -235,7 +233,6 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     })
   }
 
-  /** Server-enforced read-only execution for the MCP read guard: `readonly = 1`. */
   async queryReadOnly(
     config: ConnectionConfig,
     sql: string,
@@ -258,7 +255,6 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     })
   }
 
-  /** No positional parameters in ClickHouse; every params-passing caller is gated. */
   async execute(
     config: ConnectionConfig,
     sql: string,
@@ -296,7 +292,6 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     })
   }
 
-  /** `EXPLAIN indexes = 1`. There is no ANALYZE, so `analyze` is ignored (SQLite precedent). */
   async explain(config: ConnectionConfig, sql: string, _analyze: boolean): Promise<ExplainResult> {
     const statements = splitStatements(sql, 'clickhouse')
     if (statements.length !== 1) {
@@ -344,7 +339,6 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     return []
   }
 
-  /** Must resolve: mcp/tools.ts awaits it inside Promise.all without a catch. */
   async getTypes(): Promise<CustomTypeInfo[]> {
     return []
   }
@@ -357,7 +351,6 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     throw new CapabilityError('clickhouse', 'healthActiveQueries')
   }
 
-  /** Active parts from system.parts, per table; `schema` narrows to one database. */
   async getTableSizes(
     config: ConnectionConfig,
     schema?: string
@@ -391,7 +384,6 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     throw new CapabilityError('clickhouse', 'killQuery')
   }
 
-  /** No check supports ClickHouse: every requested check is reported as skipped. */
   async runSchemaIntel(
     _config: ConnectionConfig,
     checks?: SchemaIntelCheckId[]

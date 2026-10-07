@@ -1,6 +1,5 @@
 import type { DatabaseType } from "./index";
 
-/** User-facing features that exist for some databases and not others. */
 export type Capability =
   | "inlineEdit"
   | "tableDesigner"
@@ -21,15 +20,6 @@ export type Capability =
 
 export type CapabilityRow = Readonly<Record<Capability, boolean>>;
 
-/**
- * The single declaration of what each database can do in data-peek.
- *
- * Every dbType declares every capability, so adding a dbType or a capability does not
- * compile until the cell is filled. The literal type feeds `DbTypesWith<C>`, which the
- * dialect builders use as their key type: a builder cannot be handed a dbType whose
- * cell is false. db-capabilities.test.ts checks the rows against the optional adapter
- * methods and against SCHEMA_INTEL_CHECKS.
- */
 export const DB_CAPABILITIES = {
   postgresql: {
     inlineEdit: true,
@@ -123,7 +113,6 @@ export const DB_CAPABILITIES = {
   },
 } as const satisfies Record<DatabaseType, CapabilityRow>;
 
-/** Database types whose cell for `C` is literally `true`. */
 export type DbTypesWith<C extends Capability> = {
   [K in DatabaseType]: (typeof DB_CAPABILITIES)[K][C] extends true ? K : never;
 }[DatabaseType];
@@ -166,7 +155,6 @@ export function hasCapability<C extends Capability>(
   return dbType !== undefined && DB_CAPABILITIES[dbType][cap];
 }
 
-/** Thrown by main (IPC guard and adapter backstops). */
 export class CapabilityError extends Error {
   readonly code = "CAPABILITY_UNAVAILABLE" as const;
   constructor(

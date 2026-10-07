@@ -66,13 +66,12 @@ const NUMERIC_TYPE =
 const DATE_TYPE =
   /\b(timestamptz|timestamp|datetime2?|datetimeoffset|smalldatetime|date|date32|datetime64|time|timetz)\b/
 
-// ClickHouse wraps the payload type: `LowCardinality(Nullable(UInt64))` sorts as UInt64.
 const CLICKHOUSE_WRAPPERS = /^(?:(?:nullable|lowcardinality)\()+/
+const CONTAINER_TYPE = /^(array|map|tuple|nested)\(/
 
 export function getTypeCategory(dataType: string): TypeCategory {
   const lower = dataType.toLowerCase().replace(CLICKHOUSE_WRAPPERS, '')
-  // A container's element type must not make the whole column sort as that type.
-  if (/^(array|map|tuple|nested)\(/.test(lower)) return 'string'
+  if (CONTAINER_TYPE.test(lower)) return 'string'
   if (/\bbool(ean)?\b/.test(lower)) return 'bool'
   if (NUMERIC_TYPE.test(lower)) return 'numeric'
   if (DATE_TYPE.test(lower)) return 'date'

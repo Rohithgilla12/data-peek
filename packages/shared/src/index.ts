@@ -778,7 +778,6 @@ export interface QueryField {
   dataTypeID?: number;
 }
 
-/** Explain output for engines whose plan is lines of text (ClickHouse). */
 export interface TextExplainPlan {
   kind: "text";
   lines: string[];
@@ -2810,10 +2809,6 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
   },
 ];
 
-/**
- * Schema Intel is not a cell in DB_CAPABILITIES: a database supports it when at
- * least one check lists it, so the check definitions stay the single source.
- */
 export function supportsSchemaIntel(dbType: DatabaseType | undefined): boolean {
   return (
     dbType !== undefined &&

@@ -141,8 +141,6 @@ export const useHealthStore = create<HealthState>()((set, get) => ({
   fetchAll: async (config, schema?) => {
     const { fetchActiveQueries, fetchTableSizes, fetchCacheStats, fetchLocks } = get()
 
-    // A panel the database cannot serve is skipped, and whatever a previously viewed
-    // connection left in the store is cleared so the panel shows its empty state.
     const dbType = config.dbType
     const activeQueries = hasCapability(dbType, 'healthActiveQueries')
     const cacheStats = hasCapability(dbType, 'healthCacheStats')

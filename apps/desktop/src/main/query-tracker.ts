@@ -15,7 +15,6 @@ export type CancellableHandle =
   | { type: 'mysql'; connection: Connection }
   | { type: 'mssql'; request: MSSQLRequest }
   | { type: 'sqlite' } // SQLite is synchronous and cannot be cancelled mid-query
-  /** Aborts the in-flight HTTP request and issues KILL QUERY for the running statement. */
   | { type: 'clickhouse'; cancel: () => Promise<void> }
 
 function assertNever(handle: never): never {

@@ -1,12 +1,6 @@
 import { test, expect } from './fixtures/electron-app'
 import { startSeededClickHouse, type SeededClickHouse } from './fixtures/clickhouse'
 
-/**
- * ClickHouse end to end through the real renderer: the connection dialog, the schema
- * explorer, the query editor, and the features that must stay hidden for ClickHouse.
- * Row counts come from seeds/clickhouse/init/01_acme_analytics.sql.
- */
-
 type Page = import('@playwright/test').Page
 
 let ch: SeededClickHouse
@@ -33,7 +27,6 @@ async function activateSeededConnection(window: Page) {
   await expect(window.locator('header').getByText(ch.config.name)).toBeVisible({ timeout: 8000 })
 }
 
-/** The schema tree row for a table; the sidebar search palette renders the same names. */
 function treeRow(window: Page, name: string) {
   return window
     .locator('[data-sidebar="menu-sub-item"]')

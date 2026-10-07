@@ -14,7 +14,6 @@ type ProgressCallback = (
   totalBatches: number
 ) => void
 
-/** Databases the batch INSERT builders (CSV import, data generator) can target. */
 export type BulkInsertDbType = DbTypesWith<'csvImport'>
 
 export const IDENTIFIER_QUOTES: Record<BulkInsertDbType, string> = {

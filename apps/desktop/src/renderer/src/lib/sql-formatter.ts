@@ -17,7 +17,6 @@ const defaultOptions: FormatOptions = {
   linesBetweenQueries: 2
 }
 
-/** The formatter dialect for a connection. Postgres was the historical default for all. */
 export function formatterLanguage(dbType: DatabaseType | undefined): FormatOptions['language'] {
   return dbType === 'clickhouse' ? 'clickhouse' : 'postgresql'
 }
