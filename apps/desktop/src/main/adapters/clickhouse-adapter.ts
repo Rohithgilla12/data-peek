@@ -57,11 +57,11 @@ export { closeClickHousePool, closeAllClickHousePools }
 const ABORT_BACKSTOP_MS = 5000
 const CONNECT_TIMEOUT_MS = 15_000
 /**
- * Test-only probe deadline override. The e2e suite sets DP_E2E=1 plus
- * DP_E2E_CONNECT_TIMEOUT_MS so stale connect attempts settle in seconds instead
- * of the production 15 s; production builds never see these variables.
+ * The e2e suite runs with DP_E2E=1 and may shorten the connect probe with
+ * DP_E2E_CONNECT_TIMEOUT_MS so stale connect attempts settle in seconds. Outside
+ * e2e this is always CONNECT_TIMEOUT_MS.
  */
-const TEST_CONNECT_TIMEOUT_MS =
+const CONNECT_PROBE_TIMEOUT_MS =
   process.env.DP_E2E === '1' && Number(process.env.DP_E2E_CONNECT_TIMEOUT_MS) > 0
     ? Number(process.env.DP_E2E_CONNECT_TIMEOUT_MS)
     : CONNECT_TIMEOUT_MS
@@ -93,7 +93,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
    */
   async connect(config: ConnectionConfig): Promise<void> {
     const deadline = new AbortController()
-    const timer = setTimeout(() => deadline.abort(), TEST_CONNECT_TIMEOUT_MS)
+    const timer = setTimeout(() => deadline.abort(), CONNECT_PROBE_TIMEOUT_MS)
     try {
       await withClickHouseClient(config, async (client) => {
         const rs = await client.query({
