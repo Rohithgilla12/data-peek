@@ -188,7 +188,7 @@ export interface DatabaseAdapter {
   /** Get table definition (reverse engineer DDL) */
   getTableDDL(config: ConnectionConfig, schema: string, table: string): Promise<TableDefinition>
 
-  /** Get available sequences (PostgreSQL-specific, returns empty for MySQL) */
+  /** Get available sequences (returns empty for databases without sequences, e.g. MySQL, SQLite) */
   getSequences(config: ConnectionConfig): Promise<SequenceInfo[]>
 
   /** Get custom types (enums, etc.) */

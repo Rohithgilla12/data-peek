@@ -978,10 +978,30 @@ export class MSSQLAdapter implements DatabaseAdapter {
     })
   }
 
-  async getSequences(): Promise<SequenceInfo[]> {
-    // MSSQL uses IDENTITY columns instead of sequences
-    // Return empty array as sequences are a PostgreSQL concept
-    return []
+  async getSequences(config: ConnectionConfig): Promise<SequenceInfo[]> {
+    return withMSSQLPool(config, async (pool) => {
+      const result = await pool.request().query(`
+        SELECT
+          s.name AS schema_name,
+          seq.name AS sequence_name,
+          t.name AS data_type,
+          seq.start_value AS start_value,
+          seq.increment AS increment
+        FROM sys.sequences seq
+        JOIN sys.schemas s ON seq.schema_id = s.schema_id
+        JOIN sys.types t ON seq.user_type_id = t.user_type_id
+        WHERE s.name NOT IN ('sys', 'INFORMATION_SCHEMA')
+        ORDER BY s.name, seq.name
+      `)
+
+      return result.recordset.map((row) => ({
+        schema: String(row.schema_name),
+        name: String(row.sequence_name),
+        dataType: String(row.data_type),
+        startValue: String(row.start_value),
+        increment: String(row.increment)
+      }))
+    })
   }
 
   async getTypes(config: ConnectionConfig): Promise<CustomTypeInfo[]> {
