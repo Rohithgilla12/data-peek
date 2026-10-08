@@ -6,6 +6,8 @@ import { commentedSql } from '@shared/schema-intel/sql-safety'
 const DEFAULT_MSSQL_CHECKS: SchemaIntelCheckId[] = [
   'tables_without_pk',
   'missing_fk_indexes',
+  'duplicate_indexes',
+  'unused_indexes',
   'nullable_fks'
 ]
 
@@ -84,18 +86,23 @@ function columnList(objectIdAlias: string, filter = ''): string {
     )`
 }
 
-/** Parses the payload from {@link columnList}; tolerant of NULL, empty and junk. */
-export function parseFkColumns(raw: unknown): string[] {
+/** Parses a `FOR JSON PATH` payload into its rows; tolerant of NULL, empty and junk. */
+function parseJsonRows(raw: unknown): Row[] {
   if (typeof raw !== 'string' || raw === '') return []
   try {
     const parsed: unknown = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed
-      .map((entry) => String((entry as { name?: unknown } | undefined)?.name ?? ''))
-      .filter(Boolean)
+    return parsed.filter((entry): entry is Row => typeof entry === 'object' && entry !== null)
   } catch {
     return []
   }
+}
+
+/** Parses the payload from {@link columnList}; tolerant of NULL, empty and junk. */
+export function parseFkColumns(raw: unknown): string[] {
+  return parseJsonRows(raw)
+    .map((entry) => String(entry.name ?? ''))
+    .filter(Boolean)
 }
 
 /**
@@ -224,11 +231,237 @@ export function toNullableFkFindings(rows: Row[]): SchemaIntelFinding[] {
   })
 }
 
+/**
+ * An index's columns as a JSON array of `{"name": ..., "desc": ...}`: the key
+ * columns in key order with their sort direction, or the included columns in
+ * column order. Same reasoning as {@link columnList}: a comma-joined list
+ * cannot be split back apart once a name contains a comma.
+ */
+function indexColumnList(indexAlias: string, part: 'key' | 'include'): string {
+  const filter = part === 'key' ? 'ic.key_ordinal > 0' : 'ic.is_included_column = 1'
+  const order = part === 'key' ? 'ic.key_ordinal' : 'ic.column_id'
+  return `(
+      SELECT c.name AS name, ic.is_descending_key AS [desc]
+      FROM sys.index_columns ic
+      JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id
+      WHERE ic.object_id = ${indexAlias}.object_id
+        AND ic.index_id = ${indexAlias}.index_id
+        AND ${filter}
+      ORDER BY ${order}
+      FOR JSON PATH
+    )`
+}
+
+interface IndexColumn {
+  name: string
+  desc: boolean
+}
+
+/** Parses the payload from {@link indexColumnList}; tolerant of NULL, empty and junk. */
+export function parseIndexColumns(raw: unknown): IndexColumn[] {
+  return parseJsonRows(raw)
+    .map((entry) => ({ name: String(entry.name ?? ''), desc: Number(entry.desc) === 1 }))
+    .filter((column) => column.name !== '')
+}
+
+interface IndexRow {
+  schema: string
+  table: string
+  name: string
+  /** `sys.indexes.type`: 1 is clustered, 2 nonclustered. */
+  type: number
+  isUnique: boolean
+  isPrimaryKey: boolean
+  isUniqueConstraint: boolean
+  filter: string | null
+  keys: IndexColumn[]
+  includes: string[]
+}
+
+function readIndexRow(row: Row): IndexRow {
+  return {
+    schema: String(row.schema_name),
+    table: String(row.table_name),
+    name: String(row.index_name),
+    type: Number(row.index_type),
+    isUnique: Number(row.is_unique) === 1,
+    isPrimaryKey: Number(row.is_primary_key) === 1,
+    isUniqueConstraint: Number(row.is_unique_constraint) === 1,
+    filter: row.filter_definition == null ? null : String(row.filter_definition),
+    keys: parseIndexColumns(row.key_columns_json),
+    includes: parseIndexColumns(row.included_columns_json).map((column) => column.name)
+  }
+}
+
+/**
+ * Orders a group of duplicates so the one to keep comes first. A clustered
+ * index is the table itself, a primary key or unique constraint is part of the
+ * schema's contract, and after that the first name is as good as any.
+ */
+function keptFirst(a: IndexRow, b: IndexRow): number {
+  const rank = (index: IndexRow): number =>
+    index.type === 1 ? 0 : index.isPrimaryKey ? 1 : index.isUniqueConstraint ? 2 : 3
+  return rank(a) - rank(b) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+}
+
+/** The statement that removes an index; one backing a constraint goes through the constraint. */
+function dropIndexSql(index: IndexRow): string {
+  const table = qualified(index.schema, index.table)
+  return index.isPrimaryKey || index.isUniqueConstraint
+    ? `ALTER TABLE ${table} DROP CONSTRAINT ${qid(index.name)};`
+    : `DROP INDEX ${qid(index.name)} ON ${table};`
+}
+
+async function checkDuplicateIndexes(pool: sql.ConnectionPool): Promise<SchemaIntelFinding[]> {
+  // One row per rowstore index, grouped in TypeScript. Grouping in T-SQL would
+  // mean GROUP BY over the JSON payloads, and a catalog query that fails only
+  // degrades to a skipped check, which the canned-row tests cannot see.
+  // XML, spatial and columnstore indexes have no key list to compare.
+  const rows = await runQuery(
+    pool,
+    `
+    SELECT
+      s.name AS schema_name,
+      t.name AS table_name,
+      i.name AS index_name,
+      i.type AS index_type,
+      i.is_unique,
+      i.is_primary_key,
+      i.is_unique_constraint,
+      i.filter_definition,
+      ${indexColumnList('i', 'key')} AS key_columns_json,
+      ${indexColumnList('i', 'include')} AS included_columns_json
+    FROM sys.indexes i
+    JOIN sys.tables t ON t.object_id = i.object_id
+    JOIN sys.schemas s ON s.schema_id = t.schema_id
+    WHERE i.index_id > 0
+      AND i.type IN (1, 2)
+      AND i.is_hypothetical = 0
+      AND i.is_disabled = 0
+    ORDER BY s.name, t.name, i.name
+    `
+  )
+  return toDuplicateIndexFindings(rows)
+}
+
+/** Groups the query's rows into findings. Exported so the grouping is testable. */
+export function toDuplicateIndexFindings(rows: Row[]): SchemaIntelFinding[] {
+  // Two indexes are duplicates when everything but the name matches: key
+  // columns in order with their sort direction, included columns, uniqueness
+  // and filter. Clustered and nonclustered compare alike, since a nonclustered
+  // index on the clustered key is redundant with it.
+  const groups = new Map<string, IndexRow[]>()
+  for (const row of rows) {
+    const index = readIndexRow(row)
+    // An unreadable column payload must not pair up with another one.
+    if (index.keys.length === 0) continue
+    const signature = JSON.stringify([
+      index.schema,
+      index.table,
+      index.isUnique,
+      index.filter,
+      index.keys,
+      index.includes
+    ])
+    groups.set(signature, [...(groups.get(signature) ?? []), index])
+  }
+
+  const findings: SchemaIntelFinding[] = []
+  for (const group of groups.values()) {
+    if (group.length < 2) continue
+    const [kept, ...duplicates] = [...group].sort(keptFirst)
+    const names = duplicates.map((index) => index.name)
+    findings.push({
+      checkId: 'duplicate_indexes',
+      severity: 'warning',
+      title: `${kept.schema}.${kept.table} has duplicate index${names.length > 1 ? 'es' : ''}: ${names.join(', ')}`,
+      detail:
+        'These indexes have the same key columns, included columns, uniqueness and filter. Keeping one is usually enough; the others only slow down writes.',
+      entity: { schema: kept.schema, name: kept.table, kind: 'table' },
+      metadata: {
+        keptIndex: kept.name,
+        duplicates: names,
+        columns: kept.keys.map((column) => column.name),
+        includedColumns: kept.includes
+      },
+      suggestedSql: duplicates.map(dropIndexSql).join('\n')
+    })
+  }
+  return findings
+}
+
+async function checkUnusedIndexes(pool: sql.ConnectionPool): Promise<SchemaIntelFinding[]> {
+  // sys.dm_db_index_usage_stats needs VIEW SERVER STATE (VIEW DATABASE STATE
+  // on Azure SQL Database). Without it the query fails, and the runner records
+  // the check as skipped with the server's reason. Only nonclustered rowstore
+  // indexes are candidates: dropping a clustered index rebuilds the table, and
+  // a primary key or unique index enforces a rule whether or not it is read.
+  // An index with writes but no reads is the signal; one with no row in the
+  // DMV at all has seen nothing since the counters reset, which says nothing.
+  const rows = await runQuery(
+    pool,
+    `
+    SELECT
+      s.name AS schema_name,
+      t.name AS table_name,
+      i.name AS index_name,
+      u.user_updates,
+      u.last_user_update,
+      ${indexColumnList('i', 'key')} AS key_columns_json
+    FROM sys.indexes i
+    JOIN sys.tables t ON t.object_id = i.object_id
+    JOIN sys.schemas s ON s.schema_id = t.schema_id
+    JOIN sys.dm_db_index_usage_stats u
+      ON u.database_id = DB_ID() AND u.object_id = i.object_id AND u.index_id = i.index_id
+    WHERE i.type = 2
+      AND i.is_primary_key = 0
+      AND i.is_unique = 0
+      AND i.is_hypothetical = 0
+      AND i.is_disabled = 0
+      AND u.user_seeks + u.user_scans + u.user_lookups = 0
+      AND u.user_updates > 0
+    ORDER BY u.user_updates DESC, s.name, t.name, i.name
+    `
+  )
+  return toUnusedIndexFindings(rows)
+}
+
+function timestamp(value: unknown): string | undefined {
+  if (value == null) return undefined
+  return value instanceof Date ? value.toISOString() : String(value)
+}
+
+/** Shapes the query's rows into findings. Exported so the shaping is testable. */
+export function toUnusedIndexFindings(rows: Row[]): SchemaIntelFinding[] {
+  return rows.map((row) => {
+    const s = String(row.schema_name)
+    const t = String(row.table_name)
+    const indexName = String(row.index_name)
+    const userUpdates = Number(row.user_updates ?? 0)
+    return {
+      checkId: 'unused_indexes',
+      severity: 'info',
+      title: `${s}.${t}.${indexName} has no recorded reads`,
+      detail: `Written ${userUpdates} time${userUpdates === 1 ? '' : 's'} and never read since the usage counters last reset, which happens when SQL Server restarts or the database comes online. If that covers a normal workload, it is a candidate to drop. Clustered indexes, primary keys and unique indexes are not listed.`,
+      entity: { schema: s, name: indexName, kind: 'index' },
+      metadata: {
+        table: t,
+        columns: parseIndexColumns(row.key_columns_json).map((column) => column.name),
+        userUpdates,
+        lastUserUpdate: timestamp(row.last_user_update)
+      },
+      suggestedSql: `DROP INDEX ${qid(indexName)} ON ${qualified(s, t)};`
+    } satisfies SchemaIntelFinding
+  })
+}
+
 const CHECK_RUNNERS: Partial<
   Record<SchemaIntelCheckId, (pool: sql.ConnectionPool) => Promise<SchemaIntelFinding[]>>
 > = {
   tables_without_pk: checkTablesWithoutPk,
   missing_fk_indexes: checkMissingFkIndexes,
+  duplicate_indexes: checkDuplicateIndexes,
+  unused_indexes: checkUnusedIndexes,
   nullable_fks: checkNullableFks
 }
 

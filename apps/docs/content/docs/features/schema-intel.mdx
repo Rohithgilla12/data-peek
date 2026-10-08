@@ -23,8 +23,8 @@ Schema Intel tailors its diagnostic suite to the active database engine. Checks 
 | ----- | -------- | :--------: | :---: | :--------: | :----: | :--------: |
 | `tables_without_pk` | `warning` | Supported | Supported | Supported | Supported | Unsupported |
 | `missing_fk_indexes` | `warning` | Supported | Supported | Supported | Supported | Unsupported |
-| `duplicate_indexes` | `warning` | Supported | Supported | Unsupported | Supported | Unsupported |
-| `unused_indexes` | `info` | Supported | Supported | Unsupported | Unsupported | Unsupported |
+| `duplicate_indexes` | `warning` | Supported | Supported | Supported | Supported | Unsupported |
+| `unused_indexes` | `info` | Supported | Supported | Supported | Unsupported | Unsupported |
 | `invalid_indexes` | `critical` | Supported | Unsupported | Unsupported | Unsupported | Unsupported |
 | `bloated_tables` | `info` | Supported | Unsupported | Unsupported | Unsupported | Unsupported |
 | `never_vacuumed` | `info` | Supported | Unsupported | Unsupported | Unsupported | Unsupported |
@@ -62,7 +62,7 @@ Schema Intel tailors its diagnostic suite to the active database engine. Checks 
 - **Database support**:
   - **PostgreSQL**: Supported — compares normalized index definitions via `pg_get_indexdef`.
   - **MySQL**: Supported — identifies indexes covering the identical ordered column list and collation.
-  - **SQL Server**: Unsupported — not currently evaluated for SQL Server connections.
+  - **SQL Server**: Supported — groups `sys.indexes` by key columns with sort order, included columns, uniqueness, and filter. The clustered index, primary key, or unique constraint is kept; a duplicate backed by a constraint is dropped through `ALTER TABLE ... DROP CONSTRAINT`.
   - **SQLite**: Supported — compares index column lists, collation, and sort order signatures.
 
 ### Unused Indexes (`unused_indexes`)
@@ -73,7 +73,7 @@ Schema Intel tailors its diagnostic suite to the active database engine. Checks 
 - **Database support**:
   - **PostgreSQL**: Supported — queries `pg_stat_user_indexes` where `idx_scan = 0`.
   - **MySQL**: Supported — reads `performance_schema.table_io_waits_summary_by_index_usage` for indexes with zero fetch operations (`COUNT_FETCH = 0`).
-  - **SQL Server**: Unsupported — not currently evaluated for SQL Server connections.
+  - **SQL Server**: Supported — reads `sys.dm_db_index_usage_stats` for nonclustered, non-unique indexes with writes but no seeks, scans, or lookups since the counters last reset. Needs `VIEW SERVER STATE`; without it the check is reported as skipped with the server's reason.
   - **SQLite**: Unsupported — SQLite does not record index usage or scan frequency statistics.
 
 ### Invalid Indexes (`invalid_indexes`)

@@ -2765,7 +2765,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Multiple indexes that cover the same leading columns waste disk space and slow writes.",
     severity: "warning",
-    supportedDbTypes: ["postgresql", "mysql", "sqlite"],
+    supportedDbTypes: ["postgresql", "mysql", "mssql", "sqlite"],
   },
   {
     id: "unused_indexes",
@@ -2773,7 +2773,7 @@ export const SCHEMA_INTEL_CHECKS: readonly SchemaIntelCheckDefinition[] = [
     description:
       "Indexes that have never served a scan since stats were reset. They add maintenance overhead without speeding up reads.",
     severity: "info",
-    supportedDbTypes: ["postgresql", "mysql"],
+    supportedDbTypes: ["postgresql", "mysql", "mssql"],
   },
   {
     id: "invalid_indexes",
