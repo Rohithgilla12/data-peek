@@ -985,8 +985,8 @@ export class MSSQLAdapter implements DatabaseAdapter {
           s.name AS schema_name,
           seq.name AS sequence_name,
           t.name AS data_type,
-          seq.start_value AS start_value,
-          seq.increment AS increment
+          CONVERT(varchar(40), seq.start_value) AS start_value,
+          CONVERT(varchar(40), seq.increment) AS increment
         FROM sys.sequences seq
         JOIN sys.schemas s ON seq.schema_id = s.schema_id
         JOIN sys.types t ON seq.user_type_id = t.user_type_id
