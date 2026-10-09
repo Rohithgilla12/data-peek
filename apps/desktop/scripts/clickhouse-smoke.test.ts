@@ -303,15 +303,38 @@ describe('gating', () => {
     await expect(adapter.getCacheStats(config)).rejects.toThrow(same('healthCacheStats'))
     await expect(adapter.getLocks(config)).rejects.toThrow(same('healthLocks'))
     await expect(adapter.killQuery(config, 1)).rejects.toThrow(same('killQuery'))
-    await expect(adapter.getColumnStats(config, db, 'events', 'org_id', 'UInt32')).rejects.toThrow(
-      same('columnStats')
-    )
   })
 
   it('reports every Schema Intel check as skipped', async () => {
     const report = await adapter.runSchemaIntel(config)
     expect(report.findings).toEqual([])
     expect(report.skipped.length).toBeGreaterThan(0)
+  })
+})
+
+describe('column stats', () => {
+  it('profiles a low-cardinality string column', async () => {
+    const stats = await adapter.getColumnStats(
+      config,
+      db,
+      'events',
+      'status',
+      "Enum8('ok' = 1, 'error' = 2)"
+    )
+    expect(stats.statsType).toBe('text')
+    expect(stats.totalRows).toBe(50000)
+    expect(stats.nullCount).toBe(0)
+    expect(stats.distinctCount).toBe(2)
+    expect(stats.commonValues?.[0]).toMatchObject({ value: 'ok', count: 47500 })
+    expect(stats.commonValues?.[1]).toMatchObject({ value: 'error', count: 2500 })
+  })
+
+  it('profiles a numeric column', async () => {
+    const stats = await adapter.getColumnStats(config, db, 'events', 'org_id', 'UInt32')
+    expect(stats.statsType).toBe('numeric')
+    expect(stats.totalRows).toBe(50000)
+    expect(Number(stats.min)).toBeLessThanOrEqual(Number(stats.max))
+    expect(stats.avg).not.toBeNull()
   })
 })
 

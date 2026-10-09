@@ -52,6 +52,7 @@ Turn on **SSL** to connect over HTTPS. To reach a server behind a bastion host, 
 | Enum types                   |        ✓         |
 | Query plans                  |    Text plans    |
 | Cancel and timeouts          |        ✓         |
+| Column statistics            |        ✓         |
 | Health Monitor               | Table Sizes only |
 | AI assistant                 |        ✓         |
 | MCP server                   |        ✓         |
@@ -73,7 +74,6 @@ data-peek hides these features on ClickHouse connections:
 - Triggers
 - SQL dump export and import
 - Schema Intel
-- Column statistics
 - Health Monitor panels for active queries, locks, and cache stats
 - Cross-tab `@name` references
 
@@ -115,6 +115,10 @@ The editor suggests common ClickHouse functions, such as `uniqExact`, `toStartOf
 - Row counts come from the `total_rows` estimate in `system.tables`.
 
 ClickHouse has no foreign keys, so ER diagrams show tables and columns without relationship lines.
+
+## Column Statistics
+
+The column statistics panel shows row, null and distinct counts, plus min, max and average for numeric columns, and the most common values for text columns. The distinct count comes from ClickHouse's `uniq`, so it is approximate on large tables.
 
 ## Query Plans
 

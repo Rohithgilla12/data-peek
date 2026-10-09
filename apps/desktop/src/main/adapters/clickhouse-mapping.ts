@@ -1,5 +1,6 @@
 import type {
   ColumnInfo,
+  ColumnStatsType,
   QueryField,
   SchemaInfo,
   StatementResult,
@@ -239,4 +240,19 @@ export function mapPartsRows(rows: SystemPartsRow[]): TableSizeInfo[] {
       totalSizeBytes
     }
   })
+}
+
+/** Maps a ClickHouse type name (Nullable and LowCardinality wrappers included) to a stats bucket. */
+export function classifyColumnType(dataType: string): ColumnStatsType {
+  let type = dataType.trim()
+  for (;;) {
+    const wrapped = /^(?:Nullable|LowCardinality)\((.*)\)$/.exec(type)
+    if (!wrapped) break
+    type = wrapped[1].trim()
+  }
+  if (/^Bool(ean)?$/i.test(type)) return 'boolean'
+  if (/^(U?Int(8|16|32|64|128|256)|Float(32|64)|BFloat16|Decimal)/i.test(type)) return 'numeric'
+  if (/^(Date|DateTime)/i.test(type)) return 'datetime'
+  if (/^(String|FixedString|Enum|UUID|IPv[46])/i.test(type)) return 'text'
+  return 'other'
 }

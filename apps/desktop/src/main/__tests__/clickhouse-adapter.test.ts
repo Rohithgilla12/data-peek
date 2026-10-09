@@ -17,6 +17,7 @@ vi.mock('fs', async (importOriginal) => {
 })
 
 import {
+  classifyColumnType,
   classifyStatement,
   columnDefault,
   hasTrailingFormatClause,
@@ -55,6 +56,29 @@ function makeConfig(overrides: Partial<ConnectionConfig> = {}): ConnectionConfig
     ...overrides
   }
 }
+
+describe('classifyColumnType', () => {
+  it.each([
+    ['UInt32', 'numeric'],
+    ['Int64', 'numeric'],
+    ['Float64', 'numeric'],
+    ['Decimal(10, 2)', 'numeric'],
+    ['Nullable(Float32)', 'numeric'],
+    ['String', 'text'],
+    ['LowCardinality(String)', 'text'],
+    ['LowCardinality(Nullable(String))', 'text'],
+    ["Enum8('ok' = 1, 'error' = 2)", 'text'],
+    ['UUID', 'text'],
+    ['Date', 'datetime'],
+    ['DateTime64(3)', 'datetime'],
+    ['Nullable(DateTime)', 'datetime'],
+    ['Bool', 'boolean'],
+    ['Array(String)', 'other'],
+    ['Map(String, String)', 'other']
+  ])('classifies %s as %s', (type, expected) => {
+    expect(classifyColumnType(type)).toBe(expected)
+  })
+})
 
 describe('classifyStatement', () => {
   it.each([
@@ -387,7 +411,6 @@ describe('ClickHouseAdapter backstops', () => {
     await expect(adapter.getCacheStats()).rejects.toThrow('Cache monitoring')
     await expect(adapter.getLocks()).rejects.toThrow('Lock monitoring')
     await expect(adapter.killQuery()).rejects.toThrow('Kill query')
-    await expect(adapter.getColumnStats()).rejects.toThrow('Column profiling')
     await expect(adapter.getActiveQueries()).rejects.toThrow('Active query monitoring')
     await expect(adapter.queryMultiple(config, 'SELECT 1', { sessionId: 's' })).rejects.toThrow(
       'Transaction support'

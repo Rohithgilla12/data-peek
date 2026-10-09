@@ -7,6 +7,7 @@ import {
   type CacheStats,
   type ColumnDefinition,
   type ColumnStats,
+  type CommonValue,
   type ConnectionConfig,
   type CustomTypeInfo,
   type DatabaseSizeInfo,
@@ -30,6 +31,7 @@ import { splitStatements } from '../lib/sql-parser'
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 import {
+  classifyColumnType,
   classifyStatement,
   FORMAT_CLAUSE_MESSAGE,
   formatBytes,
@@ -395,8 +397,131 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     return []
   }
 
-  async getColumnStats(): Promise<ColumnStats> {
-    throw new CapabilityError('clickhouse', 'columnStats')
+  async getColumnStats(
+    config: ConnectionConfig,
+    schema: string,
+    table: string,
+    column: string,
+    dataType: string
+  ): Promise<ColumnStats> {
+    const statsType = classifyColumnType(dataType)
+    const query_params = { db: schema, tbl: table, col: column }
+    const source = 'FROM {db:Identifier}.{tbl:Identifier}'
+
+    return withClickHouseClient(config, async (client) => {
+      const [base] = await this.rows<{
+        total_rows: string
+        null_count: string
+        distinct_count: string
+      }>(client, {
+        query: `SELECT count() AS total_rows,
+                       countIf(isNull({col:Identifier})) AS null_count,
+                       uniq({col:Identifier}) AS distinct_count
+                ${source}`,
+        query_params
+      })
+
+      const totalRows = Number(base.total_rows)
+      const nullCount = Number(base.null_count)
+      const distinctCount = Number(base.distinct_count)
+
+      const stats: ColumnStats = {
+        column,
+        dataType,
+        statsType,
+        totalRows,
+        nullCount,
+        nullPercentage: totalRows > 0 ? (nullCount / totalRows) * 100 : 0,
+        distinctCount,
+        distinctPercentage: totalRows > 0 ? (distinctCount / totalRows) * 100 : 0
+      }
+
+      if (statsType === 'numeric') {
+        const [num] = await this.rows<{
+          min_val: string | null
+          max_val: string | null
+          avg_val: number | null
+          stddev_val: number | null
+        }>(client, {
+          query: `SELECT toString(min({col:Identifier})) AS min_val,
+                         toString(max({col:Identifier})) AS max_val,
+                         avg({col:Identifier}) AS avg_val,
+                         stddevPop({col:Identifier}) AS stddev_val
+                  ${source}
+                  WHERE {col:Identifier} IS NOT NULL`,
+          query_params
+        })
+        const hasValues = totalRows > nullCount
+        stats.min = hasValues ? (num?.min_val ?? null) : null
+        stats.max = hasValues ? (num?.max_val ?? null) : null
+        stats.avg = hasValues && num?.avg_val != null ? Number(num.avg_val) : null
+        stats.stdDev = hasValues && num?.stddev_val != null ? Number(num.stddev_val) : null
+      } else if (statsType === 'datetime') {
+        const [range] = await this.rows<{ min_val: string | null; max_val: string | null }>(
+          client,
+          {
+            query: `SELECT toString(min({col:Identifier})) AS min_val,
+                         toString(max({col:Identifier})) AS max_val
+                  ${source}
+                  WHERE {col:Identifier} IS NOT NULL`,
+            query_params
+          }
+        )
+        const hasValues = totalRows > nullCount
+        stats.min = hasValues ? (range?.min_val ?? null) : null
+        stats.max = hasValues ? (range?.max_val ?? null) : null
+      } else if (statsType === 'text') {
+        const [len] = await this.rows<{
+          min_length: string | null
+          max_length: string | null
+          avg_length: number | null
+        }>(client, {
+          query: `SELECT min(lengthUTF8(toString({col:Identifier}))) AS min_length,
+                         max(lengthUTF8(toString({col:Identifier}))) AS max_length,
+                         avg(lengthUTF8(toString({col:Identifier}))) AS avg_length
+                  ${source}
+                  WHERE {col:Identifier} IS NOT NULL`,
+          query_params
+        })
+        const hasValues = totalRows > nullCount
+        stats.minLength = hasValues && len?.min_length != null ? Number(len.min_length) : null
+        stats.maxLength = hasValues && len?.max_length != null ? Number(len.max_length) : null
+        stats.avgLength = hasValues && len?.avg_length != null ? Number(len.avg_length) : null
+      } else if (statsType === 'boolean') {
+        const [flags] = await this.rows<{ true_count: string; false_count: string }>(client, {
+          query: `SELECT countIf({col:Identifier} = true) AS true_count,
+                         countIf({col:Identifier} = false) AS false_count
+                  ${source}`,
+          query_params
+        })
+        stats.trueCount = Number(flags.true_count)
+        stats.falseCount = Number(flags.false_count)
+      }
+
+      if (statsType === 'text' || statsType === 'boolean' || statsType === 'other') {
+        // topK picks the candidates in bounded memory (an exact GROUP BY keeps one entry per
+        // distinct value), then only those few values are counted so percentages stay exact.
+        const common = await this.rows<{ val: string; cnt: string }>(client, {
+          query: `WITH (SELECT topK(5)(toString({col:Identifier})) ${source}) AS top
+                  SELECT toString({col:Identifier}) AS val, count() AS cnt
+                  ${source}
+                  WHERE {col:Identifier} IS NOT NULL AND has(top, toString({col:Identifier}))
+                  GROUP BY val
+                  ORDER BY cnt DESC, val ASC
+                  LIMIT 5`,
+          query_params
+        })
+        if (common.length > 0) {
+          stats.commonValues = common.map((row): CommonValue => ({
+            value: row.val,
+            count: Number(row.cnt),
+            percentage: totalRows > 0 ? (Number(row.cnt) / totalRows) * 100 : 0
+          }))
+        }
+      }
+
+      return stats
+    })
   }
 
   async getActiveQueries(): Promise<ActiveQuery[]> {
