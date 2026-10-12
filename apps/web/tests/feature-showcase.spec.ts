@@ -8,7 +8,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 /** Scroll the showcase into view so the player's IntersectionObserver fires. */
 async function openShowcase(page: Page) {
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   await page.locator("#see-it-work").scrollIntoViewIfNeeded();
 }
 
