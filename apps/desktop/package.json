@@ -27,7 +27,8 @@
     "build:unpack": "pnpm run build && electron-builder --dir",
     "build:win": "pnpm run build && electron-builder --win",
     "build:mac": "pnpm run build && electron-builder --mac",
-    "build:linux": "pnpm run build && electron-builder --linux -c.productName=data-peek"
+    "build:linux": "pnpm run build && electron-builder --linux -c.productName=data-peek",
+    "smoke:clickhouse:ssh-tls": "docker compose -f ../../seeds/clickhouse/compose.ssh-tls.yml up -d --wait && vitest run -c vitest.smoke.config.ts scripts/clickhouse-smoke-ssh-tls.test.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.85",

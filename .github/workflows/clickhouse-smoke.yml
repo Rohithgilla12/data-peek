@@ -7,6 +7,8 @@ on:
       - 'apps/desktop/src/main/adapters/clickhouse-*'
       - 'apps/desktop/src/main/__tests__/clickhouse-*'
       - 'apps/desktop/scripts/clickhouse-smoke.test.ts'
+      - 'apps/desktop/scripts/clickhouse-smoke-ssh-tls.test.ts'
+      - 'apps/desktop/src/main/ssh-tunnel-service.ts'
       - 'apps/desktop/vitest.smoke.config.ts'
       - 'apps/desktop/package.json'
       - 'apps/desktop/src/main/query-tracker.ts'
@@ -69,15 +71,33 @@ jobs:
       - name: Prefetch clickhouse image
         run: docker pull clickhouse/clickhouse-server:24.8
 
+      - name: Prefetch ssh bastion image
+        run: docker pull linuxserver/openssh-server:version-10.3_p1-r1
+
       # The script starts the compose stack with `docker compose up -d --wait`
       # and then runs the suite against it.
       - name: Run ClickHouse smoke suite
         run: pnpm --filter @data-peek/desktop smoke:clickhouse
 
+      # Covers the SSH bastion and HTTPS (self-signed CA) combinations from #308.
+      - name: Run ClickHouse SSH/TLS smoke suite
+        run: pnpm --filter @data-peek/desktop smoke:clickhouse:ssh-tls
+
+      - name: Check bastion reachability on failure
+        if: failure()
+        run: |
+          docker compose -f seeds/clickhouse/compose.ssh-tls.yml exec -T ssh-bastion bash -c 'getent hosts clickhouse-tls || echo dns-failed; (exec 3<>/dev/tcp/clickhouse-tls/8123) 2>/dev/null && echo bastion-reaches-8123 || echo bastion-cannot-reach-8123'
+
       - name: Show ClickHouse logs on failure
         if: failure()
         run: docker compose -f seeds/clickhouse/compose.yml logs --no-color
 
+      - name: Show SSH/TLS stack logs on failure
+        if: failure()
+        run: docker compose -f seeds/clickhouse/compose.ssh-tls.yml logs --no-color
+
       - name: Stop ClickHouse
         if: always()
-        run: docker compose -f seeds/clickhouse/compose.yml down -v
+        run: |
+          docker compose -f seeds/clickhouse/compose.yml down -v
+          docker compose -f seeds/clickhouse/compose.ssh-tls.yml down -v
