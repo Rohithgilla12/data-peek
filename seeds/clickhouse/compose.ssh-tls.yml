@@ -14,7 +14,7 @@ services:
       CLICKHOUSE_DB: acme_analytics
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     ports:
-      - '58443:8443'
+      - '127.0.0.1:58443:8443'
     volumes:
       - ./init:/docker-entrypoint-initdb.d:ro
       - ./tls/server.crt:/etc/clickhouse-server/certs/server.crt:ro
@@ -40,7 +40,7 @@ services:
       PASSWORD_ACCESS: 'false'
       SUDO_ACCESS: 'false'
     ports:
-      - '52222:2222'
+      - '127.0.0.1:52222:2222'
     volumes:
       - ./ssh/id_rsa.pub:/keys/id_rsa.pub:ro
       - ./sshd:/config/sshd/sshd_config.d:ro
