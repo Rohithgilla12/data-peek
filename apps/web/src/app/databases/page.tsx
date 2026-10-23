@@ -63,7 +63,7 @@ const databases = [
 export const metadata: Metadata = generateSeoMetadata({
   title: "Supported Databases",
   description:
-    "data-peek supports PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse. One client for all your database needs.",
+    "data-peek supports PostgreSQL, MySQL, SQL Server, SQLite, and ClickHouse (beta). One client for all your database needs.",
   keywords: [
     "PostgreSQL client",
     "MySQL client",
@@ -107,7 +107,7 @@ export default function DatabasesPage() {
               </h1>
               <p className="text-base sm:text-xl text-(--color-text-muted) max-w-2xl mx-auto font-mono leading-relaxed">
                 One client for all your database needs. Connect to PostgreSQL,
-                MySQL, SQL Server, SQLite, and ClickHouse with a unified
+                MySQL, SQL Server, SQLite, and ClickHouse (beta) with a unified
                 experience.
               </p>
             </section>
