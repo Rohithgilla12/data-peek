@@ -39,7 +39,9 @@ import {
   HIDDEN_DATABASES,
   mapPartsRows,
   mapSystemRows,
+  RESULT_FORMAT,
   rowCountFromSummary,
+  SINGLE_STATEMENT_MESSAGE,
   timeoutSettings,
   toColumnInfo,
   toStatementResult,
@@ -194,7 +196,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
               if (hasTrailingFormatClause(statement)) throw new Error(FORMAT_CLAUSE_MESSAGE)
               const rs = await client.query({
                 query: statement,
-                format: 'JSON',
+                format: RESULT_FORMAT,
                 query_id: currentQueryId,
                 session_id: sessionId,
                 abort_signal: abort.signal,
@@ -285,7 +287,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
       const run = async (): Promise<AdapterQueryResult> => {
         const rs = await client.query({
           query: sql,
-          format: 'JSON',
+          format: RESULT_FORMAT,
           abort_signal: abort.signal,
           clickhouse_settings: {
             readonly: '1',
@@ -349,7 +351,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   async explain(config: ConnectionConfig, sql: string, _analyze: boolean): Promise<ExplainResult> {
     const statements = splitStatements(sql, 'clickhouse')
     if (statements.length !== 1) {
-      throw new Error('EXPLAIN accepts a single statement')
+      throw new Error(SINGLE_STATEMENT_MESSAGE)
     }
     const start = Date.now()
     const rows = await withClickHouseClient(config, (client) =>
