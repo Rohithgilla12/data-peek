@@ -1,20 +1,23 @@
 /**
  * Performance Analyzer
  *
- * Analyzes PostgreSQL queries for performance issues:
- * - Missing indexes (via EXPLAIN analysis)
- * - N+1 query patterns (via history analysis)
- * - Slow query warnings
+ * Each database type that supports performance analysis registers a PlanAnalyzer that
+ * inspects the query's plan (and, where the server keeps one, its execution log). N+1
+ * detection over the renderer-supplied history is database-agnostic and runs for all.
  */
 
 import { v4 as uuidv4 } from 'uuid'
-import type {
-  ConnectionConfig,
-  PerformanceAnalysisResult,
-  PerformanceAnalysisConfig,
-  PerformanceIssue,
-  NplusOnePattern,
-  QueryHistoryItemForAnalysis
+import {
+  CapabilityError,
+  hasCapability,
+  type ConnectionConfig,
+  type DbTypesWith,
+  type PerformanceAnalysisResult,
+  type PerformanceAnalysisConfig,
+  type PerformanceIssue,
+  type NplusOnePattern,
+  type QueryHistoryItemForAnalysis,
+  type QueryRuntimeStats
 } from '@shared/index'
 import { getAdapter } from './db-adapter'
 import {
@@ -70,6 +73,23 @@ const DEFAULT_CONFIG: PerformanceAnalysisConfig = {
   historyLookbackCount: 50
 }
 
+export interface PlanAnalysis {
+  issues: PerformanceIssue[]
+  explainPlan?: unknown
+  runtimeStats?: QueryRuntimeStats
+}
+
+export type PlanAnalyzer = (
+  connectionConfig: ConnectionConfig,
+  query: string,
+  config: PerformanceAnalysisConfig
+) => Promise<PlanAnalysis>
+
+/** Keyed by exactly the database types whose `performanceAnalysis` capability is true. */
+export const PLAN_ANALYZERS: Readonly<Record<DbTypesWith<'performanceAnalysis'>, PlanAnalyzer>> = {
+  postgresql: analyzePostgresPlan
+}
+
 /**
  * Main entry point for performance analysis.
  */
@@ -81,54 +101,18 @@ export async function analyzeQueryPerformance(
 ): Promise<PerformanceAnalysisResult> {
   const startTime = performance.now()
   const analysisConfig = { ...DEFAULT_CONFIG, ...config }
-  const issues: PerformanceIssue[] = []
-  let explainPlan: ExplainPlan | undefined
+  const dbType = connectionConfig.dbType || 'postgresql'
+  if (!hasCapability(dbType, 'performanceAnalysis')) {
+    throw new CapabilityError(dbType, 'performanceAnalysis')
+  }
 
   log.debug('Starting performance analysis for query')
 
-  // Only analyze SELECT queries for EXPLAIN
-  const isSelect = isSelectQuery(query)
-
-  if (isSelect) {
-    try {
-      // Run EXPLAIN ANALYZE
-      const adapter = getAdapter(connectionConfig)
-      const explainResult = await adapter.explain(connectionConfig, query, true)
-
-      if (
-        explainResult.plan &&
-        Array.isArray(explainResult.plan) &&
-        explainResult.plan.length > 0 &&
-        explainResult.plan[0]?.Plan
-      ) {
-        explainPlan = explainResult.plan[0] as ExplainPlan
-
-        // Analyze the plan for issues
-        const planIssues = analyzePlanTree(explainPlan)
-        issues.push(...planIssues)
-
-        // Check for slow query
-        const executionTime = explainPlan['Execution Time']
-        if (executionTime && executionTime > analysisConfig.slowQueryThresholdMs) {
-          issues.push({
-            id: uuidv4(),
-            type: 'slow_query',
-            severity:
-              executionTime > analysisConfig.slowQueryThresholdMs * 2 ? 'critical' : 'warning',
-            title: 'Slow Query',
-            message: `Query took ${executionTime.toFixed(2)}ms to execute, exceeding the ${analysisConfig.slowQueryThresholdMs}ms threshold.`,
-            suggestion:
-              'Consider optimizing the query by adding indexes, reducing data volume, or simplifying joins.',
-            threshold: analysisConfig.slowQueryThresholdMs,
-            actualValue: executionTime
-          })
-        }
-      }
-    } catch (error) {
-      log.error('EXPLAIN failed:', error)
-      // Continue with other analysis even if EXPLAIN fails
-    }
-  }
+  const { issues, explainPlan, runtimeStats } = await PLAN_ANALYZERS[dbType](
+    connectionConfig,
+    query,
+    analysisConfig
+  )
 
   // Analyze query history for N+1 patterns
   const nplusOnePatterns = detectNplusOnePatterns(queryHistory, connectionConfig.id, analysisConfig)
@@ -166,9 +150,63 @@ export async function analyzeQueryPerformance(
     issues,
     nplusOnePatterns,
     explainPlan,
-    dbType: 'postgresql',
+    runtimeStats,
+    dbType,
     connectionId: connectionConfig.id
   }
+}
+
+async function analyzePostgresPlan(
+  connectionConfig: ConnectionConfig,
+  query: string,
+  analysisConfig: PerformanceAnalysisConfig
+): Promise<PlanAnalysis> {
+  const issues: PerformanceIssue[] = []
+  let explainPlan: ExplainPlan | undefined
+
+  // Only analyze SELECT queries for EXPLAIN
+  if (!isSelectQuery(query)) return { issues }
+
+  try {
+    // Run EXPLAIN ANALYZE
+    const adapter = getAdapter(connectionConfig)
+    const explainResult = await adapter.explain(connectionConfig, query, true)
+
+    if (
+      explainResult.plan &&
+      Array.isArray(explainResult.plan) &&
+      explainResult.plan.length > 0 &&
+      explainResult.plan[0]?.Plan
+    ) {
+      explainPlan = explainResult.plan[0] as ExplainPlan
+
+      // Analyze the plan for issues
+      const planIssues = analyzePlanTree(explainPlan)
+      issues.push(...planIssues)
+
+      // Check for slow query
+      const executionTime = explainPlan['Execution Time']
+      if (executionTime && executionTime > analysisConfig.slowQueryThresholdMs) {
+        issues.push({
+          id: uuidv4(),
+          type: 'slow_query',
+          severity:
+            executionTime > analysisConfig.slowQueryThresholdMs * 2 ? 'critical' : 'warning',
+          title: 'Slow Query',
+          message: `Query took ${executionTime.toFixed(2)}ms to execute, exceeding the ${analysisConfig.slowQueryThresholdMs}ms threshold.`,
+          suggestion:
+            'Consider optimizing the query by adding indexes, reducing data volume, or simplifying joins.',
+          threshold: analysisConfig.slowQueryThresholdMs,
+          actualValue: executionTime
+        })
+      }
+    }
+  } catch (error) {
+    log.error('EXPLAIN failed:', error)
+    // Continue with other analysis even if EXPLAIN fails
+  }
+
+  return { issues, explainPlan }
 }
 
 /**

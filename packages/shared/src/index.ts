@@ -1911,7 +1911,8 @@ export type PerformanceIssueType =
   | "slow_query"
   | "high_filter_ratio"
   | "row_estimate_off"
-  | "disk_spill";
+  | "disk_spill"
+  | "poor_pruning";
 
 /**
  * A single performance issue detected during query analysis
@@ -1991,11 +1992,35 @@ export interface PerformanceAnalysisResult {
   nplusOnePatterns: NplusOnePattern[];
   /** Raw EXPLAIN plan for reference */
   explainPlan?: unknown;
+  /** Past executions of this query shape, from the server's own log */
+  runtimeStats?: QueryRuntimeStats;
   /** Database type */
-  dbType: "postgresql";
+  dbType: "postgresql" | "clickhouse";
   /** Connection identifier */
   connectionId: string;
 }
+
+/**
+ * Server-side history of a query shape. `unavailable` means the log could not be read
+ * (disabled, or no grant), which never fails the analysis.
+ */
+export type QueryRuntimeStats =
+  | {
+      status: "ok";
+      windowDays: number;
+      executions: number;
+      failed: number;
+      p50Ms: number;
+      p95Ms: number;
+      maxMs: number;
+      avgReadRows: number;
+      avgReadBytes: number;
+      maxMemoryBytes: number;
+      /** Unix timestamp (ms) of the most recent run */
+      lastSeenAt: number;
+    }
+  | { status: "no_history"; windowDays: number }
+  | { status: "unavailable"; reason: string };
 
 /**
  * Configuration options for performance analysis

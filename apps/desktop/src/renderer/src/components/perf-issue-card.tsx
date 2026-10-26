@@ -14,7 +14,8 @@ import {
   Sparkles,
   Code,
   Loader2,
-  ShieldCheck
+  ShieldCheck,
+  Filter
 } from 'lucide-react'
 import { cn, Button } from '@data-peek/ui'
 import type { PerformanceIssue, PerformanceIssueType } from '@data-peek/shared'
@@ -33,7 +34,8 @@ const ISSUE_TYPE_LABELS: Record<PerformanceIssueType, string> = {
   slow_query: 'Slow Query',
   high_filter_ratio: 'High Filter Ratio',
   row_estimate_off: 'Row Estimate Mismatch',
-  disk_spill: 'Disk Spill'
+  disk_spill: 'Disk Spill',
+  poor_pruning: 'Poor Pruning'
 }
 
 const ISSUE_TYPE_ICONS: Record<PerformanceIssueType, React.ElementType> = {
@@ -42,7 +44,8 @@ const ISSUE_TYPE_ICONS: Record<PerformanceIssueType, React.ElementType> = {
   slow_query: Clock,
   high_filter_ratio: AlertTriangle,
   row_estimate_off: Info,
-  disk_spill: AlertCircle
+  disk_spill: AlertCircle,
+  poor_pruning: Filter
 }
 
 const severityClasses = {
@@ -57,7 +60,12 @@ const severityIconClasses = {
   info: 'text-blue-500'
 }
 
-export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix }: PerfIssueCardProps) {
+export function PerfIssueCard({
+  issue,
+  isExpanded = false,
+  onToggle,
+  onApplyFix
+}: PerfIssueCardProps) {
   const [copied, setCopied] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
   const [applySuccess, setApplySuccess] = useState(false)
@@ -162,7 +170,8 @@ export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix 
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Sparkles className="size-3.5 text-indigo-400" /> AI Fix Recommendation (claude -p)
+                  <Sparkles className="size-3.5 text-indigo-400" /> AI Fix Recommendation (claude
+                  -p)
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-mono">
                   <ShieldCheck className="size-3" /> Lock-Free Safe Execution
@@ -276,4 +285,3 @@ export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix 
     </div>
   )
 }
-
