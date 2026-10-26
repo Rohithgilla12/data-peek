@@ -463,6 +463,18 @@ describe('performance analysis', () => {
     )
   })
 
+  it('does not flag a LIMIT read that can stop early, but still flags one under ORDER BY', async () => {
+    const limited = await analyze(config, `SELECT * FROM ${probe} LIMIT 100`)
+    const pruning = limited.issues.filter((i) => i.type === 'poor_pruning')
+    expect(pruning.map((i) => i.severity)).toEqual(['info'])
+    expect(pruning[0].planNodeDetails).toMatchObject({ limitedRead: true })
+
+    const sorted = await analyze(config, `SELECT * FROM ${probe} ORDER BY bucket LIMIT 100`)
+    expect(sorted.issues.filter((i) => i.type === 'poor_pruning').map((i) => i.severity)).toEqual([
+      'critical'
+    ])
+  })
+
   it('counts exactly the runs made through the adapter once query_log is flushed', async () => {
     // A unique alias gives this run its own normalized hash, so earlier smoke runs do not count.
     // Letters only: the server normalizes away aliases with more than two digits.

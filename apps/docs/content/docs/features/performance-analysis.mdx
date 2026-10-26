@@ -54,6 +54,8 @@ A MergeTree table is stored in granules, and ClickHouse skips the granules that 
 
 The issue names the table, the number of granules read, and the primary key condition, if any. To fix it, filter on a leading column of the table's `ORDER BY` key, or add a data-skipping index or a projection for the column you filter on.
 
+A `LIMIT` with no sort, aggregation, or join under it can stop the read before it reaches every eligible granule. data-peek reports such a read as **Info** only, and the run history shows the rows the query actually read.
+
 ### Run History
 
 The panel shows a one-line summary of earlier runs of the same query shape over the last 7 days: the number of runs and failures, the p50 and p95 duration, the average rows and bytes read, and the peak memory. ClickHouse ignores literal values when it groups queries by shape, so `WHERE org_id = 3` and `WHERE org_id = 7` count as the same query.

@@ -40,22 +40,28 @@ export interface ChPlanNode {
 
 export type ChExplainJson = Array<{ Plan: ChPlanNode }>
 
+/** Nodes that pass rows through one at a time, so a LIMIT above them can stop the read below. */
+const STREAMING_NODES = new Set(['Expression', 'Filter'])
+
 /**
  * Index steps apply in sequence (MinMax, Partition, PrimaryKey, Skip), so a read's overall
  * pruning is the last step's selected granules over the first step's initial granules.
+ * EXPLAIN counts the granules left eligible, not the ones a LIMIT lets the read skip.
  */
 export function findPoorPruning(explain: ChExplainJson): PerformanceIssue[] {
   const issues: PerformanceIssue[] = []
-  const visit = (node: ChPlanNode): void => {
-    const issue = pruningIssue(node)
+  const visit = (node: ChPlanNode, limited: boolean): void => {
+    const issue = pruningIssue(node, limited)
     if (issue) issues.push(issue)
-    node.Plans?.forEach(visit)
+    const type = node['Node Type']
+    const childLimited = type === 'Limit' || (limited && STREAMING_NODES.has(type))
+    node.Plans?.forEach((child) => visit(child, childLimited))
   }
-  for (const entry of explain) visit(entry.Plan)
+  for (const entry of explain) visit(entry.Plan, false)
   return issues
 }
 
-function pruningIssue(node: ChPlanNode): PerformanceIssue | undefined {
+function pruningIssue(node: ChPlanNode, limited: boolean): PerformanceIssue | undefined {
   const steps = node.Indexes
   if (!steps || steps.length === 0) return undefined
   const initial = steps[0]['Initial Granules']
@@ -70,13 +76,16 @@ function pruningIssue(node: ChPlanNode): PerformanceIssue | undefined {
       ? `the primary key condition is ${keyCondition}`
       : 'no condition uses the primary key'
   const percent = Math.round((selected / initial) * 100)
+  const fullRead = selected >= initial && initial >= CRITICAL_MIN_GRANULES
 
   return {
     id: uuidv4(),
     type: 'poor_pruning',
-    severity: selected >= initial && initial >= CRITICAL_MIN_GRANULES ? 'critical' : 'warning',
+    severity: limited ? 'info' : fullRead ? 'critical' : 'warning',
     title: 'Poor Granule Pruning',
-    message: `Query reads ${selected} of ${initial} granules (${percent}%) from ${table}; ${keyClause}.`,
+    message: limited
+      ? `Indexes leave ${selected} of ${initial} granules eligible in ${table}, but LIMIT can stop the read early; the runtime stats show the rows actually read.`
+      : `Query reads ${selected} of ${initial} granules (${percent}%) from ${table}; ${keyClause}.`,
     suggestion:
       "Filter on a leading column of the table's ORDER BY key, or add a data-skipping index or projection for the filtered column.",
     tableName: table,
@@ -84,6 +93,7 @@ function pruningIssue(node: ChPlanNode): PerformanceIssue | undefined {
     planNodeDetails: {
       initialGranules: initial,
       selectedGranules: selected,
+      limitedRead: limited,
       primaryKeyCondition: keyCondition,
       indexes: steps.map((s) => ({
         type: s.Type,

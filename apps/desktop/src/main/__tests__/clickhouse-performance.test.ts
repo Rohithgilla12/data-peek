@@ -153,6 +153,45 @@ describe('findPoorPruning', () => {
   })
 })
 
+/** Nests `leaf` under the given node types, outermost first, as one plan. */
+function chain(types: string[], leaf: ChPlanNode): ChExplainJson {
+  const root = types.reduceRight<ChPlanNode>(
+    (child, type) => ({ 'Node Type': type, Plans: [child] }),
+    leaf
+  )
+  return [{ Plan: root }]
+}
+
+describe('findPoorPruning under LIMIT', () => {
+  const fullRead = (): ChPlanNode => read('db.events', [step('PrimaryKey', 367, 367)])
+
+  it('downgrades a full-eligible read that LIMIT can stop early to info', () => {
+    const issues = findPoorPruning(chain(['Expression', 'Limit', 'Expression'], fullRead()))
+    expect(issues).toHaveLength(1)
+    expect(issues[0]).toMatchObject({ type: 'poor_pruning', severity: 'info' })
+    expect(issues[0].message).toBe(
+      'Indexes leave 367 of 367 granules eligible in db.events, but LIMIT can stop the read early; the runtime stats show the rows actually read.'
+    )
+    expect(issues[0].planNodeDetails).toMatchObject({ limitedRead: true })
+  })
+
+  it('treats a Filter between LIMIT and the read as streaming', () => {
+    const [issue] = findPoorPruning(chain(['Limit', 'Filter'], fullRead()))
+    expect(issue.severity).toBe('info')
+  })
+
+  it.each([
+    ['Sorting', ['Limit', 'Sorting', 'Expression']],
+    ['Aggregating', ['Limit', 'Aggregating', 'Expression']],
+    ['LimitBy', ['LimitBy', 'Expression']]
+  ])('still flags a full read when %s sits between the limit and the read', (_, types) => {
+    const [issue] = findPoorPruning(chain(types, fullRead()))
+    expect(issue.severity).toBe('critical')
+    expect(issue.message).toMatch(/^Query reads 367 of 367 granules/)
+    expect(issue.planNodeDetails).toMatchObject({ limitedRead: false })
+  })
+})
+
 const settings: PerformanceAnalysisConfig = {
   slowQueryThresholdMs: 1000,
   nplusOneWindowMs: 5000,
