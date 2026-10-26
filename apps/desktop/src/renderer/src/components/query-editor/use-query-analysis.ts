@@ -131,10 +131,7 @@ export function useQueryAnalysis(
     }
 
     if (!hasCapability(tabConnection.dbType, 'performanceAnalysis')) {
-      notify.info(
-        'Not Supported',
-        'Performance analysis is currently only available for PostgreSQL databases.'
-      )
+      notify.info('Not Supported', 'Performance analysis is not available for this database.')
       return
     }
 

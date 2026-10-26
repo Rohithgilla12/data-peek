@@ -28,6 +28,7 @@ import {
 } from './lib/query-fingerprint'
 import { generateIndexSuggestion } from './lib/index-suggestion'
 import { createLogger } from './lib/logger'
+import { analyzeClickHousePlan } from './performance/clickhouse'
 
 const log = createLogger('performance-analyzer')
 
@@ -87,7 +88,8 @@ export type PlanAnalyzer = (
 
 /** Keyed by exactly the database types whose `performanceAnalysis` capability is true. */
 export const PLAN_ANALYZERS: Readonly<Record<DbTypesWith<'performanceAnalysis'>, PlanAnalyzer>> = {
-  postgresql: analyzePostgresPlan
+  postgresql: analyzePostgresPlan,
+  clickhouse: analyzeClickHousePlan
 }
 
 /**
