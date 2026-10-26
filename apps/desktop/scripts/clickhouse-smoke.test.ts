@@ -11,17 +11,16 @@ vi.mock('../src/main/lib/logger', () => ({
   createLogger: () => ({ debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() })
 }))
 
-const { ClickHouseAdapter, closeAllClickHousePools } = await import(
-  '../src/main/adapters/clickhouse-adapter'
-)
+const { ClickHouseAdapter, closeAllClickHousePools } =
+  await import('../src/main/adapters/clickhouse-adapter')
 const { withClickHouseClient } = await import('../src/main/adapters/clickhouse-pool-manager')
 const { cancelQuery } = await import('../src/main/query-tracker')
 const { requireCapability } = await import('../src/main/lib/capability-guard')
 const { runReadOnlyQuery } = await import('../src/main/mcp/read-guard')
 const { getAdapter } = await import('../src/main/db-adapter')
-const { buildQualifiedTableRef, buildSelectQuery } = await import(
-  '../src/renderer/src/lib/sql-helpers'
-)
+const { analyzeQueryPerformance } = await import('../src/main/performance-analyzer')
+const { buildQualifiedTableRef, buildSelectQuery } =
+  await import('../src/renderer/src/lib/sql-helpers')
 
 const port = Number(process.env.CH_PORT ?? 58123)
 const config: ConnectionConfig = {
@@ -407,6 +406,96 @@ describe('mcp read guard', () => {
     const capped = await runReadOnlyQuery(config, sql)
     expect(capped.rows.length).toBeLessThanOrEqual(500)
     expect(Date.now() - started).toBeLessThan(5_000)
+  })
+})
+
+describe('performance analysis', () => {
+  const probe = `${db}.perf_probe`
+  const probeUser = 'perf_probe_user'
+  const restricted: ConnectionConfig = {
+    ...config,
+    id: 'smoke-ch-no-query-log',
+    user: probeUser,
+    password: 'probe'
+  }
+  const command = (query: string): Promise<unknown> =>
+    withClickHouseClient(config, (client) => client.command({ query }))
+  const analyze = (target: ConnectionConfig, sql: string) =>
+    analyzeQueryPerformance(target, sql, [])
+
+  beforeAll(async () => {
+    await command(`DROP TABLE IF EXISTS ${probe}`)
+    await command(
+      `CREATE TABLE ${probe} (id UInt64, bucket UInt32, payload String)
+       ENGINE = MergeTree ORDER BY id SETTINGS index_granularity = 8192`
+    )
+    await command(
+      `INSERT INTO ${probe} SELECT number, number % 1000, toString(number) FROM numbers(3000000)`
+    )
+    await command(`OPTIMIZE TABLE ${probe} FINAL`)
+    await command(`DROP USER IF EXISTS ${probeUser}`)
+    await command(`CREATE USER ${probeUser} IDENTIFIED WITH plaintext_password BY 'probe'`)
+    await command(`GRANT SELECT ON ${db}.* TO ${probeUser}`)
+  }, 60_000)
+
+  afterAll(async () => {
+    await command(`DROP TABLE IF EXISTS ${probe}`)
+    await command(`DROP USER IF EXISTS ${probeUser}`)
+  })
+
+  it('finds no pruning issue when the filter uses the sort key', async () => {
+    const result = await analyze(
+      config,
+      `SELECT count() FROM ${probe} WHERE id BETWEEN 1000 AND 2000`
+    )
+    expect(result.dbType).toBe('clickhouse')
+    expect(result.issues.filter((i) => i.type === 'poor_pruning')).toEqual([])
+  })
+
+  it('flags a non-key filter that reads every granule as critical', async () => {
+    const result = await analyze(config, `SELECT count() FROM ${probe} WHERE bucket = 7`)
+    const pruning = result.issues.filter((i) => i.type === 'poor_pruning')
+    expect(pruning).toHaveLength(1)
+    expect(pruning[0].severity).toBe('critical')
+    expect(pruning[0].tableName).toBe(probe)
+    expect(pruning[0].message).toMatch(
+      /^Query reads (\d+) of \1 granules \(100%\) from acme_analytics\.perf_probe; no condition uses the primary key\.$/
+    )
+  })
+
+  it('counts exactly the runs made through the adapter once query_log is flushed', async () => {
+    // A unique alias gives this run its own normalized hash, so earlier smoke runs do not count.
+    // Letters only: the server normalizes away aliases with more than two digits.
+    const alias = Date.now()
+      .toString(36)
+      .replace(/\d/g, (d) => 'abcdefghij'[Number(d)])
+    const sql = `SELECT count() AS hits_${alias} FROM ${probe} WHERE bucket = 7;`
+    const runs = 3
+    const before = await analyze(config, sql)
+    expect(before.runtimeStats).toEqual({ status: 'no_history', windowDays: 7 })
+
+    for (let i = 0; i < runs; i++) await adapter.queryMultiple(config, sql)
+    await command('SYSTEM FLUSH LOGS')
+
+    const after = await analyze(config, sql)
+    const stats = after.runtimeStats
+    expect(stats?.status).toBe('ok')
+    if (stats?.status !== 'ok') return
+    expect(stats.executions).toBe(runs)
+    expect(stats.failed).toBe(0)
+    expect(stats.avgReadRows).toBe(3_000_000)
+    expect(stats.p95Ms).toBeGreaterThanOrEqual(stats.p50Ms)
+    expect(stats.maxMemoryBytes).toBeGreaterThan(0)
+    expect(Date.now() - stats.lastSeenAt).toBeLessThan(120_000)
+  })
+
+  it('reports query_log as unavailable, not an error, for a user without access', async () => {
+    const result = await analyze(restricted, `SELECT count() FROM ${probe} WHERE bucket = 7`)
+    expect(result.runtimeStats).toEqual({
+      status: 'unavailable',
+      reason: 'No permission to read system.query_log'
+    })
+    expect(result.issues.map((i) => i.type)).toContain('poor_pruning')
   })
 })
 
