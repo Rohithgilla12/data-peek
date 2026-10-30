@@ -125,7 +125,10 @@ export const useMaskingStore = create<MaskingState>()(
 
       addAutoMaskRule: (pattern) =>
         set((state) => ({
-          autoMaskRules: [...state.autoMaskRules, { id: crypto.randomUUID(), pattern, enabled: true }]
+          autoMaskRules: [
+            ...state.autoMaskRules,
+            { id: crypto.randomUUID(), pattern, enabled: true }
+          ]
         })),
 
       removeAutoMaskRule: (id) =>

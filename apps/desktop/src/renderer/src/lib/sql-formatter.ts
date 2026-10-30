@@ -26,7 +26,7 @@ const DB_TYPE_TO_LANGUAGE: Record<DatabaseType, SqlLanguage> = {
 }
 
 export function formatterLanguage(dbType: DatabaseType | undefined): SqlLanguage {
-  return dbType ? DB_TYPE_TO_LANGUAGE[dbType] ?? 'postgresql' : 'postgresql'
+  return dbType ? (DB_TYPE_TO_LANGUAGE[dbType] ?? 'postgresql') : 'postgresql'
 }
 
 /**

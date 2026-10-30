@@ -36,8 +36,8 @@ test.beforeEach(async ({ window }) => {
   await expect(window.getByText('Loading...')).toBeHidden({ timeout: 8000 })
 
   // 3. Open the ConnectionSwitcher dropdown and click our connection to activate it.
-  //    This triggers setActiveConnection in the renderer store (with a 500ms connect
-  //    simulation), which makes TabQueryEditor show the Monaco editor.
+  //    This triggers selectConnection in the renderer store (activating immediately
+  //    and fetching schemas), which makes TabQueryEditor show the Monaco editor.
   await window.locator('[data-sidebar="menu-button"]').first().click()
 
   // The connection name appears as a DropdownMenuItem inside the switcher
