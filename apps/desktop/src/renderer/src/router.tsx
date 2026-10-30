@@ -18,7 +18,6 @@ import { McpApprovalDialog } from '@/components/mcp-approval-dialog'
 import { SavedQueriesDialog } from '@/components/saved-queries-dialog'
 import { DatabaseIcon } from '@/components/database-icons'
 import { AppSidebar } from '@/components/app-sidebar'
-import { NavActions } from '@/components/nav-actions'
 import {
   Separator,
   SidebarInset,
@@ -44,6 +43,8 @@ import { LicenseActivationModal } from '@/components/license-activation-modal'
 import { LicenseSettingsModal } from '@/components/license-settings-modal'
 import { AIChatPanel, AISettingsModal } from '@/components/ai'
 import { SettingsModal } from '@/components/settings-modal'
+import { McpSettingsSection } from '@/components/mcp-settings-section'
+import { AuditSettingsSection } from '@/components/audit-settings-section'
 import { Notifications } from '@/components/notifications'
 import { PokemonBuddy } from '@/components/pokemon-buddy'
 import { useAIStore } from '@/stores/ai-store'
@@ -59,8 +60,7 @@ function LayoutContent() {
   const { state: sidebarState } = useSidebar()
   const activeConnection = useConnectionStore((s) => s.getActiveConnection())
   const connections = useConnectionStore((s) => s.connections)
-  const setActiveConnection = useConnectionStore((s) => s.setActiveConnection)
-  const setConnectionStatus = useConnectionStore((s) => s.setConnectionStatus)
+  const selectConnection = useConnectionStore((s) => s.selectConnection)
   const [isConnectionPickerOpen, setIsConnectionPickerOpen] = useState(false)
 
   // Command palette state
@@ -144,13 +144,9 @@ function LayoutContent() {
   // Handle connection switching (used by keyboard shortcuts)
   const handleSelectConnection = useCallback(
     (connectionId: string) => {
-      setConnectionStatus(connectionId, { isConnecting: true, error: undefined })
-      setTimeout(() => {
-        setConnectionStatus(connectionId, { isConnecting: false, isConnected: true })
-        setActiveConnection(connectionId)
-      }, 500)
+      selectConnection(connectionId)
     },
-    [setConnectionStatus, setActiveConnection]
+    [selectConnection]
   )
 
   // Open command palette with specific page
@@ -240,8 +236,6 @@ function LayoutContent() {
             </Tooltip>
             <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
             <LicenseStatusIndicator />
-            <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
-            <NavActions />
           </div>
           {platform === 'win32' && (
             <>
@@ -741,6 +735,12 @@ function SettingsPage() {
             />
           </div>
         </div>
+
+        {/* MCP Server */}
+        <McpSettingsSection />
+
+        {/* Audit Logging */}
+        <AuditSettingsSection />
       </div>
     </div>
   )

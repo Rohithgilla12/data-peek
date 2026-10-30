@@ -488,6 +488,8 @@ export function SQLEditor({
   const editorRef = React.useRef<EditorType | null>(null)
   const monacoRef = React.useRef<Monaco | null>(null)
   const crossTabDialectRef = React.useRef<DatabaseType | undefined>(crossTabDialect)
+  const schemasRef = React.useRef(schemas)
+  const snippetsRef = React.useRef(snippets)
 
   // Use refs to always hold the latest callbacks to avoid stale closures
   const onRunRef = React.useRef(onRun)
@@ -514,6 +516,14 @@ export function SQLEditor({
     crossTabDialectRef.current = crossTabDialect
   }, [crossTabDialect])
 
+  React.useEffect(() => {
+    schemasRef.current = schemas
+  }, [schemas])
+
+  React.useEffect(() => {
+    snippetsRef.current = snippets
+  }, [snippets])
+
   const handleEditorDidMount: OnMount = (editor, monaco) => {
     editorRef.current = editor
     monacoRef.current = monaco
@@ -526,6 +536,11 @@ export function SQLEditor({
     updateCompletionSchemas(schemas)
     updateCompletionSnippets(snippets)
     ensureCompletionProvider(monaco)
+
+    editor.onDidFocusEditorText(() => {
+      updateCompletionSchemas(schemasRef.current)
+      updateCompletionSnippets(snippetsRef.current)
+    })
 
     ensureCrossTabProviders(monaco)
     const crossTabModel = editor.getModel()

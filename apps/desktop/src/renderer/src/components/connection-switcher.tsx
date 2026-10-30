@@ -51,8 +51,7 @@ export function ConnectionSwitcher() {
   const navigate = useNavigate()
   const connections = useConnectionStore((s) => s.connections)
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
-  const setActiveConnection = useConnectionStore((s) => s.setActiveConnection)
-  const setConnectionStatus = useConnectionStore((s) => s.setConnectionStatus)
+  const selectConnection = useConnectionStore((s) => s.selectConnection)
   const initializeConnections = useConnectionStore((s) => s.initializeConnections)
   const removeConnection = useConnectionStore((s) => s.removeConnection)
   const addConnection = useConnectionStore((s) => s.addConnection)
@@ -77,15 +76,8 @@ export function ConnectionSwitcher() {
   const activeConnection = connections.find((c) => c.id === activeConnectionId)
   const activeEnv = resolveEnvironment(activeConnection?.environment)
 
-  const handleSelectConnection = async (connectionId: string) => {
-    // Set connecting status
-    setConnectionStatus(connectionId, { isConnecting: true, error: undefined })
-
-    // Simulate connection (in real app, this would be IPC call)
-    setTimeout(() => {
-      setConnectionStatus(connectionId, { isConnecting: false, isConnected: true })
-      setActiveConnection(connectionId)
-    }, 500)
+  const handleSelectConnection = (connectionId: string) => {
+    selectConnection(connectionId)
   }
 
   const handleManageConnections = () => {

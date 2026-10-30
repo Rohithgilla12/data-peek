@@ -1,13 +1,14 @@
 import { ipcMain } from 'electron'
-import type {
-  ConnectionConfig,
-  DatabaseType,
-  EditBatch,
-  EditResult,
-  QueryTelemetry,
-  BenchmarkResult,
-  PerformanceAnalysisConfig,
-  QueryHistoryItemForAnalysis
+import {
+  type ConnectionConfig,
+  type DatabaseType,
+  type EditBatch,
+  type EditResult,
+  type QueryTelemetry,
+  type BenchmarkResult,
+  type PerformanceAnalysisConfig,
+  type QueryHistoryItemForAnalysis,
+  redactSensitive
 } from '@shared/index'
 import { getAdapter } from '../db-adapter'
 import { cancelQuery } from '../query-tracker'
@@ -85,7 +86,7 @@ export function registerQueryHandlers(): void {
         sessionId?: string
       }
     ) => {
-      log.debug('Received query request', { ...config, password: '***' })
+      log.debug('Received query request', redactSensitive(config))
       log.debug('Query:', query)
       log.debug('Execution ID:', executionId)
       log.debug('Query timeout:', queryTimeoutMs)
@@ -474,7 +475,7 @@ export function registerQueryHandlers(): void {
         sessionId?: string
       }
     ) => {
-      log.debug('Received query with telemetry request', { ...config, password: '***' })
+      log.debug('Received query with telemetry request', redactSensitive(config))
       log.debug('Query:', query)
       log.debug('Execution ID:', executionId)
       log.debug('Query timeout:', queryTimeoutMs)
@@ -533,7 +534,7 @@ export function registerQueryHandlers(): void {
       _,
       { config, query, runCount }: { config: ConnectionConfig; query: string; runCount: number }
     ) => {
-      log.debug('Received benchmark request', { ...config, password: '***' })
+      log.debug('Received benchmark request', redactSensitive(config))
       log.debug('Query:', query)
       log.debug('Run count:', runCount)
 

@@ -159,7 +159,7 @@ export function SidebarOmnibar() {
   )
 
   const items = React.useMemo<OmnibarItem[]>(() => {
-    if (!activeConnectionId) return []
+    if (!activeConnectionId || !isActive) return []
 
     const result: OmnibarItem[] = []
 
@@ -263,6 +263,7 @@ export function SidebarOmnibar() {
 
     return result
   }, [
+    isActive,
     schemas,
     activeConnectionId,
     savedQueries,
