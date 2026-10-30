@@ -3030,3 +3030,6 @@ export interface AuditStatus {
   retentionDays: number;
   entryCount: number;
 }
+
+export * from "./redact";
+

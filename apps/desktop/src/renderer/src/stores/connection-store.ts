@@ -82,6 +82,7 @@ interface ConnectionState {
   updateConnection: (id: string, updates: Partial<Connection>) => Promise<void>
 
   setActiveConnection: (id: string | null) => void
+  selectConnection: (id: string | null) => void
   setConnectionStatus: (
     id: string,
     status: Partial<Pick<ConnectionWithStatus, 'isConnected' | 'isConnecting' | 'error'>>
@@ -200,6 +201,15 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     }
   },
 
+  selectConnection: (id) => {
+    if (!id) {
+      get().setActiveConnection(null)
+      return
+    }
+    get().setConnectionStatus(id, { isConnecting: true, error: undefined })
+    get().setActiveConnection(id)
+  },
+
   setActiveConnection: (id) => {
     set({ activeConnectionId: id })
 
@@ -260,6 +270,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
           schemaFromCache: fromCache ?? false,
           schemaFetchedAt: fetchedAt
         })
+        get().setConnectionStatus(id, { isConnecting: false, isConnected: true, error: undefined })
 
         // Sequences come from a separate call. Only some databases return any,
         // and a failure here should not break the schema explorer.
@@ -296,15 +307,26 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
           isLoadingSchema: false,
           schemaError: schemasResult.error || 'Failed to fetch schemas'
         })
+        get().setConnectionStatus(id, {
+          isConnecting: false,
+          isConnected: false,
+          error: schemasResult.error || 'Failed to fetch schemas'
+        })
       }
     } catch (error) {
       console.error('Failed to fetch schemas:', error)
+      const errMessage = error instanceof Error ? error.message : 'Unknown error'
       set({
         schemas: [],
         customTypes: [],
         sequences: [],
         isLoadingSchema: false,
-        schemaError: error instanceof Error ? error.message : 'Unknown error'
+        schemaError: errMessage
+      })
+      get().setConnectionStatus(id, {
+        isConnecting: false,
+        isConnected: false,
+        error: errMessage
       })
     }
   },

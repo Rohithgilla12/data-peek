@@ -860,13 +860,27 @@ export function SchemaExplorer() {
     focusedSchema
   ])
 
-  // Update expanded schemas when schemas change
+  // Reset expanded items when connection changes, preserving them across focus toggles
+  const lastConnectionIdRef = React.useRef<string | null>(activeConnectionId)
   React.useEffect(() => {
-    setExpandedSchemas(new Set(schemas.map((s) => s.name)))
-    setExpandedTables(new Set())
-    setExpandedRoutines(new Set())
-    setExpandedTriggers(new Set())
-    // Reset focused schema if it no longer exists
+    const isNewConnection = activeConnectionId !== lastConnectionIdRef.current
+    lastConnectionIdRef.current = activeConnectionId
+
+    setExpandedSchemas((prev) => {
+      const next = new Set(prev)
+      for (const s of schemas) next.add(s.name)
+      return next
+    })
+
+    if (isNewConnection) {
+      setExpandedTables(new Set())
+      setExpandedRoutines(new Set())
+      setExpandedTriggers(new Set())
+    }
+  }, [schemas, activeConnectionId])
+
+  // Reset focused schema if it no longer exists
+  React.useEffect(() => {
     if (focusedSchema && !schemas.some((s) => s.name === focusedSchema)) {
       setFocusedSchema(null)
     }

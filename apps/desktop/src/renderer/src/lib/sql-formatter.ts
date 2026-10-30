@@ -1,8 +1,8 @@
-import { format } from 'sql-formatter'
+import { format, type SqlLanguage } from 'sql-formatter'
 import type { DatabaseType } from '@shared/index'
 
 export interface FormatOptions {
-  language?: 'sql' | 'postgresql' | 'mysql' | 'sqlite' | 'clickhouse'
+  language?: SqlLanguage
   tabWidth?: number
   useTabs?: boolean
   keywordCase?: 'upper' | 'lower' | 'preserve'
@@ -17,8 +17,16 @@ const defaultOptions: FormatOptions = {
   linesBetweenQueries: 2
 }
 
-export function formatterLanguage(dbType: DatabaseType | undefined): FormatOptions['language'] {
-  return dbType === 'clickhouse' ? 'clickhouse' : 'postgresql'
+const DB_TYPE_TO_LANGUAGE: Record<DatabaseType, SqlLanguage> = {
+  postgresql: 'postgresql',
+  mysql: 'mysql',
+  sqlite: 'sqlite',
+  mssql: 'transactsql',
+  clickhouse: 'clickhouse'
+}
+
+export function formatterLanguage(dbType: DatabaseType | undefined): SqlLanguage {
+  return dbType ? DB_TYPE_TO_LANGUAGE[dbType] ?? 'postgresql' : 'postgresql'
 }
 
 /**

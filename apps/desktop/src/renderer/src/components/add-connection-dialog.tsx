@@ -56,8 +56,7 @@ export function AddConnectionDialog({
 }: AddConnectionDialogProps) {
   const addConnection = useConnectionStore((s) => s.addConnection)
   const updateConnection = useConnectionStore((s) => s.updateConnection)
-  const setActiveConnection = useConnectionStore((s) => s.setActiveConnection)
-  const setConnectionStatus = useConnectionStore((s) => s.setConnectionStatus)
+  const selectConnection = useConnectionStore((s) => s.selectConnection)
   const isEditMode = !!editConnection
 
   // One id per dialog session rather than one per getConnectionConfig() call. The main
@@ -423,12 +422,7 @@ export function AddConnectionDialog({
           addConnection(result.data)
 
           // Auto-switch to the new connection
-          const newConnectionId = result.data.id
-          setConnectionStatus(newConnectionId, { isConnecting: true, error: undefined })
-          setTimeout(() => {
-            setConnectionStatus(newConnectionId, { isConnecting: false, isConnected: true })
-            setActiveConnection(newConnectionId)
-          }, 500)
+          selectConnection(result.data.id)
 
           handleClose()
         } else {
