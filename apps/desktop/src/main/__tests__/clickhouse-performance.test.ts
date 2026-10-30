@@ -264,6 +264,24 @@ describe('analyzeClickHousePlan', () => {
     })
   })
 
+  it('keeps the runtime stats and slow query when EXPLAIN fails', async () => {
+    query.mockImplementation(async (params: { query: string }) => {
+      if (params.query.startsWith('EXPLAIN')) throw new Error('Unknown table expression')
+      return { json: async () => ({ data: [statsRow()] }) }
+    })
+    const result = await analyzeClickHousePlan(config, 'SELECT * FROM missing', settings)
+
+    expect(result.explainPlan).toBeUndefined()
+    expect(result.runtimeStats?.status).toBe('ok')
+    expect(result.issues.map((i) => i.type)).toEqual(['slow_query'])
+  })
+
+  it('counts only initial queries, not the child queries a distributed read sends to shards', async () => {
+    respond(statsRow())
+    await analyzeClickHousePlan(config, 'SELECT 1', settings)
+    expect(logQueryCall().query).toContain('is_initial_query = 1')
+  })
+
   it('passes the statement as query parameters, in both the typed and the sent form', async () => {
     respond(statsRow())
     const statement = "SELECT count() FROM events WHERE status = 'error'"

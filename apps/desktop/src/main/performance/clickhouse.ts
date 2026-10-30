@@ -110,6 +110,7 @@ function pruningIssue(node: ChPlanNode, limited: boolean): PerformanceIssue | un
 /**
  * The second hash matches every run data-peek made of this query shape: the server
  * normalizes literals and whitespace, and the client adds the format clause.
+ * `is_initial_query` drops the child row each shard logs for a distributed read.
  */
 const RUNTIME_STATS_SQL = `
   SELECT countIf(type = 'QueryFinish') AS executions,
@@ -123,6 +124,7 @@ const RUNTIME_STATS_SQL = `
   FROM system.query_log
   WHERE event_date >= today() - {days:UInt16}
     AND type != 'QueryStart'
+    AND is_initial_query = 1
     AND current_database = currentDatabase()
     AND normalized_query_hash IN (normalizedQueryHash({typed:String}),
                                   normalizedQueryHash({sent:String}))`
@@ -220,7 +222,12 @@ export const analyzeClickHousePlan: PlanAnalyzer = async (connectionConfig, quer
 
   return withClickHouseClient(connectionConfig, async (client) => {
     const [explainPlan, runtimeStats] = await Promise.all([
-      isSelect ? explainJson(client, statement) : undefined,
+      isSelect
+        ? explainJson(client, statement).catch((error) => {
+            log.warn('EXPLAIN failed:', error)
+            return undefined
+          })
+        : undefined,
       fetchRuntimeStats(client, statement)
     ])
     const issues = explainPlan ? findPoorPruning(explainPlan) : []
