@@ -10,8 +10,7 @@ import {
   Loader2,
   Play,
   SearchCode,
-  ShieldAlert,
-  Sparkles
+  ShieldAlert
 } from 'lucide-react'
 import {
   Badge,
@@ -104,13 +103,6 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
       >
   )
 
-  const [isAiAuditing, setIsAiAuditing] = useState(false)
-  const [aiReport, setAiReport] = useState<{
-    rating: string
-    summary: string
-    recommendations: Array<{ title: string; explanation: string; sql?: string }>
-  } | null>(null)
-
   // Group findings by checkId, with severity sort within.
   const findingsByCheck = useMemo(() => {
     const map = new Map<SchemaIntelCheckId, SchemaIntelFinding[]>()
@@ -160,34 +152,6 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
   const warningCount = report?.findings.filter((f) => f.severity === 'warning').length ?? 0
   const infoCount = report?.findings.filter((f) => f.severity === 'info').length ?? 0
 
-  const handleAiAudit = async () => {
-    if (!connection) return
-    setIsAiAuditing(true)
-
-    const schemas = useConnectionStore.getState().schemas
-    const tableNames = schemas.flatMap((s) => s.tables.map((t) => t.name)).slice(0, 10).join(', ')
-
-    setTimeout(() => {
-      setAiReport({
-        rating: 'A-',
-        summary: `AI analyzed tables (${tableNames || 'orders, customers, products'}). Detected 2 indexing & schema architecture optimizations for scale.`,
-        recommendations: [
-          {
-            title: 'Unindexed Foreign Key Optimization',
-            explanation: 'Table `orders(customer_id)` is missing a B-tree index, causing slow JOIN queries during heavy reads.',
-            sql: 'CREATE INDEX CONCURRENTLY idx_orders_customer_id ON orders(customer_id);'
-          },
-          {
-            title: 'Timestamp Storage Precision',
-            explanation: 'Ensure date/time columns use `TIMESTAMPTZ` instead of ISO text strings to enable index range scans.',
-            sql: '-- AI Migration Script:\n-- ALTER TABLE orders ALTER COLUMN created_at TYPE TIMESTAMPTZ;'
-          }
-        ]
-      })
-      setIsAiAuditing(false)
-    }, 1200)
-  }
-
   const openInTab = (sql: string) => {
     const id = createQueryTab(connection.id, sql)
     setActiveTab(id)
@@ -216,21 +180,6 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
             {report && (
               <span className="text-xs text-muted-foreground">Ran in {report.durationMs}ms</span>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={handleAiAudit}
-              disabled={isAiAuditing}
-              className="gap-2 border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 hover:text-indigo-300"
-            >
-              {isAiAuditing ? (
-                <Loader2 className="size-3.5 animate-spin" />
-              ) : (
-                <Sparkles className="size-3.5 text-indigo-400" />
-              )}
-              {isAiAuditing ? 'Analyzing Schema...' : 'AI Architecture Audit'}
-            </Button>
-
             <Button size="sm" onClick={handleRun} disabled={isRunning} className="gap-2">
               {isRunning ? (
                 <Loader2 className="size-3.5 animate-spin" />
@@ -317,49 +266,6 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
             {error && (
               <div className="m-4 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400">
                 {error}
-              </div>
-            )}
-
-            {aiReport && (
-              <div className="m-4 space-y-3 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="size-4 text-indigo-400" />
-                    <span className="font-semibold text-sm text-indigo-300">AI Schema Architecture Audit</span>
-                  </div>
-                  <Badge className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 font-mono">
-                    Rating: {aiReport.rating}
-                  </Badge>
-                </div>
-
-                <p className="text-xs text-muted-foreground">{aiReport.summary}</p>
-
-                <div className="space-y-2 pt-1">
-                  {aiReport.recommendations.map((rec, i) => (
-                    <div key={i} className="rounded border border-border/40 bg-black/40 p-2.5 space-y-1.5 text-xs">
-                      <div className="font-medium text-foreground flex items-center justify-between">
-                        <span>{rec.title}</span>
-                        {rec.sql && (
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-6 text-[11px] text-indigo-400 hover:text-indigo-300 gap-1"
-                            onClick={() => openInTab(rec.sql!)}
-                          >
-                            <Play className="size-3" />
-                            Open Migration Tab
-                          </Button>
-                        )}
-                      </div>
-                      <p className="text-muted-foreground text-[11px]">{rec.explanation}</p>
-                      {rec.sql && (
-                        <pre className="text-[11px] bg-black/60 p-2 rounded text-emerald-400 font-mono overflow-x-auto">
-                          {rec.sql}
-                        </pre>
-                      )}
-                    </div>
-                  ))}
-                </div>
               </div>
             )}
 
