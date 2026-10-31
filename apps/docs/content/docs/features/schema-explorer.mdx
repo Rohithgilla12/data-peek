@@ -110,18 +110,7 @@ When you make changes to your database structure (outside or inside data-peek):
 
 ## Custom Types
 
-If your database has custom types (enums, composites), they appear under the schema:
-
-```
-📁 public
-  └── 📦 Types
-      └── order_status (enum)
-          ├── pending
-          ├── processing
-          └── completed
-```
-
-Enum values are used for dropdown selectors when editing data.
+data-peek reads your database's custom types (enums, composites) along with the schema. They are not listed in the schema tree, but enum values are used for dropdown selectors when editing data.
 
 ## Tips
 
