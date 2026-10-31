@@ -11,10 +11,8 @@ import {
   Clock,
   Repeat,
   Play,
-  Sparkles,
   Code,
-  Loader2,
-  ShieldCheck
+  Loader2
 } from 'lucide-react'
 import { cn, Button } from '@data-peek/ui'
 import type { PerformanceIssue, PerformanceIssueType } from '@data-peek/shared'
@@ -57,10 +55,16 @@ const severityIconClasses = {
   info: 'text-blue-500'
 }
 
-export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix }: PerfIssueCardProps) {
+export function PerfIssueCard({
+  issue,
+  isExpanded = false,
+  onToggle,
+  onApplyFix
+}: PerfIssueCardProps) {
   const [copied, setCopied] = useState(false)
   const [isApplying, setIsApplying] = useState(false)
   const [applySuccess, setApplySuccess] = useState(false)
+  const [applyError, setApplyError] = useState<string | null>(null)
   const [showJson, setShowJson] = useState(false)
 
   const SeverityIcon =
@@ -85,15 +89,18 @@ export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix 
     const activeConnection = useConnectionStore.getState().getActiveConnection()
     if (!activeConnection) return
 
+    setIsApplying(true)
+    setApplyError(null)
     try {
-      setIsApplying(true)
-      await window.api.db.query(activeConnection, issue.indexSuggestion)
-      setApplySuccess(true)
-      if (onApplyFix) {
-        onApplyFix()
+      const response = await window.api.db.query(activeConnection, issue.indexSuggestion)
+      if (!response.success) {
+        setApplyError(response.error ?? 'Failed to create the index')
+        return
       }
+      setApplySuccess(true)
+      onApplyFix?.()
     } catch (err) {
-      console.error('Failed to apply index fix:', err)
+      setApplyError(err instanceof Error ? err.message : String(err))
     } finally {
       setIsApplying(false)
     }
@@ -119,12 +126,6 @@ export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix 
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
               {ISSUE_TYPE_LABELS[issue.type]}
             </span>
-            {issue.indexSuggestion && (
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono font-medium flex items-center gap-1">
-                <Sparkles className="size-3" />
-                Predicted ~50x Speedup
-              </span>
-            )}
           </div>
         </div>
         {isExpanded ? (
@@ -160,14 +161,7 @@ export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix 
 
           {issue.indexSuggestion && (
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                  <Sparkles className="size-3.5 text-indigo-400" /> AI Fix Recommendation (claude -p)
-                </div>
-                <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-mono">
-                  <ShieldCheck className="size-3" /> Lock-Free Safe Execution
-                </div>
-              </div>
+              <div className="text-xs font-medium text-muted-foreground">Suggested index</div>
 
               <div className="relative">
                 <pre className="text-xs bg-black/60 border border-border/40 text-emerald-400 rounded-md p-2.5 pr-10 overflow-x-auto font-mono">
@@ -195,7 +189,7 @@ export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix 
                   onClick={() => setShowJson(!showJson)}
                 >
                   <Code className="size-3.5" />
-                  {showJson ? 'Hide AI JSON' : 'View AI JSON Output'}
+                  {showJson ? 'Hide raw issue' : 'View raw issue'}
                 </Button>
 
                 <Button
@@ -223,6 +217,8 @@ export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix 
                   )}
                 </Button>
               </div>
+
+              {applyError && <p className="break-words text-xs text-red-400">{applyError}</p>}
 
               {showJson && (
                 <div className="mt-2 bg-black/80 border border-border/40 rounded p-2.5 text-[11px] font-mono text-purple-300 max-h-36 overflow-auto">
@@ -276,4 +272,3 @@ export function PerfIssueCard({ issue, isExpanded = false, onToggle, onApplyFix 
     </div>
   )
 }
-
