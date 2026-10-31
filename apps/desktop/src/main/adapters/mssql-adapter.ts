@@ -42,7 +42,7 @@ import {
   withMSSQLTransaction,
   withDedicatedMSSQLConnection
 } from './mssql-pool-manager'
-import { splitStatements } from '../lib/sql-parser'
+import { requireSingleStatement, splitStatements } from '../lib/sql-parser'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 
 // Re-exported because it was part of this module's surface before it moved out to break
@@ -153,6 +153,8 @@ export function isDataReturningStatement(sqlText: string): boolean {
 /**
  * MSSQL database adapter
  */
+const SHOWPLAN_COLUMN = 'Microsoft SQL Server 2005 XML Showplan'
+
 export class MSSQLAdapter implements DatabaseAdapter {
   readonly dbType = 'mssql' as const
 
@@ -708,47 +710,39 @@ export class MSSQLAdapter implements DatabaseAdapter {
     sqlQuery: string,
     analyze: boolean
   ): Promise<ExplainResult> {
+    const statement = requireSingleStatement(sqlQuery, 'mssql')
     // Pinned to one connection: the SET below configures the statement that follows it,
-    // and pooled requests are not guaranteed to share a connection.
+    // and pooled requests are not guaranteed to share a connection. The connection is
+    // closed afterwards, so the SET never needs turning off. Each step goes out as a raw
+    // batch because query() wraps it in sp_executesql, which scopes SET and BEGIN
+    // TRANSACTION to that one call.
     return withDedicatedMSSQLConnection(config, async (pool) => {
+      const run = (q: string): Promise<sql.IResult<Record<string, unknown>>> =>
+        pool.request().batch(q)
       const start = Date.now()
 
+      let result: sql.IResult<Record<string, unknown>>
       if (analyze) {
-        // Use SET STATISTICS XML ON for actual execution plan
-        await pool.request().query('SET STATISTICS XML ON')
-        const result = await pool.request().query(sqlQuery)
-        await pool.request().query('SET STATISTICS XML OFF')
-
-        // Extract XML plan from result
-        const plan = result.recordset.find((row: Record<string, unknown>) => {
-          const keys = Object.keys(row)
-          return keys.some(
-            (k) => k.toLowerCase().includes('executionplan') || k.toLowerCase().includes('xml')
-          )
-        })
-
-        return {
-          plan: plan || result.recordset,
-          durationMs: Date.now() - start
+        // STATISTICS XML executes the statement, so a write would otherwise commit.
+        await run('BEGIN TRANSACTION')
+        try {
+          await run('SET STATISTICS XML ON')
+          result = await run(statement)
+        } finally {
+          await run('IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION')
         }
       } else {
-        // Use SET SHOWPLAN_XML ON for estimated plan (doesn't execute)
-        await pool.request().query('SET SHOWPLAN_XML ON')
-        const result = await pool.request().query(sqlQuery)
-        await pool.request().query('SET SHOWPLAN_XML OFF')
+        await run('SET SHOWPLAN_XML ON')
+        result = await run(statement)
+      }
 
-        // Extract XML plan from result
-        const plan = result.recordset.find((row: Record<string, unknown>) => {
-          const keys = Object.keys(row)
-          return keys.some(
-            (k) => k.toLowerCase().includes('executionplan') || k.toLowerCase().includes('xml')
-          )
-        })
+      // The plan arrives as its own result set, after the statement's rows if it has any.
+      const recordsets = result.recordsets as Array<Array<Record<string, unknown>>>
+      const plan = recordsets.flat().find((row) => SHOWPLAN_COLUMN in row)
 
-        return {
-          plan: plan || result.recordset,
-          durationMs: Date.now() - start
-        }
+      return {
+        plan: plan || result.recordset,
+        durationMs: Date.now() - start
       }
     })
   }

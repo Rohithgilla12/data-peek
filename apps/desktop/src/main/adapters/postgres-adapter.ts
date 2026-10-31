@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto'
+import type { QueryResult } from 'pg'
 import {
   resolvePostgresType,
   type ConnectionConfig,
@@ -40,7 +41,7 @@ import type {
   QueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
-import { splitStatements } from '../lib/sql-parser'
+import { requireSingleStatement, splitStatements } from '../lib/sql-parser'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 import {
   withPgClient,
@@ -851,14 +852,26 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async explain(config: ConnectionConfig, sql: string, analyze: boolean): Promise<ExplainResult> {
+    const statement = requireSingleStatement(sql, 'postgresql')
     return withPgClient(config, async (client) => {
       const explainOptions = analyze
         ? 'ANALYZE, COSTS, VERBOSE, BUFFERS, FORMAT JSON'
         : 'COSTS, VERBOSE, FORMAT JSON'
-      const explainQuery = `EXPLAIN (${explainOptions}) ${sql}`
+      const explainQuery = `EXPLAIN (${explainOptions}) ${statement}`
+
+      const runExplain = async (): Promise<QueryResult> => {
+        if (!analyze) return client.query(explainQuery)
+        // ANALYZE executes the statement, so a write would otherwise commit.
+        await client.query('BEGIN')
+        try {
+          return await client.query(explainQuery)
+        } finally {
+          await client.query('ROLLBACK')
+        }
+      }
 
       const start = Date.now()
-      const res = await client.query(explainQuery)
+      const res = await runExplain()
       const duration = Date.now() - start
 
       const planJson = res.rows[0]?.['QUERY PLAN']
