@@ -658,6 +658,17 @@ describe('requireSingleStatement', () => {
     expect(requireSingleStatement('DELETE FROM t;', 'postgresql')).toBe('DELETE FROM t')
   })
 
+  it('ignores a trailing comment after the statement', () => {
+    expect(requireSingleStatement('SELECT 1; -- note', 'postgresql')).toBe('SELECT 1')
+    expect(requireSingleStatement('SELECT 1; # note', 'mysql')).toBe('SELECT 1')
+  })
+
+  it('refuses a buffer that is only comments', () => {
+    expect(() => requireSingleStatement('-- nothing here\n/* or here */', 'mssql')).toThrow(
+      /found 0/
+    )
+  })
+
   it('refuses a buffer with a second statement hidden after the first', () => {
     expect(() => requireSingleStatement('SELECT 1; DELETE FROM t', 'postgresql')).toThrow(
       /single statement, found 2/

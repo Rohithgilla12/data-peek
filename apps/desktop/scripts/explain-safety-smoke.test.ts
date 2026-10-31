@@ -131,6 +131,12 @@ describe.each(engines)('explain on $name', ({ config, adapter, run, plan, joinDe
     expect(JSON.stringify(result.plan)).toMatch(plan)
   })
 
+  it('leaves rows intact for a semicolon-free batch that commits mid-way', async () => {
+    const batch = 'SELECT 1\nCOMMIT\nDELETE FROM explain_smoke'
+    await adapter.explain(config, batch, true).catch(() => undefined)
+    expect(await count()).toBe(3)
+  })
+
   it('refuses a multi-statement buffer and leaves rows intact', async () => {
     await expect(
       adapter.explain(config, 'SELECT 1; DELETE FROM explain_smoke', true)
