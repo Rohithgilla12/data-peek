@@ -1,0 +1,269 @@
+---
+title: "Does EXPLAIN ANALYZE Run Your Query? I Tested Postgres, MySQL, MariaDB, and SQL Server"
+description: "EXPLAIN ANALYZE deletes your rows on Postgres. MySQL won't. MariaDB and SQL Server will. Tested results for five databases, and how to explain a write safely."
+date: "2026-10-31"
+author: "Rohith Gilla"
+tags: ["postgresql", "postgres", "mysql", "sql-server", "explain", "performance"]
+published: false
+---
+
+You have a slow `UPDATE`. You want to know why, so you paste it into the
+console, type `EXPLAIN ANALYZE` in front of it, and press Enter. The plan
+comes back, the timings look interesting, and about two seconds later your
+stomach drops. Did that just run?
+
+On Postgres, yes. Every row it touched is updated, and with autocommit on,
+it is committed.
+
+I know this feeling from the wrong side. This week I found that the Explain
+button in my own SQL client, data-peek, did exactly this on Postgres and SQL
+Server. Click Explain on a `DELETE`, get a nice plan, lose the rows. So
+before fixing it, I went and tested what each database actually does,
+instead of trusting what I half remembered. The answers are not the same
+across databases, and two of them surprised me.
+
+Everything below was run against real servers: PostgreSQL 16.14, MySQL
+8.4.11, MariaDB 11.4.13, SQL Server 2022, and SQLite 3.54. Every table
+started with known rows, and I counted them again after each command.
+
+## The short answer
+
+| Database | Command that shows real timings | Does it apply a `DELETE` or `UPDATE`? | Safe way to explain a write |
+| --- | --- | --- | --- |
+| PostgreSQL | `EXPLAIN ANALYZE` | **Yes**, and it commits | `BEGIN; EXPLAIN ANALYZE ...; ROLLBACK;` |
+| MySQL 8.4 | `EXPLAIN ANALYZE` | No | Safe for the write itself. A `SELECT` still runs functions it calls |
+| MariaDB 11.4 | `ANALYZE` (no `EXPLAIN ANALYZE`) | **Yes**, and it commits | `START TRANSACTION; ANALYZE ...; ROLLBACK;` |
+| SQL Server 2022 | Actual execution plan | **Yes**, and it commits | Estimated plan, or `BEGIN TRAN ... ROLLBACK` |
+| SQLite | None | No | `EXPLAIN QUERY PLAN` never runs the statement |
+
+The rule that holds everywhere: anything that gives you **actual** row
+counts and timings got them by running the query. Estimated plans are the
+only plans that are free.
+
+## PostgreSQL runs all of it
+
+Here is the test. A table with 1,000 rows, then `EXPLAIN ANALYZE` on a
+`DELETE` that matches half of them:
+
+```sql
+CREATE TABLE o (id serial PRIMARY KEY, total int);
+INSERT INTO o (total) SELECT g FROM generate_series(1, 1000) g;
+
+EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF)
+DELETE FROM o WHERE total > 500;
+```
+
+```text
+Delete on o (actual rows=0 loops=1)
+  ->  Seq Scan on o (actual rows=500 loops=1)
+        Filter: (total > 500)
+        Rows Removed by Filter: 500
+Execution Time: 1.600 ms
+```
+
+`SELECT count(*) FROM o` afterwards returns **500**. The plan is honest
+about it, too. The scan found 500 rows, and they are gone. (`Delete on o`
+shows `actual rows=0` because the delete node returns no rows, not because
+it deleted none.)
+
+The fix is the one the Postgres docs recommend: put it in a transaction and
+roll back.
+
+```sql
+BEGIN;
+EXPLAIN (ANALYZE, BUFFERS) DELETE FROM o WHERE total > 500;
+ROLLBACK;
+```
+
+After the `ROLLBACK`, the count is back to 1,000. That covers most cases,
+but a rollback does not undo everything, and these are the gaps I measured:
+
+- **Sequences keep moving.** I ran `EXPLAIN ANALYZE` on an `INSERT` of 50
+  rows inside the same transaction. After the rollback, the rows were gone,
+  but `o_id_seq` had gone from 1,000 to 1,050. Sequences are never rolled
+  back, so you will see gaps in your ids.
+- **A SELECT is not automatically safe.** I wrote a function that inserts
+  into an `audit` table and returns 1. `EXPLAIN ANALYZE SELECT touch();`
+  left a row in `audit`. If a `SELECT` calls something with side effects,
+  `EXPLAIN ANALYZE` runs it. Inside `BEGIN`/`ROLLBACK` that row goes away.
+  Calls that leave the database, such as `dblink` or an HTTP extension, do
+  not.
+- **Locks are real while it runs.** An `EXPLAIN ANALYZE UPDATE` inside
+  `BEGIN` takes the same row locks as the real `UPDATE`, and holds them
+  until you roll back. On a busy table, do not run the `BEGIN` in one psql
+  tab and wander off to read the plan. Roll back first, then read. If you
+  have ever had a session sit on locks, you know
+  [what that does to everyone else's queries](/blog/what-is-blocking-my-postgres-query).
+
+One more practical point: a slow `DELETE` is still slow under
+`EXPLAIN ANALYZE`, because it really runs. If it is slow enough to be a
+problem in production, plain `EXPLAIN` (no `ANALYZE`) gives you the
+estimated plan instantly and touches nothing. If you do start one and it
+won't finish, here is
+[how to stop it without stopping the wrong query](/blog/kill-a-stuck-postgres-query).
+
+## MySQL doesn't apply the write
+
+This is the result that surprised me. MySQL documents `EXPLAIN ANALYZE` as
+running the statement, so I expected it to behave like Postgres. Under
+autocommit, on 8.4.11, it didn't.
+
+For a single-table `DELETE` or `UPDATE`, you don't get a plan at all:
+
+```sql
+EXPLAIN ANALYZE DELETE FROM o WHERE cid = 1;
+```
+
+```text
+-> <not executable by iterator executor>
+```
+
+The rows are still there. For a multi-table `DELETE` or `UPDATE`, you do get
+a plan with real timings, and the reads clearly happen:
+
+```text
+-> Delete from o (buffered)  (actual time=0.701..0.701 rows=0 loops=1)
+    -> Nested loop inner join  (actual time=0.367..0.434 rows=2 loops=1)
+        -> Filter: (0 <> c.churned)  ...
+```
+
+The join found 2 matching rows, and the delete removed 0. All 3 rows were
+still in the table afterwards. The two-table `UPDATE` behaved the same way.
+On MySQL 8.0.36, a multi-table `DELETE` and `UPDATE` also left the data
+alone.
+
+My first guess was that MySQL runs the write and rolls it back. So I ran
+the same multi-table `DELETE` against a **MyISAM** table, which can't roll
+anything back. The rows survived there too. So MySQL collects the rows,
+then doesn't apply the change.
+
+That doesn't make MySQL's `EXPLAIN ANALYZE` free. It runs the read side for
+real. The same side-effect test as Postgres:
+
+```sql
+EXPLAIN ANALYZE SELECT touch();  -- touch() inserts into audit
+```
+
+Each run left a committed row in `audit`. If a query calls a stored
+function that writes, `EXPLAIN ANALYZE` performs that write.
+
+If you need the plan for a single-table `DELETE` or `UPDATE`, plain
+`EXPLAIN` gives you the estimated plan.
+
+## MariaDB is the opposite of MySQL
+
+MariaDB is MySQL's close relative, so it is easy to assume they match. They
+don't. MariaDB has no `EXPLAIN ANALYZE`:
+
+```text
+ERROR 1064 (42000): You have an error in your SQL syntax ... near 'ANALYZE DELETE FROM o'
+```
+
+Its version is a separate statement, `ANALYZE`, and it runs the write for
+real. My table had three rows, two of them over 500:
+
+```sql
+ANALYZE DELETE FROM o WHERE total > 500;
+SELECT COUNT(*) FROM o;  -- 1
+```
+
+Two rows deleted and committed. Wrapping it works:
+
+```sql
+START TRANSACTION;
+ANALYZE DELETE FROM o WHERE total > 500;
+ROLLBACK;
+```
+
+After that, the count stayed at 3. A transaction only protects tables on a
+transactional engine like InnoDB, so on MyISAM or Aria tables, use plain
+`EXPLAIN` instead.
+
+## SQL Server: estimated vs actual
+
+SQL Server makes the split explicit, which helps once you know which button
+is which.
+
+- The **estimated** plan (`SET SHOWPLAN_XML ON`, or "Display Estimated
+  Execution Plan" in SSMS) compiles the statement and never runs it. After
+  an estimated plan for a `DELETE`, my table still had all 3 rows.
+- The **actual** plan (`SET STATISTICS XML ON`, or "Include Actual
+  Execution Plan") runs the statement and attaches the plan to the result.
+  After an actual plan for the same `DELETE`, 1 row was left.
+
+To get actual numbers for a write, roll it back:
+
+```sql
+BEGIN TRANSACTION;
+SET STATISTICS XML ON;
+DELETE FROM o WHERE total > 500;
+SET STATISTICS XML OFF;
+ROLLBACK TRANSACTION;
+```
+
+Rows are restored. As with Postgres sequences, identity values are not. I
+inserted 3 rows inside the transaction, and after the rollback
+`IDENT_CURRENT` had moved from 5 to 8.
+
+One trap here is specific to T-SQL. Statements don't need semicolons, so a
+batch like this is easy to paste without noticing the middle line:
+
+```sql
+BEGIN TRANSACTION
+DELETE FROM o WHERE total > 500
+COMMIT
+```
+
+Your `ROLLBACK` at the end has nothing left to roll back. If you didn't
+write the batch yourself, read all of it before asking for an actual plan.
+
+## SQLite never runs it
+
+SQLite has no analyze mode. `EXPLAIN QUERY PLAN` describes the plan, and
+plain `EXPLAIN` prints the bytecode the statement would run. After both, my
+table still had all 3 rows. The price is that you never get actual timings
+from `EXPLAIN` in SQLite.
+
+## What I changed in data-peek
+
+data-peek's Explain button always asked for the actual plan, because actual
+timings are the useful part. Before the fix, it ran that bare. It also sent
+the whole editor, so on Postgres, `SELECT 1; DELETE FROM users` ran the
+`DELETE` too.
+Here is what it does from version 0.36:
+
+- On **PostgreSQL**, Explain runs `EXPLAIN (ANALYZE, BUFFERS)` inside a
+  transaction that is always rolled back, even if the `EXPLAIN` fails.
+- On **SQL Server**, a read-only statement gets the actual plan inside a
+  rolled-back transaction. Anything else gets the estimated plan, because
+  of the batch problem above. A rollback can't help if the batch contains
+  its own `COMMIT`.
+- On **MySQL**, it runs `EXPLAIN ANALYZE` as is, because the write is never
+  applied.
+- Everywhere, it explains one statement: your selection if there is one,
+  otherwise the editor. If there is more than one statement, it stops and
+  tells you, instead of running the rest.
+
+The trade-offs are the same ones from the tests above. Sequence and
+identity values still advance, a slow write still takes its full time on
+Postgres, and SQL Server writes only get estimated numbers. I'd rather lose
+the actual timings than someone's rows.
+
+If you want to go further with the plan once you have it,
+[here is how I read one](/blog/understanding-explain-analyze), node by node.
+
+## The short version
+
+- Actual timings mean the query ran. On Postgres, MariaDB, and SQL Server,
+  that includes writes, and they commit.
+- Wrap writes in a transaction and roll back: `BEGIN` / `ROLLBACK`, or
+  `START TRANSACTION` / `ROLLBACK` on MariaDB. Sequences and identity
+  values still move.
+- A `SELECT` that calls a function with side effects is not safe under
+  `EXPLAIN ANALYZE` on Postgres or MySQL.
+- When in doubt, plain `EXPLAIN` (or SQL Server's estimated plan) never
+  runs anything.
+
+data-peek is at [datapeek.dev](https://datapeek.dev). It is free for
+personal use and the source is MIT. I wrote this post because the tool got
+it wrong first, and I wanted the fix to rest on tests, not memory.
