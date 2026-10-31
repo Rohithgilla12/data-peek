@@ -8,7 +8,8 @@ export default defineConfig({
     include: [
       'scripts/pool-smoke.test.ts',
       'scripts/clickhouse-smoke.test.ts',
-      'scripts/clickhouse-smoke-ssh-tls.test.ts'
+      'scripts/clickhouse-smoke-ssh-tls.test.ts',
+      'scripts/explain-safety-smoke.test.ts'
     ],
     testTimeout: 60_000
   },

@@ -212,3 +212,36 @@ describe('PostgresAdapter.getTableDDL', () => {
     expect(def.comment).toBeUndefined()
   })
 })
+
+describe('PostgresAdapter.explain', () => {
+  beforeEach(() => {
+    fakeClient.query.mockReset()
+  })
+
+  it('rolls back an ANALYZE run so a write never commits', async () => {
+    fakeClient.query.mockResolvedValue({ rows: [{ 'QUERY PLAN': [{ Plan: {} }] }] })
+    await new PostgresAdapter().explain(makeConfig(), 'DELETE FROM t', true)
+    const sent = fakeClient.query.mock.calls.map((c) => c[0])
+    expect(sent[0]).toBe('BEGIN')
+    expect(sent.at(-1)).toBe('ROLLBACK')
+    expect(sent).not.toContain('COMMIT')
+  })
+
+  it('rolls back even when the EXPLAIN fails', async () => {
+    fakeClient.query.mockImplementation(async (q: string) => {
+      if (q.startsWith('EXPLAIN')) throw new Error('boom')
+      return { rows: [] }
+    })
+    await expect(
+      new PostgresAdapter().explain(makeConfig(), 'DELETE FROM t', true)
+    ).rejects.toThrow('boom')
+    expect(fakeClient.query.mock.calls.at(-1)?.[0]).toBe('ROLLBACK')
+  })
+
+  it('sends nothing for a multi-statement buffer', async () => {
+    await expect(
+      new PostgresAdapter().explain(makeConfig(), 'SELECT 1; DELETE FROM t', true)
+    ).rejects.toThrow(/single statement/)
+    expect(fakeClient.query).not.toHaveBeenCalled()
+  })
+})

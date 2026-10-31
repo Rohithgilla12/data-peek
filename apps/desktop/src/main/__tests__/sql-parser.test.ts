@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { splitStatements, createStatementSplitter, SQL_PARSER_CONFIGS } from '../lib/sql-parser'
+import {
+  splitStatements,
+  createStatementSplitter,
+  requireSingleStatement,
+  SQL_PARSER_CONFIGS
+} from '../lib/sql-parser'
 
 describe('splitStatements', () => {
   describe('basic functionality', () => {
@@ -645,5 +650,17 @@ describe('SQL_PARSER_CONFIGS', () => {
     expect(config.backslashEscape).toBe(false)
     expect(config.hashLineComment).toBe(false)
     expect(config.bracketIdentifiers).toBe(true)
+  })
+})
+
+describe('requireSingleStatement', () => {
+  it('returns the statement without its trailing semicolon', () => {
+    expect(requireSingleStatement('DELETE FROM t;', 'postgresql')).toBe('DELETE FROM t')
+  })
+
+  it('refuses a buffer with a second statement hidden after the first', () => {
+    expect(() => requireSingleStatement('SELECT 1; DELETE FROM t', 'postgresql')).toThrow(
+      /single statement, found 2/
+    )
   })
 })

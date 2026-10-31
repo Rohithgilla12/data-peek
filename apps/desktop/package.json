@@ -16,6 +16,7 @@
     "test:watch": "vitest",
     "smoke:clickhouse": "docker compose -f ../../seeds/clickhouse/compose.yml up -d --wait && vitest run -c vitest.smoke.config.ts scripts/clickhouse-smoke.test.ts",
     "test:coverage": "vitest run --coverage",
+    "smoke:explain": "vitest run -c vitest.smoke.config.ts scripts/explain-safety-smoke.test.ts",
     "test:e2e": "pnpm run build && playwright test",
     "test:e2e:ui": "pnpm run build && playwright test --ui",
     "test:e2e:debug": "pnpm run build && PWDEBUG=1 playwright test",
