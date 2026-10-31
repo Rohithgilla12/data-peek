@@ -99,6 +99,16 @@ describe('toMSSQLConfig', () => {
     expect(cfg.options?.trustServerCertificate).toBeUndefined()
   })
 
+  it.each([
+    'ActiveDirectoryPassword',
+    'ActiveDirectoryServicePrincipal',
+    'ActiveDirectoryDeviceCodeFlow'
+  ] as const)('refuses %s instead of silently using SQL login', (authentication) => {
+    expect(() => toMSSQLConfig(makeConfig({ mssqlOptions: { authentication } }))).toThrow(
+      /isn't supported yet/
+    )
+  })
+
   it('without ssl defaults trustServerCertificate to true', () => {
     const cfg = toMSSQLConfig(makeConfig({ ssl: false }))
     expect(cfg.options?.trustServerCertificate).toBe(true)
