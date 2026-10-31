@@ -89,7 +89,7 @@ For reference, here's what's already implemented:
 - Inline editing (INSERT/UPDATE/DELETE)
 - Table designer with full DDL support
 - JSON editor for JSON/JSONB columns
-- Export to CSV, JSON, Excel
+- Export to CSV, JSON, SQL INSERT, Markdown
 - Server-side pagination
 - CSV import with column mapping, type inference, and conflict handling
 - Data generator with Faker.js integration and FK awareness
