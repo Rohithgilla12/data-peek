@@ -1,5 +1,6 @@
 import sql from 'mssql'
 import { randomUUID } from 'crypto'
+import { isReadOnlySql } from '@shared/index'
 import type {
   ConnectionConfig,
   SchemaInfo,
@@ -721,8 +722,11 @@ export class MSSQLAdapter implements DatabaseAdapter {
         pool.request().batch(q)
       const start = Date.now()
 
+      // T-SQL needs no semicolons, so a "single statement" can still hold a COMMIT that
+      // would escape the rollback. Anything not provably read-only gets the estimated
+      // plan, which executes nothing.
       let result: sql.IResult<Record<string, unknown>>
-      if (analyze) {
+      if (analyze && isReadOnlySql(statement)) {
         // STATISTICS XML executes the statement, so a write would otherwise commit.
         await run('BEGIN TRANSACTION')
         try {
