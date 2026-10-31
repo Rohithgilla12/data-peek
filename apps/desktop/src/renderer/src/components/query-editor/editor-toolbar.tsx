@@ -256,7 +256,7 @@ export function EditorToolbar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                <p className="text-xs">AI Performance & Index Tuning (claude -p)</p>
+                <p className="text-xs">Check the query plan for missing indexes and slow scans</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

@@ -84,8 +84,6 @@ export function sentQueryText(statement: string): string {
   return `${statement} \nFORMAT ${RESULT_FORMAT}`
 }
 
-export const SINGLE_STATEMENT_MESSAGE = 'EXPLAIN accepts a single statement'
-
 /**
  * client.query appends `FORMAT JSON`, so a user-written trailing FORMAT clause would be
  * a duplicate and a server syntax error. Refuse it with a message that says why.

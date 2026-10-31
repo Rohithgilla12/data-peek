@@ -88,8 +88,7 @@ export function CommandPalette({
   // Stores
   const activeConnection = useConnectionStore((s) => s.getActiveConnection())
   const connections = useConnectionStore((s) => s.connections)
-  const setActiveConnection = useConnectionStore((s) => s.setActiveConnection)
-  const setConnectionStatus = useConnectionStore((s) => s.setConnectionStatus)
+  const selectConnection = useConnectionStore((s) => s.selectConnection)
   const fetchSchemas = useConnectionStore((s) => s.fetchSchemas)
 
   const createQueryTab = useTabStore((s) => s.createQueryTab)
@@ -143,14 +142,10 @@ export function CommandPalette({
   // Handle connection switching
   const handleSelectConnection = React.useCallback(
     (connectionId: string) => {
-      setConnectionStatus(connectionId, { isConnecting: true, error: undefined })
-      setTimeout(() => {
-        setConnectionStatus(connectionId, { isConnecting: false, isConnected: true })
-        setActiveConnection(connectionId)
-      }, 500)
+      selectConnection(connectionId)
       onClose()
     },
-    [setConnectionStatus, setActiveConnection, onClose]
+    [selectConnection, onClose]
   )
 
   // Handle saved query selection

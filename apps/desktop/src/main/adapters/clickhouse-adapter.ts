@@ -27,7 +27,7 @@ import type {
   ExplainResult,
   QueryOptions
 } from '../db-adapter'
-import { splitStatements } from '../lib/sql-parser'
+import { requireSingleStatement, splitStatements } from '../lib/sql-parser'
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 import {
@@ -41,7 +41,6 @@ import {
   mapSystemRows,
   RESULT_FORMAT,
   rowCountFromSummary,
-  SINGLE_STATEMENT_MESSAGE,
   timeoutSettings,
   toColumnInfo,
   toStatementResult,
@@ -349,13 +348,10 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   }
 
   async explain(config: ConnectionConfig, sql: string, _analyze: boolean): Promise<ExplainResult> {
-    const statements = splitStatements(sql, 'clickhouse')
-    if (statements.length !== 1) {
-      throw new Error(SINGLE_STATEMENT_MESSAGE)
-    }
+    const statement = requireSingleStatement(sql, 'clickhouse')
     const start = Date.now()
     const rows = await withClickHouseClient(config, (client) =>
-      this.rows<{ explain: string }>(client, { query: `EXPLAIN indexes = 1 ${statements[0]}` })
+      this.rows<{ explain: string }>(client, { query: `EXPLAIN indexes = 1 ${statement}` })
     )
     return { plan: toTextPlan(rows), durationMs: Date.now() - start }
   }

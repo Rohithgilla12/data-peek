@@ -2,13 +2,8 @@ import { v4 as uuidv4 } from 'uuid'
 import { ClickHouseError, type ClickHouseClient } from '@clickhouse/client'
 import type { PerformanceIssue, QueryRuntimeStats } from '@shared/index'
 import { withClickHouseClient } from '../adapters/clickhouse-pool-manager'
-import {
-  RESULT_FORMAT,
-  SINGLE_STATEMENT_MESSAGE,
-  sentQueryText,
-  stripLeading
-} from '../adapters/clickhouse-mapping'
-import { splitStatements } from '../lib/sql-parser'
+import { RESULT_FORMAT, sentQueryText, stripLeading } from '../adapters/clickhouse-mapping'
+import { requireSingleStatement } from '../lib/sql-parser'
 import { createLogger } from '../lib/logger'
 import type { PlanAnalyzer } from '../performance-analyzer'
 
@@ -215,9 +210,7 @@ function slowQueryIssue(
 
 /** Reads the plan and the server's own log; never runs the user's statement. */
 export const analyzeClickHousePlan: PlanAnalyzer = async (connectionConfig, query, config) => {
-  const statements = splitStatements(query, 'clickhouse')
-  if (statements.length !== 1) throw new Error(SINGLE_STATEMENT_MESSAGE)
-  const [statement] = statements
+  const statement = requireSingleStatement(query, 'clickhouse')
   const isSelect = /^(SELECT|WITH)\b/i.test(stripLeading(statement))
 
   return withClickHouseClient(connectionConfig, async (client) => {

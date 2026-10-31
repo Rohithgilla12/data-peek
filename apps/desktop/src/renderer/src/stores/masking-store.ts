@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { nanoid } from 'nanoid'
 
 export interface AutoMaskRule {
   id: string
@@ -126,7 +125,10 @@ export const useMaskingStore = create<MaskingState>()(
 
       addAutoMaskRule: (pattern) =>
         set((state) => ({
-          autoMaskRules: [...state.autoMaskRules, { id: nanoid(), pattern, enabled: true }]
+          autoMaskRules: [
+            ...state.autoMaskRules,
+            { id: crypto.randomUUID(), pattern, enabled: true }
+          ]
         })),
 
       removeAutoMaskRule: (id) =>

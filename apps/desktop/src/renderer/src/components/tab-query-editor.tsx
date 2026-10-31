@@ -902,6 +902,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     handleRunQuery(getSelectedSql(editorRef.current))
   }, [handleRunQuery])
 
+  const handleExplainSelection = useCallback(() => {
+    handleExplainQuery(getSelectedSql(editorRef.current))
+  }, [handleExplainQuery])
+
   const handleClearResults = useCallback(() => {
     const t = useTabStore.getState().getTab(tabId)
     if (!t || !isExecutableTab(t) || t.isExecuting) return
@@ -1090,7 +1094,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           hasActiveTransaction={hasActiveTransaction}
           handleCommit={handleCommit}
           handleRollback={handleRollback}
-          handleExplainQuery={handleExplainQuery}
+          handleExplainQuery={handleExplainSelection}
           isExplaining={isExplaining}
           handleAnalyzePerformance={handleAnalyzePerformance}
           isPerfAnalyzing={isPerfAnalyzing}

@@ -37,7 +37,7 @@ import type {
   QueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
-import { splitStatements } from '../lib/sql-parser'
+import { requireSingleStatement, splitStatements } from '../lib/sql-parser'
 import { telemetryCollector, TELEMETRY_PHASES } from '../telemetry-collector'
 import { toMySQLConfig } from './mysql-client-config'
 import { withMySQLConnection, withMySQLTransaction } from './mysql-pool-manager'
@@ -688,9 +688,12 @@ export class MySQLAdapter implements DatabaseAdapter {
   }
 
   async explain(config: ConnectionConfig, sql: string, analyze: boolean): Promise<ExplainResult> {
+    const statement = requireSingleStatement(sql, 'mysql')
     return withMySQLConnection(config, async (connection) => {
       // MySQL uses EXPLAIN ANALYZE (8.0.18+) or just EXPLAIN
-      const explainQuery = analyze ? `EXPLAIN ANALYZE ${sql}` : `EXPLAIN FORMAT=JSON ${sql}`
+      const explainQuery = analyze
+        ? `EXPLAIN ANALYZE ${statement}`
+        : `EXPLAIN FORMAT=JSON ${statement}`
 
       const start = Date.now()
       const [rows] = await connection.query(explainQuery)

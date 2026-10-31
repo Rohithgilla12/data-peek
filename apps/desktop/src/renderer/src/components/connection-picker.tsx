@@ -14,8 +14,7 @@ interface ConnectionPickerProps {
 export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) {
   const connections = useConnectionStore((s) => s.connections)
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
-  const setActiveConnection = useConnectionStore((s) => s.setActiveConnection)
-  const setConnectionStatus = useConnectionStore((s) => s.setConnectionStatus)
+  const selectConnection = useConnectionStore((s) => s.selectConnection)
 
   const [search, setSearch] = useState('')
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -70,15 +69,11 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
   }, [open])
 
   const handleSelectConnection = useCallback(
-    async (connectionId: string) => {
-      setConnectionStatus(connectionId, { isConnecting: true, error: undefined })
-      setTimeout(() => {
-        setConnectionStatus(connectionId, { isConnecting: false, isConnected: true })
-        setActiveConnection(connectionId)
-      }, 500)
+    (connectionId: string) => {
+      selectConnection(connectionId)
       onOpenChange(false)
     },
-    [setConnectionStatus, setActiveConnection, onOpenChange]
+    [selectConnection, onOpenChange]
   )
 
   const handleKeyDown = useCallback(

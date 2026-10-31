@@ -353,7 +353,7 @@ describe('analyzeClickHousePlan', () => {
 
   it('refuses more than one statement with the adapter EXPLAIN message', async () => {
     await expect(analyzeClickHousePlan(config, 'SELECT 1; SELECT 2', settings)).rejects.toThrow(
-      'EXPLAIN accepts a single statement'
+      /Explain needs a single statement/
     )
     expect(query).not.toHaveBeenCalled()
   })

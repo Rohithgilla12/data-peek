@@ -94,33 +94,36 @@ export function useQueryAnalysis(
     ]
   )
 
-  const handleExplainQuery = useCallback(async () => {
-    if (!tab || !isExecutableTab(tab) || !tabConnection || isExplaining || !tab.query.trim()) {
-      return
-    }
+  const handleExplainQuery = useCallback(
+    async (selectedSql?: string) => {
+      if (!tab || !isExecutableTab(tab) || !tabConnection || isExplaining) return
+      const sql = selectedSql ?? tab.query
+      if (!sql.trim()) return
 
-    setIsExplaining(true)
-    setExecutionPlan(null)
+      setIsExplaining(true)
+      setExecutionPlan(null)
 
-    try {
-      const response = await window.api.db.explain(tabConnection, tab.query, true)
+      try {
+        const response = await window.api.db.explain(tabConnection, sql, true)
 
-      if (response.success && response.data) {
-        setExecutionPlan({
-          plan: response.data.plan as unknown[],
-          durationMs: response.data.durationMs
-        })
-      } else {
-        // Show error in the existing error display
-        updateTabResult(tabId, null, response.error ?? 'Failed to get execution plan')
+        if (response.success && response.data) {
+          setExecutionPlan({
+            plan: response.data.plan as unknown[],
+            durationMs: response.data.durationMs
+          })
+        } else {
+          // Show error in the existing error display
+          updateTabResult(tabId, null, response.error ?? 'Failed to get execution plan')
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        updateTabResult(tabId, null, errorMessage)
+      } finally {
+        setIsExplaining(false)
       }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      updateTabResult(tabId, null, errorMessage)
-    } finally {
-      setIsExplaining(false)
-    }
-  }, [tab, tabConnection, tabId, isExplaining, updateTabResult])
+    },
+    [tab, tabConnection, tabId, isExplaining, updateTabResult]
+  )
 
   // Get query history for performance analysis
   const queryHistory = useQueryStore((s) => s.history)
