@@ -43,7 +43,7 @@ export const FEATURE_CLIPS: FeatureClip[] = [
     id: "command-palette",
     title: "Command palette",
     blurb:
-      "⌘K opens every action. Switch connections, run queries, jump to tables.",
+      "⌘K for the everyday moves. Switch connections, open a tab or saved query, open the AI panel.",
     category: "editor",
     media: { kind: "video", file: "command-palette", width: 1280, height: 800 },
   },
