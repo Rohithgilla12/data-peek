@@ -99,6 +99,15 @@ describe('toMSSQLConfig', () => {
     expect(cfg.options?.trustServerCertificate).toBeUndefined()
   })
 
+  it('keeps user and password for explicit SQL Server Authentication', () => {
+    const cfg = toMSSQLConfig(
+      makeConfig({ mssqlOptions: { authentication: 'SQL Server Authentication' } })
+    )
+    expect(cfg.user).toBe('u')
+    expect(cfg.password).toBe('p')
+    expect(cfg.authentication).toBeUndefined()
+  })
+
   it.each([
     'ActiveDirectoryPassword',
     'ActiveDirectoryServicePrincipal',
