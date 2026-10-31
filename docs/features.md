@@ -257,7 +257,7 @@ For power users and teams:
 
 | Feature | Description |
 |---------|-------------|
-| **EXPLAIN Visualization** | See query execution plans in a visual tree |
+| **EXPLAIN Visualization** | See PostgreSQL query execution plans in a visual tree |
 | **Node Type Coloring** | Color-coded operations (scans, joins, sorts) |
 | **Cost Analysis** | View estimated vs actual costs |
 | **Performance Metrics** | Execution time breakdown by operation |

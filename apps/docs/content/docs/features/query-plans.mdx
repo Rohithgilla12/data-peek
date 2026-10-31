@@ -1,31 +1,37 @@
 ---
 title: Query Plans
-description: Analyze query performance with EXPLAIN ANALYZE
+description: Analyze query performance with the Explain button
 ---
 
 # Query Plans
 
-Use EXPLAIN ANALYZE to understand how PostgreSQL executes your queries and optimize performance.
+Use **Explain** to understand how the database executes your queries and optimize performance. On PostgreSQL, the plan renders as an interactive tree.
 
 ## Running EXPLAIN
 
-1. Write your SELECT query
-2. Execute the query to see results
-3. Click **Explain** or **Explain Analyze** in the toolbar
+1. Write a single statement, or select one in the editor
+2. Click **Explain** in the toolbar
 
-### Modes
+Explain uses the editor selection if there is one, otherwise the whole editor. It accepts one statement at a time.
 
-| Mode                | Description                            |
-| ------------------- | -------------------------------------- |
-| **EXPLAIN**         | Shows estimated plan without executing |
-| **EXPLAIN ANALYZE** | Runs query and shows actual statistics |
+### By Database
+
+| Database   | Plan display                    |
+| ---------- | ------------------------------- |
+| PostgreSQL | Interactive plan tree (below)   |
+| ClickHouse | Text plan                       |
+| MySQL      | Raw `EXPLAIN` output            |
+| SQL Server | Raw execution plan output       |
+| SQLite     | Raw `EXPLAIN QUERY PLAN` output |
 
 <Callout type="info">
-  EXPLAIN ANALYZE actually executes the query, so use with caution on slow
-  queries or data-modifying statements.
+  On PostgreSQL and SQL Server, Explain runs the statement with EXPLAIN
+  ANALYZE inside a transaction that is always rolled back. The statement still
+  executes, so slow queries take their full time, and effects outside the
+  transaction (such as sequence increments) are not undone.
 </Callout>
 
-## Plan Viewer
+## Plan Viewer (PostgreSQL)
 
 ### Node Tree
 

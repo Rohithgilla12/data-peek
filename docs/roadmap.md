@@ -81,7 +81,7 @@ For reference, here's what's already implemented:
 ### Performance Analysis
 - Query telemetry with waterfall visualization
 - Benchmark mode (p50/p90/p99 statistics)
-- EXPLAIN viewer with interactive visualization
+- EXPLAIN viewer with interactive visualization (PostgreSQL)
 - Query cancellation
 
 ### Data Management
