@@ -372,6 +372,26 @@ export function splitStatements(sql: string, dbType: DatabaseType): string[] {
   return statements
 }
 
+function isCommentOnly(statement: string, dbType: DatabaseType): boolean {
+  let rest = statement.replace(/\/\*[\s\S]*?\*\//g, '').replace(/--[^\n]*/g, '')
+  if (SQL_PARSER_CONFIGS[dbType].hashLineComment) rest = rest.replace(/#[^\n]*/g, '')
+  return rest.trim() === ''
+}
+
+/**
+ * The one statement in `sql`, or a throw. EXPLAIN takes a single statement, and a driver
+ * that accepts multi-statement strings would run every statement after the first for real.
+ */
+export function requireSingleStatement(sql: string, dbType: DatabaseType): string {
+  const statements = splitStatements(sql, dbType).filter((s) => !isCommentOnly(s, dbType))
+  if (statements.length !== 1) {
+    throw new Error(
+      `Explain needs a single statement, found ${statements.length}. Select one statement and try again.`
+    )
+  }
+  return statements[0]
+}
+
 /**
  * Create a database-specific statement splitter function.
  * Useful for creating a bound function without passing dbType each time.

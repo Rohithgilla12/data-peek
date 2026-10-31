@@ -31,7 +31,7 @@ import type {
   ExplainResult,
   QueryOptions
 } from '../db-adapter'
-import { splitStatements } from '../lib/sql-parser'
+import { requireSingleStatement, splitStatements } from '../lib/sql-parser'
 import { runSqliteSchemaIntel } from '../schema-intel/sqlite'
 
 // Runtime shapes for SQLite catalog/PRAGMA introspection. Parsing (rather than
@@ -432,13 +432,14 @@ export class SQLiteAdapter implements DatabaseAdapter {
     }
   }
 
-  async explain(config: ConnectionConfig, sql: string, analyze: boolean): Promise<ExplainResult> {
+  async explain(config: ConnectionConfig, sql: string, _analyze: boolean): Promise<ExplainResult> {
+    const statement = requireSingleStatement(sql, 'sqlite')
     const db = this.getDb(config)
     try {
       const start = Date.now()
 
-      // SQLite supports EXPLAIN QUERY PLAN for query planning info
-      const explainSql = analyze ? `EXPLAIN QUERY PLAN ${sql}` : `EXPLAIN QUERY PLAN ${sql}`
+      // EXPLAIN QUERY PLAN never executes the statement, so there is no ANALYZE variant.
+      const explainSql = `EXPLAIN QUERY PLAN ${statement}`
 
       const rows = db.prepare(explainSql).all() as Array<{
         id: number
