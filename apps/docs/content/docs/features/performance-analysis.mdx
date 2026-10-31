@@ -5,11 +5,11 @@ description: Automatic query performance analysis with actionable recommendation
 
 # Performance Analysis
 
-After executing a query, data-peek automatically analyzes the execution plan and flags potential performance issues.
+Performance analysis checks the query in the current tab for likely performance problems and suggests a fix for each one. It is available for PostgreSQL and ClickHouse connections.
 
 ## How It Works
 
-A performance indicator panel appears below query results when issues are detected. Each issue has a severity level:
+Run a query, then click **Analyze** in the results toolbar. A panel opens below the results and lists the issues it found. Each issue has a severity level:
 
 | Severity | Meaning                           |
 | -------- | --------------------------------- |
@@ -17,37 +17,67 @@ A performance indicator panel appears below query results when issues are detect
 | Warning  | May impact performance            |
 | Info     | Optimization opportunity          |
 
-## Detected Issues
+## PostgreSQL Checks
+
+On PostgreSQL, data-peek runs `EXPLAIN ANALYZE` on `SELECT` statements and walks the plan.
 
 ### Missing Indexes
 
-Identifies columns used in WHERE, JOIN, or ORDER BY that lack indexes.
+Flags sequential scans that return many rows through a filter, and suggests a `CREATE INDEX` statement for the filtered columns.
 
-### Sequential Scans on Large Tables
+### High Filter Ratio
 
-Flags queries that perform full table scans on tables above a size threshold.
+Flags plan nodes that read many rows only to discard most of them.
 
-### N+1 Query Patterns
+### Row Estimate Mismatch
 
-Detects when the same query pattern is executed repeatedly with different parameters, suggesting a JOIN or batch query instead.
+Flags plan nodes where the planner's row estimate is far from the actual count. Running `ANALYZE` on the table usually fixes this.
 
-## Recommendations
+### Disk Spills
 
-Each issue includes a specific recommendation, such as:
+Flags sorts and hashes that spilled to disk instead of staying in memory.
 
-- Suggested index creation SQL
-- Query rewrite suggestions
-- Batch query alternatives
+### Slow Queries
+
+Flags a query whose execution time exceeds the slow-query threshold (1 second by default).
+
+## ClickHouse Checks
+
+On ClickHouse, data-peek does not run your query again. It reads the plan with `EXPLAIN json = 1, indexes = 1` and reads the history of the query from `system.query_log`. Analysis accepts one statement at a time.
+
+### Poor Granule Pruning
+
+A MergeTree table is stored in granules, and ClickHouse skips the granules that its partition key, primary key, and data-skipping indexes rule out. data-peek flags a table read that still covers more than half of the table's granules:
+
+- **Warning**: the read covers more than 50% of the granules, on a table with at least 8 granules.
+- **Critical**: the read covers every granule, on a table with at least 128 granules.
+
+The issue names the table, the number of granules read, and the primary key condition, if any. To fix it, filter on a leading column of the table's `ORDER BY` key, or add a data-skipping index or a projection for the column you filter on.
+
+A `LIMIT` with no sort, aggregation, or join under it can stop the read before it reaches every eligible granule. data-peek reports such a read as **Info** only, and the run history shows the rows the query actually read.
+
+### Run History
+
+The panel shows a one-line summary of earlier runs of the same query shape over the last 7 days: the number of runs and failures, the p50 and p95 duration, the average rows and bytes read, and the peak memory. ClickHouse ignores literal values when it groups queries by shape, so `WHERE org_id = 3` and `WHERE org_id = 7` count as the same query.
+
+### Slow Queries
+
+Flags a query whose p95 duration over the last 7 days exceeds the slow-query threshold (1 second by default).
+
+### Limitations
+
+- On a cluster, `system.query_log` holds only the queries that ran on the node data-peek is connected to. Runs that reached other nodes are not counted.
+- ClickHouse writes to `system.query_log` in batches, about every 7 seconds. A run from the last few seconds may not be counted yet.
+- If `system.query_log` is turned off on the server, or your user cannot read it, the panel says so. The pruning check still runs.
+
+## N+1 Query Patterns
+
+For both databases, data-peek checks your recent query history on the same connection. If the same query pattern ran many times in a short window with different parameters, it suggests a JOIN or a batch query instead.
 
 ## Reanalyze
 
-Click **Reanalyze** after making changes (like adding an index) to re-evaluate the query.
+Click **Re-analyze** after you make a change, such as adding an index, to check the query again.
 
 ## Filtering
 
-Filter issues by severity badge to focus on critical problems first.
-
-<Callout type="info">
-  Performance analysis uses the query's EXPLAIN plan. It works best with
-  PostgreSQL, which provides the most detailed execution plans.
-</Callout>
+Click a severity badge to show or hide the issues of that severity.

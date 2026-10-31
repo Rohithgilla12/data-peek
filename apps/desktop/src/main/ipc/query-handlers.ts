@@ -615,14 +615,6 @@ export function registerQueryHandlers(): void {
       log.debug('Query:', query)
       log.debug('History items:', queryHistory.length)
 
-      // Only support PostgreSQL for now
-      if (config.dbType && config.dbType !== 'postgresql') {
-        return {
-          success: false,
-          error: 'Performance analysis is currently only supported for PostgreSQL'
-        }
-      }
-
       try {
         const result = await analyzeQueryPerformance(config, query, queryHistory, analysisConfig)
 

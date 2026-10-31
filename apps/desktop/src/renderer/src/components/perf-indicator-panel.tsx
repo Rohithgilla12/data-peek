@@ -11,7 +11,11 @@ import {
 } from 'lucide-react'
 import { cn, Button, Badge } from '@data-peek/ui'
 import { PerfIssueCard } from './perf-issue-card'
-import type { PerformanceAnalysisResult, NplusOnePattern } from '@data-peek/shared'
+import type {
+  PerformanceAnalysisResult,
+  NplusOnePattern,
+  QueryRuntimeStats
+} from '@data-peek/shared'
 
 interface PerfIndicatorPanelProps {
   analysis: PerformanceAnalysisResult
@@ -126,6 +130,8 @@ export function PerfIndicatorPanel({
         </div>
       </div>
 
+      {analysis.runtimeStats && <RuntimeStatsStrip stats={analysis.runtimeStats} />}
+
       {/* Content */}
       <div className="max-h-72 overflow-auto">
         {/* Issues List */}
@@ -199,6 +205,67 @@ export function PerfIndicatorPanel({
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function formatMs(ms: number): string {
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`
+}
+
+function formatCount(n: number): string {
+  if (n >= 1e9) return `${(n / 1e9).toFixed(1)}B`
+  if (n >= 1e6) return `${(n / 1e6).toFixed(1)}M`
+  if (n >= 1e3) return `${(n / 1e3).toFixed(1)}K`
+  return String(Math.round(n))
+}
+
+function formatBytes(bytes: number): string {
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let value = bytes
+  let unit = 0
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024
+    unit++
+  }
+  return `${unit === 0 ? Math.round(value) : value.toFixed(value < 10 ? 1 : 0)} ${units[unit]}`
+}
+
+function describeRuntimeStats(stats: QueryRuntimeStats): string {
+  switch (stats.status) {
+    case 'ok': {
+      const runs = `${stats.executions} ${stats.executions === 1 ? 'run' : 'runs'}`
+      const failed = stats.failed > 0 ? ` (${stats.failed} failed)` : ''
+      return [
+        `query_log, ${stats.windowDays} days: ${runs}${failed}`,
+        `p50 ${formatMs(stats.p50Ms)}`,
+        `p95 ${formatMs(stats.p95Ms)}`,
+        `reads ${formatCount(stats.avgReadRows)} rows / ${formatBytes(stats.avgReadBytes)}`,
+        `peak ${formatBytes(stats.maxMemoryBytes)}`
+      ].join(', ')
+    }
+    case 'no_history':
+      return `query_log, ${stats.windowDays} days: no runs of this query found. Runs from the last few seconds can take about 7 s to appear.`
+    case 'unavailable':
+      return `query_log unavailable: ${stats.reason}`
+  }
+}
+
+function RuntimeStatsStrip({ stats }: { stats: QueryRuntimeStats }) {
+  const text = describeRuntimeStats(stats)
+  const detail =
+    stats.status === 'ok'
+      ? `${text}\nSlowest ${formatMs(stats.maxMs)}, last run ${new Date(stats.lastSeenAt).toLocaleString()}`
+      : text
+  return (
+    <div
+      className={cn(
+        'px-4 py-1.5 border-b border-border/40 text-xs tabular-nums truncate',
+        stats.status === 'ok' ? 'text-muted-foreground' : 'text-muted-foreground/70'
+      )}
+      title={detail}
+    >
+      {text}
     </div>
   )
 }

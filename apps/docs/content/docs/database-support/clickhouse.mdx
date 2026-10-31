@@ -53,6 +53,7 @@ Turn on **SSL** to connect over HTTPS. To reach a server behind a bastion host, 
 | Query plans                  |    Text plans    |
 | Cancel and timeouts          |        ✓         |
 | Column statistics            |        ✓         |
+| Performance analysis         |        ✓         |
 | Health Monitor               | Active Queries, Table Sizes |
 | AI assistant                 |        ✓         |
 | MCP server                   |        ✓         |
@@ -139,6 +140,12 @@ You can also write `EXPLAIN` yourself. It returns one row per plan line:
 EXPLAIN indexes = 1
 SELECT count() FROM events WHERE event_date >= today() - 7;
 ```
+
+## Performance Analysis
+
+Click **Analyze** in the results toolbar to check the current statement. data-peek reads the plan with `EXPLAIN json = 1, indexes = 1` and flags a table read that skips few of the table's granules. It also summarizes earlier runs of the same query shape from `system.query_log` over the last 7 days, and flags the query as slow when its p95 duration passes the threshold. Your query is not run again.
+
+`system.query_log` is per node, so on a cluster only the runs on the connected node are counted, and a run from the last few seconds may not be logged yet. If your user cannot read `system.query_log`, the pruning check still runs. See [Performance Analysis](/docs/features/performance-analysis).
 
 ## Cancel and Timeouts
 

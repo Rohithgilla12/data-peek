@@ -102,7 +102,7 @@ export const DB_CAPABILITIES = {
     stepThrough: false,
     notifications: false,
     pgDump: false,
-    performanceAnalysis: false,
+    performanceAnalysis: true,
     columnStats: true,
     crossTabRefs: false,
     healthActiveQueries: true,

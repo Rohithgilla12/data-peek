@@ -86,11 +86,11 @@ const DATABASES = {
     description:
       "Beta. Query and explore ClickHouse over its HTTP interface. Multi-statement scripts, exact 64-bit results, and a schema browser that knows views from materialized views.",
     features: [
-      "HTTP interface, with SSL and SSH tunnels",
+      "HTTP interface, with SSL, SSH tunnels, and query cancel",
       "Multi-statement scripts that keep SET for the whole run",
       "Exact 64-bit integers and decimals",
       "Tables, views, and materialized views in the schema browser",
-      "Text EXPLAIN plans and query cancel",
+      "Text EXPLAIN plans, pruning analysis, and query_log run stats",
       "Read-only MCP queries enforced by the server",
     ],
     color: "#ffcc01",

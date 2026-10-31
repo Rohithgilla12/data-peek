@@ -39,6 +39,7 @@ import {
   HIDDEN_DATABASES,
   mapPartsRows,
   mapSystemRows,
+  RESULT_FORMAT,
   rowCountFromSummary,
   timeoutSettings,
   toColumnInfo,
@@ -194,7 +195,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
               if (hasTrailingFormatClause(statement)) throw new Error(FORMAT_CLAUSE_MESSAGE)
               const rs = await client.query({
                 query: statement,
-                format: 'JSON',
+                format: RESULT_FORMAT,
                 query_id: currentQueryId,
                 session_id: sessionId,
                 abort_signal: abort.signal,
@@ -285,7 +286,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
       const run = async (): Promise<AdapterQueryResult> => {
         const rs = await client.query({
           query: sql,
-          format: 'JSON',
+          format: RESULT_FORMAT,
           abort_signal: abort.signal,
           clickhouse_settings: {
             readonly: '1',

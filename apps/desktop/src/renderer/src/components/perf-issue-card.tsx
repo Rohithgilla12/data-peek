@@ -12,7 +12,8 @@ import {
   Repeat,
   Play,
   Code,
-  Loader2
+  Loader2,
+  Filter
 } from 'lucide-react'
 import { cn, Button } from '@data-peek/ui'
 import type { PerformanceIssue, PerformanceIssueType } from '@data-peek/shared'
@@ -31,7 +32,8 @@ const ISSUE_TYPE_LABELS: Record<PerformanceIssueType, string> = {
   slow_query: 'Slow Query',
   high_filter_ratio: 'High Filter Ratio',
   row_estimate_off: 'Row Estimate Mismatch',
-  disk_spill: 'Disk Spill'
+  disk_spill: 'Disk Spill',
+  poor_pruning: 'Poor Pruning'
 }
 
 const ISSUE_TYPE_ICONS: Record<PerformanceIssueType, React.ElementType> = {
@@ -40,7 +42,8 @@ const ISSUE_TYPE_ICONS: Record<PerformanceIssueType, React.ElementType> = {
   slow_query: Clock,
   high_filter_ratio: AlertTriangle,
   row_estimate_off: Info,
-  disk_spill: AlertCircle
+  disk_spill: AlertCircle,
+  poor_pruning: Filter
 }
 
 const severityClasses = {

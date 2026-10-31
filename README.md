@@ -121,6 +121,7 @@ More clips (command palette, ER diagrams, the AI assistant, inline editing) are 
 - `EXPLAIN ANALYZE` viewer with an interactive plan tree on PostgreSQL
 - Query telemetry with a timing waterfall, and a benchmark mode reporting avg/p90/p95/p99
 - Performance hints for missing indexes, N+1 patterns, and slow queries, each with a suggested fix
+- On ClickHouse, performance analysis flags reads that skip few granules and summarizes past runs from `system.query_log`
 - Cancel a running query, or kill a blocking one from the health monitor
 
 ### Live data

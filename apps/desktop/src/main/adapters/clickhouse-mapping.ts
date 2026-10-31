@@ -74,6 +74,16 @@ export function classifyStatement(statement: string): StatementKind {
   return ROW_RETURNING.has(first) ? 'query' : 'command'
 }
 
+export const RESULT_FORMAT = 'JSON' as const
+
+/**
+ * The text system.query_log records for a statement data-peek ran: @clickhouse/client
+ * appends the format clause exactly like this.
+ */
+export function sentQueryText(statement: string): string {
+  return `${statement} \nFORMAT ${RESULT_FORMAT}`
+}
+
 /**
  * client.query appends `FORMAT JSON`, so a user-written trailing FORMAT clause would be
  * a duplicate and a server syntax error. Refuse it with a message that says why.
