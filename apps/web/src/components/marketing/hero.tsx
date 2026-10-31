@@ -51,7 +51,8 @@ export function Hero() {
             <p className="mt-6 max-w-[56ch] text-[15px] leading-[1.65] text-[var(--n-fg-muted)]">
               Connect, query, and edit data across Postgres, MySQL, SQL Server,
               and SQLite, and query ClickHouse (beta). Inline edits, AI assist
-              with your own key, and a command palette that knows every action.
+              with your own key, and a command palette for switching connections
+              and opening queries.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">

@@ -9,16 +9,16 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
     items: [
       {
         title: "Command palette",
-        body: "⌘K opens every action. Switch connections, run queries, jump to tables.",
+        body: "⌘K for the everyday moves. Switch connections, open a tab or saved query, open the AI panel.",
         href: "#feature-command-palette",
       },
       {
         title: "Monaco editor",
-        body: "The engine that powers VS Code. Autocomplete, schema-aware lint, format on save.",
+        body: "The engine that powers VS Code. Schema-aware autocomplete, ⇧⌘F to format.",
       },
       {
         title: "Keyboard-first",
-        body: "Every surface is reachable without the mouse. Shortcuts are discoverable in the palette.",
+        body: "Run, format, open tabs, and switch connections from the keyboard. Shortcuts are discoverable in the palette.",
       },
       {
         title: "Inline editing",
@@ -46,7 +46,7 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
       },
       {
         title: "Cold start under 2s",
-        body: "No splash, no warmup. Open the app, you're in your last connection.",
+        body: "No splash, no warmup. Open the app and pick a connection.",
       },
       {
         title: "Query telemetry",
@@ -125,7 +125,7 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
       },
       {
         title: "Data generator",
-        body: "Realistic fake data with Faker.js. FK-aware, preview before insert, up to 100k rows.",
+        body: "Realistic fake data with Faker.js. FK-aware, preview before insert, up to 10k rows.",
       },
       {
         title: "Data masking",
@@ -138,7 +138,7 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
       },
       {
         title: "Export anywhere",
-        body: "CSV, JSON, TSV, or copy rows as SQL INSERTs. No wizards.",
+        body: "CSV, JSON, Markdown, or copy rows as SQL INSERTs. No wizards.",
       },
     ],
   },
@@ -250,8 +250,8 @@ export function Features() {
           />
           <Pillar
             kicker="Keyboard"
-            title="Everything is under ⌘K."
-            body="Switch connections, open a table, run a query, format SQL, export, activate AI — one input, every action."
+            title="The everyday moves, under ⌘K."
+            body="Switch connections, open a tab or a saved query, open the AI panel — one input, no hunting."
             footer={
               <div
                 className="flex items-center gap-1.5 pt-3"

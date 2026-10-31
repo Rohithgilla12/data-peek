@@ -166,12 +166,10 @@ Edit table data efficiently with keyboard shortcuts.
 
 ## Command Palette
 
-The command palette (`Cmd/Ctrl + K`) provides quick access to all commands:
+The command palette (`Cmd/Ctrl + K`) provides quick access to common commands:
 
 | Action | How to Access |
 |--------|---------------|
-| Execute query | Type "execute" or "run" |
-| Format SQL | Type "format" |
 | Switch connection | Type connection name |
 | Change theme | Type "theme" |
 | Open settings | Type "settings" |
@@ -211,7 +209,6 @@ To view all keyboard shortcuts within the app:
 ### 1. Use the Command Palette
 
 `Cmd/Ctrl + K` is your best friend. It provides fuzzy search access to:
-- All commands
 - Connections
 - Saved queries
 - Theme switching

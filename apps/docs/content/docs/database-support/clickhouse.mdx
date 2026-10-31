@@ -131,7 +131,7 @@ The column statistics panel shows row, null and distinct counts, plus min, max a
 
 ## Query Plans
 
-The **Explain** button runs `EXPLAIN indexes = 1` on the current statement and shows the plan as text. ClickHouse has no `EXPLAIN ANALYZE`, so the analyze option does nothing on ClickHouse connections.
+The **Explain** button runs `EXPLAIN indexes = 1` on the current statement and shows the plan as text. ClickHouse has no `EXPLAIN ANALYZE`, so Explain plans the statement without executing it.
 
 You can also write `EXPLAIN` yourself. It returns one row per plan line:
 

@@ -20,16 +20,12 @@ This document outlines planned features and future development priorities for da
 
 | Feature | Description |
 |---------|-------------|
-| Query Snippets/Templates | Pre-built SQL templates for common operations (SELECT *, COUNT, JOINs, etc.) |
-| Connection Cloning | Quickly duplicate existing connections with modifications |
-| Query History Search | Filter and search through query history |
 | Keyboard Shortcut Customization | Allow users to remap keyboard shortcuts |
 
 ### Medium Priority
 
 | Feature | Description |
 |---------|-------------|
-| Query Scheduling | Run queries on a local schedule (cron-like) |
 | Multiple Result Sets UI | Better UI for queries returning multiple result sets |
 | Schema Comparison | Compare schemas between two connections |
 | Query Profiler | More detailed execution stats beyond current telemetry |
@@ -65,7 +61,8 @@ These features are planned for the commercial Pro tier:
 For reference, here's what's already implemented:
 
 ### Core
-- Multi-database support (PostgreSQL, MySQL, MSSQL, SQLite)
+- Multi-database support (PostgreSQL, MySQL, MSSQL, SQLite, ClickHouse beta)
+- Connection cloning (duplicate a saved connection)
 - SSH tunnel connections with password and key auth
 - Encrypted credential storage using OS keychain
 - SSL connection support
@@ -75,13 +72,16 @@ For reference, here's what's already implemented:
 - Schema-aware autocomplete with table alias support
 - Multi-tab and multi-window support
 - Saved queries with organization
+- Snippets with built-in and custom SQL templates
+- Query history search and filters
+- Scheduled queries on a cron schedule, with run history
 - Command palette (`Cmd+K`)
 - Query formatting/beautify
 
 ### Performance Analysis
 - Query telemetry with waterfall visualization
-- Benchmark mode (p50/p90/p99 statistics)
-- EXPLAIN viewer with interactive visualization
+- Benchmark mode (avg/p90/p95/p99 statistics)
+- EXPLAIN viewer with interactive visualization (PostgreSQL)
 - Query cancellation
 
 ### Data Management
@@ -89,7 +89,7 @@ For reference, here's what's already implemented:
 - Inline editing (INSERT/UPDATE/DELETE)
 - Table designer with full DDL support
 - JSON editor for JSON/JSONB columns
-- Export to CSV, JSON, Excel
+- Export to CSV, JSON, SQL INSERT, Markdown
 - Server-side pagination
 - CSV import with column mapping, type inference, and conflict handling
 - Data generator with Faker.js integration and FK awareness

@@ -32,7 +32,7 @@
 ## Why data-peek
 
 - **Fast.** Opens in about two seconds and stays light on memory. No splash screens, no project setup.
-- **Keyboard-first.** `Cmd/Ctrl+K` reaches every action. [Every shortcut](https://docs.datapeek.dev/docs/reference/keyboard-shortcuts) is documented.
+- **Keyboard-first.** `Cmd/Ctrl+K` switches connections and opens tabs, saved queries, and settings. [Every shortcut](https://docs.datapeek.dev/docs/reference/keyboard-shortcuts) is documented.
 - **Local and private.** Credentials are encrypted with your OS keychain. No telemetry, no account, no cloud sync.
 - **Grows with the task.** A quick `SELECT` stays quick, and query plans, live diffs, ER diagrams, and an AI assistant are there when the job gets bigger.
 
@@ -112,14 +112,14 @@ More clips (command palette, ER diagrams, the AI assistant, inline editing) are 
 - Inline editing with a preview of the generated `INSERT`/`UPDATE`/`DELETE` before you commit
 - Smart filters and sorting on results without re-running the query
 - Foreign key navigation, a JSON/JSONB editor, and one-click column statistics
-- Export to CSV, JSON, or Excel, or share a result as an image
+- Export to CSV, JSON, SQL `INSERT`s, or Markdown, or share a result as an image
 - CSV import with column mapping and type inference, PostgreSQL `.sql` dump import, and an FK-aware fake data generator
 - Data masking that blurs sensitive columns for demos and screenshots
 
 ### Performance
 
-- `EXPLAIN` viewer with an interactive plan tree
-- Query telemetry with a timing waterfall, and a benchmark mode reporting p50/p90/p99
+- `EXPLAIN ANALYZE` viewer with an interactive plan tree on PostgreSQL
+- Query telemetry with a timing waterfall, and a benchmark mode reporting avg/p90/p95/p99
 - Performance hints for missing indexes, N+1 patterns, and slow queries, each with a suggested fix
 - Cancel a running query, or kill a blocking one from the health monitor
 
@@ -134,7 +134,7 @@ More clips (command palette, ER diagrams, the AI assistant, inline editing) are 
 ### Schema and monitoring
 
 - Schema explorer for tables, views, functions, procedures, triggers, and sequences
-- Table designer for creating and altering tables: columns, indexes, constraints, and partitions
+- Table designer for creating and altering tables: columns, indexes, and constraints
 - Interactive ER diagrams
 - Health monitor with active queries, table sizes, cache hit ratios, and lock detection
 - [Schema Intel](https://docs.datapeek.dev/docs/features/schema-intel) diagnostics for unindexed foreign keys, duplicate or unused indexes, missing primary keys, and table bloat, with suggested SQL fixes
