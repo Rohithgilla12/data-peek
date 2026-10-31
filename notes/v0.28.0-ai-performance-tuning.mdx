@@ -1,11 +1,20 @@
 ---
-title: "v0.28.0 — Local AI Performance Tuning & 1-Click Index Fixes"
-description: "Piping EXPLAIN ANALYZE query plans directly into your local Claude CLI with zero API keys required. Includes 1-click index recommendations, AI Schema Architecture Audits in Schema Intel, and sub-millisecond query optimization."
+title: "v0.28.0 — Performance Tuning & 1-Click Index Fixes (corrected)"
+description: "Rule-based EXPLAIN ANALYZE checks with 1-click index fixes. Corrected on 2026-10-31: an earlier version described AI features that never ran a model."
 date: "2026-07-29"
 author: "Rohith Gilla"
 tags: ["release-notes", "ai", "performance", "postgres", "cli"]
 published: true
 ---
+
+> **Correction, 2026-10-31.** An earlier version of this post described features that didn't work the way it said, and I'm sorry about that.
+>
+> - Performance analysis is rule-based. It reads the PostgreSQL `EXPLAIN ANALYZE` plan and flags sequential scans, scans that filter out most rows, and N+1 patterns. It never calls the `claude` CLI. The `claude` CLI integration is real, but it powers the AI assistant (`Cmd+I`), not this panel.
+> - The "AI Architecture Audit" in Schema Intel showed a canned report rather than analyzing your schema. It has been removed. The rule-based Schema Intel checks are real.
+> - The "Predicted ~50x Speedup" badge was a fixed label, not a prediction. It has been removed.
+> - `CREATE INDEX CONCURRENTLY` is not lock-free. It doesn't block reads or writes, but it still takes a lighter lock on the table.
+>
+> The suggested index and **Apply Index & Re-run** are real and work as described. For how the analyzer actually works, see [Building a Query Performance Analyzer in Electron](/blog/query-performance-analyzer).
 
 Every database developer has been there: a query that ran in `1.2ms` on your local laptop with 50 test rows suddenly takes `84ms` in staging, and `1.8 seconds` in production once your table hits 100,000 rows.
 

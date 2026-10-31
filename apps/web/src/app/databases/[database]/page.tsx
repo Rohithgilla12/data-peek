@@ -58,7 +58,7 @@ const DATABASES = {
       "T-SQL syntax highlighting",
       "SQL Server-specific features",
       "Connection encryption",
-      "Query performance analysis",
+      "Health monitor with active queries, locks, and query kill",
       "Schema exploration",
     ],
     color: "#cc2927",
