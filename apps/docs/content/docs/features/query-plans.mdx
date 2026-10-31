@@ -25,10 +25,12 @@ Explain uses the editor selection if there is one, otherwise the whole editor. I
 | SQLite     | Raw `EXPLAIN QUERY PLAN` output |
 
 <Callout type="info">
-  On PostgreSQL and SQL Server, Explain runs the statement with EXPLAIN
-  ANALYZE inside a transaction that is always rolled back. The statement still
-  executes, so slow queries take their full time, and effects outside the
-  transaction (such as sequence increments) are not undone.
+  On PostgreSQL, Explain runs the statement with EXPLAIN ANALYZE inside a
+  transaction that is always rolled back. The statement still executes, so slow
+  queries take their full time, and effects outside the transaction (such as
+  sequence increments) are not undone. On SQL Server, read-only statements get
+  the actual plan the same way. Anything else gets the estimated plan, which
+  does not run the statement.
 </Callout>
 
 ## Plan Viewer (PostgreSQL)

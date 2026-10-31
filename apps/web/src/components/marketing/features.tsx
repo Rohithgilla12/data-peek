@@ -251,7 +251,7 @@ export function Features() {
           <Pillar
             kicker="Keyboard"
             title="The everyday moves, under ⌘K."
-            body="Switch connections, open a tab or a saved query, scrub past runs, open the AI panel — one input, no hunting."
+            body="Switch connections, open a tab or a saved query, open the AI panel — one input, no hunting."
             footer={
               <div
                 className="flex items-center gap-1.5 pt-3"
