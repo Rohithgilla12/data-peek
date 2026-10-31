@@ -62,28 +62,19 @@ export function toMSSQLConfig(
     sqlConfig.port = config.port
   }
 
-  // Handle authentication methods
   if (authentication === 'ActiveDirectoryIntegrated') {
-    // Azure AD Integrated Authentication - uses azure-active-directory-default
+    // Credentials come from the environment (az login, managed identity), never the config.
     sqlConfig.authentication = {
       type: 'azure-active-directory-default',
       options: {}
     }
-    // Explicitly don't set user/password for Azure AD authentication
-    // Even if they exist in config, we should not include them
-  } else if (authentication === 'ActiveDirectoryPassword') {
-    // Azure AD Password Authentication
-    // Note: This requires clientId and tenantId which aren't in our config yet
-    // For now, use SQL Server auth as fallback
-    if (config.user) sqlConfig.user = config.user
-    if (config.password) sqlConfig.password = config.password
-  } else if (authentication === 'ActiveDirectoryServicePrincipal') {
-    // Azure AD Service Principal - would need clientId and clientSecret
-    // For now, fall back to SQL Server auth
-    if (config.user) sqlConfig.user = config.user
-    if (config.password) sqlConfig.password = config.password
+  } else if (authentication && authentication !== 'SQL Server Authentication') {
+    // These need a client ID and tenant ID the connection config doesn't hold yet. Sending
+    // the user and password as a SQL login instead fails with a misleading error.
+    throw new Error(
+      `${authentication} authentication isn't supported yet. Use ActiveDirectoryIntegrated (az login) or SQL Server Authentication.`
+    )
   } else {
-    // Default: SQL Server Authentication
     if (config.user) sqlConfig.user = config.user
     if (config.password) sqlConfig.password = config.password
   }
