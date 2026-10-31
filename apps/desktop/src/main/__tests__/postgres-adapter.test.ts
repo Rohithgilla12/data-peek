@@ -14,7 +14,7 @@ vi.mock('../ssh-tunnel-service', () => ({
 // Mock the pool manager so getTableDDL runs against a fake client whose query()
 // results we program per call. Resolves to the same module the adapter imports.
 const { withPgClient, fakeClient } = vi.hoisted(() => {
-  const fakeClient = { query: vi.fn() }
+  const fakeClient = { query: vi.fn(), release: vi.fn() }
   const withPgClient = vi.fn(async (_cfg: unknown, fn: (c: typeof fakeClient) => unknown) =>
     fn(fakeClient)
   )
@@ -236,6 +236,21 @@ describe('PostgresAdapter.explain', () => {
       new PostgresAdapter().explain(makeConfig(), 'DELETE FROM t', true)
     ).rejects.toThrow('boom')
     expect(fakeClient.query.mock.calls.at(-1)?.[0]).toBe('ROLLBACK')
+  })
+
+  it('destroys the client and keeps the EXPLAIN error when ROLLBACK also fails', async () => {
+    fakeClient.release.mockReset()
+    fakeClient.query.mockImplementation(async (q: string) => {
+      if (q.startsWith('EXPLAIN')) throw new Error('explain failed')
+      if (q === 'ROLLBACK') throw new Error('connection lost')
+      return { rows: [] }
+    })
+    await expect(
+      new PostgresAdapter().explain(makeConfig(), 'DELETE FROM t', true)
+    ).rejects.toThrow('explain failed')
+    expect(fakeClient.release).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'connection lost' })
+    )
   })
 
   it('sends nothing for a multi-statement buffer', async () => {

@@ -866,7 +866,9 @@ export class PostgresAdapter implements DatabaseAdapter {
         try {
           return await client.query(explainQuery)
         } finally {
-          await client.query('ROLLBACK')
+          // A failed ROLLBACK leaves the client mid-transaction, so destroy it rather
+          // than hand it back to the pool, and keep the EXPLAIN error as the one thrown.
+          await client.query('ROLLBACK').catch((err: Error) => client.release(err))
         }
       }
 
