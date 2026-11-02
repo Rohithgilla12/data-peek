@@ -140,6 +140,7 @@ function settle(dispatch: Dispatch<Action>, result: Fetched) {
     storeKey(result.license.licenseKey);
     dispatch({ type: "loaded", license: result.license });
   } else {
+    storeKey(null);
     dispatch({ type: "failed", message: result.message });
   }
 }
