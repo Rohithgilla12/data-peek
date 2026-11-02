@@ -1,6 +1,6 @@
 {
   "name": "@data-peek/cli",
-  "version": "0.35.0",
+  "version": "0.36.0",
   "description": "Schema checks for your database from the terminal. The CLI companion to data-peek, the fast SQL client.",
   "license": "MIT",
   "author": "Rohith Gilla",
