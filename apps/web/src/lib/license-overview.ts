@@ -1,11 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import {
-  activations,
-  db,
-  licenses,
-  type Activation,
-  type License,
-} from "@/db";
+import { activations, db, licenses, type Activation, type License } from "@/db";
 
 export type LicenseDevice = {
   instanceId: string;
