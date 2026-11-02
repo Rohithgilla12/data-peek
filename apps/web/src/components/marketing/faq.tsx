@@ -30,6 +30,10 @@ const faqs = [
     a: "A Pro license includes one year of updates. If you don't renew, the version you have keeps working forever. Renew whenever you want new features.",
   },
   {
+    q: "I reinstalled my OS and hit the device limit. What now?",
+    a: "A Pro license covers 3 active devices, and a reinstall shows up as a new one. Enter your license key at datapeek.dev/dashboard to see every active device and remove the ones you no longer use. The key is all you need.",
+  },
+  {
     q: "What happens if data-peek stops being maintained?",
     a: "Your activated version keeps working forever, fully offline — licence checks fail open, not closed. And if the project sees no maintainer activity for 12 months, the commercial-licence requirement is waived for every released version. The source is MIT, so you can always build it yourself.",
   },
