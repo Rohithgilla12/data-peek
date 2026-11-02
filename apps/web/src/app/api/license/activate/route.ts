@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, licenses, activations } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
-import { normalizeLicenseKey } from "@/lib/license";
+import { normalizeLicenseKey } from "@/lib/license-key";
 
 export async function POST(request: NextRequest) {
   try {

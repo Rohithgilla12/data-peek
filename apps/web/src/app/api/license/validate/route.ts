@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, licenses } from "@/db";
 import { eq } from "drizzle-orm";
-import { normalizeLicenseKey } from "@/lib/license";
+import { normalizeLicenseKey } from "@/lib/license-key";
 
 export async function POST(request: NextRequest) {
   try {

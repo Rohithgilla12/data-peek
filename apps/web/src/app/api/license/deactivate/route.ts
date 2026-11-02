@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { normalizeLicenseKey } from "@/lib/license";
+import { normalizeLicenseKey } from "@/lib/license-key";
 import { deactivateDevice } from "@/lib/license-overview";
 
 export async function POST(request: NextRequest) {

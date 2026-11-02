@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from "vitest";
 import type { Activation, License } from "@/db";
-import { normalizeLicenseKey } from "@/lib/license";
+import { normalizeLicenseKey } from "@/lib/license-key";
 import {
   deactivateDeviceQuery,
   toLicenseOverview,
