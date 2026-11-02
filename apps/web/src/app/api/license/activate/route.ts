@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, licenses, activations } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
+import { normalizeLicenseKey } from "@/lib/license-key";
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,8 +23,7 @@ export async function POST(request: NextRequest) {
       app_version?: string;
     };
 
-    // Normalize license key to uppercase (our keys are uppercase)
-    const license_key = rawLicenseKey?.toUpperCase().trim();
+    const license_key = rawLicenseKey ? normalizeLicenseKey(rawLicenseKey) : "";
 
     if (!license_key || !name) {
       return NextResponse.json(
@@ -61,20 +61,8 @@ export async function POST(request: NextRequest) {
         })
       : null;
 
-    if (activation) {
-      // Update existing activation
-      await db
-        .update(activations)
-        .set({
-          lastValidatedAt: new Date(),
-          appVersion: app_version,
-          deviceName: name,
-        })
-        .where(eq(activations.id, activation.id));
-
-      console.log(`[activate] Updated existing activation for ${license_key}`);
-    } else {
-      // Count current activations
+    // A device freed from the dashboard takes a slot again when it re-activates.
+    if (!activation?.isActive) {
       const currentActivations = await db.query.activations.findMany({
         where: and(
           eq(activations.licenseId, license.id),
@@ -90,7 +78,21 @@ export async function POST(request: NextRequest) {
           { status: 400 },
         );
       }
+    }
 
+    if (activation) {
+      await db
+        .update(activations)
+        .set({
+          lastValidatedAt: new Date(),
+          appVersion: app_version,
+          deviceName: name,
+          isActive: true,
+        })
+        .where(eq(activations.id, activation.id));
+
+      console.log(`[activate] Updated existing activation for ${license_key}`);
+    } else {
       // Create new activation
       const instanceId = randomUUID();
       const [newActivation] = await db

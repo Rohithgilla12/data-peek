@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import {
   buildTrackingUrl,
@@ -55,8 +55,8 @@ describe('license purchase link', () => {
 })
 
 describe('license dashboard link', () => {
-  it('is covered by a marketing-site redirect so it does not 404', () => {
-    const nextConfig = readFileSync(resolve(WEB_APP_DIR, 'next.config.ts'), 'utf-8')
-    expect(nextConfig).toContain(`source: "${LICENSE_DASHBOARD_PATH}"`)
+  it('targets a page that exists on the marketing site', () => {
+    const pagePath = resolve(WEB_APP_DIR, `src/app${LICENSE_DASHBOARD_PATH}/page.tsx`)
+    expect(existsSync(pagePath)).toBe(true)
   })
 })

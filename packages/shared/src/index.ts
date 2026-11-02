@@ -30,8 +30,8 @@ export const DATAPEEK_BASE_URL = "https://www.datapeek.dev";
 export const LICENSE_PURCHASE_PATH = "/pricing";
 
 /**
- * Marketing-site path for managing an existing license.
- * There is no standalone dashboard page yet; the site redirects this to the home page.
+ * Marketing-site path for managing an existing license (listing and removing devices).
+ * Must match a real page in apps/web — shipped desktop builds link here directly.
  */
 export const LICENSE_DASHBOARD_PATH = "/dashboard";
 
