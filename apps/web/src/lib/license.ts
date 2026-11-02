@@ -51,3 +51,10 @@ export function calculateUpdatesUntil(purchaseDate: Date = new Date()): Date {
   expiry.setFullYear(expiry.getFullYear() + 1);
   return expiry;
 }
+
+/**
+ * Keys are stored uppercase; users paste them in any case and with stray whitespace.
+ */
+export function normalizeLicenseKey(raw: string): string {
+  return raw.trim().toUpperCase();
+}
