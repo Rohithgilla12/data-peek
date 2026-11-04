@@ -1,6 +1,6 @@
 import { useNotificationStore, type NotificationType } from '@/stores/notification-store'
 import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react'
-import { cn } from '@data-peek/ui'
+import { cn, Progress } from '@data-peek/ui'
 
 const iconMap: Record<NotificationType, typeof CheckCircle2> = {
   success: CheckCircle2,
@@ -49,6 +49,14 @@ export function Notifications() {
               <p className="text-sm font-medium">{notification.title}</p>
               {notification.message && (
                 <p className="text-xs text-muted-foreground mt-0.5">{notification.message}</p>
+              )}
+              {notification.progress !== undefined && (
+                <div className="mt-2.5 flex items-center gap-2">
+                  <Progress value={notification.progress} className="h-1.5 flex-1" />
+                  <span className="text-[11px] font-mono text-muted-foreground w-8 text-right shrink-0">
+                    {notification.progress}%
+                  </span>
+                </div>
               )}
               {notification.action && (
                 <button
