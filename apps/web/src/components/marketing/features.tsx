@@ -78,6 +78,18 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
     label: "AI",
     items: [
       {
+        title: "Ask, the default tab",
+        body: "One input for questions and SQL. Reads run on their own, writes wait for you, failed queries get a one-click fix.",
+      },
+      {
+        title: "Your subscription, not a new bill",
+        body: "Point it at the Claude Code, Codex, or Antigravity CLI you already pay for. Found on launch, one click to use.",
+      },
+      {
+        title: "⌘I to edit SQL",
+        body: "Describe the change, review it as a diff, accept or reject. Undo takes it back.",
+      },
+      {
         title: "Plain-English to SQL",
         body: "Schema-aware. Ask what you want, get a runnable query back.",
         href: "#feature-ai-to-sql",

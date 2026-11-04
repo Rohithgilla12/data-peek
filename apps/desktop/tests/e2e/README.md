@@ -35,7 +35,8 @@ pnpm exec playwright test
 import { test, expect } from './fixtures/electron-app'
 
 test('my new behaviour', async ({ window }) => {
-  await window.locator('button:has-text("New Query")').click()
+  // Cmd/Ctrl+T opens an Ask tab; Cmd/Ctrl+Shift+T opens the SQL editor.
+  await window.keyboard.press(process.platform === 'darwin' ? 'Meta+Shift+t' : 'Control+Shift+t')
   await expect(window.locator('.monaco-editor')).toBeVisible()
 })
 ```

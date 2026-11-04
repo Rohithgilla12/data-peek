@@ -61,13 +61,8 @@ test.beforeEach(async ({ window }) => {
 type Page = import('@playwright/test').Page
 
 async function openQueryTab(window: Page) {
-  const emptyStateBtn = window.getByRole('button', { name: /new query/i })
-  if (await emptyStateBtn.isVisible()) {
-    await emptyStateBtn.click()
-  } else {
-    const newTabShortcut = process.platform === 'darwin' ? 'Meta+t' : 'Control+t'
-    await window.keyboard.press(newTabShortcut)
-  }
+  // Cmd/Ctrl+T and the empty state open Ask; Cmd/Ctrl+Shift+T opens a SQL tab.
+  await window.keyboard.press(process.platform === 'darwin' ? 'Meta+Shift+t' : 'Control+Shift+t')
   await expect(window.locator('.monaco-editor').first()).toBeVisible({ timeout: 10000 })
 }
 

@@ -222,35 +222,38 @@
     -webkit-app-region: no-drag;
   }
 
-  /* Smooth scrolling with macOS-style scrollbars */
-  ::-webkit-scrollbar {
+  /*
+   * Styling ::-webkit-scrollbar opts Chromium out of macOS overlay scrollbars,
+   * so every overflow container gets a permanent track. On macOS we leave them
+   * native (they appear while scrolling and fade out); elsewhere we draw slim ones.
+   */
+  :root:not([data-platform='darwin']) ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
 
-  ::-webkit-scrollbar-track {
+  :root:not([data-platform='darwin']) ::-webkit-scrollbar-track {
     background: transparent;
   }
 
-  ::-webkit-scrollbar-thumb {
+  :root:not([data-platform='darwin']) ::-webkit-scrollbar-thumb {
     background: oklch(0.5 0 0 / 0.3);
     border-radius: 4px;
   }
 
-  ::-webkit-scrollbar-thumb:hover {
+  :root:not([data-platform='darwin']) ::-webkit-scrollbar-thumb:hover {
     background: oklch(0.5 0 0 / 0.5);
   }
 
-  .dark ::-webkit-scrollbar-thumb {
+  :root.dark:not([data-platform='darwin']) ::-webkit-scrollbar-thumb {
     background: oklch(0.6 0 0 / 0.3);
   }
 
-  .dark ::-webkit-scrollbar-thumb:hover {
+  :root.dark:not([data-platform='darwin']) ::-webkit-scrollbar-thumb:hover {
     background: oklch(0.6 0 0 / 0.5);
   }
 
-  /* Scrollbar corner */
-  ::-webkit-scrollbar-corner {
+  :root:not([data-platform='darwin']) ::-webkit-scrollbar-corner {
     background: transparent;
   }
 

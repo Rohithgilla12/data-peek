@@ -44,12 +44,15 @@ import { DataGenerator } from '@/components/data-generator'
 import { PgNotificationsPanel } from '@/components/pg-notifications-panel'
 import { HealthMonitor } from '@/components/health-monitor'
 import { SchemaIntelPanel } from '@/components/schema-intel'
+import { AskView } from '@/components/ask/ask-view'
 import { SaveQueryDialog } from '@/components/save-query-dialog'
 import { ShareQueryDialog } from '@/components/share-query-dialog'
 import { ColumnStatsPanel } from '@/components/column-stats-panel'
 import { StepRibbon } from './step-ribbon'
 import { StepResultsTabs } from './step-results-tabs'
 import { EditorToolbar } from './query-editor/editor-toolbar'
+import { AiEditBar } from './query-editor/ai-edit-bar'
+import { useAIStore } from '@/stores/ai-store'
 import { QueryResults } from './query-editor/query-results'
 import { MaskedExportDialog } from './query-editor/masked-export-dialog'
 import { ShareResultsImage } from './query-editor/share-results-image'
@@ -185,6 +188,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const [editorMounted, setEditorMounted] = useState(false)
   const activeLineDecoIds = useRef<string[]>([])
   const breakpointDecoIds = useRef<string[]>([])
+  const [aiEditOpen, setAiEditOpen] = useState(false)
+  const [aiEditInstruction, setAiEditInstruction] = useState<string | undefined>()
+  const aiConfigured = useAIStore((s) => s.isConfigured)
+  const openAISettings = useAIStore((s) => s.openSettings)
+  const toggleAIPanel = useAIStore((s) => s.togglePanel)
 
   // Panel collapse state (extracted to hook)
   const { isEditorCollapsed, setIsEditorCollapsed, isResultsCollapsed, setIsResultsCollapsed } =
@@ -985,6 +993,10 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
     return <SchemaIntelPanel tabId={tabId} />
   }
 
+  if (tab.type === 'ask') {
+    return <AskView tabId={tabId} />
+  }
+
   // Get statement results for multi-statement queries
   const statementResults = getAllStatementResults(tabId)
   const activeStatementResult = getActiveStatementResult(tabId)
@@ -1054,7 +1066,27 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
         {/* Monaco SQL Editor - Collapsible */}
         {!isEditorCollapsed && (
           <div className={`p-3 pb-0 ${isResultsCollapsed ? 'flex-1 min-h-0' : ''}`}>
+            {aiEditOpen && editorRef.current && tabConnection && (
+              <AiEditBar
+                key={aiEditInstruction ?? 'manual'}
+                initialInstruction={aiEditInstruction}
+                editor={editorRef.current}
+                connection={tabConnection}
+                schemas={schemas}
+                onClose={() => {
+                  setAiEditOpen(false)
+                  setAiEditInstruction(undefined)
+                }}
+              />
+            )}
             <SQLEditor
+              onAiEdit={() => {
+                // Monaco owns ⌘I here, so when an inline edit can't happen it
+                // falls back to what ⌘I does everywhere else: the AI panel.
+                if (stepSession || !tabConnection) toggleAIPanel()
+                else if (!aiConfigured) openAISettings()
+                else setAiEditOpen(true)
+              }}
               value={tab.query}
               onChange={handleQueryChange}
               onRun={handleRunQuery}
@@ -1128,6 +1160,14 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       </div>
 
       <QueryResults
+        onFixWithAi={
+          aiConfigured && tabConnection && !stepSession && !isEditorCollapsed
+            ? (error) => {
+                setAiEditInstruction(`Fix this error: ${error.split('\n')[0]}`)
+                setAiEditOpen(true)
+              }
+            : undefined
+        }
         tabId={tabId}
         tab={tab}
         tabConnection={tabConnection}

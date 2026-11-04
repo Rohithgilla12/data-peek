@@ -77,7 +77,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         <ConnectionSwitcher />
       </SidebarHeader>
 
-      <SidebarContent className="gap-0">
+      <SidebarContent className="gap-0 overflow-x-hidden">
         {/* Omnibar - unified search across everything */}
         <SidebarOmnibar />
 

@@ -2,6 +2,7 @@
   "title": "Features",
   "pages": [
     "index",
+    "ask",
     "query-editor",
     "cross-tab-references",
     "schema-explorer",

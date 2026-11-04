@@ -369,6 +369,8 @@ export interface SQLEditorProps {
    */
   onRun?: (selectedSql?: string) => void
   onFormat?: () => void
+  /** ⌘I: describe a change to the query (or the selection) and review it as a diff. */
+  onAiEdit?: () => void
   readOnly?: boolean
   height?: string | number
   minHeight?: string | number
@@ -471,6 +473,7 @@ export function SQLEditor({
   onChange,
   onRun,
   onFormat,
+  onAiEdit,
   readOnly = false,
   height = 200,
   minHeight,
@@ -494,6 +497,7 @@ export function SQLEditor({
   // Use refs to always hold the latest callbacks to avoid stale closures
   const onRunRef = React.useRef(onRun)
   const onFormatRef = React.useRef(onFormat)
+  const onAiEditRef = React.useRef(onAiEdit)
 
   // Resolve system theme
   const resolvedTheme = React.useMemo(() => {
@@ -511,6 +515,10 @@ export function SQLEditor({
   React.useEffect(() => {
     onFormatRef.current = onFormat
   }, [onFormat])
+
+  React.useEffect(() => {
+    onAiEditRef.current = onAiEdit
+  }, [onAiEdit])
 
   React.useEffect(() => {
     crossTabDialectRef.current = crossTabDialect
@@ -560,6 +568,14 @@ export function SQLEditor({
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
       onRunRef.current?.(getSelectedSql(editor))
     })
+
+    // Only claim Cmd/Ctrl+I where inline edit exists; elsewhere it must reach the
+    // app-wide AI panel shortcut, which Monaco would otherwise swallow.
+    if (onAiEditRef.current) {
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI, () => {
+        onAiEditRef.current?.()
+      })
+    }
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
       if (onFormatRef.current) {

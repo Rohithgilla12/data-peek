@@ -53,6 +53,8 @@ export interface RunnerOpts {
   cliLabel: string
   /** Message for ENOENT, e.g. install + sign-in instructions. */
   notFoundMessage: string
+  /** Aborting kills the CLI and rejects with 'Cancelled'. */
+  signal?: AbortSignal
 }
 
 /**
@@ -86,6 +88,11 @@ export function runHarnessProcess(
       reject(new Error(`${opts.cliLabel} working directory disappeared: ${request.cwd}`))
       return
     }
+    if (opts.signal?.aborted) {
+      cleanup()
+      reject(new Error('Cancelled'))
+      return
+    }
     const child = spawn(request.binary, request.args, {
       env: request.env,
       cwd: request.cwd,
@@ -99,6 +106,14 @@ export function runHarnessProcess(
       cleanup()
       reject(new Error(`${opts.cliLabel} timed out after ${Math.round(opts.timeoutMs / 1000)}s`))
     }, opts.timeoutMs)
+    const onAbort = (): void => {
+      clearTimeout(timer)
+      child.kill('SIGTERM')
+      cleanup()
+      reject(new Error('Cancelled'))
+    }
+    opts.signal?.addEventListener('abort', onAbort, { once: true })
+    child.on('close', () => opts.signal?.removeEventListener('abort', onAbort))
 
     const consume = (chunk: string): void => {
       buf += chunk

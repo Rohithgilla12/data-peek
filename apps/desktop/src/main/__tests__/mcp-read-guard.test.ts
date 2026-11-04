@@ -63,6 +63,24 @@ describe('assertSingleReadStatement', () => {
     )
   })
 
+  it.each([
+    [
+      'a COMMIT that would end the rolled-back transaction',
+      "SELECT 1 COMMIT WRITETEXT t.c @p N'x'"
+    ],
+    ['ROLLBACK inside a batch', 'SELECT 1 ROLLBACK'],
+    ['BEGIN TRAN inside a batch', 'SELECT 1 BEGIN TRAN'],
+    ['UPDATETEXT', "SELECT 1 UPDATETEXT t.c @p 0 NULL N'x'"],
+    ['NEXT VALUE FOR, which a rollback does not undo', 'SELECT NEXT VALUE FOR dbo.seq']
+  ])('rejects %s on SQL Server', (_label, sql) => {
+    expect(() => assertSingleReadStatement(sql, 'mssql')).toThrow(/read-only/i)
+  })
+
+  it('still accepts identifiers that merely contain those words', () => {
+    const sql = 'SELECT begin_at, committed_by FROM rollbacks_log'
+    expect(assertSingleReadStatement(sql, 'mssql')).toBe(sql)
+  })
+
   it('rejects PRAGMA', () => {
     expect(() => assertSingleReadStatement('PRAGMA user_version = 5', 'postgresql')).toThrow(
       /read-only/i

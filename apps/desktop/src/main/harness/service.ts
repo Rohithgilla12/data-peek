@@ -185,7 +185,8 @@ async function executeHarness(
   adapter: HarnessAdapter,
   input: Omit<HarnessInput, 'workDir'>,
   timeoutMs: number,
-  onEvent?: (event: AIChatStreamEvent) => void
+  onEvent?: (event: AIChatStreamEvent) => void,
+  signal?: AbortSignal
 ): Promise<HarnessResult> {
   const workDir = mkdtempSync(join(tmpdir(), 'data-peek-harness-'))
   try {
@@ -196,7 +197,7 @@ async function executeHarness(
     let lastActivity = ''
     const exit = await runHarnessProcess(
       request,
-      { timeoutMs, cliLabel: adapter.cliLabel, notFoundMessage: adapter.notFoundMessage },
+      { timeoutMs, cliLabel: adapter.cliLabel, notFoundMessage: adapter.notFoundMessage, signal },
       (obj) => {
         const info = run.onLine(obj)
         if (!onEvent) return
@@ -302,7 +303,8 @@ export async function generateChatResponseViaHarnessStream(
   dbType: string,
   connectionId: string | undefined,
   resumeSessionId: string | undefined,
-  onEvent: (event: AIChatStreamEvent) => void
+  onEvent: (event: AIChatStreamEvent) => void,
+  signal?: AbortSignal
 ): Promise<{ success: boolean; data?: AIStructuredResponse; error?: string; meta?: HarnessMeta }> {
   try {
     const adapter = adapterFor(config.provider)
@@ -346,7 +348,8 @@ export async function generateChatResponseViaHarnessStream(
         mcp
       },
       timeoutMs,
-      onEvent
+      onEvent,
+      signal
     )
     return { success: true, data: validatePayload(result.payload), meta: metaFrom(agentic, result) }
   } catch (error: unknown) {
