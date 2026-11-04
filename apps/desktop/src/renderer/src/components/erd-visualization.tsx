@@ -101,7 +101,7 @@ function TableNode({ data }: { data: TableNodeData }) {
           )}
           <div className="flex-1">
             <div
-              className={cn('font-semibold text-sm', data.isHub && 'font-semibold')}
+              className={cn('font-medium text-sm', data.isHub && 'font-semibold')}
               style={{ color: data.isHub ? data.clusterColor : 'var(--foreground)' }}
             >
               {data.label}

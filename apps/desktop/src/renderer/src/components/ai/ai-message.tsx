@@ -344,7 +344,7 @@ export function AIMessage({
             {queryData.warning && (
               <div className="flex items-start gap-2 p-2 rounded-lg bg-warning/10 border border-warning/30 text-warning">
                 <WarningIcon className="size-4 shrink-0 mt-0.5" />
-                <span className="text-xs">{queryData.warning}</span>
+                <span className="font-sans text-xs">{queryData.warning}</span>
               </div>
             )}
             <AISQLPreview

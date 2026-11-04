@@ -183,7 +183,7 @@ export function AISQLPreview({
       {/* Explanation */}
       {explanation && (
         <div className="px-3 py-2 border-t border-border bg-muted/40">
-          <p className="text-2xs text-muted-foreground leading-relaxed">{explanation}</p>
+          <p className="font-sans text-2xs text-muted-foreground leading-relaxed">{explanation}</p>
         </div>
       )}
 

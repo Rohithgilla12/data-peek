@@ -191,7 +191,9 @@ export function AIChart({ chartData, className }: AIChartProps) {
           <div className="min-w-0 flex-1">
             {title && <h3 className="font-semibold text-sm truncate">{title}</h3>}
             {description && (
-              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{description}</p>
+              <p className="font-sans text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                {description}
+              </p>
             )}
           </div>
 
