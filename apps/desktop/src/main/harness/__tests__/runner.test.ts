@@ -38,6 +38,25 @@ describe('runHarnessProcess', () => {
     spawnMock.mockReset()
   })
 
+  it('kills the CLI and rejects with Cancelled when aborted', async () => {
+    const child = fakeChild()
+    spawnMock.mockReturnValue(child)
+    const controller = new AbortController()
+    const p = runHarnessProcess(req(), { ...opts, signal: controller.signal }, () => {})
+    controller.abort()
+    await expect(p).rejects.toThrow('Cancelled')
+    expect(child.kill).toHaveBeenCalledWith('SIGTERM')
+  })
+
+  it('never spawns when the signal is already aborted', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    await expect(
+      runHarnessProcess(req(), { ...opts, signal: controller.signal }, () => {})
+    ).rejects.toThrow('Cancelled')
+    expect(spawnMock).not.toHaveBeenCalled()
+  })
+
   it('parses one JSON object per line, buffering across chunk boundaries', async () => {
     const child = fakeChild()
     spawnMock.mockReturnValue(child)

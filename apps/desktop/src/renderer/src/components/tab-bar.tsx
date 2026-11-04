@@ -25,7 +25,7 @@ export function TabBar({ className }: TabBarProps) {
   const tabs = useTabStore((s) => s.tabs)
   const activeTabId = useTabStore((s) => s.activeTabId)
   const setActiveTab = useTabStore((s) => s.setActiveTab)
-  const createQueryTab = useTabStore((s) => s.createQueryTab)
+  const createAskTab = useTabStore((s) => s.createAskTab)
   const closeTab = useTabStore((s) => s.closeTab)
   const closeOtherTabs = useTabStore((s) => s.closeOtherTabs)
   const closeTabsToRight = useTabStore((s) => s.closeTabsToRight)
@@ -70,7 +70,7 @@ export function TabBar({ className }: TabBarProps) {
   }
 
   const handleNewTab = () => {
-    createQueryTab(activeConnectionId)
+    createAskTab(activeConnectionId)
   }
 
   return (

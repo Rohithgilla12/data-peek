@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { FileCode, Table2, Pin, X, Network, SearchCode } from 'lucide-react'
+import { FileCode, Table2, Pin, X, Network, SearchCode, Sparkles } from 'lucide-react'
 import {
   cn,
   ContextMenu,
@@ -76,13 +76,15 @@ export function Tab({
   }
 
   const Icon =
-    tab.type === 'query'
-      ? FileCode
-      : tab.type === 'erd'
-        ? Network
-        : tab.type === 'schema-intel'
-          ? SearchCode
-          : Table2
+    tab.type === 'ask'
+      ? Sparkles
+      : tab.type === 'query'
+        ? FileCode
+        : tab.type === 'erd'
+          ? Network
+          : tab.type === 'schema-intel'
+            ? SearchCode
+            : Table2
 
   return (
     <ContextMenu>

@@ -248,6 +248,12 @@ export function registerAIHandlers(): void {
   // 'ai:chat-stream:event' (keyed by requestId) while the invoke resolves with
   // the final structured response. Used by the main chat panel; the modal
   // dialogs keep using the one-shot ai:chat handler above.
+  const inFlight = new Map<string, AbortController>()
+  ipcMain.handle('ai:chat-stream:cancel', (_, requestId: string) => {
+    inFlight.get(requestId)?.abort()
+    return { success: true }
+  })
+
   ipcMain.handle(
     'ai:chat-stream',
     async (
@@ -268,13 +274,20 @@ export function registerAIHandlers(): void {
         resumeSessionId?: string
       }
     ) => {
+      const controller = new AbortController()
+      inFlight.set(requestId, controller)
+      const aborted = new Promise<{ success: false; error: string }>((resolve) =>
+        controller.signal.addEventListener('abort', () =>
+          resolve({ success: false, error: 'Cancelled' })
+        )
+      )
       try {
         const config = getAIConfig()
         if (!config) {
           return { success: false, error: 'AI not configured. Please set up your API key.' }
         }
 
-        const result = await generateChatResponseStream(
+        const generation = generateChatResponseStream(
           config,
           messages,
           schemas,
@@ -282,19 +295,25 @@ export function registerAIHandlers(): void {
           connectionId,
           resumeSessionId,
           (streamEvent) => {
-            if (!event.sender.isDestroyed()) {
+            if (!event.sender.isDestroyed() && !controller.signal.aborted) {
               event.sender.send('ai:chat-stream:event', { requestId, event: streamEvent })
             }
-          }
+          },
+          controller.signal
         )
+        // API-key providers can't be interrupted mid-request; the race still
+        // frees the caller at once and their late answer is dropped.
+        const result = await Promise.race([generation, aborted])
 
-        if (result.success && result.data) {
+        if (result.success && 'data' in result && result.data) {
           return { success: true, data: result.data, meta: result.meta }
         }
         return { success: false, error: result.error }
       } catch (error: unknown) {
         log.error('Chat stream error:', error)
         return { success: false, error: error instanceof Error ? error.message : String(error) }
+      } finally {
+        inFlight.delete(requestId)
       }
     }
   )

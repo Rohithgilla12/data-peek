@@ -2,6 +2,7 @@ import {
   Download,
   Loader2,
   AlertCircle,
+  Wand2,
   PanelBottomClose,
   PanelBottom,
   Timer,
@@ -59,6 +60,8 @@ interface QueryResultsProps {
   isResultsCollapsed: boolean
   setIsResultsCollapsed: (v: boolean) => void
   hasMultipleResults: boolean
+  /** Present when AI is available: rewrite the failed query from its error. */
+  onFixWithAi?: (error: string) => void
   statementResults: StatementResult[]
   activeStatementResult: StatementResult | undefined
   activeResultIndex: number
@@ -168,7 +171,8 @@ export function QueryResults({
   setShareResultsOpen,
   getCurrentExportData,
   handleExport,
-  generateExportFilename
+  generateExportFilename,
+  onFixWithAi
 }: QueryResultsProps) {
   const can = useCapabilities(tabConnection?.dbType)
   const executable = isExecutableTab(tab) ? tab : null
@@ -259,6 +263,16 @@ export function QueryResults({
                 <AlertCircle className="size-8 text-red-400 mx-auto" />
                 <h3 className="font-medium text-red-400">Query Error</h3>
                 <p className="text-sm text-muted-foreground">{tabError}</p>
+                {onFixWithAi && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-2 h-7 gap-1.5 text-xs"
+                    onClick={() => onFixWithAi(tabError)}
+                  >
+                    <Wand2 className="size-3.5" /> Fix with AI
+                  </Button>
+                )}
               </div>
             </div>
           ) : hasResults ? (

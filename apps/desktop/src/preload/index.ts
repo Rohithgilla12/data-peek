@@ -135,6 +135,8 @@ const api = {
       queryTimeoutMs?: number,
       sessionId?: string
     ) => ipcRenderer.invoke('db:query', { config, query, executionId, queryTimeoutMs, sessionId }),
+    queryReadOnly: (config: ConnectionConfig, query: string): Promise<IpcResponse<unknown>> =>
+      ipcRenderer.invoke('db:query-read-only', { config, query }),
     cancelQuery: (executionId: string): Promise<IpcResponse<{ cancelled: boolean }>> =>
       ipcRenderer.invoke('db:cancel-query', executionId),
     schemas: (
@@ -604,13 +606,16 @@ const api = {
       dbType: string,
       connectionId: string | undefined,
       resumeSessionId: string | undefined,
-      onEvent: (event: AIChatStreamEvent) => void
+      onEvent: (event: AIChatStreamEvent) => void,
+      // Pass your own id to be able to cancelChatStream(id) later.
+      requestIdOverride?: string
     ): Promise<
       IpcResponse<AIChatResponse> & {
         meta?: { grounded: boolean; agentic: boolean; turns?: number; sessionId?: string }
       }
     > => {
       const requestId =
+        requestIdOverride ??
         globalThis.crypto?.randomUUID?.() ??
         `req-${Date.now()}-${Math.random().toString(36).slice(2)}`
       const listener = (
@@ -631,6 +636,8 @@ const api = {
         })
         .finally(() => ipcRenderer.removeListener('ai:chat-stream:event', listener))
     },
+    cancelChatStream: (requestId: string): Promise<IpcResponse<void>> =>
+      ipcRenderer.invoke('ai:chat-stream:cancel', requestId),
     // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string): Promise<IpcResponse<StoredChatMessage[]>> =>
       ipcRenderer.invoke('ai:get-chat-history', connectionId),
