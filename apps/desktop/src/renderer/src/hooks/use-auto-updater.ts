@@ -46,7 +46,10 @@ export function useAutoUpdater() {
       hasShownDownloadedRef.current = true
 
       const activeId = activeNotificationIdRef.current
-      if (activeId) {
+      const existsInStore =
+        activeId && useNotificationStore.getState().notifications.some((n) => n.id === activeId)
+
+      if (activeId && existsInStore) {
         useNotificationStore.getState().updateNotification(activeId, {
           type: 'success',
           title: 'Update Ready',
@@ -63,16 +66,20 @@ export function useAutoUpdater() {
           }
         })
       } else {
-        notify.success('Update Ready', `Version ${version} has been downloaded. Restart to update.`, {
-          duration: 0,
-          action: {
-            label: 'Restart Now',
-            variant: 'primary',
-            onClick: () => {
-              window.api.updater.quitAndInstall()
+        notify.success(
+          'Update Ready',
+          `Version ${version} has been downloaded. Restart to update.`,
+          {
+            duration: 0,
+            action: {
+              label: 'Restart Now',
+              variant: 'primary',
+              onClick: () => {
+                window.api.updater.quitAndInstall()
+              }
             }
           }
-        })
+        )
       }
     })
 

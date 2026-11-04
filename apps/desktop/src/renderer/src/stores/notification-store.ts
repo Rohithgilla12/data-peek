@@ -56,6 +56,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   updateNotification: (id, updates) => {
+    let scheduleDuration: number | undefined
+
     set((state) => {
       const index = state.notifications.findIndex((n) => n.id === id)
       if (index === -1) return state
@@ -75,13 +77,17 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
         updates.duration > 0 &&
         (!existing.duration || existing.duration <= 0)
       ) {
-        setTimeout(() => {
-          get().removeNotification(id)
-        }, updates.duration)
+        scheduleDuration = updates.duration
       }
 
       return { notifications: nextNotifications }
     })
+
+    if (scheduleDuration && scheduleDuration > 0) {
+      setTimeout(() => {
+        get().removeNotification(id)
+      }, scheduleDuration)
+    }
   },
 
   removeNotification: (id) => {
