@@ -14,7 +14,7 @@ vi.mock('../src/main/lib/logger', () => ({
 const { ClickHouseAdapter, closeAllClickHousePools } =
   await import('../src/main/adapters/clickhouse-adapter')
 const { withClickHouseClient } = await import('../src/main/adapters/clickhouse-pool-manager')
-const { cancelQuery } = await import('../src/main/query-tracker')
+const { cancelQuery, isQueryActive } = await import('../src/main/query-tracker')
 const { requireCapability } = await import('../src/main/lib/capability-guard')
 const { runReadOnlyQuery } = await import('../src/main/mcp/read-guard')
 const { getAdapter } = await import('../src/main/db-adapter')
@@ -394,7 +394,7 @@ describe('mcp read guard', () => {
   })
 
   it('returns capped rows for a plain SELECT', async () => {
-    const r = await runReadOnlyQuery(config, `SELECT number FROM numbers(1000)`, 5)
+    const r = await runReadOnlyQuery(config, `SELECT number FROM numbers(1000)`, { maxRows: 5 })
     expect(r.rows).toHaveLength(5)
   })
 
@@ -406,6 +406,23 @@ describe('mcp read guard', () => {
     const capped = await runReadOnlyQuery(config, sql)
     expect(capped.rows.length).toBeLessThanOrEqual(500)
     expect(Date.now() - started).toBeLessThan(5_000)
+  })
+
+  it('cancels a running read-only query on the server', async () => {
+    const executionId = `smoke-cancel-${Date.now()}`
+    const started = Date.now()
+    const running = runReadOnlyQuery(
+      config,
+      'SELECT count() FROM numbers(100000000000) WHERE sipHash64(number) = 0',
+      { executionId }
+    )
+    const settled = expect(running).rejects.toThrow(/cancelled/i)
+    await vi.waitFor(() => expect(isQueryActive(executionId)).toBe(true))
+    await new Promise((resolve) => setTimeout(resolve, 300))
+    await expect(cancelQuery(executionId)).resolves.toEqual({ cancelled: true })
+    await settled
+    expect(Date.now() - started).toBeLessThan(5_000)
+    expect(isQueryActive(executionId)).toBe(false)
   })
 })
 
