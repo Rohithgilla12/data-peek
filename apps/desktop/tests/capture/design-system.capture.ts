@@ -62,17 +62,6 @@ const ASK_MESSAGES = [
 
 const RESULTS_QUERY = 'SELECT id, email, name FROM users ORDER BY email LIMIT 50'
 
-/** Swap the theme the way ThemeProvider does: persist the choice and flip the root class. */
-async function setTheme(window: Page, theme: Theme): Promise<void> {
-  await window.evaluate((t) => {
-    localStorage.setItem('data-peek-theme', t)
-    const root = document.documentElement
-    root.classList.remove('light', 'dark')
-    root.classList.add(t)
-  }, theme)
-  await window.waitForTimeout(400)
-}
-
 async function runQuery(window: Page, sql: string): Promise<void> {
   await window.locator('.monaco-editor').first().click()
   await window.keyboard.press('ControlOrMeta+a')
@@ -104,9 +93,13 @@ for (const theme of THEMES) {
       },
       { connectionId: pg.config.id, messages: ASK_MESSAGES }
     )
+    // ThemeProvider reads localStorage once at mount, so the theme must be in place
+    // before the page loads. The fixture's init script pins 'dark' on every load;
+    // this one is registered after it and so wins.
+    await window.addInitScript((t) => localStorage.setItem('data-peek-theme', t), theme)
     await window.reload()
     await window.waitForSelector('#root', { timeout: 15000 })
-    await setTheme(window, theme)
+    await expect(window.locator('html')).toHaveClass(new RegExp(`\\b${theme}\\b`))
 
     // The harness only adds the connection; select it.
     await window.locator('[data-sidebar="menu-button"]').first().click()
@@ -163,8 +156,13 @@ for (const theme of THEMES) {
       .getByRole('button', { name: /Analyze/ })
       .last()
       .click()
-    await expect(window.getByText('Slow Query').first()).toBeVisible({ timeout: 30000 })
+    const slowCard = window.getByText('Slow Query').first()
+    await expect(slowCard).toBeVisible({ timeout: 30000 })
+    // The card sits at the bottom edge; hiding the editor frees the room to show all of it.
+    await window.locator('button[title="Hide query editor"]').click()
+    await slowCard.scrollIntoViewIfNeeded()
     await shot('warning-state')
+    await window.locator('button[title="Show query editor"]').click()
 
     // error-state: a query that fails
     await runQuery(window, 'SELECT * FROM table_that_does_not_exist')
