@@ -234,7 +234,8 @@ export class MSSQLAdapter implements DatabaseAdapter {
 
   /**
    * SQL Server has no READ ONLY transaction, so the statement runs inside one that is
-   * always rolled back; anything it wrote is undone before the connection is reused.
+   * always rolled back. The read guard refuses what a rollback can't undo (COMMIT,
+   * NEXT VALUE FOR).
    */
   async queryReadOnly(config: ConnectionConfig, sqlQuery: string): Promise<AdapterQueryResult> {
     return withMSSQLRolledBackTransaction(config, async (transaction) =>

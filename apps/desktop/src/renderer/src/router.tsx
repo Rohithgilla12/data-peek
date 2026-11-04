@@ -556,7 +556,11 @@ function SettingsPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">Tab Management</h3>
               <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'T']} description="Create new query tab" />
+                <ShortcutRow keys={[keys.mod, 'T']} description="Create new Ask tab" />
+                <ShortcutRow
+                  keys={[keys.mod, keys.shift, 'T']}
+                  description="Create new SQL editor tab"
+                />
                 <ShortcutRow keys={[keys.mod, 'W']} description="Close current tab" />
                 <ShortcutRow keys={[keys.mod, '1-9']} description="Switch to tab by number" />
                 <ShortcutRow keys={[keys.mod, keys.alt, '→']} description="Switch to next tab" />

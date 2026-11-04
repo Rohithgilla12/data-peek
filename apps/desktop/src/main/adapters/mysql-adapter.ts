@@ -187,7 +187,13 @@ export class MySQLAdapter implements DatabaseAdapter {
         const [rows, fields] = await connection.query({ sql, timeout: options.timeoutMs })
         return toAdapterResult(rows, fields)
       } finally {
-        await connection.query('ROLLBACK').catch(() => undefined)
+        try {
+          await connection.query('ROLLBACK')
+        } catch {
+          // Transaction state is unknown; don't hand this connection back to the
+          // pool. release() after destroy() is a no-op.
+          connection.destroy()
+        }
       }
     })
   }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { AIChatResponse } from '@shared/index'
-import { gateFor, toAnswer, toHistory, toStored, type AskBlock } from '../ask-session'
+import { gateFor, runsReadOnly, toAnswer, toHistory, toStored, type AskBlock } from '../ask-session'
 
 const response = (patch: Partial<AIChatResponse>): AIChatResponse => ({
   type: 'message',
@@ -194,6 +194,47 @@ describe('toHistory', () => {
     )
     expect(history[0].content).toContain('I typed:')
     expect(history[0].content).toContain('It has not been run.')
+  })
+})
+
+describe('toAnswer report widgets', () => {
+  it('shows a KPI-first report as a metric', () => {
+    const answer = toAnswer({
+      type: 'report',
+      message: 'Revenue is up.',
+      widgets: [
+        { title: 'Revenue', kind: 'kpi', sql: 'select sum(total) from orders', format: 'currency' }
+      ]
+    } as unknown as Parameters<typeof toAnswer>[0])
+    expect(answer.visual).toEqual({ kind: 'metric', label: 'Revenue', format: 'currency' })
+    expect(answer.sql).toBe('select sum(total) from orders')
+  })
+})
+
+describe('toHistory bounds', () => {
+  it('sends only the most recent blocks and clips long SQL', () => {
+    const blocks = Array.from({ length: 30 }, (_, i) =>
+      block({ mode: 'sql', prompt: `select ${i}`, sql: `select ${i}` })
+    )
+    blocks.push(block({ mode: 'sql', prompt: 'big', sql: `select ${'x'.repeat(10_000)}` }))
+    const [message] = toHistory(blocks, 'next?')
+    expect(message.content).not.toContain('select 0\n')
+    expect(message.content).toContain('select 29')
+    expect(message.content).toContain('-- (truncated)')
+    expect(message.content.length).toBeLessThan(10_000)
+  })
+})
+
+describe('runsReadOnly', () => {
+  it('keeps AI-written reads read-only on every run', () => {
+    expect(runsReadOnly({ mode: 'ask', sql: 'select 1' })).toBe(true)
+    expect(runsReadOnly({ mode: 'sql', sql: 'select 1', fromAi: true })).toBe(true)
+  })
+
+  it('leaves SQL the user typed, and approved writes, on the normal path', () => {
+    expect(runsReadOnly({ mode: 'sql', sql: 'select 1' })).toBe(false)
+    expect(runsReadOnly({ mode: 'ask', sql: 'delete from t' })).toBe(false)
+    expect(runsReadOnly({ mode: 'ask', sql: null })).toBe(false)
   })
 })
 

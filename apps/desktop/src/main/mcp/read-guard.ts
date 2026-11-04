@@ -21,8 +21,12 @@ const READ_FIRST_KEYWORDS = new Set([
   'values',
   'table'
 ])
+// Transaction control is listed because T-SQL needs no `;` between statements:
+// `SELECT 1 COMMIT WRITETEXT ...` parses as one statement, and its COMMIT would
+// end the transaction the caller rolls back. `NEXT VALUE FOR` advances a SQL
+// Server sequence, which a rollback does not undo.
 const WRITE_KEYWORDS =
-  /\b(insert|update|delete|merge|drop|alter|create|truncate|grant|revoke|vacuum|exec|execute|call|copy|into)\b/i
+  /\b(insert|update|delete|merge|drop|alter|create|truncate|grant|revoke|vacuum|exec|execute|call|copy|into|begin|commit|rollback|savepoint|updatetext|writetext)\b|\bnext\s+value\s+for\b/i
 
 export function assertSingleReadStatement(sql: string, dbType: DatabaseType): string {
   const statements = parseStatementsWithLines(sql, dbType)

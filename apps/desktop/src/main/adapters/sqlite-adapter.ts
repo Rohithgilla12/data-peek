@@ -172,11 +172,13 @@ export class SQLiteAdapter implements DatabaseAdapter {
    * Create a connection to SQLite database
    * Note: SQLite connections are file-based, using config.database as the path
    */
-  private getDb(config: ConnectionConfig): Database.Database {
+  private getDb(config: ConnectionConfig, readOnly = false): Database.Database {
     // For SQLite, database is the file path
     // Support special paths: ':memory:' for in-memory, or file paths
     const dbPath = config.database || ':memory:'
-    return new Database(dbPath, { readonly: false })
+    // A read-only open never creates a missing file. SQLite can't open an
+    // in-memory database read-only, and there is nothing on disk to protect.
+    return new Database(dbPath, { readonly: readOnly && dbPath !== ':memory:' })
   }
 
   async connect(config: ConnectionConfig): Promise<void> {
@@ -204,7 +206,7 @@ export class SQLiteAdapter implements DatabaseAdapter {
     sql: string,
     readOnly: boolean
   ): AdapterQueryResult {
-    const db = this.getDb(config)
+    const db = this.getDb(config, readOnly)
     try {
       const stmt = db.prepare(sql)
       if (readOnly && !stmt.readonly) {

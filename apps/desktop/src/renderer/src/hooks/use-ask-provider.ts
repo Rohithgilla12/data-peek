@@ -59,12 +59,18 @@ export function useAskProvider() {
 
   const activate = useCallback(
     async (id: AIProvider) => {
+      // Save in main first: if that fails, showing the CLI as active would leave
+      // every question failing with "AI not configured".
+      const saved = await window.api.ai.setProviderConfig(id, {})
+      const activated = saved.success ? await window.api.ai.setActiveProvider(id) : saved
+      if (!activated.success) {
+        openSettings()
+        return
+      }
       setProviderConfig(id, {})
       setActiveProvider(id)
-      await window.api.ai.setProviderConfig(id, {})
-      await window.api.ai.setActiveProvider(id)
     },
-    [setProviderConfig, setActiveProvider]
+    [setProviderConfig, setActiveProvider, openSettings]
   )
 
   const active = isConfigured && provider ? provider : undefined

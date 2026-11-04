@@ -10,6 +10,7 @@ export function openAsk(text: string): void {
 }
 
 export function askAboutTable(schema: string, table: string): string {
-  const name = schema === 'public' || schema === 'main' ? table : `${schema}.${table}`
-  return `Describe the ${name} table: what it stores, its key columns, how it relates to other tables, and anything notable in its data.`
+  // Keep the schema even for public/main: another schema may have a table of
+  // the same name, and the model sees every schema.
+  return `Describe the ${schema}.${table} table: what it stores, its key columns, how it relates to other tables, and anything notable in its data.`
 }

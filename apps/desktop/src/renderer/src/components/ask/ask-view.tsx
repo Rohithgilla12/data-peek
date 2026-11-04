@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { ChevronRight, Sparkles } from 'lucide-react'
-import type { SchemaInfo } from '@shared/index'
+import type { DatabaseType, SchemaInfo } from '@shared/index'
+import { buildFullyQualifiedTableRef, buildSelectQuery } from '@/lib/sql-helpers'
 import { DatabaseIcon } from '@/components/database-icons'
 import { useAIStore } from '@/stores/ai-store'
 import {
@@ -27,13 +28,11 @@ interface Starter {
   text: string
 }
 
-function startersFor(schemas: SchemaInfo[]): Starter[] {
+function startersFor(schemas: SchemaInfo[], dbType: DatabaseType | undefined): Starter[] {
   const tables = schemas.flatMap((s) =>
     s.tables.filter((t) => t.type === 'table').map((t) => ({ ...t, schema: s.name }))
   )
   if (tables.length === 0) return []
-  const qualified = (t: (typeof tables)[number]): string =>
-    t.schema === 'public' || t.schema === 'main' ? t.name : `${t.schema}.${t.name}`
   const inbound = new Map<string, number>()
   for (const t of tables) {
     for (const c of t.columns) {
@@ -59,7 +58,13 @@ function startersFor(schemas: SchemaInfo[]): Starter[] {
   if (linked && fk) {
     starters.push({ mode: 'ask', text: `How do ${linked.name} relate to ${fk.referencedTable}?` })
   }
-  starters.push({ mode: 'sql', text: `select * from ${qualified(byImportance[0])} limit 50` })
+  const top = byImportance[0]
+  starters.push({
+    mode: 'sql',
+    text: buildSelectQuery(buildFullyQualifiedTableRef(top.schema, top.name, dbType), dbType, {
+      limit: 50
+    })
+  })
   return starters
 }
 
@@ -135,7 +140,8 @@ export function AskView({ tabId }: { tabId: string | null }) {
     () => (connection && onActive ? { connection, schemas, provider } : null),
     [connection, onActive, schemas, provider]
   )
-  const starters = useMemo(() => startersFor(schemas), [schemas])
+  const dbType = connection?.dbType
+  const starters = useMemo(() => startersFor(schemas, dbType), [schemas, dbType])
   const history = useMemo<ComposerEntry[]>(
     () => blocks.map((b) => ({ text: b.prompt, mode: b.mode, locked: !!b.locked })),
     [blocks]

@@ -4,6 +4,7 @@ import type { AIProvider, ConnectionConfig, SchemaInfo } from '@shared/index'
 import type { AskMode } from '@/lib/ask-input'
 import {
   gateFor,
+  runsReadOnly,
   toAnswer,
   toHistory,
   toStored,
@@ -287,7 +288,8 @@ export const useAskStore = create<AskState>()(
             return run?.status === 'running' && run.executionId === executionId
           }
           try {
-            const response = opts?.readOnly
+            const readOnly = opts?.readOnly ?? runsReadOnly(block)
+            const response = readOnly
               ? await window.api.db.queryReadOnly(ctx.connection, block.sql)
               : await window.api.db.query(ctx.connection, block.sql, executionId)
             if (!stillMine()) return

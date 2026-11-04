@@ -91,6 +91,9 @@ export function toAnswer(data: AIChatResponse): AiAnswer {
       xKey: firstWidget.xKey,
       yKeys: firstWidget.yKeys
     }
+  } else if (firstWidget?.kind === 'kpi') {
+    // Reports lead with KPIs; show the headline number, not a one-row table.
+    visual = { kind: 'metric', label: firstWidget.title, format: firstWidget.format ?? 'number' }
   }
   return {
     narration: data.message,
@@ -128,6 +131,16 @@ export function gateFor(origin: SqlOrigin, sql: string | null, flagged: boolean)
   return { action: 'run', readOnly: origin === 'ai' }
 }
 
+/**
+ * SQL the assistant wrote stays on the read-only path every time it runs
+ * (Run again, Run after an edit), not only when the gate first auto-runs it.
+ * SQL that isn't a read still goes through the normal path once approved.
+ */
+export function runsReadOnly(block: Pick<AskBlock, 'mode' | 'sql' | 'fromAi'>): boolean {
+  if (!block.sql) return false
+  return (block.mode === 'ask' || Boolean(block.fromAi)) && isReadOnlySql(block.sql)
+}
+
 function describeResult(run: RunState): string {
   if (run.status === 'done') {
     const cols = run.result.columns.map((c) => c.name).join(', ')
@@ -135,6 +148,13 @@ function describeResult(run: RunState): string {
   }
   if (run.status === 'error') return `It failed with: ${run.message}`
   return 'It has not been run.'
+}
+
+const HISTORY_BLOCKS = 20
+const HISTORY_SQL_CHARS = 4000
+
+function clip(sql: string): string {
+  return sql.length > HISTORY_SQL_CHARS ? `${sql.slice(0, HISTORY_SQL_CHARS)}\n-- (truncated)` : sql
 }
 
 /**
@@ -145,14 +165,16 @@ function describeResult(run: RunState): string {
 export function toHistory(blocks: AskBlock[], prompt: string): AIMessage[] {
   const messages: AIMessage[] = []
   let context: string[] = []
-  for (const block of blocks) {
+  // Providers without a resumable session get the transcript every turn, so
+  // cap it rather than let cost and latency grow with the tab's age.
+  for (const block of blocks.slice(-HISTORY_BLOCKS)) {
     if (block.mode === 'sql') {
       const ran = block.run.status === 'done' || block.run.status === 'error'
       const who = block.fromAi
         ? `I ${ran ? 'ran' : 'did not run'} this query you suggested`
         : `I ${ran ? 'ran' : 'typed'}`
       context.push(
-        `${who}:\n\`\`\`sql\n${block.sql ?? block.prompt}\n\`\`\`\n${describeResult(block.run)}`
+        `${who}:\n\`\`\`sql\n${clip(block.sql ?? block.prompt)}\n\`\`\`\n${describeResult(block.run)}`
       )
       continue
     }
@@ -163,7 +185,7 @@ export function toHistory(blocks: AskBlock[], prompt: string): AIMessage[] {
     })
     context = []
     const parts = [block.ai.narration]
-    if (block.sql) parts.push(`\`\`\`sql\n${block.sql}\n\`\`\``, describeResult(block.run))
+    if (block.sql) parts.push(`\`\`\`sql\n${clip(block.sql)}\n\`\`\``, describeResult(block.run))
     messages.push({ role: 'assistant', content: parts.filter(Boolean).join('\n\n') })
   }
   messages.push({ role: 'user', content: [...context, prompt].join('\n\n') })

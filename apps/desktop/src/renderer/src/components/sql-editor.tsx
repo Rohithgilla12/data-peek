@@ -569,9 +569,13 @@ export function SQLEditor({
       onRunRef.current?.(getSelectedSql(editor))
     })
 
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI, () => {
-      onAiEditRef.current?.()
-    })
+    // Only claim Cmd/Ctrl+I where inline edit exists; elsewhere it must reach the
+    // app-wide AI panel shortcut, which Monaco would otherwise swallow.
+    if (onAiEditRef.current) {
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyI, () => {
+        onAiEditRef.current?.()
+      })
+    }
 
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyF, () => {
       if (onFormatRef.current) {
