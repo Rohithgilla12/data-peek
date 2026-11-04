@@ -34,7 +34,8 @@ import type {
   AdapterQueryResult,
   AdapterMultiQueryResult,
   ExplainResult,
-  QueryOptions
+  QueryOptions,
+  ReadOnlyQueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { requireSingleStatement, splitStatements } from '../lib/sql-parser'
@@ -179,14 +180,18 @@ export class MySQLAdapter implements DatabaseAdapter {
   async queryReadOnly(
     config: ConnectionConfig,
     sql: string,
-    options: { timeoutMs: number }
+    options: ReadOnlyQueryOptions
   ): Promise<AdapterQueryResult> {
     return withMySQLConnection(config, async (connection) => {
       await connection.query('START TRANSACTION READ ONLY')
+      if (options.executionId) {
+        registerQuery(options.executionId, { type: 'mysql', connection })
+      }
       try {
         const [rows, fields] = await connection.query({ sql, timeout: options.timeoutMs })
         return toAdapterResult(rows, fields)
       } finally {
+        if (options.executionId) unregisterQuery(options.executionId)
         try {
           await connection.query('ROLLBACK')
         } catch {

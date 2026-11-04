@@ -25,7 +25,8 @@ import type {
   AdapterQueryResult,
   DatabaseAdapter,
   ExplainResult,
-  QueryOptions
+  QueryOptions,
+  ReadOnlyQueryOptions
 } from '../db-adapter'
 import { requireSingleStatement, splitStatements } from '../lib/sql-parser'
 import { registerQuery, unregisterQuery } from '../query-tracker'
@@ -263,7 +264,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
   async queryReadOnly(
     config: ConnectionConfig,
     sql: string,
-    options: { timeoutMs: number; maxRows?: number }
+    options: ReadOnlyQueryOptions
   ): Promise<AdapterQueryResult> {
     if (hasTrailingFormatClause(sql)) throw new Error(FORMAT_CLAUSE_MESSAGE)
     // 'break' stops at a block boundary, so the server may still send more than maxRows.
@@ -274,7 +275,23 @@ export class ClickHouseAdapter implements DatabaseAdapter {
     return withClickHouseClient(config, async (client) => {
       const abort = new AbortController()
       const timeoutMessage = `Query timed out after ${options.timeoutMs / 1000} s`
+      const queryId = randomUUID()
+      let cancelled = false
       let timer: ReturnType<typeof setTimeout> | undefined
+      if (options.executionId) {
+        registerQuery(options.executionId, {
+          type: 'clickhouse',
+          cancel: async () => {
+            cancelled = true
+            abort.abort()
+            // Aborting only drops our side of the HTTP request; stop the server too.
+            await client.command({
+              query: 'KILL QUERY WHERE query_id = {id:String} ASYNC',
+              query_params: { id: queryId }
+            })
+          }
+        })
+      }
       // The client may stop watching abort_signal once headers arrive, so a stalled body
       // would outlive the abort; the race settles the call regardless.
       const deadline = new Promise<never>((_resolve, reject) => {
@@ -286,6 +303,7 @@ export class ClickHouseAdapter implements DatabaseAdapter {
       const run = async (): Promise<AdapterQueryResult> => {
         const rs = await client.query({
           query: sql,
+          query_id: queryId,
           format: RESULT_FORMAT,
           abort_signal: abort.signal,
           clickhouse_settings: {
@@ -302,10 +320,12 @@ export class ClickHouseAdapter implements DatabaseAdapter {
       try {
         return await Promise.race([run(), deadline])
       } catch (error) {
+        if (cancelled) throw new Error('Query cancelled')
         if (abort.signal.aborted) throw new Error(timeoutMessage)
         throw new Error(describeError(error))
       } finally {
         clearTimeout(timer)
+        if (options.executionId) unregisterQuery(options.executionId)
       }
     })
   }

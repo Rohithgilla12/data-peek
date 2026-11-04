@@ -290,7 +290,7 @@ export const useAskStore = create<AskState>()(
           try {
             const readOnly = opts?.readOnly ?? runsReadOnly(block)
             const response = readOnly
-              ? await window.api.db.queryReadOnly(ctx.connection, block.sql)
+              ? await window.api.db.queryReadOnly(ctx.connection, block.sql, executionId)
               : await window.api.db.query(ctx.connection, block.sql, executionId)
             if (!stillMine()) return
             setRun(

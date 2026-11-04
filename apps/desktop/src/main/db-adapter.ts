@@ -106,6 +106,12 @@ export interface ExplainResult {
 /**
  * Database adapter interface - abstracts database-specific operations
  */
+export interface ReadOnlyQueryOptions {
+  timeoutMs: number
+  maxRows?: number
+  executionId?: string
+}
+
 export interface DatabaseAdapter {
   /** Database type identifier */
   readonly dbType: DatabaseType
@@ -126,12 +132,13 @@ export interface DatabaseAdapter {
   /**
    * Run one statement so that it cannot leave writes behind, using whatever the engine
    * offers (READ ONLY transaction, always-rolled-back transaction, or a statement-level
-   * read-only check). The read guard prefers it, for MCP reads and AI-written Ask queries.
+   * read-only check). The read guard runs MCP reads and AI-written Ask queries through it.
+   * With an `executionId` the query is registered so `db:cancel-query` can abort it.
    */
-  queryReadOnly?(
+  queryReadOnly(
     config: ConnectionConfig,
     sql: string,
-    options: { timeoutMs: number; maxRows?: number }
+    options: ReadOnlyQueryOptions
   ): Promise<AdapterQueryResult>
 
   /** Execute a statement (for INSERT/UPDATE/DELETE in transactions) */
