@@ -214,7 +214,7 @@ export function PerfIssueCard({
                     </>
                   ) : (
                     <>
-                      <PlayIcon weight="fill" className="size-3.5 fill-white" />
+                      <PlayIcon className="size-3.5 fill-white" />
                       Apply Index & Re-run
                     </>
                   )}

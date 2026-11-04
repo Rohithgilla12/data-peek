@@ -4,7 +4,8 @@ import {
   BookmarkIcon,
   ChartBarIcon,
   MaximizeIcon,
-  PanelTopIcon,
+  HideEditorIcon,
+  ShowEditorIcon,
   PlayIcon,
   ShareIcon,
   SpinnerIcon,
@@ -111,9 +112,9 @@ export function EditorToolbar({
           title={isEditorCollapsed ? 'Show query editor' : 'Hide query editor'}
         >
           {isEditorCollapsed ? (
-            <PanelTopIcon className="size-3.5" />
+            <ShowEditorIcon className="size-3.5" />
           ) : (
-            <PanelTopIcon className="size-3.5" />
+            <HideEditorIcon className="size-3.5" />
           )}
         </Button>
         {isExecuting ? (

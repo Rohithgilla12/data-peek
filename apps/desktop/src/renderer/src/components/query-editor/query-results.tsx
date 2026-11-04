@@ -2,7 +2,8 @@ import {
   ActivityIcon,
   DownloadIcon,
   ErrorIcon,
-  PanelBottomIcon,
+  HideResultsIcon,
+  ShowResultsIcon,
   PlayIcon,
   ShareIcon,
   SpinnerIcon,
@@ -208,7 +209,7 @@ export function QueryResults({
               onClick={() => setIsResultsCollapsed(false)}
               title="Show results panel"
             >
-              <PanelBottomIcon className="size-3.5" />
+              <ShowResultsIcon className="size-3.5" />
             </Button>
             {tabError ? (
               <span className="flex items-center gap-1.5 text-xs text-red-400">
@@ -382,7 +383,7 @@ export function QueryResults({
                     onClick={() => setIsResultsCollapsed(true)}
                     title="Collapse results panel"
                   >
-                    <PanelBottomIcon className="size-3.5" />
+                    <HideResultsIcon className="size-3.5" />
                   </Button>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     {hasMultipleResults ? (

@@ -360,7 +360,7 @@ export function CommandPalette({
                   keywords={['bookmark', 'favorites', 'history', 'pinned']}
                   onSelect={() => pushPage('saved-queries')}
                 >
-                  <BookmarkIcon weight="fill" className="text-amber-400" />
+                  <BookmarkIcon className="text-amber-400" />
                   <span>Saved Queries</span>
                   <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
@@ -765,20 +765,4 @@ export function CommandPalette({
       </Command>
     </CommandDialog>
   )
-}
-
-// Re-export icons for backward compatibility
-export {
-  AiIcon,
-  DatabaseIcon,
-  FileCodeIcon,
-  SettingsIcon,
-  MoonIcon,
-  SunIcon,
-  MonitorIcon,
-  PlusIcon,
-  LayoutGridIcon,
-  BookmarkIcon,
-  RefreshIcon,
-  KeyboardIcon
 }
