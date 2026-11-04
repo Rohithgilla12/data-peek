@@ -327,7 +327,7 @@ export function CommandPalette({
                     <DatabaseBrandIcon dbType={conn.dbType} className="size-4" />
                     <span className="truncate">{conn.name}</span>
                     {conn.id === activeConnection?.id && (
-                      <span className="ml-2 text-[10px] text-success">Active</span>
+                      <span className="ml-2 text-2xs text-success">Active</span>
                     )}
                     <CommandShortcut>
                       {keys.mod}
@@ -462,7 +462,7 @@ export function CommandPalette({
                     <DatabaseBrandIcon dbType={conn.dbType} className="size-4" />
                     <span className="truncate">{conn.name}</span>
                     {conn.id === activeConnection?.id && (
-                      <span className="ml-2 text-[10px] text-success">Active</span>
+                      <span className="ml-2 text-2xs text-success">Active</span>
                     )}
                     {index < 9 && (
                       <CommandShortcut>
@@ -586,7 +586,7 @@ export function CommandPalette({
                       </span>
                     </div>
                     {conn.id === activeConnection?.id && (
-                      <span className="ml-auto text-[10px] text-success">Active</span>
+                      <span className="ml-auto text-2xs text-success">Active</span>
                     )}
                     {index < 9 && (
                       <CommandShortcut>
@@ -622,7 +622,7 @@ export function CommandPalette({
                     </span>
                   </div>
                   {conn.id === activeConnection?.id && (
-                    <span className="ml-auto text-[10px] text-success">Active</span>
+                    <span className="ml-auto text-2xs text-success">Active</span>
                   )}
                 </CommandItem>
               ))}
@@ -650,7 +650,7 @@ export function CommandPalette({
                             <span className="truncate">{query.name}</span>
                             <span
                               className={cn(
-                                'px-1.5 py-0.5 rounded text-[10px] font-medium',
+                                'px-1.5 py-0.5 rounded text-2xs font-medium',
                                 queryTypeColors[queryType]
                               )}
                             >
@@ -741,19 +741,19 @@ export function CommandPalette({
         </CommandList>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-3 py-2 border-t text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between px-3 py-2 border-t text-2xs text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-muted border text-[10px]">↑↓</kbd>
+              <kbd className="px-1 py-0.5 rounded bg-muted border text-2xs">↑↓</kbd>
               navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-muted border text-[10px]">↵</kbd>
+              <kbd className="px-1 py-0.5 rounded bg-muted border text-2xs">↵</kbd>
               select
             </span>
             {pages.length > 1 && (
               <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 rounded bg-muted border text-[10px]">⌫</kbd>
+                <kbd className="px-1 py-0.5 rounded bg-muted border text-2xs">⌫</kbd>
                 back
               </span>
             )}

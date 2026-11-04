@@ -41,7 +41,7 @@ function EnvironmentBadge({ environment }: { environment?: ConnectionEnvironment
   if (!resolved) return null
   return (
     <span
-      className="shrink-0 rounded px-1.5 py-px text-[0.625rem] font-semibold uppercase tracking-wide font-mono leading-none"
+      className="shrink-0 rounded px-1.5 py-px text-2xs font-semibold uppercase tracking-wide font-mono leading-none"
       style={{
         backgroundColor: `color-mix(in oklch, ${resolved.color} 15%, transparent)`,
         borderWidth: '1px',

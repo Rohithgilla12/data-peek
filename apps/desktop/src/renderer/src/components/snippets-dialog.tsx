@@ -252,7 +252,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                           <Badge
                             variant="outline"
                             className={cn(
-                              'text-[10px] px-2 py-0.5 font-semibold border-0',
+                              'text-2xs px-2 py-0.5 font-semibold border-0',
                               getSnippetCategoryColor(snippet.category)
                             )}
                           >
@@ -262,7 +262,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                           {snippet.triggerPrefix && (
                             <Badge
                               variant="secondary"
-                              className="text-[10px] font-mono px-2 py-0.5 bg-muted/70"
+                              className="text-2xs font-mono px-2 py-0.5 bg-muted/70"
                             >
                               <CodeIcon className="size-2.5 mr-1" />
                               {snippet.triggerPrefix}
@@ -271,7 +271,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                           {snippet.isBuiltIn && (
                             <Badge
                               variant="outline"
-                              className="text-[10px] font-medium border-primary/20 bg-primary/5 text-primary/80"
+                              className="text-2xs font-medium border-primary/20 bg-primary/5 text-primary/80"
                             >
                               built-in
                             </Badge>
@@ -280,7 +280,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                         <p className="text-xs text-muted-foreground leading-relaxed">
                           {snippet.description}
                         </p>
-                        <pre className="text-[11px] font-mono text-foreground/90 leading-relaxed whitespace-pre-wrap break-all bg-muted/70 rounded-md px-3 py-2 max-h-[100px] overflow-auto border border-border/50">
+                        <pre className="text-2xs font-mono text-foreground/90 leading-relaxed whitespace-pre-wrap break-all bg-muted/70 rounded-md px-3 py-2 max-h-[100px] overflow-auto border border-border/50">
                           {cleanSnippetTemplate(snippet.template)}
                         </pre>
                       </div>

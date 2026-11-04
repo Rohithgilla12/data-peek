@@ -201,7 +201,7 @@ export function EditToolbar({
                   <PanelRightIcon className="size-4 text-success" />
                   <div className="flex flex-col">
                     <span>Add with Form</span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-2xs text-muted-foreground">
                       Smart fields & validation
                     </span>
                   </div>
@@ -210,7 +210,7 @@ export function EditToolbar({
                   <PlusIcon className="size-4 text-muted-foreground" />
                   <div className="flex flex-col">
                     <span>Quick Add</span>
-                    <span className="text-[10px] text-muted-foreground">Inline row editing</span>
+                    <span className="text-2xs text-muted-foreground">Inline row editing</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -225,7 +225,7 @@ export function EditToolbar({
                   {pendingChanges.updates > 0 && (
                     <Badge
                       variant="outline"
-                      className="text-warning border-warning/30 text-[10px] px-1.5"
+                      className="text-warning border-warning/30 text-2xs px-1.5"
                     >
                       {pendingChanges.updates} modified
                     </Badge>
@@ -233,7 +233,7 @@ export function EditToolbar({
                   {pendingChanges.inserts > 0 && (
                     <Badge
                       variant="outline"
-                      className="text-success border-success/30 text-[10px] px-1.5"
+                      className="text-success border-success/30 text-2xs px-1.5"
                     >
                       {pendingChanges.inserts} new
                     </Badge>
@@ -241,7 +241,7 @@ export function EditToolbar({
                   {pendingChanges.deletes > 0 && (
                     <Badge
                       variant="outline"
-                      className="text-destructive border-destructive/30 text-[10px] px-1.5"
+                      className="text-destructive border-destructive/30 text-2xs px-1.5"
                     >
                       {pendingChanges.deletes} deleted
                     </Badge>

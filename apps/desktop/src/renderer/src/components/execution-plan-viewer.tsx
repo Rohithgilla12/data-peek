@@ -280,13 +280,13 @@ function PlanNodeView({
                   )}
 
                   {node['Join Type'] && (
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-2xs">
                       {node['Join Type']}
                     </Badge>
                   )}
 
                   {node['Parallel Aware'] && (
-                    <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
+                    <Badge variant="outline" className="text-2xs text-primary border-primary/30">
                       <ZapIcon className="size-2.5 mr-0.5" />
                       Parallel
                     </Badge>
@@ -295,7 +295,7 @@ function PlanNodeView({
                   {node['Async Capable'] && (
                     <Badge
                       variant="outline"
-                      className="text-[10px] text-cat-purple border-cat-purple/30"
+                      className="text-2xs text-cat-purple border-cat-purple/30"
                     >
                       Async
                     </Badge>
@@ -317,7 +317,7 @@ function PlanNodeView({
                       {node['Plan Rows'] !== undefined && node['Actual Rows'] !== undefined && (
                         <span
                           className={cn(
-                            'text-[10px]',
+                            'text-2xs',
                             node['Plan Rows'] === node['Actual Rows']
                               ? 'text-success'
                               : Math.abs(node['Plan Rows'] - node['Actual Rows']) /
@@ -340,7 +340,7 @@ function PlanNodeView({
                       {/* Show startup time if significant */}
                       {node['Actual Startup Time'] !== undefined &&
                         node['Actual Startup Time'] > 0.1 && (
-                          <span className="text-[10px] text-muted-foreground/70">
+                          <span className="text-2xs text-muted-foreground/70">
                             (startup: {node['Actual Startup Time'].toFixed(2)}ms)
                           </span>
                         )}
@@ -459,16 +459,16 @@ function PlanNodeView({
                 {node['Sort Key'] && (
                   <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                     <ArrowsDownUpIcon className="size-3" />
-                    <span className="font-mono text-[11px]">{node['Sort Key'].join(', ')}</span>
+                    <span className="font-mono text-2xs">{node['Sort Key'].join(', ')}</span>
                     {node['Sort Method'] && (
-                      <Badge variant="outline" className="text-[10px] h-4">
+                      <Badge variant="outline" className="text-2xs h-4">
                         {node['Sort Method']}
                       </Badge>
                     )}
                     {node['Sort Space Used'] !== undefined && (
                       <span
                         className={cn(
-                          'text-[10px]',
+                          'text-2xs',
                           node['Sort Space Type'] === 'Disk' ? 'text-warning' : ''
                         )}
                       >
@@ -482,8 +482,8 @@ function PlanNodeView({
                 {node['Group Key'] && (
                   <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                     <TrendUpIcon className="size-3" />
-                    <span className="text-[10px]">GROUP BY</span>
-                    <span className="font-mono text-[11px]">{node['Group Key'].join(', ')}</span>
+                    <span className="text-2xs">GROUP BY</span>
+                    <span className="font-mono text-2xs">{node['Group Key'].join(', ')}</span>
                   </div>
                 )}
 
@@ -506,7 +506,7 @@ function PlanNodeView({
                   node['Hash Cond'] ||
                   node['Merge Cond'] ||
                   node['Recheck Cond']) && (
-                  <div className="mt-1.5 text-[11px] text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded space-y-0.5">
+                  <div className="mt-1.5 text-2xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded space-y-0.5">
                     {node['Index Cond'] && (
                       <div className="flex gap-2">
                         <span className="text-success">Index Cond:</span>
@@ -544,7 +544,7 @@ function PlanNodeView({
                 {warnings.length > 0 && (
                   <div className="mt-1.5 space-y-1">
                     {warnings.map((warning, i) => (
-                      <div key={i} className="flex items-start gap-1.5 text-[11px] text-warning">
+                      <div key={i} className="flex items-start gap-1.5 text-2xs text-warning">
                         <WarningIcon className="size-3 shrink-0 mt-0.5" />
                         {warning}
                       </div>
@@ -749,13 +749,13 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
         <div className="flex items-center gap-1.5 ml-auto">
           <span className="text-muted-foreground">{stats.nodeCount} nodes</span>
           {stats.hasParallel && (
-            <Badge variant="outline" className="text-[10px] h-4 text-primary border-primary/30">
+            <Badge variant="outline" className="text-2xs h-4 text-primary border-primary/30">
               <ZapIcon className="size-2 mr-0.5" />
               Parallel
             </Badge>
           )}
           {stats.hasSeqScan && (
-            <Badge variant="outline" className="text-[10px] h-4 text-warning border-warning/30">
+            <Badge variant="outline" className="text-2xs h-4 text-warning border-warning/30">
               Seq Scan
             </Badge>
           )}
@@ -768,7 +768,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
       </div>
 
       {/* Legend */}
-      <div className="px-4 py-2 border-t border-border/40 flex items-center gap-4 text-[10px] text-muted-foreground shrink-0">
+      <div className="px-4 py-2 border-t border-border/40 flex items-center gap-4 text-2xs text-muted-foreground shrink-0">
         <span className="flex items-center gap-1">
           <div className="size-2 rounded bg-cat-orange" />
           Seq Scan

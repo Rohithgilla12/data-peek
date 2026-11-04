@@ -40,7 +40,7 @@ function Histogram({ buckets }: HistogramProps) {
       {buckets.map((bucket, i) => (
         <div key={i} className="flex items-center gap-2">
           <div className="w-20 text-right shrink-0">
-            <span className="text-[10px] text-muted-foreground font-mono">
+            <span className="text-2xs text-muted-foreground font-mono">
               {formatNumber(bucket.min, 0)}
             </span>
           </div>
@@ -51,7 +51,7 @@ function Histogram({ buckets }: HistogramProps) {
             />
           </div>
           <div className="w-12 shrink-0">
-            <span className="text-[10px] text-muted-foreground font-mono">
+            <span className="text-2xs text-muted-foreground font-mono">
               {formatNumber(bucket.count, 0)}
             </span>
           </div>
@@ -80,7 +80,7 @@ function CommonValuesList({ values }: CommonValuesProps) {
                 item.value
               )}
             </span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-2xs text-muted-foreground">
               {formatNumber(item.count, 0)} ({formatPercentage(item.percentage)})
             </span>
           </div>
@@ -204,11 +204,11 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium font-mono">{stats.column}</span>
-                  <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono">
+                  <Badge variant="outline" className="text-2xs px-1 py-0 font-mono">
                     {stats.dataType}
                   </Badge>
                 </div>
-                <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                <Badge variant="secondary" className="text-2xs px-1.5 py-0">
                   {stats.statsType}
                 </Badge>
               </div>
@@ -231,7 +231,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                 <>
                   <Separator />
                   <div className="space-y-0.5">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
+                    <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
                       Numeric
                     </p>
                     <StatRow label="Min" value={stats.min != null ? String(stats.min) : null} />
@@ -253,7 +253,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                     <>
                       <Separator />
                       <div className="space-y-2">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                        <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium">
                           Distribution
                         </p>
                         <Histogram buckets={stats.histogram} />
@@ -267,7 +267,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                 <>
                   <Separator />
                   <div className="space-y-0.5">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
+                    <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
                       Length
                     </p>
                     <StatRow
@@ -287,7 +287,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                     <>
                       <Separator />
                       <div className="space-y-2">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                        <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium">
                           Top values
                         </p>
                         <CommonValuesList values={stats.commonValues} totalRows={stats.totalRows} />
@@ -301,7 +301,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                 <>
                   <Separator />
                   <div className="space-y-0.5">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
+                    <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
                       Range
                     </p>
                     <StatRow label="Min" value={stats.min != null ? String(stats.min) : null} />
@@ -314,7 +314,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                 <>
                   <Separator />
                   <div className="space-y-2">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                    <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium">
                       Distribution
                     </p>
                     <BooleanBar

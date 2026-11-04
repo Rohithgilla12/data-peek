@@ -521,7 +521,7 @@ export function AddConnectionDialog({
                 <Icon className="size-4 shrink-0" />
                 {DB_TYPE_LABELS[type]}
                 {beta && (
-                  <span className="ml-auto rounded border px-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <span className="ml-auto rounded border px-1 font-mono text-2xs uppercase tracking-wide text-muted-foreground">
                     Beta
                   </span>
                 )}

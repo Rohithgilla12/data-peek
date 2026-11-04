@@ -181,7 +181,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
                             <div className="flex items-center gap-2">
                               <span className="font-medium truncate">{connection.name}</span>
                               {isActive && (
-                                <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                                <span className="text-2xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
                                   Active
                                 </span>
                               )}
@@ -191,7 +191,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
                             </span>
                           </div>
                           {shortcutIndex < 9 && (
-                            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                            <kbd className="hidden sm:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-2xs font-medium text-muted-foreground">
                               <span className="text-xs">⌘⇧</span>
                               {shortcutIndex + 1}
                             </kbd>

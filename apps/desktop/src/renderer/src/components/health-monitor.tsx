@@ -445,7 +445,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                       <p className="text-xs text-muted-foreground">Buffer Cache</p>
                       <p
                         className={cn(
-                          'text-3xl font-bold',
+                          'text-3xl font-semibold',
                           cacheColor(cacheStats.bufferCacheHitRatio)
                         )}
                       >
@@ -454,7 +454,12 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                     </div>
                     <div className="rounded-lg border p-4 text-center">
                       <p className="text-xs text-muted-foreground">Index Cache</p>
-                      <p className={cn('text-3xl font-bold', cacheColor(cacheStats.indexHitRatio))}>
+                      <p
+                        className={cn(
+                          'text-3xl font-semibold',
+                          cacheColor(cacheStats.indexHitRatio)
+                        )}
+                      >
                         {cacheStats.indexHitRatio}%
                       </p>
                     </div>

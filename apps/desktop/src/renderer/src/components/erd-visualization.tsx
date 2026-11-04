@@ -63,7 +63,7 @@ function ClusterNode({ data }: { data: ClusterNodeData }) {
       }}
     >
       <div
-        className="absolute -top-3 left-4 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide uppercase"
+        className="absolute -top-3 left-4 px-2 py-0.5 rounded-full text-2xs font-medium tracking-wide uppercase"
         style={{
           backgroundColor: tint(data.color, 12),
           color: data.color
@@ -101,12 +101,12 @@ function TableNode({ data }: { data: TableNodeData }) {
           )}
           <div className="flex-1">
             <div
-              className={cn('font-semibold text-sm', data.isHub && 'font-bold')}
+              className={cn('font-semibold text-sm', data.isHub && 'font-semibold')}
               style={{ color: data.isHub ? data.clusterColor : 'var(--foreground)' }}
             >
               {data.label}
             </div>
-            <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+            <div className="text-2xs text-muted-foreground flex items-center gap-1.5">
               <span>{data.schemaName}</span>
               {data.relationshipCount > 0 && (
                 <>
@@ -161,12 +161,10 @@ function TableNode({ data }: { data: TableNodeData }) {
               {column.name}
             </span>
 
-            <span className="text-[10px] text-muted-foreground/70 font-mono">
-              {column.dataType}
-            </span>
+            <span className="text-2xs text-muted-foreground/70 font-mono">{column.dataType}</span>
 
             {!column.isNullable && !column.isPrimaryKey && (
-              <span className="text-destructive/80 text-[10px] font-bold">*</span>
+              <span className="text-destructive/80 text-2xs font-semibold">*</span>
             )}
           </div>
         ))}
@@ -698,7 +696,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
               <FilterIcon className="size-3" />
               Filter Tables
               {selectedTables.size > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-2xs">
                   {selectedTables.size}
                 </Badge>
               )}
@@ -731,7 +729,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                           <button
                             type="button"
                             onClick={() => selectSchema(schemaName)}
-                            className="text-[10px] text-primary hover:underline"
+                            className="text-2xs text-primary hover:underline"
                           >
                             Select all
                           </button>
@@ -789,7 +787,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                 <Badge
                   key={key}
                   variant="secondary"
-                  className="h-5 text-[10px] gap-1 cursor-pointer hover:bg-secondary/80"
+                  className="h-5 text-2xs gap-1 cursor-pointer hover:bg-secondary/80"
                   onClick={() => toggleTable(key)}
                 >
                   {key.split('.')[1]}

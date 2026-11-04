@@ -92,7 +92,7 @@ export function QueryHistory() {
             />
             <span>History</span>
             {filteredHistory.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[11px] px-1.5 py-0">
+              <Badge variant="outline" className="ml-1 text-2xs px-1.5 py-0 tabular-nums">
                 {filteredHistory.length}
               </Badge>
             )}
@@ -130,7 +130,7 @@ export function QueryHistory() {
                                 <div className="flex items-center gap-1.5 w-full">
                                   <Badge
                                     variant="outline"
-                                    className={`text-[11px] px-1.5 py-0 shrink-0 ${getQueryTypeColor(queryType)}`}
+                                    className={`text-2xs px-1.5 py-0 shrink-0 ${getQueryTypeColor(queryType)}`}
                                   >
                                     {queryType}
                                   </Badge>
@@ -138,15 +138,15 @@ export function QueryHistory() {
                                     {truncateQuery(item.query)}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                <div className="flex items-center gap-2 text-2xs text-muted-foreground">
                                   <span className="flex items-center gap-0.5">
                                     <ClockIcon className="size-3" />
                                     {formatRelativeTime(item.timestamp)}
                                   </span>
                                   {item.status === 'success' ? (
                                     <>
-                                      <span>{item.rowCount} rows</span>
-                                      <span>{item.durationMs}ms</span>
+                                      <span className="tabular-nums">{item.rowCount} rows</span>
+                                      <span className="tabular-nums">{item.durationMs}ms</span>
                                     </>
                                   ) : (
                                     <span className="text-destructive">error</span>

@@ -210,7 +210,7 @@ export function CreateSnippetDialog({
                       Use placeholders like ${'{1:table_name}'} for tab stops in the editor.
                     </p>
                     <div className="bg-muted/50 rounded px-2 py-1.5 border border-border/50">
-                      <p className="text-[11px] font-mono text-muted-foreground">
+                      <p className="text-2xs font-mono text-muted-foreground">
                         SELECT * FROM ${'{1:table}'} WHERE ${'{2:column}'} = ${'{3:value}'};
                       </p>
                     </div>

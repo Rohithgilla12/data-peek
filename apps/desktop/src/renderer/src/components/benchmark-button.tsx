@@ -86,11 +86,11 @@ export function BenchmarkButton({ onBenchmark, isRunning, disabled }: BenchmarkB
                 >
                   <div className="flex flex-col">
                     <span className="font-medium">{label}</span>
-                    <span className="text-[10px] text-muted-foreground">{description}</span>
+                    <span className="text-2xs text-muted-foreground">{description}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     {count >= 100 && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                      <span className="text-2xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
                         {count >= 500 ? 'PRECISE' : 'DETAILED'}
                       </span>
                     )}
@@ -110,7 +110,7 @@ export function BenchmarkButton({ onBenchmark, isRunning, disabled }: BenchmarkB
         >
           <div className="space-y-1.5">
             <p className="text-xs font-medium">Performance Benchmark</p>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-2xs text-muted-foreground leading-relaxed">
               Run the query multiple times to collect timing statistics including average, p90, p95,
               and p99 latencies.
             </p>

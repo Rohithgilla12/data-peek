@@ -74,7 +74,7 @@ export function PaginationControls({
   return (
     <div className="flex items-center justify-between py-2 shrink-0">
       <div className="flex items-center gap-3">
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground tabular-nums">
           {displayTotalRows === 0 ? (
             'No rows'
           ) : (

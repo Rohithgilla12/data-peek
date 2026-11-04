@@ -65,7 +65,7 @@ export function PerfIndicatorPanel({
               <Badge
                 variant="secondary"
                 className={cn(
-                  'h-5 px-1.5 text-[10px] cursor-pointer transition-opacity',
+                  'h-5 px-1.5 text-2xs cursor-pointer transition-opacity',
                   'bg-destructive/10 text-destructive hover:bg-destructive/30',
                   !showCritical && 'opacity-40'
                 )}
@@ -79,7 +79,7 @@ export function PerfIndicatorPanel({
               <Badge
                 variant="secondary"
                 className={cn(
-                  'h-5 px-1.5 text-[10px] cursor-pointer transition-opacity',
+                  'h-5 px-1.5 text-2xs cursor-pointer transition-opacity',
                   'bg-warning/10 text-warning hover:bg-warning/30',
                   !showWarning && 'opacity-40'
                 )}
@@ -93,7 +93,7 @@ export function PerfIndicatorPanel({
               <Badge
                 variant="secondary"
                 className={cn(
-                  'h-5 px-1.5 text-[10px] cursor-pointer transition-opacity',
+                  'h-5 px-1.5 text-2xs cursor-pointer transition-opacity',
                   'bg-primary/20 text-primary hover:bg-primary/30',
                   !showInfo && 'opacity-40'
                 )}
@@ -159,7 +159,7 @@ export function PerfIndicatorPanel({
             >
               <RepeatIcon className="size-4 text-warning" />
               <span className="text-sm font-medium">N+1 Query Patterns</span>
-              <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+              <Badge variant="secondary" className="h-5 px-1.5 text-2xs">
                 {analysis.nplusOnePatterns.length}
               </Badge>
               <div className="flex-1" />
@@ -314,7 +314,7 @@ function NplusOneCard({ pattern }: NplusOneCardProps) {
             {pattern.querySamples.map((query, i) => (
               <pre
                 key={i}
-                className="text-[11px] bg-muted/50 rounded p-1.5 overflow-x-auto font-mono text-muted-foreground"
+                className="text-2xs bg-muted/50 rounded p-1.5 overflow-x-auto font-mono text-muted-foreground"
               >
                 {query}
               </pre>

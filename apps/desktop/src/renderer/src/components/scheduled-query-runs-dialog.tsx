@@ -97,12 +97,12 @@ function RunItem({ run }: { run: ScheduledQueryRun }) {
           <div className="flex items-center gap-2 mb-1">
             <span className="text-sm font-medium">{run.success ? 'Success' : 'Failed'}</span>
             {run.durationMs !== undefined && (
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-2xs">
                 {formatDuration(run.durationMs)}
               </Badge>
             )}
             {run.rowCount !== undefined && run.success && (
-              <Badge variant="secondary" className="text-[10px]">
+              <Badge variant="secondary" className="text-2xs">
                 {run.rowCount} {run.rowCount === 1 ? 'row' : 'rows'}
               </Badge>
             )}

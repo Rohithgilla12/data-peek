@@ -103,7 +103,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="hide-editor">Hide query editor by default</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-sans text-xs text-muted-foreground">
                   Start with the query editor collapsed
                 </p>
               </div>
@@ -123,7 +123,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="hide-quick-query-panel">Hide quick query panel by default</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-sans text-xs text-muted-foreground">
                   Hide the quick query panel by default
                 </p>
               </div>
@@ -143,7 +143,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="expand-json">Expand JSON by default</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-sans text-xs text-muted-foreground">
                   Automatically expand all JSON objects when viewing
                 </p>
               </div>
@@ -156,7 +156,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="json-depth">Default JSON expansion depth</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-sans text-xs text-muted-foreground">
                   How many levels deep JSON should be expanded
                 </p>
               </div>
@@ -183,7 +183,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="pokemon-buddy">Pokemon Buddy</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-sans text-xs text-muted-foreground">
                   Show a friendly Pokemon buddy in the sidebar
                 </p>
               </div>
@@ -204,7 +204,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="query-timeout">Query timeout (seconds)</Label>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-sans text-xs text-muted-foreground">
                     Maximum time to wait for a query to complete. Set to 0 for no timeout.
                   </p>
                 </div>
@@ -237,7 +237,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <Label htmlFor="time-machine">Snapshot query results</Label>
-                <p className="text-xs text-muted-foreground">
+                <p className="font-sans text-xs text-muted-foreground">
                   Keep a local history of SELECT results to scrub and diff. Masked columns are
                   stored redacted.
                 </p>

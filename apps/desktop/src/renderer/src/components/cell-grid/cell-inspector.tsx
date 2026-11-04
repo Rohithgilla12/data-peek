@@ -97,7 +97,7 @@ export function CellInspector({
     >
       <div className="flex items-center justify-between gap-3 border-b border-border/40 px-3 py-2">
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-mono text-[11px] tracking-tight text-muted-foreground tabular-nums">
+          <span className="font-mono text-2xs tracking-tight text-muted-foreground tabular-nums">
             R{pos.row + 1}
             <span className="text-muted-foreground/40">·</span>C{pos.col + 1}
             <span className="text-muted-foreground/40">/</span>
@@ -106,19 +106,19 @@ export function CellInspector({
             </span>
           </span>
           <span className="text-muted-foreground/30">/</span>
-          <span className="font-mono text-[12px] font-medium truncate" title={columnName}>
+          <span className="font-mono text-xs font-medium truncate" title={columnName}>
             {columnName}
           </span>
           <Badge
             variant="outline"
-            className={cn('h-4 px-1.5 font-mono text-[9px] uppercase', getTypeColor(dataType))}
+            className={cn('h-4 px-1.5 font-mono text-2xs uppercase', getTypeColor(dataType))}
           >
             {dataType}
           </Badge>
           {formatted.isNull && (
             <Badge
               variant="outline"
-              className="h-4 px-1.5 font-mono text-[9px] uppercase border-warning/30 text-warning"
+              className="h-4 px-1.5 font-mono text-2xs uppercase border-warning/30 text-warning"
             >
               null
             </Badge>
@@ -159,37 +159,37 @@ export function CellInspector({
       </div>
 
       <div className="grid grid-cols-[140px_1fr] divide-x divide-border/30 min-h-[88px] max-h-[280px]">
-        <div className="flex flex-col gap-1.5 px-3 py-2 text-[11px] font-mono">
+        <div className="flex flex-col gap-1.5 px-3 py-2 text-2xs font-mono">
           <Metric label="kind" value={formatted.kind} />
           <Metric label="chars" value={String(charLength)} />
           <Metric label="bytes" value={String(byteLength)} />
         </div>
         <div className="overflow-auto px-3 py-2">
           {formatted.isNull ? (
-            <span className="font-mono text-[12px] italic text-muted-foreground">NULL</span>
+            <span className="font-mono text-xs italic text-muted-foreground">NULL</span>
           ) : formatted.kind === 'json' ? (
-            <pre className="font-mono text-[12px] leading-relaxed whitespace-pre-wrap break-all">
+            <pre className="font-mono text-xs leading-relaxed whitespace-pre-wrap break-all">
               {formatted.display}
             </pre>
           ) : (
-            <div className="font-mono text-[13px] leading-relaxed whitespace-pre-wrap break-all">
+            <div className="font-mono text-sm leading-relaxed whitespace-pre-wrap break-all">
               {formatted.display}
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 border-t border-border/40 px-3 py-1.5 text-[10px] font-mono text-muted-foreground">
+      <div className="flex items-center justify-between gap-3 border-t border-border/40 px-3 py-1.5 text-2xs font-mono text-muted-foreground">
         <div className="flex items-center gap-3">
           <span className="inline-flex items-center gap-1">
-            <Kbd className="h-4 text-[9px]">Esc</Kbd>close
+            <Kbd className="h-4 text-2xs">Esc</Kbd>close
           </span>
           <span className="inline-flex items-center gap-1">
-            <Kbd className="h-4 text-[9px]">⌘C</Kbd>copy
+            <Kbd className="h-4 text-2xs">⌘C</Kbd>copy
           </span>
           <span className="inline-flex items-center gap-1">
-            <Kbd className="h-4 text-[9px]">↑↓</Kbd>row
-            <Kbd className="h-4 text-[9px]">←→</Kbd>col
+            <Kbd className="h-4 text-2xs">↑↓</Kbd>row
+            <Kbd className="h-4 text-2xs">←→</Kbd>col
           </span>
         </div>
         {onMove && (
@@ -231,7 +231,7 @@ export function CellInspector({
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-2">
-      <span className="text-muted-foreground/60 uppercase tracking-wide text-[9px]">{label}</span>
+      <span className="text-muted-foreground/60 uppercase tracking-wide text-2xs">{label}</span>
       <span className="tabular-nums truncate">{value}</span>
     </div>
   )

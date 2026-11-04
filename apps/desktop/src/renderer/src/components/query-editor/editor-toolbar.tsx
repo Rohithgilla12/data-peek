@@ -136,7 +136,7 @@ export function EditorToolbar({
           >
             <PlayIcon className="size-3.5" />
             Run
-            <kbd className="ml-1.5 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+            <kbd className="ml-1.5 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-2xs font-medium text-primary-foreground">
               {keys.mod}
               {keys.enter}
             </kbd>
@@ -153,7 +153,7 @@ export function EditorToolbar({
             >
               <StepForwardIcon className="size-3 mr-1" />
               Step
-              <kbd className="ml-2 opacity-60 text-[10px]">⇧⌘↵</kbd>
+              <kbd className="ml-2 opacity-60 text-2xs">⇧⌘↵</kbd>
             </Button>
             <label className="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
               <input
@@ -281,7 +281,7 @@ export function EditorToolbar({
             >
               <AiIcon className="size-3.5" />
               Format
-              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
+              <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-2xs font-medium">
                 {keys.mod}
                 {keys.shift}F
               </kbd>
@@ -342,7 +342,7 @@ export function EditorToolbar({
       </div>
       <div className="flex items-center gap-3 text-xs text-muted-foreground">
         {isEditorCollapsed && query && (
-          <code className="text-[10px] bg-muted/50 px-2 py-0.5 rounded max-w-[300px] truncate">
+          <code className="text-2xs bg-muted/50 px-2 py-0.5 rounded max-w-[300px] truncate">
             {query.replace(/\s+/g, ' ').slice(0, 60)}
             {query.length > 60 ? '...' : ''}
           </code>

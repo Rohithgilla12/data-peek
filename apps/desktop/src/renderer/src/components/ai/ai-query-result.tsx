@@ -48,11 +48,11 @@ export function AIQueryResult({
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
             <TableIcon className="size-3.5 text-success" />
-            <span className="text-[11px] font-medium text-foreground">
+            <span className="text-2xs font-medium text-foreground">
               {totalRows} row{totalRows !== 1 ? 's' : ''}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1 text-2xs text-muted-foreground">
             <ClockIcon className="size-3" />
             {duration}ms
           </div>
@@ -63,7 +63,7 @@ export function AIQueryResult({
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {isExpanded ? (
                 <>
@@ -98,7 +98,7 @@ export function AIQueryResult({
                 >
                   <div className="flex flex-col">
                     <span>{col.name}</span>
-                    <span className="text-[9px] font-normal text-muted-foreground">{col.type}</span>
+                    <span className="text-2xs font-normal text-muted-foreground">{col.type}</span>
                   </div>
                 </th>
               ))}
@@ -149,13 +149,13 @@ export function AIQueryResult({
       {/* Footer */}
       {hasMore && (
         <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40">
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-2xs text-muted-foreground">
             Showing {displayRows.length} of {totalRows} rows
           </span>
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
+            className="h-6 gap-1.5 text-2xs text-muted-foreground hover:text-foreground"
             onClick={onOpenInTab}
           >
             <ExternalLinkIcon className="size-3" />

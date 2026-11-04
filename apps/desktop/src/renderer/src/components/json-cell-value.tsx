@@ -274,7 +274,7 @@ export function JsonCellEditor({
             <div className="shrink-0">
               <p className="text-xs text-muted-foreground mb-1.5">Preview</p>
               <div className="max-h-32 overflow-auto bg-muted/30 rounded-lg border border-border/50 p-2">
-                <div className="font-mono text-[10px]">
+                <div className="font-mono text-2xs">
                   <JsonTreeNode value={parsedValue} depth={0} expandAll={expandJsonByDefault} />
                 </div>
               </div>
@@ -330,7 +330,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-md max-h-48 overflow-auto">
-            <pre className="font-mono text-[10px] whitespace-pre-wrap">
+            <pre className="font-mono text-2xs whitespace-pre-wrap">
               {fullPreview.length > 500 ? fullPreview.slice(0, 500) + '\n...' : fullPreview}
             </pre>
           </TooltipContent>
@@ -381,7 +381,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
             <div className="shrink-0">
               <p className="text-xs text-muted-foreground mb-1.5">Raw JSON</p>
               <div className="max-h-32 overflow-auto bg-muted/30 rounded-lg border border-border/50 p-2">
-                <pre className="font-mono text-[10px] text-muted-foreground whitespace-pre-wrap break-all">
+                <pre className="font-mono text-2xs text-muted-foreground whitespace-pre-wrap break-all">
                   {typeof value === 'string' ? value : JSON.stringify(parsedValue, null, 2)}
                 </pre>
               </div>

@@ -278,7 +278,7 @@ export function PgExportDialog() {
                 <p>{exportResult.rowsExported.toLocaleString()} rows exported</p>
                 <p>{formatBytes(exportResult.bytesWritten)} written</p>
                 <p>{formatDuration(exportResult.durationMs)}</p>
-                <p className="font-mono text-[11px] break-all mt-2">{exportResult.filePath}</p>
+                <p className="font-mono text-2xs break-all mt-2">{exportResult.filePath}</p>
               </div>
             )}
 

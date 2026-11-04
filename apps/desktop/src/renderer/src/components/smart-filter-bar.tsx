@@ -240,7 +240,7 @@ function FilterChipButton({
               className="motion-safe:[stroke-dasharray:20] motion-safe:[stroke-dashoffset:20] motion-safe:animate-[check-draw_300ms_ease-out_forwards]"
             />
           </svg>
-          <span className="text-[10px] font-medium">Copied</span>
+          <span className="text-2xs font-medium">Copied</span>
         </span>
       )}
       <span
@@ -731,7 +731,7 @@ export function SmartFilterBar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1"
+              className="h-6 px-1.5 text-2xs text-muted-foreground hover:text-foreground gap-1"
               onClick={clearAll}
             >
               <CloseIcon className="size-3" />
@@ -741,7 +741,7 @@ export function SmartFilterBar({
 
           <span
             className={cn(
-              'text-[11px] tabular-nums transition-colors duration-200',
+              'text-2xs tabular-nums transition-colors duration-200',
               isFiltered ? 'text-primary' : 'text-muted-foreground/60'
             )}
           >
@@ -765,14 +765,14 @@ export function SmartFilterBar({
             'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-200'
           )}
         >
-          <span className="text-[11px] text-warning/70">
+          <span className="text-2xs text-warning/70">
             Filtering {totalRows.toLocaleString()} loaded rows client-side
           </span>
           <Button
             variant="ghost"
             size="sm"
             className={cn(
-              'h-6 gap-1.5 text-[11px] text-warning hover:text-warning hover:bg-warning/10',
+              'h-6 gap-1.5 text-2xs text-warning hover:text-warning hover:bg-warning/10',
               'motion-safe:animate-pulse motion-safe:[animation-duration:3s] motion-safe:[animation-iteration-count:3]'
             )}
             onClick={onApplyToQuery}
@@ -796,7 +796,7 @@ export function SmartFilterBar({
         >
           {builderStep === 'column' && (
             <>
-              <div className="px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
+              <div className="px-2.5 py-1.5 text-2xs font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
                 {inputValue ? 'Matching columns' : 'Select column'}
               </div>
               {(dropdownItems as FilterColumn[]).length === 0 ? (
@@ -821,7 +821,7 @@ export function SmartFilterBar({
                     onMouseEnter={() => setHighlightedIndex(i)}
                   >
                     <span className="font-medium">{col.name}</span>
-                    <span className={cn('text-[10px]', getTypeColor(col.dataType))}>
+                    <span className={cn('text-2xs', getTypeColor(col.dataType))}>
                       {col.dataType}
                     </span>
                   </button>
@@ -858,7 +858,7 @@ export function SmartFilterBar({
 
           {builderStep === 'operator' && selectedColumn && (
             <>
-              <div className="px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
+              <div className="px-2.5 py-1.5 text-2xs font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
                 Operator for{' '}
                 <span className={getTypeColor(selectedColumn.dataType)}>{selectedColumn.name}</span>
               </div>
@@ -878,7 +878,7 @@ export function SmartFilterBar({
                   onMouseEnter={() => setHighlightedIndex(i)}
                 >
                   <span className="font-mono font-medium">{op.label}</span>
-                  <span className="text-[10px] text-muted-foreground">{op.description}</span>
+                  <span className="text-2xs text-muted-foreground">{op.description}</span>
                 </button>
               ))}
             </>

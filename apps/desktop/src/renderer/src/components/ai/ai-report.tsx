@@ -67,7 +67,7 @@ function ReportWidgetView({
           <WarningIcon className="size-4 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-medium">{widget.title}</p>
-            <p className="text-[11px] opacity-70 mt-0.5">{error}</p>
+            <p className="text-2xs opacity-70 mt-0.5">{error}</p>
           </div>
         </div>
       </div>

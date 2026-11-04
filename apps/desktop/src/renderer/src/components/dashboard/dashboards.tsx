@@ -117,7 +117,7 @@ export function Dashboards() {
             />
             <span>Dashboards</span>
             {sortedDashboards.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[11px] px-1.5 py-0">
+              <Badge variant="outline" className="ml-1 text-2xs px-1.5 py-0 tabular-nums">
                 {sortedDashboards.length}
               </Badge>
             )}
@@ -152,7 +152,7 @@ export function Dashboards() {
                                 <DashboardIcon className="size-3 text-muted-foreground" />
                                 <span className="text-xs truncate font-medium">{item.name}</span>
                               </div>
-                              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                              <div className="flex items-center gap-1.5 text-2xs text-muted-foreground">
                                 <span>
                                   {item.widgets.length} widget{item.widgets.length !== 1 ? 's' : ''}
                                 </span>
@@ -174,7 +174,7 @@ export function Dashboards() {
                             {item.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1">
                                 {item.tags.map((tag) => (
-                                  <Badge key={tag} variant="secondary" className="text-[10px]">
+                                  <Badge key={tag} variant="secondary" className="text-2xs">
                                     {tag}
                                   </Badge>
                                 ))}

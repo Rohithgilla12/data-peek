@@ -929,7 +929,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           </div>
           <div>
             <h2 className="text-lg font-medium">No Connection</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="font-sans text-sm text-muted-foreground mt-1">
               This tab&apos;s connection is no longer available.
               <br />
               Select a different connection from the sidebar.
@@ -1118,7 +1118,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           }
           refsSlot={
             refsSummary ? (
-              <code className="text-[10px] bg-muted/50 px-2 py-0.5 rounded">
+              <code className="text-2xs bg-muted/50 px-2 py-0.5 rounded">
                 {refsSummary.refCount} {refsSummary.refCount === 1 ? 'ref' : 'refs'} ·{' '}
                 {refsSummary.rowsInlined.toLocaleString()} rows inlined
               </code>

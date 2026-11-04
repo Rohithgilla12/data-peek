@@ -105,7 +105,7 @@ export function AISuggestions({ schemas, onSelect }: AISuggestionsProps) {
           className={cn(
             'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',
             'border',
-            'text-[11px] font-medium',
+            'text-2xs font-medium',
             'transition-all duration-200',
             'hover:scale-[1.02] hover:shadow-md',
             'active:scale-[0.98]',

@@ -373,7 +373,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                     <span className="text-sm font-medium">
                       {group.folder === '(ungrouped)' ? 'Ungrouped' : group.folder}
                     </span>
-                    <Badge variant="secondary" className="ml-auto text-[10px]">
+                    <Badge variant="secondary" className="ml-auto text-2xs">
                       {group.queries.length}
                     </Badge>
                   </CollapsibleTrigger>
@@ -394,12 +394,12 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                 <span className="font-medium text-sm truncate">{query.name}</span>
                                 <Badge
                                   variant="outline"
-                                  className={cn('text-[10px]', getQueryTypeColor(queryType))}
+                                  className={cn('text-2xs', getQueryTypeColor(queryType))}
                                 >
                                   {queryType}
                                 </Badge>
                                 {connectionName && (
-                                  <Badge variant="outline" className="text-[10px]">
+                                  <Badge variant="outline" className="text-2xs">
                                     {connectionName}
                                   </Badge>
                                 )}
@@ -415,7 +415,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                 {query.query}
                               </pre>
 
-                              <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                              <div className="flex items-center gap-3 mt-2 text-2xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <ClockIcon className="size-3" />
                                   {query.lastUsedAt
@@ -432,13 +432,13 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                       <Badge
                                         key={tag}
                                         variant="secondary"
-                                        className="text-[9px] px-1 py-0"
+                                        className="text-2xs px-1 py-0"
                                       >
                                         {tag}
                                       </Badge>
                                     ))}
                                     {query.tags.length > 3 && (
-                                      <span className="text-[9px]">+{query.tags.length - 3}</span>
+                                      <span className="text-2xs">+{query.tags.length - 3}</span>
                                     )}
                                   </div>
                                 )}

@@ -121,7 +121,7 @@ export function AIMetricCard({ metric, className }: AIMetricCardProps) {
           </div>
         ) : (
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold tracking-tight">
+            <span className="text-3xl font-semibold tracking-tight">
               {formatMetricValue(value, format)}
             </span>
           </div>

@@ -324,7 +324,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
 
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] text-muted-foreground">Connection</Label>
+                  <Label className="text-2xs text-muted-foreground">Connection</Label>
                   <Select
                     value={connectionId}
                     onValueChange={(v) => dispatch({ type: 'SET_CONNECTION_ID', payload: v })}
@@ -344,7 +344,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
 
                 {sourceType === 'saved-query' && (
                   <div className="col-span-2 space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">Saved Query</Label>
+                    <Label className="text-2xs text-muted-foreground">Saved Query</Label>
                     <Select
                       value={selectedQueryId}
                       onValueChange={(v) => dispatch({ type: 'SET_SELECTED_QUERY_ID', payload: v })}
@@ -378,7 +378,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
               {sourceType === 'inline' && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[11px] text-muted-foreground">SQL Query</Label>
+                    <Label className="text-2xs text-muted-foreground">SQL Query</Label>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -409,7 +409,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
               {sourceType === 'saved-query' && selectedQuery && (
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <Label className="text-[11px] text-muted-foreground">Query Preview</Label>
+                    <Label className="text-2xs text-muted-foreground">Query Preview</Label>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -461,7 +461,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                               {availableColumns.map((col) => (
                                 <td
                                   key={col}
-                                  className="px-2 py-1.5 whitespace-nowrap font-mono text-[11px] max-w-[200px] truncate"
+                                  className="px-2 py-1.5 whitespace-nowrap font-mono text-2xs max-w-[200px] truncate"
                                   title={String(row[col] ?? '')}
                                 >
                                   {row[col] === null ? (
@@ -477,7 +477,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                       </table>
                     </div>
                     {previewData.length > 5 && (
-                      <div className="px-2 py-1 text-[10px] text-muted-foreground bg-muted/30 border-t">
+                      <div className="px-2 py-1 text-2xs text-muted-foreground bg-muted/30 border-t">
                         Showing 5 of {previewData.length} rows
                       </div>
                     )}
@@ -510,15 +510,13 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                       )}
                     >
                       <ct.icon className="size-4" />
-                      <span className="text-[10px] font-medium">
-                        {ct.label.replace(' Chart', '')}
-                      </span>
+                      <span className="text-2xs font-medium">{ct.label.replace(' Chart', '')}</span>
                     </button>
                   ))}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">
+                    <Label className="text-2xs text-muted-foreground">
                       X Axis <span className="text-destructive">*</span>
                     </Label>
                     <Input
@@ -529,7 +527,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">
+                    <Label className="text-2xs text-muted-foreground">
                       Y Axis <span className="text-destructive">*</span>
                     </Label>
                     <Input
@@ -550,7 +548,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">
+                    <Label className="text-2xs text-muted-foreground">
                       Label <span className="text-destructive">*</span>
                     </Label>
                     <Input
@@ -561,7 +559,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">
+                    <Label className="text-2xs text-muted-foreground">
                       Value Column <span className="text-destructive">*</span>
                     </Label>
                     <Input
@@ -574,7 +572,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">Format</Label>
+                    <Label className="text-2xs text-muted-foreground">Format</Label>
                     <Select
                       value={kpiFormat}
                       onValueChange={(v) =>
@@ -594,7 +592,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">Prefix</Label>
+                    <Label className="text-2xs text-muted-foreground">Prefix</Label>
                     <Input
                       placeholder="$"
                       value={prefix}
@@ -603,7 +601,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">Suffix</Label>
+                    <Label className="text-2xs text-muted-foreground">Suffix</Label>
                     <Input
                       placeholder="%"
                       value={suffix}
@@ -621,7 +619,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                   Table Configuration
                 </Label>
                 <div className="space-y-1.5">
-                  <Label className="text-[11px] text-muted-foreground">Max Rows</Label>
+                  <Label className="text-2xs text-muted-foreground">Max Rows</Label>
                   <Input
                     type="number"
                     min={1}

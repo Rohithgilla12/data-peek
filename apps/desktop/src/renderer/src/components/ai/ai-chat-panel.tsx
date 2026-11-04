@@ -662,7 +662,7 @@ export function AIChatPanel({
                     <ChatIcon className="size-3 shrink-0" />
                     <span className="truncate">{currentSession?.title || 'AI Assistant'}</span>
                   </button>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-2xs text-muted-foreground">
                     {sessions.length} chat{sessions.length !== 1 ? 's' : ''} • Click to switch
                   </p>
                 </>
@@ -745,10 +745,10 @@ export function AIChatPanel({
           <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30 bg-muted/20">
             <DatabaseIcon className="size-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Connected to</span>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+            <Badge variant="secondary" className="text-2xs px-1.5 py-0 font-mono">
               {connection.name || connection.database}
             </Badge>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-2xs text-muted-foreground">
               {tableCount} table{tableCount !== 1 ? 's' : ''} available
             </span>
           </div>
@@ -775,7 +775,7 @@ export function AIChatPanel({
                   <div className="flex flex-col items-center justify-center py-12 text-center px-4">
                     <ChatIcon className="size-10 text-muted-foreground/30 mb-3" />
                     <p className="text-sm text-muted-foreground">No chat sessions yet</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">
+                    <p className="font-sans text-xs text-muted-foreground/60 mt-1">
                       Click &quot;New Chat&quot; to start a conversation
                     </p>
                   </div>
@@ -836,7 +836,7 @@ export function AIChatPanel({
                         ) : (
                           <p className="text-sm font-medium truncate">{session.title}</p>
                         )}
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                        <p className="text-2xs text-muted-foreground mt-0.5">
                           {session.messages.length} message
                           {session.messages.length !== 1 ? 's' : ''} •{' '}
                           {new Date(session.updatedAt).toLocaleDateString()}
@@ -895,7 +895,7 @@ export function AIChatPanel({
               </div>
             </div>
             <h3 className="font-semibold mb-2">Configure AI Assistant</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-[280px]">
+            <p className="font-sans text-sm text-muted-foreground mb-4 max-w-[280px]">
               Add your API key to start asking questions about your database in natural language.
             </p>
             <Button onClick={onOpenSettings} className="gap-2">
@@ -915,11 +915,11 @@ export function AIChatPanel({
               </div>
             </div>
             <h3 className="font-semibold mb-2">Connect to a Database</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-[280px]">
+            <p className="font-sans text-sm text-muted-foreground mb-4 max-w-[280px]">
               Select a database connection to start asking questions about your data.
             </p>
             <p className="text-xs text-muted-foreground/60">
-              Use <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">⌘P</kbd> to
+              Use <kbd className="px-1.5 py-0.5 rounded bg-muted text-2xs font-mono">⌘P</kbd> to
               open the connection picker
             </p>
           </div>
@@ -999,7 +999,7 @@ export function AIChatPanel({
                 {/* @-mention autocomplete menu (tables + columns) */}
                 {mentionOpen && (
                   <div className="absolute bottom-full left-0 mb-2 w-72 max-h-56 overflow-auto rounded-lg border border-border/60 bg-popover shadow-xl z-50 py-1">
-                    <div className="px-2.5 py-1 text-[10px] uppercase tracking-wide text-muted-foreground/50">
+                    <div className="px-2.5 py-1 text-2xs uppercase tracking-wide text-muted-foreground/50">
                       Reference a table or column
                     </div>
                     {mentionItems.map((item, i) => (
@@ -1019,7 +1019,7 @@ export function AIChatPanel({
                         )}
                       >
                         <span className="font-mono truncate">{item.label}</span>
-                        <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                        <span className="text-2xs text-muted-foreground/60 shrink-0">
                           {item.detail}
                         </span>
                       </button>
@@ -1038,7 +1038,7 @@ export function AIChatPanel({
                   rows={1}
                   className={cn(
                     'flex-1 resize-none bg-transparent',
-                    'text-sm placeholder:text-muted-foreground/50',
+                    'text-sm placeholder:font-sans placeholder:text-muted-foreground/50',
                     'focus:outline-none',
                     'min-h-[36px] max-h-[120px] py-2 px-2'
                   )}
@@ -1070,7 +1070,7 @@ export function AIChatPanel({
                   )}
                 </Button>
               </div>
-              <p className="text-[10px] text-muted-foreground/50 mt-2 text-center">
+              <p className="text-2xs text-muted-foreground/50 mt-2 text-center">
                 Press Enter to send, Shift+Enter for new line · Type @ to reference a table
               </p>
             </div>

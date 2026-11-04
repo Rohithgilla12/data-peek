@@ -194,7 +194,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
           {/* Left rail: checks */}
           <div className="flex flex-col overflow-y-auto border-r">
             <div className="px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <p className="text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Checks
               </p>
               <p className="mt-1 text-xs text-muted-foreground">Toggle which diagnostics to run.</p>
@@ -230,7 +230,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                               <Badge
                                 variant="outline"
                                 className={cn(
-                                  'h-5 px-1.5 text-[10px] font-semibold',
+                                  'h-5 px-1.5 text-2xs font-semibold',
                                   severityBadgeClass(check.severity)
                                 )}
                               >
@@ -239,7 +239,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                             ) : wasSkipped ? (
                               <Tooltip>
                                 <TooltipTrigger asChild>
-                                  <span className="text-[10px] text-muted-foreground">skipped</span>
+                                  <span className="text-2xs text-muted-foreground">skipped</span>
                                 </TooltipTrigger>
                                 <TooltipContent className="max-w-xs text-xs">
                                   {wasSkipped.reason}
@@ -249,7 +249,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                               <SuccessIcon className="size-3 text-success" />
                             ))}
                         </div>
-                        <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
+                        <p className="mt-0.5 line-clamp-2 text-2xs text-muted-foreground">
                           {check.description}
                         </p>
                       </div>
@@ -271,7 +271,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
             {!report && !error && !isRunning && (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
                 <ActivityIcon className="size-6 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
+                <p className="font-sans text-sm text-muted-foreground">
                   Run the diagnostics to surface schema issues.
                 </p>
               </div>
@@ -341,7 +341,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                                       <Badge
                                         variant="outline"
                                         className={cn(
-                                          'h-5 px-1.5 text-[10px] font-semibold',
+                                          'h-5 px-1.5 text-2xs font-semibold',
                                           severityBadgeClass(check.severity)
                                         )}
                                       >
@@ -349,9 +349,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                                         {findings.length === 1 ? '' : 's'}
                                       </Badge>
                                     ) : (
-                                      <span className="text-[11px] text-muted-foreground">
-                                        clean
-                                      </span>
+                                      <span className="text-2xs text-muted-foreground">clean</span>
                                     )}
                                   </div>
                                 </CardTitle>
@@ -415,18 +413,16 @@ function FindingRow({
           <Badge
             variant="outline"
             className={cn(
-              'h-4 px-1 text-[9px] font-semibold uppercase',
+              'h-4 px-1 text-2xs font-semibold uppercase',
               severityBadgeClass(finding.severity)
             )}
           >
             {finding.severity}
           </Badge>
         </div>
-        {finding.detail && (
-          <p className="mt-1 text-[11px] text-muted-foreground">{finding.detail}</p>
-        )}
+        {finding.detail && <p className="mt-1 text-2xs text-muted-foreground">{finding.detail}</p>}
         {finding.entity && (
-          <p className="mt-1 font-mono text-[10px] text-muted-foreground">
+          <p className="mt-1 font-mono text-2xs text-muted-foreground">
             {finding.entity.kind}
             {': '}
             {finding.entity.schema ? `${finding.entity.schema}.` : ''}
@@ -438,7 +434,7 @@ function FindingRow({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-[11px]"
+              className="h-6 px-2 text-2xs"
               onClick={() => setShowSql((v) => !v)}
             >
               {showSql ? 'Hide fix' : 'Show fix'}
@@ -446,7 +442,7 @@ function FindingRow({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-[11px]"
+              className="h-6 px-2 text-2xs"
               onClick={() => onCopy(finding.suggestedSql!)}
             >
               <CopyIcon className="mr-1 size-3" />
@@ -455,7 +451,7 @@ function FindingRow({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-2 text-[11px]"
+              className="h-6 px-2 text-2xs"
               onClick={() => onOpenInTab(finding.suggestedSql!)}
             >
               Open in new tab
@@ -463,7 +459,7 @@ function FindingRow({
           </div>
         )}
         {hasSql && showSql && (
-          <pre className="mt-2 overflow-auto rounded-md bg-muted/60 p-2 font-mono text-[11px] leading-snug">
+          <pre className="mt-2 overflow-auto rounded-md bg-muted/60 p-2 font-mono text-2xs leading-snug">
             {finding.suggestedSql}
           </pre>
         )}

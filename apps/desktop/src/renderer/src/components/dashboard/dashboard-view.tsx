@@ -316,7 +316,7 @@ function EmptyDashboard({ onAddWidget, onGenerateAI }: EmptyDashboardProps) {
           <DashboardIcon className="size-8 text-muted-foreground" />
         </div>
         <h2 className="text-xl font-semibold mb-2">No widgets yet</h2>
-        <p className="text-muted-foreground mb-6">
+        <p className="font-sans text-muted-foreground mb-6">
           Describe what you want and let AI build the whole dashboard — or add widgets yourself.
         </p>
         <div className="flex items-center gap-2">

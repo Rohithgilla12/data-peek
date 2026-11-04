@@ -53,22 +53,16 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
               {formatFullTime(compareRun.capturedAt)} → {formatFullTime(snapshot.capturedAt)}
             </span>
             <span className="flex items-center gap-1.5 text-muted-foreground tabular-nums">
-              <Badge
-                variant="secondary"
-                className="h-4 px-1.5 text-[10px] bg-success/10 text-success"
-              >
+              <Badge variant="secondary" className="h-4 px-1.5 text-2xs bg-success/10 text-success">
                 +{diff.addedRowKeys.size} added
               </Badge>
               <Badge
                 variant="secondary"
-                className="h-4 px-1.5 text-[10px] bg-destructive/10 text-destructive"
+                className="h-4 px-1.5 text-2xs bg-destructive/10 text-destructive"
               >
                 −{diff.removedRowKeys.size} removed
               </Badge>
-              <Badge
-                variant="secondary"
-                className="h-4 px-1.5 text-[10px] bg-warning/10 text-warning"
-              >
+              <Badge variant="secondary" className="h-4 px-1.5 text-2xs bg-warning/10 text-warning">
                 {changedCells} cells changed
               </Badge>
             </span>

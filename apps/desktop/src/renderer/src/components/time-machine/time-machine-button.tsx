@@ -41,7 +41,7 @@ export function TimeMachineButton({ tabId, disabled }: TimeMachineButtonProps) {
             <HistoryIcon className="size-3.5" />
             Time Machine
             {isOpen && runCount > 0 && (
-              <Badge variant="secondary" className="h-4 px-1.5 text-[10px] tabular-nums">
+              <Badge variant="secondary" className="h-4 px-1.5 text-2xs tabular-nums">
                 {runCount}
               </Badge>
             )}

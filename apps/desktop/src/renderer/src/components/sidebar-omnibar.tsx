@@ -333,7 +333,7 @@ export function SidebarOmnibar() {
             className="flex h-7 w-full bg-transparent py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
           />
           {!isActive && (
-            <kbd className="pointer-events-none shrink-0 rounded border border-border/50 bg-sidebar-accent/50 px-1 py-0.5 text-[10px] font-mono text-muted-foreground/50">
+            <kbd className="pointer-events-none shrink-0 rounded border border-border/50 bg-sidebar-accent/50 px-1 py-0.5 text-2xs font-mono text-muted-foreground/50">
               /
             </kbd>
           )}
@@ -360,7 +360,7 @@ export function SidebarOmnibar() {
                   <CommandPrimitive.Group
                     key={groupKey}
                     heading={GROUP_LABELS[groupKey]}
-                    className="px-1 py-0.5 [&_[cmdk-group-heading]]:px-1.5 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground/60"
+                    className="px-1 py-0.5 [&_[cmdk-group-heading]]:px-1.5 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-2xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground/60"
                   >
                     {groupItems.map((item) => (
                       <CommandPrimitive.Item
@@ -375,7 +375,7 @@ export function SidebarOmnibar() {
                           <HighlightMatch text={item.label} query={query} />
                         </span>
                         {item.sublabel && (
-                          <span className="shrink-0 text-[10px] text-muted-foreground/50 max-w-[120px] truncate">
+                          <span className="shrink-0 text-2xs text-muted-foreground/50 max-w-[120px] truncate">
                             {item.sublabel}
                           </span>
                         )}

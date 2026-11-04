@@ -110,7 +110,7 @@ function DataTypeBadge({ type }: { type: string }) {
   }
 
   return (
-    <Badge variant="outline" className={`text-[11px] px-1.5 py-0 font-mono ${getTypeColor(type)}`}>
+    <Badge variant="outline" className={`text-2xs px-1.5 py-0 font-mono ${getTypeColor(type)}`}>
       {type}
     </Badge>
   )
@@ -121,7 +121,7 @@ function SequenceRow({ sequence }: { sequence: SequenceInfo }) {
     <SidebarMenuSubButton className="cursor-default" title={formatSequenceDetail(sequence)}>
       <ListNumbersIcon className="size-3.5 text-cat-pink" />
       <span className="flex-1 truncate">{sequence.name}</span>
-      <span className="text-[11px] text-muted-foreground truncate">
+      <span className="text-2xs text-muted-foreground truncate">
         {formatSequenceDetail(sequence)}
       </span>
     </SidebarMenuSubButton>
@@ -249,7 +249,7 @@ function TriggerSubItem({
           >
             {trigger.name}
           </span>
-          <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-cat-green">
+          <Badge variant="outline" className="text-2xs px-1.5 py-0 text-cat-green">
             trig
           </Badge>
         </SidebarMenuSubButton>
@@ -302,11 +302,7 @@ function TriggerSubItem({
             <span>{trigger.timing}</span>
             <span className="flex flex-wrap gap-1">
               {trigger.events.map((event) => (
-                <Badge
-                  key={event}
-                  variant="outline"
-                  className="text-[10px] px-1 py-0 text-cat-green"
-                >
+                <Badge key={event} variant="outline" className="text-2xs px-1 py-0 text-cat-green">
                   {event}
                 </Badge>
               ))}
@@ -476,17 +472,17 @@ function VirtualizedSchemaItems({
                     />
                     <span className="flex-1 truncate">{table.name}</span>
                     {table.type === 'view' && (
-                      <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-cat-purple">
+                      <Badge variant="outline" className="text-2xs px-1.5 py-0 text-cat-purple">
                         view
                       </Badge>
                     )}
                     {table.type === 'materialized_view' && (
-                      <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-cat-teal">
+                      <Badge variant="outline" className="text-2xs px-1.5 py-0 text-cat-teal">
                         mview
                       </Badge>
                     )}
                     {!isExpanded && (
-                      <span className="text-[10px] text-muted-foreground/60 group-hover/table:hidden">
+                      <span className="text-2xs text-muted-foreground/60 group-hover/table:hidden">
                         {table.columns.length}
                       </span>
                     )}
@@ -536,11 +532,11 @@ function VirtualizedSchemaItems({
                                 {column.name}
                               </span>
                               {!column.isNullable && !column.isPrimaryKey && (
-                                <span className="text-destructive text-[10px] shrink-0">*</span>
+                                <span className="text-destructive text-2xs shrink-0">*</span>
                               )}
                               <DataTypeBadge type={column.dataType} />
                               {column.foreignKey && (
-                                <span className="text-[9px] text-cat-blue/80 shrink-0 hidden group-hover/col:inline">
+                                <span className="text-2xs text-cat-blue/80 shrink-0 hidden group-hover/col:inline">
                                   → {column.foreignKey.referencedTable}
                                 </span>
                               )}
@@ -654,7 +650,7 @@ function VirtualizedSchemaItems({
                     <span className="flex-1 truncate">{routine.name}</span>
                     <Badge
                       variant="outline"
-                      className={`text-[11px] px-1.5 py-0 ${
+                      className={`text-2xs px-1.5 py-0 ${
                         routine.type === 'function' ? 'text-cat-cyan' : 'text-cat-orange'
                       }`}
                     >
@@ -707,7 +703,7 @@ function VirtualizedSchemaItems({
                               <span>{param.name}</span>
                               <Badge
                                 variant="outline"
-                                className={`text-[11px] px-1.5 py-0 ${
+                                className={`text-2xs px-1.5 py-0 ${
                                   param.mode === 'OUT'
                                     ? 'text-cat-orange'
                                     : param.mode === 'INOUT'
@@ -1438,7 +1434,7 @@ export function SchemaExplorer() {
                   <DropdownMenuRadioItem key={schema.name} value={schema.name} className="text-xs">
                     <DatabaseIcon className="size-3.5 mr-2 text-muted-foreground" />
                     {schema.name}
-                    <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0">
+                    <Badge variant="outline" className="ml-auto text-2xs px-1 py-0 tabular-nums">
                       {schema.tables.length}
                     </Badge>
                   </DropdownMenuRadioItem>
@@ -1511,7 +1507,10 @@ export function SchemaExplorer() {
                       />
                       <DatabaseIcon className="size-4 text-muted-foreground" />
                       <span>{schema.name}</span>
-                      <Badge variant="outline" className="ml-auto text-[11px] px-1.5 py-0">
+                      <Badge
+                        variant="outline"
+                        className="ml-auto text-2xs px-1.5 py-0 tabular-nums"
+                      >
                         {schema.tables.length +
                           schemaSequences(schema.name).length +
                           (schema.routines?.length ?? 0) +
@@ -1622,7 +1621,7 @@ export function SchemaExplorer() {
                                       {table.type === 'view' && (
                                         <Badge
                                           variant="outline"
-                                          className="text-[11px] px-1.5 py-0 text-cat-purple"
+                                          className="text-2xs px-1.5 py-0 text-cat-purple"
                                         >
                                           view
                                         </Badge>
@@ -1630,13 +1629,13 @@ export function SchemaExplorer() {
                                       {table.type === 'materialized_view' && (
                                         <Badge
                                           variant="outline"
-                                          className="text-[11px] px-1.5 py-0 text-cat-teal"
+                                          className="text-2xs px-1.5 py-0 text-cat-teal"
                                         >
                                           mview
                                         </Badge>
                                       )}
                                       {!expandedTables.has(`${schema.name}.${table.name}`) && (
-                                        <span className="text-[10px] text-muted-foreground/60 group-hover/table:hidden">
+                                        <span className="text-2xs text-muted-foreground/60 group-hover/table:hidden">
                                           {table.columns.length}
                                         </span>
                                       )}
@@ -1697,13 +1696,13 @@ export function SchemaExplorer() {
                                                   {column.name}
                                                 </span>
                                                 {!column.isNullable && !column.isPrimaryKey && (
-                                                  <span className="text-destructive text-[10px] shrink-0">
+                                                  <span className="text-destructive text-2xs shrink-0">
                                                     *
                                                   </span>
                                                 )}
                                                 <DataTypeBadge type={column.dataType} />
                                                 {column.foreignKey && (
-                                                  <span className="text-[9px] text-cat-blue/80 shrink-0 hidden group-hover/col:inline">
+                                                  <span className="text-2xs text-cat-blue/80 shrink-0 hidden group-hover/col:inline">
                                                     → {column.foreignKey.referencedTable}
                                                   </span>
                                                 )}
@@ -1801,7 +1800,7 @@ export function SchemaExplorer() {
                                       <span className="flex-1">{routine.name}</span>
                                       <Badge
                                         variant="outline"
-                                        className={`text-[11px] px-1.5 py-0 ${
+                                        className={`text-2xs px-1.5 py-0 ${
                                           routine.type === 'function'
                                             ? 'text-cat-cyan'
                                             : 'text-cat-orange'
@@ -1858,7 +1857,7 @@ export function SchemaExplorer() {
                                                 <span>{param.name}</span>
                                                 <Badge
                                                   variant="outline"
-                                                  className={`text-[11px] px-1.5 py-0 ${
+                                                  className={`text-2xs px-1.5 py-0 ${
                                                     param.mode === 'OUT'
                                                       ? 'text-cat-orange'
                                                       : param.mode === 'INOUT'

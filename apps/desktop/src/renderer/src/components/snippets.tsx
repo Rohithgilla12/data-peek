@@ -104,7 +104,7 @@ export function Snippets() {
             />
             <span>Snippets</span>
             {allSnippets.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[11px] px-1.5 py-0">
+              <Badge variant="outline" className="ml-1 text-2xs px-1.5 py-0 tabular-nums">
                 {allSnippets.length}
               </Badge>
             )}
@@ -163,13 +163,13 @@ export function Snippets() {
                               <div className="flex items-center gap-2 w-full">
                                 <Badge
                                   variant="outline"
-                                  className={`text-[10px] px-1.5 py-0.5 font-medium shrink-0 border-0 ${getSnippetCategoryColor(snippet.category)}`}
+                                  className={`text-2xs px-1.5 py-0.5 font-medium shrink-0 border-0 ${getSnippetCategoryColor(snippet.category)}`}
                                 >
                                   {snippet.category.toUpperCase()}
                                 </Badge>
                                 <span className="text-xs font-medium truncate">{snippet.name}</span>
                               </div>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70 pl-0.5">
+                              <div className="flex items-center gap-2 text-2xs text-muted-foreground/70 pl-0.5">
                                 {snippet.triggerPrefix && (
                                   <span className="flex items-center gap-1 bg-muted/50 px-1.5 py-0.5 rounded">
                                     <CodeIcon className="size-2.5" />
@@ -196,7 +196,7 @@ export function Snippets() {
                               </p>
                             </div>
                             <div className="px-3 py-2 bg-popover">
-                              <pre className="text-[11px] font-mono leading-relaxed text-popover-foreground/90 whitespace-pre-wrap">
+                              <pre className="text-2xs font-mono leading-relaxed text-popover-foreground/90 whitespace-pre-wrap">
                                 {cleanSnippetTemplate(snippet.template)}
                               </pre>
                             </div>

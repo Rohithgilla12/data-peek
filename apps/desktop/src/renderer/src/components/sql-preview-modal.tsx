@@ -138,7 +138,7 @@ export function SqlPreviewModal({
                     <span className="text-xs text-muted-foreground">#{index + 1}</span>
                     <Badge
                       variant="outline"
-                      className={cn('text-[10px] px-1.5', getOperationColor(statement.type))}
+                      className={cn('text-2xs px-1.5', getOperationColor(statement.type))}
                     >
                       {getOperationLabel(statement.type)}
                     </Badge>

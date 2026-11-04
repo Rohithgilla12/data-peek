@@ -89,7 +89,7 @@ function ResultTable({ result }: { result: QueryResult }) {
         </tbody>
       </table>
       {isTruncated && (
-        <p className="text-[10px] text-muted-foreground px-2 py-1.5 border-t border-border/30">
+        <p className="text-2xs text-muted-foreground px-2 py-1.5 border-t border-border/30">
           Showing {MAX_DISPLAY_ROWS} of {result.rows.length} rows
         </p>
       )}
@@ -252,7 +252,7 @@ export const NotebookCell = memo(function NotebookCell({
 
         <span
           className={cn(
-            'text-[10px] font-medium px-1.5 py-0.5 rounded font-mono uppercase tracking-wide',
+            'text-2xs font-medium px-1.5 py-0.5 rounded font-mono uppercase tracking-wide',
             cell.type === 'sql' ? 'text-primary bg-primary/10' : 'text-muted-foreground bg-muted/50'
           )}
         >
@@ -262,13 +262,13 @@ export const NotebookCell = memo(function NotebookCell({
         <StatusIcon status={status} />
 
         {durationMs !== null && status !== 'running' && (
-          <span className="text-[10px] text-muted-foreground font-mono">
+          <span className="text-2xs text-muted-foreground font-mono">
             {durationMs < 1000 ? `${durationMs}ms` : `${(durationMs / 1000).toFixed(2)}s`}
           </span>
         )}
 
         {liveResult && status === 'success' && (
-          <span className="text-[10px] text-muted-foreground font-mono">
+          <span className="text-2xs text-muted-foreground font-mono">
             {liveResult.rows.length} row{liveResult.rows.length !== 1 ? 's' : ''}
           </span>
         )}
@@ -418,7 +418,7 @@ export const NotebookCell = memo(function NotebookCell({
             <div>
               <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/20">
                 <PinIcon weight="fill" className="size-3 text-muted-foreground/60" />
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-2xs text-muted-foreground">
                   Pinned — ran {new Date(pinnedResult.executedAt).toLocaleString()}
                   {pinnedResult.durationMs
                     ? ` · ${pinnedResult.durationMs < 1000 ? `${pinnedResult.durationMs}ms` : `${(pinnedResult.durationMs / 1000).toFixed(2)}s`}`
@@ -444,7 +444,7 @@ export const NotebookCell = memo(function NotebookCell({
 
           {!liveError && !liveResult && !hasPinnedResult && status === 'idle' && (
             <div className="px-3 py-2">
-              <p className="text-[10px] text-muted-foreground/50">Not yet executed — ⇧⏎ to run</p>
+              <p className="text-2xs text-muted-foreground/50">Not yet executed — ⇧⏎ to run</p>
             </div>
           )}
         </div>

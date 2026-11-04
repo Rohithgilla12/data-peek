@@ -213,11 +213,11 @@ export function AIChart({ chartData, className }: AIChartProps) {
 
         {/* Data info badges */}
         <div className="flex items-center gap-2 mt-2">
-          <Badge variant="outline" className="text-[10px] gap-1">
+          <Badge variant="outline" className="text-2xs gap-1">
             <HashIcon className="size-2.5" />
             {data.length} rows
           </Badge>
-          <Badge variant="outline" className="text-[10px] gap-1">
+          <Badge variant="outline" className="text-2xs gap-1">
             {xDataType === 'date' ? (
               <CalendarIcon className="size-2.5" />
             ) : xDataType === 'number' ? (
@@ -231,7 +231,7 @@ export function AIChart({ chartData, className }: AIChartProps) {
             <Badge
               key={key}
               variant="outline"
-              className="text-[10px] gap-1"
+              className="text-2xs gap-1"
               style={{
                 borderColor: `color-mix(in oklab, ${colors[i % colors.length]} 31%, transparent)`
               }}
@@ -427,7 +427,7 @@ export function AIChart({ chartData, className }: AIChartProps) {
       {/* Stats footer */}
       {stats && chartType !== 'pie' && (
         <div className="px-4 py-2 border-t border-border/30 bg-muted/10">
-          <div className="flex items-center justify-between gap-4 text-[10px]">
+          <div className="flex items-center justify-between gap-4 text-2xs">
             <div className="flex items-center gap-4">
               <span className="text-muted-foreground">
                 Sum:{' '}

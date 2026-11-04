@@ -147,7 +147,7 @@ export function SavedQueries() {
             />
             <span>Saved Queries</span>
             {sortedQueries.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[11px] px-1.5 py-0">
+              <Badge variant="outline" className="ml-1 text-2xs px-1.5 py-0 tabular-nums">
                 {sortedQueries.length}
               </Badge>
             )}
@@ -176,13 +176,13 @@ export function SavedQueries() {
                                 <div className="flex items-center gap-1.5 w-full">
                                   <Badge
                                     variant="outline"
-                                    className={`text-[11px] px-1.5 py-0 shrink-0 ${getQueryTypeColor(queryType)}`}
+                                    className={`text-2xs px-1.5 py-0 shrink-0 ${getQueryTypeColor(queryType)}`}
                                   >
                                     {queryType}
                                   </Badge>
                                   <span className="text-xs truncate font-medium">{item.name}</span>
                                 </div>
-                                <span className="text-[11px] text-muted-foreground font-mono truncate w-full">
+                                <span className="text-2xs text-muted-foreground font-mono truncate w-full">
                                   {truncateQuery(item.query)}
                                 </span>
                               </div>

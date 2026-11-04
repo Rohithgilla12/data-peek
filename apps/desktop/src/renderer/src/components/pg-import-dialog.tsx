@@ -156,7 +156,7 @@ export function PgImportDialog() {
             </div>
 
             {importProgress.currentStatement && (
-              <p className="text-[11px] text-muted-foreground font-mono truncate">
+              <p className="text-2xs text-muted-foreground font-mono truncate">
                 {importProgress.currentStatement}
               </p>
             )}
@@ -229,7 +229,7 @@ export function PgImportDialog() {
                         <p className="text-destructive font-medium">
                           Statement {err.statementIndex + 1}
                         </p>
-                        <p className="font-mono text-[11px] text-muted-foreground truncate">
+                        <p className="font-mono text-2xs text-muted-foreground truncate">
                           {err.statement}
                         </p>
                         <p className="text-destructive">{err.error}</p>

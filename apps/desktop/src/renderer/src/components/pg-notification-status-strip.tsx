@@ -346,7 +346,7 @@ export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCoun
       )}
 
       {(failed || reconnectError) && (
-        <div className="relative px-3 pb-1.5 text-[11px] text-destructive/80 truncate">
+        <div className="relative px-3 pb-1.5 text-2xs text-destructive/80 truncate">
           {reconnectError ?? status?.lastError ?? 'Connection lost'}
         </div>
       )}

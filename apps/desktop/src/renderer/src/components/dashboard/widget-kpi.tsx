@@ -171,7 +171,7 @@ export function WidgetKPI({ config, data }: WidgetKPIProps) {
   return (
     <div className="flex h-full flex-col items-center justify-center p-2">
       <p className="text-xs text-muted-foreground font-medium mb-1 text-center">{label}</p>
-      <div className="text-3xl font-bold tracking-tight text-center">{formattedValue}</div>
+      <div className="text-3xl font-semibold tracking-tight text-center">{formattedValue}</div>
       {trend && (
         <div
           className={cn(

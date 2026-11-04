@@ -115,7 +115,7 @@ function EventRow({ event, isFresh }: { event: PgNotificationEvent; isFresh: boo
           title="Copy payload"
         >
           {copied ? (
-            <span className="text-[10px] text-success">ok</span>
+            <span className="text-2xs text-success">ok</span>
           ) : (
             <CopyIcon className="size-3" />
           )}
@@ -255,7 +255,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
         <div className="space-y-2">
           <ErrorIcon className="size-8 text-muted-foreground mx-auto" />
           <p className="text-sm font-medium">PostgreSQL only</p>
-          <p className="text-xs text-muted-foreground">
+          <p className="font-sans text-xs text-muted-foreground">
             LISTEN/NOTIFY is a PostgreSQL feature. Connect to a PostgreSQL database to use this
             panel.
           </p>
@@ -320,7 +320,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
               >
                 {ch.name}
                 {ch.eventCount > 0 && (
-                  <span className="text-muted-foreground text-[10px]">({ch.eventCount})</span>
+                  <span className="text-muted-foreground text-2xs">({ch.eventCount})</span>
                 )}
                 <button
                   type="button"

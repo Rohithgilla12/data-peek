@@ -51,7 +51,7 @@ export function WatchSparkline({ points, className }: WatchSparklineProps) {
     return (
       <div
         className={cn(
-          'flex h-9 items-center justify-center rounded border border-dashed text-[10px] text-muted-foreground',
+          'flex h-9 items-center justify-center rounded border border-dashed text-2xs text-muted-foreground',
           className
         )}
       >
@@ -83,7 +83,7 @@ export function WatchSparkline({ points, className }: WatchSparklineProps) {
           <circle key={i} cx={cx} cy={H - PAD} r={2} className="fill-destructive" />
         ))}
       </svg>
-      <div className="flex justify-between text-[10px] tabular-nums text-muted-foreground">
+      <div className="flex justify-between text-2xs tabular-nums text-muted-foreground">
         <span>
           min {min} · max {max}
         </span>

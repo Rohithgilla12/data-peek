@@ -249,7 +249,7 @@ export function ShareImageDialog({
 
                 {showBranding && (
                   <div
-                    className="mt-3 flex items-center justify-end gap-1.5 font-mono text-[0.6875rem] tracking-wide"
+                    className="mt-3 flex items-center justify-end gap-1.5 font-mono text-2xs tracking-wide"
                     style={{
                       color: theme === 'light' ? 'oklch(0.55 0.02 250)' : 'oklch(0.55 0.08 250)'
                     }}

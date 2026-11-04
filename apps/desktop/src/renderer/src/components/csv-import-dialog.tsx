@@ -336,7 +336,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                             <TableRow key={col.name}>
                               <TableCell className="text-xs font-mono">{col.name}</TableCell>
                               <TableCell className="text-xs">
-                                <Badge variant="outline" className="text-[11px]">
+                                <Badge variant="outline" className="text-2xs">
                                   {col.dataType}
                                 </Badge>
                               </TableCell>
@@ -590,15 +590,17 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-md bg-muted p-3 text-center">
-                      <p className="text-lg font-bold">{result.rowsImported.toLocaleString()}</p>
+                      <p className="text-lg font-semibold">
+                        {result.rowsImported.toLocaleString()}
+                      </p>
                       <p className="text-xs text-muted-foreground">Imported</p>
                     </div>
                     <div className="rounded-md bg-muted p-3 text-center">
-                      <p className="text-lg font-bold">{result.rowsSkipped.toLocaleString()}</p>
+                      <p className="text-lg font-semibold">{result.rowsSkipped.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">Skipped</p>
                     </div>
                     <div className="rounded-md bg-muted p-3 text-center">
-                      <p className="text-lg font-bold">{result.rowsFailed.toLocaleString()}</p>
+                      <p className="text-lg font-semibold">{result.rowsFailed.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">Failed</p>
                     </div>
                   </div>

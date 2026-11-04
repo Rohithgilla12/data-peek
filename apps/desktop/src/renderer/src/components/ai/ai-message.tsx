@@ -549,7 +549,7 @@ export function AIMessage({
           <div className="relative group/content">
             <div
               className={cn(
-                'text-sm leading-relaxed',
+                'font-sans text-sm leading-relaxed',
                 isUser ? 'text-foreground' : 'text-foreground/90'
               )}
             >
@@ -601,7 +601,7 @@ export function AIMessage({
         {/* Live streaming activity: a grounding/tool step, or "Thinking…" before
             any prose has arrived. Hidden once prose is streaming with no active step. */}
         {!isUser && message.streaming && (message.activity || !message.content) && (
-          <div className="flex items-center gap-1.5 text-[11px] text-primary/90">
+          <div className="flex items-center gap-1.5 text-2xs text-primary/90">
             <SpinnerIcon className="size-3 animate-spin" />
             {message.activity ?? 'Thinking…'}
           </div>
@@ -609,7 +609,7 @@ export function AIMessage({
 
         {/* Grounded-against-DB indicator (BYOH agentic mode queried the live DB) */}
         {!isUser && message.grounded && (
-          <div className="flex items-center gap-1 text-[10px] text-success/90">
+          <div className="flex items-center gap-1 text-2xs text-success/90">
             <CheckIcon className="size-3" />
             Grounded against your database
           </div>
@@ -626,7 +626,7 @@ export function AIMessage({
                 <button
                   type="button"
                   disabled={pinBusy}
-                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-2xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                 >
                   {pinBusy ? (
                     <SpinnerIcon className="size-3 animate-spin" />
@@ -652,7 +652,7 @@ export function AIMessage({
               </DropdownMenuContent>
             </DropdownMenu>
             {pinResult && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-success/90">
+              <span className="inline-flex items-center gap-1 text-2xs text-success/90">
                 <CheckIcon className="size-3" />
                 {pinResult}
               </span>
@@ -682,7 +682,7 @@ export function AIMessage({
           )}
 
         {/* Timestamp */}
-        <p className="text-[10px] text-muted-foreground/50 mt-1">
+        <p className="text-2xs text-muted-foreground/50 mt-1">
           {message.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </p>
       </div>

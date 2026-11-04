@@ -56,7 +56,7 @@ export function McpSettingsSection() {
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <Label htmlFor="mcp-enabled">Enable MCP server</Label>
-          <p className="text-xs text-muted-foreground">
+          <p className="font-sans text-xs text-muted-foreground">
             Let local AI agents query your connections. Writes always require approval here.
           </p>
         </div>
@@ -72,7 +72,9 @@ export function McpSettingsSection() {
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <Label htmlFor="mcp-port">Port</Label>
-          <p className="text-xs text-muted-foreground">Local port the MCP server listens on</p>
+          <p className="font-sans text-xs text-muted-foreground">
+            Local port the MCP server listens on
+          </p>
         </div>
         <Input
           id="mcp-port"
@@ -94,7 +96,9 @@ export function McpSettingsSection() {
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <Label htmlFor="mcp-token">Access token</Label>
-          <p className="text-xs text-muted-foreground">Bearer token for MCP client setup</p>
+          <p className="font-sans text-xs text-muted-foreground">
+            Bearer token for MCP client setup
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Input id="mcp-token" readOnly className="w-40 font-mono text-xs" value={status.token} />

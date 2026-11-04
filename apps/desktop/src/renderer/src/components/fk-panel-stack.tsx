@@ -75,7 +75,7 @@ function FKPanel({
         <div className="flex items-center gap-2">
           <LinkIcon className="size-4 text-cat-blue" />
           <span className="font-medium">{panel.foreignKey.referencedTable}</span>
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-2xs">
             {panel.foreignKey.referencedSchema}
           </Badge>
         </div>
@@ -121,7 +121,7 @@ function FKPanel({
                         <span className="text-xs text-muted-foreground">{key}</span>
                         {hasFK && <LinkIcon className="size-3 text-cat-blue" />}
                         {columnInfo?.isPrimaryKey && (
-                          <Badge variant="secondary" className="text-[9px] px-1 py-0">
+                          <Badge variant="secondary" className="text-2xs px-1 py-0">
                             PK
                           </Badge>
                         )}

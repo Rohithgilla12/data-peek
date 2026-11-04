@@ -126,7 +126,7 @@ function TextCellEditor({
           </div>
 
           <div className="text-xs text-muted-foreground">
-            Press <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">⌘/Ctrl + Enter</kbd> to
+            Press <kbd className="px-1 py-0.5 bg-muted rounded text-2xs">⌘/Ctrl + Enter</kbd> to
             save
           </div>
 
@@ -520,11 +520,11 @@ export function EditableCell({
             <div className="space-y-1">
               <p className="text-xs font-mono break-all">{displayValue}</p>
               {isModified && !isNewRow && (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-2xs text-muted-foreground">
                   Original: {formatForInput(originalValue, dataType) || 'NULL'}
                 </p>
               )}
-              {!isDeleted && <p className="text-[10px] text-muted-foreground">Click to edit</p>}
+              {!isDeleted && <p className="text-2xs text-muted-foreground">Click to edit</p>}
             </div>
           </TooltipContent>
         </Tooltip>

@@ -51,7 +51,7 @@ export function FKCellValue({
         <TooltipContent side="bottom" className="max-w-sm">
           <div className="space-y-1">
             <p className="text-xs font-medium">View in {foreignKey.referencedTable}</p>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
               Click to open panel, {keys.mod}+Click for new tab
             </p>
             <pre className="text-xs text-muted-foreground font-mono mt-1">{stringValue}</pre>

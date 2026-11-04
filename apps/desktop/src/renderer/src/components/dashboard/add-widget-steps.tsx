@@ -442,7 +442,7 @@ function ChartConfig({ chartType, xKey, yKeys, availableColumns, dispatch }: Cha
               )}
             >
               <ct.icon className="size-4" />
-              <span className="text-[11px] font-medium">{ct.label.replace(' Chart', '')}</span>
+              <span className="text-2xs font-medium">{ct.label.replace(' Chart', '')}</span>
             </button>
           ))}
         </div>
@@ -481,13 +481,13 @@ function ChartConfig({ chartType, xKey, yKeys, availableColumns, dispatch }: Cha
       </div>
       {availableColumns.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide mr-1">
+          <span className="text-2xs text-muted-foreground uppercase tracking-wide mr-1">
             Columns:
           </span>
           {availableColumns.map((col) => (
             <span
               key={col}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
+              className="text-2xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
             >
               {col}
             </span>
@@ -607,13 +607,13 @@ function KPIConfig({
 
       {availableColumns.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide mr-1">
+          <span className="text-2xs text-muted-foreground uppercase tracking-wide mr-1">
             Columns:
           </span>
           {availableColumns.map((col) => (
             <span
               key={col}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
+              className="text-2xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
             >
               {col}
             </span>
@@ -655,7 +655,7 @@ function WidgetWidthSelector({ widgetWidth, dispatch }: WidgetWidthSelectorProps
             )}
           >
             <span>{option.label}</span>
-            <span className="text-[10px] text-muted-foreground">{option.width}</span>
+            <span className="text-2xs text-muted-foreground">{option.width}</span>
           </button>
         ))}
       </div>

@@ -199,16 +199,13 @@ function SmartField({
         <Label className="text-sm font-medium">{column.name}</Label>
         {isRequired && <span className="text-destructive text-xs">*</span>}
         {column.isPrimaryKey && (
-          <Badge
-            variant="outline"
-            className="text-[9px] px-1.5 py-0 text-warning border-warning/30"
-          >
+          <Badge variant="outline" className="text-2xs px-1.5 py-0 text-warning border-warning/30">
             PK
           </Badge>
         )}
         <Badge
           variant="outline"
-          className={cn('text-[9px] px-1.5 py-0 font-mono ml-auto', iconColor)}
+          className={cn('text-2xs px-1.5 py-0 font-mono ml-auto', iconColor)}
         >
           {column.dataType}
         </Badge>
@@ -517,7 +514,7 @@ function SmartField({
                   <TooltipTrigger asChild>
                     <Badge
                       variant="outline"
-                      className="h-9 px-2 text-[10px] text-cat-blue border-cat-blue/30 flex items-center gap-1 shrink-0"
+                      className="h-9 px-2 text-2xs text-cat-blue border-cat-blue/30 flex items-center gap-1 shrink-0"
                     >
                       <LinkIcon className="size-3" />
                       {column.foreignKey.referencedTable}
@@ -556,7 +553,7 @@ function SmartField({
 
       {/* Helper text */}
       {hasDefault && (
-        <p className="text-[10px] text-muted-foreground pl-5">
+        <p className="text-2xs text-muted-foreground pl-5">
           Default: <code className="bg-muted/50 px-1 rounded">{column.defaultValue}</code>
         </p>
       )}
@@ -712,9 +709,7 @@ export function AddRowSheet({
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Optional Fields
                   </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    ({optionalColumns.length})
-                  </span>
+                  <span className="text-2xs text-muted-foreground">({optionalColumns.length})</span>
                   <div className="h-px flex-1 bg-border/50" />
                   {showOptional ? (
                     <CaretUpIcon className="size-4 text-muted-foreground" />

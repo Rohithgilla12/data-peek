@@ -153,7 +153,7 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
                       {!run.hasRows && ' · too large to store — metadata only'}
                       {unchanged && ' · no change vs previous run'}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-2xs text-muted-foreground">
                       Click to view · ⌥-click to compare with the selected run
                     </p>
                   </TooltipContent>

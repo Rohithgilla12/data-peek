@@ -122,12 +122,12 @@ export function AISQLPreview({
       <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
         <div className="flex items-center gap-2">
           <CodeIcon className="size-3.5 text-primary" />
-          <span className="text-[11px] font-medium text-muted-foreground">Generated SQL</span>
+          <span className="text-2xs font-medium text-muted-foreground">Generated SQL</span>
           {lines.length > 3 && (
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {isExpanded ? (
                 <>
@@ -147,7 +147,7 @@ export function AISQLPreview({
         <button
           type="button"
           onClick={() => copy(sql)}
-          className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground transition-colors"
         >
           {copied ? (
             <>
@@ -183,7 +183,7 @@ export function AISQLPreview({
       {/* Explanation */}
       {explanation && (
         <div className="px-3 py-2 border-t border-border bg-muted/40">
-          <p className="text-[11px] text-muted-foreground leading-relaxed">{explanation}</p>
+          <p className="text-2xs text-muted-foreground leading-relaxed">{explanation}</p>
         </div>
       )}
 

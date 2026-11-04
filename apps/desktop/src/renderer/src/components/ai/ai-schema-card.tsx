@@ -70,8 +70,8 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
       >
         <div className="flex items-center gap-2">
           <TableIcon className="size-3.5 text-primary" />
-          <span className="text-[11px] font-semibold text-foreground">{table.name}</span>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-2xs font-semibold text-foreground">{table.name}</span>
+          <span className="text-2xs text-muted-foreground">
             {table.columns.length} column{table.columns.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -80,7 +80,7 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
           {pkColumns.length > 0 && (
             <div className="flex items-center gap-1">
               <KeyIcon className="size-3 text-cat-yellow" />
-              <span className="text-[9px] text-cat-yellow/70">{pkColumns.length} PK</span>
+              <span className="text-2xs text-cat-yellow/70">{pkColumns.length} PK</span>
             </div>
           )}
           {isExpanded ? (
@@ -108,7 +108,7 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
                 {column.isPrimaryKey && <KeyIcon className="size-3 text-cat-yellow" />}
                 <span
                   className={cn(
-                    'text-[11px] font-mono',
+                    'text-2xs font-mono',
                     column.isPrimaryKey ? 'text-foreground font-medium' : 'text-muted-foreground'
                   )}
                 >
@@ -117,8 +117,8 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className={cn('text-[10px] font-mono', typeStyle.color)}>{column.type}</span>
-                {column.nullable && <span className="text-[9px] text-muted-foreground">NULL</span>}
+                <span className={cn('text-2xs font-mono', typeStyle.color)}>{column.type}</span>
+                {column.nullable && <span className="text-2xs text-muted-foreground">NULL</span>}
               </div>
             </div>
           )
@@ -126,7 +126,7 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
 
         {/* Show more indicator */}
         {!isExpanded && table.columns.length > 5 && (
-          <div className="px-2 py-1 text-[10px] text-muted-foreground text-center">
+          <div className="px-2 py-1 text-2xs text-muted-foreground text-center">
             +{table.columns.length - 5} more columns
           </div>
         )}

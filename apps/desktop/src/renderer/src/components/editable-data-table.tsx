@@ -217,7 +217,7 @@ function CopyableCell({
               className="motion-safe:[stroke-dasharray:20] motion-safe:[stroke-dashoffset:20] motion-safe:animate-[check-draw_300ms_ease-out_forwards]"
             />
           </svg>
-          <span className="text-[10px] text-success font-medium">Copied</span>
+          <span className="text-2xs text-success font-medium">Copied</span>
         </span>
       )}
     </span>
@@ -789,7 +789,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   {col.foreignKey && <LinkIcon className="ml-1 size-3 text-cat-blue" />}
                   <Badge
                     variant="outline"
-                    className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                    className={`ml-1.5 text-2xs px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
                   >
                     {col.dataType}
                   </Badge>
@@ -801,7 +801,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                         <ArrowDownIcon className="size-3 text-primary" />
                       )}
                       {sortChips.length > 1 && (
-                        <span className="text-[9px] font-mono font-semibold text-primary/80 tabular-nums">
+                        <span className="text-2xs font-mono font-semibold text-primary/80 tabular-nums">
                           {activeRank}
                         </span>
                       )}
@@ -847,7 +847,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 </DropdownMenu>
               </div>
               {col.foreignKey && (
-                <span className="text-[9px] text-muted-foreground px-2 -mt-0.5">
+                <span className="text-2xs text-muted-foreground px-2 -mt-0.5">
                   → {col.foreignKey.referencedTable}
                 </span>
               )}

@@ -118,3 +118,23 @@ describe('design-system guard: renderer colours', () => {
     expect(violations, message).toEqual([])
   })
 })
+
+describe('design-system guard: typography', () => {
+  it('renderer and shared ui use the type scale, not arbitrary sizes', () => {
+    const violations = scanSource([rendererSrc, uiSrc], /\btext-\[\d/, [])
+    const message = violations
+      .map((v) => `${v.file}:${v.line} ${v.match} -> use text-2xs (11px), text-xs, or text-sm`)
+      .join('\n')
+    expect(violations, message).toEqual([])
+  })
+
+  it('renderer and shared ui use no weight above 600', () => {
+    const violations = scanSource([rendererSrc, uiSrc], /\bfont-(bold|extrabold|black)\b/, [
+      'components/query-editor/share-results-image.tsx',
+      'components/share-image-dialog.tsx',
+      'components/health-share-content.tsx'
+    ])
+    const message = violations.map((v) => `${v.file}:${v.line} ${v.match} -> use font-semibold`)
+    expect(violations, message.join('\n')).toEqual([])
+  })
+})

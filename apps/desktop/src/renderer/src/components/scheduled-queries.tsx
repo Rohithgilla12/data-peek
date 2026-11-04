@@ -193,7 +193,7 @@ export function ScheduledQueries() {
             />
             <span>Scheduled Queries</span>
             {sortedQueries.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[11px] px-1.5 py-0">
+              <Badge variant="outline" className="ml-1 text-2xs px-1.5 py-0 tabular-nums">
                 {sortedQueries.length}
               </Badge>
             )}
@@ -228,7 +228,7 @@ export function ScheduledQueries() {
                                 {getStatusIcon(item.status)}
                                 <span className="text-xs truncate font-medium">{item.name}</span>
                               </div>
-                              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                              <div className="flex items-center gap-1.5 text-2xs text-muted-foreground">
                                 <ClockIcon className="size-3" />
                                 <span>{getScheduleLabel(item.schedule)}</span>
                                 {item.status === 'active' && item.nextRunAt && (

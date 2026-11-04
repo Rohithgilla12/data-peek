@@ -301,9 +301,9 @@ export function AISettingsModal({
                         />
                       </div>
                     )}
-                    <span className="text-[10px] font-medium">{p.name}</span>
+                    <span className="text-2xs font-medium">{p.name}</span>
                     {isActive && hasConfig && (
-                      <span className="text-[8px] px-1 py-0.5 rounded bg-success/10 text-success">
+                      <span className="text-2xs px-1 py-0.5 rounded bg-success/10 text-success">
                         Active
                       </span>
                     )}
@@ -311,7 +311,7 @@ export function AISettingsModal({
                 )
               })}
             </div>
-            <p className="text-[10px] text-muted-foreground">{providerConfig.description}</p>
+            <p className="font-sans text-2xs text-muted-foreground">{providerConfig.description}</p>
           </div>
 
           {/* API Key Input */}
@@ -325,7 +325,7 @@ export function AISettingsModal({
                   href={providerConfig.keyUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-[10px] text-primary hover:underline"
+                  className="flex items-center gap-1 text-2xs text-primary hover:underline"
                 >
                   Get API Key
                   <ExternalLinkIcon className="size-3" />
@@ -373,13 +373,13 @@ export function AISettingsModal({
                 </Button>
               </div>
               {validationResult === 'success' && (
-                <p className="text-[10px] text-success flex items-center gap-1">
+                <p className="text-2xs text-success flex items-center gap-1">
                   <CheckIcon className="size-3" />
                   API key is valid
                 </p>
               )}
               {validationResult === 'error' && (
-                <p className="text-[10px] text-destructive flex items-center gap-1">
+                <p className="text-2xs text-destructive flex items-center gap-1">
                   <ErrorIcon className="size-3" />
                   Invalid API key
                 </p>
@@ -392,21 +392,21 @@ export function AISettingsModal({
             <div className="space-y-2">
               <Label className="text-xs">{providerConfig.name}</Label>
               {isDetecting ? (
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                <p className="text-2xs text-muted-foreground flex items-center gap-1.5">
                   <SpinnerIcon className="size-3.5 animate-spin" />
                   Looking for the local CLI…
                 </p>
               ) : harness?.available ? (
                 <div className="flex items-center gap-1.5 rounded-lg border border-success/30 bg-success/10 px-3 py-2">
                   <SuccessIcon className="size-4 text-success shrink-0" />
-                  <span className="text-[11px] text-success">
+                  <span className="text-2xs text-success">
                     Detected{harness.version ? ` · ${harness.version}` : ''} —{' '}
                     {renderHint(HARNESS_HINTS[selectedProvider]?.detected)}
                   </span>
                 </div>
               ) : (
                 <div className="space-y-1.5 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2">
-                  <span className="text-[11px] text-warning flex items-center gap-1.5">
+                  <span className="text-2xs text-warning flex items-center gap-1.5">
                     <ErrorIcon className="size-3.5 shrink-0" />
                     {renderHint(HARNESS_HINTS[selectedProvider]?.missing)}
                   </span>
@@ -414,7 +414,7 @@ export function AISettingsModal({
                     href={providerConfig.keyUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1 text-[10px] text-primary hover:underline"
+                    className="flex items-center gap-1 text-2xs text-primary hover:underline"
                   >
                     Setup guide
                     <ExternalLinkIcon className="size-3" />
@@ -438,7 +438,7 @@ export function AISettingsModal({
                 placeholder="http://localhost:11434"
                 className="font-mono text-xs"
               />
-              <p className="text-[10px] text-muted-foreground">
+              <p className="font-sans text-2xs text-muted-foreground">
                 Make sure Ollama is running locally
               </p>
             </div>
@@ -457,12 +457,12 @@ export function AISettingsModal({
                     <div className="flex items-center gap-2">
                       <span>{m.name}</span>
                       {m.recommended && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                        <span className="text-2xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                           Recommended
                         </span>
                       )}
                       {m.description && (
-                        <span className="text-[10px] text-muted-foreground">{m.description}</span>
+                        <span className="text-2xs text-muted-foreground">{m.description}</span>
                       )}
                     </div>
                   </SelectItem>
@@ -506,7 +506,7 @@ export function AISettingsModal({
 
           {/* Info box */}
           <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="font-sans text-2xs text-muted-foreground leading-relaxed">
               Your API keys are stored locally and securely. They are never sent to our servers. All
               AI requests are made directly from your machine to the provider. Configure multiple
               providers and switch between them anytime.

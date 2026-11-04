@@ -233,7 +233,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                                 <Badge
                                   variant="outline"
-                                  className={cn('text-[10px]', getQueryTypeColor(queryType, true))}
+                                  className={cn('text-2xs', getQueryTypeColor(queryType, true))}
                                 >
                                   {queryType}
                                 </Badge>
@@ -256,7 +256,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                                   </>
                                 )}
                                 {connections.length > 1 && (
-                                  <Badge variant="outline" className="text-[10px]">
+                                  <Badge variant="outline" className="text-2xs">
                                     {getConnectionName(item.connectionId)}
                                   </Badge>
                                 )}

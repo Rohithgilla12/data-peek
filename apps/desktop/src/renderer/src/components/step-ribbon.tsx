@@ -99,7 +99,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
         >
           <PlayIcon className="size-3 mr-1" />
           Next
-          <kbd className="ml-2 opacity-60 text-[10px]">⇧↵</kbd>
+          <kbd className="ml-2 opacity-60 text-2xs">⇧↵</kbd>
         </Button>
         <Button
           size="sm"

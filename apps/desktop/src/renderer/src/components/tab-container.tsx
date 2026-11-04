@@ -136,13 +136,13 @@ export function TabContainer() {
         <div className="flex flex-1 items-center justify-center">
           <div className="text-center space-y-3">
             <h2 className="text-lg font-medium">Ready to query</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="font-sans text-sm text-muted-foreground">
               Open a new tab or select a table from the sidebar
             </p>
             <Button onClick={handleNewTab} className="gap-2">
               <PlusIcon className="size-4" />
               New Query
-              <kbd className="ml-1 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
+              <kbd className="ml-1 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-2xs font-medium text-primary-foreground">
                 {window.electron.process.platform === 'darwin' ? '⌘' : 'Ctrl+'}T
               </kbd>
             </Button>

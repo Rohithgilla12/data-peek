@@ -206,7 +206,7 @@ const CellValue = React.memo(function CellValue({
           <button
             type="button"
             onClick={() => copy(stringValue)}
-            className={`text-left truncate max-w-[300px] hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${isMono ? 'font-mono text-xs' : ''}`}
+            className={`text-left truncate max-w-[300px] hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${isMono ? 'font-mono text-xs tabular-nums' : ''}`}
           >
             {isLong ? stringValue.substring(0, 50) + '...' : stringValue}
           </button>
@@ -401,7 +401,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                     {col.foreignKey && <LinkIcon className="ml-1 size-3 text-cat-blue" />}
                     <Badge
                       variant="outline"
-                      className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                      className={`ml-1.5 text-2xs px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
                     >
                       {col.dataType}
                     </Badge>
@@ -413,7 +413,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                           <ArrowDownIcon className="size-3 text-primary" />
                         )}
                         {sortChips.length > 1 && (
-                          <span className="text-[9px] font-mono font-semibold text-primary/80 tabular-nums">
+                          <span className="text-2xs font-mono font-semibold text-primary/80 tabular-nums">
                             {activeRank}
                           </span>
                         )}
@@ -463,7 +463,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                   )}
                 </div>
                 {col.foreignKey && (
-                  <span className="text-[9px] text-muted-foreground px-2 -mt-0.5">
+                  <span className="text-2xs text-muted-foreground px-2 -mt-0.5">
                     → {col.foreignKey.referencedTable}
                   </span>
                 )}

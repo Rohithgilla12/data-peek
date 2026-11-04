@@ -126,7 +126,7 @@ export function PerfIssueCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium text-sm truncate">{issue.title}</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            <span className="text-2xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
               {ISSUE_TYPE_LABELS[issue.type]}
             </span>
           </div>
@@ -224,7 +224,7 @@ export function PerfIssueCard({
               {applyError && <p className="break-words text-xs text-destructive">{applyError}</p>}
 
               {showJson && (
-                <div className="mt-2 bg-black/80 border border-border/40 rounded p-2.5 text-[11px] font-mono text-foreground max-h-36 overflow-auto">
+                <div className="mt-2 bg-black/80 border border-border/40 rounded p-2.5 text-2xs font-mono text-foreground max-h-36 overflow-auto">
                   <pre>{JSON.stringify(issue, null, 2)}</pre>
                 </div>
               )}
@@ -240,7 +240,7 @@ export function PerfIssueCard({
                 {issue.relatedQueries.slice(0, 3).map((query, i) => (
                   <pre
                     key={i}
-                    className="text-[11px] bg-muted/50 rounded p-1.5 overflow-x-auto font-mono text-muted-foreground truncate"
+                    className="text-2xs bg-muted/50 rounded p-1.5 overflow-x-auto font-mono text-muted-foreground truncate"
                   >
                     {query}
                   </pre>

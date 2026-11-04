@@ -365,12 +365,12 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                           <span className="font-medium text-sm truncate">{query.name}</span>
                           <Badge
                             variant="outline"
-                            className={cn('text-[10px] gap-1', getStatusColor(query.status))}
+                            className={cn('text-2xs gap-1', getStatusColor(query.status))}
                           >
                             {getStatusIcon(query.status)}
                             {query.status}
                           </Badge>
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-2xs">
                             {getConnectionName(query.connectionId)}
                           </Badge>
                         </div>
@@ -385,7 +385,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                           {query.query}
                         </pre>
 
-                        <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-4 mt-2 text-2xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <TimerIcon className="size-3" />
                             {getScheduleLabel(query.schedule)}

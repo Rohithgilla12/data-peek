@@ -186,7 +186,7 @@ function StatBadge({
         variant === 'highlight' && 'border-primary/40 bg-primary/5'
       )}
     >
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">
+      <span className="text-2xs uppercase tracking-wider text-muted-foreground/70 font-medium">
         {label}
       </span>
       <span
@@ -499,7 +499,7 @@ export function TelemetryPanel({
                     />
                     <span
                       className={cn(
-                        'text-[11px] font-medium uppercase tracking-wide',
+                        'text-2xs font-medium uppercase tracking-wide',
                         'text-muted-foreground/80 group-hover:text-foreground',
                         'transition-colors duration-150'
                       )}
@@ -536,7 +536,7 @@ export function TelemetryPanel({
                     >
                       <span
                         className={cn(
-                          'font-mono text-[11px] font-medium tabular-nums',
+                          'font-mono text-2xs font-medium tabular-nums',
                           widthPercent > 30 ? 'text-white/90 drop-shadow-sm' : 'text-foreground/80'
                         )}
                       >
@@ -556,7 +556,7 @@ export function TelemetryPanel({
                       )}
                     >
                       <div className="text-xs font-medium">{config.label}</div>
-                      <div className="text-[10px] text-muted-foreground">{config.description}</div>
+                      <div className="text-2xs text-muted-foreground">{config.description}</div>
                     </div>
                   </div>
                 </div>
@@ -581,7 +581,7 @@ export function TelemetryPanel({
                 className="absolute bottom-0 flex flex-col items-center"
                 style={{ left: `calc(112px + ${marker.position}% * (100% - 112px) / 100)` }}
               >
-                <span className="text-[9px] font-mono text-muted-foreground/60 tabular-nums mb-1">
+                <span className="text-2xs font-mono text-muted-foreground/60 tabular-nums mb-1">
                   {marker.label}
                 </span>
                 <div className="w-px h-1.5 bg-border/60" />
@@ -612,7 +612,7 @@ export function TelemetryPanel({
                     />
                     <span
                       className={cn(
-                        'text-[11px] font-medium uppercase tracking-wide',
+                        'text-2xs font-medium uppercase tracking-wide',
                         'text-muted-foreground/80 group-hover:text-foreground',
                         'transition-colors duration-150'
                       )}
@@ -651,7 +651,7 @@ export function TelemetryPanel({
                       {/* Duration label inside bar if wide enough */}
                       {widthPercent > 8 && (
                         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                          <span className="font-mono text-[10px] font-medium text-white/90 drop-shadow-sm tabular-nums">
+                          <span className="font-mono text-2xs font-medium text-white/90 drop-shadow-sm tabular-nums">
                             {formatDuration(duration)}
                           </span>
                         </div>
@@ -664,7 +664,7 @@ export function TelemetryPanel({
                         className="absolute top-0 bottom-0 flex items-center pl-1"
                         style={{ left: `${startPercent + widthPercent}%` }}
                       >
-                        <span className="font-mono text-[10px] font-medium text-foreground/70 tabular-nums whitespace-nowrap">
+                        <span className="font-mono text-2xs font-medium text-foreground/70 tabular-nums whitespace-nowrap">
                           {formatDuration(duration)}
                         </span>
                       </div>
@@ -684,8 +684,8 @@ export function TelemetryPanel({
                       style={{ left: `${startPercent}%` }}
                     >
                       <div className="text-xs font-medium">{config.label}</div>
-                      <div className="text-[10px] text-muted-foreground">{config.description}</div>
-                      <div className="text-[10px] text-muted-foreground/70 mt-1 font-mono">
+                      <div className="text-2xs text-muted-foreground">{config.description}</div>
+                      <div className="text-2xs text-muted-foreground/70 mt-1 font-mono">
                         {formatDuration(start)} → {formatDuration(start + duration)}
                       </div>
                     </div>
@@ -716,7 +716,7 @@ export function TelemetryPanel({
       {/* Connection status */}
       {telemetry?.connectionReused !== undefined && (
         <div className="px-4 py-1.5 border-t border-border/30 bg-muted/10">
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60">
+          <div className="flex items-center gap-2 text-2xs text-muted-foreground/60">
             <span
               className={cn(
                 'size-1.5 rounded-full',

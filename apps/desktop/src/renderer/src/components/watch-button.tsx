@@ -291,23 +291,23 @@ export function WatchButton({
           </div>
           <div className="flex items-center gap-2">
             {held && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1 text-2xs text-muted-foreground">
                 <PauseIcon className="size-3" />
                 grid held
               </span>
             )}
             {lastSnap?.error && (
-              <span className="flex items-center gap-1 text-[10px] text-destructive">
+              <span className="flex items-center gap-1 text-2xs text-destructive">
                 <WarningIcon className="size-3" />
                 error
               </span>
             )}
           </div>
         </div>
-        {held && <p className="px-3 pt-2 text-[10px] leading-snug text-warning">{holdMessage}</p>}
+        {held && <p className="px-3 pt-2 text-2xs leading-snug text-warning">{holdMessage}</p>}
 
         <div className="px-3 py-2 space-y-2">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">
             Cadence
           </span>
           <div className="grid grid-cols-3 gap-1">
@@ -320,7 +320,7 @@ export function WatchButton({
                   watchScheduler.reschedule(tabId)
                 }}
                 className={cn(
-                  'rounded border px-2 py-1 text-[11px] font-medium transition-colors',
+                  'rounded border px-2 py-1 text-2xs font-medium transition-colors',
                   config.cadenceMs === ms
                     ? 'border-warning/30 bg-warning/10 text-warning'
                     : 'border-border hover:bg-muted'
@@ -345,14 +345,14 @@ export function WatchButton({
         </div>
 
         <div className="border-t px-3 py-2 space-y-1">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">
             Row count
           </span>
           <WatchSparkline points={watchState?.metrics ?? []} />
         </div>
 
         <div className="border-t px-3 py-2 space-y-1.5">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">
             Alerts
           </span>
           {alerts.length > 0 && (
@@ -367,7 +367,7 @@ export function WatchButton({
                   />
                   <span className="flex-1 truncate">{describeAlertCondition(alert.condition)}</span>
                   {alert.firedCount > 0 && (
-                    <span className="tabular-nums text-[10px] text-destructive">
+                    <span className="tabular-nums text-2xs text-destructive">
                       {alert.firedCount}×
                     </span>
                   )}
@@ -387,7 +387,7 @@ export function WatchButton({
             <select
               value={draftKind}
               onChange={(e) => setDraftKind(e.target.value as AlertDraftKind)}
-              className="h-6 flex-1 rounded border bg-transparent px-1 text-[11px]"
+              className="h-6 flex-1 rounded border bg-transparent px-1 text-2xs"
               aria-label="Alert condition"
             >
               {ALERT_DRAFT_OPTIONS.map((o) => (
@@ -407,7 +407,7 @@ export function WatchButton({
                 }}
                 placeholder="100"
                 aria-label="Alert threshold"
-                className="h-6 w-16 rounded border bg-transparent px-1.5 text-[11px] tabular-nums"
+                className="h-6 w-16 rounded border bg-transparent px-1.5 text-2xs tabular-nums"
               />
             )}
             <Button
@@ -421,12 +421,12 @@ export function WatchButton({
               <PlusIcon className="size-3.5" />
             </Button>
           </div>
-          <p className="text-[10px] leading-snug text-muted-foreground">
+          <p className="text-2xs leading-snug text-muted-foreground">
             Fires an OS notification. Thresholds re-arm when the condition clears.
           </p>
         </div>
 
-        <div className="border-t px-3 py-2 grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+        <div className="border-t px-3 py-2 grid grid-cols-3 gap-2 text-2xs text-muted-foreground">
           <div>
             <div className="text-foreground tabular-nums text-sm font-medium">
               {totals?.ticksRun ?? 0}
@@ -501,7 +501,7 @@ export function WatchButton({
           >
             <StopIcon className="size-3.5" />
             Stop
-            <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[9px] font-medium">
+            <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-2xs font-medium">
               {keys.mod}
               {keys.shift}W
             </kbd>

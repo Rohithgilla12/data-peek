@@ -49,7 +49,7 @@ export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
         <div className="flex items-center gap-1">
           <Badge
             variant="secondary"
-            className="gap-1 px-1.5 py-0 text-[10px] text-warning bg-warning/10 border-warning/30"
+            className="gap-1 px-1.5 py-0 text-2xs text-warning bg-warning/10 border-warning/30"
           >
             <LockIcon className="size-2.5" />
             {maskedCount} masked
