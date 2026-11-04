@@ -451,7 +451,7 @@ function SettingsPage() {
         {/* License */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">License</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Manage your data-peek license for commercial use.
           </p>
           <div className="flex items-center justify-between">
@@ -492,7 +492,7 @@ function SettingsPage() {
         {/* Appearance */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Appearance</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Choose your preferred theme for the application.
           </p>
           <div className="grid grid-cols-3 gap-3">
@@ -523,13 +523,13 @@ function SettingsPage() {
         {/* Fun Features */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Fun Features</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Enable fun features to personalize your experience.
           </p>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="pokemon-buddy">Pokemon Buddy</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Show a friendly Pokemon buddy in the sidebar
               </p>
             </div>
@@ -544,7 +544,7 @@ function SettingsPage() {
         {/* Keyboard Shortcuts */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Keyboard Shortcuts</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             All available keyboard shortcuts in the application.
           </p>
 
@@ -639,7 +639,7 @@ function SettingsPage() {
         {/* Connections */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Connections</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="font-sans text-sm text-muted-foreground">
             Manage your database connections and credentials.
           </p>
         </div>
@@ -647,13 +647,13 @@ function SettingsPage() {
         {/* Editor */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Query Editor</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Customize the query editor appearance and behavior.
           </p>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="hide-editor">Hide query editor by default</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Start with the query editor collapsed when opening table previews
               </p>
             </div>
@@ -666,7 +666,9 @@ function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="hide-quick-query-panel">Hide quick query panel by default</Label>
-              <p className="text-xs text-muted-foreground">Hide the quick query panel by default</p>
+              <p className="font-sans text-xs text-muted-foreground">
+                Hide the quick query panel by default
+              </p>
             </div>
             <Switch
               id="hide-quick-query-panel"
@@ -679,13 +681,13 @@ function SettingsPage() {
         {/* JSON Display */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">JSON Display</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Configure how JSON data is displayed in results.
           </p>
           <div className="flex items-center justify-between mb-4">
             <div className="space-y-0.5">
               <Label htmlFor="expand-json">Expand JSON by default</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Automatically expand all JSON objects when viewing
               </p>
             </div>
@@ -698,7 +700,7 @@ function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="json-depth">Default JSON expansion depth</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 How many levels deep JSON should be expanded
               </p>
             </div>
@@ -720,11 +722,13 @@ function SettingsPage() {
         {/* Database */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Database</h2>
-          <p className="text-sm text-muted-foreground mb-4">Configure database query behavior.</p>
+          <p className="font-sans text-sm text-muted-foreground mb-4">
+            Configure database query behavior.
+          </p>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="query-timeout">Query timeout (seconds)</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Maximum time to wait for a query to complete. Set to 0 for no timeout.
               </p>
             </div>
