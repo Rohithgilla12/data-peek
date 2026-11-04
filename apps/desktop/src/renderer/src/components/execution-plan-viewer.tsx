@@ -137,7 +137,7 @@ function getNodeTypeInfo(nodeType: string): { color: string; bgColor: string } {
     return { color: 'text-purple-500', bgColor: 'bg-purple-500/10' }
   }
   if (type.includes('limit') || type.includes('result')) {
-    return { color: 'text-gray-500', bgColor: 'bg-gray-500/10' }
+    return { color: 'text-muted-foreground', bgColor: 'bg-muted' }
   }
 
   return { color: 'text-muted-foreground', bgColor: 'bg-muted' }
@@ -154,29 +154,29 @@ function calculateCostPercentage(nodeCost: number, totalCost: number): number {
 function getTimeBarColor(timePercentage: number, actualTimeMs: number): string {
   // If absolute time is very fast (< 10ms), always green
   if (actualTimeMs < 10) {
-    return '[&>div]:bg-green-500'
+    return '[&>div]:bg-success'
   }
 
   // If absolute time is reasonably fast (< 100ms), cap at yellow
   if (actualTimeMs < 100) {
-    return timePercentage > 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-green-500'
+    return timePercentage > 50 ? '[&>div]:bg-warning' : '[&>div]:bg-success'
   }
 
   // For slower operations, use relative percentage thresholds
   // but with higher absolute time requirements
   if (actualTimeMs > 1000 && timePercentage > 50) {
-    return '[&>div]:bg-red-500'
+    return '[&>div]:bg-destructive'
   }
 
   if (actualTimeMs > 500 && timePercentage > 50) {
-    return '[&>div]:bg-yellow-500'
+    return '[&>div]:bg-warning'
   }
 
   if (timePercentage > 75 && actualTimeMs > 200) {
-    return '[&>div]:bg-yellow-500'
+    return '[&>div]:bg-warning'
   }
 
-  return '[&>div]:bg-green-500'
+  return '[&>div]:bg-success'
 }
 
 // Get warning indicators for potential issues
@@ -304,7 +304,7 @@ function PlanNodeView({
                     </Badge>
                   )}
 
-                  {warnings.length > 0 && <WarningIcon className="size-3.5 text-yellow-500" />}
+                  {warnings.length > 0 && <WarningIcon className="size-3.5 text-warning" />}
                 </div>
 
                 {/* Metrics Row - Primary */}
@@ -322,7 +322,7 @@ function PlanNodeView({
                           className={cn(
                             'text-[10px]',
                             node['Plan Rows'] === node['Actual Rows']
-                              ? 'text-green-500'
+                              ? 'text-success'
                               : Math.abs(node['Plan Rows'] - node['Actual Rows']) /
                                     Math.max(node['Plan Rows'], node['Actual Rows'], 1) >
                                   0.5
@@ -383,9 +383,7 @@ function PlanNodeView({
                         <span className="text-orange-500">reads: {node['Shared Read Blocks']}</span>
                       ) : null}
                       {node['Shared Dirtied Blocks'] ? (
-                        <span className="text-yellow-500">
-                          dirty: {node['Shared Dirtied Blocks']}
-                        </span>
+                        <span className="text-warning">dirty: {node['Shared Dirtied Blocks']}</span>
                       ) : null}
                     </span>
                   )}
@@ -514,7 +512,7 @@ function PlanNodeView({
                   <div className="mt-1.5 text-[11px] text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded space-y-0.5">
                     {node['Index Cond'] && (
                       <div className="flex gap-2">
-                        <span className="text-green-600 dark:text-green-400">Index Cond:</span>
+                        <span className="text-success">Index Cond:</span>
                         <span>{node['Index Cond']}</span>
                       </div>
                     )}
@@ -538,7 +536,7 @@ function PlanNodeView({
                     )}
                     {node['Merge Cond'] && (
                       <div className="flex gap-2">
-                        <span className="text-amber-600 dark:text-amber-400">Merge Cond:</span>
+                        <span className="text-warning">Merge Cond:</span>
                         <span>{node['Merge Cond']}</span>
                       </div>
                     )}
@@ -549,10 +547,7 @@ function PlanNodeView({
                 {warnings.length > 0 && (
                   <div className="mt-1.5 space-y-1">
                     {warnings.map((warning, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-1.5 text-[11px] text-yellow-600 dark:text-yellow-500"
-                      >
+                      <div key={i} className="flex items-start gap-1.5 text-[11px] text-warning">
                         <WarningIcon className="size-3 shrink-0 mt-0.5" />
                         {warning}
                       </div>
@@ -737,7 +732,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
           <div className="flex items-center gap-1.5">
             <HardDriveIcon className="size-3 text-muted-foreground" />
             <span className="text-muted-foreground">Buffers:</span>
-            <span className="font-mono font-medium text-green-600 dark:text-green-400">
+            <span className="font-mono font-medium text-success">
               {stats.totalBufferHits.toLocaleString()} hits
             </span>
             {stats.totalBufferReads > 0 && (
@@ -785,7 +780,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
           Seq Scan
         </span>
         <span className="flex items-center gap-1">
-          <div className="size-2 rounded bg-green-500" />
+          <div className="size-2 rounded bg-success" />
           Index Scan
         </span>
         <span className="flex items-center gap-1">

@@ -241,12 +241,11 @@ export function WatchButton({
                 }}
                 className={cn(
                   'gap-1.5 h-7 px-2.5 transition-colors',
-                  enabled &&
-                    !paused &&
-                    !held &&
-                    'text-amber-500 bg-amber-500/10 hover:bg-amber-500/15',
+                  enabled && !paused && !held && 'text-warning bg-warning/10 hover:bg-warning/15',
                   enabled && (paused || held) && 'text-muted-foreground bg-muted/50',
-                  enabled && alertFlash && 'text-rose-500 bg-rose-500/10 hover:bg-rose-500/15'
+                  enabled &&
+                    alertFlash &&
+                    'text-destructive bg-destructive/10 hover:bg-destructive/15'
                 )}
                 data-watch-active={enabled || undefined}
                 data-watch-held={held || undefined}
@@ -263,8 +262,8 @@ export function WatchButton({
                       aria-hidden
                       className="relative inline-flex size-2 items-center justify-center"
                     >
-                      <span className="absolute inline-flex size-2 rounded-full bg-amber-500/40 motion-safe:animate-ping" />
-                      <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
+                      <span className="absolute inline-flex size-2 rounded-full bg-warning/40 motion-safe:animate-ping" />
+                      <span className="relative inline-flex size-1.5 rounded-full bg-warning" />
                     </span>
                   )
                 ) : (
@@ -287,7 +286,7 @@ export function WatchButton({
       >
         <div className="border-b px-3 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ActivityIcon className="size-3.5 text-amber-500" />
+            <ActivityIcon className="size-3.5 text-warning" />
             <span className="text-xs font-semibold">Watching</span>
           </div>
           <div className="flex items-center gap-2">
@@ -305,11 +304,7 @@ export function WatchButton({
             )}
           </div>
         </div>
-        {held && (
-          <p className="px-3 pt-2 text-[10px] leading-snug text-amber-600 dark:text-amber-400">
-            {holdMessage}
-          </p>
-        )}
+        {held && <p className="px-3 pt-2 text-[10px] leading-snug text-warning">{holdMessage}</p>}
 
         <div className="px-3 py-2 space-y-2">
           <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -327,7 +322,7 @@ export function WatchButton({
                 className={cn(
                   'rounded border px-2 py-1 text-[11px] font-medium transition-colors',
                   config.cadenceMs === ms
-                    ? 'border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    ? 'border-warning/30 bg-warning/10 text-warning'
                     : 'border-border hover:bg-muted'
                 )}
               >
@@ -367,19 +362,19 @@ export function WatchButton({
                   <BellRingingIcon
                     className={cn(
                       'size-3 shrink-0',
-                      alert.firedCount > 0 ? 'text-rose-500' : 'text-muted-foreground'
+                      alert.firedCount > 0 ? 'text-destructive' : 'text-muted-foreground'
                     )}
                   />
                   <span className="flex-1 truncate">{describeAlertCondition(alert.condition)}</span>
                   {alert.firedCount > 0 && (
-                    <span className="tabular-nums text-[10px] text-rose-500">
+                    <span className="tabular-nums text-[10px] text-destructive">
                       {alert.firedCount}×
                     </span>
                   )}
                   <button
                     type="button"
                     aria-label="Remove alert"
-                    className="text-muted-foreground hover:text-rose-500 transition-colors"
+                    className="text-muted-foreground hover:text-destructive transition-colors"
                     onClick={() => removeAlert(tabId, alert.id)}
                   >
                     <TrashIcon className="size-3" />
@@ -442,8 +437,8 @@ export function WatchButton({
             <div
               className={cn(
                 'text-foreground tabular-nums text-sm font-medium',
-                rowDelta > 0 && 'text-emerald-500',
-                rowDelta < 0 && 'text-rose-500'
+                rowDelta > 0 && 'text-success',
+                rowDelta < 0 && 'text-destructive'
               )}
             >
               {rowDelta > 0 ? '+' : ''}
@@ -497,7 +492,7 @@ export function WatchButton({
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 text-rose-500 hover:text-rose-500"
+            className="h-7 gap-1.5 text-destructive hover:text-destructive"
             onClick={() => {
               stop(tabId)
               watchScheduler.unregister(tabId)

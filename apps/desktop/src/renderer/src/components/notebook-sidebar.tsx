@@ -174,8 +174,8 @@ export function NotebookSidebar() {
             <span>Open notebook</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-400" onClick={() => handleDelete(nb)}>
-            <TrashIcon className="text-red-400" />
+          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(nb)}>
+            <TrashIcon className="text-destructive" />
             <span>Delete</span>
           </DropdownMenuItem>
         </DropdownMenuContent>

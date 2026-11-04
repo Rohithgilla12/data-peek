@@ -65,10 +65,10 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
               <div
                 className={`mt-0.5 rounded-full p-1.5 ${
                   isExpired
-                    ? 'bg-amber-500/10 text-amber-500'
+                    ? 'bg-warning/10 text-warning'
                     : isExpiringSoon
-                      ? 'bg-amber-500/10 text-amber-500'
-                      : 'bg-green-500/10 text-green-500'
+                      ? 'bg-warning/10 text-warning'
+                      : 'bg-success/10 text-success'
                 }`}
               >
                 {isExpired || isExpiringSoon ? (
@@ -127,7 +127,7 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
             </div>
 
             {isExpired && (
-              <div className="mt-4 rounded-md bg-amber-500/10 p-3 text-sm text-amber-500">
+              <div className="mt-4 rounded-md bg-warning/10 p-3 text-sm text-warning">
                 Your subscription has ended.
                 {status.perpetualVersion && (
                   <>

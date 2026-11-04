@@ -118,7 +118,7 @@ export function CellInspector({
           {formatted.isNull && (
             <Badge
               variant="outline"
-              className="h-4 px-1.5 font-mono text-[9px] uppercase border-amber-500/40 text-amber-500"
+              className="h-4 px-1.5 font-mono text-[9px] uppercase border-warning/30 text-warning"
             >
               null
             </Badge>

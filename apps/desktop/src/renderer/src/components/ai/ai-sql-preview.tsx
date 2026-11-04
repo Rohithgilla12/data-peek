@@ -35,7 +35,7 @@ function highlightSQL(sql: string): React.ReactNode[] {
   return parts.map((part, partIndex) => {
     if (part.match(/^--/) || part.match(/^\/\*/)) {
       return (
-        <span key={partIndex} className="text-zinc-500 italic">
+        <span key={partIndex} className="text-muted-foreground italic">
           {part}
         </span>
       )
@@ -64,13 +64,13 @@ function highlightSQL(sql: string): React.ReactNode[] {
         )
       } else if (fullMatch.startsWith("'")) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-emerald-400">
+          <span key={`${partIndex}-${match.index}`} className="text-success">
             {fullMatch}
           </span>
         )
       } else if (fullMatch.match(/^\d+$/)) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-amber-400">
+          <span key={`${partIndex}-${match.index}`} className="text-warning">
             {fullMatch}
           </span>
         )
@@ -113,21 +113,21 @@ export function AISQLPreview({
     <div
       className={cn(
         'relative rounded-xl overflow-hidden',
-        'bg-gradient-to-b from-zinc-900/80 to-zinc-900/60',
-        'border border-zinc-800/80',
+        'bg-card',
+        'border border-border',
         'shadow-lg shadow-black/10'
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50 bg-zinc-900/50">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
         <div className="flex items-center gap-2">
           <CodeIcon className="size-3.5 text-blue-400" />
-          <span className="text-[11px] font-medium text-zinc-400">Generated SQL</span>
+          <span className="text-[11px] font-medium text-muted-foreground">Generated SQL</span>
           {lines.length > 3 && (
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
             >
               {isExpanded ? (
                 <>
@@ -147,12 +147,12 @@ export function AISQLPreview({
         <button
           type="button"
           onClick={() => copy(sql)}
-          className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
         >
           {copied ? (
             <>
-              <CheckIcon className="size-3 text-green-500" />
-              <span className="text-green-500">Copied</span>
+              <CheckIcon className="size-3 text-success" />
+              <span className="text-success">Copied</span>
             </>
           ) : (
             <>
@@ -170,25 +170,25 @@ export function AISQLPreview({
           !isExpanded && lines.length > 3 && 'max-h-[80px] overflow-hidden'
         )}
       >
-        <pre className="font-mono text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap">
+        <pre className="font-mono text-xs leading-relaxed text-foreground whitespace-pre-wrap">
           {highlightSQL(sql)}
         </pre>
 
         {/* Gradient fade when collapsed */}
         {!isExpanded && lines.length > 3 && (
-          <div className="absolute bottom-12 left-0 right-0 h-8 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
+          <div className="absolute bottom-12 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         )}
       </div>
 
       {/* Explanation */}
       {explanation && (
-        <div className="px-3 py-2 border-t border-zinc-800/30 bg-zinc-900/30">
-          <p className="text-[11px] text-zinc-400 leading-relaxed">{explanation}</p>
+        <div className="px-3 py-2 border-t border-border bg-muted/40">
+          <p className="text-[11px] text-muted-foreground leading-relaxed">{explanation}</p>
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 px-3 py-2 border-t border-zinc-800/50 bg-zinc-900/30">
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-border bg-muted/40">
         {!requiresConfirmation && (
           <Button
             size="sm"
@@ -222,8 +222,8 @@ export function AISQLPreview({
           className={cn(
             'h-7 gap-1.5 text-xs',
             requiresConfirmation
-              ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-warning text-warning-foreground hover:bg-warning/90 font-medium'
+              : 'text-muted-foreground hover:text-foreground'
           )}
           onClick={onOpenInTab}
         >

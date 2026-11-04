@@ -36,7 +36,7 @@ export function TitlebarActions() {
       <Button
         variant="ghost"
         size="icon"
-        className="h-14 w-9.5 text-muted-foreground rounded-none hover:bg-red-500!"
+        className="h-14 w-9.5 text-muted-foreground rounded-none hover:bg-destructive!"
         onClick={handleClose}
       >
         <CloseIcon className="size-4" />

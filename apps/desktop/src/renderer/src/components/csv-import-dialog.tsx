@@ -410,7 +410,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                     <div className="flex items-center gap-1">
                       <span className="text-sm font-mono truncate">{header}</span>
                       {!isUnmapped && !hasMatch && !createNewTable && (
-                        <ErrorIcon className="size-3 text-yellow-500 shrink-0" />
+                        <ErrorIcon className="size-3 text-warning shrink-0" />
                       )}
                     </div>
                     <Select
@@ -580,7 +580,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     {result.success ? (
-                      <SuccessIcon className="size-5 text-green-500" />
+                      <SuccessIcon className="size-5 text-success" />
                     ) : (
                       <ErrorIcon className="size-5 text-destructive" />
                     )}

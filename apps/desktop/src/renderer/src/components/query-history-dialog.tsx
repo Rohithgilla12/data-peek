@@ -179,7 +179,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 text-xs text-red-500 hover:text-red-600 hover:bg-red-500/10 ml-auto"
+                className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
                 onClick={() => {
                   if (confirm('Clear all query history?')) {
                     clearHistory()
@@ -225,7 +225,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                           key={item.id}
                           className={cn(
                             'group rounded-lg border p-3 transition-colors hover:bg-muted/50',
-                            item.status === 'error' && 'border-red-500/30 bg-red-500/5'
+                            item.status === 'error' && 'border-destructive/30 bg-destructive/10'
                           )}
                         >
                           <div className="flex items-start gap-3">
@@ -238,9 +238,9 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                                   {queryType}
                                 </Badge>
                                 {item.status === 'success' ? (
-                                  <SuccessIcon className="size-3.5 text-green-500" />
+                                  <SuccessIcon className="size-3.5 text-success" />
                                 ) : (
-                                  <ErrorIcon className="size-3.5 text-red-500" />
+                                  <ErrorIcon className="size-3.5 text-destructive" />
                                 )}
                                 <span className="text-xs text-muted-foreground">
                                   {formatRelativeTime(item.timestamp)}
@@ -265,7 +265,9 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                                 {item.query}
                               </pre>
                               {item.status === 'error' && item.errorMessage && (
-                                <p className="text-xs text-red-500 mt-1.5">{item.errorMessage}</p>
+                                <p className="text-xs text-destructive mt-1.5">
+                                  {item.errorMessage}
+                                </p>
                               )}
                             </div>
 
@@ -308,7 +310,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="size-7 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                      className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                       onClick={() => removeFromHistory(item.id)}
                                     >
                                       <TrashIcon className="size-3.5" />

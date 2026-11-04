@@ -127,7 +127,7 @@ export function WidgetCard({ widget, dashboardId, editMode }: WidgetCardProps) {
                 Configure
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-400" onClick={handleDelete}>
+              <DropdownMenuItem className="text-destructive" onClick={handleDelete}>
                 <TrashIcon className="mr-2 size-4" />
                 Delete
               </DropdownMenuItem>
@@ -189,7 +189,7 @@ function WidgetContent({ widget, data, isLoading }: WidgetContentProps) {
 
   if (!data.success) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-red-400">
+      <div className="flex h-full items-center justify-center text-sm text-destructive">
         {data.error || 'Failed to load data'}
       </div>
     )

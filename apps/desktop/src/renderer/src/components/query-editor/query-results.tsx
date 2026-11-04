@@ -212,7 +212,7 @@ export function QueryResults({
               <ShowResultsIcon className="size-3.5" />
             </Button>
             {tabError ? (
-              <span className="flex items-center gap-1.5 text-xs text-red-400">
+              <span className="flex items-center gap-1.5 text-xs text-destructive">
                 <ErrorIcon className="size-3" />
                 Query Error
               </span>
@@ -221,7 +221,7 @@ export function QueryResults({
                 {hasMultipleResults ? (
                   <>
                     <span className="flex items-center gap-1.5">
-                      <span className="size-1.5 rounded-full bg-green-500" />
+                      <span className="size-1.5 rounded-full bg-success" />
                       {statementResults.length} statements
                     </span>
                     <span className="text-muted-foreground/60">
@@ -231,7 +231,7 @@ export function QueryResults({
                 ) : (
                   <>
                     <span className="flex items-center gap-1.5">
-                      <span className="size-1.5 rounded-full bg-green-500" />
+                      <span className="size-1.5 rounded-full bg-success" />
                       {tabResult?.rowCount ?? 0} rows
                     </span>
                     <span className="text-muted-foreground/60">{tabResult?.durationMs}ms</span>
@@ -256,8 +256,8 @@ export function QueryResults({
           ) : tabError ? (
             <div className="flex-1 flex items-center justify-center p-4">
               <div className="max-w-md text-center space-y-2">
-                <ErrorIcon className="size-8 text-red-400 mx-auto" />
-                <h3 className="font-medium text-red-400">Query Error</h3>
+                <ErrorIcon className="size-8 text-destructive mx-auto" />
+                <h3 className="font-medium text-destructive">Query Error</h3>
                 <p className="text-sm text-muted-foreground">{tabError}</p>
               </div>
             </div>
@@ -285,7 +285,7 @@ export function QueryResults({
                       >
                         <span
                           className={`size-1.5 rounded-full ${
-                            stmt.isDataReturning ? 'bg-green-500' : 'bg-blue-500'
+                            stmt.isDataReturning ? 'bg-success' : 'bg-blue-500'
                           } ${isActive ? 'opacity-80' : ''}`}
                         />
                         {label}
@@ -389,7 +389,7 @@ export function QueryResults({
                     {hasMultipleResults ? (
                       <>
                         <span className="flex items-center gap-1.5">
-                          <span className="size-1.5 rounded-full bg-green-500" />
+                          <span className="size-1.5 rounded-full bg-success" />
                           {activeStatementResult?.rowCount ?? 0}{' '}
                           {activeStatementResult?.isDataReturning ? 'rows' : 'affected'}
                         </span>
@@ -401,7 +401,7 @@ export function QueryResults({
                     ) : (
                       <>
                         <span className="flex items-center gap-1.5">
-                          <span className="size-1.5 rounded-full bg-green-500" />
+                          <span className="size-1.5 rounded-full bg-success" />
                           {tabResult?.rowCount ?? 0} rows returned
                         </span>
                         <span>{tabResult?.durationMs}ms</span>
@@ -459,8 +459,8 @@ export function QueryResults({
                                   variant="secondary"
                                   className={`h-4 px-1.5 text-[10px] ${
                                     perfAnalysis.issueCount.critical > 0
-                                      ? 'bg-red-500/20 text-red-500'
-                                      : 'bg-yellow-500/20 text-yellow-500'
+                                      ? 'bg-destructive/10 text-destructive'
+                                      : 'bg-warning/10 text-warning'
                                   }`}
                                 >
                                   {perfAnalysis.issueCount.critical +

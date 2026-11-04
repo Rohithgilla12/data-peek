@@ -242,14 +242,14 @@ function TriggerSubItem({
         </Button>
         <SidebarMenuSubButton className="flex-1 cursor-default" onClick={onToggle}>
           <ZapIcon
-            className={`size-3.5 ${trigger.enabled ? 'text-amber-500' : 'text-muted-foreground'}`}
+            className={`size-3.5 ${trigger.enabled ? 'text-warning' : 'text-muted-foreground'}`}
           />
           <span
             className={`flex-1 truncate ${trigger.enabled ? '' : 'text-muted-foreground line-through'}`}
           >
             {trigger.name}
           </span>
-          <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-amber-500">
+          <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-warning">
             trig
           </Badge>
         </SidebarMenuSubButton>
@@ -298,15 +298,11 @@ function TriggerSubItem({
             <span className="text-foreground truncate">{trigger.table}</span>
           </div>
           <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-            <ArrowRightIcon className="size-3 text-amber-500" />
+            <ArrowRightIcon className="size-3 text-warning" />
             <span>{trigger.timing}</span>
             <span className="flex flex-wrap gap-1">
               {trigger.events.map((event) => (
-                <Badge
-                  key={event}
-                  variant="outline"
-                  className="text-[10px] px-1 py-0 text-amber-500"
-                >
+                <Badge key={event} variant="outline" className="text-[10px] px-1 py-0 text-warning">
                   {event}
                 </Badge>
               ))}
@@ -330,8 +326,8 @@ function TriggerSubItem({
           )}
           {!trigger.enabled && (
             <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-              <PowerIcon className="size-3 text-red-400" />
-              <span className="text-red-400">disabled</span>
+              <PowerIcon className="size-3 text-destructive" />
+              <span className="text-destructive">disabled</span>
             </div>
           )}
         </div>
@@ -524,7 +520,7 @@ function VirtualizedSchemaItems({
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default group/col">
                               {column.isPrimaryKey ? (
-                                <KeyIcon className="size-3 text-yellow-500 shrink-0" />
+                                <KeyIcon className="size-3 text-warning shrink-0" />
                               ) : column.foreignKey ? (
                                 <LinkIcon className="size-3 text-blue-400 shrink-0" />
                               ) : (
@@ -536,7 +532,7 @@ function VirtualizedSchemaItems({
                                 {column.name}
                               </span>
                               {!column.isNullable && !column.isPrimaryKey && (
-                                <span className="text-red-400 text-[10px] shrink-0">*</span>
+                                <span className="text-destructive text-[10px] shrink-0">*</span>
                               )}
                               <DataTypeBadge type={column.dataType} />
                               {column.foreignKey && (
@@ -557,7 +553,7 @@ function VirtualizedSchemaItems({
                                 {column.isNullable ? 'Yes' : 'No'}
                               </div>
                               {column.isPrimaryKey && (
-                                <div className="text-yellow-500">Primary Key</div>
+                                <div className="text-warning">Primary Key</div>
                               )}
                               {column.foreignKey && (
                                 <div className="text-blue-400">
@@ -711,7 +707,7 @@ function VirtualizedSchemaItems({
                                   param.mode === 'OUT'
                                     ? 'text-orange-400'
                                     : param.mode === 'INOUT'
-                                      ? 'text-yellow-400'
+                                      ? 'text-warning'
                                       : 'text-muted-foreground'
                                 }`}
                               >
@@ -1408,7 +1404,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowTriggers}
                 className="text-xs"
               >
-                <ZapIcon className="size-3.5 mr-2 text-amber-500" />
+                <ZapIcon className="size-3.5 mr-2 text-warning" />
                 Triggers
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
@@ -1681,7 +1677,7 @@ export function SchemaExplorer() {
                                             <TooltipTrigger asChild>
                                               <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default group/col">
                                                 {column.isPrimaryKey ? (
-                                                  <KeyIcon className="size-3 text-yellow-500 shrink-0" />
+                                                  <KeyIcon className="size-3 text-warning shrink-0" />
                                                 ) : column.foreignKey ? (
                                                   <LinkIcon className="size-3 text-blue-400 shrink-0" />
                                                 ) : (
@@ -1697,7 +1693,7 @@ export function SchemaExplorer() {
                                                   {column.name}
                                                 </span>
                                                 {!column.isNullable && !column.isPrimaryKey && (
-                                                  <span className="text-red-400 text-[10px] shrink-0">
+                                                  <span className="text-destructive text-[10px] shrink-0">
                                                     *
                                                   </span>
                                                 )}
@@ -1724,7 +1720,7 @@ export function SchemaExplorer() {
                                                   {column.isNullable ? 'Yes' : 'No'}
                                                 </div>
                                                 {column.isPrimaryKey && (
-                                                  <div className="text-yellow-500">Primary Key</div>
+                                                  <div className="text-warning">Primary Key</div>
                                                 )}
                                                 {column.foreignKey && (
                                                   <div className="text-blue-400">
@@ -1862,7 +1858,7 @@ export function SchemaExplorer() {
                                                     param.mode === 'OUT'
                                                       ? 'text-orange-400'
                                                       : param.mode === 'INOUT'
-                                                        ? 'text-yellow-400'
+                                                        ? 'text-warning'
                                                         : 'text-muted-foreground'
                                                   }`}
                                                 >

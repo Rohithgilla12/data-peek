@@ -92,7 +92,7 @@ function EventRow({ event, isFresh }: { event: PgNotificationEvent; isFresh: boo
       {isFresh && (
         <span
           aria-hidden
-          className="absolute left-0 top-0 bottom-0 w-[2px] bg-emerald-500/80 motion-safe:animate-[pgnotify-bar_700ms_ease-out_forwards]"
+          className="absolute left-0 top-0 bottom-0 w-[2px] bg-success/80 motion-safe:animate-[pgnotify-bar_700ms_ease-out_forwards]"
         />
       )}
       <div className="flex items-center gap-2 min-w-0">
@@ -115,7 +115,7 @@ function EventRow({ event, isFresh }: { event: PgNotificationEvent; isFresh: boo
           title="Copy payload"
         >
           {copied ? (
-            <span className="text-[10px] text-green-500">ok</span>
+            <span className="text-[10px] text-success">ok</span>
           ) : (
             <CopyIcon className="size-3" />
           )}

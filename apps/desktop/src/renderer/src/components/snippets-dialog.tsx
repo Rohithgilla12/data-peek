@@ -348,7 +348,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="size-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                    className="size-8 text-destructive hover:text-destructive hover:bg-destructive/10"
                                     onClick={() => handleDeleteSnippet(snippet.id)}
                                   >
                                     <TrashIcon className="size-4" />

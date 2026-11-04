@@ -89,11 +89,11 @@ function getScheduleLabel(schedule: ScheduledQuery['schedule']): string {
 function getStatusIcon(status: ScheduledQuery['status']) {
   switch (status) {
     case 'active':
-      return <SuccessIcon className="size-3 text-green-500" />
+      return <SuccessIcon className="size-3 text-success" />
     case 'paused':
-      return <PauseIcon className="size-3 text-yellow-500" />
+      return <PauseIcon className="size-3 text-warning" />
     case 'error':
-      return <ErrorIcon className="size-3 text-red-500" />
+      return <ErrorIcon className="size-3 text-destructive" />
     default:
       return null
   }
@@ -232,7 +232,7 @@ export function ScheduledQueries() {
                                 <ClockIcon className="size-3" />
                                 <span>{getScheduleLabel(item.schedule)}</span>
                                 {item.status === 'active' && item.nextRunAt && (
-                                  <span className="text-green-600">
+                                  <span className="text-success">
                                     ({formatFutureTime(item.nextRunAt)})
                                   </span>
                                 )}
@@ -298,10 +298,10 @@ export function ScheduledQueries() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-red-400"
+                          className="text-destructive"
                           onClick={() => handleDeleteQuery(item.id)}
                         >
-                          <TrashIcon className="text-red-400" />
+                          <TrashIcon className="text-destructive" />
                           <span>Delete</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>

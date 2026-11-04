@@ -146,12 +146,12 @@ function TableNode({ data }: { data: TableNodeData }) {
                 type="target"
                 position={Position.Left}
                 id={`${column.name}-target`}
-                className="!bg-amber-500 !w-2.5 !h-2.5 !border-2 !border-background"
+                className="!bg-warning !w-2.5 !h-2.5 !border-2 !border-background"
               />
             )}
 
             {column.isPrimaryKey ? (
-              <KeyIcon className="size-3.5 text-amber-500 shrink-0" />
+              <KeyIcon className="size-3.5 text-warning shrink-0" />
             ) : column.foreignKey ? (
               <KeyIcon className="size-3.5 shrink-0" style={{ color: data.clusterColor }} />
             ) : (
@@ -167,7 +167,7 @@ function TableNode({ data }: { data: TableNodeData }) {
             </span>
 
             {!column.isNullable && !column.isPrimaryKey && (
-              <span className="text-red-400/80 text-[10px] font-bold">*</span>
+              <span className="text-destructive/80 text-[10px] font-bold">*</span>
             )}
           </div>
         ))}
@@ -825,7 +825,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
           </span>
         )}
         <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-amber-500/60" />
+          <span className="size-2 rounded-full bg-warning/60" />
           {relationshipCount} relationship{relationshipCount !== 1 ? 's' : ''}
         </span>
         <span className="ml-auto opacity-70">

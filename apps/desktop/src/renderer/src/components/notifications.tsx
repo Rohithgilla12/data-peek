@@ -10,17 +10,17 @@ const iconMap: Record<NotificationType, typeof SuccessIcon> = {
 }
 
 const styleMap: Record<NotificationType, string> = {
-  success: 'border-green-500/30 bg-green-500/10',
-  error: 'border-red-500/30 bg-red-500/10',
+  success: 'border-success/30 bg-success/10',
+  error: 'border-destructive/30 bg-destructive/10',
   info: 'border-blue-500/30 bg-blue-500/10',
-  warning: 'border-yellow-500/30 bg-yellow-500/10'
+  warning: 'border-warning/30 bg-warning/10'
 }
 
 const iconStyleMap: Record<NotificationType, string> = {
-  success: 'text-green-500',
-  error: 'text-red-500',
+  success: 'text-success',
+  error: 'text-destructive',
   info: 'text-blue-500',
-  warning: 'text-yellow-500'
+  warning: 'text-warning'
 }
 
 export function Notifications() {

@@ -87,9 +87,9 @@ function TrendIcon({ direction }: { direction: TrendDirection }) {
 function getTrendColorClass(direction: TrendDirection): string {
   switch (direction) {
     case 'up':
-      return 'text-green-500'
+      return 'text-success'
     case 'down':
-      return 'text-red-500'
+      return 'text-destructive'
     default:
       return 'text-muted-foreground'
   }
@@ -120,7 +120,7 @@ export function AIMetricCard({ metric, className }: AIMetricCardProps) {
           </div>
         ) : error ? (
           <div className="h-10 flex items-center">
-            <span className="text-sm text-red-400">{error}</span>
+            <span className="text-sm text-destructive">{error}</span>
           </div>
         ) : (
           <div className="flex items-baseline gap-2">

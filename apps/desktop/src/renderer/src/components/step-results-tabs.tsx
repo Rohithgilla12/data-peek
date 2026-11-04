@@ -49,7 +49,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
               }
             }}
           >
-            <PinIcon weight="fill" className="size-2.5 text-amber-500" />
+            <PinIcon weight="fill" className="size-2.5 text-warning" />
             <span>#{p.statementIndex + 1}</span>
             <button
               type="button"
@@ -91,7 +91,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 text-[10px] text-amber-500"
+            className="h-6 text-[10px] text-warning"
             onClick={() => pinResult(tabId, session.lastResult!.statementIndex)}
           >
             <PinIcon className="size-3 mr-1" /> Pin

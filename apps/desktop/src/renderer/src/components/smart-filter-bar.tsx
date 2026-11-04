@@ -217,7 +217,7 @@ function FilterChipButton({
         isEditing
           ? 'border-primary/50 bg-primary/10 ring-1 ring-primary/20'
           : copied
-            ? 'border-green-500/50 bg-green-500/10'
+            ? 'border-success/30 bg-success/10'
             : 'border-border/60 bg-muted/50'
       )}
     >
@@ -225,7 +225,7 @@ function FilterChipButton({
         {chipDisplayLabel(chip)}
       </span>
       {copied && (
-        <span className="absolute inset-0 flex items-center justify-center gap-1 text-green-400 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
+        <span className="absolute inset-0 flex items-center justify-center gap-1 text-success motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
           <svg
             className="size-3"
             viewBox="0 0 16 16"
@@ -761,18 +761,18 @@ export function SmartFilterBar({
       {hasActiveFilters && onApplyToQuery && (
         <div
           className={cn(
-            'flex items-center justify-between px-2.5 py-1 border-b border-amber-500/10 bg-amber-500/[0.03]',
+            'flex items-center justify-between px-2.5 py-1 border-b border-warning/30 bg-warning/[0.03]',
             'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-200'
           )}
         >
-          <span className="text-[11px] text-amber-400/70">
+          <span className="text-[11px] text-warning/70">
             Filtering {totalRows.toLocaleString()} loaded rows client-side
           </span>
           <Button
             variant="ghost"
             size="sm"
             className={cn(
-              'h-6 gap-1.5 text-[11px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10',
+              'h-6 gap-1.5 text-[11px] text-warning hover:text-warning hover:bg-warning/10',
               'motion-safe:animate-pulse motion-safe:[animation-duration:3s] motion-safe:[animation-iteration-count:3]'
             )}
             onClick={onApplyToQuery}

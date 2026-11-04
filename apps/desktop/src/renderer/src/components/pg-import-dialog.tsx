@@ -179,9 +179,9 @@ export function PgImportDialog() {
           <div className="space-y-4 py-2">
             <div className="flex items-center gap-2">
               {importResult.success && importResult.statementsFailed === 0 ? (
-                <SuccessIcon className="size-5 text-green-500" />
+                <SuccessIcon className="size-5 text-success" />
               ) : importResult.success && importResult.statementsFailed > 0 ? (
-                <WarningIcon className="size-5 text-yellow-500" />
+                <WarningIcon className="size-5 text-warning" />
               ) : (
                 <ErrorIcon className="size-5 text-destructive" />
               )}
@@ -197,9 +197,7 @@ export function PgImportDialog() {
             <div className="space-y-1 text-xs text-muted-foreground">
               <p>{importResult.statementsExecuted.toLocaleString()} statements executed</p>
               {importResult.statementsSkipped > 0 && (
-                <p className="text-yellow-500">
-                  {importResult.statementsSkipped} statements skipped
-                </p>
+                <p className="text-warning">{importResult.statementsSkipped} statements skipped</p>
               )}
               {importResult.statementsFailed > 0 && (
                 <p className="text-destructive">

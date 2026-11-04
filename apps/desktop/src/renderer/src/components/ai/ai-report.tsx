@@ -62,8 +62,8 @@ function ReportWidgetView({
   }
   if (error) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3">
-        <div className="flex items-start gap-2 text-red-400">
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+        <div className="flex items-start gap-2 text-destructive">
           <WarningIcon className="size-4 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-medium">{widget.title}</p>

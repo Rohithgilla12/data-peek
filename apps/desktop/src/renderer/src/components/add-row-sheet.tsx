@@ -197,11 +197,11 @@ function SmartField({
       <div className="flex items-center gap-2">
         <Icon className={cn('size-3.5', iconColor)} />
         <Label className="text-sm font-medium">{column.name}</Label>
-        {isRequired && <span className="text-red-400 text-xs">*</span>}
+        {isRequired && <span className="text-destructive text-xs">*</span>}
         {column.isPrimaryKey && (
           <Badge
             variant="outline"
-            className="text-[9px] px-1.5 py-0 text-amber-500 border-amber-500/30"
+            className="text-[9px] px-1.5 py-0 text-warning border-warning/30"
           >
             PK
           </Badge>
@@ -251,7 +251,7 @@ function SmartField({
             <Switch
               checked={value === true}
               onCheckedChange={(checked) => onChange(checked)}
-              className="data-[state=checked]:bg-yellow-500"
+              className="data-[state=checked]:bg-warning"
             />
             <span className="text-sm text-muted-foreground">
               {value === null ? 'NULL' : value ? 'true' : 'false'}
@@ -383,7 +383,7 @@ function SmartField({
             value={displayValue}
             onChange={(e) => onChange(e.target.value || null)}
             placeholder={hasDefault ? `Default: ${column.defaultValue}` : 'Enter value...'}
-            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-green-500/50"
+            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-success/50"
           />
         )}
 
@@ -654,7 +654,7 @@ export function AddRowSheet({
             <div
               className={cn(
                 'size-10 rounded-lg flex items-center justify-center',
-                isDuplicate ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
+                isDuplicate ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
               )}
             >
               {isDuplicate ? <CopyIcon className="size-5" /> : <PlusIcon className="size-5" />}
@@ -681,11 +681,11 @@ export function AddRowSheet({
             {requiredColumns.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <ErrorIcon className="size-3.5 text-red-400" />
-                  <span className="text-xs font-medium text-red-400 uppercase tracking-wider">
+                  <ErrorIcon className="size-3.5 text-destructive" />
+                  <span className="text-xs font-medium text-destructive uppercase tracking-wider">
                     Required Fields
                   </span>
-                  <div className="h-px flex-1 bg-red-500/20" />
+                  <div className="h-px flex-1 bg-destructive/10" />
                 </div>
                 {requiredColumns.map((col) => (
                   <SmartField
@@ -752,7 +752,9 @@ export function AddRowSheet({
               onClick={handleSubmit}
               className={cn(
                 'flex-1 h-10 gap-2',
-                isDuplicate ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'
+                isDuplicate
+                  ? 'bg-warning text-warning-foreground hover:bg-warning/90'
+                  : 'bg-success text-success-foreground hover:bg-success/90'
               )}
             >
               {isDuplicate ? (

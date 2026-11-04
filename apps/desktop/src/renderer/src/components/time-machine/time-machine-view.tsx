@@ -55,19 +55,19 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
             <span className="flex items-center gap-1.5 text-muted-foreground tabular-nums">
               <Badge
                 variant="secondary"
-                className="h-4 px-1.5 text-[10px] bg-green-500/15 text-green-500"
+                className="h-4 px-1.5 text-[10px] bg-success/10 text-success"
               >
                 +{diff.addedRowKeys.size} added
               </Badge>
               <Badge
                 variant="secondary"
-                className="h-4 px-1.5 text-[10px] bg-red-500/15 text-red-400"
+                className="h-4 px-1.5 text-[10px] bg-destructive/10 text-destructive"
               >
                 −{diff.removedRowKeys.size} removed
               </Badge>
               <Badge
                 variant="secondary"
-                className="h-4 px-1.5 text-[10px] bg-amber-500/15 text-amber-500"
+                className="h-4 px-1.5 text-[10px] bg-warning/10 text-warning"
               >
                 {changedCells} cells changed
               </Badge>
@@ -93,7 +93,7 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
               {snapshot.rowCount} rows · {snapshot.durationMs}ms · read-only
             </span>
             {snapshot.truncated && (
-              <span className="text-amber-500">
+              <span className="text-warning">
                 first {snapshot.storedRowCount} of {snapshot.rowCount} rows stored
               </span>
             )}
@@ -103,7 +103,7 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-red-400"
+            className="h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
             onClick={() => void useTimeMachineStore.getState().deleteRun(tabId, snapshot.id)}
             title="Delete this run from history"
           >

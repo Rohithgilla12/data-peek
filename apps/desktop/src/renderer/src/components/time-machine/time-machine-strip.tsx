@@ -108,7 +108,7 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
       )}
 
       {state.error ? (
-        <span className="text-xs text-red-400 truncate">{state.error}</span>
+        <span className="text-xs text-destructive truncate">{state.error}</span>
       ) : chronological.length === 0 ? (
         <span className="text-xs text-muted-foreground/60">
           No runs captured yet — successful SELECTs are snapshotted automatically
@@ -171,7 +171,7 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
                 : 'bg-background text-muted-foreground hover:bg-muted hover:text-foreground ring-1 ring-border'
             )}
           >
-            <span className="size-1.5 rounded-full bg-green-500" />
+            <span className="size-1.5 rounded-full bg-success" />
             Live
           </button>
         </div>

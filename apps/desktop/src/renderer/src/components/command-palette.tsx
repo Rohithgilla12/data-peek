@@ -327,7 +327,7 @@ export function CommandPalette({
                     <DatabaseBrandIcon dbType={conn.dbType} className="size-4" />
                     <span className="truncate">{conn.name}</span>
                     {conn.id === activeConnection?.id && (
-                      <span className="ml-2 text-[10px] text-emerald-400">Active</span>
+                      <span className="ml-2 text-[10px] text-success">Active</span>
                     )}
                     <CommandShortcut>
                       {keys.mod}
@@ -462,7 +462,7 @@ export function CommandPalette({
                     <DatabaseBrandIcon dbType={conn.dbType} className="size-4" />
                     <span className="truncate">{conn.name}</span>
                     {conn.id === activeConnection?.id && (
-                      <span className="ml-2 text-[10px] text-emerald-400">Active</span>
+                      <span className="ml-2 text-[10px] text-success">Active</span>
                     )}
                     {index < 9 && (
                       <CommandShortcut>
@@ -586,7 +586,7 @@ export function CommandPalette({
                       </span>
                     </div>
                     {conn.id === activeConnection?.id && (
-                      <span className="ml-auto text-[10px] text-emerald-400">Active</span>
+                      <span className="ml-auto text-[10px] text-success">Active</span>
                     )}
                     {index < 9 && (
                       <CommandShortcut>
@@ -622,7 +622,7 @@ export function CommandPalette({
                     </span>
                   </div>
                   {conn.id === activeConnection?.id && (
-                    <span className="ml-auto text-[10px] text-emerald-400">Active</span>
+                    <span className="ml-auto text-[10px] text-success">Active</span>
                   )}
                 </CommandItem>
               ))}
@@ -673,7 +673,7 @@ export function CommandPalette({
                           className={cn(
                             'p-1 rounded hover:bg-accent transition-colors',
                             query.isPinned
-                              ? 'text-amber-400'
+                              ? 'text-warning'
                               : 'text-muted-foreground opacity-0 group-hover:opacity-100'
                           )}
                           title={query.isPinned ? 'Unpin' : 'Pin'}

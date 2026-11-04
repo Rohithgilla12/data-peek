@@ -189,8 +189,8 @@ function StatBadge({
         'flex items-baseline gap-1.5 px-2.5 py-1.5 rounded-md',
         'bg-gradient-to-b from-muted/80 to-muted/40',
         'border border-border/50',
-        variant === 'min' && 'border-emerald-500/30',
-        variant === 'max' && 'border-amber-500/30',
+        variant === 'min' && 'border-success/30',
+        variant === 'max' && 'border-warning/30',
         variant === 'highlight' && 'border-primary/40 bg-primary/5'
       )}
     >
@@ -200,8 +200,8 @@ function StatBadge({
       <span
         className={cn(
           'font-mono text-xs tabular-nums',
-          variant === 'min' && 'text-emerald-500',
-          variant === 'max' && 'text-amber-500',
+          variant === 'min' && 'text-success',
+          variant === 'max' && 'text-warning',
           variant === 'highlight' && 'text-primary',
           variant === 'default' && 'text-foreground'
         )}
@@ -357,7 +357,7 @@ export function TelemetryPanel({
           <div className="flex items-center gap-2">
             <div className="relative">
               <ClockIcon className="size-4 text-primary" />
-              <span className="absolute -top-0.5 -right-0.5 size-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              <span className="absolute -top-0.5 -right-0.5 size-1.5 bg-success rounded-full animate-pulse" />
             </div>
             <h3 className="text-sm font-semibold tracking-tight">Query Telemetry</h3>
           </div>
@@ -373,7 +373,7 @@ export function TelemetryPanel({
 
             {telemetry?.rowCount !== undefined && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <span className="size-1 bg-emerald-500 rounded-full" />
+                <span className="size-1 bg-success rounded-full" />
                 <span className="font-mono tabular-nums">
                   {telemetry.rowCount.toLocaleString()}
                 </span>
@@ -392,7 +392,7 @@ export function TelemetryPanel({
 
             {benchmark && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <span className="size-1 bg-amber-500 rounded-full" />
+                <span className="size-1 bg-warning rounded-full" />
                 <span className="font-mono tabular-nums">{benchmark.runCount}</span>
                 <span className="text-muted-foreground/60">runs</span>
               </div>
@@ -734,7 +734,7 @@ export function TelemetryPanel({
             <span
               className={cn(
                 'size-1.5 rounded-full',
-                telemetry.connectionReused ? 'bg-emerald-500/80' : 'bg-amber-500/80'
+                telemetry.connectionReused ? 'bg-success/80' : 'bg-warning/80'
               )}
             />
             <span>{telemetry.connectionReused ? 'Connection pooled' : 'New connection'}</span>

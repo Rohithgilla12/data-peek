@@ -229,7 +229,7 @@ export function JsonCellEditor({
             >
               {copied ? (
                 <>
-                  <CheckIcon className="size-3 text-green-500" />
+                  <CheckIcon className="size-3 text-success" />
                   Copied!
                 </>
               ) : (
@@ -250,7 +250,7 @@ export function JsonCellEditor({
           </div>
 
           {error && (
-            <div className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2">
+            <div className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2">
               {error}
             </div>
           )}
@@ -358,7 +358,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
               >
                 {copied ? (
                   <>
-                    <CheckIcon className="size-3 text-green-500" />
+                    <CheckIcon className="size-3 text-success" />
                     Copied!
                   </>
                 ) : (

@@ -26,11 +26,11 @@ interface SqlPreviewModalProps {
 function getOperationColor(type: string): string {
   switch (type) {
     case 'insert':
-      return 'text-green-500 border-green-500/30'
+      return 'text-success border-success/30'
     case 'update':
-      return 'text-amber-500 border-amber-500/30'
+      return 'text-warning border-warning/30'
     case 'delete':
-      return 'text-red-500 border-red-500/30'
+      return 'text-destructive border-destructive/30'
     default:
       return 'text-muted-foreground'
   }
@@ -85,17 +85,17 @@ export function SqlPreviewModal({
         <div className="flex items-center gap-2 py-2 border-b border-border/50">
           <span className="text-sm text-muted-foreground">Summary:</span>
           {insertCount > 0 && (
-            <Badge variant="outline" className="text-green-500 border-green-500/30 text-xs">
+            <Badge variant="outline" className="text-success border-success/30 text-xs">
               {insertCount} INSERT
             </Badge>
           )}
           {updateCount > 0 && (
-            <Badge variant="outline" className="text-amber-500 border-amber-500/30 text-xs">
+            <Badge variant="outline" className="text-warning border-warning/30 text-xs">
               {updateCount} UPDATE
             </Badge>
           )}
           {deleteCount > 0 && (
-            <Badge variant="outline" className="text-red-500 border-red-500/30 text-xs">
+            <Badge variant="outline" className="text-destructive border-destructive/30 text-xs">
               {deleteCount} DELETE
             </Badge>
           )}
@@ -108,7 +108,7 @@ export function SqlPreviewModal({
           >
             {copied ? (
               <>
-                <CheckIcon className="size-3 text-green-500" />
+                <CheckIcon className="size-3 text-success" />
                 Copied!
               </>
             ) : (
@@ -162,10 +162,10 @@ export function SqlPreviewModal({
 
         {/* Commit error */}
         {error && (
-          <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm">
-            <ErrorIcon className="size-4 text-red-500 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm">
+            <ErrorIcon className="size-4 text-destructive shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-red-600">Commit failed</p>
+              <p className="font-medium text-destructive">Commit failed</p>
               <p className="mt-0.5 text-xs text-muted-foreground break-words font-mono whitespace-pre-wrap">
                 {error}
               </p>
@@ -174,10 +174,10 @@ export function SqlPreviewModal({
         )}
 
         {/* Warning */}
-        <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm">
-          <ErrorIcon className="size-4 text-amber-500 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/30 rounded-lg text-sm">
+          <ErrorIcon className="size-4 text-warning shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-amber-600">Review Carefully</p>
+            <p className="font-medium text-warning">Review Carefully</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               These changes will be executed within a single transaction. If any statement fails,
               all changes will be rolled back.
@@ -192,7 +192,7 @@ export function SqlPreviewModal({
           <Button
             onClick={onConfirm}
             disabled={isLoading || sqlStatements.length === 0}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-success text-success-foreground hover:bg-success/90"
           >
             {isLoading ? (
               <>

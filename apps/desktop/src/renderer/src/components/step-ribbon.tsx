@@ -72,7 +72,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
       {/* Statement preview */}
       <div className="flex-1 text-xs font-mono text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
         {session.state === 'done' ? (
-          <span className="text-green-500">
+          <span className="text-success">
             Complete — {session.statements.length} statements executed
           </span>
         ) : session.state === 'errored' && session.lastError ? (
@@ -126,7 +126,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
             size="sm"
             variant="ghost"
             onClick={() => retryStep(tabId)}
-            className="h-7 text-xs text-amber-500 hover:text-amber-400"
+            className="h-7 text-xs text-warning hover:text-warning"
           >
             <RefreshIcon className="size-3 mr-1" />
             Retry
@@ -150,12 +150,12 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
 function StatusDot({ state }: { state: SessionState }) {
   const color =
     state === 'running'
-      ? 'bg-amber-500 animate-pulse'
+      ? 'bg-warning animate-pulse'
       : state === 'paused' || state === 'idle'
         ? 'bg-primary'
         : state === 'errored'
           ? 'bg-destructive'
-          : 'bg-green-500'
+          : 'bg-success'
   return <div className={cn('size-2 rounded-full', color)} />
 }
 

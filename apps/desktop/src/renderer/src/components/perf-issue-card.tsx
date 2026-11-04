@@ -47,14 +47,14 @@ const ISSUE_TYPE_ICONS: Record<PerformanceIssueType, React.ElementType> = {
 }
 
 const severityClasses = {
-  critical: 'border-red-500/30 bg-red-500/5',
-  warning: 'border-yellow-500/30 bg-yellow-500/5',
+  critical: 'border-destructive/30 bg-destructive/10',
+  warning: 'border-warning/30 bg-warning/10',
   info: 'border-blue-500/30 bg-blue-500/5'
 }
 
 const severityIconClasses = {
-  critical: 'text-red-500',
-  warning: 'text-yellow-500',
+  critical: 'text-destructive',
+  warning: 'text-warning',
   info: 'text-blue-500'
 }
 
@@ -167,7 +167,7 @@ export function PerfIssueCard({
               <div className="text-xs font-medium text-muted-foreground">Suggested index</div>
 
               <div className="relative">
-                <pre className="text-xs bg-black/60 border border-border/40 text-emerald-400 rounded-md p-2.5 pr-10 overflow-x-auto font-mono">
+                <pre className="text-xs bg-black/60 border border-border/40 text-success rounded-md p-2.5 pr-10 overflow-x-auto font-mono">
                   {issue.indexSuggestion}
                 </pre>
                 <Button
@@ -177,7 +177,7 @@ export function PerfIssueCard({
                   onClick={handleCopyIndex}
                 >
                   {copied ? (
-                    <CheckIcon className="size-3 text-green-500" />
+                    <CheckIcon className="size-3 text-success" />
                   ) : (
                     <CopyIcon className="size-3" />
                   )}
@@ -198,7 +198,7 @@ export function PerfIssueCard({
                 <Button
                   variant="default"
                   size="sm"
-                  className="h-8 gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium shadow-md"
+                  className="h-8 gap-1.5 bg-success text-success-foreground hover:bg-success/90 font-medium shadow-md"
                   onClick={handleApplyFix}
                   disabled={isApplying || applySuccess}
                 >
@@ -221,7 +221,7 @@ export function PerfIssueCard({
                 </Button>
               </div>
 
-              {applyError && <p className="break-words text-xs text-red-400">{applyError}</p>}
+              {applyError && <p className="break-words text-xs text-destructive">{applyError}</p>}
 
               {showJson && (
                 <div className="mt-2 bg-black/80 border border-border/40 rounded p-2.5 text-[11px] font-mono text-purple-300 max-h-36 overflow-auto">
@@ -257,7 +257,7 @@ export function PerfIssueCard({
               <span
                 className={cn(
                   'font-medium',
-                  issue.actualValue > issue.threshold ? 'text-red-500' : 'text-muted-foreground'
+                  issue.actualValue > issue.threshold ? 'text-destructive' : 'text-muted-foreground'
                 )}
               >
                 <span className="font-medium">Actual:</span> {issue.actualValue.toFixed(2)}ms

@@ -871,7 +871,7 @@ export function AIChatPanel({
                                 e.stopPropagation()
                                 handleDeleteSession(session.id)
                               }}
-                              className="text-red-500 focus:text-red-500"
+                              className="text-destructive focus:text-destructive"
                             >
                               <TrashIcon className="size-3.5 mr-2" />
                               Delete
@@ -911,9 +911,9 @@ export function AIChatPanel({
         {isConfigured && !connection && (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <div className="relative mb-4">
-              <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-full blur-xl" />
-              <div className="relative flex items-center justify-center size-16 rounded-full bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/20">
-                <DatabaseIcon className="size-8 text-amber-400/50" />
+              <div className="absolute -inset-4 bg-warning/10 rounded-full blur-xl" />
+              <div className="relative flex items-center justify-center size-16 rounded-full bg-warning/10 border border-warning/30">
+                <DatabaseIcon className="size-8 text-warning/50" />
               </div>
             </div>
             <h3 className="font-semibold mb-2">Connect to a Database</h3>

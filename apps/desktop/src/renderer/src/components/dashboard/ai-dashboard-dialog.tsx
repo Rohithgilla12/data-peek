@@ -142,7 +142,7 @@ export function AIDashboardDialog({ open, onOpenChange, dashboardId }: AIDashboa
           </p>
         )}
         {error && (
-          <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2 text-red-400">
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-destructive">
             <WarningIcon className="size-4 shrink-0 mt-0.5" />
             <span className="text-xs">{error}</span>
           </div>

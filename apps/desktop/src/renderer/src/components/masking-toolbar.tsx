@@ -49,7 +49,7 @@ export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
         <div className="flex items-center gap-1">
           <Badge
             variant="secondary"
-            className="gap-1 px-1.5 py-0 text-[10px] text-amber-600 bg-amber-500/10 border-amber-500/20"
+            className="gap-1 px-1.5 py-0 text-[10px] text-warning bg-warning/10 border-warning/30"
           >
             <LockIcon className="size-2.5" />
             {maskedCount} masked
@@ -109,7 +109,7 @@ export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-5 shrink-0 text-muted-foreground hover:text-red-500"
+                className="size-5 shrink-0 text-muted-foreground hover:text-destructive"
                 onClick={() => removeAutoMaskRule(rule.id)}
               >
                 <TrashIcon className="size-3" />

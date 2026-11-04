@@ -95,11 +95,11 @@ function formatFutureTime(timestamp: number): string {
 function getStatusColor(status: ScheduledQueryStatus): string {
   switch (status) {
     case 'active':
-      return 'bg-green-500/10 text-green-500 border-green-500/20'
+      return 'bg-success/10 text-success border-success/30'
     case 'paused':
-      return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+      return 'bg-warning/10 text-warning border-warning/30'
     case 'error':
-      return 'bg-red-500/10 text-red-500 border-red-500/20'
+      return 'bg-destructive/10 text-destructive border-destructive/30'
     default:
       return 'bg-muted text-muted-foreground border-border'
   }
@@ -391,7 +391,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                             {getScheduleLabel(query.schedule)}
                           </span>
                           {query.status === 'active' && query.nextRunAt && (
-                            <span className="flex items-center gap-1 text-green-600">
+                            <span className="flex items-center gap-1 text-success">
                               <RefreshIcon className="size-3" />
                               Next: {formatFutureTime(query.nextRunAt)}
                             </span>
@@ -403,7 +403,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                             </span>
                           )}
                           {query.lastError && (
-                            <span className="flex items-center gap-1 text-red-500">
+                            <span className="flex items-center gap-1 text-destructive">
                               <ErrorIcon className="size-3" />
                               {query.lastError.slice(0, 50)}
                               {query.lastError.length > 50 && '...'}
@@ -494,7 +494,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-7 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => handleDelete(query.id)}
                               >
                                 <TrashIcon className="size-3.5" />

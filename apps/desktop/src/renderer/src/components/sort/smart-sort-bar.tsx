@@ -62,7 +62,7 @@ function SortStatus({
   const total = scope.total
   return (
     <span className="flex items-center gap-2">
-      <span className="text-[10px] text-amber-500/90">
+      <span className="text-[10px] text-warning/90">
         {total === null
           ? `sorting ${scope.loaded.toLocaleString()} loaded rows`
           : `sorting ${scope.loaded.toLocaleString()} of ${total.toLocaleString()} loaded`}

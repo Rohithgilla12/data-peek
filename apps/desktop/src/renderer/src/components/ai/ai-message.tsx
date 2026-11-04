@@ -342,7 +342,7 @@ export function AIMessage({
         return (
           <div className="space-y-2 mt-3">
             {queryData.warning && (
-              <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200">
+              <div className="flex items-start gap-2 p-2 rounded-lg bg-warning/10 border border-warning/30 text-warning">
                 <WarningIcon className="size-4 shrink-0 mt-0.5" />
                 <span className="text-xs">{queryData.warning}</span>
               </div>
@@ -358,8 +358,8 @@ export function AIMessage({
 
             {/* Query Error */}
             {queryError && (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4">
-                <div className="flex items-start gap-2 text-red-400">
+              <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+                <div className="flex items-start gap-2 text-destructive">
                   <WarningIcon className="size-4 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium">Query failed</p>
@@ -399,8 +399,8 @@ export function AIMessage({
 
         if (chartError) {
           return (
-            <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 mt-3">
-              <div className="flex items-start gap-2 text-red-400">
+            <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 mt-3">
+              <div className="flex items-start gap-2 text-destructive">
                 <WarningIcon className="size-4 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium">Failed to load chart data</p>
@@ -591,7 +591,7 @@ export function AIMessage({
                 className="absolute -right-1 -top-1 opacity-0 group-hover/content:opacity-100 transition-opacity p-1 rounded bg-muted hover:bg-muted/80"
               >
                 {copiedContent ? (
-                  <CheckIcon className="size-3 text-green-500" />
+                  <CheckIcon className="size-3 text-success" />
                 ) : (
                   <CopyIcon className="size-3 text-muted-foreground" />
                 )}
@@ -611,7 +611,7 @@ export function AIMessage({
 
         {/* Grounded-against-DB indicator (BYOH agentic mode queried the live DB) */}
         {!isUser && message.grounded && (
-          <div className="flex items-center gap-1 text-[10px] text-green-400/90">
+          <div className="flex items-center gap-1 text-[10px] text-success/90">
             <CheckIcon className="size-3" />
             Grounded against your database
           </div>
@@ -654,7 +654,7 @@ export function AIMessage({
               </DropdownMenuContent>
             </DropdownMenu>
             {pinResult && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-green-400/90">
+              <span className="inline-flex items-center gap-1 text-[11px] text-success/90">
                 <CheckIcon className="size-3" />
                 {pinResult}
               </span>

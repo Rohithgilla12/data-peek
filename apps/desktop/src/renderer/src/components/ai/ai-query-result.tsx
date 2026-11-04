@@ -42,23 +42,17 @@ export function AIQueryResult({
   }
 
   return (
-    <div
-      className={cn(
-        'mt-2 rounded-xl overflow-hidden',
-        'bg-gradient-to-b from-zinc-900/60 to-zinc-900/40',
-        'border border-zinc-800/60'
-      )}
-    >
+    <div className={cn('mt-2 rounded-xl overflow-hidden', 'bg-card', 'border border-border')}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/30 bg-zinc-900/40">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <TableIcon className="size-3.5 text-emerald-400" />
-            <span className="text-[11px] font-medium text-zinc-300">
+            <TableIcon className="size-3.5 text-success" />
+            <span className="text-[11px] font-medium text-foreground">
               {totalRows} row{totalRows !== 1 ? 's' : ''}
             </span>
           </div>
-          <div className="flex items-center gap-1 text-[10px] text-zinc-500">
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
             <ClockIcon className="size-3" />
             {duration}ms
           </div>
@@ -69,7 +63,7 @@ export function AIQueryResult({
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
             >
               {isExpanded ? (
                 <>
@@ -96,20 +90,20 @@ export function AIQueryResult({
       >
         <table className="w-full text-xs">
           <thead>
-            <tr className="border-b border-zinc-800/30 bg-zinc-900/30">
+            <tr className="border-b border-border bg-muted/40">
               {columns.slice(0, 6).map((col) => (
                 <th
                   key={col.name}
-                  className="px-3 py-1.5 text-left font-medium text-zinc-400 whitespace-nowrap"
+                  className="px-3 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap"
                 >
                   <div className="flex flex-col">
                     <span>{col.name}</span>
-                    <span className="text-[9px] font-normal text-zinc-600">{col.type}</span>
+                    <span className="text-[9px] font-normal text-muted-foreground">{col.type}</span>
                   </div>
                 </th>
               ))}
               {columns.length > 6 && (
-                <th className="px-3 py-1.5 text-left font-medium text-zinc-500 whitespace-nowrap">
+                <th className="px-3 py-1.5 text-left font-medium text-muted-foreground whitespace-nowrap">
                   +{columns.length - 6} more
                 </th>
               )}
@@ -120,8 +114,8 @@ export function AIQueryResult({
               <tr
                 key={rowIndex}
                 className={cn(
-                  'border-b border-zinc-800/20 hover:bg-zinc-800/20 transition-colors',
-                  rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-zinc-900/20'
+                  'border-b border-border hover:bg-muted transition-colors',
+                  rowIndex % 2 === 0 ? 'bg-transparent' : 'bg-muted/20'
                 )}
               >
                 {columns.slice(0, 6).map((col) => {
@@ -133,14 +127,14 @@ export function AIQueryResult({
                       key={col.name}
                       className={cn(
                         'px-3 py-1.5 font-mono whitespace-nowrap',
-                        isNull ? 'text-zinc-600 italic' : 'text-zinc-300'
+                        isNull ? 'text-muted-foreground italic' : 'text-foreground'
                       )}
                     >
                       {truncateValue(value)}
                     </td>
                   )
                 })}
-                {columns.length > 6 && <td className="px-3 py-1.5 text-zinc-600">...</td>}
+                {columns.length > 6 && <td className="px-3 py-1.5 text-muted-foreground">...</td>}
               </tr>
             ))}
           </tbody>
@@ -148,20 +142,20 @@ export function AIQueryResult({
 
         {/* Gradient fade when collapsed */}
         {!isExpanded && displayRows.length > 3 && (
-          <div className="absolute bottom-10 left-0 right-0 h-6 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
+          <div className="absolute bottom-10 left-0 right-0 h-6 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         )}
       </div>
 
       {/* Footer */}
       {hasMore && (
-        <div className="flex items-center justify-between px-3 py-2 border-t border-zinc-800/30 bg-zinc-900/30">
-          <span className="text-[10px] text-zinc-500">
+        <div className="flex items-center justify-between px-3 py-2 border-t border-border bg-muted/40">
+          <span className="text-[10px] text-muted-foreground">
             Showing {displayRows.length} of {totalRows} rows
           </span>
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 gap-1.5 text-[10px] text-zinc-400 hover:text-zinc-200"
+            className="h-6 gap-1.5 text-[10px] text-muted-foreground hover:text-foreground"
             onClick={onOpenInTab}
           >
             <ExternalLinkIcon className="size-3" />

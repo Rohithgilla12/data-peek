@@ -330,7 +330,7 @@ export function EditWidgetDialog({
                   <SelectItem key={conn.id} value={conn.id}>
                     <span className="flex items-center gap-2">
                       <span
-                        className={`size-2 rounded-full ${conn.isConnected ? 'bg-green-500' : 'bg-gray-400'}`}
+                        className={`size-2 rounded-full ${conn.isConnected ? 'bg-success' : 'bg-muted-foreground'}`}
                       />
                       {conn.name}
                     </span>

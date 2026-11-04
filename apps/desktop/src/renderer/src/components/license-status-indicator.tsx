@@ -64,7 +64,7 @@ export function LicenseStatusIndicator() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 gap-1.5 px-2 text-xs text-amber-500 hover:text-amber-400"
+              className="h-6 gap-1.5 px-2 text-xs text-warning hover:text-warning"
               onClick={handleClick}
             >
               <ErrorIcon className="size-3" />
@@ -93,7 +93,7 @@ export function LicenseStatusIndicator() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 gap-1.5 px-2 text-xs text-amber-500 hover:text-amber-400"
+              className="h-6 gap-1.5 px-2 text-xs text-warning hover:text-warning"
               onClick={handleClick}
             >
               <ErrorIcon className="size-3" />
@@ -117,7 +117,7 @@ export function LicenseStatusIndicator() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 gap-1.5 px-2 text-xs text-green-500 hover:text-green-400"
+            className="h-6 gap-1.5 px-2 text-xs text-success hover:text-success"
             onClick={handleClick}
           >
             <CheckIcon className="size-3" />

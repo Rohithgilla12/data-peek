@@ -104,7 +104,7 @@ function TextCellEditor({
             >
               {copied ? (
                 <>
-                  <CheckIcon className="size-3 text-green-500" />
+                  <CheckIcon className="size-3 text-success" />
                   Copied!
                 </>
               ) : (
@@ -331,7 +331,7 @@ export function EditableCell({
     if (isJson && isJsonEditorOpen) {
       return (
         <>
-          <div className="flex items-center gap-1.5 text-amber-500">
+          <div className="flex items-center gap-1.5 text-warning">
             <BracesIcon className="size-3.5" />
             <span className="text-xs">Editing...</span>
           </div>
@@ -448,7 +448,7 @@ export function EditableCell({
           <Button
             variant="ghost"
             size="icon"
-            className="size-6 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+            className="size-6 text-success hover:text-success hover:bg-success/10"
             onClick={() => onSave(parseValue(editValue, dataType))}
           >
             <CheckIcon className="size-3" />
@@ -456,7 +456,7 @@ export function EditableCell({
           <Button
             variant="ghost"
             size="icon"
-            className="size-6 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+            className="size-6 text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={onCancel}
           >
             <CloseIcon className="size-3" />
@@ -487,15 +487,15 @@ export function EditableCell({
       >
         {/* Modified indicator - amber left border */}
         {isModified && !isNewRow && !isDeleted && (
-          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-amber-500 rounded-full" />
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-warning rounded-full" />
         )}
         {/* New row indicator - green left border */}
         {isNewRow && (
-          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-green-500 rounded-full" />
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-success rounded-full" />
         )}
         {/* Deleted indicator - red left border */}
         {isDeleted && (
-          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-red-500 rounded-full" />
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-destructive rounded-full" />
         )}
 
         <Tooltip>
@@ -508,8 +508,8 @@ export function EditableCell({
                 'text-left truncate max-w-[300px] px-1.5 py-0.5 rounded transition-colors cursor-text',
                 !isDeleted && 'hover:bg-accent/50',
                 isNull && 'text-muted-foreground/50 italic',
-                isModified && !isNewRow && 'bg-amber-500/10',
-                isNewRow && 'bg-green-500/10',
+                isModified && !isNewRow && 'bg-warning/10',
+                isNewRow && 'bg-success/10',
                 isDeleted && 'line-through text-muted-foreground cursor-not-allowed'
               )}
             >

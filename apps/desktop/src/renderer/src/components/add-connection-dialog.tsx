@@ -1040,7 +1040,7 @@ export function AddConnectionDialog({
             role={testResult === 'success' ? 'status' : 'alert'}
             className={`mx-5 mb-3 flex max-h-32 shrink-0 items-start gap-2 overflow-y-auto rounded-md p-3 text-sm ${
               testResult === 'success'
-                ? 'bg-green-500/10 text-green-500'
+                ? 'bg-success/10 text-success'
                 : 'bg-destructive/10 text-destructive'
             }`}
           >

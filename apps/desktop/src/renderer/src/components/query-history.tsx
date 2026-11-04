@@ -149,7 +149,7 @@ export function QueryHistory() {
                                       <span>{item.durationMs}ms</span>
                                     </>
                                   ) : (
-                                    <span className="text-red-400">error</span>
+                                    <span className="text-destructive">error</span>
                                   )}
                                 </div>
                               </div>
@@ -186,10 +186,10 @@ export function QueryHistory() {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-400"
+                            className="text-destructive"
                             onClick={() => removeFromHistory(item.id)}
                           >
-                            <TrashIcon className="text-red-400" />
+                            <TrashIcon className="text-destructive" />
                             <span>Delete from history</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>

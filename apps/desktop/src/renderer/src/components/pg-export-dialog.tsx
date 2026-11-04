@@ -263,7 +263,7 @@ export function PgExportDialog() {
           <div className="space-y-4 py-2">
             <div className="flex items-center gap-2">
               {exportResult.success ? (
-                <SuccessIcon className="size-5 text-green-500" />
+                <SuccessIcon className="size-5 text-success" />
               ) : (
                 <ErrorIcon className="size-5 text-destructive" />
               )}

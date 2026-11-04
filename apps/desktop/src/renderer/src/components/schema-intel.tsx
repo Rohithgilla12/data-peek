@@ -54,17 +54,17 @@ const SEVERITY_ORDER: Record<SchemaIntelSeverity, number> = {
 function severityBadgeClass(severity: SchemaIntelSeverity): string {
   switch (severity) {
     case 'critical':
-      return 'bg-red-500/15 text-red-400 border-red-500/30'
+      return 'bg-destructive/10 text-destructive border-destructive/30'
     case 'warning':
-      return 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+      return 'bg-warning/10 text-warning border-warning/30'
     default:
       return 'bg-blue-500/15 text-blue-400 border-blue-500/30'
   }
 }
 
 function SeverityIcon({ severity }: { severity: SchemaIntelSeverity }) {
-  if (severity === 'critical') return <WarningIcon className="size-3.5 text-red-400" />
-  if (severity === 'warning') return <WarningIcon className="size-3.5 text-amber-400" />
+  if (severity === 'critical') return <WarningIcon className="size-3.5 text-destructive" />
+  if (severity === 'warning') return <WarningIcon className="size-3.5 text-warning" />
   return <InfoIcon className="size-3.5 text-blue-400" />
 }
 
@@ -246,7 +246,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                                 </TooltipContent>
                               </Tooltip>
                             ) : (
-                              <SuccessIcon className="size-3 text-green-500" />
+                              <SuccessIcon className="size-3 text-success" />
                             ))}
                         </div>
                         <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
@@ -263,7 +263,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
           {/* Right panel: findings */}
           <div className="flex flex-col overflow-y-auto">
             {error && (
-              <div className="m-4 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400">
+              <div className="m-4 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
                 {error}
               </div>
             )}
@@ -289,12 +289,12 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                 {/* Summary strip */}
                 <div className="flex items-center gap-4 border-b px-4 py-3 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <WarningIcon className="size-3.5 text-red-400" />
+                    <WarningIcon className="size-3.5 text-destructive" />
                     <span className="font-medium">{criticalCount}</span>
                     <span className="text-muted-foreground">critical</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <WarningIcon className="size-3.5 text-amber-400" />
+                    <WarningIcon className="size-3.5 text-warning" />
                     <span className="font-medium">{warningCount}</span>
                     <span className="text-muted-foreground">warning</span>
                   </div>
@@ -361,7 +361,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                               <CardContent className="pt-0">
                                 {findings.length === 0 ? (
                                   <p className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
-                                    <SuccessIcon className="size-3.5 text-green-500" />
+                                    <SuccessIcon className="size-3.5 text-success" />
                                     No issues found for this check.
                                   </p>
                                 ) : (

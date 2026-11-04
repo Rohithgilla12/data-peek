@@ -502,7 +502,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="size-7 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                      className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                       onClick={() => handleDeleteQuery(query.id)}
                                     >
                                       <TrashIcon className="size-3.5" />

@@ -255,9 +255,7 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
         <div
           className={cn(
             'flex items-center gap-2 px-4 py-2 border-b text-xs shrink-0',
-            result.success
-              ? 'bg-green-500/10 text-green-700 dark:text-green-400'
-              : 'bg-destructive/10 text-destructive'
+            result.success ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
           )}
         >
           {result.success ? (

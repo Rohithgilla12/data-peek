@@ -164,9 +164,9 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
   }
 
   const cacheColor = (ratio: number) => {
-    if (ratio >= 99) return 'text-green-500'
-    if (ratio >= 95) return 'text-yellow-500'
-    return 'text-red-500'
+    if (ratio >= 99) return 'text-success'
+    if (ratio >= 95) return 'text-warning'
+    return 'text-destructive'
   }
 
   const connLabel = connection?.name || connection?.host || ''
@@ -261,7 +261,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                         <TableCell
                           className={cn(
                             'text-xs',
-                            q.durationMs > 60000 && 'font-medium text-red-500'
+                            q.durationMs > 60000 && 'font-medium text-destructive'
                           )}
                         >
                           {q.duration}
@@ -532,8 +532,8 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                 <p className="text-xs text-destructive">{errors.locks}</p>
               ) : locks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 py-8">
-                  <SuccessIcon className="size-6 text-green-500" />
-                  <p className="text-sm text-green-600">No blocking locks</p>
+                  <SuccessIcon className="size-6 text-success" />
+                  <p className="text-sm text-success">No blocking locks</p>
                 </div>
               ) : (
                 <Table>
@@ -563,7 +563,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                         <TableCell
                           className={cn(
                             'text-xs',
-                            l.waitDurationMs > 30000 && 'font-medium text-red-500'
+                            l.waitDurationMs > 30000 && 'font-medium text-destructive'
                           )}
                         >
                           {l.waitDuration}

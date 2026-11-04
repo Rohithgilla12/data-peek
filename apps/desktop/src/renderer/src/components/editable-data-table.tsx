@@ -192,7 +192,7 @@ function CopyableCell({
       className={cn(
         'relative cursor-default inline-flex items-center',
         'transition-[background-color] duration-200',
-        copied && 'rounded bg-green-500/10'
+        copied && 'rounded bg-success/10'
       )}
       onClick={() => handleClick(value)}
       onDoubleClick={onDoubleClick ? handleDoubleClick : undefined}
@@ -204,7 +204,7 @@ function CopyableCell({
       {copied && (
         <span className="absolute inset-0 flex items-center px-1 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
           <svg
-            className="size-3 text-green-400 mr-1"
+            className="size-3 text-success mr-1"
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
@@ -217,7 +217,7 @@ function CopyableCell({
               className="motion-safe:[stroke-dasharray:20] motion-safe:[stroke-dashoffset:20] motion-safe:animate-[check-draw_300ms_ease-out_forwards]"
             />
           </svg>
-          <span className="text-[10px] text-green-400 font-medium">Copied</span>
+          <span className="text-[10px] text-success font-medium">Copied</span>
         </span>
       )}
     </span>
@@ -733,13 +733,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       onClick={() => handleDuplicateRow(originalRow)}
                       className="gap-2"
                     >
-                      <CopyIcon className="size-4 text-amber-500" />
+                      <CopyIcon className="size-4 text-warning" />
                       Duplicate Row
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => markRowForDeletion(tabId, originalRow)}
-                      className="gap-2 text-red-500 focus:text-red-500"
+                      className="gap-2 text-destructive focus:text-destructive"
                     >
                       <TrashIcon className="size-4" />
                       Delete Row
@@ -781,11 +781,11 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 >
                   <span>{displayName}</span>
                   {col.isPrimaryKey && (
-                    <span className="ml-1 text-amber-500" title="Primary Key">
+                    <span className="ml-1 text-warning" title="Primary Key">
                       🔑
                     </span>
                   )}
-                  {isMasked && <LockIcon className="ml-1 size-3 text-amber-500" />}
+                  {isMasked && <LockIcon className="ml-1 size-3 text-warning" />}
                   {col.foreignKey && <LinkIcon className="ml-1 size-3 text-blue-400" />}
                   <Badge
                     variant="outline"
@@ -990,7 +990,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 <span
                   className={cn(
                     'text-xs font-mono px-1.5 py-0.5 rounded',
-                    boolVal ? 'text-green-500' : 'text-red-400',
+                    boolVal ? 'text-success' : 'text-destructive',
                     canActivate && 'hover:bg-accent/50'
                   )}
                 >
@@ -1209,7 +1209,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 onPreviewSql={handlePreviewSql}
               />
               {newRows.length > 0 && (
-                <span className="text-xs text-green-500 ml-auto">+{newRows.length} new</span>
+                <span className="text-xs text-success ml-auto">+{newRows.length} new</span>
               )}
             </div>
           )}
@@ -1292,7 +1292,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                                   data-index={virtualRow.index}
                                   className={cn(
                                     'hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center',
-                                    isDeleted && 'bg-red-500/5'
+                                    isDeleted && 'bg-destructive/10'
                                   )}
                                   style={{
                                     position: 'absolute',
@@ -1354,7 +1354,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                           <TableRow
                             className={cn(
                               'hover:bg-accent/30 border-border/30 transition-colors',
-                              isDeleted && 'bg-red-500/5'
+                              isDeleted && 'bg-destructive/10'
                             )}
                             style={
                               decoration.isAdded && !isDeleted ? INLINE_ADDED_ROW_STYLE : undefined
@@ -1393,13 +1393,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   newRows.map((newRow) => (
                     <TableRow
                       key={newRow.id}
-                      className="hover:bg-accent/30 border-border/30 bg-green-500/5"
+                      className="hover:bg-accent/30 border-border/30 bg-success/10"
                     >
                       <TableCell className="py-2 text-sm whitespace-nowrap">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-6 text-muted-foreground hover:text-red-500"
+                          className="size-6 text-muted-foreground hover:text-destructive"
                           onClick={() => removeNewRow(tabId, newRow.id)}
                         >
                           <CloseIcon className="size-3" />

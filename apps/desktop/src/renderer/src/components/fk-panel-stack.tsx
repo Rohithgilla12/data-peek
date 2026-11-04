@@ -103,7 +103,7 @@ function FKPanel({
           </div>
         ) : panel.error ? (
           <div className="flex flex-col items-center justify-center h-32 gap-2 text-center">
-            <ErrorIcon className="size-8 text-red-400" />
+            <ErrorIcon className="size-8 text-destructive" />
             <p className="text-sm text-muted-foreground">{panel.error}</p>
           </div>
         ) : panel.data ? (
@@ -157,7 +157,7 @@ function FKPanel({
                       onClick={() => handleCopy(key, value)}
                     >
                       {copiedField === key ? (
-                        <CheckIcon className="size-3 text-green-500" />
+                        <CheckIcon className="size-3 text-success" />
                       ) : (
                         <CopyIcon className="size-3" />
                       )}

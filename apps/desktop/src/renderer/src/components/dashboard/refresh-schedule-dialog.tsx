@@ -200,10 +200,10 @@ export function RefreshScheduleDialog({
                     placeholder="*/15 * * * *"
                     value={cronExpression}
                     onChange={(e) => setCronExpression(e.target.value)}
-                    className={cronError ? 'border-red-500' : ''}
+                    className={cronError ? 'border-destructive' : ''}
                   />
                   {cronError ? (
-                    <p className="text-xs text-red-500">{cronError}</p>
+                    <p className="text-xs text-destructive">{cronError}</p>
                   ) : (
                     <p className="text-xs text-muted-foreground">
                       Standard cron format: minute hour day month weekday

@@ -127,7 +127,7 @@ export function Tab({
           />
 
           {/* Dirty indicator */}
-          {isDirty && <span className="size-2 shrink-0 rounded-full bg-yellow-500" />}
+          {isDirty && <span className="size-2 shrink-0 rounded-full bg-warning" />}
 
           {/* Watching indicator — pulses while polling, dimmed when paused */}
           {isWatching && (
@@ -139,9 +139,9 @@ export function Tab({
               )}
             >
               {!isPaused && (
-                <span className="absolute inline-flex size-2 rounded-full bg-amber-500/40 motion-safe:animate-ping" />
+                <span className="absolute inline-flex size-2 rounded-full bg-warning/40 motion-safe:animate-ping" />
               )}
-              <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-warning" />
             </span>
           )}
 
@@ -176,7 +176,7 @@ export function Tab({
               title={nameError ?? undefined}
               className={cn(
                 'w-24 bg-transparent text-sm outline-none border-b',
-                nameError ? 'border-red-500' : 'border-primary/50'
+                nameError ? 'border-destructive' : 'border-primary/50'
               )}
             />
           ) : refName ? (

@@ -283,7 +283,7 @@ export function ScheduledQueryFormDialog({
                 className="font-mono"
               />
               {cronError && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
+                <p className="text-xs text-destructive flex items-center gap-1">
                   <ErrorIcon className="size-3" />
                   {cronError}
                 </p>

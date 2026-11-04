@@ -201,7 +201,7 @@ function LayoutContent() {
                 />
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`size-1.5 rounded-full ${activeConnection.isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}
+                    className={`size-1.5 rounded-full ${activeConnection.isConnected ? 'bg-success' : 'bg-warning'}`}
                   />
                   <DatabaseIcon dbType={activeConnection.dbType} className="size-4" />
                   <span className="text-sm text-foreground">{activeConnection.name}</span>
@@ -466,8 +466,8 @@ function SettingsPage() {
                   <span
                     className={`size-2 rounded-full ${
                       licenseStatus?.daysUntilExpiry && licenseStatus.daysUntilExpiry <= 0
-                        ? 'bg-amber-500'
-                        : 'bg-green-500'
+                        ? 'bg-warning'
+                        : 'bg-success'
                     }`}
                   />
                   <span className="text-sm capitalize">
@@ -759,7 +759,7 @@ function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
   return (
     <div className="flex flex-1 items-center justify-center p-8">
       <div className="flex flex-col items-center gap-4 max-w-md text-center">
-        <WarningIcon className="size-10 text-amber-500" />
+        <WarningIcon className="size-10 text-warning" />
         <h2 className="text-lg font-semibold">Something went wrong</h2>
         <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
           {error.message}
@@ -801,7 +801,7 @@ export class RootErrorBoundary extends Component<
       return (
         <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground p-8">
           <div className="flex flex-col items-center gap-4 max-w-md text-center">
-            <WarningIcon className="size-10 text-amber-500" />
+            <WarningIcon className="size-10 text-warning" />
             <h2 className="text-lg font-semibold">Something went wrong</h2>
             <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
               {this.state.error?.message}

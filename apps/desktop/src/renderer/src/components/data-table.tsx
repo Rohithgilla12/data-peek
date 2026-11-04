@@ -180,7 +180,7 @@ const CellValue = React.memo(function CellValue({
         type="button"
         onClick={() => copy(String(value))}
         className={`text-xs font-mono px-1.5 py-0.5 -mx-1 rounded hover:bg-accent/50 transition-colors ${
-          boolVal ? 'text-green-500' : 'text-red-400'
+          boolVal ? 'text-success' : 'text-destructive'
         }`}
       >
         {String(value)}
@@ -223,7 +223,7 @@ const CellValue = React.memo(function CellValue({
               <CopyIcon className="size-3" />
             </Button>
           </div>
-          {copied && <p className="text-xs text-green-500 mt-1">Copied!</p>}
+          {copied && <p className="text-xs text-success mt-1">Copied!</p>}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -397,7 +397,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                     title="Click to sort, Shift+click for multi-sort"
                   >
                     <span>{displayName}</span>
-                    {isMasked && <LockIcon className="ml-1 size-3 text-amber-500" />}
+                    {isMasked && <LockIcon className="ml-1 size-3 text-warning" />}
                     {col.foreignKey && <LinkIcon className="ml-1 size-3 text-blue-400" />}
                     <Badge
                       variant="outline"

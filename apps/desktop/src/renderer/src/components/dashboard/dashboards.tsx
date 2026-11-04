@@ -210,10 +210,10 @@ export function Dashboards() {
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
-                          className="text-red-400"
+                          className="text-destructive"
                           onClick={() => handleDeleteDashboard(item.id)}
                         >
-                          <TrashIcon className="text-red-400" />
+                          <TrashIcon className="text-destructive" />
                           <span>Delete</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>

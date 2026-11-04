@@ -101,7 +101,7 @@ function StatusIcon({ status }: { status: 'idle' | 'running' | 'success' | 'erro
   if (status === 'idle') return null
   if (status === 'running')
     return <span className="size-2 rounded-full bg-primary animate-pulse shrink-0" />
-  if (status === 'success') return <CheckIcon className="size-3 text-emerald-500 shrink-0" />
+  if (status === 'success') return <CheckIcon className="size-3 text-success shrink-0" />
   return <CloseIcon className="size-3 text-destructive shrink-0" />
 }
 

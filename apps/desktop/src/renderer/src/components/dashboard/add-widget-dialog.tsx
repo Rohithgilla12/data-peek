@@ -433,9 +433,9 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
 
               {previewData && (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                    <SuccessIcon className="size-3.5 text-emerald-500 shrink-0" />
-                    <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                  <div className="flex items-center gap-2 p-2 rounded-md bg-success/10 border border-success/30">
+                    <SuccessIcon className="size-3.5 text-success shrink-0" />
+                    <span className="text-xs font-medium text-success">
                       {previewData.length} row{previewData.length !== 1 ? 's' : ''},{' '}
                       {availableColumns.length} column{availableColumns.length !== 1 ? 's' : ''}
                     </span>

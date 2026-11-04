@@ -316,12 +316,10 @@ export function ConfigStep({
           )}
         </button>
       ) : (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-success/10 border border-success/30">
           <div className="flex items-center gap-2">
-            <SuccessIcon className="size-4 text-emerald-500" />
-            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-              Preview loaded
-            </span>
+            <SuccessIcon className="size-4 text-success" />
+            <span className="text-sm font-medium text-success">Preview loaded</span>
             <span className="text-xs text-muted-foreground">
               {previewData.length} row{previewData.length !== 1 ? 's' : ''},{' '}
               {availableColumns.length} column{availableColumns.length !== 1 ? 's' : ''}

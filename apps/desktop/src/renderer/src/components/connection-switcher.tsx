@@ -183,10 +183,10 @@ export function ConnectionSwitcher() {
                   className="size-4 text-sidebar-primary"
                 />
                 {activeConnection?.isConnected && (
-                  <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-green-500 ring-1 ring-sidebar" />
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-success ring-1 ring-sidebar" />
                 )}
                 {activeConnection?.isConnecting && (
-                  <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-yellow-500 ring-1 ring-sidebar animate-pulse" />
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-warning ring-1 ring-sidebar animate-pulse" />
                 )}
               </div>
               <span className="truncate font-medium">
@@ -219,7 +219,7 @@ export function ConnectionSwitcher() {
                     <DatabaseIcon dbType={connection.dbType} className="size-4 shrink-0" />
                   )}
                   {connection.isConnected && !connection.isConnecting && (
-                    <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-green-500 ring-1 ring-background" />
+                    <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-success ring-1 ring-background" />
                   )}
                 </div>
                 <div className="flex flex-1 min-w-0 flex-col gap-0.5">

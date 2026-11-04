@@ -290,23 +290,20 @@ export function AISettingsModal({
                       selectedProvider === p.id
                         ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
                         : hasConfig
-                          ? 'border-green-500/30 hover:border-green-500/50 hover:bg-green-500/5 text-muted-foreground'
+                          ? 'border-success/30 hover:border-success/50 hover:bg-success/5 text-muted-foreground'
                           : 'border-border/50 hover:border-border hover:bg-muted/50 text-muted-foreground'
                     )}
                   >
                     {hasConfig && (
                       <div className="absolute -top-1 -right-1">
                         <SuccessIcon
-                          className={cn(
-                            'size-3.5',
-                            isActive ? 'text-green-500' : 'text-green-500/60'
-                          )}
+                          className={cn('size-3.5', isActive ? 'text-success' : 'text-success/60')}
                         />
                       </div>
                     )}
                     <span className="text-[10px] font-medium">{p.name}</span>
                     {isActive && hasConfig && (
-                      <span className="text-[8px] px-1 py-0.5 rounded bg-green-500/20 text-green-400">
+                      <span className="text-[8px] px-1 py-0.5 rounded bg-success/10 text-success">
                         Active
                       </span>
                     )}
@@ -367,22 +364,22 @@ export function AISettingsModal({
                   {isValidating ? (
                     <SpinnerIcon className="size-4 animate-spin" />
                   ) : validationResult === 'success' ? (
-                    <CheckIcon className="size-4 text-green-500" />
+                    <CheckIcon className="size-4 text-success" />
                   ) : validationResult === 'error' ? (
-                    <ErrorIcon className="size-4 text-red-500" />
+                    <ErrorIcon className="size-4 text-destructive" />
                   ) : (
                     'Test'
                   )}
                 </Button>
               </div>
               {validationResult === 'success' && (
-                <p className="text-[10px] text-green-500 flex items-center gap-1">
+                <p className="text-[10px] text-success flex items-center gap-1">
                   <CheckIcon className="size-3" />
                   API key is valid
                 </p>
               )}
               {validationResult === 'error' && (
-                <p className="text-[10px] text-red-500 flex items-center gap-1">
+                <p className="text-[10px] text-destructive flex items-center gap-1">
                   <ErrorIcon className="size-3" />
                   Invalid API key
                 </p>
@@ -400,16 +397,16 @@ export function AISettingsModal({
                   Looking for the local CLI…
                 </p>
               ) : harness?.available ? (
-                <div className="flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/5 px-3 py-2">
-                  <SuccessIcon className="size-4 text-green-500 shrink-0" />
-                  <span className="text-[11px] text-green-400">
+                <div className="flex items-center gap-1.5 rounded-lg border border-success/30 bg-success/10 px-3 py-2">
+                  <SuccessIcon className="size-4 text-success shrink-0" />
+                  <span className="text-[11px] text-success">
                     Detected{harness.version ? ` · ${harness.version}` : ''} —{' '}
                     {renderHint(HARNESS_HINTS[selectedProvider]?.detected)}
                   </span>
                 </div>
               ) : (
-                <div className="space-y-1.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-                  <span className="text-[11px] text-amber-400 flex items-center gap-1.5">
+                <div className="space-y-1.5 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2">
+                  <span className="text-[11px] text-warning flex items-center gap-1.5">
                     <ErrorIcon className="size-3.5 shrink-0" />
                     {renderHint(HARNESS_HINTS[selectedProvider]?.missing)}
                   </span>
@@ -500,7 +497,7 @@ export function AISettingsModal({
                 variant="ghost"
                 onClick={handleRemoveProviderConfig}
                 disabled={isSaving}
-                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
               >
                 <TrashIcon className="size-4" />
               </Button>

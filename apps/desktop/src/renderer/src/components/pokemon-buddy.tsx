@@ -51,10 +51,10 @@ function AchievementToast({
 
   return (
     <div className="absolute -top-20 right-0 animate-achievement-pop">
-      <div className="flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-card px-3 py-2 shadow-lg">
+      <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-card px-3 py-2 shadow-lg">
         <span className="text-lg">{icon}</span>
         <div className="min-w-0">
-          <div className="text-xs font-bold text-yellow-400">{name}</div>
+          <div className="text-xs font-bold text-warning">{name}</div>
           <div className="text-[10px] text-muted-foreground truncate max-w-[140px]">
             {description}
           </div>

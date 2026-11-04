@@ -349,7 +349,7 @@ export function EditorToolbar({
         )}
         <span className="flex items-center gap-1.5">
           <span
-            className={`size-1.5 rounded-full ${tabConnection?.isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}
+            className={`size-1.5 rounded-full ${tabConnection?.isConnected ? 'bg-success' : 'bg-warning'}`}
           />
           {tabConnection?.name}
         </span>

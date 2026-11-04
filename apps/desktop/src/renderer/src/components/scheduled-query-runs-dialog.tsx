@@ -80,14 +80,14 @@ function RunItem({ run }: { run: ScheduledQueryRun }) {
     <div
       className={cn(
         'rounded-lg border p-3 transition-colors',
-        run.success ? 'border-green-500/20' : 'border-red-500/20'
+        run.success ? 'border-success/30' : 'border-destructive/30'
       )}
     >
       <div className="flex items-start gap-3">
         <div
           className={cn(
             'shrink-0 size-6 rounded-full flex items-center justify-center',
-            run.success ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
+            run.success ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'
           )}
         >
           {run.success ? <SuccessIcon className="size-4" /> : <ErrorIcon className="size-4" />}
@@ -119,7 +119,7 @@ function RunItem({ run }: { run: ScheduledQueryRun }) {
           </div>
 
           {run.error && (
-            <div className="mt-2 text-xs text-red-500 bg-red-500/10 rounded px-2 py-1.5 font-mono">
+            <div className="mt-2 text-xs text-destructive bg-destructive/10 rounded px-2 py-1.5 font-mono">
               {run.error}
             </div>
           )}
@@ -199,11 +199,11 @@ export function ScheduledQueryRunsDialog({
             <div className="flex items-center gap-2">
               <Badge variant="secondary">{queryRuns.length} runs</Badge>
             </div>
-            <div className="flex items-center gap-1 text-green-600">
+            <div className="flex items-center gap-1 text-success">
               <SuccessIcon className="size-3" />
               {successCount} success
             </div>
-            <div className="flex items-center gap-1 text-red-500">
+            <div className="flex items-center gap-1 text-destructive">
               <ErrorIcon className="size-3" />
               {failureCount} failed
             </div>
@@ -224,7 +224,7 @@ export function ScheduledQueryRunsDialog({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="size-7 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                      className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                       onClick={handleClearRuns}
                     >
                       <TrashIcon className="size-3.5" />

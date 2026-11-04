@@ -66,7 +66,7 @@ export function PerfIndicatorPanel({
                 variant="secondary"
                 className={cn(
                   'h-5 px-1.5 text-[10px] cursor-pointer transition-opacity',
-                  'bg-red-500/20 text-red-500 hover:bg-red-500/30',
+                  'bg-destructive/10 text-destructive hover:bg-destructive/30',
                   !showCritical && 'opacity-40'
                 )}
                 onClick={() => onToggleSeverity('critical')}
@@ -80,7 +80,7 @@ export function PerfIndicatorPanel({
                 variant="secondary"
                 className={cn(
                   'h-5 px-1.5 text-[10px] cursor-pointer transition-opacity',
-                  'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30',
+                  'bg-warning/10 text-warning hover:bg-warning/30',
                   !showWarning && 'opacity-40'
                 )}
                 onClick={() => onToggleSeverity('warning')}
@@ -106,7 +106,7 @@ export function PerfIndicatorPanel({
           </div>
 
           {totalIssues === 0 && (
-            <span className="text-xs text-green-500 font-medium">No issues found</span>
+            <span className="text-xs text-success font-medium">No issues found</span>
           )}
         </div>
 
@@ -157,7 +157,7 @@ export function PerfIndicatorPanel({
               className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-muted/30 transition-colors"
               onClick={() => setShowNplusOne(!showNplusOne)}
             >
-              <RepeatIcon className="size-4 text-yellow-500" />
+              <RepeatIcon className="size-4 text-warning" />
               <span className="text-sm font-medium">N+1 Query Patterns</span>
               <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
                 {analysis.nplusOnePatterns.length}
@@ -183,9 +183,9 @@ export function PerfIndicatorPanel({
         {/* Empty state */}
         {totalIssues === 0 && analysis.nplusOnePatterns.length === 0 && (
           <div className="px-4 py-8 text-center">
-            <div className="size-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
+            <div className="size-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
               <svg
-                className="size-6 text-green-500"
+                className="size-6 text-success"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -198,7 +198,7 @@ export function PerfIndicatorPanel({
                 />
               </svg>
             </div>
-            <p className="text-sm font-medium text-green-500">Query looks good!</p>
+            <p className="text-sm font-medium text-success">Query looks good!</p>
             <p className="text-xs text-muted-foreground mt-1">
               No performance issues detected in this query.
             </p>
@@ -278,13 +278,13 @@ function NplusOneCard({ pattern }: NplusOneCardProps) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="border border-yellow-500/30 bg-yellow-500/5 rounded-md overflow-hidden">
+    <div className="border border-warning/30 bg-warning/10 rounded-md overflow-hidden">
       <button
         type="button"
         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-muted/30 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
-        <RepeatIcon className="size-4 text-yellow-500 shrink-0" />
+        <RepeatIcon className="size-4 text-warning shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{pattern.occurrences} similar queries</span>

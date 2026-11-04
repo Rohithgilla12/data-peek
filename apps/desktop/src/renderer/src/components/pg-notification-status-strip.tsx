@@ -54,27 +54,27 @@ function toneClasses(tone: Tone): {
   switch (tone) {
     case 'ok':
       return {
-        dot: 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]',
-        text: 'text-emerald-500',
-        border: 'border-emerald-500/30',
-        glow: 'from-emerald-500/10 via-emerald-500/5 to-transparent',
-        bar: 'bg-emerald-500'
+        dot: 'bg-success shadow-[0_0_12px_rgba(16,185,129,0.6)]',
+        text: 'text-success',
+        border: 'border-success/30',
+        glow: 'from-success/10 via-success/5 to-transparent',
+        bar: 'bg-success'
       }
     case 'warn':
       return {
-        dot: 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)]',
-        text: 'text-amber-500',
-        border: 'border-amber-500/30',
-        glow: 'from-amber-500/15 via-amber-500/5 to-transparent',
-        bar: 'bg-amber-500'
+        dot: 'bg-warning shadow-[0_0_12px_rgba(245,158,11,0.6)]',
+        text: 'text-warning',
+        border: 'border-warning/30',
+        glow: 'from-warning/10 via-warning/5 to-transparent',
+        bar: 'bg-warning'
       }
     case 'err':
       return {
-        dot: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)]',
-        text: 'text-rose-500',
-        border: 'border-rose-500/30',
-        glow: 'from-rose-500/15 via-rose-500/5 to-transparent',
-        bar: 'bg-rose-500'
+        dot: 'bg-destructive shadow-[0_0_12px_rgba(244,63,94,0.6)]',
+        text: 'text-destructive',
+        border: 'border-destructive/30',
+        glow: 'from-destructive/10 via-destructive/5 to-transparent',
+        bar: 'bg-destructive'
       }
     default:
       return {
@@ -309,7 +309,7 @@ export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCoun
           <Sparkline samples={samples} tone={tone} />
 
           {reconnecting && countdown && (
-            <span className="text-amber-500 shrink-0 tabular-nums">retry in {countdown}</span>
+            <span className="text-warning shrink-0 tabular-nums">retry in {countdown}</span>
           )}
 
           {(failed || reconnecting) && (
@@ -346,7 +346,7 @@ export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCoun
       )}
 
       {(failed || reconnectError) && (
-        <div className="relative px-3 pb-1.5 text-[11px] text-rose-500/80 truncate">
+        <div className="relative px-3 pb-1.5 text-[11px] text-destructive/80 truncate">
           {reconnectError ?? status?.lastError ?? 'Connection lost'}
         </div>
       )}

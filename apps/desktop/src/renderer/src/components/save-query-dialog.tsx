@@ -153,7 +153,7 @@ export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: Sav
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="query-name">
-              Name <span className="text-red-500">*</span>
+              Name <span className="text-destructive">*</span>
             </Label>
             <Input
               id="query-name"

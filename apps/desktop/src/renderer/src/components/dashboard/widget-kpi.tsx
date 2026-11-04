@@ -111,7 +111,7 @@ function TrendIcon({ direction }: { direction: 'up' | 'down' | 'neutral' }) {
  *
  * @param direction - The trend direction: 'up', 'down', or 'neutral'.
  * @param trendType - Optional qualifier indicating which direction is considered favorable: `'up-good'` (up is good) or `'down-good'` (down is good).
- * @returns The Tailwind-like text color class to apply to the trend element (e.g., `'text-green-500'`, `'text-red-500'`, or `'text-muted-foreground'`).
+ * @returns The Tailwind-like text color class to apply to the trend element (e.g., `'text-success'`, `'text-destructive'`, or `'text-muted-foreground'`).
  */
 function getTrendColorClass(
   direction: 'up' | 'down' | 'neutral',
@@ -120,8 +120,8 @@ function getTrendColorClass(
   const upIsGood = trendType !== 'down-good'
 
   if (direction === 'neutral') return 'text-muted-foreground'
-  if (direction === 'up') return upIsGood ? 'text-green-500' : 'text-red-500'
-  return upIsGood ? 'text-red-500' : 'text-green-500'
+  if (direction === 'up') return upIsGood ? 'text-success' : 'text-destructive'
+  return upIsGood ? 'text-destructive' : 'text-success'
 }
 
 /**

@@ -174,7 +174,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
                               <DatabaseIcon dbType={connection.dbType} className="size-4" />
                             )}
                             {connection.isConnected && !connection.isConnecting && (
-                              <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-green-500 ring-2 ring-background" />
+                              <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-success ring-2 ring-background" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">

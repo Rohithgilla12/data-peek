@@ -584,7 +584,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
           {validationErrors.length > 0 && (
             <div className="rounded-lg border border-border/40 p-4 space-y-2">
               <h3 className="font-medium text-sm flex items-center gap-2">
-                <ErrorIcon className="size-4 text-yellow-500" />
+                <ErrorIcon className="size-4 text-warning" />
                 Validation Issues
               </h3>
               <ul className="text-sm space-y-1">
@@ -593,7 +593,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
                     key={i}
                     className={cn(
                       'flex items-center gap-2',
-                      err.severity === 'error' ? 'text-destructive' : 'text-yellow-600'
+                      err.severity === 'error' ? 'text-destructive' : 'text-warning'
                     )}
                   >
                     {err.severity === 'error' ? (

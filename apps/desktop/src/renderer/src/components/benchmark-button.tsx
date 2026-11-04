@@ -42,7 +42,7 @@ export function BenchmarkButton({ onBenchmark, isRunning, disabled }: BenchmarkB
                 className={cn(
                   'gap-1.5 h-7 px-2.5',
                   'transition-all duration-200',
-                  isRunning && 'text-amber-500 bg-amber-500/10'
+                  isRunning && 'text-warning bg-warning/10'
                 )}
                 disabled={isRunning || disabled}
               >

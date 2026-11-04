@@ -115,14 +115,14 @@ function BooleanBar({ trueCount, falseCount, nullCount }: BooleanBarProps) {
       <div className="flex h-6 rounded overflow-hidden gap-0.5">
         {truePct > 0 && (
           <div
-            className="bg-green-500/70 flex items-center justify-center"
+            className="bg-success/70 flex items-center justify-center"
             style={{ width: `${truePct}%` }}
             title={`true: ${trueCount}`}
           />
         )}
         {falsePct > 0 && (
           <div
-            className="bg-red-500/70 flex items-center justify-center"
+            className="bg-destructive/70 flex items-center justify-center"
             style={{ width: `${falsePct}%` }}
             title={`false: ${falseCount}`}
           />
@@ -137,11 +137,11 @@ function BooleanBar({ trueCount, falseCount, nullCount }: BooleanBarProps) {
       </div>
       <div className="flex gap-3 text-xs">
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-sm bg-green-500/70 inline-block" />
+          <span className="w-2 h-2 rounded-sm bg-success/70 inline-block" />
           true: {formatNumber(trueCount, 0)} ({formatPercentage(truePct)})
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-sm bg-red-500/70 inline-block" />
+          <span className="w-2 h-2 rounded-sm bg-destructive/70 inline-block" />
           false: {formatNumber(falseCount, 0)} ({formatPercentage(falsePct)})
         </span>
         {nullCount > 0 && (
