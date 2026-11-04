@@ -76,7 +76,7 @@ export function TabBar({ className }: TabBarProps) {
   return (
     <div
       className={cn(
-        'flex h-9 items-center border-b border-border/40 bg-muted/20 overflow-x-auto',
+        'flex h-9 items-center border-b border-border/40 bg-muted/20 overflow-x-auto overflow-y-hidden [scrollbar-width:none]',
         className
       )}
     >

@@ -432,7 +432,7 @@ function VirtualizedSchemaItems({
   return (
     <div
       ref={parentRef}
-      className="overflow-auto"
+      className="overflow-y-auto overflow-x-hidden"
       style={{
         height: Math.min(400, virtualizer.getTotalSize()),
         maxHeight: 400
@@ -441,7 +441,6 @@ function VirtualizedSchemaItems({
       <SidebarMenuSub
         style={{
           height: virtualizer.getTotalSize(),
-          width: '100%',
           position: 'relative'
         }}
       >
