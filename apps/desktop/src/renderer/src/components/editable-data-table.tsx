@@ -781,12 +781,12 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 >
                   <span>{displayName}</span>
                   {col.isPrimaryKey && (
-                    <span className="ml-1 text-warning" title="Primary Key">
+                    <span className="ml-1" title="Primary Key">
                       🔑
                     </span>
                   )}
                   {isMasked && <LockIcon className="ml-1 size-3 text-warning" />}
-                  {col.foreignKey && <LinkIcon className="ml-1 size-3 text-blue-400" />}
+                  {col.foreignKey && <LinkIcon className="ml-1 size-3 text-cat-blue" />}
                   <Badge
                     variant="outline"
                     className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}

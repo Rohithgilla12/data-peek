@@ -28,7 +28,7 @@ const getTypeStyle = (type: string) => {
   const lowerType = type.toLowerCase()
 
   if (lowerType.includes('int') || lowerType.includes('serial') || lowerType.includes('numeric')) {
-    return { icon: HashIcon, color: 'text-warning' }
+    return { icon: HashIcon, color: 'text-cat-blue' }
   }
   if (
     lowerType.includes('char') ||
@@ -36,19 +36,19 @@ const getTypeStyle = (type: string) => {
     lowerType.includes('string') ||
     lowerType.includes('varchar')
   ) {
-    return { icon: TypeIcon, color: 'text-success' }
+    return { icon: TypeIcon, color: 'text-cat-green' }
   }
   if (lowerType.includes('bool')) {
-    return { icon: null, color: 'text-purple-400' }
+    return { icon: null, color: 'text-cat-yellow' }
   }
   if (lowerType.includes('date') || lowerType.includes('time') || lowerType.includes('stamp')) {
-    return { icon: null, color: 'text-blue-400' }
+    return { icon: null, color: 'text-cat-orange' }
   }
   if (lowerType.includes('uuid')) {
-    return { icon: null, color: 'text-pink-400' }
+    return { icon: null, color: 'text-cat-purple' }
   }
   if (lowerType.includes('json')) {
-    return { icon: null, color: 'text-cyan-400' }
+    return { icon: null, color: 'text-cat-pink' }
   }
 
   return { icon: null, color: 'text-muted-foreground' }
@@ -79,8 +79,8 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
         <div className="flex items-center gap-2">
           {pkColumns.length > 0 && (
             <div className="flex items-center gap-1">
-              <KeyIcon className="size-3 text-warning" />
-              <span className="text-[9px] text-warning/70">{pkColumns.length} PK</span>
+              <KeyIcon className="size-3 text-cat-yellow" />
+              <span className="text-[9px] text-cat-yellow/70">{pkColumns.length} PK</span>
             </div>
           )}
           {isExpanded ? (
@@ -105,7 +105,7 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
               )}
             >
               <div className="flex items-center gap-2">
-                {column.isPrimaryKey && <KeyIcon className="size-3 text-warning" />}
+                {column.isPrimaryKey && <KeyIcon className="size-3 text-cat-yellow" />}
                 <span
                   className={cn(
                     'text-[11px] font-mono',

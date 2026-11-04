@@ -193,7 +193,7 @@ export function SidebarOmnibar() {
             sublabel: `${table.name}.${col.dataType}`,
             group: 'columns',
             icon: col.isPrimaryKey ? (
-              <KeyIcon className="size-3.5 text-yellow-500" />
+              <KeyIcon className="size-3.5 text-cat-yellow" />
             ) : (
               <ColumnsIcon className="size-3.5 text-muted-foreground" />
             ),

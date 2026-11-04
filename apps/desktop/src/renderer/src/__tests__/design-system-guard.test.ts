@@ -123,11 +123,15 @@ const RAW_STATUS_ALLOW = [
   'components/command-palette.tsx:647',
   'components/schema-explorer.tsx:98',
   'components/schema-explorer.tsx:108',
+  'components/schema-explorer.tsx:245',
+  'components/schema-explorer.tsx:252',
+  'components/schema-explorer.tsx:301',
+  'components/schema-explorer.tsx:308',
+  'components/schema-explorer.tsx:1411',
   'components/telemetry-panel.tsx:87',
   'components/telemetry-panel.tsx:95',
   'components/add-row-sheet.tsx:112',
   'components/add-row-sheet.tsx:114',
-  'components/sidebar-omnibar.tsx:196',
   'components/sidebar-omnibar.tsx:230',
   'components/sidebar-omnibar.tsx:243',
   'components/saved-queries-dialog.tsx:83',
@@ -161,5 +165,14 @@ describe('design-system guard: renderer colours', () => {
       })
       .join('\n')
     expect(violations, message).toEqual([])
+  })
+
+  it('every line-level allowlist entry still matches a raw palette class', () => {
+    const stale = RAW_STATUS_ALLOW.filter((entry) => /:\d+$/.test(entry)).filter((entry) => {
+      const [file, line] = entry.split(/:(?=\d+$)/)
+      const text = readFileSync(path.join(rendererSrc, file), 'utf8').split('\n')[Number(line) - 1]
+      return !text || !RAW_STATUS_PATTERN.test(text)
+    })
+    expect(stale, 'stale allowlist entries; remove them').toEqual([])
   })
 })

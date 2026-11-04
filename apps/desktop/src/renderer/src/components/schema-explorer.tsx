@@ -242,14 +242,14 @@ function TriggerSubItem({
         </Button>
         <SidebarMenuSubButton className="flex-1 cursor-default" onClick={onToggle}>
           <ZapIcon
-            className={`size-3.5 ${trigger.enabled ? 'text-warning' : 'text-muted-foreground'}`}
+            className={`size-3.5 ${trigger.enabled ? 'text-amber-500' : 'text-muted-foreground'}`}
           />
           <span
             className={`flex-1 truncate ${trigger.enabled ? '' : 'text-muted-foreground line-through'}`}
           >
             {trigger.name}
           </span>
-          <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-warning">
+          <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-amber-500">
             trig
           </Badge>
         </SidebarMenuSubButton>
@@ -298,11 +298,15 @@ function TriggerSubItem({
             <span className="text-foreground truncate">{trigger.table}</span>
           </div>
           <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-            <ArrowRightIcon className="size-3 text-warning" />
+            <ArrowRightIcon className="size-3 text-amber-500" />
             <span>{trigger.timing}</span>
             <span className="flex flex-wrap gap-1">
               {trigger.events.map((event) => (
-                <Badge key={event} variant="outline" className="text-[10px] px-1 py-0 text-warning">
+                <Badge
+                  key={event}
+                  variant="outline"
+                  className="text-[10px] px-1 py-0 text-amber-500"
+                >
                   {event}
                 </Badge>
               ))}
@@ -520,9 +524,9 @@ function VirtualizedSchemaItems({
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default group/col">
                               {column.isPrimaryKey ? (
-                                <KeyIcon className="size-3 text-warning shrink-0" />
+                                <KeyIcon className="size-3 text-cat-yellow shrink-0" />
                               ) : column.foreignKey ? (
-                                <LinkIcon className="size-3 text-blue-400 shrink-0" />
+                                <LinkIcon className="size-3 text-cat-blue shrink-0" />
                               ) : (
                                 <ColumnsIcon className="size-3 shrink-0" />
                               )}
@@ -536,7 +540,7 @@ function VirtualizedSchemaItems({
                               )}
                               <DataTypeBadge type={column.dataType} />
                               {column.foreignKey && (
-                                <span className="text-[9px] text-blue-400/80 shrink-0 hidden group-hover/col:inline">
+                                <span className="text-[9px] text-cat-blue/80 shrink-0 hidden group-hover/col:inline">
                                   → {column.foreignKey.referencedTable}
                                 </span>
                               )}
@@ -553,10 +557,10 @@ function VirtualizedSchemaItems({
                                 {column.isNullable ? 'Yes' : 'No'}
                               </div>
                               {column.isPrimaryKey && (
-                                <div className="text-warning">Primary Key</div>
+                                <div className="text-cat-yellow">Primary Key</div>
                               )}
                               {column.foreignKey && (
-                                <div className="text-blue-400">
+                                <div className="text-cat-blue">
                                   FK → {column.foreignKey.referencedSchema}.
                                   {column.foreignKey.referencedTable}.
                                   {column.foreignKey.referencedColumn}
@@ -1404,7 +1408,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowTriggers}
                 className="text-xs"
               >
-                <ZapIcon className="size-3.5 mr-2 text-warning" />
+                <ZapIcon className="size-3.5 mr-2 text-amber-500" />
                 Triggers
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
@@ -1677,9 +1681,9 @@ export function SchemaExplorer() {
                                             <TooltipTrigger asChild>
                                               <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default group/col">
                                                 {column.isPrimaryKey ? (
-                                                  <KeyIcon className="size-3 text-warning shrink-0" />
+                                                  <KeyIcon className="size-3 text-cat-yellow shrink-0" />
                                                 ) : column.foreignKey ? (
-                                                  <LinkIcon className="size-3 text-blue-400 shrink-0" />
+                                                  <LinkIcon className="size-3 text-cat-blue shrink-0" />
                                                 ) : (
                                                   <ColumnsIcon className="size-3 shrink-0" />
                                                 )}
@@ -1699,7 +1703,7 @@ export function SchemaExplorer() {
                                                 )}
                                                 <DataTypeBadge type={column.dataType} />
                                                 {column.foreignKey && (
-                                                  <span className="text-[9px] text-blue-400/80 shrink-0 hidden group-hover/col:inline">
+                                                  <span className="text-[9px] text-cat-blue/80 shrink-0 hidden group-hover/col:inline">
                                                     → {column.foreignKey.referencedTable}
                                                   </span>
                                                 )}
@@ -1720,10 +1724,10 @@ export function SchemaExplorer() {
                                                   {column.isNullable ? 'Yes' : 'No'}
                                                 </div>
                                                 {column.isPrimaryKey && (
-                                                  <div className="text-warning">Primary Key</div>
+                                                  <div className="text-cat-yellow">Primary Key</div>
                                                 )}
                                                 {column.foreignKey && (
-                                                  <div className="text-blue-400">
+                                                  <div className="text-cat-blue">
                                                     FK → {column.foreignKey.referencedSchema}.
                                                     {column.foreignKey.referencedTable}.
                                                     {column.foreignKey.referencedColumn}

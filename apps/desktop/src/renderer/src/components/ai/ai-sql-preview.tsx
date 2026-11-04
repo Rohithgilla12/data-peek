@@ -58,25 +58,25 @@ function highlightSQL(sql: string): React.ReactNode[] {
       // Determine type and apply styling
       if (fullMatch.match(keywords)) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-blue-400 font-semibold">
+          <span key={`${partIndex}-${match.index}`} className="text-cat-blue font-semibold">
             {fullMatch}
           </span>
         )
       } else if (fullMatch.startsWith("'")) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-success">
+          <span key={`${partIndex}-${match.index}`} className="text-cat-green">
             {fullMatch}
           </span>
         )
       } else if (fullMatch.match(/^\d+$/)) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-warning">
+          <span key={`${partIndex}-${match.index}`} className="text-cat-orange">
             {fullMatch}
           </span>
         )
       } else if (fullMatch.match(operators)) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-purple-400">
+          <span key={`${partIndex}-${match.index}`} className="text-cat-purple">
             {fullMatch}
           </span>
         )

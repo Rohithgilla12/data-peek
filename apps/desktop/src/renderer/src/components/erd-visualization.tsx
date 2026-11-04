@@ -146,12 +146,12 @@ function TableNode({ data }: { data: TableNodeData }) {
                 type="target"
                 position={Position.Left}
                 id={`${column.name}-target`}
-                className="!bg-warning !w-2.5 !h-2.5 !border-2 !border-background"
+                className="!bg-cat-yellow !w-2.5 !h-2.5 !border-2 !border-background"
               />
             )}
 
             {column.isPrimaryKey ? (
-              <KeyIcon className="size-3.5 text-warning shrink-0" />
+              <KeyIcon className="size-3.5 text-cat-yellow shrink-0" />
             ) : column.foreignKey ? (
               <KeyIcon className="size-3.5 shrink-0" style={{ color: data.clusterColor }} />
             ) : (
