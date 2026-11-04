@@ -124,8 +124,9 @@ export interface DatabaseAdapter {
   ): Promise<AdapterMultiQueryResult>
 
   /**
-   * Server-enforced read-only execution, when the engine has a cheaper mechanism than a
-   * READ ONLY transaction. The MCP read guard prefers it when present.
+   * Run one statement so that it cannot leave writes behind, using whatever the engine
+   * offers (READ ONLY transaction, always-rolled-back transaction, or a statement-level
+   * read-only check). The read guard prefers it, for MCP reads and AI-written Ask queries.
    */
   queryReadOnly?(
     config: ConnectionConfig,

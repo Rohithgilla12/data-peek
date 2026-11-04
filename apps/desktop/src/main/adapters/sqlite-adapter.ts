@@ -191,9 +191,25 @@ export class SQLiteAdapter implements DatabaseAdapter {
   }
 
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
+    return this.runStatement(config, sql, false)
+  }
+
+  /** Refuses any statement SQLite itself reports as writing (sqlite3_stmt_readonly). */
+  async queryReadOnly(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
+    return this.runStatement(config, sql, true)
+  }
+
+  private runStatement(
+    config: ConnectionConfig,
+    sql: string,
+    readOnly: boolean
+  ): AdapterQueryResult {
     const db = this.getDb(config)
     try {
       const stmt = db.prepare(sql)
+      if (readOnly && !stmt.readonly) {
+        throw new Error('Refused: this statement would write to the database')
+      }
       const rows = stmt.all() as Record<string, unknown>[]
 
       // Get column metadata from the statement
