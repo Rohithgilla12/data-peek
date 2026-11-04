@@ -223,7 +223,7 @@ export const NotebookCell = memo(function NotebookCell({
       className={cn(
         'group relative rounded-lg border transition-all duration-150',
         'border-border/50 bg-card',
-        isFocused && 'border-primary/30 shadow-[0_0_0_1px_oklch(0.55_0.15_250/0.3)]',
+        isFocused && 'border-primary/30 ring-1 ring-primary/30',
         isDragging && 'opacity-50 shadow-lg z-10'
       )}
       onClick={onFocus}

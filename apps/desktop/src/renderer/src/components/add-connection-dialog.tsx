@@ -570,7 +570,7 @@ export function AddConnectionDialog({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Optional. Defaults to host/database if empty.
               </p>
             </div>
@@ -578,7 +578,7 @@ export function AddConnectionDialog({
             {/* Environment Tag */}
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">Environment</span>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Optional. Adds a visual indicator to help identify this connection.
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -699,13 +699,13 @@ export function AddConnectionDialog({
                       <FolderOpenIcon className="size-4" />
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-sans text-xs text-muted-foreground">
                     Enter the path to your SQLite database file, or use :memory: for an in-memory
                     database.
                   </p>
                 </div>
                 <div className="rounded-md bg-muted/50 border border-border/50 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-sans text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">
                       Turso / libSQL support coming soon.
                     </span>{' '}
@@ -733,7 +733,7 @@ export function AddConnectionDialog({
                   onChange={(e) => handleConnectionStringChange(e.target.value)}
                   className="font-mono text-sm"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="font-sans text-xs text-muted-foreground">
                   Format:{' '}
                   {dbType === 'mysql'
                     ? 'mysql://user:password@host:port/database'
@@ -825,7 +825,7 @@ export function AddConnectionDialog({
                       value={schema}
                       onChange={(e) => setSchema(e.target.value)}
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-sans text-xs text-muted-foreground">
                       Sets <code className="font-mono">search_path</code> so unqualified table names
                       resolve here, and focuses the sidebar on this schema. Comma-separate for a
                       fallback chain (e.g. <code className="font-mono">bbl, public</code>). Leave
@@ -934,7 +934,7 @@ export function AddConnectionDialog({
                             Verify server certificate (strict)
                           </label>
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="mt-1 font-sans text-xs text-muted-foreground">
                           Off by default — most cloud DBs (AWS RDS, Supabase, Neon, DigitalOcean)
                           use self-signed or private-CA certs that fail strict verification. Enable
                           only if you have the CA certificate below or a public CA cert.
@@ -958,7 +958,7 @@ export function AddConnectionDialog({
                           placeholder="/path/to/ca-certificate.pem"
                           className="mt-1"
                         />
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="mt-1 font-sans text-xs text-muted-foreground">
                           Path to a CA certificate file for servers with private CA certificates.
                         </p>
                       </div>
@@ -1017,7 +1017,7 @@ export function AddConnectionDialog({
                         </label>
                       </div>
 
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-sans text-xs text-muted-foreground">
                         Query timeout can be configured in Settings → Database.
                       </p>
                     </CollapsibleContent>

@@ -48,7 +48,9 @@ export function Notifications() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">{notification.title}</p>
               {notification.message && (
-                <p className="text-xs text-muted-foreground mt-0.5">{notification.message}</p>
+                <p className="font-sans text-xs text-muted-foreground mt-0.5">
+                  {notification.message}
+                </p>
               )}
               {notification.action && (
                 <button

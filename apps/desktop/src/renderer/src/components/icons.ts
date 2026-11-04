@@ -1,4 +1,5 @@
 export type { IconComponent } from '@data-peek/ui'
+export { IconContext } from '@phosphor-icons/react'
 export {
   CaretDownIcon,
   CaretRightIcon,
@@ -63,6 +64,7 @@ export {
   CrosshairSimpleIcon as FocusIcon,
   FolderOpenIcon,
   FolderPlusIcon,
+  ConfettiIcon as FunIcon,
   FunctionIcon,
   ChartBarHorizontalIcon as GanttChartIcon,
   GaugeIcon,
@@ -90,6 +92,7 @@ export {
   MonitorIcon,
   MoonIcon,
   DotsThreeIcon as MoreIcon,
+  ListNumbersIcon as NaturalSortIcon,
   NetworkIcon,
   NotebookIcon,
   SquareHalfIcon as PanelRightIcon,

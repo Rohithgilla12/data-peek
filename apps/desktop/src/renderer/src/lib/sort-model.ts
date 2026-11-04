@@ -1,6 +1,6 @@
 import type * as React from 'react'
 import {
-  AiIcon,
+  NaturalSortIcon,
   CalendarIcon,
   ClockIcon,
   RadioButtonIcon,
@@ -96,7 +96,7 @@ export const STRING_MODES: ModeOption[] = [
     label: 'Natural',
     short: 'nat',
     description: 'item2 before item10',
-    icon: AiIcon
+    icon: NaturalSortIcon
   },
   {
     value: 'length',

@@ -49,6 +49,12 @@ export default defineConfig(
           paths: [
             { name: 'lucide-react', message: 'Use @/components/icons' },
             { name: '@phosphor-icons/react', message: 'Use @/components/icons' }
+          ],
+          patterns: [
+            {
+              group: ['@phosphor-icons/react/*', 'lucide-react/*'],
+              message: 'Use @/components/icons'
+            }
           ]
         }
       ]

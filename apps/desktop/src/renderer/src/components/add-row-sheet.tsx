@@ -29,7 +29,7 @@ import {
   SelectValue
 } from '@data-peek/ui'
 import {
-  AiIcon,
+  DiceIcon,
   BracesIcon,
   CalendarIcon,
   CaretDownIcon,
@@ -232,7 +232,7 @@ function SmartField({
                     className="h-9 gap-1.5 text-cat-purple border-cat-purple/30 hover:bg-cat-purple/10 hover:text-cat-purple/80"
                     onClick={generateUUID}
                   >
-                    <AiIcon className="size-3.5" />
+                    <DiceIcon className="size-3.5" />
                     Generate
                   </Button>
                 </TooltipTrigger>

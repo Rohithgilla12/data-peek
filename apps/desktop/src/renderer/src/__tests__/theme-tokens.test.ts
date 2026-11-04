@@ -62,6 +62,30 @@ function contrastRatio(a: Oklch, b: Oklch): number {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
 }
 
+type Rgb = [number, number, number]
+
+const encodeGamma = (v: number): number =>
+  v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055
+const decodeGamma = (v: number): number => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)
+
+const relativeLuminance = ([r, g, b]: Rgb): number => 0.2126 * r + 0.7152 * g + 0.0722 * b
+
+/**
+ * Tailwind v4 emits `bg-X/10` as `color-mix(in oklab, var(--X) 10%, transparent)`, which is X at
+ * 10% alpha. Browsers composite alpha in gamma-encoded sRGB, so blend there, then return linear.
+ */
+function tintedSurface(tint: Oklch, base: Oklch, alpha = 0.1): Rgb {
+  const t = toLinearSrgb(tint).map(encodeGamma)
+  const b = toLinearSrgb(base).map(encodeGamma)
+  return t.map((v, i) => decodeGamma(alpha * v + (1 - alpha) * b[i])) as Rgb
+}
+
+function contrastOnSurface(fg: Oklch, surface: Rgb): number {
+  const la = luminance(fg)
+  const lb = relativeLuminance(surface)
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05)
+}
+
 const catNames = ['blue', 'cyan', 'green', 'yellow', 'orange', 'purple', 'pink', 'teal'].map(
   (n) => `cat-${n}`
 )
@@ -106,6 +130,34 @@ describe('theme tokens', () => {
         4.5
       )
     }
+  })
+
+  const tintCases = themeNames.flatMap((theme) =>
+    ['success', 'warning', 'destructive', ...catNames].map((name) => [theme, name] as const)
+  )
+
+  it.each(tintCases)('%s %s text reaches 4.5:1 on its own 10% tint (bg-X/10)', (theme, name) => {
+    const fg = parseOklch(themes[theme][`--${name}`])
+    for (const surface of ['background', 'card']) {
+      const base = parseOklch(themes[theme][`--${surface}`])
+      expect(
+        contrastOnSurface(fg, tintedSurface(fg, base)),
+        `${theme} --${name} on ${name}/10 over --${surface}`
+      ).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  const solidCases = themeNames.flatMap((theme) =>
+    ['success', 'warning', 'destructive'].map((name) => [theme, name] as const)
+  )
+
+  it.each(solidCases)('%s %s-foreground reaches 4.5:1 on its solid token', (theme, name) => {
+    const fg = parseOklch(themes[theme][`--${name}-foreground`])
+    const bg = parseOklch(themes[theme][`--${name}`])
+    expect(
+      contrastRatio(fg, bg),
+      `${theme} --${name}-foreground on --${name}`
+    ).toBeGreaterThanOrEqual(4.5)
   })
 
   it('defines the type scale', () => {

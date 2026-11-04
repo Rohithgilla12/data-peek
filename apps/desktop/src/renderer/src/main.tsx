@@ -4,6 +4,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from '@tanstack/react-router'
 import { router, RootErrorBoundary } from './router'
+import { IconContext } from '@/components/icons'
+
+// Phosphor does not set aria-hidden (lucide did); icons are decorative unless given a label.
+const ICON_CONTEXT_VALUE = { 'aria-hidden': true } as const
 
 // Disable browser-like behaviors for native app feel
 ;(() => {
@@ -25,8 +29,10 @@ import { router, RootErrorBoundary } from './router'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RootErrorBoundary>
-      <RouterProvider router={router} />
-    </RootErrorBoundary>
+    <IconContext.Provider value={ICON_CONTEXT_VALUE}>
+      <RootErrorBoundary>
+        <RouterProvider router={router} />
+      </RootErrorBoundary>
+    </IconContext.Provider>
   </StrictMode>
 )

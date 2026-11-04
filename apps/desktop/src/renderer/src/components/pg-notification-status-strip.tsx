@@ -54,7 +54,7 @@ function toneClasses(tone: Tone): {
   switch (tone) {
     case 'ok':
       return {
-        dot: 'bg-success shadow-[0_0_12px_rgba(16,185,129,0.6)]',
+        dot: 'bg-success',
         text: 'text-success',
         border: 'border-success/30',
         glow: 'bg-success/10',
@@ -62,7 +62,7 @@ function toneClasses(tone: Tone): {
       }
     case 'warn':
       return {
-        dot: 'bg-warning shadow-[0_0_12px_rgba(245,158,11,0.6)]',
+        dot: 'bg-warning',
         text: 'text-warning',
         border: 'border-warning/30',
         glow: 'bg-warning/10',
@@ -70,7 +70,7 @@ function toneClasses(tone: Tone): {
       }
     case 'err':
       return {
-        dot: 'bg-destructive shadow-[0_0_12px_rgba(244,63,94,0.6)]',
+        dot: 'bg-destructive',
         text: 'text-destructive',
         border: 'border-destructive/30',
         glow: 'bg-destructive/10',

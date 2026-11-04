@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import {
-  AiIcon,
+  FunIcon,
   CaretRightIcon,
   ClockIcon,
   DatabaseIcon,
@@ -142,7 +142,7 @@ export function FunAnalytics() {
       <SidebarGroup>
         <SidebarGroupLabel asChild>
           <CollapsibleTrigger>
-            <AiIcon className="size-4 mr-1" />
+            <FunIcon className="size-4 mr-1" />
             Fun Stats
             <CaretRightIcon className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
           </CollapsibleTrigger>

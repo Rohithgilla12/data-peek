@@ -167,7 +167,7 @@ export function PerfIssueCard({
               <div className="text-xs font-medium text-muted-foreground">Suggested index</div>
 
               <div className="relative">
-                <pre className="text-xs bg-black/60 border border-border/40 text-success rounded-md p-2.5 pr-10 overflow-x-auto font-mono">
+                <pre className="text-xs bg-muted border border-border text-success rounded-md p-2.5 pr-10 overflow-x-auto font-mono">
                   {issue.indexSuggestion}
                 </pre>
                 <Button
@@ -209,12 +209,12 @@ export function PerfIssueCard({
                     </>
                   ) : applySuccess ? (
                     <>
-                      <CheckIcon className="size-3.5 text-white" />
+                      <CheckIcon className="size-3.5" />
                       Index Applied!
                     </>
                   ) : (
                     <>
-                      <PlayIcon className="size-3.5 fill-white" />
+                      <PlayIcon className="size-3.5" />
                       Apply Index & Re-run
                     </>
                   )}
@@ -224,7 +224,7 @@ export function PerfIssueCard({
               {applyError && <p className="break-words text-xs text-destructive">{applyError}</p>}
 
               {showJson && (
-                <div className="mt-2 bg-black/80 border border-border/40 rounded p-2.5 text-2xs font-mono text-foreground max-h-36 overflow-auto">
+                <div className="mt-2 bg-muted border border-border rounded p-2.5 text-2xs font-mono text-foreground max-h-36 overflow-auto">
                   <pre>{JSON.stringify(issue, null, 2)}</pre>
                 </div>
               )}

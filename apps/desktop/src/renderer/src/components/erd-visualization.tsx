@@ -152,7 +152,7 @@ function TableNode({ data }: { data: TableNodeData }) {
             {column.isPrimaryKey ? (
               <KeyIcon className="size-3.5 text-cat-yellow shrink-0" />
             ) : column.foreignKey ? (
-              <KeyIcon className="size-3.5 shrink-0" style={{ color: data.clusterColor }} />
+              <KeyIcon className="size-3.5 text-cat-blue shrink-0" />
             ) : (
               <ColumnsIcon className="size-3.5 text-muted-foreground/60 shrink-0" />
             )}

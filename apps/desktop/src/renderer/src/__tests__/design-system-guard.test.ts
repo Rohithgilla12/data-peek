@@ -67,8 +67,17 @@ describe('design-system guard: renderer icons', () => {
   })
 })
 
-const RAW_PALETTE_PATTERN =
-  /\b(text|bg|border|ring|fill|stroke|from|to|via|shadow|outline|divide)-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone)-\d{2,3}/
+const HUES =
+  'red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone'
+// Matches mid-string, so variant prefixes (`hover:`, `dark:`, `group-hover:`) are covered too.
+const RAW_PALETTE_PATTERN = new RegExp(
+  `\\b(text|bg|border|border-[trblxyse]|ring|ring-offset|fill|stroke|from|to|via|shadow|outline|divide|decoration|accent|caret|placeholder)-(${HUES})-\\d{2,3}`
+)
+
+// Arbitrary colour values in a class token: a hex, or a colour function inside the brackets (a shadow glow, for instance).
+// A colour function inside `[...]` is the signal; bare rgba()/hsl() in .ts logic files is not matched.
+const ARBITRARY_COLOUR_PATTERN =
+  /\b(text|bg|border|fill|stroke|ring|shadow|outline|decoration|from|to|via)-\[(#|[^\]\s'"]*(rgba?|hsla?|oklch)\()/
 
 const NEUTRALS = 'muted-foreground (text), muted/card (surface), border (line), or foreground'
 const SUGGESTED_TOKEN: Record<string, string> = {
@@ -108,7 +117,7 @@ const RAW_PALETTE_ALLOW = [
 
 describe('design-system guard: renderer colours', () => {
   it('renderer uses tokens, not raw palette classes', () => {
-    const violations = scanSource([rendererSrc], RAW_PALETTE_PATTERN, RAW_PALETTE_ALLOW)
+    const violations = scanSource([rendererSrc, uiSrc], RAW_PALETTE_PATTERN, RAW_PALETTE_ALLOW)
     const message = violations
       .map((v) => {
         const hue = /-([a-z]+)-\d+$/.exec(v.match)?.[1]
@@ -119,9 +128,23 @@ describe('design-system guard: renderer colours', () => {
   })
 })
 
+// Non-chrome code that legitimately carries literal colours (brand logos, third-party palettes).
+const ARBITRARY_COLOUR_ALLOW: string[] = []
+
+describe('design-system guard: arbitrary colours', () => {
+  it('renderer and shared ui use token colours, not arbitrary colour values', () => {
+    const violations = scanSource([rendererSrc, uiSrc], ARBITRARY_COLOUR_PATTERN, [
+      ...RAW_PALETTE_ALLOW,
+      ...ARBITRARY_COLOUR_ALLOW
+    ])
+    const message = violations.map((v) => `${v.file}:${v.line} ${v.match} -> use a colour token`)
+    expect(violations, message.join('\n')).toEqual([])
+  })
+})
+
 describe('design-system guard: typography', () => {
   it('renderer and shared ui use the type scale, not arbitrary sizes', () => {
-    const violations = scanSource([rendererSrc, uiSrc], /\btext-\[\d/, [])
+    const violations = scanSource([rendererSrc, uiSrc], /\btext-\[(\.|\d|length:)/, [])
     const message = violations
       .map((v) => `${v.file}:${v.line} ${v.match} -> use text-2xs (11px), text-xs, or text-sm`)
       .join('\n')
