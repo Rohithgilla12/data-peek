@@ -39,12 +39,8 @@ async function indexesOn(window: Page): Promise<string[]> {
 }
 
 async function analyzeFilteredScan(window: Page): Promise<void> {
-  const newQuery = window.getByRole('button', { name: /new query/i })
-  if (await newQuery.isVisible()) {
-    await newQuery.click()
-  } else {
-    await window.keyboard.press(process.platform === 'darwin' ? 'Meta+t' : 'Control+t')
-  }
+  // Cmd/Ctrl+T and the empty state open Ask; Cmd/Ctrl+Shift+T opens a SQL tab.
+  await window.keyboard.press(process.platform === 'darwin' ? 'Meta+Shift+t' : 'Control+Shift+t')
   const editor = window.locator('.monaco-editor').first()
   await expect(editor).toBeVisible({ timeout: 10000 })
   await editor.click()

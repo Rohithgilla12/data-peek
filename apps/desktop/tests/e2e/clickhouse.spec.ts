@@ -86,12 +86,8 @@ test('schema explorer lists seeded tables, views and materialized views', async 
 test('query editor runs ClickHouse SQL and renders typed results', async ({ window }, testInfo) => {
   await activateSeededConnection(window)
 
-  const newQuery = window.getByRole('button', { name: /new query/i })
-  if (await newQuery.isVisible()) {
-    await newQuery.click()
-  } else {
-    await window.keyboard.press(process.platform === 'darwin' ? 'Meta+t' : 'Control+t')
-  }
+  // Cmd/Ctrl+T and the empty state open Ask; Cmd/Ctrl+Shift+T opens a SQL tab.
+  await window.keyboard.press(process.platform === 'darwin' ? 'Meta+Shift+t' : 'Control+Shift+t')
   await expect(window.locator('.monaco-editor').first()).toBeVisible({ timeout: 10000 })
 
   await window.locator('.monaco-editor').first().click()
