@@ -30,25 +30,25 @@ export function AISuggestions({ schemas, onSelect }: AISuggestionsProps) {
         icon: <TableIcon className="size-3" />,
         label: 'Show all tables',
         query: 'What tables are available in this database?',
-        color: 'from-blue-500/20 to-blue-600/10 border-blue-500/30 text-blue-400'
+        color: 'bg-primary/10 border-primary/30 text-primary'
       },
       {
         icon: <TrendUpIcon className="size-3" />,
         label: 'Recent records',
         query: 'Show me the most recent records added to the database',
-        color: 'from-emerald-500/20 to-emerald-600/10 border-emerald-500/30 text-emerald-400'
+        color: 'bg-primary/10 border-primary/30 text-primary'
       },
       {
         icon: <SearchIcon className="size-3" />,
         label: 'Search data',
         query: 'Help me search for',
-        color: 'from-purple-500/20 to-purple-600/10 border-purple-500/30 text-purple-400'
+        color: 'bg-primary/10 border-primary/30 text-primary'
       },
       {
         icon: <GitBranchIcon className="size-3" />,
         label: 'Table relationships',
         query: 'What are the relationships between tables?',
-        color: 'from-amber-500/20 to-amber-600/10 border-amber-500/30 text-amber-400'
+        color: 'bg-primary/10 border-primary/30 text-primary'
       }
     ]
 
@@ -69,7 +69,7 @@ export function AISuggestions({ schemas, onSelect }: AISuggestionsProps) {
           icon: <UsersIcon className="size-3" />,
           label: `Query ${userTable.name}`,
           query: `Show me all records from ${userTable.name} table`,
-          color: 'from-pink-500/20 to-pink-600/10 border-pink-500/30 text-pink-400'
+          color: 'bg-primary/10 border-primary/30 text-primary'
         })
       }
 
@@ -87,7 +87,7 @@ export function AISuggestions({ schemas, onSelect }: AISuggestionsProps) {
           icon: <ClockIcon className="size-3" />,
           label: 'Recent activity',
           query: `Show me the latest entries from ${tableWithTimestamp.name} ordered by most recent`,
-          color: 'from-cyan-500/20 to-cyan-600/10 border-cyan-500/30 text-cyan-400'
+          color: 'bg-primary/10 border-primary/30 text-primary'
         })
       }
     }
@@ -104,7 +104,7 @@ export function AISuggestions({ schemas, onSelect }: AISuggestionsProps) {
           onClick={() => onSelect(suggestion.query)}
           className={cn(
             'flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg',
-            'bg-gradient-to-r border',
+            'border',
             'text-[11px] font-medium',
             'transition-all duration-200',
             'hover:scale-[1.02] hover:shadow-md',

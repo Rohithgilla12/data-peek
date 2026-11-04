@@ -40,7 +40,6 @@ const PHASE_CONFIG: Record<
     label: string
     shortLabel: string
     color: string
-    glowColor: string
     icon: typeof ActivityIcon
     description: string
     isConnectionPhase?: boolean
@@ -49,8 +48,7 @@ const PHASE_CONFIG: Record<
   tcp_handshake: {
     label: 'TCP Handshake',
     shortLabel: 'TCP',
-    color: 'from-violet-500 to-purple-600',
-    glowColor: 'shadow-violet-500/30',
+    color: 'bg-cat-purple',
     icon: ZapIcon,
     description: 'TCP connection establishment',
     isConnectionPhase: true
@@ -58,8 +56,7 @@ const PHASE_CONFIG: Record<
   db_handshake: {
     label: 'DB Handshake',
     shortLabel: 'AUTH',
-    color: 'from-purple-500 to-fuchsia-600',
-    glowColor: 'shadow-purple-500/30',
+    color: 'bg-cat-pink',
     icon: DatabaseIcon,
     description: 'Database authentication and protocol handshake',
     isConnectionPhase: true
@@ -67,40 +64,35 @@ const PHASE_CONFIG: Record<
   network_latency: {
     label: 'Network Latency',
     shortLabel: 'NET',
-    color: 'from-blue-500 to-cyan-500',
-    glowColor: 'shadow-blue-500/30',
+    color: 'bg-cat-blue',
     icon: ActivityIcon,
     description: 'Round-trip time to server'
   },
   planning: {
     label: 'Query Planning',
     shortLabel: 'PLAN',
-    color: 'from-cyan-500 to-teal-500',
-    glowColor: 'shadow-cyan-500/30',
+    color: 'bg-cat-cyan',
     icon: FileCodeIcon,
     description: 'Query plan generation'
   },
   execution: {
     label: 'Execution',
     shortLabel: 'EXEC',
-    color: 'from-emerald-500 to-green-500',
-    glowColor: 'shadow-emerald-500/30',
+    color: 'bg-cat-green',
     icon: ZapIcon,
     description: 'Server-side query execution'
   },
   download: {
     label: 'Data Transfer',
     shortLabel: 'XFER',
-    color: 'from-amber-500 to-orange-500',
-    glowColor: 'shadow-amber-500/30',
+    color: 'bg-cat-orange',
     icon: ArrowLineDownIcon,
     description: 'Data transfer from server'
   },
   parse: {
     label: 'Parse & Decode',
     shortLabel: 'PARSE',
-    color: 'from-orange-500 to-red-500',
-    glowColor: 'shadow-orange-500/30',
+    color: 'bg-cat-yellow',
     icon: FileCodeIcon,
     description: 'Client-side result parsing'
   }
@@ -187,7 +179,7 @@ function StatBadge({
     <div
       className={cn(
         'flex items-baseline gap-1.5 px-2.5 py-1.5 rounded-md',
-        'bg-gradient-to-b from-muted/80 to-muted/40',
+        'bg-muted/60',
         'border border-border/50',
         variant === 'min' && 'border-success/30',
         variant === 'max' && 'border-warning/30',
@@ -345,7 +337,7 @@ export function TelemetryPanel({
     <div
       className={cn(
         'border-t border-border/60',
-        'bg-gradient-to-b from-card/95 to-muted/30',
+        'bg-card',
         'backdrop-blur-sm',
         'animate-in slide-in-from-bottom-2 fade-in duration-200'
       )}
@@ -383,7 +375,7 @@ export function TelemetryPanel({
 
             {telemetry?.bytesReceived && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <span className="size-1 bg-blue-500 rounded-full" />
+                <span className="size-1 bg-primary rounded-full" />
                 <span className="font-mono tabular-nums">
                   {formatBytes(telemetry.bytesReceived)}
                 </span>
@@ -520,15 +512,12 @@ export function TelemetryPanel({
                   <div className="flex-1 relative h-6">
                     {/* Track */}
                     <div className="absolute inset-0 bg-muted/50 rounded-sm overflow-hidden">
-                      {/* Fill with gradient */}
+                      {/* Fill */}
                       <div
                         className={cn(
                           'h-full rounded-sm',
-                          'bg-gradient-to-r',
                           config.color,
-                          'transition-all duration-500 ease-out',
-                          'group-hover:shadow-lg',
-                          config.glowColor
+                          'transition-all duration-500 ease-out'
                         )}
                         style={{
                           width: `${widthPercent}%`,
@@ -650,11 +639,8 @@ export function TelemetryPanel({
                     <div
                       className={cn(
                         'absolute top-0.5 bottom-0.5 rounded-sm',
-                        'bg-gradient-to-r',
                         config.color,
                         'transition-all duration-300 ease-out',
-                        'group-hover:shadow-md',
-                        config.glowColor,
                         'min-w-[4px]'
                       )}
                       style={{

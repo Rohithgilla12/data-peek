@@ -125,16 +125,16 @@ function getNodeTypeInfo(nodeType: string): { color: string; bgColor: string } {
   const type = nodeType.toLowerCase()
 
   if (type.includes('seq scan')) {
-    return { color: 'text-orange-500', bgColor: 'bg-orange-500/10' }
+    return { color: 'text-cat-orange', bgColor: 'bg-cat-orange/10' }
   }
   if (type.includes('index') || type.includes('bitmap')) {
-    return { color: 'text-green-500', bgColor: 'bg-green-500/10' }
+    return { color: 'text-cat-green', bgColor: 'bg-cat-green/10' }
   }
   if (type.includes('hash') || type.includes('merge') || type.includes('nested')) {
-    return { color: 'text-blue-500', bgColor: 'bg-blue-500/10' }
+    return { color: 'text-cat-blue', bgColor: 'bg-cat-blue/10' }
   }
   if (type.includes('sort') || type.includes('aggregate') || type.includes('group')) {
-    return { color: 'text-purple-500', bgColor: 'bg-purple-500/10' }
+    return { color: 'text-cat-purple', bgColor: 'bg-cat-purple/10' }
   }
   if (type.includes('limit') || type.includes('result')) {
     return { color: 'text-muted-foreground', bgColor: 'bg-muted' }
@@ -286,10 +286,7 @@ function PlanNodeView({
                   )}
 
                   {node['Parallel Aware'] && (
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] text-blue-500 border-blue-500/30"
-                    >
+                    <Badge variant="outline" className="text-[10px] text-primary border-primary/30">
                       <ZapIcon className="size-2.5 mr-0.5" />
                       Parallel
                     </Badge>
@@ -298,7 +295,7 @@ function PlanNodeView({
                   {node['Async Capable'] && (
                     <Badge
                       variant="outline"
-                      className="text-[10px] text-purple-500 border-purple-500/30"
+                      className="text-[10px] text-cat-purple border-cat-purple/30"
                     >
                       Async
                     </Badge>
@@ -326,7 +323,7 @@ function PlanNodeView({
                               : Math.abs(node['Plan Rows'] - node['Actual Rows']) /
                                     Math.max(node['Plan Rows'], node['Actual Rows'], 1) >
                                   0.5
-                                ? 'text-orange-500'
+                                ? 'text-warning'
                                 : 'text-muted-foreground/70'
                           )}
                         >
@@ -360,12 +357,12 @@ function PlanNodeView({
 
                   {/* Parallel workers */}
                   {node['Workers Launched'] !== undefined && node['Workers Launched'] > 0 && (
-                    <span className="flex items-center gap-1 text-blue-500">
+                    <span className="flex items-center gap-1 text-primary">
                       <UsersIcon className="size-3" />
                       <span className="font-mono">{node['Workers Launched']}</span>
                       {node['Workers Planned'] &&
                         node['Workers Launched'] < node['Workers Planned'] && (
-                          <span className="text-orange-500">/{node['Workers Planned']}</span>
+                          <span className="text-warning">/{node['Workers Planned']}</span>
                         )}
                       workers
                     </span>
@@ -380,7 +377,7 @@ function PlanNodeView({
                       <HardDriveIcon className="size-3" />
                       hits: <span className="font-mono">{node['Shared Hit Blocks']}</span>
                       {node['Shared Read Blocks'] ? (
-                        <span className="text-orange-500">reads: {node['Shared Read Blocks']}</span>
+                        <span className="text-warning">reads: {node['Shared Read Blocks']}</span>
                       ) : null}
                       {node['Shared Dirtied Blocks'] ? (
                         <span className="text-warning">dirty: {node['Shared Dirtied Blocks']}</span>
@@ -396,7 +393,7 @@ function PlanNodeView({
                       {node['I/O Read Time'] !== undefined && (
                         <span>
                           read:{' '}
-                          <span className="font-mono text-orange-500">
+                          <span className="font-mono text-warning">
                             {node['I/O Read Time'].toFixed(2)}ms
                           </span>
                         </span>
@@ -404,7 +401,7 @@ function PlanNodeView({
                       {node['I/O Write Time'] !== undefined && (
                         <span>
                           write:{' '}
-                          <span className="font-mono text-orange-500">
+                          <span className="font-mono text-warning">
                             {node['I/O Write Time'].toFixed(2)}ms
                           </span>
                         </span>
@@ -421,7 +418,7 @@ function PlanNodeView({
                           className={cn(
                             'font-mono',
                             node['Rows Removed by Filter'] > (node['Actual Rows'] ?? 0) * 10
-                              ? 'text-orange-500'
+                              ? 'text-warning'
                               : ''
                           )}
                         >
@@ -445,7 +442,7 @@ function PlanNodeView({
                   {/* Temp blocks (spilling to disk) */}
                   {(node['Temp Read Blocks'] !== undefined ||
                     node['Temp Written Blocks'] !== undefined) && (
-                    <span className="flex items-center gap-1 text-orange-500">
+                    <span className="flex items-center gap-1 text-warning">
                       <HardDriveIcon className="size-3" />
                       temp:
                       {node['Temp Read Blocks'] !== undefined && (
@@ -472,7 +469,7 @@ function PlanNodeView({
                       <span
                         className={cn(
                           'text-[10px]',
-                          node['Sort Space Type'] === 'Disk' ? 'text-orange-500' : ''
+                          node['Sort Space Type'] === 'Disk' ? 'text-warning' : ''
                         )}
                       >
                         {node['Sort Space Used']}kB {node['Sort Space Type']}
@@ -518,19 +515,19 @@ function PlanNodeView({
                     )}
                     {node['Filter'] && (
                       <div className="flex gap-2">
-                        <span className="text-blue-600 dark:text-blue-400">Filter:</span>
+                        <span className="text-cat-blue">Filter:</span>
                         <span>{node['Filter']}</span>
                       </div>
                     )}
                     {node['Recheck Cond'] && (
                       <div className="flex gap-2">
-                        <span className="text-purple-600 dark:text-purple-400">Recheck:</span>
+                        <span className="text-cat-purple">Recheck:</span>
                         <span>{node['Recheck Cond']}</span>
                       </div>
                     )}
                     {node['Hash Cond'] && (
                       <div className="flex gap-2">
-                        <span className="text-cyan-600 dark:text-cyan-400">Hash Cond:</span>
+                        <span className="text-cat-cyan">Hash Cond:</span>
                         <span>{node['Hash Cond']}</span>
                       </div>
                     )}
@@ -736,14 +733,14 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
               {stats.totalBufferHits.toLocaleString()} hits
             </span>
             {stats.totalBufferReads > 0 && (
-              <span className="font-mono font-medium text-orange-500">
+              <span className="font-mono font-medium text-warning">
                 {stats.totalBufferReads.toLocaleString()} reads
               </span>
             )}
           </div>
         )}
         {stats.totalTempBlocks > 0 && (
-          <div className="flex items-center gap-1.5 text-orange-500">
+          <div className="flex items-center gap-1.5 text-warning">
             <HardDriveIcon className="size-3" />
             <span>Temp:</span>
             <span className="font-mono font-medium">{stats.totalTempBlocks} blocks</span>
@@ -752,16 +749,13 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
         <div className="flex items-center gap-1.5 ml-auto">
           <span className="text-muted-foreground">{stats.nodeCount} nodes</span>
           {stats.hasParallel && (
-            <Badge variant="outline" className="text-[10px] h-4 text-blue-500 border-blue-500/30">
+            <Badge variant="outline" className="text-[10px] h-4 text-primary border-primary/30">
               <ZapIcon className="size-2 mr-0.5" />
               Parallel
             </Badge>
           )}
           {stats.hasSeqScan && (
-            <Badge
-              variant="outline"
-              className="text-[10px] h-4 text-orange-500 border-orange-500/30"
-            >
+            <Badge variant="outline" className="text-[10px] h-4 text-warning border-warning/30">
               Seq Scan
             </Badge>
           )}
@@ -776,19 +770,19 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
       {/* Legend */}
       <div className="px-4 py-2 border-t border-border/40 flex items-center gap-4 text-[10px] text-muted-foreground shrink-0">
         <span className="flex items-center gap-1">
-          <div className="size-2 rounded bg-orange-500" />
+          <div className="size-2 rounded bg-cat-orange" />
           Seq Scan
         </span>
         <span className="flex items-center gap-1">
-          <div className="size-2 rounded bg-success" />
+          <div className="size-2 rounded bg-cat-green" />
           Index Scan
         </span>
         <span className="flex items-center gap-1">
-          <div className="size-2 rounded bg-blue-500" />
+          <div className="size-2 rounded bg-cat-blue" />
           Join
         </span>
         <span className="flex items-center gap-1">
-          <div className="size-2 rounded bg-purple-500" />
+          <div className="size-2 rounded bg-cat-purple" />
           Sort/Aggregate
         </span>
       </div>

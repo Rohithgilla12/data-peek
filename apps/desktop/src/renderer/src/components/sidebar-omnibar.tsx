@@ -175,9 +175,9 @@ export function SidebarOmnibar() {
               className={cn(
                 'size-3.5',
                 table.type === 'view'
-                  ? 'text-purple-500'
+                  ? 'text-cat-purple'
                   : table.type === 'materialized_view'
-                    ? 'text-teal-500'
+                    ? 'text-cat-teal'
                     : 'text-muted-foreground'
               )}
             />
@@ -211,9 +211,9 @@ export function SidebarOmnibar() {
           group: 'routines',
           icon:
             routine.type === 'function' ? (
-              <FunctionIcon className="size-3.5 text-cyan-500" />
+              <FunctionIcon className="size-3.5 text-cat-cyan" />
             ) : (
-              <WorkflowIcon className="size-3.5 text-orange-500" />
+              <WorkflowIcon className="size-3.5 text-cat-orange" />
             ),
           keywords: [schema.name, routine.type, ...(routine.parameters?.map((p) => p.name) ?? [])],
           onSelect: () => handleRoutineSelect(schema.name, routine)
@@ -227,7 +227,7 @@ export function SidebarOmnibar() {
         label: sq.name,
         sublabel: sq.description || sq.query.replace(/\s+/g, ' ').slice(0, 50),
         group: 'saved',
-        icon: <BookmarkIcon weight="fill" className="size-3.5 text-amber-500" />,
+        icon: <BookmarkIcon weight="fill" className="size-3.5 text-muted-foreground" />,
         keywords: [sq.query, sq.description ?? ''],
         onSelect: () => handleQuerySelect(sq.query)
       })
@@ -240,7 +240,7 @@ export function SidebarOmnibar() {
         label: snippet.name,
         sublabel: snippet.description,
         group: 'snippets',
-        icon: <CodeIcon className="size-3.5 text-emerald-500" />,
+        icon: <CodeIcon className="size-3.5 text-muted-foreground" />,
         keywords: [snippet.category, snippet.description, snippet.template],
         onSelect: () => handleSnippetSelect(snippet.template)
       })

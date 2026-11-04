@@ -221,7 +221,7 @@ export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidget
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <AiIcon className="size-4 text-purple-500" />
+        <AiIcon className="size-4 text-primary" />
         <span className="text-sm font-medium">AI Suggestions</span>
         {isAnalyzing && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">

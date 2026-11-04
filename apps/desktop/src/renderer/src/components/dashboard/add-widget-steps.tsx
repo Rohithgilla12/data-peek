@@ -292,7 +292,7 @@ export function ConfigStep({
           type="button"
           onClick={onPreviewQuery}
           disabled={isLoadingPreview}
-          className="w-full flex items-center justify-between p-4 rounded-xl bg-linear-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary/40 transition-all duration-200 group"
+          className="w-full flex items-center justify-between p-4 rounded-xl bg-primary/10 border border-primary/20 hover:border-primary/40 transition-all duration-200 group"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">

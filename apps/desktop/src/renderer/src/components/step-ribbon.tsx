@@ -52,7 +52,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
       {/* Top-edge progress bar */}
       <div className="absolute inset-x-0 top-0 h-[2px] bg-border/40">
         <div
-          className="h-full bg-gradient-to-r from-primary to-cyan-400 transition-[width] duration-300 ease-out"
+          className="h-full bg-primary transition-[width] duration-300 ease-out"
           style={{ width: `${progressPct}%` }}
         />
       </div>

@@ -63,15 +63,15 @@ interface CommandPaletteProps {
 
 // Query type badge colors
 const queryTypeColors: Record<string, string> = {
-  SELECT: 'bg-blue-500/20 text-blue-400',
-  INSERT: 'bg-green-500/20 text-green-400',
-  UPDATE: 'bg-yellow-500/20 text-yellow-400',
-  DELETE: 'bg-red-500/20 text-red-400',
-  CREATE: 'bg-purple-500/20 text-purple-400',
-  ALTER: 'bg-purple-500/20 text-purple-400',
-  DROP: 'bg-purple-500/20 text-purple-400',
-  EXPLAIN: 'bg-orange-500/20 text-orange-400',
-  SQL: 'bg-zinc-500/20 text-zinc-400'
+  SELECT: 'bg-cat-blue/10 text-cat-blue',
+  INSERT: 'bg-cat-green/10 text-cat-green',
+  UPDATE: 'bg-cat-yellow/10 text-cat-yellow',
+  DELETE: 'bg-destructive/10 text-destructive',
+  CREATE: 'bg-cat-purple/10 text-cat-purple',
+  ALTER: 'bg-cat-purple/10 text-cat-purple',
+  DROP: 'bg-cat-purple/10 text-cat-purple',
+  EXPLAIN: 'bg-cat-orange/10 text-cat-orange',
+  SQL: 'bg-muted-foreground/10 text-muted-foreground'
 }
 
 export function CommandPalette({
@@ -286,7 +286,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <AiIcon className="text-blue-400" />
+                  <AiIcon className="text-primary" />
                   <span>Open AI Assistant</span>
                   <CommandShortcut>{keys.mod}I</CommandShortcut>
                 </CommandItem>
@@ -298,7 +298,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <AiIcon className="text-blue-400" />
+                  <AiIcon className="text-primary" />
                   <span>AI Settings</span>
                 </CommandItem>
               </CommandGroup>
@@ -312,7 +312,7 @@ export function CommandPalette({
                   keywords={['database', 'connect', 'switch', 'manage']}
                   onSelect={() => pushPage('connections')}
                 >
-                  <DatabaseIcon className="text-emerald-400" />
+                  <DatabaseIcon className="text-muted-foreground" />
                   <span>Connections</span>
                   <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
@@ -351,7 +351,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <PlusIcon className="text-amber-400" />
+                  <PlusIcon className="text-muted-foreground" />
                   <span>New Query Tab</span>
                   <CommandShortcut>{keys.mod}T</CommandShortcut>
                 </CommandItem>
@@ -360,7 +360,7 @@ export function CommandPalette({
                   keywords={['bookmark', 'favorites', 'history', 'pinned']}
                   onSelect={() => pushPage('saved-queries')}
                 >
-                  <BookmarkIcon className="text-amber-400" />
+                  <BookmarkIcon className="text-muted-foreground" />
                   <span>Saved Queries</span>
                   <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
@@ -381,7 +381,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <HistoryIcon className="text-amber-400" />
+                  <HistoryIcon className="text-muted-foreground" />
                   <span>Toggle Time Machine</span>
                   <CommandShortcut>
                     {keys.mod}
@@ -402,7 +402,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <SettingsIcon className="text-purple-400" />
+                  <SettingsIcon className="text-muted-foreground" />
                   <span>Settings</span>
                 </CommandItem>
                 <CommandItem
@@ -413,7 +413,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <LayoutGridIcon className="text-purple-400" />
+                  <LayoutGridIcon className="text-muted-foreground" />
                   <span>Toggle Sidebar</span>
                   <CommandShortcut>{keys.mod}B</CommandShortcut>
                 </CommandItem>
@@ -425,7 +425,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <KeyboardIcon className="text-purple-400" />
+                  <KeyboardIcon className="text-muted-foreground" />
                   <span>Keyboard Shortcuts</span>
                 </CommandItem>
               </CommandGroup>
@@ -439,7 +439,7 @@ export function CommandPalette({
                   keywords={['theme', 'dark', 'light', 'mode']}
                   onSelect={() => pushPage('appearance')}
                 >
-                  <MoonIcon className="text-pink-400" />
+                  <MoonIcon className="text-muted-foreground" />
                   <span>Change Theme</span>
                   <span className="ml-auto text-xs text-muted-foreground capitalize">{theme}</span>
                   <CaretRightIcon className="size-4 text-muted-foreground" />
@@ -483,7 +483,7 @@ export function CommandPalette({
                   keywords={['switch', 'browse', 'list']}
                   onSelect={() => pushPage('connections:switch')}
                 >
-                  <DatabaseIcon className="text-emerald-400" />
+                  <DatabaseIcon className="text-muted-foreground" />
                   <span>All Connections</span>
                   <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
@@ -492,7 +492,7 @@ export function CommandPalette({
                   keywords={['modify', 'change', 'update']}
                   onSelect={() => pushPage('connections:edit')}
                 >
-                  <EditIcon className="text-emerald-400" />
+                  <EditIcon className="text-muted-foreground" />
                   <span>Edit Connection</span>
                   <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
@@ -505,7 +505,7 @@ export function CommandPalette({
                       onClose()
                     }}
                   >
-                    <PlusIcon className="text-emerald-400" />
+                    <PlusIcon className="text-muted-foreground" />
                     <span>Add New Connection</span>
                   </CommandItem>
                 )}
@@ -519,7 +519,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <RefreshIcon className="text-emerald-400" />
+                  <RefreshIcon className="text-muted-foreground" />
                   <span>Refresh Schema</span>
                 </CommandItem>
               </CommandGroup>
@@ -540,7 +540,7 @@ export function CommandPalette({
                       onClose()
                     }}
                   >
-                    <PlusIcon className="text-emerald-400" />
+                    <PlusIcon className="text-muted-foreground" />
                     <span>Add New Connection</span>
                   </CommandItem>
                 )}
@@ -549,7 +549,7 @@ export function CommandPalette({
                   keywords={['modify', 'change', 'update', 'edit']}
                   onSelect={() => pushPage('connections:edit')}
                 >
-                  <EditIcon className="text-emerald-400" />
+                  <EditIcon className="text-muted-foreground" />
                   <span>Edit Connection</span>
                   <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
@@ -563,7 +563,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <RefreshIcon className="text-emerald-400" />
+                  <RefreshIcon className="text-muted-foreground" />
                   <span>Refresh Schema</span>
                 </CommandItem>
               </CommandGroup>
@@ -644,7 +644,7 @@ export function CommandPalette({
                         onSelect={() => handleSelectQuery(query)}
                         className="group"
                       >
-                        <FileCodeIcon className="text-amber-400 shrink-0" />
+                        <FileCodeIcon className="text-muted-foreground shrink-0" />
                         <div className="flex flex-col min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="truncate">{query.name}</span>
@@ -708,9 +708,9 @@ export function CommandPalette({
                   onClose()
                 }}
               >
-                <SunIcon className="text-pink-400" />
+                <SunIcon className="text-muted-foreground" />
                 <span>Light</span>
-                {theme === 'light' && <span className="ml-auto text-xs text-pink-400">Active</span>}
+                {theme === 'light' && <span className="ml-auto text-xs text-primary">Active</span>}
               </CommandItem>
               <CommandItem
                 value="theme-dark"
@@ -720,9 +720,9 @@ export function CommandPalette({
                   onClose()
                 }}
               >
-                <MoonIcon className="text-pink-400" />
+                <MoonIcon className="text-muted-foreground" />
                 <span>Dark</span>
-                {theme === 'dark' && <span className="ml-auto text-xs text-pink-400">Active</span>}
+                {theme === 'dark' && <span className="ml-auto text-xs text-primary">Active</span>}
               </CommandItem>
               <CommandItem
                 value="theme-system"
@@ -732,11 +732,9 @@ export function CommandPalette({
                   onClose()
                 }}
               >
-                <MonitorIcon className="text-pink-400" />
+                <MonitorIcon className="text-muted-foreground" />
                 <span>System</span>
-                {theme === 'system' && (
-                  <span className="ml-auto text-xs text-pink-400">Active</span>
-                )}
+                {theme === 'system' && <span className="ml-auto text-xs text-primary">Active</span>}
               </CommandItem>
             </CommandGroup>
           )}

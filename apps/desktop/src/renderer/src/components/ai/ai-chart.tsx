@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { seriesColors } from '@/lib/chart-palette'
 import {
   BarChart,
   Bar,
@@ -53,18 +54,6 @@ interface AIChartProps {
   chartData: ChartData
   className?: string
 }
-
-// Default color palette
-const DEFAULT_COLORS = [
-  'hsl(221, 83%, 53%)', // blue
-  'hsl(262, 83%, 58%)', // purple
-  'hsl(142, 71%, 45%)', // green
-  'hsl(38, 92%, 50%)', // amber
-  'hsl(0, 84%, 60%)', // red
-  'hsl(199, 89%, 48%)', // cyan
-  'hsl(339, 90%, 51%)', // pink
-  'hsl(24, 95%, 53%)' // orange
-]
 
 // Chart type icons
 const CHART_ICONS: Record<ChartType, React.ReactNode> = {
@@ -127,7 +116,11 @@ function suggestChartType(
 }
 
 export function AIChart({ chartData, className }: AIChartProps) {
-  const { title, description, data, xKey, yKeys, colors = DEFAULT_COLORS } = chartData
+  const { title, description, data, xKey, yKeys, colors: suppliedColors } = chartData
+  const colors = React.useMemo(
+    () => seriesColors(Math.max(yKeys.length, data.length), suppliedColors),
+    [yKeys.length, data.length, suppliedColors]
+  )
 
   // Determine chart type
   const suggestedType = React.useMemo(
@@ -191,12 +184,7 @@ export function AIChart({ chartData, className }: AIChartProps) {
   }
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border border-border/50 bg-gradient-to-b from-background to-muted/20 overflow-hidden',
-        className
-      )}
-    >
+    <div className={cn('rounded-xl border border-border/50 bg-card overflow-hidden', className)}>
       {/* Header */}
       <div className="px-4 py-3 border-b border-border/30">
         <div className="flex items-start justify-between gap-4">
@@ -244,7 +232,9 @@ export function AIChart({ chartData, className }: AIChartProps) {
               key={key}
               variant="outline"
               className="text-[10px] gap-1"
-              style={{ borderColor: colors[i % colors.length] + '50' }}
+              style={{
+                borderColor: `color-mix(in oklab, ${colors[i % colors.length]} 31%, transparent)`
+              }}
             >
               <TrendUpIcon className="size-2.5" style={{ color: colors[i % colors.length] }} />
               {key}

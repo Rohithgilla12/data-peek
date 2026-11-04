@@ -55,7 +55,7 @@ function ReportWidgetView({
   if (loading) {
     return (
       <div className="rounded-lg border border-border/50 bg-muted/20 p-4 flex items-center gap-2">
-        <SpinnerIcon className="size-4 animate-spin text-blue-400" />
+        <SpinnerIcon className="size-4 animate-spin text-primary" />
         <span className="text-xs text-muted-foreground">{widget.title}…</span>
       </div>
     )

@@ -101,13 +101,10 @@ export function AIMetricCard({ metric, className }: AIMetricCardProps) {
   return (
     <div
       className={cn(
-        'relative rounded-xl border border-border/50 bg-gradient-to-br from-background to-muted/20 p-4 overflow-hidden',
+        'relative rounded-xl border border-border/50 bg-card p-4 overflow-hidden',
         className
       )}
     >
-      {/* Decorative gradient */}
-      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-full blur-2xl -translate-y-8 translate-x-8" />
-
       <div className="relative">
         {/* Label */}
         <p className="text-xs text-muted-foreground font-medium mb-1">{label}</p>

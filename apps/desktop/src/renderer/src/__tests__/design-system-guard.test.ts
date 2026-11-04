@@ -67,112 +67,54 @@ describe('design-system guard: renderer icons', () => {
   })
 })
 
-const RAW_STATUS_PATTERN =
-  /(text|bg|border|ring|fill|stroke|shadow|outline|divide)-(red|rose|green|emerald|amber|yellow|zinc|gray|slate|neutral|stone)-\d/
+const RAW_PALETTE_PATTERN =
+  /\b(text|bg|border|ring|fill|stroke|from|to|via|shadow|outline|divide)-(red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose|slate|gray|zinc|neutral|stone)-\d{2,3}/
 
+const NEUTRALS = 'muted-foreground (text), muted/card (surface), border (line), or foreground'
 const SUGGESTED_TOKEN: Record<string, string> = {
   red: 'destructive',
   rose: 'destructive',
-  green: 'success',
+  green: 'success (status) or cat-green (kind)',
   emerald: 'success',
   amber: 'warning',
-  yellow: 'warning',
-  zinc: 'muted-foreground (text), muted/card (surface), border (line), or foreground',
-  gray: 'muted-foreground (text), muted/card (surface), border (line), or foreground',
-  slate: 'muted-foreground (text), muted/card (surface), border (line), or foreground',
-  neutral: 'muted-foreground (text), muted/card (surface), border (line), or foreground',
-  stone: 'muted-foreground (text), muted/card (surface), border (line), or foreground'
+  yellow: 'warning (status) or cat-yellow (kind)',
+  orange: 'warning (status) or cat-orange (kind)',
+  blue: 'primary (emphasis) or cat-blue (kind)',
+  sky: 'primary or cat-cyan',
+  indigo: 'primary or cat-blue',
+  violet: 'cat-purple',
+  purple: 'cat-purple',
+  fuchsia: 'cat-pink',
+  pink: 'cat-pink',
+  cyan: 'cat-cyan',
+  teal: 'cat-teal',
+  lime: 'cat-green',
+  zinc: NEUTRALS,
+  gray: NEUTRALS,
+  slate: NEUTRALS,
+  neutral: NEUTRALS,
+  stone: NEUTRALS
 }
 
 // Fixed colours by design (exported images, Monaco themes, persisted user colours, easter egg).
-// Entries are 'path' (whole file) or 'path:line' (a single line).
-const RAW_STATUS_ALLOW = [
+const RAW_PALETTE_ALLOW = [
   'components/query-editor/share-results-image.tsx',
   'components/share-image-dialog.tsx',
   'components/health-share-content.tsx',
   'components/sql-editor.tsx',
   'lib/environment.ts',
-  'stores/pokemon-buddy-store.ts',
-  // Task 6: hues that tell kinds apart (type, query-kind, category badges); become cat-* tokens
-  'lib/built-in-snippets.ts:172',
-  'lib/built-in-snippets.ts:174',
-  'lib/built-in-snippets.ts:176',
-  'lib/query-history-utils.ts:24',
-  'lib/query-history-utils.ts:26',
-  'lib/query-history-utils.ts:28',
-  'lib/type-colors.ts:8',
-  'lib/type-colors.ts:18',
-  'components/execution-plan-viewer.tsx:131',
-  'components/ai/ai-suggestions.tsx:39',
-  'components/ai/ai-suggestions.tsx:51',
-  'components/command-palette.tsx:67',
-  'components/command-palette.tsx:68',
-  'components/command-palette.tsx:69',
-  'components/command-palette.tsx:74',
-  'components/command-palette.tsx:315',
-  'components/command-palette.tsx:354',
-  'components/command-palette.tsx:363',
-  'components/command-palette.tsx:384',
-  'components/command-palette.tsx:486',
-  'components/command-palette.tsx:495',
-  'components/command-palette.tsx:508',
-  'components/command-palette.tsx:522',
-  'components/command-palette.tsx:543',
-  'components/command-palette.tsx:552',
-  'components/command-palette.tsx:566',
-  'components/command-palette.tsx:647',
-  'components/schema-explorer.tsx:98',
-  'components/schema-explorer.tsx:108',
-  'components/schema-explorer.tsx:245',
-  'components/schema-explorer.tsx:252',
-  'components/schema-explorer.tsx:301',
-  'components/schema-explorer.tsx:308',
-  'components/schema-explorer.tsx:1411',
-  'components/telemetry-panel.tsx:87',
-  'components/telemetry-panel.tsx:95',
-  'components/add-row-sheet.tsx:112',
-  'components/add-row-sheet.tsx:114',
-  'components/sidebar-omnibar.tsx:230',
-  'components/sidebar-omnibar.tsx:243',
-  'components/saved-queries-dialog.tsx:83',
-  'components/saved-queries-dialog.tsx:85',
-  'components/saved-queries-dialog.tsx:87',
-  'components/json-cell-value.tsx:43',
-  'components/json-cell-value.tsx:47',
-  'components/json-cell-value.tsx:215',
-  'components/json-cell-value.tsx:326',
-  'components/json-cell-value.tsx:344',
-  'components/saved-queries.tsx:64',
-  'components/saved-queries.tsx:66',
-  'components/saved-queries.tsx:68'
+  'stores/pokemon-buddy-store.ts'
 ]
 
 describe('design-system guard: renderer colours', () => {
-  it('renderer uses status tokens, not raw status hues', () => {
-    const wholeFiles = RAW_STATUS_ALLOW.filter((entry) => !/:\d+$/.test(entry))
-    const violations = scanSource([rendererSrc], RAW_STATUS_PATTERN, wholeFiles).filter(
-      (v) =>
-        !RAW_STATUS_ALLOW.includes(
-          `${v.file.replace('apps/desktop/src/renderer/src/', '')}:${v.line}`
-        )
-    )
+  it('renderer uses tokens, not raw palette classes', () => {
+    const violations = scanSource([rendererSrc], RAW_PALETTE_PATTERN, RAW_PALETTE_ALLOW)
     const message = violations
       .map((v) => {
-        const hue = /-(red|rose|green|emerald|amber|yellow|zinc|gray|slate|neutral|stone)-/.exec(
-          v.match
-        )?.[1]
+        const hue = /-([a-z]+)-\d+$/.exec(v.match)?.[1]
         return `${v.file}:${v.line} ${v.match} -> use ${hue ? SUGGESTED_TOKEN[hue] : 'a token'}`
       })
       .join('\n')
     expect(violations, message).toEqual([])
-  })
-
-  it('every line-level allowlist entry still matches a raw palette class', () => {
-    const stale = RAW_STATUS_ALLOW.filter((entry) => /:\d+$/.test(entry)).filter((entry) => {
-      const [file, line] = entry.split(/:(?=\d+$)/)
-      const text = readFileSync(path.join(rendererSrc, file), 'utf8').split('\n')[Number(line) - 1]
-      return !text || !RAW_STATUS_PATTERN.test(text)
-    })
-    expect(stale, 'stale allowlist entries; remove them').toEqual([])
   })
 })

@@ -193,7 +193,7 @@ export function DashboardView() {
           <Button
             variant="outline"
             size="sm"
-            className="text-blue-400 hover:text-blue-300"
+            className="text-primary hover:text-primary/80"
             onClick={() => setIsAIWidgetOpen(true)}
           >
             <AiIcon className="size-4 mr-2" />

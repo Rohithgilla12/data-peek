@@ -93,19 +93,19 @@ const VIRTUALIZATION_THRESHOLD = 50
 function DataTypeBadge({ type }: { type: string }) {
   const getTypeColor = (t: string): string => {
     const lower = t.toLowerCase()
-    if (lower.includes('uuid')) return 'bg-purple-500/10 text-purple-500'
+    if (lower.includes('uuid')) return 'bg-cat-purple/10 text-cat-purple'
     if (lower.includes('varchar') || lower.includes('text') || lower.includes('char'))
-      return 'bg-green-500/10 text-green-500'
+      return 'bg-cat-green/10 text-cat-green'
     if (
       lower.includes('int') ||
       lower.includes('numeric') ||
       lower.includes('decimal') ||
       lower.includes('bigint')
     )
-      return 'bg-blue-500/10 text-blue-500'
+      return 'bg-cat-blue/10 text-cat-blue'
     if (lower.includes('timestamp') || lower.includes('date') || lower.includes('time'))
-      return 'bg-orange-500/10 text-orange-500'
-    if (lower.includes('bool')) return 'bg-yellow-500/10 text-yellow-500'
+      return 'bg-cat-orange/10 text-cat-orange'
+    if (lower.includes('bool')) return 'bg-cat-yellow/10 text-cat-yellow'
     return 'bg-muted text-muted-foreground'
   }
 
@@ -119,7 +119,7 @@ function DataTypeBadge({ type }: { type: string }) {
 function SequenceRow({ sequence }: { sequence: SequenceInfo }) {
   return (
     <SidebarMenuSubButton className="cursor-default" title={formatSequenceDetail(sequence)}>
-      <ListNumbersIcon className="size-3.5 text-violet-500" />
+      <ListNumbersIcon className="size-3.5 text-cat-pink" />
       <span className="flex-1 truncate">{sequence.name}</span>
       <span className="text-[11px] text-muted-foreground truncate">
         {formatSequenceDetail(sequence)}
@@ -242,14 +242,14 @@ function TriggerSubItem({
         </Button>
         <SidebarMenuSubButton className="flex-1 cursor-default" onClick={onToggle}>
           <ZapIcon
-            className={`size-3.5 ${trigger.enabled ? 'text-amber-500' : 'text-muted-foreground'}`}
+            className={`size-3.5 ${trigger.enabled ? 'text-cat-green' : 'text-muted-foreground'}`}
           />
           <span
             className={`flex-1 truncate ${trigger.enabled ? '' : 'text-muted-foreground line-through'}`}
           >
             {trigger.name}
           </span>
-          <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-amber-500">
+          <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-cat-green">
             trig
           </Badge>
         </SidebarMenuSubButton>
@@ -298,14 +298,14 @@ function TriggerSubItem({
             <span className="text-foreground truncate">{trigger.table}</span>
           </div>
           <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-            <ArrowRightIcon className="size-3 text-amber-500" />
+            <ArrowRightIcon className="size-3 text-cat-green" />
             <span>{trigger.timing}</span>
             <span className="flex flex-wrap gap-1">
               {trigger.events.map((event) => (
                 <Badge
                   key={event}
                   variant="outline"
-                  className="text-[10px] px-1 py-0 text-amber-500"
+                  className="text-[10px] px-1 py-0 text-cat-green"
                 >
                   {event}
                 </Badge>
@@ -318,7 +318,7 @@ function TriggerSubItem({
           </div>
           {trigger.functionName && (
             <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-              <FunctionIcon className="size-3 text-cyan-500" />
+              <FunctionIcon className="size-3 text-cat-cyan" />
               <span className="truncate">{trigger.functionName}</span>
             </div>
           )}
@@ -472,16 +472,16 @@ function VirtualizedSchemaItems({
                     className="flex-1"
                   >
                     <TableIcon
-                      className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : table.type === 'materialized_view' ? 'text-teal-500' : 'text-muted-foreground'}`}
+                      className={`size-3.5 ${table.type === 'view' ? 'text-cat-purple' : table.type === 'materialized_view' ? 'text-cat-teal' : 'text-muted-foreground'}`}
                     />
                     <span className="flex-1 truncate">{table.name}</span>
                     {table.type === 'view' && (
-                      <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-purple-500">
+                      <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-cat-purple">
                         view
                       </Badge>
                     )}
                     {table.type === 'materialized_view' && (
-                      <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-teal-500">
+                      <Badge variant="outline" className="text-[11px] px-1.5 py-0 text-cat-teal">
                         mview
                       </Badge>
                     )}
@@ -647,15 +647,15 @@ function VirtualizedSchemaItems({
                   </Button>
                   <SidebarMenuSubButton className="flex-1 cursor-default">
                     {routine.type === 'function' ? (
-                      <FunctionIcon className="size-3.5 text-cyan-500" />
+                      <FunctionIcon className="size-3.5 text-cat-cyan" />
                     ) : (
-                      <WorkflowIcon className="size-3.5 text-orange-500" />
+                      <WorkflowIcon className="size-3.5 text-cat-orange" />
                     )}
                     <span className="flex-1 truncate">{routine.name}</span>
                     <Badge
                       variant="outline"
                       className={`text-[11px] px-1.5 py-0 ${
-                        routine.type === 'function' ? 'text-cyan-500' : 'text-orange-500'
+                        routine.type === 'function' ? 'text-cat-cyan' : 'text-cat-orange'
                       }`}
                     >
                       {routine.type === 'function' ? 'fn' : 'proc'}
@@ -693,7 +693,7 @@ function VirtualizedSchemaItems({
                   <div className="ml-6 border-l border-border/50 pl-2 py-1 space-y-0.5">
                     {routine.returnType && (
                       <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-                        <ArrowRightIcon className="size-3 text-cyan-500" />
+                        <ArrowRightIcon className="size-3 text-cat-cyan" />
                         <span className="text-muted-foreground">returns</span>
                         <DataTypeBadge type={routine.returnType} />
                       </div>
@@ -709,9 +709,9 @@ function VirtualizedSchemaItems({
                                 variant="outline"
                                 className={`text-[11px] px-1.5 py-0 ${
                                   param.mode === 'OUT'
-                                    ? 'text-orange-400'
+                                    ? 'text-cat-orange'
                                     : param.mode === 'INOUT'
-                                      ? 'text-warning'
+                                      ? 'text-cat-purple'
                                       : 'text-muted-foreground'
                                 }`}
                               >
@@ -1376,7 +1376,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowViews}
                 className="text-xs"
               >
-                <EyeIcon className="size-3.5 mr-2 text-purple-500" />
+                <EyeIcon className="size-3.5 mr-2 text-cat-purple" />
                 Views
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
@@ -1384,7 +1384,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowMaterializedViews}
                 className="text-xs"
               >
-                <TableIcon className="size-3.5 mr-2 text-teal-500" />
+                <TableIcon className="size-3.5 mr-2 text-cat-teal" />
                 Materialized Views
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
@@ -1392,7 +1392,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowFunctions}
                 className="text-xs"
               >
-                <FunctionIcon className="size-3.5 mr-2 text-cyan-500" />
+                <FunctionIcon className="size-3.5 mr-2 text-cat-cyan" />
                 Functions
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
@@ -1400,7 +1400,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowProcedures}
                 className="text-xs"
               >
-                <WorkflowIcon className="size-3.5 mr-2 text-orange-500" />
+                <WorkflowIcon className="size-3.5 mr-2 text-cat-orange" />
                 Procedures
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
@@ -1408,7 +1408,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowTriggers}
                 className="text-xs"
               >
-                <ZapIcon className="size-3.5 mr-2 text-amber-500" />
+                <ZapIcon className="size-3.5 mr-2 text-cat-green" />
                 Triggers
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
@@ -1616,13 +1616,13 @@ export function SchemaExplorer() {
                                       className="flex-1"
                                     >
                                       <TableIcon
-                                        className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : table.type === 'materialized_view' ? 'text-teal-500' : 'text-muted-foreground'}`}
+                                        className={`size-3.5 ${table.type === 'view' ? 'text-cat-purple' : table.type === 'materialized_view' ? 'text-cat-teal' : 'text-muted-foreground'}`}
                                       />
                                       <span className="flex-1 truncate">{table.name}</span>
                                       {table.type === 'view' && (
                                         <Badge
                                           variant="outline"
-                                          className="text-[11px] px-1.5 py-0 text-purple-500"
+                                          className="text-[11px] px-1.5 py-0 text-cat-purple"
                                         >
                                           view
                                         </Badge>
@@ -1630,7 +1630,7 @@ export function SchemaExplorer() {
                                       {table.type === 'materialized_view' && (
                                         <Badge
                                           variant="outline"
-                                          className="text-[11px] px-1.5 py-0 text-teal-500"
+                                          className="text-[11px] px-1.5 py-0 text-cat-teal"
                                         >
                                           mview
                                         </Badge>
@@ -1794,17 +1794,17 @@ export function SchemaExplorer() {
                                     </CollapsibleTrigger>
                                     <SidebarMenuSubButton className="flex-1 cursor-default">
                                       {routine.type === 'function' ? (
-                                        <FunctionIcon className="size-3.5 text-cyan-500" />
+                                        <FunctionIcon className="size-3.5 text-cat-cyan" />
                                       ) : (
-                                        <WorkflowIcon className="size-3.5 text-orange-500" />
+                                        <WorkflowIcon className="size-3.5 text-cat-orange" />
                                       )}
                                       <span className="flex-1">{routine.name}</span>
                                       <Badge
                                         variant="outline"
                                         className={`text-[11px] px-1.5 py-0 ${
                                           routine.type === 'function'
-                                            ? 'text-cyan-500'
-                                            : 'text-orange-500'
+                                            ? 'text-cat-cyan'
+                                            : 'text-cat-orange'
                                         }`}
                                       >
                                         {routine.type === 'function' ? 'fn' : 'proc'}
@@ -1843,7 +1843,7 @@ export function SchemaExplorer() {
                                       {/* Return type for functions */}
                                       {routine.returnType && (
                                         <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-                                          <ArrowRightIcon className="size-3 text-cyan-500" />
+                                          <ArrowRightIcon className="size-3 text-cat-cyan" />
                                           <span className="text-muted-foreground">returns</span>
                                           <DataTypeBadge type={routine.returnType} />
                                         </div>
@@ -1860,9 +1860,9 @@ export function SchemaExplorer() {
                                                   variant="outline"
                                                   className={`text-[11px] px-1.5 py-0 ${
                                                     param.mode === 'OUT'
-                                                      ? 'text-orange-400'
+                                                      ? 'text-cat-orange'
                                                       : param.mode === 'INOUT'
-                                                        ? 'text-warning'
+                                                        ? 'text-cat-purple'
                                                         : 'text-muted-foreground'
                                                   }`}
                                                 >

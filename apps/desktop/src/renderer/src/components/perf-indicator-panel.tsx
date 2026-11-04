@@ -94,7 +94,7 @@ export function PerfIndicatorPanel({
                 variant="secondary"
                 className={cn(
                   'h-5 px-1.5 text-[10px] cursor-pointer transition-opacity',
-                  'bg-blue-500/20 text-blue-500 hover:bg-blue-500/30',
+                  'bg-primary/20 text-primary hover:bg-primary/30',
                   !showInfo && 'opacity-40'
                 )}
                 onClick={() => onToggleSeverity('info')}

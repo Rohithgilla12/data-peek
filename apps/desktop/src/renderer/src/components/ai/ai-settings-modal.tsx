@@ -253,14 +253,14 @@ export function AISettingsModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[520px] gap-0 p-0 overflow-hidden">
         {/* Decorative header gradient */}
-        <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+        <div className="h-1 bg-primary" />
 
         <DialogHeader className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-sm" />
-              <div className="relative flex items-center justify-center size-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-                <AiIcon className="size-5 text-blue-400" />
+              <div className="absolute -inset-1 bg-primary/10 rounded-full" />
+              <div className="relative flex items-center justify-center size-10 rounded-full bg-primary/10 border border-primary/20">
+                <AiIcon className="size-5 text-primary" />
               </div>
             </div>
             <div>
@@ -288,7 +288,7 @@ export function AISettingsModal({
                     className={cn(
                       'relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all',
                       selectedProvider === p.id
-                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                        ? 'bg-primary/10 border-primary/30 text-primary'
                         : hasConfig
                           ? 'border-success/30 hover:border-success/50 hover:bg-success/5 text-muted-foreground'
                           : 'border-border/50 hover:border-border hover:bg-muted/50 text-muted-foreground'
@@ -325,7 +325,7 @@ export function AISettingsModal({
                   href={providerConfig.keyUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
+                  className="flex items-center gap-1 text-[10px] text-primary hover:underline"
                 >
                   Get API Key
                   <ExternalLinkIcon className="size-3" />
@@ -414,7 +414,7 @@ export function AISettingsModal({
                     href={providerConfig.keyUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
+                    className="flex items-center gap-1 text-[10px] text-primary hover:underline"
                   >
                     Setup guide
                     <ExternalLinkIcon className="size-3" />
@@ -457,7 +457,7 @@ export function AISettingsModal({
                     <div className="flex items-center gap-2">
                       <span>{m.name}</span>
                       {m.recommended && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                           Recommended
                         </span>
                       )}

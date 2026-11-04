@@ -167,19 +167,19 @@ export const BUILT_IN_SNIPPETS: Snippet[] = [
 export function getSnippetCategoryColor(category: string): string {
   switch (category) {
     case 'select':
-      return 'bg-blue-500/10 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400'
+      return 'bg-cat-blue/10 text-cat-blue'
     case 'insert':
-      return 'bg-green-500/10 dark:bg-green-500/15 text-green-600 dark:text-green-400'
+      return 'bg-cat-green/10 text-cat-green'
     case 'update':
-      return 'bg-amber-500/10 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400'
+      return 'bg-cat-yellow/10 text-cat-yellow'
     case 'delete':
-      return 'bg-red-500/10 dark:bg-red-500/15 text-red-600 dark:text-red-400'
+      return 'bg-destructive/10 text-destructive'
     case 'ddl':
-      return 'bg-purple-500/10 dark:bg-purple-500/15 text-purple-600 dark:text-purple-400'
+      return 'bg-cat-purple/10 text-cat-purple'
     case 'aggregate':
-      return 'bg-orange-500/10 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400'
+      return 'bg-cat-orange/10 text-cat-orange'
     case 'join':
-      return 'bg-cyan-500/10 dark:bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
+      return 'bg-cat-cyan/10 text-cat-cyan'
     default:
       return 'bg-muted text-muted-foreground'
   }

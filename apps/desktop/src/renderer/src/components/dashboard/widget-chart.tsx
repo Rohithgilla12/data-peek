@@ -23,22 +23,12 @@ import {
 } from '@data-peek/ui'
 import type { ChartWidgetConfig } from '@shared/index'
 import { useMemo, useCallback } from 'react'
+import { seriesColors } from '@/lib/chart-palette'
 
 interface WidgetChartProps {
   config: ChartWidgetConfig
   data: Record<string, unknown>[]
 }
-
-const DEFAULT_COLORS = [
-  'hsl(221, 83%, 53%)',
-  'hsl(262, 83%, 58%)',
-  'hsl(142, 71%, 45%)',
-  'hsl(38, 92%, 50%)',
-  'hsl(0, 84%, 60%)',
-  'hsl(199, 89%, 48%)',
-  'hsl(339, 90%, 51%)',
-  'hsl(24, 95%, 53%)'
-]
 
 /**
  * Detects the data type of the first non-null, non-undefined value in an array.
@@ -94,10 +84,14 @@ export function WidgetChart({ config, data }: WidgetChartProps) {
     chartType,
     xKey,
     yKeys,
-    colors = DEFAULT_COLORS,
+    colors: suppliedColors,
     showLegend = true,
     showGrid = true
   } = config
+  const colors = useMemo(
+    () => seriesColors(Math.max(yKeys.length, data.length), suppliedColors),
+    [yKeys.length, data.length, suppliedColors]
+  )
 
   const xDataType = useMemo(() => {
     const xValues = data.map((d) => d[xKey])

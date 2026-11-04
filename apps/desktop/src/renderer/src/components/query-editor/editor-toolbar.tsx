@@ -243,14 +243,14 @@ export function EditorToolbar({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="gap-1.5 h-7 text-indigo-400 hover:text-indigo-300"
+                  className="gap-1.5 h-7 text-primary hover:text-primary/80"
                   disabled={isExecuting || isPerfAnalyzing || !hasQuery}
                   onClick={handleAnalyzePerformance}
                 >
                   {isPerfAnalyzing ? (
                     <SpinnerIcon className="size-3.5 animate-spin" />
                   ) : (
-                    <ActivityIcon className="size-3.5 text-indigo-400" />
+                    <ActivityIcon className="size-3.5 text-primary" />
                   )}
                   Analyze
                 </Button>

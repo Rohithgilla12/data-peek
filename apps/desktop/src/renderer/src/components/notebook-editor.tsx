@@ -251,7 +251,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 gap-1.5 text-xs text-blue-400 hover:text-blue-300"
+          className="h-7 gap-1.5 text-xs text-primary hover:text-primary/80"
           onClick={() => openAICell()}
         >
           <AiIcon className="size-3" />

@@ -23,6 +23,7 @@ import {
   type Node
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
+import { CATEGORICAL_COLORS } from '@/lib/chart-palette'
 import {
   CaretUpDownIcon,
   CheckIcon,
@@ -55,8 +56,8 @@ function ClusterNode({ data }: { data: ClusterNodeData }) {
     <div
       className="rounded-2xl border-2 border-dashed transition-all"
       style={{
-        backgroundColor: `${data.color}08`,
-        borderColor: `${data.color}30`,
+        backgroundColor: tint(data.color, 4),
+        borderColor: tint(data.color, 19),
         width: '100%',
         height: '100%'
       }}
@@ -64,7 +65,7 @@ function ClusterNode({ data }: { data: ClusterNodeData }) {
       <div
         className="absolute -top-3 left-4 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide uppercase"
         style={{
-          backgroundColor: `${data.color}20`,
+          backgroundColor: tint(data.color, 12),
           color: data.color
         }}
       >
@@ -90,10 +91,8 @@ function TableNode({ data }: { data: TableNodeData }) {
       <div
         className="px-3 py-2.5 border-b"
         style={{
-          background: data.isHub
-            ? `linear-gradient(135deg, ${data.clusterColor}15, ${data.clusterColor}08)`
-            : 'var(--muted)',
-          borderColor: data.isHub ? `${data.clusterColor}30` : 'var(--border)'
+          background: data.isHub ? tint(data.clusterColor, 8) : 'var(--muted)',
+          borderColor: data.isHub ? tint(data.clusterColor, 19) : 'var(--border)'
         }}
       >
         <div className="flex items-center gap-2">
@@ -112,7 +111,7 @@ function TableNode({ data }: { data: TableNodeData }) {
               {data.relationshipCount > 0 && (
                 <>
                   <span className="opacity-40">·</span>
-                  <span style={{ color: `${data.clusterColor}90` }}>
+                  <span style={{ color: tint(data.clusterColor, 56) }}>
                     {data.relationshipCount} relation{data.relationshipCount !== 1 ? 's' : ''}
                   </span>
                 </>
@@ -185,19 +184,13 @@ interface ERDVisualizationProps {
   schemas: SchemaInfo[]
 }
 
-// Cluster color palette - distinctive, accessible colors
-const CLUSTER_COLORS = [
-  '#6366f1', // Indigo
-  '#10b981', // Emerald
-  '#f59e0b', // Amber
-  '#ec4899', // Pink
-  '#8b5cf6', // Violet
-  '#06b6d4', // Cyan
-  '#f97316', // Orange
-  '#14b8a6', // Teal
-  '#a855f7', // Purple
-  '#84cc16' // Lime
-]
+// Cluster colours cycle through the categorical palette
+const CLUSTER_COLORS = CATEGORICAL_COLORS
+
+// Translucent tint of a CSS colour (hex alpha suffixes do not work with var() values)
+function tint(color: string, percent: number): string {
+  return `color-mix(in oklab, ${color} ${percent}%, transparent)`
+}
 
 // Graph utilities for relationship-based layout
 interface TableGraph {
@@ -620,7 +613,9 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                 c.component.includes(sourceTableKey)
               )
               const edgeColor =
-                clusterIndex >= 0 ? CLUSTER_COLORS[clusterIndex % CLUSTER_COLORS.length] : '#6366f1'
+                clusterIndex >= 0
+                  ? CLUSTER_COLORS[clusterIndex % CLUSTER_COLORS.length]
+                  : 'var(--primary)'
 
               edges.push({
                 id: `${sourceTableKey}.${column.name}->${targetTableKey}.${column.foreignKey.referencedColumn}`,
@@ -642,7 +637,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                   height: 20
                 },
                 label: column.foreignKey.constraintName,
-                labelStyle: { fontSize: 9, fill: '#888', fontWeight: 500 },
+                labelStyle: { fontSize: 9, fill: 'var(--muted-foreground)', fontWeight: 500 },
                 labelBgStyle: {
                   fill: 'var(--background)',
                   fillOpacity: 0.9
@@ -816,7 +811,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
         </span>
         {clusterCount > 0 && (
           <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-indigo-500/60" />
+            <span className="size-2 rounded-full bg-muted-foreground/60" />
             {clusterCount +
               (tableCount - clusterCount > clusterCount
                 ? tableCount - clusterCount - clusterCount
@@ -825,7 +820,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
           </span>
         )}
         <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-warning/60" />
+          <span className="size-2 rounded-full bg-muted-foreground/60" />
           {relationshipCount} relationship{relationshipCount !== 1 ? 's' : ''}
         </span>
         <span className="ml-auto opacity-70">
@@ -850,7 +845,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
           }}
           proOptions={{ hideAttribution: true }}
         >
-          <Background color="#888" gap={24} size={1} />
+          <Background color="var(--border)" gap={24} size={1} />
           <Controls className="!bg-background/90 !border-border !rounded-lg !shadow-lg" />
           <MiniMap
             nodeColor={(node) => {

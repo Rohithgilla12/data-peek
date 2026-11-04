@@ -19,19 +19,19 @@ export function getQueryType(query: string): string {
 export function getQueryTypeColor(type: string, withBorder = false): string {
   switch (type) {
     case 'SELECT':
-      return `bg-blue-500/10 text-blue-500${withBorder ? ' border-blue-500/20' : ''}`
+      return `bg-cat-blue/10 text-cat-blue${withBorder ? ' border-cat-blue/20' : ''}`
     case 'INSERT':
-      return `bg-green-500/10 text-green-500${withBorder ? ' border-green-500/20' : ''}`
+      return `bg-cat-green/10 text-cat-green${withBorder ? ' border-cat-green/20' : ''}`
     case 'UPDATE':
-      return `bg-yellow-500/10 text-yellow-500${withBorder ? ' border-yellow-500/20' : ''}`
+      return `bg-cat-yellow/10 text-cat-yellow${withBorder ? ' border-cat-yellow/20' : ''}`
     case 'DELETE':
-      return `bg-red-500/10 text-red-500${withBorder ? ' border-red-500/20' : ''}`
+      return `bg-destructive/10 text-destructive${withBorder ? ' border-destructive/20' : ''}`
     case 'CREATE':
     case 'ALTER':
     case 'DROP':
-      return `bg-purple-500/10 text-purple-500${withBorder ? ' border-purple-500/20' : ''}`
+      return `bg-cat-purple/10 text-cat-purple${withBorder ? ' border-cat-purple/20' : ''}`
     case 'EXPLAIN':
-      return `bg-orange-500/10 text-orange-500${withBorder ? ' border-orange-500/20' : ''}`
+      return `bg-cat-orange/10 text-cat-orange${withBorder ? ' border-cat-orange/20' : ''}`
     default:
       return `bg-muted text-muted-foreground${withBorder ? ' border-border' : ''}`
   }

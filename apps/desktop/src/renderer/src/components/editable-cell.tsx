@@ -87,7 +87,7 @@ function TextCellEditor({
       <SheetContent side="right" className="w-[500px] sm:max-w-[500px] flex flex-col">
         <SheetHeader className="shrink-0">
           <SheetTitle className="flex items-center gap-2">
-            <FileTextIcon className="size-4 text-blue-500" />
+            <FileTextIcon className="size-4 text-primary" />
             Edit {columnName || 'Text'}
           </SheetTitle>
           <SheetDescription>Edit text content in the editor below</SheetDescription>
@@ -355,7 +355,7 @@ export function EditableCell({
     if (isTextEditorOpen) {
       return (
         <>
-          <div className="flex items-center gap-1.5 text-blue-500">
+          <div className="flex items-center gap-1.5 text-primary">
             <FileTextIcon className="size-3.5" />
             <span className="text-xs">Editing...</span>
           </div>
@@ -429,7 +429,7 @@ export function EditableCell({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-6 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+                  className="size-6 text-primary hover:text-primary hover:bg-primary/10"
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()

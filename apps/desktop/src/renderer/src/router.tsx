@@ -232,7 +232,7 @@ function LayoutContent() {
                   size="icon"
                   className={cn(
                     'size-8',
-                    isAIConfigured ? 'text-blue-400 hover:text-blue-300' : 'text-muted-foreground'
+                    isAIConfigured ? 'text-primary hover:text-primary/80' : 'text-muted-foreground'
                   )}
                   onClick={toggleAIPanel}
                 >

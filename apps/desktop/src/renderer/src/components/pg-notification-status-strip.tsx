@@ -57,7 +57,7 @@ function toneClasses(tone: Tone): {
         dot: 'bg-success shadow-[0_0_12px_rgba(16,185,129,0.6)]',
         text: 'text-success',
         border: 'border-success/30',
-        glow: 'from-success/10 via-success/5 to-transparent',
+        glow: 'bg-success/10',
         bar: 'bg-success'
       }
     case 'warn':
@@ -65,7 +65,7 @@ function toneClasses(tone: Tone): {
         dot: 'bg-warning shadow-[0_0_12px_rgba(245,158,11,0.6)]',
         text: 'text-warning',
         border: 'border-warning/30',
-        glow: 'from-warning/10 via-warning/5 to-transparent',
+        glow: 'bg-warning/10',
         bar: 'bg-warning'
       }
     case 'err':
@@ -73,7 +73,7 @@ function toneClasses(tone: Tone): {
         dot: 'bg-destructive shadow-[0_0_12px_rgba(244,63,94,0.6)]',
         text: 'text-destructive',
         border: 'border-destructive/30',
-        glow: 'from-destructive/10 via-destructive/5 to-transparent',
+        glow: 'bg-destructive/10',
         bar: 'bg-destructive'
       }
     default:
@@ -81,7 +81,7 @@ function toneClasses(tone: Tone): {
         dot: 'bg-muted-foreground/50',
         text: 'text-muted-foreground',
         border: 'border-border',
-        glow: 'from-muted/20 via-transparent to-transparent',
+        glow: 'bg-muted/20',
         bar: 'bg-muted-foreground/40'
       }
   }
@@ -260,7 +260,7 @@ export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCoun
     <div className={cn('relative overflow-hidden border-b shrink-0 font-mono text-xs', t.border)}>
       <div
         className={cn(
-          'absolute inset-0 bg-gradient-to-r pointer-events-none transition-opacity duration-500',
+          'absolute inset-0 pointer-events-none transition-opacity duration-500',
           t.glow
         )}
       />

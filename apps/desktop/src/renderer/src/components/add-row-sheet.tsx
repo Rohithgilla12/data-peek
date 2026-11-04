@@ -108,16 +108,16 @@ const fieldTypeIcons: Record<FieldType, React.ElementType> = {
 
 // Field type colors
 const fieldTypeColors: Record<FieldType, string> = {
-  uuid: 'text-purple-400',
-  text: 'text-green-400',
-  number: 'text-blue-400',
-  boolean: 'text-yellow-400',
-  date: 'text-orange-400',
-  time: 'text-orange-400',
-  datetime: 'text-orange-400',
-  json: 'text-pink-400',
-  enum: 'text-cyan-400',
-  foreignKey: 'text-blue-400'
+  uuid: 'text-cat-purple',
+  text: 'text-cat-green',
+  number: 'text-cat-blue',
+  boolean: 'text-cat-yellow',
+  date: 'text-cat-orange',
+  time: 'text-cat-orange',
+  datetime: 'text-cat-orange',
+  json: 'text-cat-pink',
+  enum: 'text-cat-cyan',
+  foreignKey: 'text-cat-blue'
 }
 
 /** FK reference value with display label */
@@ -223,7 +223,7 @@ function SmartField({
               value={displayValue}
               onChange={(e) => onChange(e.target.value || null)}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="font-mono text-xs h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-purple-500/50"
+              className="font-mono text-xs h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-purple/50"
             />
             <TooltipProvider>
               <Tooltip>
@@ -232,7 +232,7 @@ function SmartField({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-9 gap-1.5 text-purple-400 border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-300"
+                    className="h-9 gap-1.5 text-cat-purple border-cat-purple/30 hover:bg-cat-purple/10 hover:text-cat-purple/80"
                     onClick={generateUUID}
                   >
                     <AiIcon className="size-3.5" />
@@ -289,7 +289,7 @@ function SmartField({
                   onChange(e.target.value)
                 }
               }}
-              className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-orange-500/50"
+              className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-orange/50"
             />
             <TooltipProvider>
               <Tooltip>
@@ -298,7 +298,7 @@ function SmartField({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-9 gap-1.5 text-orange-400 border-orange-500/30 hover:bg-orange-500/10 hover:text-orange-300"
+                    className="h-9 gap-1.5 text-cat-orange border-cat-orange/30 hover:bg-cat-orange/10 hover:text-cat-orange/80"
                     onClick={setNow}
                   >
                     <ClockIcon className="size-3.5" />
@@ -325,7 +325,7 @@ function SmartField({
               }
             }}
             placeholder={hasDefault ? `Default: ${column.defaultValue}` : '0'}
-            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-blue-500/50 font-mono"
+            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-blue/50 font-mono"
           />
         )}
 
@@ -349,14 +349,14 @@ function SmartField({
               }
             }}
             placeholder='{"key": "value"}'
-            className="min-h-[80px] flex-1 bg-muted/30 border-border/50 focus-visible:ring-pink-500/50 font-mono text-xs resize-y"
+            className="min-h-[80px] flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-pink/50 font-mono text-xs resize-y"
           />
         )}
 
         {/* Enum Field */}
         {fieldType === 'enum' && Array.isArray(enumValues) && enumValues.length > 0 ? (
           <Select value={displayValue || ''} onValueChange={(v) => onChange(v || null)}>
-            <SelectTrigger className="h-9 flex-1 bg-muted/30 border-border/50 focus:ring-cyan-500/50">
+            <SelectTrigger className="h-9 flex-1 bg-muted/30 border-border/50 focus:ring-cat-cyan/50">
               <SelectValue placeholder="Select value..." />
             </SelectTrigger>
             <SelectContent>
@@ -373,7 +373,7 @@ function SmartField({
             value={displayValue}
             onChange={(e) => onChange(e.target.value || null)}
             placeholder="Enter enum value..."
-            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cyan-500/50"
+            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-cyan/50"
           />
         ) : null}
 
@@ -392,7 +392,7 @@ function SmartField({
           <div className="flex gap-2 flex-1">
             {loadingFkValues ? (
               <div className="h-9 flex-1 bg-muted/30 border border-border/50 rounded-md flex items-center px-3 gap-2">
-                <div className="size-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                <div className="size-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 <span className="text-xs text-muted-foreground">Loading values...</span>
               </div>
             ) : foreignKeyValues && foreignKeyValues.length > 0 ? (
@@ -508,7 +508,7 @@ function SmartField({
                 value={displayValue}
                 onChange={(e) => onChange(e.target.value || null)}
                 placeholder={`Enter ${column.foreignKey?.referencedColumn} value...`}
-                className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-blue-500/50 font-mono text-xs"
+                className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-blue/50 font-mono text-xs"
               />
             )}
             {column.foreignKey && (
@@ -517,7 +517,7 @@ function SmartField({
                   <TooltipTrigger asChild>
                     <Badge
                       variant="outline"
-                      className="h-9 px-2 text-[10px] text-blue-400 border-blue-500/30 flex items-center gap-1 shrink-0"
+                      className="h-9 px-2 text-[10px] text-cat-blue border-cat-blue/30 flex items-center gap-1 shrink-0"
                     >
                       <LinkIcon className="size-3" />
                       {column.foreignKey.referencedTable}

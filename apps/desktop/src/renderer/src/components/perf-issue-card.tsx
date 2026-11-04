@@ -49,13 +49,13 @@ const ISSUE_TYPE_ICONS: Record<PerformanceIssueType, React.ElementType> = {
 const severityClasses = {
   critical: 'border-destructive/30 bg-destructive/10',
   warning: 'border-warning/30 bg-warning/10',
-  info: 'border-blue-500/30 bg-blue-500/5'
+  info: 'border-primary/30 bg-primary/10'
 }
 
 const severityIconClasses = {
   critical: 'text-destructive',
   warning: 'text-warning',
-  info: 'text-blue-500'
+  info: 'text-primary'
 }
 
 export function PerfIssueCard({
@@ -224,7 +224,7 @@ export function PerfIssueCard({
               {applyError && <p className="break-words text-xs text-destructive">{applyError}</p>}
 
               {showJson && (
-                <div className="mt-2 bg-black/80 border border-border/40 rounded p-2.5 text-[11px] font-mono text-purple-300 max-h-36 overflow-auto">
+                <div className="mt-2 bg-black/80 border border-border/40 rounded p-2.5 text-[11px] font-mono text-foreground max-h-36 overflow-auto">
                   <pre>{JSON.stringify(issue, null, 2)}</pre>
                 </div>
               )}

@@ -42,7 +42,7 @@ export function FKCellValue({
           <button
             type="button"
             onClick={handleClick}
-            className="group flex items-center gap-1 text-left text-blue-400 hover:text-blue-300 hover:underline cursor-pointer font-mono text-xs px-1 -mx-1 rounded transition-colors"
+            className="group flex items-center gap-1 text-left text-primary hover:text-primary/80 hover:underline cursor-pointer font-mono text-xs px-1 -mx-1 rounded transition-colors"
           >
             <span className="truncate max-w-[200px]">{displayValue}</span>
             <ExternalLinkIcon className="size-3 opacity-0 group-hover:opacity-70 shrink-0 transition-opacity" />

@@ -330,7 +330,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="size-8 hover:bg-blue-500/10 hover:text-blue-500"
+                                    className="size-8 hover:bg-primary/10 hover:text-primary"
                                     onClick={() => handleEditSnippet(snippet.id)}
                                   >
                                     <EditIcon className="size-4" />

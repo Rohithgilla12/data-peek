@@ -58,14 +58,14 @@ function severityBadgeClass(severity: SchemaIntelSeverity): string {
     case 'warning':
       return 'bg-warning/10 text-warning border-warning/30'
     default:
-      return 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+      return 'bg-primary/10 text-primary border-primary/30'
   }
 }
 
 function SeverityIcon({ severity }: { severity: SchemaIntelSeverity }) {
   if (severity === 'critical') return <WarningIcon className="size-3.5 text-destructive" />
   if (severity === 'warning') return <WarningIcon className="size-3.5 text-warning" />
-  return <InfoIcon className="size-3.5 text-blue-400" />
+  return <InfoIcon className="size-3.5 text-primary" />
 }
 
 export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
@@ -299,7 +299,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                     <span className="text-muted-foreground">warning</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <InfoIcon className="size-3.5 text-blue-400" />
+                    <InfoIcon className="size-3.5 text-primary" />
                     <span className="font-medium">{infoCount}</span>
                     <span className="text-muted-foreground">info</span>
                   </div>

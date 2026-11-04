@@ -115,7 +115,7 @@ export function AIDashboardDialog({ open, onOpenChange, dashboardId }: AIDashboa
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AiIcon className="size-4 text-blue-400" />
+            <AiIcon className="size-4 text-primary" />
             Generate a dashboard
           </DialogTitle>
           <DialogDescription>
@@ -132,7 +132,7 @@ export function AIDashboardDialog({ open, onOpenChange, dashboardId }: AIDashboa
           autoFocus
           disabled={loading}
           placeholder="e.g. a business overview for this SaaS — signups, revenue by plan, growth"
-          className="w-full resize-none rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm outline-none focus:border-blue-500/50 disabled:opacity-50"
+          className="w-full resize-none rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm outline-none focus:border-primary/50 disabled:opacity-50"
         />
 
         {loading && status && (

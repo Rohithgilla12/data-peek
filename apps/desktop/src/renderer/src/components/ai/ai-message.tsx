@@ -390,7 +390,7 @@ export function AIMessage({
           return (
             <div className="rounded-xl border border-border/50 bg-muted/20 p-8 mt-3">
               <div className="flex flex-col items-center justify-center gap-2">
-                <SpinnerIcon className="size-6 animate-spin text-blue-400" />
+                <SpinnerIcon className="size-6 animate-spin text-primary" />
                 <span className="text-sm text-muted-foreground">Loading chart data...</span>
               </div>
             </div>
@@ -532,15 +532,13 @@ export function AIMessage({
       <div
         className={cn(
           'flex items-center justify-center size-7 rounded-full shrink-0',
-          isUser
-            ? 'bg-muted border border-border'
-            : 'bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20'
+          isUser ? 'bg-muted border border-border' : 'bg-primary/10 border border-primary/20'
         )}
       >
         {isUser ? (
           <UserIcon className="size-3.5 text-muted-foreground" />
         ) : (
-          <AiIcon className="size-3.5 text-blue-400" />
+          <AiIcon className="size-3.5 text-primary" />
         )}
       </div>
 
@@ -568,7 +566,7 @@ export function AIMessage({
                   return (
                     <code
                       key={i}
-                      className="px-1 py-0.5 rounded bg-muted font-mono text-xs text-blue-400"
+                      className="px-1 py-0.5 rounded bg-muted font-mono text-xs text-primary"
                     >
                       {part.slice(1, -1)}
                     </code>
@@ -578,7 +576,7 @@ export function AIMessage({
               })}
               {/* Streaming caret while prose is still arriving */}
               {!isUser && message.streaming && (
-                <span className="inline-block w-1 h-3.5 ml-0.5 -mb-0.5 bg-blue-400/80 animate-pulse align-middle" />
+                <span className="inline-block w-1 h-3.5 ml-0.5 -mb-0.5 bg-primary/80 animate-pulse align-middle" />
               )}
             </div>
 
@@ -603,7 +601,7 @@ export function AIMessage({
         {/* Live streaming activity: a grounding/tool step, or "Thinking…" before
             any prose has arrived. Hidden once prose is streaming with no active step. */}
         {!isUser && message.streaming && (message.activity || !message.content) && (
-          <div className="flex items-center gap-1.5 text-[11px] text-blue-400/90">
+          <div className="flex items-center gap-1.5 text-[11px] text-primary/90">
             <SpinnerIcon className="size-3 animate-spin" />
             {message.activity ?? 'Thinking…'}
           </div>
@@ -674,7 +672,7 @@ export function AIMessage({
                   key={i}
                   type="button"
                   onClick={() => onSuggestionClick(s)}
-                  className="inline-flex items-center gap-1 rounded-full border border-blue-500/25 bg-blue-500/5 px-2.5 py-1 text-xs text-blue-300/90 hover:bg-blue-500/10 hover:border-blue-500/40 transition-colors"
+                  className="inline-flex items-center gap-1 rounded-full border border-primary/25 bg-primary/10 px-2.5 py-1 text-xs text-primary/90 hover:bg-primary/10 hover:border-primary/40 transition-colors"
                 >
                   <ArrowElbowDownRightIcon className="size-3 opacity-60" />
                   {s}

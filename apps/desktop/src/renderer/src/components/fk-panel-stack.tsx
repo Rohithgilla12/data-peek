@@ -138,7 +138,7 @@ function FKPanel({
                               onDrillDown(columnInfo!.foreignKey!, value)
                             }
                           }}
-                          className="text-sm text-blue-400 hover:text-blue-300 hover:underline cursor-pointer font-mono text-left break-all"
+                          className="text-sm text-primary hover:text-primary/80 hover:underline cursor-pointer font-mono text-left break-all"
                         >
                           {String(value)}
                         </button>

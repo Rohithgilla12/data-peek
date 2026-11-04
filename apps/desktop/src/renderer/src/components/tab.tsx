@@ -119,9 +119,9 @@ export function Tab({
             className={cn(
               'size-4 shrink-0',
               tab.type === 'table-preview'
-                ? 'text-blue-500'
+                ? 'text-cat-blue'
                 : tab.type === 'erd'
-                  ? 'text-purple-500'
+                  ? 'text-cat-purple'
                   : 'text-muted-foreground'
             )}
           />

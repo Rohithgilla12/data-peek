@@ -121,7 +121,7 @@ export function AISQLPreview({
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
         <div className="flex items-center gap-2">
-          <CodeIcon className="size-3.5 text-blue-400" />
+          <CodeIcon className="size-3.5 text-primary" />
           <span className="text-[11px] font-medium text-muted-foreground">Generated SQL</span>
           {lines.length > 3 && (
             <button
@@ -194,9 +194,7 @@ export function AISQLPreview({
             size="sm"
             className={cn(
               'h-7 gap-1.5 text-xs font-medium',
-              'bg-gradient-to-r from-blue-500 to-blue-600',
-              'hover:from-blue-600 hover:to-blue-700',
-              'shadow-md shadow-blue-500/20',
+              'bg-primary hover:bg-primary/90',
               'transition-all duration-200'
             )}
             onClick={onExecute}

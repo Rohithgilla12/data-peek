@@ -101,7 +101,7 @@ export function NotebookAICellDialog({
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AiIcon className="size-4 text-blue-400" />
+            <AiIcon className="size-4 text-primary" />
             AI cell
           </DialogTitle>
           <DialogDescription>
@@ -119,7 +119,7 @@ export function NotebookAICellDialog({
           rows={3}
           autoFocus
           placeholder="e.g. monthly signups for the last 6 months"
-          className="w-full resize-none rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm outline-none focus:border-blue-500/50"
+          className="w-full resize-none rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm outline-none focus:border-primary/50"
         />
 
         {error && (

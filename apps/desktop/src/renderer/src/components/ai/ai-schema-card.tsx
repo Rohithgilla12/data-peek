@@ -69,7 +69,7 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
         className="w-full flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40 hover:bg-muted transition-colors"
       >
         <div className="flex items-center gap-2">
-          <TableIcon className="size-3.5 text-blue-400" />
+          <TableIcon className="size-3.5 text-primary" />
           <span className="text-[11px] font-semibold text-foreground">{table.name}</span>
           <span className="text-[10px] text-muted-foreground">
             {table.columns.length} column{table.columns.length !== 1 ? 's' : ''}

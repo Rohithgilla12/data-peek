@@ -285,7 +285,7 @@ export function QueryResults({
                       >
                         <span
                           className={`size-1.5 rounded-full ${
-                            stmt.isDataReturning ? 'bg-success' : 'bg-blue-500'
+                            stmt.isDataReturning ? 'bg-success' : 'bg-primary'
                           } ${isActive ? 'opacity-80' : ''}`}
                         />
                         {label}

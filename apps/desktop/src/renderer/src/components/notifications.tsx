@@ -12,14 +12,14 @@ const iconMap: Record<NotificationType, typeof SuccessIcon> = {
 const styleMap: Record<NotificationType, string> = {
   success: 'border-success/30 bg-success/10',
   error: 'border-destructive/30 bg-destructive/10',
-  info: 'border-blue-500/30 bg-blue-500/10',
+  info: 'border-primary/30 bg-primary/10',
   warning: 'border-warning/30 bg-warning/10'
 }
 
 const iconStyleMap: Record<NotificationType, string> = {
   success: 'text-success',
   error: 'text-destructive',
-  info: 'text-blue-500',
+  info: 'text-primary',
   warning: 'text-warning'
 }
 

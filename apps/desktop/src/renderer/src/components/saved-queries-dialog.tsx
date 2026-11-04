@@ -78,19 +78,19 @@ function getQueryType(query: string): string {
 function getQueryTypeColor(type: string): string {
   switch (type) {
     case 'SELECT':
-      return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+      return 'bg-cat-blue/10 text-cat-blue border-cat-blue/20'
     case 'INSERT':
-      return 'bg-green-500/10 text-green-500 border-green-500/20'
+      return 'bg-cat-green/10 text-cat-green border-cat-green/20'
     case 'UPDATE':
-      return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+      return 'bg-cat-yellow/10 text-cat-yellow border-cat-yellow/20'
     case 'DELETE':
-      return 'bg-red-500/10 text-red-500 border-red-500/20'
+      return 'bg-destructive/10 text-destructive border-destructive/20'
     case 'CREATE':
     case 'ALTER':
     case 'DROP':
-      return 'bg-purple-500/10 text-purple-500 border-purple-500/20'
+      return 'bg-cat-purple/10 text-cat-purple border-cat-purple/20'
     case 'EXPLAIN':
-      return 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+      return 'bg-cat-orange/10 text-cat-orange border-cat-orange/20'
     default:
       return 'bg-muted text-muted-foreground border-border'
   }
