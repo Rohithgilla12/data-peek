@@ -4,8 +4,7 @@ import { parseStatementsWithLines } from '../lib/parse-statements'
 
 export const MCP_MAX_ROWS = 500
 // Bound how long a single read-only query may run (enforced server-side on
-// PostgreSQL and ClickHouse, client-side on MySQL; SQL Server uses the pool's
-// request timeout). The read-only keyword
+// PostgreSQL and ClickHouse; on MySQL and SQL Server the client cancels it). The read-only keyword
 // guard can't catch side-effecting or slow functions inside a SELECT (e.g.
 // pg_sleep), and the row cap is applied after the full result is fetched — a
 // statement timeout puts a hard ceiling on both a runaway query and a

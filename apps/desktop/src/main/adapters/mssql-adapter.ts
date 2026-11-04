@@ -246,9 +246,20 @@ export class MSSQLAdapter implements DatabaseAdapter {
     return withMSSQLRolledBackTransaction(config, async (transaction) => {
       const request = transaction.request()
       if (options.executionId) registerQuery(options.executionId, { type: 'mssql', request })
+      // mssql has no per-request timeout (it ignores `request.timeout`), so bound
+      // the read ourselves by cancelling it.
+      let timedOut = false
+      const timer = setTimeout(() => {
+        timedOut = true
+        request.cancel()
+      }, options.timeoutMs)
       try {
         return toAdapterResult(await request.query(sqlQuery))
+      } catch (error) {
+        if (timedOut) throw new Error(`Query timed out after ${options.timeoutMs / 1000} s`)
+        throw error
       } finally {
+        clearTimeout(timer)
         if (options.executionId) unregisterQuery(options.executionId)
       }
     })

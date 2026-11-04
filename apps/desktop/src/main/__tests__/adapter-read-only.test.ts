@@ -149,6 +149,14 @@ describe('MSSQLAdapter.queryReadOnly', () => {
     )
     expect(mssql.log.at(-1)).toBe('ROLLBACK')
   })
+
+  it('cancels the request once the timeout passes', async () => {
+    mssql.hangOn('SELECT dbo.slow()')
+    await expect(
+      new MSSQLAdapter().queryReadOnly(config, 'SELECT dbo.slow()', { timeoutMs: 20 })
+    ).rejects.toThrow(/timed out/)
+    expect(mssql.log.at(-1)).toBe('ROLLBACK')
+  })
 })
 
 describe('PostgresAdapter.queryReadOnly', () => {
