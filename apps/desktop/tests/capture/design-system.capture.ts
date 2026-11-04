@@ -59,7 +59,9 @@ const ASK_MESSAGES = [
   }
 ]
 
-const RESULTS_QUERY = 'SELECT id, email, name FROM users ORDER BY email LIMIT 50'
+const RESULTS_QUERY =
+  'SELECT id, currency, amount_cents, status, due_date, paid_at, created_at ' +
+  'FROM invoices ORDER BY created_at DESC LIMIT 50'
 
 async function runQuery(window: Page, sql: string): Promise<void> {
   await window.locator('.monaco-editor').first().click()
@@ -126,7 +128,16 @@ for (const theme of THEMES) {
     await expect(window.getByText('subscriptions', { exact: true })).toBeVisible({
       timeout: 15000
     })
+    // Expand a table with varied column types so the type badges show.
+    const invoicesRow = window
+      .locator('.group\\/table')
+      .filter({ has: window.getByText('invoices', { exact: true }) })
+      .first()
+    await invoicesRow.scrollIntoViewIfNeeded()
+    await invoicesRow.locator('button').first().click()
+    await expect(window.getByText('amount_cents', { exact: true })).toBeVisible({ timeout: 5000 })
     await shot('schema-sidebar')
+    await invoicesRow.locator('button').first().click()
 
     // table-preview-tab
     await window.getByText('users', { exact: true }).first().click()
