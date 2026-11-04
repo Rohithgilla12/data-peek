@@ -34,7 +34,8 @@ import type {
   AdapterQueryResult,
   AdapterMultiQueryResult,
   ExplainResult,
-  QueryOptions
+  QueryOptions,
+  ReadOnlyQueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { toMSSQLConfig } from './mssql-client-config'
@@ -237,10 +238,31 @@ export class MSSQLAdapter implements DatabaseAdapter {
    * always rolled back. The read guard refuses what a rollback can't undo (COMMIT,
    * NEXT VALUE FOR).
    */
-  async queryReadOnly(config: ConnectionConfig, sqlQuery: string): Promise<AdapterQueryResult> {
-    return withMSSQLRolledBackTransaction(config, async (transaction) =>
-      toAdapterResult(await transaction.request().query(sqlQuery))
-    )
+  async queryReadOnly(
+    config: ConnectionConfig,
+    sqlQuery: string,
+    options: ReadOnlyQueryOptions
+  ): Promise<AdapterQueryResult> {
+    return withMSSQLRolledBackTransaction(config, async (transaction) => {
+      const request = transaction.request()
+      if (options.executionId) registerQuery(options.executionId, { type: 'mssql', request })
+      // mssql has no per-request timeout (it ignores `request.timeout`), so bound
+      // the read ourselves by cancelling it.
+      let timedOut = false
+      const timer = setTimeout(() => {
+        timedOut = true
+        request.cancel()
+      }, options.timeoutMs)
+      try {
+        return toAdapterResult(await request.query(sqlQuery))
+      } catch (error) {
+        if (timedOut) throw new Error(`Query timed out after ${options.timeoutMs / 1000} s`)
+        throw error
+      } finally {
+        clearTimeout(timer)
+        if (options.executionId) unregisterQuery(options.executionId)
+      }
+    })
   }
 
   async queryMultiple(

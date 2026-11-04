@@ -135,8 +135,12 @@ const api = {
       queryTimeoutMs?: number,
       sessionId?: string
     ) => ipcRenderer.invoke('db:query', { config, query, executionId, queryTimeoutMs, sessionId }),
-    queryReadOnly: (config: ConnectionConfig, query: string): Promise<IpcResponse<unknown>> =>
-      ipcRenderer.invoke('db:query-read-only', { config, query }),
+    queryReadOnly: (
+      config: ConnectionConfig,
+      query: string,
+      executionId?: string
+    ): Promise<IpcResponse<unknown>> =>
+      ipcRenderer.invoke('db:query-read-only', { config, query, executionId }),
     cancelQuery: (executionId: string): Promise<IpcResponse<{ cancelled: boolean }>> =>
       ipcRenderer.invoke('db:cancel-query', executionId),
     schemas: (

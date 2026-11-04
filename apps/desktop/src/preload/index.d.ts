@@ -222,8 +222,15 @@ interface DataPeekApi {
       queryTimeoutMs?: number,
       sessionId?: string
     ) => Promise<IpcResponse<unknown>>
-    /** One statement in a rolled-back READ ONLY transaction; for SQL run without a click. */
-    queryReadOnly: (config: ConnectionConfig, query: string) => Promise<IpcResponse<unknown>>
+    /**
+     * One statement the database keeps from writing; for SQL run without a click.
+     * Pass `executionId` to make it cancellable with `cancelQuery`.
+     */
+    queryReadOnly: (
+      config: ConnectionConfig,
+      query: string,
+      executionId?: string
+    ) => Promise<IpcResponse<unknown>>
     cancelQuery: (executionId: string) => Promise<IpcResponse<{ cancelled: boolean }>>
     schemas: (
       config: ConnectionConfig,

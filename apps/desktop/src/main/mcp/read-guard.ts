@@ -1,10 +1,10 @@
-import { randomUUID } from 'crypto'
 import type { ConnectionConfig, DatabaseType } from '@shared/index'
 import { getAdapter, type AdapterQueryResult } from '../db-adapter'
 import { parseStatementsWithLines } from '../lib/parse-statements'
 
 export const MCP_MAX_ROWS = 500
-// Bound how long a single MCP read may run on PostgreSQL. The read-only keyword
+// Bound how long a single read-only query may run (enforced server-side on
+// PostgreSQL and ClickHouse; on MySQL and SQL Server the client cancels it). The read-only keyword
 // guard can't catch side-effecting or slow functions inside a SELECT (e.g.
 // pg_sleep), and the row cap is applied after the full result is fetched — a
 // statement timeout puts a hard ceiling on both a runaway query and a
@@ -45,41 +45,14 @@ export function assertSingleReadStatement(sql: string, dbType: DatabaseType): st
 export async function runReadOnlyQuery(
   config: ConnectionConfig,
   sql: string,
-  maxRows: number = MCP_MAX_ROWS
+  { maxRows = MCP_MAX_ROWS, executionId }: { maxRows?: number; executionId?: string } = {}
 ): Promise<AdapterQueryResult> {
-  const dbType = config.dbType || 'postgresql'
-  const stmt = assertSingleReadStatement(sql, dbType)
-  const adapter = getAdapter(config)
+  const stmt = assertSingleReadStatement(sql, config.dbType || 'postgresql')
   const cap = Math.min(Math.max(1, maxRows), MCP_MAX_ROWS)
-
-  if (adapter.queryReadOnly) {
-    const result = await adapter.queryReadOnly(config, stmt, {
-      timeoutMs: MCP_READ_TIMEOUT_MS,
-      maxRows: cap
-    })
-    return { ...result, rows: result.rows.slice(0, cap) }
-  }
-
-  if (adapter.beginTransaction && adapter.queryInTransaction && adapter.rollbackTransaction) {
-    const sessionId = `mcp-ro-${randomUUID()}`
-    await adapter.beginTransaction(config, sessionId)
-    try {
-      if (dbType === 'postgresql') {
-        await adapter.queryInTransaction(config, sessionId, 'SET TRANSACTION READ ONLY')
-        // SET LOCAL is scoped to this transaction, which is always rolled back.
-        await adapter.queryInTransaction(
-          config,
-          sessionId,
-          `SET LOCAL statement_timeout = ${MCP_READ_TIMEOUT_MS}`
-        )
-      }
-      const result = await adapter.queryInTransaction(config, sessionId, stmt)
-      return { ...result, rows: result.rows.slice(0, cap) }
-    } finally {
-      await adapter.rollbackTransaction(config, sessionId).catch(() => undefined)
-    }
-  }
-
-  const result = await adapter.query(config, stmt)
+  const result = await getAdapter(config).queryReadOnly(config, stmt, {
+    timeoutMs: MCP_READ_TIMEOUT_MS,
+    maxRows: cap,
+    executionId
+  })
   return { ...result, rows: result.rows.slice(0, cap) }
 }
