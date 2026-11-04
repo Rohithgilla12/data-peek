@@ -13,14 +13,16 @@ export interface Notification {
   type: NotificationType
   title: string
   message?: string
-  duration?: number // ms, undefined = persistent until dismissed
+  duration?: number // ms, undefined or 0 = persistent until dismissed
   dismissible?: boolean
   action?: NotificationAction
+  progress?: number
 }
 
 interface NotificationState {
   notifications: Notification[]
   addNotification: (notification: Omit<Notification, 'id'>) => string
+  updateNotification: (id: string, updates: Partial<Omit<Notification, 'id'>>) => void
   removeNotification: (id: string) => void
   clearAll: () => void
 }
@@ -51,6 +53,35 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     }
 
     return id
+  },
+
+  updateNotification: (id, updates) => {
+    set((state) => {
+      const index = state.notifications.findIndex((n) => n.id === id)
+      if (index === -1) return state
+
+      const existing = state.notifications[index]
+      const updated: Notification = {
+        ...existing,
+        ...updates
+      }
+
+      const nextNotifications = [...state.notifications]
+      nextNotifications[index] = updated
+
+      // If duration was added/updated to a positive number, schedule auto-dismiss
+      if (
+        updates.duration &&
+        updates.duration > 0 &&
+        (!existing.duration || existing.duration <= 0)
+      ) {
+        setTimeout(() => {
+          get().removeNotification(id)
+        }, updates.duration)
+      }
+
+      return { notifications: nextNotifications }
+    })
   },
 
   removeNotification: (id) => {
