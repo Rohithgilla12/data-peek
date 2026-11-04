@@ -16,15 +16,15 @@ function formatCell(value: unknown): string {
 
 export function AskGrid({ result }: { result: AskResult }) {
   const rows = result.rows.slice(0, MAX_ROWS)
+  if (result.columns.length === 0) {
+    return <p className="px-3 py-2 text-xs text-muted-foreground">Statement finished.</p>
+  }
   if (rows.length === 0 && result.rowCount > 0) {
     return (
       <p className="px-3 py-2 text-xs text-muted-foreground">
         Rows aren&apos;t kept after a restart. Run it again to see them.
       </p>
     )
-  }
-  if (result.columns.length === 0) {
-    return <p className="px-3 py-2 text-xs text-muted-foreground">Statement finished.</p>
   }
   const numeric = result.columns.map(
     (c) => NUMERIC.test(c.type) || (!c.type && typeof rows[0]?.[c.name] === 'number')

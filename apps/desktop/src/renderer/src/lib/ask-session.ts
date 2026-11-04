@@ -177,9 +177,12 @@ export function fixPrompt(sql: string, error: string): string {
 const KEEP_BLOCKS = 40
 /**
  * The slice of a timeline worth keeping across restarts: recent blocks and
- * the shape of each result, but no row values, so query data never lands in
- * an unencrypted file on disk. Nothing mid-flight survives, since the query
- * or CLI behind it is gone once the app quits.
+ * the shape of each result, but no result rows, so query data never lands in
+ * an unencrypted file on disk. `context` is dropped too: for "Fix with AI" it
+ * embeds the raw database error, which can quote row values, and history falls
+ * back to the visible prompt. Error messages shown on a block are kept.
+ * Nothing mid-flight survives, since the query or CLI behind it is gone once
+ * the app quits.
  */
 export function toStored(blocks: AskBlock[]): AskBlock[] {
   return blocks.slice(-KEEP_BLOCKS).map((b) => {
@@ -199,6 +202,7 @@ export function toStored(blocks: AskBlock[]): AskBlock[] {
     else if (run.status === 'done' && run.result.rows.length > 0) {
       run = { ...run, result: { ...run.result, rows: [] } }
     }
-    return { ...b, ai, run }
+    const { context: _context, ...rest } = b
+    return { ...rest, ai, run }
   })
 }

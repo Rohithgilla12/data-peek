@@ -335,7 +335,12 @@ export const useAskStore = create<AskState>()(
           patch(tabId, blockId, { sql, run: { status: 'idle' } })
         },
 
-        remove: (tabId, blockId) =>
+        remove: (tabId, blockId) => {
+          // Cancel in-flight work first: a running query keeps hitting the
+          // database, and a live CLI would race the next question for the
+          // same harness session.
+          get().cancel(tabId, blockId)
+          get().stop(tabId, blockId)
           set((s) => {
             const session = s.sessions[tabId]
             if (!session) return s
@@ -345,7 +350,8 @@ export const useAskStore = create<AskState>()(
                 [tabId]: { ...session, blocks: session.blocks.filter((b) => b.id !== blockId) }
               }
             }
-          }),
+          })
+        },
 
         prune: (keepTabIds) =>
           set((s) => {

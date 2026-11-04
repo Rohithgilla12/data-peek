@@ -36,7 +36,7 @@ The input decides what you typed as you type, and the chip on its left shows the
 
 The assistant reads your schema, answers in a sentence or two, and writes the SQL. Then:
 
-- **Single read-only statements run on their own,** inside a read-only transaction that is always rolled back, so a function that writes is refused by the database. The block shows the rows, plus a chart or a single number when the question asked for one. Switch between the chart and the table from the block's header.
+- **Single read-only statements run on their own,** in a way the database itself keeps from writing: a read-only transaction on PostgreSQL and MySQL, a transaction that is always rolled back on SQL Server, a statement-level read-only check on SQLite, and `readonly` mode on ClickHouse. A function that writes fails or is undone. The block shows the rows, plus a chart or a single number when the question asked for one. Switch between the chart and the table from the block's header.
 - **Anything that can change data waits.** `INSERT`, `UPDATE`, `DELETE`, DDL, and anything with more than one statement show the SQL and a **Run it** button. Nothing touches the database until you click it. The same happens when the assistant itself flags a query for review.
 - **Failed queries offer Fix with AI.** The assistant sees the SQL and the error and answers with a corrected query.
 - **Follow-up chips** under each answer ask the next likely question in one click.
@@ -57,7 +57,7 @@ Without an AI provider, Ask still runs SQL.
 ## Stop, and pick up later
 
 - **Stop** next to a thinking answer ends it at once and shuts down the CLI behind it, so it stops using your subscription.
-- Ask tabs survive a restart. Each one keeps its last 40 blocks: the questions, answers, SQL, and the column names and row counts of each result. Row values are not saved to disk, so after a restart you run a block again to see its rows. An answer that was still coming in when the app quit comes back marked **Interrupted**. A tab is named after its first question.
+- Ask tabs survive a restart. Each one keeps its last 40 blocks: the questions, answers, SQL, and the column names and row counts of each result. Result rows are not saved to disk, so after a restart you run a block again to see its rows. Error messages are kept as the database returned them, and some quote the value that caused the error. An answer that was still coming in when the app quit comes back marked **Interrupted**. A tab is named after its first question.
 - Closing an Ask tab deletes its history.
 
 ## Edit SQL with AI

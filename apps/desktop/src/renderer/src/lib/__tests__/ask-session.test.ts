@@ -221,6 +221,18 @@ describe('toStored', () => {
     ])
   })
 
+  it('drops the hidden Fix-with-AI context, which can quote row values from the error', () => {
+    const [stored] = toStored([
+      block({
+        prompt: 'Fix this query',
+        context: 'This query failed with "Key (email)=(alice@example.com) already exists"'
+      })
+    ])
+    expect(stored).not.toHaveProperty('context')
+    expect(JSON.stringify(stored)).not.toContain('alice@example.com')
+    expect(stored.prompt).toBe('Fix this query')
+  })
+
   it('keeps only the most recent blocks', () => {
     const blocks = Array.from({ length: 45 }, (_, i) => block({ prompt: `q${i}` }))
     const kept = toStored(blocks)
