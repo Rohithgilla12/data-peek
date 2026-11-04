@@ -1,5 +1,11 @@
 import * as React from 'react'
-import { ExternalLink, Clock, Table2, ChevronDown, ChevronUp } from 'lucide-react'
+import {
+  CaretDownIcon,
+  CaretUpIcon,
+  ClockIcon,
+  ExternalLinkIcon,
+  TableIcon
+} from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 
 interface AIQueryResultProps {
@@ -47,13 +53,13 @@ export function AIQueryResult({
       <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/30 bg-zinc-900/40">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1.5">
-            <Table2 className="size-3.5 text-emerald-400" />
+            <TableIcon className="size-3.5 text-emerald-400" />
             <span className="text-[11px] font-medium text-zinc-300">
               {totalRows} row{totalRows !== 1 ? 's' : ''}
             </span>
           </div>
           <div className="flex items-center gap-1 text-[10px] text-zinc-500">
-            <Clock className="size-3" />
+            <ClockIcon className="size-3" />
             {duration}ms
           </div>
         </div>
@@ -67,12 +73,12 @@ export function AIQueryResult({
             >
               {isExpanded ? (
                 <>
-                  <ChevronUp className="size-3" />
+                  <CaretUpIcon className="size-3" />
                   Collapse
                 </>
               ) : (
                 <>
-                  <ChevronDown className="size-3" />
+                  <CaretDownIcon className="size-3" />
                   Expand
                 </>
               )}
@@ -158,7 +164,7 @@ export function AIQueryResult({
             className="h-6 gap-1.5 text-[10px] text-zinc-400 hover:text-zinc-200"
             onClick={onOpenInTab}
           >
-            <ExternalLink className="size-3" />
+            <ExternalLinkIcon className="size-3" />
             View All Results
           </Button>
         </div>

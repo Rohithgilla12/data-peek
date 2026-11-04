@@ -29,26 +29,26 @@ import {
   SelectValue
 } from '@data-peek/ui'
 import {
-  Sparkles,
-  Clock,
-  Key,
-  Hash,
-  Type,
-  Calendar,
-  ToggleLeft,
-  Braces,
-  Link2,
-  List,
-  Copy,
-  Plus,
-  X,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  Search,
-  Check,
-  ChevronsUpDown
-} from 'lucide-react'
+  AiIcon,
+  BracesIcon,
+  CalendarIcon,
+  CaretDownIcon,
+  CaretUpDownIcon,
+  CaretUpIcon,
+  CheckIcon,
+  ClockIcon,
+  CloseIcon,
+  CopyIcon,
+  ErrorIcon,
+  HashIcon,
+  KeyIcon,
+  LinkIcon,
+  ListIcon,
+  PlusIcon,
+  SearchIcon,
+  ToggleLeftIcon,
+  TypeIcon
+} from '@/components/icons'
 import type { ColumnInfo } from '@data-peek/shared'
 
 // Field type detection
@@ -94,16 +94,16 @@ function getFieldType(column: ColumnInfo): FieldType {
 
 // Field type icons
 const fieldTypeIcons: Record<FieldType, React.ElementType> = {
-  uuid: Key,
-  text: Type,
-  number: Hash,
-  boolean: ToggleLeft,
-  date: Calendar,
-  time: Clock,
-  datetime: Calendar,
-  json: Braces,
-  enum: List,
-  foreignKey: Link2
+  uuid: KeyIcon,
+  text: TypeIcon,
+  number: HashIcon,
+  boolean: ToggleLeftIcon,
+  date: CalendarIcon,
+  time: ClockIcon,
+  datetime: CalendarIcon,
+  json: BracesIcon,
+  enum: ListIcon,
+  foreignKey: LinkIcon
 }
 
 // Field type colors
@@ -235,7 +235,7 @@ function SmartField({
                     className="h-9 gap-1.5 text-purple-400 border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-300"
                     onClick={generateUUID}
                   >
-                    <Sparkles className="size-3.5" />
+                    <AiIcon className="size-3.5" />
                     Generate
                   </Button>
                 </TooltipTrigger>
@@ -301,7 +301,7 @@ function SmartField({
                     className="h-9 gap-1.5 text-orange-400 border-orange-500/30 hover:bg-orange-500/10 hover:text-orange-300"
                     onClick={setNow}
                   >
-                    <Clock className="size-3.5" />
+                    <ClockIcon className="size-3.5" />
                     Now
                   </Button>
                 </TooltipTrigger>
@@ -412,7 +412,7 @@ function SmartField({
                     >
                       {displayValue || `Select from ${column.foreignKey?.referencedTable}...`}
                     </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <CaretUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -421,7 +421,7 @@ function SmartField({
                 >
                   {/* Search input */}
                   <div className="flex items-center border-b px-3 py-2">
-                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                    <SearchIcon className="mr-2 h-4 w-4 shrink-0 opacity-50" />
                     <input
                       placeholder="Search..."
                       value={fkSearchQuery}
@@ -435,7 +435,7 @@ function SmartField({
                         className="h-6 w-6 shrink-0"
                         onClick={() => setFkSearchQuery('')}
                       >
-                        <X className="h-3 w-3" />
+                        <CloseIcon className="h-3 w-3" />
                       </Button>
                     )}
                   </div>
@@ -454,7 +454,7 @@ function SmartField({
                           setFkSearchQuery('')
                         }}
                       >
-                        <Check
+                        <CheckIcon
                           className={cn(
                             'mr-2 h-4 w-4',
                             value === null ? 'opacity-100' : 'opacity-0'
@@ -479,7 +479,7 @@ function SmartField({
                             setFkSearchQuery('')
                           }}
                         >
-                          <Check
+                          <CheckIcon
                             className={cn('mr-2 h-4 w-4', isSelected ? 'opacity-100' : 'opacity-0')}
                           />
                           <span className="font-mono text-xs">{fk.value}</span>
@@ -519,7 +519,7 @@ function SmartField({
                       variant="outline"
                       className="h-9 px-2 text-[10px] text-blue-400 border-blue-500/30 flex items-center gap-1 shrink-0"
                     >
-                      <Link2 className="size-3" />
+                      <LinkIcon className="size-3" />
                       {column.foreignKey.referencedTable}
                     </Badge>
                   </TooltipTrigger>
@@ -545,7 +545,7 @@ function SmartField({
                   className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
                   onClick={clearValue}
                 >
-                  <X className="size-4" />
+                  <CloseIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Set to NULL</TooltipContent>
@@ -657,7 +657,7 @@ export function AddRowSheet({
                 isDuplicate ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
               )}
             >
-              {isDuplicate ? <Copy className="size-5" /> : <Plus className="size-5" />}
+              {isDuplicate ? <CopyIcon className="size-5" /> : <PlusIcon className="size-5" />}
             </div>
             <div>
               <SheetTitle className="text-base">
@@ -681,7 +681,7 @@ export function AddRowSheet({
             {requiredColumns.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="size-3.5 text-red-400" />
+                  <ErrorIcon className="size-3.5 text-red-400" />
                   <span className="text-xs font-medium text-red-400 uppercase tracking-wider">
                     Required Fields
                   </span>
@@ -717,9 +717,9 @@ export function AddRowSheet({
                   </span>
                   <div className="h-px flex-1 bg-border/50" />
                   {showOptional ? (
-                    <ChevronUp className="size-4 text-muted-foreground" />
+                    <CaretUpIcon className="size-4 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="size-4 text-muted-foreground" />
+                    <CaretDownIcon className="size-4 text-muted-foreground" />
                   )}
                 </button>
                 {showOptional && (
@@ -757,12 +757,12 @@ export function AddRowSheet({
             >
               {isDuplicate ? (
                 <>
-                  <Copy className="size-4" />
+                  <CopyIcon className="size-4" />
                   Duplicate Row
                 </>
               ) : (
                 <>
-                  <Plus className="size-4" />
+                  <PlusIcon className="size-4" />
                   Add Row
                 </>
               )}

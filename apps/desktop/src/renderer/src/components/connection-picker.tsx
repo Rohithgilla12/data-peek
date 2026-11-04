@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { Search, Plus, Loader2, FolderOpen } from 'lucide-react'
+import { FolderOpenIcon, PlusIcon, SearchIcon, SpinnerIcon } from '@/components/icons'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Input, cn } from '@data-peek/ui'
 import { useConnectionStore } from '@/stores'
 import { useHotkeys, type UseHotkeyDefinition, type Hotkey } from '@tanstack/react-hotkeys'
@@ -123,7 +123,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
           <DialogHeader className="px-3 pt-3 pb-0">
             <DialogTitle className="sr-only">Switch Connection</DialogTitle>
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 ref={inputRef}
                 type="text"
@@ -146,7 +146,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
                   <div key={group}>
                     {groups.length > 1 && (
                       <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                        <FolderOpen className="size-3" />
+                        <FolderOpenIcon className="size-3" />
                         {group}
                       </div>
                     )}
@@ -169,7 +169,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
                         >
                           <div className="relative flex size-8 items-center justify-center rounded-md border bg-background">
                             {connection.isConnecting ? (
-                              <Loader2 className="size-4 animate-spin" />
+                              <SpinnerIcon className="size-4 animate-spin" />
                             ) : (
                               <DatabaseIcon dbType={connection.dbType} className="size-4" />
                             )}
@@ -214,7 +214,7 @@ export function ConnectionPicker({ open, onOpenChange }: ConnectionPickerProps) 
                 className="w-full flex items-center gap-3 px-3 py-2 text-left rounded-md hover:bg-accent/50 transition-colors"
               >
                 <div className="flex size-8 items-center justify-center rounded-md border bg-background">
-                  <Plus className="size-4" />
+                  <PlusIcon className="size-4" />
                 </div>
                 <span className="text-sm text-muted-foreground">Add new connection</span>
               </button>

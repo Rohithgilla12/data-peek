@@ -1,4 +1,12 @@
-import { CheckCircle2, Database, FileText, Loader2, Play, RefreshCw, Search } from 'lucide-react'
+import {
+  DatabaseIcon,
+  FileTextIcon,
+  PlayIcon,
+  RefreshIcon,
+  SearchIcon,
+  SpinnerIcon,
+  SuccessIcon
+} from '@/components/icons'
 
 import { SQLEditor } from '@/components/sql-editor'
 import {
@@ -118,7 +126,7 @@ export function SourceStep({
               : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          <FileText className="size-4" />
+          <FileTextIcon className="size-4" />
           Saved Query
         </button>
         <button
@@ -131,7 +139,7 @@ export function SourceStep({
               : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          <Database className="size-4" />
+          <DatabaseIcon className="size-4" />
           Write SQL
         </button>
       </div>
@@ -139,7 +147,7 @@ export function SourceStep({
       {sourceType === 'saved-query' ? (
         <div className="space-y-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder="Search saved queries..."
               value={querySearch}
@@ -151,7 +159,7 @@ export function SourceStep({
             <div className="p-1.5 space-y-1">
               {filteredQueries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <FileText className="size-8 text-muted-foreground/50 mb-2" />
+                  <FileTextIcon className="size-8 text-muted-foreground/50 mb-2" />
                   <p className="text-sm text-muted-foreground">No saved queries found</p>
                 </div>
               ) : (
@@ -289,9 +297,9 @@ export function ConfigStep({
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
               {isLoadingPreview ? (
-                <Loader2 className="size-5 text-primary animate-spin" />
+                <SpinnerIcon className="size-5 text-primary animate-spin" />
               ) : (
-                <Play className="size-5 text-primary" />
+                <PlayIcon className="size-5 text-primary" />
               )}
             </div>
             <div className="text-left">
@@ -310,7 +318,7 @@ export function ConfigStep({
       ) : (
         <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-4 text-emerald-500" />
+            <SuccessIcon className="size-4 text-emerald-500" />
             <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
               Preview loaded
             </span>
@@ -326,9 +334,9 @@ export function ConfigStep({
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             {isLoadingPreview ? (
-              <Loader2 className="size-3 animate-spin" />
+              <SpinnerIcon className="size-3 animate-spin" />
             ) : (
-              <RefreshCw className="size-3" />
+              <RefreshIcon className="size-3" />
             )}
             Refresh
           </button>

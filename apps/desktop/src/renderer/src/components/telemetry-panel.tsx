@@ -7,16 +7,16 @@ import {
   type TimingPhase
 } from '@data-peek/shared'
 import {
-  X,
-  Activity,
-  Zap,
-  Database,
-  Clock,
-  ArrowDownToLine,
-  FileCode,
-  BarChart3,
-  GanttChart
-} from 'lucide-react'
+  ActivityIcon,
+  ArrowLineDownIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CloseIcon,
+  DatabaseIcon,
+  FileCodeIcon,
+  GanttChartIcon,
+  ZapIcon
+} from '@/components/icons'
 import type { TelemetryViewMode } from '@/stores/telemetry-store'
 
 interface TelemetryPanelProps {
@@ -41,7 +41,7 @@ const PHASE_CONFIG: Record<
     shortLabel: string
     color: string
     glowColor: string
-    icon: typeof Activity
+    icon: typeof ActivityIcon
     description: string
     isConnectionPhase?: boolean
   }
@@ -51,7 +51,7 @@ const PHASE_CONFIG: Record<
     shortLabel: 'TCP',
     color: 'from-violet-500 to-purple-600',
     glowColor: 'shadow-violet-500/30',
-    icon: Zap,
+    icon: ZapIcon,
     description: 'TCP connection establishment',
     isConnectionPhase: true
   },
@@ -60,7 +60,7 @@ const PHASE_CONFIG: Record<
     shortLabel: 'AUTH',
     color: 'from-purple-500 to-fuchsia-600',
     glowColor: 'shadow-purple-500/30',
-    icon: Database,
+    icon: DatabaseIcon,
     description: 'Database authentication and protocol handshake',
     isConnectionPhase: true
   },
@@ -69,7 +69,7 @@ const PHASE_CONFIG: Record<
     shortLabel: 'NET',
     color: 'from-blue-500 to-cyan-500',
     glowColor: 'shadow-blue-500/30',
-    icon: Activity,
+    icon: ActivityIcon,
     description: 'Round-trip time to server'
   },
   planning: {
@@ -77,7 +77,7 @@ const PHASE_CONFIG: Record<
     shortLabel: 'PLAN',
     color: 'from-cyan-500 to-teal-500',
     glowColor: 'shadow-cyan-500/30',
-    icon: FileCode,
+    icon: FileCodeIcon,
     description: 'Query plan generation'
   },
   execution: {
@@ -85,7 +85,7 @@ const PHASE_CONFIG: Record<
     shortLabel: 'EXEC',
     color: 'from-emerald-500 to-green-500',
     glowColor: 'shadow-emerald-500/30',
-    icon: Zap,
+    icon: ZapIcon,
     description: 'Server-side query execution'
   },
   download: {
@@ -93,7 +93,7 @@ const PHASE_CONFIG: Record<
     shortLabel: 'XFER',
     color: 'from-amber-500 to-orange-500',
     glowColor: 'shadow-amber-500/30',
-    icon: ArrowDownToLine,
+    icon: ArrowLineDownIcon,
     description: 'Data transfer from server'
   },
   parse: {
@@ -101,7 +101,7 @@ const PHASE_CONFIG: Record<
     shortLabel: 'PARSE',
     color: 'from-orange-500 to-red-500',
     glowColor: 'shadow-orange-500/30',
-    icon: FileCode,
+    icon: FileCodeIcon,
     description: 'Client-side result parsing'
   }
 }
@@ -356,7 +356,7 @@ export function TelemetryPanel({
           {/* Title with pulse indicator */}
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Clock className="size-4 text-primary" />
+              <ClockIcon className="size-4 text-primary" />
               <span className="absolute -top-0.5 -right-0.5 size-1.5 bg-emerald-500 rounded-full animate-pulse" />
             </div>
             <h3 className="text-sm font-semibold tracking-tight">Query Telemetry</h3>
@@ -435,7 +435,7 @@ export function TelemetryPanel({
               )}
               title="Proportional bars"
             >
-              <BarChart3 className="size-3.5" />
+              <ChartBarIcon className="size-3.5" />
             </button>
             <button
               type="button"
@@ -448,7 +448,7 @@ export function TelemetryPanel({
               )}
               title="Timeline waterfall"
             >
-              <GanttChart className="size-3.5" />
+              <GanttChartIcon className="size-3.5" />
             </button>
           </div>
 
@@ -475,7 +475,7 @@ export function TelemetryPanel({
             className="size-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={onClose}
           >
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
       </div>

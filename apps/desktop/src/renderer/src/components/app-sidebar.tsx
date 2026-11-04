@@ -1,4 +1,10 @@
-import { Activity, Bell, MessageCircleQuestion, SearchCode, Settings2 } from 'lucide-react'
+import {
+  ActivityIcon,
+  BellIcon,
+  QuestionIcon,
+  SearchCodeIcon,
+  SlidersIcon
+} from '@/components/icons'
 import { Link } from '@tanstack/react-router'
 
 import { ConnectionSwitcher } from '@/components/connection-switcher'
@@ -111,21 +117,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   {can.notifications && (
                     <SidebarMenuItem>
                       <SidebarMenuButton onClick={handleOpenNotifications}>
-                        <Bell className="size-4" />
+                        <BellIcon className="size-4" />
                         <span>Notifications</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
                   )}
                   <SidebarMenuItem>
                     <SidebarMenuButton onClick={handleOpenHealthMonitor}>
-                      <Activity className="size-4" />
+                      <ActivityIcon className="size-4" />
                       <span>Health Monitor</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                   {hasSchemaIntel && (
                     <SidebarMenuItem>
                       <SidebarMenuButton onClick={handleOpenSchemaIntel}>
-                        <SearchCode className="size-4" />
+                        <SearchCodeIcon className="size-4" />
                         <span>Schema Intel</span>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -150,7 +156,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link to="/settings">
-                    <Settings2 className="size-4" />
+                    <SlidersIcon className="size-4" />
                     <span>Settings</span>
                   </Link>
                 </SidebarMenuButton>
@@ -162,7 +168,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <MessageCircleQuestion className="size-4" />
+                    <QuestionIcon className="size-4" />
                     <span>Help</span>
                   </a>
                 </SidebarMenuButton>

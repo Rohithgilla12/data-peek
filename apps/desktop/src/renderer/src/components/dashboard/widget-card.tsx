@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import {
-  GripVertical,
-  MoreHorizontal,
-  RefreshCw,
-  Trash2,
-  Settings,
-  Maximize2,
-  Minimize2
-} from 'lucide-react'
+  DragHandleIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  MoreIcon,
+  RefreshIcon,
+  SettingsIcon,
+  TrashIcon
+} from '@/components/icons'
 
 import {
   Button,
@@ -83,7 +83,7 @@ export function WidgetCard({ widget, dashboardId, editMode }: WidgetCardProps) {
         <div className="flex items-center gap-2">
           {editMode && (
             <div className="widget-drag-handle cursor-move">
-              <GripVertical className="size-4 text-muted-foreground" />
+              <DragHandleIcon className="size-4 text-muted-foreground" />
             </div>
           )}
           <CardTitle className="text-sm font-medium">{widget.name}</CardTitle>
@@ -96,39 +96,39 @@ export function WidgetCard({ widget, dashboardId, editMode }: WidgetCardProps) {
             onClick={handleRefresh}
             disabled={isLoading}
           >
-            <RefreshCw className={`size-3 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshIcon className={`size-3 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="size-6">
-                <MoreHorizontal className="size-3" />
+                <MoreIcon className="size-3" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={handleRefresh}>
-                <RefreshCw className="mr-2 size-4" />
+                <RefreshIcon className="mr-2 size-4" />
                 Refresh
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleToggleFullWidth}>
                 {isFullWidth ? (
                   <>
-                    <Minimize2 className="mr-2 size-4" />
+                    <MinimizeIcon className="mr-2 size-4" />
                     Reset Width
                   </>
                 ) : (
                   <>
-                    <Maximize2 className="mr-2 size-4" />
+                    <MaximizeIcon className="mr-2 size-4" />
                     Full Width
                   </>
                 )}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
-                <Settings className="mr-2 size-4" />
+                <SettingsIcon className="mr-2 size-4" />
                 Configure
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="text-red-400" onClick={handleDelete}>
-                <Trash2 className="mr-2 size-4" />
+                <TrashIcon className="mr-2 size-4" />
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -174,7 +174,7 @@ function WidgetContent({ widget, data, isLoading }: WidgetContentProps) {
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
-        <RefreshCw className="size-6 animate-spin text-muted-foreground" />
+        <RefreshIcon className="size-6 animate-spin text-muted-foreground" />
       </div>
     )
   }

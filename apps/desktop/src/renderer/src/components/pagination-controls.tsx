@@ -1,5 +1,10 @@
 import * as React from 'react'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
+import {
+  CaretDoubleLeftIcon,
+  CaretDoubleRightIcon,
+  CaretLeftIcon,
+  CaretRightIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -137,7 +142,7 @@ export function PaginationControls({
             disabled={!canPreviousPage}
             title="First page"
           >
-            <ChevronsLeft className="size-3.5" />
+            <CaretDoubleLeftIcon className="size-3.5" />
           </Button>
           <Button
             variant="outline"
@@ -147,7 +152,7 @@ export function PaginationControls({
             disabled={!canPreviousPage}
             title="Previous page"
           >
-            <ChevronLeft className="size-3.5" />
+            <CaretLeftIcon className="size-3.5" />
           </Button>
           <Button
             variant="outline"
@@ -157,7 +162,7 @@ export function PaginationControls({
             disabled={!canNextPage}
             title="Next page"
           >
-            <ChevronRight className="size-3.5" />
+            <CaretRightIcon className="size-3.5" />
           </Button>
           <Button
             variant="outline"
@@ -167,7 +172,7 @@ export function PaginationControls({
             disabled={!canNextPage}
             title="Last page"
           >
-            <ChevronsRight className="size-3.5" />
+            <CaretDoubleRightIcon className="size-3.5" />
           </Button>
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { ArrowLeft, GitCompareArrows, Trash2 } from 'lucide-react'
+import { ArrowLeftIcon, GitDiffIcon, TrashIcon } from '@/components/icons'
 import { Badge, Button } from '@data-peek/ui'
 import { DataTable } from '@/components/data-table'
 import { useTimeMachineStore } from '@/stores/time-machine-store'
@@ -48,7 +48,7 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
       <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 mb-2 shrink-0 text-xs">
         {compareRun && diff ? (
           <>
-            <GitCompareArrows className="size-3.5 text-primary shrink-0" />
+            <GitDiffIcon className="size-3.5 text-primary shrink-0" />
             <span className="font-medium">
               {formatFullTime(compareRun.capturedAt)} → {formatFullTime(snapshot.capturedAt)}
             </span>
@@ -107,7 +107,7 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
             onClick={() => void useTimeMachineStore.getState().deleteRun(tabId, snapshot.id)}
             title="Delete this run from history"
           >
-            <Trash2 className="size-3" />
+            <TrashIcon className="size-3" />
           </Button>
           <Button
             variant="secondary"
@@ -115,7 +115,7 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
             className="h-6 gap-1 px-2 text-xs"
             onClick={() => void useTimeMachineStore.getState().selectRun(tabId, null)}
           >
-            <ArrowLeft className="size-3" />
+            <ArrowLeftIcon className="size-3" />
             Back to live
           </Button>
         </div>

@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Play, Square, Eye, Loader2, AlertCircle, CheckCircle2, Shuffle } from 'lucide-react'
+import {
+  ErrorIcon,
+  EyeIcon,
+  PlayIcon,
+  ShuffleIcon,
+  SpinnerIcon,
+  StopIcon,
+  SuccessIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -116,7 +124,7 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
   if (!tabState) {
     return (
       <div className="flex flex-1 items-center justify-center">
-        <Loader2 className="size-5 animate-spin text-muted-foreground" />
+        <SpinnerIcon className="size-5 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -141,7 +149,7 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
     <div className="flex flex-1 flex-col overflow-hidden">
       <div className="flex items-center justify-between gap-4 px-4 py-3 border-b shrink-0">
         <div className="flex items-center gap-3">
-          <Shuffle className="size-4 text-muted-foreground" />
+          <ShuffleIcon className="size-4 text-muted-foreground" />
           <div>
             <span className="text-sm font-medium">
               {schemaName}.{tableName}
@@ -195,9 +203,9 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
             className="h-7 text-xs gap-1.5"
           >
             {isPreviewing ? (
-              <Loader2 className="size-3.5 animate-spin" />
+              <SpinnerIcon className="size-3.5 animate-spin" />
             ) : (
-              <Eye className="size-3.5" />
+              <EyeIcon className="size-3.5" />
             )}
             Preview
           </Button>
@@ -209,7 +217,7 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
               onClick={handleCancel}
               className="h-7 text-xs gap-1.5"
             >
-              <Square className="size-3.5" />
+              <StopIcon className="size-3.5" />
               Cancel
             </Button>
           ) : (
@@ -219,7 +227,7 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
               className="h-7 text-xs gap-1.5"
               disabled={!activeConnectionId}
             >
-              <Play className="size-3.5" />
+              <PlayIcon className="size-3.5" />
               Generate
             </Button>
           )}
@@ -253,9 +261,9 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
           )}
         >
           {result.success ? (
-            <CheckCircle2 className="size-3.5 shrink-0" />
+            <SuccessIcon className="size-3.5 shrink-0" />
           ) : (
-            <AlertCircle className="size-3.5 shrink-0" />
+            <ErrorIcon className="size-3.5 shrink-0" />
           )}
           {result.success
             ? `Inserted ${result.rowsInserted} rows in ${result.durationMs}ms`
@@ -265,7 +273,7 @@ export function DataGenerator({ tabId }: DataGeneratorProps) {
 
       {error && !result && (
         <div className="flex items-center gap-2 px-4 py-2 border-b bg-destructive/10 text-destructive text-xs shrink-0">
-          <AlertCircle className="size-3.5 shrink-0" />
+          <ErrorIcon className="size-3.5 shrink-0" />
           {error}
         </div>
       )}

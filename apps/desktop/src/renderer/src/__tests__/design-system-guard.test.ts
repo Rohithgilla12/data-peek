@@ -6,6 +6,7 @@ type Violation = { file: string; line: number; match: string }
 
 const repoRoot = path.resolve(__dirname, '../../../../../..')
 const uiSrc = path.join(repoRoot, 'packages/ui/src')
+const rendererSrc = path.join(repoRoot, 'apps/desktop/src/renderer/src')
 
 function listSourceFiles(dir: string): string[] {
   const files: string[] = []
@@ -51,5 +52,17 @@ describe('design-system guard: shared ui icons', () => {
 
   it('shared ui imports phosphor only in icons.ts', () => {
     expect(scanSource([uiSrc], /from ['"]@phosphor-icons\/react/, ['icons.ts'])).toEqual([])
+  })
+})
+
+describe('design-system guard: renderer icons', () => {
+  it('renderer never imports lucide-react', () => {
+    expect(scanSource([rendererSrc], /from ['"]lucide-react['"]/, [])).toEqual([])
+  })
+
+  it('renderer imports phosphor only in components/icons.ts', () => {
+    expect(
+      scanSource([rendererSrc], /from ['"]@phosphor-icons\/react/, ['components/icons.ts'])
+    ).toEqual([])
   })
 })

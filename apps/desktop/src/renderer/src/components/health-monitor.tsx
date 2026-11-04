@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
-import { Activity, RefreshCw, Loader2, Skull, CheckCircle2, Share2 } from 'lucide-react'
+import {
+  ActivityIcon,
+  RefreshIcon,
+  ShareIcon,
+  SkullIcon,
+  SpinnerIcon,
+  SuccessIcon
+} from '@/components/icons'
 import {
   Card,
   CardContent,
@@ -168,7 +175,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
     <div className="flex h-full flex-col overflow-hidden">
       <div className="flex items-center justify-between border-b px-4 py-2">
         <div className="flex items-center gap-2">
-          <Activity className="size-4 text-muted-foreground" />
+          <ActivityIcon className="size-4 text-muted-foreground" />
           <span className="text-sm font-medium">{connection.name || connection.host}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -186,7 +193,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
             </SelectContent>
           </Select>
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={handleManualRefresh}>
-            <RefreshCw className="size-3.5" />
+            <RefreshIcon className="size-3.5" />
           </Button>
         </div>
       </div>
@@ -200,7 +207,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                 Active Queries
                 <div className="flex items-center gap-1">
                   {can.healthActiveQueries && isLoading.activeQueries && (
-                    <Loader2 className="size-3 animate-spin" />
+                    <SpinnerIcon className="size-3 animate-spin" />
                   )}
                   {can.healthActiveQueries && (
                     <Tooltip>
@@ -211,7 +218,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                           className="h-6 w-6 p-0"
                           onClick={() => setShareCard('activeQueries')}
                         >
-                          <Share2 className="size-3" />
+                          <ShareIcon className="size-3" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="top">
@@ -270,7 +277,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                                 size="sm"
                                 className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                               >
-                                <Skull className="size-3" />
+                                <SkullIcon className="size-3" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
@@ -311,7 +318,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                   )}
                 </div>
                 <div className="flex items-center gap-1">
-                  {isLoading.tableSizes && <Loader2 className="size-3 animate-spin" />}
+                  {isLoading.tableSizes && <SpinnerIcon className="size-3 animate-spin" />}
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
@@ -320,7 +327,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                         className="h-6 w-6 p-0"
                         onClick={() => setShareCard('tableSizes')}
                       >
-                        <Share2 className="size-3" />
+                        <ShareIcon className="size-3" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="top">
@@ -398,7 +405,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                 Cache Hit Ratios
                 <div className="flex items-center gap-1">
                   {can.healthCacheStats && isLoading.cacheStats && (
-                    <Loader2 className="size-3 animate-spin" />
+                    <SpinnerIcon className="size-3 animate-spin" />
                   )}
                   {can.healthCacheStats && (
                     <Tooltip>
@@ -409,7 +416,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                           className="h-6 w-6 p-0"
                           onClick={() => setShareCard('cacheStats')}
                         >
-                          <Share2 className="size-3" />
+                          <ShareIcon className="size-3" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="top">
@@ -492,7 +499,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                 Locks &amp; Blocking
                 <div className="flex items-center gap-1">
                   {can.healthLocks && isLoading.locks && (
-                    <Loader2 className="size-3 animate-spin" />
+                    <SpinnerIcon className="size-3 animate-spin" />
                   )}
                   {can.healthLocks && (
                     <Tooltip>
@@ -503,7 +510,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                           className="h-6 w-6 p-0"
                           onClick={() => setShareCard('locks')}
                         >
-                          <Share2 className="size-3" />
+                          <ShareIcon className="size-3" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent side="top">
@@ -525,7 +532,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                 <p className="text-xs text-destructive">{errors.locks}</p>
               ) : locks.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 py-8">
-                  <CheckCircle2 className="size-6 text-green-500" />
+                  <SuccessIcon className="size-6 text-green-500" />
                   <p className="text-sm text-green-600">No blocking locks</p>
                 </div>
               ) : (
@@ -569,7 +576,7 @@ export function HealthMonitor({ tabId }: HealthMonitorProps) {
                                 size="sm"
                                 className="h-6 w-6 p-0 text-destructive hover:text-destructive"
                               >
-                                <Skull className="size-3" />
+                                <SkullIcon className="size-3" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>

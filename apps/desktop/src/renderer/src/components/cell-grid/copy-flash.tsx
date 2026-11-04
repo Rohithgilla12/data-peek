@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Check } from 'lucide-react'
+import { CheckIcon } from '@/components/icons'
 import type { CellCopyEvent, CellGridGeometry } from './cell-grid-types'
 
 interface CopyFlashProps {
@@ -60,7 +60,7 @@ export const CopyFlash = React.memo(function CopyFlash({ event, geometry }: Copy
           boxShadow: 'var(--cell-flash-shadow)'
         }}
       >
-        <Check size={10} strokeWidth={3} />
+        <CheckIcon size={10} />
         copied
       </div>
     </div>

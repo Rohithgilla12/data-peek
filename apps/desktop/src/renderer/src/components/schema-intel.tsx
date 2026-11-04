@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
-  Activity,
-  AlertTriangle,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Info,
-  Loader2,
-  Play,
-  SearchCode,
-  ShieldAlert
-} from 'lucide-react'
+  ActivityIcon,
+  CaretDownIcon,
+  CaretRightIcon,
+  CopyIcon,
+  InfoIcon,
+  PlayIcon,
+  SearchCodeIcon,
+  SpinnerIcon,
+  SuccessIcon,
+  WarningIcon
+} from '@/components/icons'
 import {
   Badge,
   Button,
@@ -64,9 +63,9 @@ function severityBadgeClass(severity: SchemaIntelSeverity): string {
 }
 
 function SeverityIcon({ severity }: { severity: SchemaIntelSeverity }) {
-  if (severity === 'critical') return <ShieldAlert className="size-3.5 text-red-400" />
-  if (severity === 'warning') return <AlertTriangle className="size-3.5 text-amber-400" />
-  return <Info className="size-3.5 text-blue-400" />
+  if (severity === 'critical') return <WarningIcon className="size-3.5 text-red-400" />
+  if (severity === 'warning') return <WarningIcon className="size-3.5 text-amber-400" />
+  return <InfoIcon className="size-3.5 text-blue-400" />
 }
 
 export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
@@ -170,7 +169,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
       <div className="flex h-full flex-col overflow-hidden">
         <div className="flex items-center justify-between border-b px-4 py-2">
           <div className="flex items-center gap-2">
-            <SearchCode className="size-4 text-muted-foreground" />
+            <SearchCodeIcon className="size-4 text-muted-foreground" />
             <span className="text-sm font-medium">Schema Intel</span>
             <span className="text-xs text-muted-foreground">
               · {connection.name || connection.host}
@@ -182,9 +181,9 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
             )}
             <Button size="sm" onClick={handleRun} disabled={isRunning} className="gap-2">
               {isRunning ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <SpinnerIcon className="size-3.5 animate-spin" />
               ) : (
-                <Play className="size-3.5" />
+                <PlayIcon className="size-3.5" />
               )}
               {isRunning ? 'Running…' : report ? 'Re-run' : 'Run checks'}
             </Button>
@@ -247,7 +246,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                                 </TooltipContent>
                               </Tooltip>
                             ) : (
-                              <CheckCircle2 className="size-3 text-green-500" />
+                              <SuccessIcon className="size-3 text-green-500" />
                             ))}
                         </div>
                         <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
@@ -271,7 +270,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
 
             {!report && !error && !isRunning && (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-                <Activity className="size-6 text-muted-foreground" />
+                <ActivityIcon className="size-6 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">
                   Run the diagnostics to surface schema issues.
                 </p>
@@ -280,7 +279,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
 
             {isRunning && !report && (
               <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 text-center">
-                <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                <SpinnerIcon className="size-6 animate-spin text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">Analyzing schema…</p>
               </div>
             )}
@@ -290,17 +289,17 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                 {/* Summary strip */}
                 <div className="flex items-center gap-4 border-b px-4 py-3 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <ShieldAlert className="size-3.5 text-red-400" />
+                    <WarningIcon className="size-3.5 text-red-400" />
                     <span className="font-medium">{criticalCount}</span>
                     <span className="text-muted-foreground">critical</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <AlertTriangle className="size-3.5 text-amber-400" />
+                    <WarningIcon className="size-3.5 text-amber-400" />
                     <span className="font-medium">{warningCount}</span>
                     <span className="text-muted-foreground">warning</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Info className="size-3.5 text-blue-400" />
+                    <InfoIcon className="size-3.5 text-blue-400" />
                     <span className="font-medium">{infoCount}</span>
                     <span className="text-muted-foreground">info</span>
                   </div>
@@ -331,9 +330,9 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                                 <CardTitle className="flex items-center justify-between gap-2 text-sm font-medium">
                                   <div className="flex min-w-0 items-center gap-2">
                                     {open ? (
-                                      <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
+                                      <CaretDownIcon className="size-3.5 shrink-0 text-muted-foreground" />
                                     ) : (
-                                      <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" />
+                                      <CaretRightIcon className="size-3.5 shrink-0 text-muted-foreground" />
                                     )}
                                     <span className="truncate">{check.title}</span>
                                   </div>
@@ -362,7 +361,7 @@ export function SchemaIntelPanel({ tabId }: SchemaIntelPanelProps) {
                               <CardContent className="pt-0">
                                 {findings.length === 0 ? (
                                   <p className="flex items-center gap-2 py-2 text-xs text-muted-foreground">
-                                    <CheckCircle2 className="size-3.5 text-green-500" />
+                                    <SuccessIcon className="size-3.5 text-green-500" />
                                     No issues found for this check.
                                   </p>
                                 ) : (
@@ -450,7 +449,7 @@ function FindingRow({
               className="h-6 px-2 text-[11px]"
               onClick={() => onCopy(finding.suggestedSql!)}
             >
-              <Copy className="mr-1 size-3" />
+              <CopyIcon className="mr-1 size-3" />
               Copy
             </Button>
             <Button

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Braces, ChevronDown, ChevronRight as ChevronRightIcon, Copy, Check } from 'lucide-react'
+import { BracesIcon, CaretDownIcon, CaretRightIcon, CheckIcon, CopyIcon } from '@/components/icons'
 import {
   Button,
   Tooltip,
@@ -79,9 +79,9 @@ function JsonTreeNode({
             className="p-0.5 hover:bg-accent/50 rounded shrink-0"
           >
             {isExpanded ? (
-              <ChevronDown className="size-3 text-muted-foreground" />
+              <CaretDownIcon className="size-3 text-muted-foreground" />
             ) : (
-              <ChevronRightIcon className="size-3 text-muted-foreground" />
+              <CaretRightIcon className="size-3 text-muted-foreground" />
             )}
           </button>
         )}
@@ -212,7 +212,7 @@ export function JsonCellEditor({
       <SheetContent side="right" className="w-[500px] sm:max-w-[500px] flex flex-col">
         <SheetHeader className="shrink-0">
           <SheetTitle className="flex items-center gap-2">
-            <Braces className="size-4 text-amber-500" />
+            <BracesIcon className="size-4 text-amber-500" />
             Edit {columnName || 'JSON'} Data
           </SheetTitle>
           <SheetDescription>Edit JSON content in the editor below</SheetDescription>
@@ -229,12 +229,12 @@ export function JsonCellEditor({
             >
               {copied ? (
                 <>
-                  <Check className="size-3 text-green-500" />
+                  <CheckIcon className="size-3 text-green-500" />
                   Copied!
                 </>
               ) : (
                 <>
-                  <Copy className="size-3" />
+                  <CopyIcon className="size-3" />
                   Copy
                 </>
               )}
@@ -244,7 +244,7 @@ export function JsonCellEditor({
               Cancel
             </Button>
             <Button size="sm" className="h-7 gap-1.5" onClick={handleSave}>
-              <Check className="size-3" />
+              <CheckIcon className="size-3" />
               Save
             </Button>
           </div>
@@ -323,7 +323,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
               }}
               className="flex items-center gap-1.5 text-left hover:bg-accent/50 px-1.5 py-0.5 -mx-1 rounded transition-colors group"
             >
-              <Braces className="size-3.5 text-amber-500 shrink-0" />
+              <BracesIcon className="size-3.5 text-amber-500 shrink-0" />
               <span className="font-mono text-xs text-muted-foreground group-hover:text-foreground truncate max-w-[200px]">
                 {preview}
               </span>
@@ -341,7 +341,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
         <SheetContent side="right" className="w-[500px] sm:max-w-[500px] flex flex-col">
           <SheetHeader className="shrink-0">
             <SheetTitle className="flex items-center gap-2">
-              <Braces className="size-4 text-amber-500" />
+              <BracesIcon className="size-4 text-amber-500" />
               {columnName || 'JSON'} Data
             </SheetTitle>
             <SheetDescription>View and copy JSON content</SheetDescription>
@@ -358,12 +358,12 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
               >
                 {copied ? (
                   <>
-                    <Check className="size-3 text-green-500" />
+                    <CheckIcon className="size-3 text-green-500" />
                     Copied!
                   </>
                 ) : (
                   <>
-                    <Copy className="size-3" />
+                    <CopyIcon className="size-3" />
                     Copy JSON
                   </>
                 )}

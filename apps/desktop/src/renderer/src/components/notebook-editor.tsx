@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Plus, Sparkles } from 'lucide-react'
+import { AiIcon, PlusIcon } from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import {
   DndContext,
@@ -234,7 +234,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
           className="h-7 gap-1.5 text-xs"
           onClick={() => handleAddCell('sql')}
         >
-          <Plus className="size-3" />
+          <PlusIcon className="size-3" />
           SQL
         </Button>
 
@@ -244,7 +244,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
           className="h-7 gap-1.5 text-xs"
           onClick={() => handleAddCell('markdown')}
         >
-          <Plus className="size-3" />
+          <PlusIcon className="size-3" />
           Note
         </Button>
 
@@ -254,7 +254,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
           className="h-7 gap-1.5 text-xs text-blue-400 hover:text-blue-300"
           onClick={() => openAICell()}
         >
-          <Sparkles className="size-3" />
+          <AiIcon className="size-3" />
           AI cell
         </Button>
       </div>
@@ -270,7 +270,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
                 className="gap-1.5 text-xs"
                 onClick={() => handleAddCell('sql')}
               >
-                <Plus className="size-3" />
+                <PlusIcon className="size-3" />
                 SQL cell
               </Button>
               <Button
@@ -279,11 +279,11 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
                 className="gap-1.5 text-xs"
                 onClick={() => handleAddCell('markdown')}
               >
-                <Plus className="size-3" />
+                <PlusIcon className="size-3" />
                 Note cell
               </Button>
               <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAICell()}>
-                <Sparkles className="size-3" />
+                <AiIcon className="size-3" />
                 AI cell
               </Button>
             </div>

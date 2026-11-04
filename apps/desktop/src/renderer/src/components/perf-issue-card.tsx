@@ -1,20 +1,20 @@
 import { useState } from 'react'
 import {
-  AlertTriangle,
-  AlertCircle,
-  Info,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Check,
-  Database,
-  Clock,
-  Repeat,
-  Play,
-  Code,
-  Loader2,
-  Filter
-} from 'lucide-react'
+  CaretDownIcon,
+  CaretRightIcon,
+  CheckIcon,
+  ClockIcon,
+  CodeIcon,
+  CopyIcon,
+  DatabaseIcon,
+  ErrorIcon,
+  FilterIcon,
+  InfoIcon,
+  PlayIcon,
+  RepeatIcon,
+  SpinnerIcon,
+  WarningIcon
+} from '@/components/icons'
 import { cn, Button } from '@data-peek/ui'
 import type { PerformanceIssue, PerformanceIssueType } from '@data-peek/shared'
 import { useConnectionStore } from '../stores/connection-store'
@@ -37,13 +37,13 @@ const ISSUE_TYPE_LABELS: Record<PerformanceIssueType, string> = {
 }
 
 const ISSUE_TYPE_ICONS: Record<PerformanceIssueType, React.ElementType> = {
-  missing_index: Database,
-  n_plus_one: Repeat,
-  slow_query: Clock,
-  high_filter_ratio: AlertTriangle,
-  row_estimate_off: Info,
-  disk_spill: AlertCircle,
-  poor_pruning: Filter
+  missing_index: DatabaseIcon,
+  n_plus_one: RepeatIcon,
+  slow_query: ClockIcon,
+  high_filter_ratio: WarningIcon,
+  row_estimate_off: InfoIcon,
+  disk_spill: ErrorIcon,
+  poor_pruning: FilterIcon
 }
 
 const severityClasses = {
@@ -72,10 +72,10 @@ export function PerfIssueCard({
 
   const SeverityIcon =
     issue.severity === 'critical'
-      ? AlertCircle
+      ? ErrorIcon
       : issue.severity === 'warning'
-        ? AlertTriangle
-        : Info
+        ? WarningIcon
+        : InfoIcon
 
   const TypeIcon = ISSUE_TYPE_ICONS[issue.type]
 
@@ -132,9 +132,9 @@ export function PerfIssueCard({
           </div>
         </div>
         {isExpanded ? (
-          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+          <CaretDownIcon className="size-4 text-muted-foreground shrink-0" />
         ) : (
-          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+          <CaretRightIcon className="size-4 text-muted-foreground shrink-0" />
         )}
       </button>
 
@@ -177,9 +177,9 @@ export function PerfIssueCard({
                   onClick={handleCopyIndex}
                 >
                   {copied ? (
-                    <Check className="size-3 text-green-500" />
+                    <CheckIcon className="size-3 text-green-500" />
                   ) : (
-                    <Copy className="size-3" />
+                    <CopyIcon className="size-3" />
                   )}
                 </Button>
               </div>
@@ -191,7 +191,7 @@ export function PerfIssueCard({
                   className="h-7 text-xs text-muted-foreground gap-1"
                   onClick={() => setShowJson(!showJson)}
                 >
-                  <Code className="size-3.5" />
+                  <CodeIcon className="size-3.5" />
                   {showJson ? 'Hide raw issue' : 'View raw issue'}
                 </Button>
 
@@ -204,17 +204,17 @@ export function PerfIssueCard({
                 >
                   {isApplying ? (
                     <>
-                      <Loader2 className="size-3.5 animate-spin" />
+                      <SpinnerIcon className="size-3.5 animate-spin" />
                       Applying Index...
                     </>
                   ) : applySuccess ? (
                     <>
-                      <Check className="size-3.5 text-white" />
+                      <CheckIcon className="size-3.5 text-white" />
                       Index Applied!
                     </>
                   ) : (
                     <>
-                      <Play className="size-3.5 fill-white" />
+                      <PlayIcon weight="fill" className="size-3.5 fill-white" />
                       Apply Index & Re-run
                     </>
                   )}

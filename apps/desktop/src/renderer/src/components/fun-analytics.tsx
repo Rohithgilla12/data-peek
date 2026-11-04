@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import {
-  Flame,
-  Zap,
-  Trophy,
-  Target,
-  Clock,
-  Database,
-  TrendingUp,
-  RotateCcw,
-  ChevronRight,
-  Sparkles
-} from 'lucide-react'
+  AiIcon,
+  CaretRightIcon,
+  ClockIcon,
+  DatabaseIcon,
+  FireIcon,
+  TargetIcon,
+  TrendUpIcon,
+  TrophyIcon,
+  UndoIcon,
+  ZapIcon
+} from '@/components/icons'
 import {
   usePokemonBuddyStore,
   getActivePokemon,
@@ -52,7 +52,7 @@ function StatCard({
   subtitle,
   color
 }: {
-  icon: typeof Flame
+  icon: typeof FireIcon
   label: string
   value: string
   subtitle?: string
@@ -144,9 +144,9 @@ export function FunAnalytics() {
       <SidebarGroup>
         <SidebarGroupLabel asChild>
           <CollapsibleTrigger>
-            <Sparkles className="size-4 mr-1" />
+            <AiIcon className="size-4 mr-1" />
             Fun Stats
-            <ChevronRight className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+            <CaretRightIcon className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
           </CollapsibleTrigger>
         </SidebarGroupLabel>
         <CollapsibleContent>
@@ -187,21 +187,21 @@ export function FunAnalytics() {
               {/* Key metrics */}
               <div className="space-y-0.5">
                 <StatCard
-                  icon={Target}
+                  icon={TargetIcon}
                   label="Queries Run"
                   value={formatNumber(totalQueries)}
                   subtitle={`${successRate}% success rate`}
                   color="#6b8cf5"
                 />
                 <StatCard
-                  icon={Database}
+                  icon={DatabaseIcon}
                   label="Rows Fetched"
                   value={formatNumber(totalRowsFetched)}
                   subtitle={totalRowsFetched > 0 ? getRowComparison(totalRowsFetched) : undefined}
                   color="#78C850"
                 />
                 <StatCard
-                  icon={Zap}
+                  icon={ZapIcon}
                   label="Fastest Query"
                   value={fastestQueryMs < 0 ? '—' : formatDuration(fastestQueryMs)}
                   subtitle={
@@ -210,21 +210,21 @@ export function FunAnalytics() {
                   color="#F8D030"
                 />
                 <StatCard
-                  icon={Flame}
+                  icon={FireIcon}
                   label="Current Streak"
                   value={`${currentStreak} ${currentStreak === 1 ? 'query' : 'queries'}`}
                   subtitle={bestStreak > 0 ? `Best: ${bestStreak} in a row` : undefined}
                   color="#F08030"
                 />
                 <StatCard
-                  icon={Clock}
+                  icon={ClockIcon}
                   label="Total Query Time"
                   value={formatDuration(totalQueryTimeMs)}
                   subtitle={`Avg: ${avgQueryTime} per query`}
                   color="#A040A0"
                 />
                 <StatCard
-                  icon={TrendingUp}
+                  icon={TrendUpIcon}
                   label="Error Count"
                   value={failedQueries.toString()}
                   subtitle={
@@ -242,9 +242,9 @@ export function FunAnalytics() {
                 onClick={() => setShowAchievements(!showAchievements)}
                 className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-accent/50 transition-colors"
               >
-                <Trophy className="size-3.5 text-yellow-500" />
+                <TrophyIcon className="size-3.5 text-yellow-500" />
                 Achievements ({achievements.length}/{ACHIEVEMENTS.length})
-                <ChevronRight
+                <CaretRightIcon
                   className={cn(
                     'ml-auto size-3 transition-transform',
                     showAchievements && 'rotate-90'
@@ -278,7 +278,7 @@ export function FunAnalytics() {
                   }}
                   className="flex w-full items-center justify-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/30 transition-colors"
                 >
-                  <RotateCcw className="size-3" />
+                  <UndoIcon className="size-3" />
                   Reset Stats
                 </button>
               )}

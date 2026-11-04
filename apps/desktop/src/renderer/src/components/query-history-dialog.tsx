@@ -1,16 +1,16 @@
 import { useState, useMemo } from 'react'
 import {
-  Clock,
-  Copy,
-  Play,
-  Trash2,
-  Search,
-  X,
-  CheckCircle2,
-  XCircle,
-  Calendar,
-  Filter
-} from 'lucide-react'
+  CalendarIcon,
+  ClockIcon,
+  CloseIcon,
+  CopyIcon,
+  ErrorIcon,
+  FilterIcon,
+  PlayIcon,
+  SearchIcon,
+  SuccessIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -98,7 +98,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
       <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-4 py-3 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="size-4" />
+            <ClockIcon className="size-4" />
             Query History
             <Badge variant="secondary" className="ml-2">
               {filteredHistory.length} queries
@@ -108,7 +108,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
 
         <div className="px-4 py-3 border-b space-y-3 shrink-0">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search queries..."
@@ -123,14 +123,14 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                 className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
                 onClick={() => setSearchQuery('')}
               >
-                <X className="size-4" />
+                <CloseIcon className="size-4" />
               </Button>
             )}
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5">
-              <Filter className="size-3.5 text-muted-foreground" />
+              <FilterIcon className="size-3.5 text-muted-foreground" />
               <span className="text-xs text-muted-foreground">Filters:</span>
             </div>
 
@@ -186,7 +186,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                   }
                 }}
               >
-                <Trash2 className="size-3.5 mr-1.5" />
+                <TrashIcon className="size-3.5 mr-1.5" />
                 Clear All
               </Button>
             )}
@@ -199,13 +199,13 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
               <div className="text-center py-12 text-muted-foreground">
                 {history.length === 0 ? (
                   <div className="space-y-2">
-                    <Clock className="size-8 mx-auto opacity-50" />
+                    <ClockIcon className="size-8 mx-auto opacity-50" />
                     <p>No query history yet</p>
                     <p className="text-xs">Run some queries to see them here</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Search className="size-8 mx-auto opacity-50" />
+                    <SearchIcon className="size-8 mx-auto opacity-50" />
                     <p>No queries match your filters</p>
                   </div>
                 )}
@@ -214,7 +214,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
               groupedHistory.map((group) => (
                 <div key={group.label}>
                   <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="size-3.5 text-muted-foreground" />
+                    <CalendarIcon className="size-3.5 text-muted-foreground" />
                     <span className="text-sm font-medium text-muted-foreground">{group.label}</span>
                   </div>
                   <div className="space-y-2">
@@ -238,9 +238,9 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                                   {queryType}
                                 </Badge>
                                 {item.status === 'success' ? (
-                                  <CheckCircle2 className="size-3.5 text-green-500" />
+                                  <SuccessIcon className="size-3.5 text-green-500" />
                                 ) : (
-                                  <XCircle className="size-3.5 text-red-500" />
+                                  <ErrorIcon className="size-3.5 text-red-500" />
                                 )}
                                 <span className="text-xs text-muted-foreground">
                                   {formatRelativeTime(item.timestamp)}
@@ -279,7 +279,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                                       className="size-7"
                                       onClick={() => handleRunQuery(item.query, item.connectionId)}
                                     >
-                                      <Play className="size-3.5" />
+                                      <PlayIcon className="size-3.5" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>Open in new tab</TooltipContent>
@@ -295,7 +295,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                                       className="size-7"
                                       onClick={() => handleCopyQuery(item.query)}
                                     >
-                                      <Copy className="size-3.5" />
+                                      <CopyIcon className="size-3.5" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>Copy query</TooltipContent>
@@ -311,7 +311,7 @@ export function QueryHistoryDialog({ open, onOpenChange }: QueryHistoryDialogPro
                                       className="size-7 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                                       onClick={() => removeFromHistory(item.id)}
                                     >
-                                      <Trash2 className="size-3.5" />
+                                      <TrashIcon className="size-3.5" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>Delete</TooltipContent>

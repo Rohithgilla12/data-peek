@@ -1,19 +1,18 @@
 import {
-  Play,
-  Square,
-  StepForward,
-  Loader2,
-  BarChart3,
-  Wand2,
-  Bookmark,
-  Share2,
-  Maximize2,
-  PanelTop,
-  PanelTopClose,
-  CheckCircle2,
-  Undo2,
-  Activity
-} from 'lucide-react'
+  ActivityIcon,
+  AiIcon,
+  BookmarkIcon,
+  ChartBarIcon,
+  MaximizeIcon,
+  PanelTopIcon,
+  PlayIcon,
+  ShareIcon,
+  SpinnerIcon,
+  StepForwardIcon,
+  StopIcon,
+  SuccessIcon,
+  UndoIcon
+} from '@/components/icons'
 import {
   Button,
   keys,
@@ -112,9 +111,9 @@ export function EditorToolbar({
           title={isEditorCollapsed ? 'Show query editor' : 'Hide query editor'}
         >
           {isEditorCollapsed ? (
-            <PanelTop className="size-3.5" />
+            <PanelTopIcon className="size-3.5" />
           ) : (
-            <PanelTopClose className="size-3.5" />
+            <PanelTopIcon className="size-3.5" />
           )}
         </Button>
         {isExecuting ? (
@@ -124,7 +123,7 @@ export function EditorToolbar({
             className="gap-1.5 h-7"
             onClick={handleCancelQuery}
           >
-            <Square className="size-3.5" />
+            <StopIcon className="size-3.5" />
             Cancel
           </Button>
         ) : (
@@ -134,7 +133,7 @@ export function EditorToolbar({
             disabled={!hasQuery}
             onClick={() => handleRunQuery()}
           >
-            <Play className="size-3.5" />
+            <PlayIcon className="size-3.5" />
             Run
             <kbd className="ml-1.5 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
               {keys.mod}
@@ -151,7 +150,7 @@ export function EditorToolbar({
               disabled={!hasQuery || !!stepSession || isExecuting}
               className="h-7 text-xs"
             >
-              <StepForward className="size-3 mr-1" />
+              <StepForwardIcon className="size-3 mr-1" />
               Step
               <kbd className="ml-2 opacity-60 text-[10px]">⇧⌘↵</kbd>
             </Button>
@@ -195,7 +194,7 @@ export function EditorToolbar({
                   disabled={!hasActiveTransaction}
                   onClick={handleCommit}
                 >
-                  <CheckCircle2 className="size-3" />
+                  <SuccessIcon className="size-3" />
                   Commit
                 </Button>
                 <Button
@@ -205,7 +204,7 @@ export function EditorToolbar({
                   disabled={!hasActiveTransaction}
                   onClick={handleRollback}
                 >
-                  <Undo2 className="size-3" />
+                  <UndoIcon className="size-3" />
                   Rollback
                 </Button>
               </>
@@ -223,9 +222,9 @@ export function EditorToolbar({
                 onClick={handleExplainQuery}
               >
                 {isExplaining ? (
-                  <Loader2 className="size-3.5 animate-spin" />
+                  <SpinnerIcon className="size-3.5 animate-spin" />
                 ) : (
-                  <BarChart3 className="size-3.5" />
+                  <ChartBarIcon className="size-3.5" />
                 )}
                 Explain
               </Button>
@@ -248,9 +247,9 @@ export function EditorToolbar({
                   onClick={handleAnalyzePerformance}
                 >
                   {isPerfAnalyzing ? (
-                    <Loader2 className="size-3.5 animate-spin" />
+                    <SpinnerIcon className="size-3.5 animate-spin" />
                   ) : (
-                    <Activity className="size-3.5 text-indigo-400" />
+                    <ActivityIcon className="size-3.5 text-indigo-400" />
                   )}
                   Analyze
                 </Button>
@@ -279,7 +278,7 @@ export function EditorToolbar({
               disabled={!hasQuery}
               onClick={handleFormatQuery}
             >
-              <Wand2 className="size-3.5" />
+              <AiIcon className="size-3.5" />
               Format
               <kbd className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium">
                 {keys.mod}
@@ -293,7 +292,7 @@ export function EditorToolbar({
               disabled={!hasQuery}
               onClick={() => setSaveDialogOpen(true)}
             >
-              <Bookmark className="size-3.5" />
+              <BookmarkIcon className="size-3.5" />
               Save
             </Button>
             <TooltipProvider>
@@ -306,7 +305,7 @@ export function EditorToolbar({
                     disabled={!hasQuery}
                     onClick={() => setShareDialogOpen(true)}
                   >
-                    <Share2 className="size-3.5" />
+                    <ShareIcon className="size-3.5" />
                     Share
                   </Button>
                 </TooltipTrigger>
@@ -325,7 +324,7 @@ export function EditorToolbar({
                     className={`h-7 w-7 ${isResultsCollapsed ? 'text-primary' : ''}`}
                     onClick={() => setIsResultsCollapsed(!isResultsCollapsed)}
                   >
-                    <Maximize2 className="size-3.5" />
+                    <MaximizeIcon className="size-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">

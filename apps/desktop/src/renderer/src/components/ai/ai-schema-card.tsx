@@ -1,5 +1,12 @@
 import * as React from 'react'
-import { Table2, Key, ChevronDown, ChevronUp, Hash, Type } from 'lucide-react'
+import {
+  CaretDownIcon,
+  CaretUpIcon,
+  HashIcon,
+  KeyIcon,
+  TableIcon,
+  TypeIcon
+} from '@/components/icons'
 import { cn } from '@data-peek/ui'
 
 interface Column {
@@ -21,7 +28,7 @@ const getTypeStyle = (type: string) => {
   const lowerType = type.toLowerCase()
 
   if (lowerType.includes('int') || lowerType.includes('serial') || lowerType.includes('numeric')) {
-    return { icon: Hash, color: 'text-amber-400' }
+    return { icon: HashIcon, color: 'text-amber-400' }
   }
   if (
     lowerType.includes('char') ||
@@ -29,7 +36,7 @@ const getTypeStyle = (type: string) => {
     lowerType.includes('string') ||
     lowerType.includes('varchar')
   ) {
-    return { icon: Type, color: 'text-emerald-400' }
+    return { icon: TypeIcon, color: 'text-emerald-400' }
   }
   if (lowerType.includes('bool')) {
     return { icon: null, color: 'text-purple-400' }
@@ -68,7 +75,7 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
         className="w-full flex items-center justify-between px-3 py-2 border-b border-zinc-800/30 bg-zinc-900/40 hover:bg-zinc-800/30 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Table2 className="size-3.5 text-blue-400" />
+          <TableIcon className="size-3.5 text-blue-400" />
           <span className="text-[11px] font-semibold text-zinc-200">{table.name}</span>
           <span className="text-[10px] text-zinc-500">
             {table.columns.length} column{table.columns.length !== 1 ? 's' : ''}
@@ -78,14 +85,14 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
         <div className="flex items-center gap-2">
           {pkColumns.length > 0 && (
             <div className="flex items-center gap-1">
-              <Key className="size-3 text-amber-400" />
+              <KeyIcon className="size-3 text-amber-400" />
               <span className="text-[9px] text-amber-400/70">{pkColumns.length} PK</span>
             </div>
           )}
           {isExpanded ? (
-            <ChevronUp className="size-3.5 text-zinc-500" />
+            <CaretUpIcon className="size-3.5 text-zinc-500" />
           ) : (
-            <ChevronDown className="size-3.5 text-zinc-500" />
+            <CaretDownIcon className="size-3.5 text-zinc-500" />
           )}
         </div>
       </button>
@@ -104,7 +111,7 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
               )}
             >
               <div className="flex items-center gap-2">
-                {column.isPrimaryKey && <Key className="size-3 text-amber-400" />}
+                {column.isPrimaryKey && <KeyIcon className="size-3 text-amber-400" />}
                 <span
                   className={cn(
                     'text-[11px] font-mono',

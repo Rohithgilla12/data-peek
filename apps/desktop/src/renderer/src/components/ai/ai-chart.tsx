@@ -15,14 +15,14 @@ import {
   ResponsiveContainer
 } from 'recharts'
 import {
-  BarChart3,
-  LineChart as LineChartIcon,
-  PieChart as PieChartIcon,
-  AreaChart as AreaChartIcon,
-  TrendingUp,
-  Hash,
-  Calendar
-} from 'lucide-react'
+  AreaChartIcon,
+  CalendarIcon,
+  ChartBarIcon,
+  HashIcon,
+  LineChartIcon,
+  PieChartIcon,
+  TrendUpIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -68,7 +68,7 @@ const DEFAULT_COLORS = [
 
 // Chart type icons
 const CHART_ICONS: Record<ChartType, React.ReactNode> = {
-  bar: <BarChart3 className="size-3.5" />,
+  bar: <ChartBarIcon className="size-3.5" />,
   line: <LineChartIcon className="size-3.5" />,
   pie: <PieChartIcon className="size-3.5" />,
   area: <AreaChartIcon className="size-3.5" />
@@ -226,16 +226,16 @@ export function AIChart({ chartData, className }: AIChartProps) {
         {/* Data info badges */}
         <div className="flex items-center gap-2 mt-2">
           <Badge variant="outline" className="text-[10px] gap-1">
-            <Hash className="size-2.5" />
+            <HashIcon className="size-2.5" />
             {data.length} rows
           </Badge>
           <Badge variant="outline" className="text-[10px] gap-1">
             {xDataType === 'date' ? (
-              <Calendar className="size-2.5" />
+              <CalendarIcon className="size-2.5" />
             ) : xDataType === 'number' ? (
-              <Hash className="size-2.5" />
+              <HashIcon className="size-2.5" />
             ) : (
-              <BarChart3 className="size-2.5" />
+              <ChartBarIcon className="size-2.5" />
             )}
             {xKey}
           </Badge>
@@ -246,7 +246,7 @@ export function AIChart({ chartData, className }: AIChartProps) {
               className="text-[10px] gap-1"
               style={{ borderColor: colors[i % colors.length] + '50' }}
             >
-              <TrendingUp className="size-2.5" style={{ color: colors[i % colors.length] }} />
+              <TrendUpIcon className="size-2.5" style={{ color: colors[i % colors.length] }} />
               {key}
             </Badge>
           ))}

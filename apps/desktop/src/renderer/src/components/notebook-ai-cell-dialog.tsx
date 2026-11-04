@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Sparkles, Loader2, AlertTriangle } from 'lucide-react'
+import { AiIcon, SpinnerIcon, WarningIcon } from '@/components/icons'
 import {
   Button,
   Dialog,
@@ -101,7 +101,7 @@ export function NotebookAICellDialog({
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="size-4 text-blue-400" />
+            <AiIcon className="size-4 text-blue-400" />
             AI cell
           </DialogTitle>
           <DialogDescription>
@@ -124,7 +124,7 @@ export function NotebookAICellDialog({
 
         {error && (
           <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2 text-red-400">
-            <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+            <WarningIcon className="size-4 shrink-0 mt-0.5" />
             <span className="text-xs">{error}</span>
           </div>
         )}
@@ -136,12 +136,12 @@ export function NotebookAICellDialog({
           <Button onClick={handleGenerate} disabled={loading || !prompt.trim()}>
             {loading ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
                 Generating…
               </>
             ) : (
               <>
-                <Sparkles className="size-4" />
+                <AiIcon className="size-4" />
                 Add AI cell
               </>
             )}

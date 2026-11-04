@@ -51,19 +51,19 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer, type Virtualizer } from '@tanstack/react-virtual'
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  BarChart2,
-  Copy,
-  Link2,
-  Lock,
-  MoreHorizontal,
-  RotateCcw,
-  Trash2,
-  Unlock,
-  X
-} from 'lucide-react'
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ArrowsDownUpIcon,
+  ChartBarIcon,
+  CloseIcon,
+  CopyIcon,
+  LinkIcon,
+  LockIcon,
+  MoreIcon,
+  TrashIcon,
+  UndoIcon,
+  UnlockIcon
+} from '@/components/icons'
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import * as React from 'react'
 import { CellGridInspector, CellGridOverlays, useCellGrid } from '@/components/cell-grid'
@@ -712,7 +712,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       className="size-6 text-muted-foreground hover:text-foreground"
                       onClick={() => unmarkRowForDeletion(tabId, originalRow)}
                     >
-                      <RotateCcw className="size-3" />
+                      <UndoIcon className="size-3" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Restore row</TooltipContent>
@@ -725,7 +725,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       size="icon"
                       className="size-6 text-muted-foreground hover:text-foreground"
                     >
-                      <MoreHorizontal className="size-3" />
+                      <MoreIcon className="size-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-40">
@@ -733,7 +733,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       onClick={() => handleDuplicateRow(originalRow)}
                       className="gap-2"
                     >
-                      <Copy className="size-4 text-amber-500" />
+                      <CopyIcon className="size-4 text-amber-500" />
                       Duplicate Row
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -741,7 +741,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       onClick={() => markRowForDeletion(tabId, originalRow)}
                       className="gap-2 text-red-500 focus:text-red-500"
                     >
-                      <Trash2 className="size-4" />
+                      <TrashIcon className="size-4" />
                       Delete Row
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -785,8 +785,8 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       🔑
                     </span>
                   )}
-                  {isMasked && <Lock className="ml-1 size-3 text-amber-500" />}
-                  {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
+                  {isMasked && <LockIcon className="ml-1 size-3 text-amber-500" />}
+                  {col.foreignKey && <LinkIcon className="ml-1 size-3 text-blue-400" />}
                   <Badge
                     variant="outline"
                     className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
@@ -796,9 +796,9 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   {activeChip ? (
                     <span className="ml-1 inline-flex items-center gap-0.5">
                       {activeChip.direction === 'asc' ? (
-                        <ArrowUp className="size-3 text-primary" />
+                        <ArrowUpIcon className="size-3 text-primary" />
                       ) : (
-                        <ArrowDown className="size-3 text-primary" />
+                        <ArrowDownIcon className="size-3 text-primary" />
                       )}
                       {sortChips.length > 1 && (
                         <span className="text-[9px] font-mono font-semibold text-primary/80 tabular-nums">
@@ -807,7 +807,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       )}
                     </span>
                   ) : (
-                    <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                    <ArrowsDownUpIcon className="ml-1 size-3 opacity-50" />
                   )}
                 </Button>
                 <DropdownMenu>
@@ -819,13 +819,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       className="size-5 ml-0.5 opacity-0 group-hover/head:opacity-100 hover:opacity-100 focus:opacity-100"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <MoreHorizontal className="size-3" />
+                      <MoreIcon className="size-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {onColumnStatsClick && (
                       <DropdownMenuItem onClick={() => onColumnStatsClick(col)}>
-                        <BarChart2 className="size-3 mr-2" />
+                        <ChartBarIcon className="size-3 mr-2" />
                         Column Statistics
                       </DropdownMenuItem>
                     )}
@@ -833,12 +833,12 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                     <DropdownMenuItem onClick={() => toggleColumnMask(tabId, col.name)}>
                       {isMasked ? (
                         <>
-                          <Unlock className="size-3 mr-2" />
+                          <UnlockIcon className="size-3 mr-2" />
                           Unmask Column
                         </>
                       ) : (
                         <>
-                          <Lock className="size-3 mr-2" />
+                          <LockIcon className="size-3 mr-2" />
                           Mask Column
                         </>
                       )}
@@ -1402,7 +1402,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                           className="size-6 text-muted-foreground hover:text-red-500"
                           onClick={() => removeNewRow(tabId, newRow.id)}
                         >
-                          <X className="size-3" />
+                          <CloseIcon className="size-3" />
                         </Button>
                       </TableCell>
                       {columnDefs.map((col) => (

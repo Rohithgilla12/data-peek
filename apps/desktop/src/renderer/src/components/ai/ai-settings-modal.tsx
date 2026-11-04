@@ -1,16 +1,16 @@
 import * as React from 'react'
 import {
-  Eye,
-  EyeOff,
-  Check,
-  AlertCircle,
-  Loader2,
-  Sparkles,
-  ExternalLink,
-  Trash2,
-  Key,
-  CheckCircle2
-} from 'lucide-react'
+  AiIcon,
+  CheckIcon,
+  ErrorIcon,
+  ExternalLinkIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  KeyIcon,
+  SpinnerIcon,
+  SuccessIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -260,7 +260,7 @@ export function AISettingsModal({
             <div className="relative">
               <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-sm" />
               <div className="relative flex items-center justify-center size-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-                <Sparkles className="size-5 text-blue-400" />
+                <AiIcon className="size-5 text-blue-400" />
               </div>
             </div>
             <div>
@@ -296,7 +296,7 @@ export function AISettingsModal({
                   >
                     {hasConfig && (
                       <div className="absolute -top-1 -right-1">
-                        <CheckCircle2
+                        <SuccessIcon
                           className={cn(
                             'size-3.5',
                             isActive ? 'text-green-500' : 'text-green-500/60'
@@ -331,12 +331,12 @@ export function AISettingsModal({
                   className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
                 >
                   Get API Key
-                  <ExternalLink className="size-3" />
+                  <ExternalLinkIcon className="size-3" />
                 </a>
               </div>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <KeyIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
                     id="api-key"
                     type={showKey ? 'text' : 'password'}
@@ -354,7 +354,7 @@ export function AISettingsModal({
                     onClick={() => setShowKey(!showKey)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    {showKey ? <EyeSlashIcon className="size-4" /> : <EyeIcon className="size-4" />}
                   </button>
                 </div>
                 <Button
@@ -365,11 +365,11 @@ export function AISettingsModal({
                   className="shrink-0"
                 >
                   {isValidating ? (
-                    <Loader2 className="size-4 animate-spin" />
+                    <SpinnerIcon className="size-4 animate-spin" />
                   ) : validationResult === 'success' ? (
-                    <Check className="size-4 text-green-500" />
+                    <CheckIcon className="size-4 text-green-500" />
                   ) : validationResult === 'error' ? (
-                    <AlertCircle className="size-4 text-red-500" />
+                    <ErrorIcon className="size-4 text-red-500" />
                   ) : (
                     'Test'
                   )}
@@ -377,13 +377,13 @@ export function AISettingsModal({
               </div>
               {validationResult === 'success' && (
                 <p className="text-[10px] text-green-500 flex items-center gap-1">
-                  <Check className="size-3" />
+                  <CheckIcon className="size-3" />
                   API key is valid
                 </p>
               )}
               {validationResult === 'error' && (
                 <p className="text-[10px] text-red-500 flex items-center gap-1">
-                  <AlertCircle className="size-3" />
+                  <ErrorIcon className="size-3" />
                   Invalid API key
                 </p>
               )}
@@ -396,12 +396,12 @@ export function AISettingsModal({
               <Label className="text-xs">{providerConfig.name}</Label>
               {isDetecting ? (
                 <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                  <Loader2 className="size-3.5 animate-spin" />
+                  <SpinnerIcon className="size-3.5 animate-spin" />
                   Looking for the local CLI…
                 </p>
               ) : harness?.available ? (
                 <div className="flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/5 px-3 py-2">
-                  <CheckCircle2 className="size-4 text-green-500 shrink-0" />
+                  <SuccessIcon className="size-4 text-green-500 shrink-0" />
                   <span className="text-[11px] text-green-400">
                     Detected{harness.version ? ` · ${harness.version}` : ''} —{' '}
                     {renderHint(HARNESS_HINTS[selectedProvider]?.detected)}
@@ -410,7 +410,7 @@ export function AISettingsModal({
               ) : (
                 <div className="space-y-1.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
                   <span className="text-[11px] text-amber-400 flex items-center gap-1.5">
-                    <AlertCircle className="size-3.5 shrink-0" />
+                    <ErrorIcon className="size-3.5 shrink-0" />
                     {renderHint(HARNESS_HINTS[selectedProvider]?.missing)}
                   </span>
                   <a
@@ -420,7 +420,7 @@ export function AISettingsModal({
                     className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
                   >
                     Setup guide
-                    <ExternalLink className="size-3" />
+                    <ExternalLinkIcon className="size-3" />
                   </a>
                 </div>
               )}
@@ -482,7 +482,7 @@ export function AISettingsModal({
               disabled={!canSaveConfig || (!needsKey && isActiveProvider)}
               className="flex-1"
             >
-              {isSaving ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
+              {isSaving ? <SpinnerIcon className="size-4 animate-spin mr-1" /> : null}
               {needsKey
                 ? `${hasProviderConfig(selectedProvider) ? 'Update' : 'Save'} ${providerConfig.name} Key`
                 : isActiveProvider
@@ -502,7 +502,7 @@ export function AISettingsModal({
                 disabled={isSaving}
                 className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
               >
-                <Trash2 className="size-4" />
+                <TrashIcon className="size-4" />
               </Button>
             )}
           </div>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Settings } from 'lucide-react'
+import { SettingsIcon } from '@/components/icons'
 import {
   Button,
   Switch,
@@ -88,7 +88,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Settings className="size-5" />
+            <SettingsIcon className="size-5" />
             Settings
           </DialogTitle>
           <DialogDescription>Configure your data-peek preferences.</DialogDescription>

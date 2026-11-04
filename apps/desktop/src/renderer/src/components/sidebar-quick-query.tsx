@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Play, ChevronDown } from 'lucide-react'
+import { CaretDownIcon, PlayIcon } from '@/components/icons'
 import {
   Button,
   Collapsible,
@@ -43,7 +43,7 @@ export function SidebarQuickQuery() {
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Quick Query
             </span>
-            <ChevronDown
+            <CaretDownIcon
               className={cn(
                 'size-4 text-muted-foreground transition-transform duration-200',
                 isOpen && 'rotate-180'
@@ -72,7 +72,7 @@ export function SidebarQuickQuery() {
                 disabled={!activeConnection || !quickQuery.trim()}
                 onClick={handleRunQuickQuery}
               >
-                <Play className="size-3" />
+                <PlayIcon className="size-3" />
                 Run in New Tab
               </Button>
             </div>

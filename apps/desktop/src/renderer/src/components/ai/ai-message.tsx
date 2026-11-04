@@ -1,17 +1,17 @@
 import * as React from 'react'
 import {
-  User,
-  Sparkles,
-  Copy,
-  Check,
-  AlertTriangle,
-  Loader2,
-  CornerDownRight,
-  Pin,
-  BookmarkPlus,
-  LayoutDashboard,
-  NotebookPen
-} from 'lucide-react'
+  AiIcon,
+  ArrowElbowDownRightIcon,
+  BookmarkAddIcon,
+  CheckIcon,
+  CopyIcon,
+  DashboardIcon,
+  NotebookIcon,
+  PinIcon,
+  SpinnerIcon,
+  UserIcon,
+  WarningIcon
+} from '@/components/icons'
 import {
   cn,
   DropdownMenu,
@@ -343,7 +343,7 @@ export function AIMessage({
           <div className="space-y-2 mt-3">
             {queryData.warning && (
               <div className="flex items-start gap-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-200">
-                <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                <WarningIcon className="size-4 shrink-0 mt-0.5" />
                 <span className="text-xs">{queryData.warning}</span>
               </div>
             )}
@@ -360,7 +360,7 @@ export function AIMessage({
             {queryError && (
               <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4">
                 <div className="flex items-start gap-2 text-red-400">
-                  <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                  <WarningIcon className="size-4 shrink-0 mt-0.5" />
                   <div>
                     <p className="text-sm font-medium">Query failed</p>
                     <p className="text-xs opacity-70 mt-1">{queryError}</p>
@@ -390,7 +390,7 @@ export function AIMessage({
           return (
             <div className="rounded-xl border border-border/50 bg-muted/20 p-8 mt-3">
               <div className="flex flex-col items-center justify-center gap-2">
-                <Loader2 className="size-6 animate-spin text-blue-400" />
+                <SpinnerIcon className="size-6 animate-spin text-blue-400" />
                 <span className="text-sm text-muted-foreground">Loading chart data...</span>
               </div>
             </div>
@@ -401,7 +401,7 @@ export function AIMessage({
           return (
             <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 mt-3">
               <div className="flex items-start gap-2 text-red-400">
-                <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+                <WarningIcon className="size-4 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-sm font-medium">Failed to load chart data</p>
                   <p className="text-xs opacity-70 mt-1">{chartError}</p>
@@ -538,9 +538,9 @@ export function AIMessage({
         )}
       >
         {isUser ? (
-          <User className="size-3.5 text-muted-foreground" />
+          <UserIcon className="size-3.5 text-muted-foreground" />
         ) : (
-          <Sparkles className="size-3.5 text-blue-400" />
+          <AiIcon className="size-3.5 text-blue-400" />
         )}
       </div>
 
@@ -591,9 +591,9 @@ export function AIMessage({
                 className="absolute -right-1 -top-1 opacity-0 group-hover/content:opacity-100 transition-opacity p-1 rounded bg-muted hover:bg-muted/80"
               >
                 {copiedContent ? (
-                  <Check className="size-3 text-green-500" />
+                  <CheckIcon className="size-3 text-green-500" />
                 ) : (
-                  <Copy className="size-3 text-muted-foreground" />
+                  <CopyIcon className="size-3 text-muted-foreground" />
                 )}
               </button>
             )}
@@ -604,7 +604,7 @@ export function AIMessage({
             any prose has arrived. Hidden once prose is streaming with no active step. */}
         {!isUser && message.streaming && (message.activity || !message.content) && (
           <div className="flex items-center gap-1.5 text-[11px] text-blue-400/90">
-            <Loader2 className="size-3 animate-spin" />
+            <SpinnerIcon className="size-3 animate-spin" />
             {message.activity ?? 'Thinking…'}
           </div>
         )}
@@ -612,7 +612,7 @@ export function AIMessage({
         {/* Grounded-against-DB indicator (BYOH agentic mode queried the live DB) */}
         {!isUser && message.grounded && (
           <div className="flex items-center gap-1 text-[10px] text-green-400/90">
-            <Check className="size-3" />
+            <CheckIcon className="size-3" />
             Grounded against your database
           </div>
         )}
@@ -631,31 +631,31 @@ export function AIMessage({
                   className="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                 >
                   {pinBusy ? (
-                    <Loader2 className="size-3 animate-spin" />
+                    <SpinnerIcon className="size-3 animate-spin" />
                   ) : (
-                    <Pin className="size-3" />
+                    <PinIcon className="size-3" />
                   )}
                   Pin
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
                 <DropdownMenuItem onClick={saveQuery}>
-                  <BookmarkPlus className="size-3.5" />
+                  <BookmarkAddIcon className="size-3.5" />
                   Save query
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={pinToDashboard}>
-                  <LayoutDashboard className="size-3.5" />
+                  <DashboardIcon className="size-3.5" />
                   Add to dashboard
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={addToNotebook}>
-                  <NotebookPen className="size-3.5" />
+                  <NotebookIcon className="size-3.5" />
                   Add to notebook cell
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             {pinResult && (
               <span className="inline-flex items-center gap-1 text-[11px] text-green-400/90">
-                <Check className="size-3" />
+                <CheckIcon className="size-3" />
                 {pinResult}
               </span>
             )}
@@ -676,7 +676,7 @@ export function AIMessage({
                   onClick={() => onSuggestionClick(s)}
                   className="inline-flex items-center gap-1 rounded-full border border-blue-500/25 bg-blue-500/5 px-2.5 py-1 text-xs text-blue-300/90 hover:bg-blue-500/10 hover:border-blue-500/40 transition-colors"
                 >
-                  <CornerDownRight className="size-3 opacity-60" />
+                  <ArrowElbowDownRightIcon className="size-3 opacity-60" />
                   {s}
                 </button>
               ))}

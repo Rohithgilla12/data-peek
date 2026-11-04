@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { X, Search, DatabaseZap } from 'lucide-react'
+import { CloseIcon, DatabaseIcon, SearchIcon } from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import { getTypeColor } from '@/lib/type-colors'
 import { useClickCopy } from '@/hooks'
@@ -261,7 +261,7 @@ function FilterChipButton({
           }
         }}
       >
-        <X className="size-3 text-muted-foreground hover:text-foreground" />
+        <CloseIcon className="size-3 text-muted-foreground hover:text-foreground" />
       </span>
     </button>
   )
@@ -609,7 +609,7 @@ export function SmartFilterBar({
       if (!chip.column) {
         return (
           <span className="flex items-center gap-1">
-            <Search className="size-3 text-muted-foreground" />
+            <SearchIcon className="size-3 text-muted-foreground" />
             <span className="text-foreground">{chip.value}</span>
           </span>
         )
@@ -666,7 +666,7 @@ export function SmartFilterBar({
           hasActiveFilters ? 'border-primary/20 bg-primary/[0.02]' : 'border-border/30'
         )}
       >
-        <Search
+        <SearchIcon
           className={cn(
             'size-3.5 shrink-0 transition-colors duration-200',
             hasActiveFilters ? 'text-primary/70' : 'text-muted-foreground/50'
@@ -734,7 +734,7 @@ export function SmartFilterBar({
               className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1"
               onClick={clearAll}
             >
-              <X className="size-3" />
+              <CloseIcon className="size-3" />
               Clear
             </Button>
           )}
@@ -777,7 +777,7 @@ export function SmartFilterBar({
             )}
             onClick={onApplyToQuery}
           >
-            <DatabaseZap className="size-3" />
+            <DatabaseIcon className="size-3" />
             Apply to Query
           </Button>
         </div>
@@ -848,7 +848,7 @@ export function SmartFilterBar({
                       cancelBuilding()
                     }}
                   >
-                    <Search className="size-3" />
+                    <SearchIcon className="size-3" />
                     Search all columns for &ldquo;{inputValue.trim()}&rdquo;
                   </button>
                 </>

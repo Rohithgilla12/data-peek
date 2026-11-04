@@ -9,7 +9,14 @@ import {
   type ErrorComponentProps
 } from '@tanstack/react-router'
 import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
-import { Moon, Sun, Monitor, Sparkles, Command, AlertTriangle } from 'lucide-react'
+import {
+  AiIcon,
+  CommandIcon,
+  MonitorIcon,
+  MoonIcon,
+  SunIcon,
+  WarningIcon
+} from '@/components/icons'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { usePokemonTracker } from '@/hooks/use-pokemon-tracker'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
@@ -212,7 +219,7 @@ function LayoutContent() {
                   className="size-8 text-muted-foreground hover:text-foreground"
                   onClick={() => setIsCommandPaletteOpen(true)}
                 >
-                  <Command className="size-4" />
+                  <CommandIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Command Palette ({keys.mod}+K)</TooltipContent>
@@ -229,7 +236,7 @@ function LayoutContent() {
                   )}
                   onClick={toggleAIPanel}
                 >
-                  <Sparkles className="size-4" />
+                  <AiIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">AI Assistant ({keys.mod}+I)</TooltipContent>
@@ -360,7 +367,7 @@ function ThemeOption({
 }: {
   value: 'light' | 'dark' | 'system'
   label: string
-  icon: typeof Sun
+  icon: typeof SunIcon
   currentTheme: string
   onSelect: (theme: 'light' | 'dark' | 'system') => void
 }) {
@@ -492,21 +499,21 @@ function SettingsPage() {
             <ThemeOption
               value="light"
               label="Light"
-              icon={Sun}
+              icon={SunIcon}
               currentTheme={theme}
               onSelect={setTheme}
             />
             <ThemeOption
               value="dark"
               label="Dark"
-              icon={Moon}
+              icon={MoonIcon}
               currentTheme={theme}
               onSelect={setTheme}
             />
             <ThemeOption
               value="system"
               label="System"
-              icon={Monitor}
+              icon={MonitorIcon}
               currentTheme={theme}
               onSelect={setTheme}
             />
@@ -752,7 +759,7 @@ function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
   return (
     <div className="flex flex-1 items-center justify-center p-8">
       <div className="flex flex-col items-center gap-4 max-w-md text-center">
-        <AlertTriangle className="size-10 text-amber-500" />
+        <WarningIcon className="size-10 text-amber-500" />
         <h2 className="text-lg font-semibold">Something went wrong</h2>
         <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
           {error.message}
@@ -794,7 +801,7 @@ export class RootErrorBoundary extends Component<
       return (
         <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground p-8">
           <div className="flex flex-col items-center gap-4 max-w-md text-center">
-            <AlertTriangle className="size-10 text-amber-500" />
+            <WarningIcon className="size-10 text-amber-500" />
             <h2 className="text-lg font-semibold">Something went wrong</h2>
             <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
               {this.state.error?.message}

@@ -1,4 +1,4 @@
-import { Copy, Check, FileCode, AlertCircle } from 'lucide-react'
+import { CheckIcon, CopyIcon, ErrorIcon, FileCodeIcon } from '@/components/icons'
 import {
   Button,
   Badge,
@@ -73,7 +73,7 @@ export function SqlPreviewModal({
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileCode className="size-5 text-primary" />
+            <FileCodeIcon className="size-5 text-primary" />
             SQL Preview
           </DialogTitle>
           <DialogDescription>
@@ -108,12 +108,12 @@ export function SqlPreviewModal({
           >
             {copied ? (
               <>
-                <Check className="size-3 text-green-500" />
+                <CheckIcon className="size-3 text-green-500" />
                 Copied!
               </>
             ) : (
               <>
-                <Copy className="size-3" />
+                <CopyIcon className="size-3" />
                 Copy All
               </>
             )}
@@ -124,7 +124,7 @@ export function SqlPreviewModal({
         <div className="flex-1 min-h-0 overflow-auto space-y-3 py-2">
           {sqlStatements.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-muted-foreground">
-              <AlertCircle className="size-4 mr-2" />
+              <ErrorIcon className="size-4 mr-2" />
               No SQL statements to preview
             </div>
           ) : (
@@ -149,7 +149,7 @@ export function SqlPreviewModal({
                     className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => copy(statement.sql)}
                   >
-                    <Copy className="size-3" />
+                    <CopyIcon className="size-3" />
                   </Button>
                 </div>
                 <pre className="p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-words bg-muted/10">
@@ -163,7 +163,7 @@ export function SqlPreviewModal({
         {/* Commit error */}
         {error && (
           <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm">
-            <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" />
+            <ErrorIcon className="size-4 text-red-500 shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
               <p className="font-medium text-red-600">Commit failed</p>
               <p className="mt-0.5 text-xs text-muted-foreground break-words font-mono whitespace-pre-wrap">
@@ -175,7 +175,7 @@ export function SqlPreviewModal({
 
         {/* Warning */}
         <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm">
-          <AlertCircle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+          <ErrorIcon className="size-4 text-amber-500 shrink-0 mt-0.5" />
           <div>
             <p className="font-medium text-amber-600">Review Carefully</p>
             <p className="text-xs text-muted-foreground mt-0.5">

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Eye, EyeOff, Lock, Plus, Trash2, X } from 'lucide-react'
+import { CloseIcon, EyeIcon, EyeSlashIcon, LockIcon, PlusIcon, TrashIcon } from '@/components/icons'
 import {
   Button,
   Badge,
@@ -51,7 +51,7 @@ export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
             variant="secondary"
             className="gap-1 px-1.5 py-0 text-[10px] text-amber-600 bg-amber-500/10 border-amber-500/20"
           >
-            <Lock className="size-2.5" />
+            <LockIcon className="size-2.5" />
             {maskedCount} masked
           </Badge>
           <Button
@@ -61,7 +61,7 @@ export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
             title="Unmask all columns"
             onClick={() => unmaskAll(tabId)}
           >
-            <X className="size-3" />
+            <CloseIcon className="size-3" />
           </Button>
         </div>
       )}
@@ -69,7 +69,7 @@ export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs">
-            {autoMaskEnabled ? <EyeOff className="size-3" /> : <Eye className="size-3" />}
+            {autoMaskEnabled ? <EyeSlashIcon className="size-3" /> : <EyeIcon className="size-3" />}
             Masking
           </Button>
         </DropdownMenuTrigger>
@@ -112,7 +112,7 @@ export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
                 className="size-5 shrink-0 text-muted-foreground hover:text-red-500"
                 onClick={() => removeAutoMaskRule(rule.id)}
               >
-                <Trash2 className="size-3" />
+                <TrashIcon className="size-3" />
               </Button>
             </div>
           ))}
@@ -137,7 +137,7 @@ export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
               onClick={handleAddRule}
               disabled={!newPattern.trim()}
             >
-              <Plus className="size-3" />
+              <PlusIcon className="size-3" />
             </Button>
           </div>
 
@@ -148,7 +148,7 @@ export function MaskingToolbar({ tabId }: MaskingToolbarProps) {
                 onClick={() => unmaskAll(tabId)}
                 className="text-xs text-muted-foreground"
               >
-                <X className="size-3 mr-2" />
+                <CloseIcon className="size-3 mr-2" />
                 Unmask all for this tab
               </DropdownMenuItem>
             </>

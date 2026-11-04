@@ -1,5 +1,12 @@
 import * as React from 'react'
-import { ArrowDownToLine, ArrowLeft, ArrowRight, Copy, Link2, X } from 'lucide-react'
+import {
+  ArrowLeftIcon,
+  ArrowLineDownIcon,
+  ArrowRightIcon,
+  CloseIcon,
+  CopyIcon,
+  LinkIcon
+} from '@/components/icons'
 import { Badge, Button, cn } from '@data-peek/ui'
 import { Kbd } from '@/components/ui/kbd'
 import { getTypeColor } from '@/lib/type-colors'
@@ -125,7 +132,7 @@ export function CellInspector({
               className="h-6 px-2 text-xs gap-1"
               onClick={foreignKey.onNavigate}
             >
-              <Link2 className="size-3" />
+              <LinkIcon className="size-3" />
               Follow
             </Button>
           )}
@@ -136,7 +143,7 @@ export function CellInspector({
             onClick={handleCopy}
             disabled={formatted.isNull}
           >
-            <Copy className="size-3" />
+            <CopyIcon className="size-3" />
             {copied ? 'Copied' : 'Copy'}
           </Button>
           <Button
@@ -146,7 +153,7 @@ export function CellInspector({
             onClick={onClose}
             aria-label="Close inspector"
           >
-            <X className="size-3" />
+            <CloseIcon className="size-3" />
           </Button>
         </div>
       </div>
@@ -194,7 +201,7 @@ export function CellInspector({
               disabled={pos.col === 0}
               aria-label="Previous column"
             >
-              <ArrowLeft className="size-3" />
+              <ArrowLeftIcon className="size-3" />
             </button>
             <button
               type="button"
@@ -203,7 +210,7 @@ export function CellInspector({
               disabled={pos.row === rowCount - 1}
               aria-label="Next row"
             >
-              <ArrowDownToLine className="size-3" />
+              <ArrowLineDownIcon className="size-3" />
             </button>
             <button
               type="button"
@@ -212,7 +219,7 @@ export function CellInspector({
               disabled={pos.col === colCount - 1}
               aria-label="Next column"
             >
-              <ArrowRight className="size-3" />
+              <ArrowRightIcon className="size-3" />
             </button>
           </div>
         )}

@@ -1,14 +1,14 @@
 import * as React from 'react'
 import {
-  Play,
-  Copy,
-  Check,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  Code2,
-  Loader2
-} from 'lucide-react'
+  CaretDownIcon,
+  CaretUpIcon,
+  CheckIcon,
+  CodeIcon,
+  CopyIcon,
+  ExternalLinkIcon,
+  PlayIcon,
+  SpinnerIcon
+} from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 
@@ -121,7 +121,7 @@ export function AISQLPreview({
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50 bg-zinc-900/50">
         <div className="flex items-center gap-2">
-          <Code2 className="size-3.5 text-blue-400" />
+          <CodeIcon className="size-3.5 text-blue-400" />
           <span className="text-[11px] font-medium text-zinc-400">Generated SQL</span>
           {lines.length > 3 && (
             <button
@@ -131,12 +131,12 @@ export function AISQLPreview({
             >
               {isExpanded ? (
                 <>
-                  <ChevronUp className="size-3" />
+                  <CaretUpIcon className="size-3" />
                   Collapse
                 </>
               ) : (
                 <>
-                  <ChevronDown className="size-3" />
+                  <CaretDownIcon className="size-3" />
                   Expand ({lines.length} lines)
                 </>
               )}
@@ -151,12 +151,12 @@ export function AISQLPreview({
         >
           {copied ? (
             <>
-              <Check className="size-3 text-green-500" />
+              <CheckIcon className="size-3 text-green-500" />
               <span className="text-green-500">Copied</span>
             </>
           ) : (
             <>
-              <Copy className="size-3" />
+              <CopyIcon className="size-3" />
               Copy
             </>
           )}
@@ -204,12 +204,12 @@ export function AISQLPreview({
           >
             {isExecuting ? (
               <>
-                <Loader2 className="size-3 animate-spin" />
+                <SpinnerIcon className="size-3 animate-spin" />
                 Running...
               </>
             ) : (
               <>
-                <Play className="size-3" />
+                <PlayIcon className="size-3" />
                 Run Query
               </>
             )}
@@ -227,7 +227,7 @@ export function AISQLPreview({
           )}
           onClick={onOpenInTab}
         >
-          <ExternalLink className="size-3" />
+          <ExternalLinkIcon className="size-3" />
           {requiresConfirmation ? 'Review in Tab' : 'Open in Tab'}
         </Button>
       </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { X, Download, Upload } from 'lucide-react'
+import { CloseIcon, DownloadIcon, UploadIcon } from '@/components/icons'
 
 import {
   Button,
@@ -221,7 +221,7 @@ export function DashboardFormDialog({
                       onClick={() => handleRemoveTag(tag)}
                       className="ml-1 hover:text-destructive"
                     >
-                      <X className="size-3" />
+                      <CloseIcon className="size-3" />
                     </button>
                   </Badge>
                 ))}
@@ -236,7 +236,7 @@ export function DashboardFormDialog({
                 <Label className="text-sm font-medium">Export & Import</Label>
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" onClick={handleExport} className="flex-1">
-                    <Download className="size-4 mr-2" />
+                    <DownloadIcon className="size-4 mr-2" />
                     Export Dashboard
                   </Button>
                   <Button
@@ -245,7 +245,7 @@ export function DashboardFormDialog({
                     onClick={handleImportClick}
                     className="flex-1"
                   >
-                    <Upload className="size-4 mr-2" />
+                    <UploadIcon className="size-4 mr-2" />
                     Import Dashboard
                   </Button>
                 </div>
@@ -263,7 +263,7 @@ export function DashboardFormDialog({
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Import from File</Label>
                 <Button variant="outline" size="sm" onClick={handleImportClick}>
-                  <Upload className="size-4 mr-2" />
+                  <UploadIcon className="size-4 mr-2" />
                   Import Dashboard JSON
                 </Button>
                 <p className="text-xs text-muted-foreground">

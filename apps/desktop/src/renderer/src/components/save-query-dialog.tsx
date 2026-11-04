@@ -19,7 +19,7 @@ import {
 
 import { useConnectionStore, useSavedQueryStore } from '@/stores'
 import type { SavedQuery } from '@shared/index'
-import { Bookmark, FolderPlus, Link2, Plus, X } from 'lucide-react'
+import { BookmarkIcon, CloseIcon, FolderPlusIcon, LinkIcon, PlusIcon } from '@/components/icons'
 import { useEffect, useMemo, useState } from 'react'
 
 interface SaveQueryDialogProps {
@@ -144,7 +144,7 @@ export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: Sav
       <DialogContent className="max-w-md" onKeyDown={handleKeyDown}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Bookmark className="size-4" />
+            <BookmarkIcon className="size-4" />
             {editingQuery ? 'Edit Saved Query' : 'Save Query'}
           </DialogTitle>
         </DialogHeader>
@@ -214,7 +214,7 @@ export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: Sav
                     setNewFolder('')
                   }}
                 >
-                  <X className="size-4" />
+                  <CloseIcon className="size-4" />
                 </Button>
                 <Button variant="secondary" size="sm" onClick={handleCreateFolder}>
                   Add
@@ -239,7 +239,7 @@ export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: Sav
                   </SelectContent>
                 </Select>
                 <Button variant="outline" size="icon" onClick={() => setIsCreatingFolder(true)}>
-                  <FolderPlus className="size-4" />
+                  <FolderPlusIcon className="size-4" />
                 </Button>
               </div>
             )}
@@ -258,7 +258,7 @@ export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: Sav
                     className="size-4 hover:bg-transparent"
                     onClick={() => handleRemoveTag(tag)}
                   >
-                    <X className="size-3" />
+                    <CloseIcon className="size-3" />
                   </Button>
                 </Badge>
               ))}
@@ -277,7 +277,7 @@ export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: Sav
                 className="flex-1"
               />
               <Button variant="outline" size="icon" onClick={handleAddTag}>
-                <Plus className="size-4" />
+                <PlusIcon className="size-4" />
               </Button>
             </div>
             {existingTags.length > 0 && (
@@ -311,7 +311,7 @@ export function SaveQueryDialog({ open, onOpenChange, query, editingQuery }: Sav
                 htmlFor="bind-connection"
                 className="text-sm font-normal flex items-center gap-1.5 cursor-pointer"
               >
-                <Link2 className="size-3.5" />
+                <LinkIcon className="size-3.5" />
                 Bind to {activeConnection.name}
               </Label>
             </div>

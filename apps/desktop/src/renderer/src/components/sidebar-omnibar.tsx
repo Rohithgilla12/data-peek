@@ -1,17 +1,17 @@
 import * as React from 'react'
 import { Command as CommandPrimitive } from 'cmdk'
 import {
-  Search,
-  Table2,
-  Columns3,
-  Key,
-  Bookmark,
-  Clock,
-  Code2,
-  FunctionSquare,
-  Workflow,
-  CornerDownLeft
-} from 'lucide-react'
+  BookmarkIcon,
+  ClockIcon,
+  CodeIcon,
+  ColumnsIcon,
+  FunctionIcon,
+  KeyIcon,
+  ReturnKeyIcon,
+  SearchIcon,
+  TableIcon,
+  WorkflowIcon
+} from '@/components/icons'
 
 import { cn } from '@data-peek/ui'
 import {
@@ -171,7 +171,7 @@ export function SidebarOmnibar() {
           sublabel: schema.name,
           group: 'tables',
           icon: (
-            <Table2
+            <TableIcon
               className={cn(
                 'size-3.5',
                 table.type === 'view'
@@ -193,9 +193,9 @@ export function SidebarOmnibar() {
             sublabel: `${table.name}.${col.dataType}`,
             group: 'columns',
             icon: col.isPrimaryKey ? (
-              <Key className="size-3.5 text-yellow-500" />
+              <KeyIcon className="size-3.5 text-yellow-500" />
             ) : (
-              <Columns3 className="size-3.5 text-muted-foreground" />
+              <ColumnsIcon className="size-3.5 text-muted-foreground" />
             ),
             keywords: [table.name, schema.name, col.dataType],
             onSelect: () => handleTableClick(schema.name, table)
@@ -211,9 +211,9 @@ export function SidebarOmnibar() {
           group: 'routines',
           icon:
             routine.type === 'function' ? (
-              <FunctionSquare className="size-3.5 text-cyan-500" />
+              <FunctionIcon className="size-3.5 text-cyan-500" />
             ) : (
-              <Workflow className="size-3.5 text-orange-500" />
+              <WorkflowIcon className="size-3.5 text-orange-500" />
             ),
           keywords: [schema.name, routine.type, ...(routine.parameters?.map((p) => p.name) ?? [])],
           onSelect: () => handleRoutineSelect(schema.name, routine)
@@ -227,7 +227,7 @@ export function SidebarOmnibar() {
         label: sq.name,
         sublabel: sq.description || sq.query.replace(/\s+/g, ' ').slice(0, 50),
         group: 'saved',
-        icon: <Bookmark className="size-3.5 text-amber-500" />,
+        icon: <BookmarkIcon weight="fill" className="size-3.5 text-amber-500" />,
         keywords: [sq.query, sq.description ?? ''],
         onSelect: () => handleQuerySelect(sq.query)
       })
@@ -240,7 +240,7 @@ export function SidebarOmnibar() {
         label: snippet.name,
         sublabel: snippet.description,
         group: 'snippets',
-        icon: <Code2 className="size-3.5 text-emerald-500" />,
+        icon: <CodeIcon className="size-3.5 text-emerald-500" />,
         keywords: [snippet.category, snippet.description, snippet.template],
         onSelect: () => handleSnippetSelect(snippet.template)
       })
@@ -255,7 +255,7 @@ export function SidebarOmnibar() {
         label: h.query.replace(/\s+/g, ' ').slice(0, 60),
         sublabel: `${h.rowCount} rows`,
         group: 'history',
-        icon: <Clock className="size-3.5 text-muted-foreground" />,
+        icon: <ClockIcon className="size-3.5 text-muted-foreground" />,
         keywords: [h.query],
         onSelect: () => handleQuerySelect(h.query)
       })
@@ -320,7 +320,7 @@ export function SidebarOmnibar() {
         }}
       >
         <div className="flex items-center px-2 gap-1.5">
-          <Search className="size-3.5 shrink-0 text-muted-foreground/60" />
+          <SearchIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
           <CommandPrimitive.Input
             ref={inputRef}
             value={query}
@@ -379,7 +379,7 @@ export function SidebarOmnibar() {
                             {item.sublabel}
                           </span>
                         )}
-                        <CornerDownLeft className="size-3 shrink-0 opacity-0 [[data-selected=true]_&]:opacity-40 transition-opacity" />
+                        <ReturnKeyIcon className="size-3 shrink-0 opacity-0 [[data-selected=true]_&]:opacity-40 transition-opacity" />
                       </CommandPrimitive.Item>
                     ))}
                   </CommandPrimitive.Group>

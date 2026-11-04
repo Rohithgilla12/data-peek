@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { RotateCw, Loader2 } from 'lucide-react'
+import { RefreshIcon, SpinnerIcon } from '@/components/icons'
 import { cn } from '@data-peek/ui'
 import type { PgNotificationConnectionStatus } from '@data-peek/shared'
 import { usePgNotificationStore } from '@/stores'
@@ -326,9 +326,9 @@ export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCoun
               title="Reconnect now"
             >
               {isManualReconnecting ? (
-                <Loader2 className="size-3 animate-spin" />
+                <SpinnerIcon className="size-3 animate-spin" />
               ) : (
-                <RotateCw className="size-3" />
+                <RefreshIcon className="size-3" />
               )}
               Retry now
             </button>

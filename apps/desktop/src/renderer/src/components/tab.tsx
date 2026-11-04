@@ -1,7 +1,14 @@
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { FileCode, Table2, Pin, X, Network, SearchCode } from 'lucide-react'
+import {
+  CloseIcon,
+  FileCodeIcon,
+  NetworkIcon,
+  PinIcon,
+  SearchCodeIcon,
+  TableIcon
+} from '@/components/icons'
 import {
   cn,
   ContextMenu,
@@ -77,12 +84,12 @@ export function Tab({
 
   const Icon =
     tab.type === 'query'
-      ? FileCode
+      ? FileCodeIcon
       : tab.type === 'erd'
-        ? Network
+        ? NetworkIcon
         : tab.type === 'schema-intel'
-          ? SearchCode
-          : Table2
+          ? SearchCodeIcon
+          : TableIcon
 
   return (
     <ContextMenu>
@@ -103,7 +110,9 @@ export function Tab({
           )}
         >
           {/* Pin indicator */}
-          {tab.isPinned && <Pin className="size-3 shrink-0 text-muted-foreground" />}
+          {tab.isPinned && (
+            <PinIcon weight="fill" className="size-3 shrink-0 text-muted-foreground" />
+          )}
 
           {/* Tab icon */}
           <Icon
@@ -189,7 +198,7 @@ export function Tab({
               }}
               className="ml-auto shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
             >
-              <X className="size-3.5" />
+              <CloseIcon className="size-3.5" />
             </button>
           )}
         </div>
@@ -197,12 +206,12 @@ export function Tab({
       <ContextMenuContent>
         {tab.isPinned ? (
           <ContextMenuItem onClick={onUnpin}>
-            <Pin className="mr-2 size-4" />
+            <PinIcon className="mr-2 size-4" />
             Unpin Tab
           </ContextMenuItem>
         ) : (
           <ContextMenuItem onClick={onPin}>
-            <Pin className="mr-2 size-4" />
+            <PinIcon className="mr-2 size-4" />
             Pin Tab
           </ContextMenuItem>
         )}
@@ -224,7 +233,7 @@ export function Tab({
         {isQuery && <ContextMenuSeparator />}
         {!tab.isPinned && (
           <ContextMenuItem onClick={onClose}>
-            <X className="mr-2 size-4" />
+            <CloseIcon className="mr-2 size-4" />
             Close Tab
           </ContextMenuItem>
         )}

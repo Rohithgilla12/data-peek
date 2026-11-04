@@ -1,5 +1,11 @@
 import * as React from 'react'
-import { ArrowDownUp, ArrowRight, Check, Loader2, X } from 'lucide-react'
+import {
+  ArrowRightIcon,
+  ArrowsDownUpIcon,
+  CheckIcon,
+  CloseIcon,
+  SpinnerIcon
+} from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import { getTypeColor } from '@/lib/type-colors'
 import { SortChipItem } from '@/components/sort/sort-chip'
@@ -29,7 +35,7 @@ function SortStatus({
   if (isSortingOnServer) {
     return (
       <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-        <Loader2 className="size-3 animate-spin" />
+        <SpinnerIcon className="size-3 animate-spin" />
         sorting…
       </span>
     )
@@ -38,7 +44,7 @@ function SortStatus({
   if (scope.kind === 'server') {
     return (
       <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <Check className="size-3 text-primary/70" />
+        <CheckIcon className="size-3 text-primary/70" />
         sorted on server
       </span>
     )
@@ -47,7 +53,7 @@ function SortStatus({
   if (scope.kind === 'complete') {
     return (
       <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <Check className="size-3 text-primary/70" />
+        <CheckIcon className="size-3 text-primary/70" />
         sorted {scope.rows.toLocaleString()} rows
       </span>
     )
@@ -70,7 +76,7 @@ function SortStatus({
           title="Rewrite ORDER BY and re-run so the sort covers every row"
         >
           {total === null ? 'Sort all rows' : `Sort all ${total.toLocaleString()}`}
-          <ArrowRight className="size-3" />
+          <ArrowRightIcon className="size-3" />
         </Button>
       )}
     </span>
@@ -424,7 +430,7 @@ export function SmartSortBar({
           hasSort ? 'border-primary/20 bg-primary/[0.02]' : 'border-border/30'
         )}
       >
-        <ArrowDownUp
+        <ArrowsDownUpIcon
           className={cn(
             'size-3.5 shrink-0 transition-colors duration-200',
             hasSort ? 'text-primary/70' : 'text-muted-foreground/50'
@@ -497,7 +503,7 @@ export function SmartSortBar({
               className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1"
               onClick={clearAll}
             >
-              <X className="size-3" />
+              <CloseIcon className="size-3" />
               Clear
             </Button>
           )}

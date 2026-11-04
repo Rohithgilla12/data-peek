@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Sparkles, Loader2, AlertTriangle } from 'lucide-react'
+import { AiIcon, SpinnerIcon, WarningIcon } from '@/components/icons'
 import {
   Button,
   Dialog,
@@ -115,7 +115,7 @@ export function AIDashboardDialog({ open, onOpenChange, dashboardId }: AIDashboa
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="size-4 text-blue-400" />
+            <AiIcon className="size-4 text-blue-400" />
             Generate a dashboard
           </DialogTitle>
           <DialogDescription>
@@ -137,13 +137,13 @@ export function AIDashboardDialog({ open, onOpenChange, dashboardId }: AIDashboa
 
         {loading && status && (
           <p className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader2 className="size-3.5 animate-spin" />
+            <SpinnerIcon className="size-3.5 animate-spin" />
             {status}
           </p>
         )}
         {error && (
           <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2 text-red-400">
-            <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+            <WarningIcon className="size-4 shrink-0 mt-0.5" />
             <span className="text-xs">{error}</span>
           </div>
         )}
@@ -155,12 +155,12 @@ export function AIDashboardDialog({ open, onOpenChange, dashboardId }: AIDashboa
           <Button onClick={handleGenerate} disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
                 Generating…
               </>
             ) : (
               <>
-                <Sparkles className="size-4" />
+                <AiIcon className="size-4" />
                 Generate dashboard
               </>
             )}

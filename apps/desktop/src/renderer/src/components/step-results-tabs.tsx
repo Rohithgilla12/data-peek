@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pin, X } from 'lucide-react'
+import { CloseIcon, PinIcon } from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import type { StatementResult } from '@shared/index'
 import { useStepStore } from '@/stores/step-store'
@@ -49,7 +49,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
               }
             }}
           >
-            <Pin className="size-2.5 text-amber-500" />
+            <PinIcon weight="fill" className="size-2.5 text-amber-500" />
             <span>#{p.statementIndex + 1}</span>
             <button
               type="button"
@@ -61,7 +61,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
               }}
               className="opacity-0 group-hover:opacity-100 hover:text-destructive"
             >
-              <X className="size-2.5" />
+              <CloseIcon className="size-2.5" />
             </button>
           </div>
         ))}
@@ -94,7 +94,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
             className="h-6 text-[10px] text-amber-500"
             onClick={() => pinResult(tabId, session.lastResult!.statementIndex)}
           >
-            <Pin className="size-3 mr-1" /> Pin
+            <PinIcon className="size-3 mr-1" /> Pin
           </Button>
         )}
       </div>

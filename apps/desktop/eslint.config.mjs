@@ -40,6 +40,25 @@ export default defineConfig(
     }
   },
   {
+    // Icons come from the semantic module, never straight from a library.
+    files: ['src/renderer/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: 'lucide-react', message: 'Use @/components/icons' },
+            { name: '@phosphor-icons/react', message: 'Use @/components/icons' }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    files: ['src/renderer/src/components/icons.ts'],
+    rules: { 'no-restricted-imports': 'off' }
+  },
+  {
     // Playwright fixtures use `async ({}, use) => {}` — the empty destructure
     // and the `use` callback are framework idioms, not React hooks.
     files: ['tests/e2e/**/*.{ts,tsx}', 'tests/capture/**/*.{ts,tsx}'],

@@ -1,14 +1,14 @@
 import {
-  BarChart3,
-  CheckCircle2,
-  Database,
-  FileText,
-  Hash,
-  Loader2,
-  Play,
-  Search,
-  Table2
-} from 'lucide-react'
+  ChartBarIcon,
+  DatabaseIcon,
+  FileTextIcon,
+  HashIcon,
+  PlayIcon,
+  SearchIcon,
+  SpinnerIcon,
+  SuccessIcon,
+  TableIcon
+} from '@/components/icons'
 import { useEffect, useReducer, useState } from 'react'
 
 import { SQLEditor } from '@/components/sql-editor'
@@ -55,10 +55,10 @@ interface AddWidgetDialogProps {
   dashboardId: string
 }
 
-const WIDGET_TYPE_OPTIONS: { type: WidgetType; label: string; icon: typeof BarChart3 }[] = [
-  { type: 'chart', label: 'Chart', icon: BarChart3 },
-  { type: 'kpi', label: 'KPI', icon: Hash },
-  { type: 'table', label: 'Table', icon: Table2 }
+const WIDGET_TYPE_OPTIONS: { type: WidgetType; label: string; icon: typeof ChartBarIcon }[] = [
+  { type: 'chart', label: 'Chart', icon: ChartBarIcon },
+  { type: 'kpi', label: 'KPI', icon: HashIcon },
+  { type: 'table', label: 'Table', icon: TableIcon }
 ]
 
 export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDialogProps) {
@@ -303,7 +303,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
-                    <Database className="size-3" />
+                    <DatabaseIcon className="size-3" />
                     SQL
                   </button>
                   <button
@@ -316,7 +316,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                         : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
-                    <FileText className="size-3" />
+                    <FileTextIcon className="size-3" />
                     Saved
                   </button>
                 </div>
@@ -355,7 +355,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                       <SelectContent>
                         <div className="px-2 pb-2">
                           <div className="relative">
-                            <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+                            <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
                             <Input
                               placeholder="Search..."
                               value={querySearch}
@@ -387,9 +387,9 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                       className="h-6 px-2 text-xs"
                     >
                       {isLoadingPreview ? (
-                        <Loader2 className="size-3 mr-1 animate-spin" />
+                        <SpinnerIcon className="size-3 mr-1 animate-spin" />
                       ) : (
-                        <Play className="size-3 mr-1" />
+                        <PlayIcon className="size-3 mr-1" />
                       )}
                       Preview
                     </Button>
@@ -418,9 +418,9 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
                       className="h-6 px-2 text-xs"
                     >
                       {isLoadingPreview ? (
-                        <Loader2 className="size-3 mr-1 animate-spin" />
+                        <SpinnerIcon className="size-3 mr-1 animate-spin" />
                       ) : (
-                        <Play className="size-3 mr-1" />
+                        <PlayIcon className="size-3 mr-1" />
                       )}
                       Run
                     </Button>
@@ -434,7 +434,7 @@ export function AddWidgetDialog({ open, onOpenChange, dashboardId }: AddWidgetDi
               {previewData && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 p-2 rounded-md bg-emerald-500/10 border border-emerald-500/20">
-                    <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />
+                    <SuccessIcon className="size-3.5 text-emerald-500 shrink-0" />
                     <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                       {previewData.length} row{previewData.length !== 1 ? 's' : ''},{' '}
                       {availableColumns.length} column{availableColumns.length !== 1 ? 's' : ''}

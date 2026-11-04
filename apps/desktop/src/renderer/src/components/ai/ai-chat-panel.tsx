@@ -1,23 +1,22 @@
 import * as React from 'react'
 import {
-  X,
-  Settings,
-  Sparkles,
-  Send,
-  Loader2,
-  Database,
-  DatabaseZap,
-  Trash2,
-  Lightbulb,
-  Maximize2,
-  Minimize2,
-  Plus,
-  MessageSquare,
-  ChevronLeft,
-  MoreHorizontal,
-  Pencil,
-  Check
-} from 'lucide-react'
+  AiIcon,
+  CaretLeftIcon,
+  ChatIcon,
+  CheckIcon,
+  CloseIcon,
+  DatabaseIcon,
+  EditIcon,
+  LightbulbIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  MoreIcon,
+  PlusIcon,
+  SendIcon,
+  SettingsIcon,
+  SpinnerIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -639,13 +638,13 @@ export function AIChatPanel({
                 className="size-8"
                 onClick={() => setShowSessionsList(false)}
               >
-                <ChevronLeft className="size-4" />
+                <CaretLeftIcon className="size-4" />
               </Button>
             ) : (
               <div className="relative">
                 <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-sm" />
                 <div className="relative flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-                  <Sparkles className="size-4 text-blue-400" />
+                  <AiIcon className="size-4 text-blue-400" />
                 </div>
               </div>
             )}
@@ -660,7 +659,7 @@ export function AIChatPanel({
                     className="font-semibold text-sm hover:text-blue-400 transition-colors flex items-center gap-1.5 truncate max-w-[200px]"
                     disabled={!connection}
                   >
-                    <MessageSquare className="size-3 shrink-0" />
+                    <ChatIcon className="size-3 shrink-0" />
                     <span className="truncate">{currentSession?.title || 'AI Assistant'}</span>
                   </button>
                   <p className="text-[10px] text-muted-foreground">
@@ -683,7 +682,7 @@ export function AIChatPanel({
                       onClick={handleNewSession}
                       disabled={!connection}
                     >
-                      <Plus className="size-3.5" />
+                      <PlusIcon className="size-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">New chat</TooltipContent>
@@ -698,9 +697,9 @@ export function AIChatPanel({
                       onClick={() => setIsExpanded(!isExpanded)}
                     >
                       {isExpanded ? (
-                        <Minimize2 className="size-3.5" />
+                        <MinimizeIcon className="size-3.5" />
                       ) : (
-                        <Maximize2 className="size-3.5" />
+                        <MaximizeIcon className="size-3.5" />
                       )}
                     </Button>
                   </TooltipTrigger>
@@ -718,7 +717,7 @@ export function AIChatPanel({
                       onClick={handleClearChat}
                       disabled={messages.length === 0}
                     >
-                      <Trash2 className="size-3.5" />
+                      <TrashIcon className="size-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">Clear chat</TooltipContent>
@@ -729,14 +728,14 @@ export function AIChatPanel({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="size-7" onClick={onOpenSettings}>
-                  <Settings className="size-3.5" />
+                  <SettingsIcon className="size-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">AI Settings</TooltipContent>
             </Tooltip>
 
             <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
-              <X className="size-4" />
+              <CloseIcon className="size-4" />
             </Button>
           </div>
         </div>
@@ -744,7 +743,7 @@ export function AIChatPanel({
         {/* Connection Context Bar */}
         {connection && !showSessionsList && (
           <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30 bg-muted/20">
-            <Database className="size-3.5 text-muted-foreground" />
+            <DatabaseIcon className="size-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Connected to</span>
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
               {connection.name || connection.database}
@@ -764,7 +763,7 @@ export function AIChatPanel({
                 onClick={handleNewSession}
                 className="w-full gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
               >
-                <Plus className="size-4" />
+                <PlusIcon className="size-4" />
                 New Chat
               </Button>
             </div>
@@ -774,7 +773,7 @@ export function AIChatPanel({
               <div className="p-2 space-y-1">
                 {sessions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                    <MessageSquare className="size-10 text-muted-foreground/30 mb-3" />
+                    <ChatIcon className="size-10 text-muted-foreground/30 mb-3" />
                     <p className="text-sm text-muted-foreground">No chat sessions yet</p>
                     <p className="text-xs text-muted-foreground/60 mt-1">
                       Click &quot;New Chat&quot; to start a conversation
@@ -800,7 +799,7 @@ export function AIChatPanel({
                         }
                       }}
                     >
-                      <MessageSquare
+                      <ChatIcon
                         className={cn(
                           'size-4 shrink-0 mt-0.5',
                           session.id === currentSessionId
@@ -833,7 +832,7 @@ export function AIChatPanel({
                                 handleSaveTitle()
                               }}
                             >
-                              <Check className="size-3" />
+                              <CheckIcon className="size-3" />
                             </Button>
                           </div>
                         ) : (
@@ -854,7 +853,7 @@ export function AIChatPanel({
                               className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <MoreHorizontal className="size-3.5" />
+                              <MoreIcon className="size-3.5" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
@@ -864,7 +863,7 @@ export function AIChatPanel({
                                 handleStartEditTitle(session)
                               }}
                             >
-                              <Pencil className="size-3.5 mr-2" />
+                              <EditIcon className="size-3.5 mr-2" />
                               Rename
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -874,7 +873,7 @@ export function AIChatPanel({
                               }}
                               className="text-red-500 focus:text-red-500"
                             >
-                              <Trash2 className="size-3.5 mr-2" />
+                              <TrashIcon className="size-3.5 mr-2" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -894,7 +893,7 @@ export function AIChatPanel({
             <div className="relative mb-4">
               <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full blur-xl" />
               <div className="relative flex items-center justify-center size-16 rounded-full bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-border">
-                <Sparkles className="size-8 text-blue-400/50" />
+                <AiIcon className="size-8 text-blue-400/50" />
               </div>
             </div>
             <h3 className="font-semibold mb-2">Configure AI Assistant</h3>
@@ -902,7 +901,7 @@ export function AIChatPanel({
               Add your API key to start asking questions about your database in natural language.
             </p>
             <Button onClick={onOpenSettings} className="gap-2">
-              <Settings className="size-4" />
+              <SettingsIcon className="size-4" />
               Configure API Key
             </Button>
           </div>
@@ -914,7 +913,7 @@ export function AIChatPanel({
             <div className="relative mb-4">
               <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-full blur-xl" />
               <div className="relative flex items-center justify-center size-16 rounded-full bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/20">
-                <DatabaseZap className="size-8 text-amber-400/50" />
+                <DatabaseIcon className="size-8 text-amber-400/50" />
               </div>
             </div>
             <h3 className="font-semibold mb-2">Connect to a Database</h3>
@@ -937,7 +936,7 @@ export function AIChatPanel({
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <div className="relative mb-6">
                       <div className="absolute -inset-3 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-full blur-lg animate-pulse" />
-                      <Lightbulb className="relative size-10 text-muted-foreground/30" />
+                      <LightbulbIcon className="relative size-10 text-muted-foreground/30" />
                     </div>
                     <p className="text-sm text-muted-foreground mb-6">
                       Ask me anything about your database
@@ -964,7 +963,7 @@ export function AIChatPanel({
                 {isLoading && !messages.some((m) => m.streaming) && (
                   <div className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
                     <div className="flex items-center justify-center size-7 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 shrink-0">
-                      <Sparkles className="size-3.5 text-blue-400" />
+                      <AiIcon className="size-3.5 text-blue-400" />
                     </div>
                     <div className="flex items-center gap-2 py-2">
                       <div className="flex gap-1">
@@ -1067,9 +1066,9 @@ export function AIChatPanel({
                   disabled={!input.trim() || isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="size-4 animate-spin" />
+                    <SpinnerIcon className="size-4 animate-spin" />
                   ) : (
-                    <Send className="size-4" />
+                    <SendIcon className="size-4" />
                   )}
                 </Button>
               </div>

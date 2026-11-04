@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Bookmark, ChevronRight, MoreHorizontal, Play, Copy, Trash2, Pencil } from 'lucide-react'
+import {
+  BookmarkIcon,
+  CaretRightIcon,
+  CopyIcon,
+  EditIcon,
+  MoreIcon,
+  PlayIcon,
+  TrashIcon
+} from '@/components/icons'
 
 import {
   Badge,
@@ -134,7 +142,7 @@ export function SavedQueries() {
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center">
           <CollapsibleTrigger className="flex items-center gap-1 flex-1">
-            <ChevronRight
+            <CaretRightIcon
               className={`size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             />
             <span>Saved Queries</span>
@@ -196,7 +204,7 @@ export function SavedQueries() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <SidebarMenuAction showOnHover>
-                            <MoreHorizontal />
+                            <MoreIcon />
                             <span className="sr-only">More</span>
                           </SidebarMenuAction>
                         </DropdownMenuTrigger>
@@ -206,17 +214,17 @@ export function SavedQueries() {
                           align={isMobile ? 'end' : 'start'}
                         >
                           <DropdownMenuItem onClick={() => handleLoadQuery(item)}>
-                            <Play className="text-muted-foreground" />
+                            <PlayIcon className="text-muted-foreground" />
                             <span>Open in new tab</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => navigator.clipboard.writeText(item.query)}
                           >
-                            <Copy className="text-muted-foreground" />
+                            <CopyIcon className="text-muted-foreground" />
                             <span>Copy query</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEditQuery(item)}>
-                            <Pencil className="text-muted-foreground" />
+                            <EditIcon className="text-muted-foreground" />
                             <span>Edit</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -224,7 +232,7 @@ export function SavedQueries() {
                             className="text-red-400"
                             onClick={() => handleDeleteQuery(item.id)}
                           >
-                            <Trash2 className="text-red-400" />
+                            <TrashIcon className="text-red-400" />
                             <span>Delete</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -239,7 +247,7 @@ export function SavedQueries() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsDialogOpen(true)}
                   >
-                    <Bookmark className="size-4" />
+                    <BookmarkIcon className="size-4" />
                     <span>View all ({sortedQueries.length})</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -250,7 +258,7 @@ export function SavedQueries() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsDialogOpen(true)}
                   >
-                    <MoreHorizontal className="size-4" />
+                    <MoreIcon className="size-4" />
                     <span>Manage saved queries</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

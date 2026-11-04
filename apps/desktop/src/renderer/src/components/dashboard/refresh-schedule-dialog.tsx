@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Clock, Calendar, Info } from 'lucide-react'
+import { CalendarIcon, ClockIcon, InfoIcon } from '@/components/icons'
 
 import {
   Button,
@@ -155,7 +155,7 @@ export function RefreshScheduleDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="size-5" />
+            <ClockIcon className="size-5" />
             Auto-Refresh Schedule
           </DialogTitle>
           <DialogDescription>
@@ -215,7 +215,7 @@ export function RefreshScheduleDialog({
               {nextRuns.length > 0 && (
                 <div className="space-y-2 rounded-lg bg-muted/50 p-3">
                   <div className="flex items-center gap-2 text-sm font-medium">
-                    <Calendar className="size-4" />
+                    <CalendarIcon className="size-4" />
                     Next scheduled refreshes
                   </div>
                   <ul className="space-y-1 text-xs text-muted-foreground">
@@ -227,7 +227,7 @@ export function RefreshScheduleDialog({
               )}
 
               <div className="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/30 p-3">
-                <Info className="size-4 mt-0.5 text-muted-foreground" />
+                <InfoIcon className="size-4 mt-0.5 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">
                   Auto-refresh runs in the background when the app is open. Widget data will update
                   automatically without manual refresh.

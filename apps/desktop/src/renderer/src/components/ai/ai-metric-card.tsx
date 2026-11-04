@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react'
+import { MinusIcon, SpinnerIcon, TrendDownIcon, TrendUpIcon } from '@/components/icons'
 import { cn } from '@data-peek/ui'
 
 type MetricFormat = 'number' | 'currency' | 'percent' | 'duration'
@@ -75,11 +75,11 @@ function formatMetricValue(value: number | string | null, format: MetricFormat):
 function TrendIcon({ direction }: { direction: TrendDirection }) {
   switch (direction) {
     case 'up':
-      return <TrendingUp className="size-3.5" />
+      return <TrendUpIcon className="size-3.5" />
     case 'down':
-      return <TrendingDown className="size-3.5" />
+      return <TrendDownIcon className="size-3.5" />
     default:
-      return <Minus className="size-3.5" />
+      return <MinusIcon className="size-3.5" />
   }
 }
 
@@ -115,7 +115,7 @@ export function AIMetricCard({ metric, className }: AIMetricCardProps) {
         {/* Value */}
         {isLoading ? (
           <div className="flex items-center gap-2 h-10">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <SpinnerIcon className="size-5 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Loading...</span>
           </div>
         ) : error ? (

@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  Loader2,
-  Database,
-  CheckCircle2,
-  XCircle,
-  Link,
-  Settings2,
-  FolderOpen,
-  ChevronDown,
-  Eye,
-  EyeOff
-} from 'lucide-react'
+  CaretDownIcon,
+  DatabaseIcon,
+  ErrorIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  FolderOpenIcon,
+  LinkIcon,
+  SlidersIcon,
+  SpinnerIcon,
+  SuccessIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -491,7 +491,7 @@ export function AddConnectionDialog({
       >
         <DialogHeader className="border-b px-5 py-4 text-left">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Database className="size-4" />
+            <DatabaseIcon className="size-4" />
             {isEditMode ? 'Edit Connection' : 'Add Connection'}
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -542,7 +542,7 @@ export function AddConnectionDialog({
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <Settings2 className="size-4" />
+                  <SlidersIcon className="size-4" />
                   Manual
                 </button>
                 <button
@@ -554,7 +554,7 @@ export function AddConnectionDialog({
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <Link className="size-4" />
+                  <LinkIcon className="size-4" />
                   Connection String
                 </button>
               </div>
@@ -696,7 +696,7 @@ export function AddConnectionDialog({
                       }}
                       title="Browse for SQLite database file"
                     >
-                      <FolderOpen className="size-4" />
+                      <FolderOpenIcon className="size-4" />
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -880,7 +880,7 @@ export function AddConnectionDialog({
                         className="px-3"
                         title={showDatabasePassword ? 'Hide password' : 'Show password'}
                       >
-                        {showDatabasePassword ? <EyeOff /> : <Eye />}
+                        {showDatabasePassword ? <EyeSlashIcon /> : <EyeIcon />}
                       </Button>
                     </div>
                   </div>
@@ -975,7 +975,7 @@ export function AddConnectionDialog({
                         className="flex w-full items-center justify-between rounded-md border bg-muted/50 px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
                       >
                         <span>Advanced Options</span>
-                        <ChevronDown
+                        <CaretDownIcon
                           className={`size-4 transition-transform ${mssqlAdvancedOpen ? 'rotate-180' : ''}`}
                         />
                       </button>
@@ -1046,12 +1046,12 @@ export function AddConnectionDialog({
           >
             {testResult === 'success' ? (
               <>
-                <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+                <SuccessIcon className="mt-0.5 size-4 shrink-0" />
                 Connection successful!
               </>
             ) : (
               <>
-                <XCircle className="mt-0.5 size-4 shrink-0" />
+                <ErrorIcon className="mt-0.5 size-4 shrink-0" />
                 <span className="min-w-0 break-words">{testError}</span>
               </>
             )}
@@ -1068,7 +1068,7 @@ export function AddConnectionDialog({
           >
             {isTesting ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
                 Testing...
               </>
             ) : (
@@ -1085,7 +1085,7 @@ export function AddConnectionDialog({
           >
             {isSaving ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
                 {isEditMode ? 'Updating...' : 'Saving...'}
               </>
             ) : isEditMode ? (

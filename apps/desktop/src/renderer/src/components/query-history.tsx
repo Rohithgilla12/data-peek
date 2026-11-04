@@ -1,5 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
-import { ChevronRight, Clock, Copy, MoreHorizontal, Play, Trash2 } from 'lucide-react'
+import {
+  CaretRightIcon,
+  ClockIcon,
+  CopyIcon,
+  MoreIcon,
+  PlayIcon,
+  TrashIcon
+} from '@/components/icons'
 
 import {
   Badge,
@@ -80,7 +87,7 @@ export function QueryHistory() {
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center">
           <CollapsibleTrigger className="flex items-center gap-1 flex-1">
-            <ChevronRight
+            <CaretRightIcon
               className={`size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             />
             <span>History</span>
@@ -97,7 +104,7 @@ export function QueryHistory() {
             }}
             title="Clear history"
           >
-            <Trash2 className="size-3.5" />
+            <TrashIcon className="size-3.5" />
           </SidebarGroupAction>
         </SidebarGroupLabel>
         <CollapsibleContent>
@@ -133,7 +140,7 @@ export function QueryHistory() {
                                 </div>
                                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                                   <span className="flex items-center gap-0.5">
-                                    <Clock className="size-3" />
+                                    <ClockIcon className="size-3" />
                                     {formatRelativeTime(item.timestamp)}
                                   </span>
                                   {item.status === 'success' ? (
@@ -158,7 +165,7 @@ export function QueryHistory() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <SidebarMenuAction showOnHover>
-                            <MoreHorizontal />
+                            <MoreIcon />
                             <span className="sr-only">More</span>
                           </SidebarMenuAction>
                         </DropdownMenuTrigger>
@@ -168,13 +175,13 @@ export function QueryHistory() {
                           align={isMobile ? 'end' : 'start'}
                         >
                           <DropdownMenuItem onClick={() => handleQueryClick(item.query)}>
-                            <Play className="text-muted-foreground" />
+                            <PlayIcon className="text-muted-foreground" />
                             <span>Load in editor</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => navigator.clipboard.writeText(item.query)}
                           >
-                            <Copy className="text-muted-foreground" />
+                            <CopyIcon className="text-muted-foreground" />
                             <span>Copy query</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
@@ -182,7 +189,7 @@ export function QueryHistory() {
                             className="text-red-400"
                             onClick={() => removeFromHistory(item.id)}
                           >
-                            <Trash2 className="text-red-400" />
+                            <TrashIcon className="text-red-400" />
                             <span>Delete from history</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -197,7 +204,7 @@ export function QueryHistory() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsHistoryDialogOpen(true)}
                   >
-                    <MoreHorizontal />
+                    <MoreIcon />
                     <span>View all ({filteredHistory.length})</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

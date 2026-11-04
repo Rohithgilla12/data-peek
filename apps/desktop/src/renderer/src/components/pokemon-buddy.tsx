@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X } from 'lucide-react'
+import { CloseIcon } from '@/components/icons'
 import {
   usePokemonBuddyStore,
   getActivePokemon,
@@ -84,7 +84,7 @@ function PokemonSelector({
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
-          <X className="size-3.5" />
+          <CloseIcon className="size-3.5" />
         </button>
       </div>
       <div className="grid grid-cols-4 gap-1.5">
@@ -135,7 +135,7 @@ function MovesPanel({
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
-          <X className="size-3.5" />
+          <CloseIcon className="size-3.5" />
         </button>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
@@ -394,7 +394,7 @@ export function PokemonBuddy() {
                 className="rounded-md bg-accent p-1 text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-colors"
                 title="Hide buddy"
               >
-                <X className="size-3" />
+                <CloseIcon className="size-3" />
               </button>
             </div>
           </div>

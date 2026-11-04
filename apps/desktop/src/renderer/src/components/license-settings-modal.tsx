@@ -1,12 +1,12 @@
 import {
-  Loader2,
-  Check,
-  AlertCircle,
-  ExternalLink,
-  LogOut,
-  Monitor,
-  CreditCard
-} from 'lucide-react'
+  CheckIcon,
+  CreditCardIcon,
+  ErrorIcon,
+  ExternalLinkIcon,
+  MonitorIcon,
+  SignOutIcon,
+  SpinnerIcon
+} from '@/components/icons'
 import {
   Button,
   Dialog,
@@ -72,9 +72,9 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
                 }`}
               >
                 {isExpired || isExpiringSoon ? (
-                  <AlertCircle className="size-4" />
+                  <ErrorIcon className="size-4" />
                 ) : (
-                  <Check className="size-4" />
+                  <CheckIcon className="size-4" />
                 )}
               </div>
               <div className="flex-1">
@@ -117,7 +117,7 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Devices</span>
                       <span className="flex items-center gap-1">
-                        <Monitor className="size-3" />
+                        <MonitorIcon className="size-3" />
                         {status.devicesUsed} of {status.devicesAllowed} used
                       </span>
                     </div>
@@ -163,12 +163,12 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
             disabled={isLoading}
           >
             {isLoading ? (
-              <Loader2 className="size-4 animate-spin" />
+              <SpinnerIcon className="size-4 animate-spin" />
             ) : (
-              <CreditCard className="size-4" />
+              <CreditCardIcon className="size-4" />
             )}
             Manage Subscription
-            <ExternalLink className="size-3" />
+            <ExternalLinkIcon className="size-3" />
           </Button>
 
           <div className="flex gap-2">
@@ -179,9 +179,9 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
               disabled={isLoading}
             >
               {isLoading ? (
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
               ) : (
-                <LogOut className="size-4" />
+                <SignOutIcon className="size-4" />
               )}
               Deactivate
             </Button>
@@ -201,7 +201,7 @@ export function LicenseSettingsModal({ open, onOpenChange }: LicenseSettingsModa
                 className="gap-2"
               >
                 Renew License
-                <ExternalLink className="size-3" />
+                <ExternalLinkIcon className="size-3" />
               </Button>
             )}
           </div>

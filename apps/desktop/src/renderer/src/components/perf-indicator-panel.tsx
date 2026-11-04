@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import {
-  X,
-  RefreshCw,
-  AlertCircle,
-  AlertTriangle,
-  Info,
-  ChevronDown,
-  ChevronRight,
-  Repeat
-} from 'lucide-react'
+  CaretDownIcon,
+  CaretRightIcon,
+  CloseIcon,
+  ErrorIcon,
+  InfoIcon,
+  RefreshIcon,
+  RepeatIcon,
+  WarningIcon
+} from '@/components/icons'
 import { cn, Button, Badge } from '@data-peek/ui'
 import { PerfIssueCard } from './perf-issue-card'
 import type {
@@ -71,7 +71,7 @@ export function PerfIndicatorPanel({
                 )}
                 onClick={() => onToggleSeverity('critical')}
               >
-                <AlertCircle className="size-3 mr-0.5" />
+                <ErrorIcon className="size-3 mr-0.5" />
                 {analysis.issueCount.critical}
               </Badge>
             )}
@@ -85,7 +85,7 @@ export function PerfIndicatorPanel({
                 )}
                 onClick={() => onToggleSeverity('warning')}
               >
-                <AlertTriangle className="size-3 mr-0.5" />
+                <WarningIcon className="size-3 mr-0.5" />
                 {analysis.issueCount.warning}
               </Badge>
             )}
@@ -99,7 +99,7 @@ export function PerfIndicatorPanel({
                 )}
                 onClick={() => onToggleSeverity('info')}
               >
-                <Info className="size-3 mr-0.5" />
+                <InfoIcon className="size-3 mr-0.5" />
                 {analysis.issueCount.info}
               </Badge>
             )}
@@ -121,11 +121,11 @@ export function PerfIndicatorPanel({
             onClick={onReanalyze}
             disabled={isAnalyzing}
           >
-            <RefreshCw className={cn('size-3.5', isAnalyzing && 'animate-spin')} />
+            <RefreshIcon className={cn('size-3.5', isAnalyzing && 'animate-spin')} />
             Re-analyze
           </Button>
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={onClose}>
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
       </div>
@@ -157,16 +157,16 @@ export function PerfIndicatorPanel({
               className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-muted/30 transition-colors"
               onClick={() => setShowNplusOne(!showNplusOne)}
             >
-              <Repeat className="size-4 text-yellow-500" />
+              <RepeatIcon className="size-4 text-yellow-500" />
               <span className="text-sm font-medium">N+1 Query Patterns</span>
               <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
                 {analysis.nplusOnePatterns.length}
               </Badge>
               <div className="flex-1" />
               {showNplusOne ? (
-                <ChevronDown className="size-4 text-muted-foreground" />
+                <CaretDownIcon className="size-4 text-muted-foreground" />
               ) : (
-                <ChevronRight className="size-4 text-muted-foreground" />
+                <CaretRightIcon className="size-4 text-muted-foreground" />
               )}
             </button>
 
@@ -284,7 +284,7 @@ function NplusOneCard({ pattern }: NplusOneCardProps) {
         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-muted/30 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
-        <Repeat className="size-4 text-yellow-500 shrink-0" />
+        <RepeatIcon className="size-4 text-yellow-500 shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{pattern.occurrences} similar queries</span>
@@ -297,9 +297,9 @@ function NplusOneCard({ pattern }: NplusOneCardProps) {
           </p>
         </div>
         {expanded ? (
-          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+          <CaretDownIcon className="size-4 text-muted-foreground shrink-0" />
         ) : (
-          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+          <CaretRightIcon className="size-4 text-muted-foreground shrink-0" />
         )}
       </button>
 

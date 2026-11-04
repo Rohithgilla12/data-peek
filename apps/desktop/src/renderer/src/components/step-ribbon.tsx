@@ -1,5 +1,11 @@
 import { useMemo } from 'react'
-import { Play, SkipForward, FastForward, Square, RefreshCw } from 'lucide-react'
+import {
+  FastForwardIcon,
+  PlayIcon,
+  RefreshIcon,
+  SkipForwardIcon,
+  StopIcon
+} from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import type { SessionState } from '@shared/index'
 import { useStepStore } from '@/stores/step-store'
@@ -91,7 +97,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
           disabled={!canNext}
           className="h-7 text-xs"
         >
-          <Play className="size-3 mr-1" />
+          <PlayIcon className="size-3 mr-1" />
           Next
           <kbd className="ml-2 opacity-60 text-[10px]">⇧↵</kbd>
         </Button>
@@ -102,7 +108,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
           disabled={!canNext}
           className="h-7 text-xs"
         >
-          <SkipForward className="size-3 mr-1" />
+          <SkipForwardIcon className="size-3 mr-1" />
           Skip
         </Button>
         <Button
@@ -112,7 +118,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
           disabled={!canNext}
           className="h-7 text-xs"
         >
-          <FastForward className="size-3 mr-1" />
+          <FastForwardIcon className="size-3 mr-1" />
           Continue
         </Button>
         {canRetry && (
@@ -122,7 +128,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
             onClick={() => retryStep(tabId)}
             className="h-7 text-xs text-amber-500 hover:text-amber-400"
           >
-            <RefreshCw className="size-3 mr-1" />
+            <RefreshIcon className="size-3 mr-1" />
             Retry
           </Button>
         )}
@@ -133,7 +139,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
           disabled={isRunning}
           className="h-7 text-xs text-destructive hover:text-destructive"
         >
-          <Square className="size-3 mr-1" />
+          <StopIcon className="size-3 mr-1" />
           Stop
         </Button>
       </div>

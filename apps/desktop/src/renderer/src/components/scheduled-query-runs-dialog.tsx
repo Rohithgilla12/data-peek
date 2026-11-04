@@ -1,5 +1,12 @@
 import { useEffect, useCallback } from 'react'
-import { History, CheckCircle, XCircle, Clock, Trash2, RefreshCw } from 'lucide-react'
+import {
+  ClockIcon,
+  ErrorIcon,
+  HistoryIcon,
+  RefreshIcon,
+  SuccessIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -83,7 +90,7 @@ function RunItem({ run }: { run: ScheduledQueryRun }) {
             run.success ? 'bg-green-500/10 text-green-500' : 'bg-red-500/10 text-red-500'
           )}
         >
-          {run.success ? <CheckCircle className="size-4" /> : <XCircle className="size-4" />}
+          {run.success ? <SuccessIcon className="size-4" /> : <ErrorIcon className="size-4" />}
         </div>
 
         <div className="flex-1 min-w-0">
@@ -102,7 +109,7 @@ function RunItem({ run }: { run: ScheduledQueryRun }) {
           </div>
 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock className="size-3" />
+            <ClockIcon className="size-3" />
             <span>Started: {formatDateTime(run.startedAt)}</span>
             {run.completedAt && (
               <span className="text-muted-foreground/70">
@@ -180,7 +187,7 @@ export function ScheduledQueryRunsDialog({
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-4 py-3 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <History className="size-4" />
+            <HistoryIcon className="size-4" />
             Run History
             {query && <span className="text-muted-foreground font-normal">- {query.name}</span>}
           </DialogTitle>
@@ -193,11 +200,11 @@ export function ScheduledQueryRunsDialog({
               <Badge variant="secondary">{queryRuns.length} runs</Badge>
             </div>
             <div className="flex items-center gap-1 text-green-600">
-              <CheckCircle className="size-3" />
+              <SuccessIcon className="size-3" />
               {successCount} success
             </div>
             <div className="flex items-center gap-1 text-red-500">
-              <XCircle className="size-3" />
+              <ErrorIcon className="size-3" />
               {failureCount} failed
             </div>
             <div className="ml-auto flex items-center gap-2">
@@ -205,7 +212,7 @@ export function ScheduledQueryRunsDialog({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="ghost" size="icon" className="size-7" onClick={handleRefresh}>
-                      <RefreshCw className="size-3.5" />
+                      <RefreshIcon className="size-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Refresh</TooltipContent>
@@ -220,7 +227,7 @@ export function ScheduledQueryRunsDialog({
                       className="size-7 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                       onClick={handleClearRuns}
                     >
-                      <Trash2 className="size-3.5" />
+                      <TrashIcon className="size-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Clear history</TooltipContent>
@@ -235,7 +242,7 @@ export function ScheduledQueryRunsDialog({
           <div className="p-4 space-y-3">
             {queryRuns.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <History className="size-8 mx-auto opacity-50 mb-2" />
+                <HistoryIcon className="size-8 mx-auto opacity-50 mb-2" />
                 <p>No runs yet</p>
                 <p className="text-xs">Runs will appear here when the schedule executes</p>
               </div>

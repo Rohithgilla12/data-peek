@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Database } from 'lucide-react'
+import { DatabaseIcon } from '@/components/icons'
 import { usePanelCollapse } from '@/hooks/use-panel-collapse'
 import { useCapabilities } from '@/hooks/use-capabilities'
 
@@ -925,7 +925,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center space-y-4">
           <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-            <Database className="size-8 text-muted-foreground" />
+            <DatabaseIcon className="size-8 text-muted-foreground" />
           </div>
           <div>
             <h2 className="text-lg font-medium">No Connection</h2>

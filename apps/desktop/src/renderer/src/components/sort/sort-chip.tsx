@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ArrowUp, ArrowDown, ChevronDown, Dices, X } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, CaretDownIcon, CloseIcon, DiceIcon } from '@/components/icons'
 import { Button, Popover, PopoverContent, PopoverTrigger, cn } from '@data-peek/ui'
 import {
   modeLabel,
@@ -177,9 +177,9 @@ export function SortChipItem({
           )}
         >
           {chip.direction === 'asc' ? (
-            <ArrowUp className="size-3" />
+            <ArrowUpIcon className="size-3" />
           ) : (
-            <ArrowDown className="size-3" />
+            <ArrowDownIcon className="size-3" />
           )}
         </span>
       </button>
@@ -202,7 +202,7 @@ export function SortChipItem({
               'transition-colors duration-100'
             )}
           >
-            <ChevronDown className="size-3" />
+            <CaretDownIcon className="size-3" />
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-56 p-1">
@@ -267,7 +267,7 @@ export function SortChipItem({
                 className="w-full justify-start h-7 text-xs gap-2"
                 onClick={onReseed}
               >
-                <Dices className="size-3" />
+                <DiceIcon className="size-3" />
                 Reroll seed
                 <span className="ml-auto font-mono text-[10px] text-muted-foreground/70">
                   {chip.seed}
@@ -286,7 +286,7 @@ export function SortChipItem({
                 onRemove()
               }}
             >
-              <X className="size-3" />
+              <CloseIcon className="size-3" />
               Remove sort
             </Button>
           </div>

@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react'
 import {
-  Clock,
-  ChevronRight,
-  MoreHorizontal,
-  Play,
-  Pause,
-  Trash2,
-  Pencil,
-  History,
-  CheckCircle,
-  AlertCircle,
-  Plus
-} from 'lucide-react'
+  CaretRightIcon,
+  ClockIcon,
+  EditIcon,
+  ErrorIcon,
+  HistoryIcon,
+  MoreIcon,
+  PauseIcon,
+  PlayIcon,
+  PlusIcon,
+  SuccessIcon,
+  TrashIcon
+} from '@/components/icons'
 
 import {
   Badge,
@@ -89,11 +89,11 @@ function getScheduleLabel(schedule: ScheduledQuery['schedule']): string {
 function getStatusIcon(status: ScheduledQuery['status']) {
   switch (status) {
     case 'active':
-      return <CheckCircle className="size-3 text-green-500" />
+      return <SuccessIcon className="size-3 text-green-500" />
     case 'paused':
-      return <Pause className="size-3 text-yellow-500" />
+      return <PauseIcon className="size-3 text-yellow-500" />
     case 'error':
-      return <AlertCircle className="size-3 text-red-500" />
+      return <ErrorIcon className="size-3 text-red-500" />
     default:
       return null
   }
@@ -188,7 +188,7 @@ export function ScheduledQueries() {
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center">
           <CollapsibleTrigger className="flex items-center gap-1 flex-1">
-            <ChevronRight
+            <CaretRightIcon
               className={`size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             />
             <span>Scheduled Queries</span>
@@ -209,7 +209,7 @@ export function ScheduledQueries() {
                     onClick={() => setIsFormDialogOpen(true)}
                     className="mx-auto w-auto"
                   >
-                    <Plus className="size-4" />
+                    <PlusIcon className="size-4" />
                     <span>New Schedule</span>
                   </SidebarMenuButton>
                 </div>
@@ -229,7 +229,7 @@ export function ScheduledQueries() {
                                 <span className="text-xs truncate font-medium">{item.name}</span>
                               </div>
                               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                                <Clock className="size-3" />
+                                <ClockIcon className="size-3" />
                                 <span>{getScheduleLabel(item.schedule)}</span>
                                 {item.status === 'active' && item.nextRunAt && (
                                   <span className="text-green-600">
@@ -259,7 +259,7 @@ export function ScheduledQueries() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <SidebarMenuAction showOnHover>
-                          <MoreHorizontal />
+                          <MoreIcon />
                           <span className="sr-only">More</span>
                         </SidebarMenuAction>
                       </DropdownMenuTrigger>
@@ -272,28 +272,28 @@ export function ScheduledQueries() {
                           onClick={() => handleRunNow(item)}
                           disabled={runningNow === item.id}
                         >
-                          <Play className="text-muted-foreground" />
+                          <PlayIcon className="text-muted-foreground" />
                           <span>{runningNow === item.id ? 'Running...' : 'Run now'}</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleTogglePause(item)}>
                           {item.status === 'active' ? (
                             <>
-                              <Pause className="text-muted-foreground" />
+                              <PauseIcon className="text-muted-foreground" />
                               <span>Pause</span>
                             </>
                           ) : (
                             <>
-                              <Play className="text-muted-foreground" />
+                              <PlayIcon className="text-muted-foreground" />
                               <span>Resume</span>
                             </>
                           )}
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleViewRuns(item)}>
-                          <History className="text-muted-foreground" />
+                          <HistoryIcon className="text-muted-foreground" />
                           <span>View runs</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEditQuery(item)}>
-                          <Pencil className="text-muted-foreground" />
+                          <EditIcon className="text-muted-foreground" />
                           <span>Edit</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -301,7 +301,7 @@ export function ScheduledQueries() {
                           className="text-red-400"
                           onClick={() => handleDeleteQuery(item.id)}
                         >
-                          <Trash2 className="text-red-400" />
+                          <TrashIcon className="text-red-400" />
                           <span>Delete</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -315,7 +315,7 @@ export function ScheduledQueries() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsDialogOpen(true)}
                   >
-                    <Clock className="size-4" />
+                    <ClockIcon className="size-4" />
                     <span>View all ({sortedQueries.length})</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -326,7 +326,7 @@ export function ScheduledQueries() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsDialogOpen(true)}
                   >
-                    <MoreHorizontal className="size-4" />
+                    <MoreIcon className="size-4" />
                     <span>Manage schedules</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

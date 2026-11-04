@@ -1,4 +1,4 @@
-import { History } from 'lucide-react'
+import { HistoryIcon } from '@/components/icons'
 import {
   Badge,
   Button,
@@ -38,7 +38,7 @@ export function TimeMachineButton({ tabId, disabled }: TimeMachineButtonProps) {
             disabled={disabled}
             onClick={() => (isOpen ? closeStrip(tabId) : openStrip(tabId))}
           >
-            <History className="size-3.5" />
+            <HistoryIcon className="size-3.5" />
             Time Machine
             {isOpen && runCount > 0 && (
               <Badge variant="secondary" className="h-4 px-1.5 text-[10px] tabular-nums">

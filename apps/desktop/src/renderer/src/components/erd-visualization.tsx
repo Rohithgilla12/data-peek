@@ -23,7 +23,15 @@ import {
   type Node
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Check, ChevronsUpDown, Columns3, Filter, GitBranch, Key, X } from 'lucide-react'
+import {
+  CaretUpDownIcon,
+  CheckIcon,
+  CloseIcon,
+  ColumnsIcon,
+  FilterIcon,
+  GitBranchIcon,
+  KeyIcon
+} from '@/components/icons'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface TableNodeData extends Record<string, unknown> {
@@ -89,7 +97,9 @@ function TableNode({ data }: { data: TableNodeData }) {
         }}
       >
         <div className="flex items-center gap-2">
-          {data.isHub && <GitBranch className="size-3.5" style={{ color: data.clusterColor }} />}
+          {data.isHub && (
+            <GitBranchIcon className="size-3.5" style={{ color: data.clusterColor }} />
+          )}
           <div className="flex-1">
             <div
               className={cn('font-semibold text-sm', data.isHub && 'font-bold')}
@@ -141,11 +151,11 @@ function TableNode({ data }: { data: TableNodeData }) {
             )}
 
             {column.isPrimaryKey ? (
-              <Key className="size-3.5 text-amber-500 shrink-0" />
+              <KeyIcon className="size-3.5 text-amber-500 shrink-0" />
             ) : column.foreignKey ? (
-              <Key className="size-3.5 shrink-0" style={{ color: data.clusterColor }} />
+              <KeyIcon className="size-3.5 shrink-0" style={{ color: data.clusterColor }} />
             ) : (
-              <Columns3 className="size-3.5 text-muted-foreground/60 shrink-0" />
+              <ColumnsIcon className="size-3.5 text-muted-foreground/60 shrink-0" />
             )}
 
             <span className={cn('flex-1 truncate', column.isPrimaryKey && 'font-medium')}>
@@ -670,7 +680,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <div className="text-center space-y-2">
-          <GitBranch className="size-12 mx-auto opacity-20" />
+          <GitBranchIcon className="size-12 mx-auto opacity-20" />
           <p>No tables found to visualize</p>
         </div>
       </div>
@@ -690,14 +700,14 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
         <Popover open={tableFilterOpen} onOpenChange={setTableFilterOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-              <Filter className="size-3" />
+              <FilterIcon className="size-3" />
               Filter Tables
               {selectedTables.size > 0 && (
                 <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
                   {selectedTables.size}
                 </Badge>
               )}
-              <ChevronsUpDown className="size-3 opacity-50" />
+              <CaretUpDownIcon className="size-3 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[300px] p-0" align="start">
@@ -747,7 +757,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                                     : 'opacity-50'
                                 )}
                               >
-                                {selectedTables.has(table.key) && <Check className="size-3" />}
+                                {selectedTables.has(table.key) && <CheckIcon className="size-3" />}
                               </div>
                               <span className="truncate">{table.table}</span>
                             </button>
@@ -767,7 +777,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                   className="w-full h-7 text-xs"
                   onClick={clearSelection}
                 >
-                  <X className="size-3 mr-1" />
+                  <CloseIcon className="size-3 mr-1" />
                   Clear selection ({selectedTables.size})
                 </Button>
               </div>
@@ -788,7 +798,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                   onClick={() => toggleTable(key)}
                 >
                   {key.split('.')[1]}
-                  <X className="size-2.5" />
+                  <CloseIcon className="size-2.5" />
                 </Badge>
               ))}
           </div>

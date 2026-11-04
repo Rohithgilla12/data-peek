@@ -1,5 +1,13 @@
 import * as React from 'react'
-import { Check, X, RotateCcw, Braces, FileText, Copy, Expand } from 'lucide-react'
+import {
+  BracesIcon,
+  CheckIcon,
+  CloseIcon,
+  CopyIcon,
+  FileTextIcon,
+  MaximizeIcon,
+  UndoIcon
+} from '@/components/icons'
 import {
   Input,
   Button,
@@ -79,7 +87,7 @@ function TextCellEditor({
       <SheetContent side="right" className="w-[500px] sm:max-w-[500px] flex flex-col">
         <SheetHeader className="shrink-0">
           <SheetTitle className="flex items-center gap-2">
-            <FileText className="size-4 text-blue-500" />
+            <FileTextIcon className="size-4 text-blue-500" />
             Edit {columnName || 'Text'}
           </SheetTitle>
           <SheetDescription>Edit text content in the editor below</SheetDescription>
@@ -96,12 +104,12 @@ function TextCellEditor({
             >
               {copied ? (
                 <>
-                  <Check className="size-3 text-green-500" />
+                  <CheckIcon className="size-3 text-green-500" />
                   Copied!
                 </>
               ) : (
                 <>
-                  <Copy className="size-3" />
+                  <CopyIcon className="size-3" />
                   Copy
                 </>
               )}
@@ -112,7 +120,7 @@ function TextCellEditor({
               Cancel
             </Button>
             <Button size="sm" className="h-7 gap-1.5" onClick={handleSave}>
-              <Check className="size-3" />
+              <CheckIcon className="size-3" />
               Save
             </Button>
           </div>
@@ -324,7 +332,7 @@ export function EditableCell({
       return (
         <>
           <div className="flex items-center gap-1.5 text-amber-500">
-            <Braces className="size-3.5" />
+            <BracesIcon className="size-3.5" />
             <span className="text-xs">Editing...</span>
           </div>
           <JsonCellEditor
@@ -348,7 +356,7 @@ export function EditableCell({
       return (
         <>
           <div className="flex items-center gap-1.5 text-blue-500">
-            <FileText className="size-3.5" />
+            <FileTextIcon className="size-3.5" />
             <span className="text-xs">Editing...</span>
           </div>
           <TextCellEditor
@@ -429,7 +437,7 @@ export function EditableCell({
                   }}
                   onMouseDown={(e) => e.preventDefault()} // Prevent blur
                 >
-                  <Expand className="size-3" />
+                  <MaximizeIcon className="size-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top">
@@ -443,7 +451,7 @@ export function EditableCell({
             className="size-6 text-green-500 hover:text-green-400 hover:bg-green-500/10"
             onClick={() => onSave(parseValue(editValue, dataType))}
           >
-            <Check className="size-3" />
+            <CheckIcon className="size-3" />
           </Button>
           <Button
             variant="ghost"
@@ -451,7 +459,7 @@ export function EditableCell({
             className="size-6 text-red-500 hover:text-red-400 hover:bg-red-500/10"
             onClick={onCancel}
           >
-            <X className="size-3" />
+            <CloseIcon className="size-3" />
           </Button>
         </div>
       </div>
@@ -531,7 +539,7 @@ export function EditableCell({
                 className="size-5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
                 onClick={onRevert}
               >
-                <RotateCcw className="size-3" />
+                <UndoIcon className="size-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">

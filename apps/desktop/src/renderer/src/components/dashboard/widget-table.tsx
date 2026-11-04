@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, ArrowsDownUpIcon } from '@/components/icons'
 
 import { cn, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@data-peek/ui'
 import type { TableWidgetConfig } from '@shared/index'
@@ -123,12 +123,12 @@ export function WidgetTable({ config, data }: WidgetTableProps) {
                   </span>
                   {sortColumn === column ? (
                     sortDirection === 'asc' ? (
-                      <ArrowUp className="size-3 flex-shrink-0" />
+                      <ArrowUpIcon className="size-3 flex-shrink-0" />
                     ) : (
-                      <ArrowDown className="size-3 flex-shrink-0" />
+                      <ArrowDownIcon className="size-3 flex-shrink-0" />
                     )
                   ) : (
-                    <ArrowUpDown className="size-3 flex-shrink-0 opacity-30" />
+                    <ArrowsDownUpIcon className="size-3 flex-shrink-0 opacity-30" />
                   )}
                 </div>
               </TableHead>

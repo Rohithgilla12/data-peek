@@ -1,21 +1,21 @@
 import { useState, useMemo } from 'react'
 import {
-  ChevronRight,
-  Clock,
-  HardDrive,
-  Rows3,
-  AlertTriangle,
-  Activity,
-  BarChart3,
-  X,
-  Zap,
-  ArrowUpDown,
-  Users,
-  Timer,
-  TrendingUp,
-  Filter,
-  Database
-} from 'lucide-react'
+  ActivityIcon,
+  ArrowsDownUpIcon,
+  CaretRightIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CloseIcon,
+  DatabaseIcon,
+  FilterIcon,
+  HardDriveIcon,
+  RowsIcon,
+  TimerIcon,
+  TrendUpIcon,
+  UsersIcon,
+  WarningIcon,
+  ZapIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -101,7 +101,7 @@ function TextPlanView({
     <div className="flex flex-col h-full bg-background border-l border-border">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30 shrink-0">
         <div className="flex items-center gap-2">
-          <BarChart3 className="size-4 text-primary" />
+          <ChartBarIcon className="size-4 text-primary" />
           <span className="font-medium text-sm">Query Execution Plan</span>
         </div>
         <div className="flex items-center gap-3">
@@ -109,7 +109,7 @@ function TextPlanView({
             Total: <span className="font-mono text-foreground">{durationMs}ms</span>
           </span>
           <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
       </div>
@@ -243,7 +243,7 @@ function PlanNodeView({
               className="group flex items-start gap-2 w-full text-left hover:bg-muted/50 rounded p-1.5 -ml-1.5 transition-colors"
             >
               {hasChildren ? (
-                <ChevronRight
+                <CaretRightIcon
                   className={cn(
                     'size-4 mt-0.5 text-muted-foreground transition-transform shrink-0',
                     isOpen && 'rotate-90'
@@ -290,7 +290,7 @@ function PlanNodeView({
                       variant="outline"
                       className="text-[10px] text-blue-500 border-blue-500/30"
                     >
-                      <Zap className="size-2.5 mr-0.5" />
+                      <ZapIcon className="size-2.5 mr-0.5" />
                       Parallel
                     </Badge>
                   )}
@@ -304,14 +304,14 @@ function PlanNodeView({
                     </Badge>
                   )}
 
-                  {warnings.length > 0 && <AlertTriangle className="size-3.5 text-yellow-500" />}
+                  {warnings.length > 0 && <WarningIcon className="size-3.5 text-yellow-500" />}
                 </div>
 
                 {/* Metrics Row - Primary */}
                 <div className="flex items-center gap-4 mt-1.5 text-xs text-muted-foreground flex-wrap">
                   {node['Actual Rows'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <Rows3 className="size-3" />
+                      <RowsIcon className="size-3" />
                       <span className="font-mono">{node['Actual Rows'].toLocaleString()}</span> rows
                       {node['Actual Loops'] && node['Actual Loops'] > 1 && (
                         <span className="text-muted-foreground/70"> x{node['Actual Loops']}</span>
@@ -338,7 +338,7 @@ function PlanNodeView({
 
                   {node['Actual Total Time'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <Clock className="size-3" />
+                      <ClockIcon className="size-3" />
                       <span className="font-mono">{node['Actual Total Time'].toFixed(2)}</span> ms
                       {/* Show startup time if significant */}
                       {node['Actual Startup Time'] !== undefined &&
@@ -352,7 +352,7 @@ function PlanNodeView({
 
                   {node['Total Cost'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <Activity className="size-3" />
+                      <ActivityIcon className="size-3" />
                       cost: <span className="font-mono">{node['Total Cost'].toFixed(0)}</span>
                       <span className="text-muted-foreground/70">({costPercentage}%)</span>
                     </span>
@@ -361,7 +361,7 @@ function PlanNodeView({
                   {/* Parallel workers */}
                   {node['Workers Launched'] !== undefined && node['Workers Launched'] > 0 && (
                     <span className="flex items-center gap-1 text-blue-500">
-                      <Users className="size-3" />
+                      <UsersIcon className="size-3" />
                       <span className="font-mono">{node['Workers Launched']}</span>
                       {node['Workers Planned'] &&
                         node['Workers Launched'] < node['Workers Planned'] && (
@@ -377,7 +377,7 @@ function PlanNodeView({
                   {/* Buffer stats */}
                   {node['Shared Hit Blocks'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <HardDrive className="size-3" />
+                      <HardDriveIcon className="size-3" />
                       hits: <span className="font-mono">{node['Shared Hit Blocks']}</span>
                       {node['Shared Read Blocks'] ? (
                         <span className="text-orange-500">reads: {node['Shared Read Blocks']}</span>
@@ -394,7 +394,7 @@ function PlanNodeView({
                   {(node['I/O Read Time'] !== undefined ||
                     node['I/O Write Time'] !== undefined) && (
                     <span className="flex items-center gap-1">
-                      <Timer className="size-3" />
+                      <TimerIcon className="size-3" />
                       {node['I/O Read Time'] !== undefined && (
                         <span>
                           read:{' '}
@@ -418,7 +418,7 @@ function PlanNodeView({
                   {node['Rows Removed by Filter'] !== undefined &&
                     node['Rows Removed by Filter'] > 0 && (
                       <span className="flex items-center gap-1">
-                        <Filter className="size-3" />
+                        <FilterIcon className="size-3" />
                         <span
                           className={cn(
                             'font-mono',
@@ -436,7 +436,7 @@ function PlanNodeView({
                   {/* Heap fetches for index scans */}
                   {node['Heap Fetches'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <Database className="size-3" />
+                      <DatabaseIcon className="size-3" />
                       <span className="font-mono">
                         {node['Heap Fetches'].toLocaleString()}
                       </span>{' '}
@@ -448,7 +448,7 @@ function PlanNodeView({
                   {(node['Temp Read Blocks'] !== undefined ||
                     node['Temp Written Blocks'] !== undefined) && (
                     <span className="flex items-center gap-1 text-orange-500">
-                      <HardDrive className="size-3" />
+                      <HardDriveIcon className="size-3" />
                       temp:
                       {node['Temp Read Blocks'] !== undefined && (
                         <span className="font-mono">r:{node['Temp Read Blocks']}</span>
@@ -463,7 +463,7 @@ function PlanNodeView({
                 {/* Sort details */}
                 {node['Sort Key'] && (
                   <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <ArrowUpDown className="size-3" />
+                    <ArrowsDownUpIcon className="size-3" />
                     <span className="font-mono text-[11px]">{node['Sort Key'].join(', ')}</span>
                     {node['Sort Method'] && (
                       <Badge variant="outline" className="text-[10px] h-4">
@@ -486,7 +486,7 @@ function PlanNodeView({
                 {/* Group key */}
                 {node['Group Key'] && (
                   <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <TrendingUp className="size-3" />
+                    <TrendUpIcon className="size-3" />
                     <span className="text-[10px]">GROUP BY</span>
                     <span className="font-mono text-[11px]">{node['Group Key'].join(', ')}</span>
                   </div>
@@ -553,7 +553,7 @@ function PlanNodeView({
                         key={i}
                         className="flex items-start gap-1.5 text-[11px] text-yellow-600 dark:text-yellow-500"
                       >
-                        <AlertTriangle className="size-3 shrink-0 mt-0.5" />
+                        <WarningIcon className="size-3 shrink-0 mt-0.5" />
                         {warning}
                       </div>
                     ))}
@@ -654,18 +654,18 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30 shrink-0">
           <div className="flex items-center gap-2">
-            <BarChart3 className="size-4 text-primary" />
+            <ChartBarIcon className="size-4 text-primary" />
             <span className="font-medium text-sm">Query Execution Plan</span>
           </div>
           <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
         {/* Empty state */}
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center space-y-3">
             <div className="size-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-              <AlertTriangle className="size-6 text-muted-foreground" />
+              <WarningIcon className="size-6 text-muted-foreground" />
             </div>
             <div>
               <p className="text-sm font-medium">No execution plan available</p>
@@ -684,7 +684,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30 shrink-0">
         <div className="flex items-center gap-2">
-          <BarChart3 className="size-4 text-primary" />
+          <ChartBarIcon className="size-4 text-primary" />
           <span className="font-medium text-sm">Query Execution Plan</span>
         </div>
         <div className="flex items-center gap-3">
@@ -706,7 +706,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
             </span>
           </div>
           <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
       </div>
@@ -714,13 +714,13 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
       {/* Summary Stats */}
       <div className="px-4 py-2 border-b border-border/40 flex items-center gap-4 text-xs shrink-0 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <Activity className="size-3 text-muted-foreground" />
+          <ActivityIcon className="size-3 text-muted-foreground" />
           <span className="text-muted-foreground">Cost:</span>
           <span className="font-mono font-medium">{totalCost.toFixed(0)}</span>
         </div>
         {rootPlan['Actual Rows'] !== undefined && (
           <div className="flex items-center gap-1.5">
-            <Rows3 className="size-3 text-muted-foreground" />
+            <RowsIcon className="size-3 text-muted-foreground" />
             <span className="text-muted-foreground">Rows:</span>
             <span className="font-mono font-medium">
               {rootPlan['Actual Rows'].toLocaleString()}
@@ -735,7 +735,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
         )}
         {(stats.totalBufferHits > 0 || stats.totalBufferReads > 0) && (
           <div className="flex items-center gap-1.5">
-            <HardDrive className="size-3 text-muted-foreground" />
+            <HardDriveIcon className="size-3 text-muted-foreground" />
             <span className="text-muted-foreground">Buffers:</span>
             <span className="font-mono font-medium text-green-600 dark:text-green-400">
               {stats.totalBufferHits.toLocaleString()} hits
@@ -749,7 +749,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
         )}
         {stats.totalTempBlocks > 0 && (
           <div className="flex items-center gap-1.5 text-orange-500">
-            <HardDrive className="size-3" />
+            <HardDriveIcon className="size-3" />
             <span>Temp:</span>
             <span className="font-mono font-medium">{stats.totalTempBlocks} blocks</span>
           </div>
@@ -758,7 +758,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
           <span className="text-muted-foreground">{stats.nodeCount} nodes</span>
           {stats.hasParallel && (
             <Badge variant="outline" className="text-[10px] h-4 text-blue-500 border-blue-500/30">
-              <Zap className="size-2 mr-0.5" />
+              <ZapIcon className="size-2 mr-0.5" />
               Parallel
             </Badge>
           )}

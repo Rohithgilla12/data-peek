@@ -1,18 +1,15 @@
 import type * as React from 'react'
 import {
-  Shuffle,
-  CircleDot,
-  Sparkles,
-  Clock,
-  CalendarDays,
-  CalendarClock,
-  Ruler,
-  Sigma,
-  ArrowDownAZ,
-  ArrowDownZA,
-  ArrowDown01,
-  ArrowDown10
-} from 'lucide-react'
+  AiIcon,
+  CalendarIcon,
+  ClockIcon,
+  RadioButtonIcon,
+  RulerIcon,
+  ShuffleIcon,
+  SigmaIcon,
+  SortAscendingIcon,
+  SortDescendingIcon
+} from '@/components/icons'
 
 export interface SortColumn {
   name: string
@@ -92,28 +89,28 @@ export const STRING_MODES: ModeOption[] = [
     label: 'Alphabetic',
     short: 'A→Z',
     description: 'Standard lexical order',
-    icon: ArrowDownAZ
+    icon: SortAscendingIcon
   },
   {
     value: 'natural',
     label: 'Natural',
     short: 'nat',
     description: 'item2 before item10',
-    icon: Sparkles
+    icon: AiIcon
   },
   {
     value: 'length',
     label: 'By length',
     short: 'len',
     description: 'Shortest to longest',
-    icon: Ruler
+    icon: RulerIcon
   },
   {
     value: 'random',
     label: 'Shuffle',
     short: 'rand',
     description: 'Random seeded order',
-    icon: Shuffle
+    icon: ShuffleIcon
   }
 ]
 
@@ -123,21 +120,21 @@ export const NUMERIC_MODES: ModeOption[] = [
     label: 'Numeric',
     short: '1→9',
     description: 'Lowest to highest',
-    icon: ArrowDown01
+    icon: SortAscendingIcon
   },
   {
     value: 'absolute',
     label: 'Absolute',
     short: '|x|',
     description: 'By distance from zero',
-    icon: Sigma
+    icon: SigmaIcon
   },
   {
     value: 'random',
     label: 'Shuffle',
     short: 'rand',
     description: 'Random seeded order',
-    icon: Shuffle
+    icon: ShuffleIcon
   }
 ]
 
@@ -147,35 +144,35 @@ export const DATE_MODES: ModeOption[] = [
     label: 'Chronological',
     short: 'time',
     description: 'Oldest to newest',
-    icon: Clock
+    icon: ClockIcon
   },
   {
     value: 'byMonth',
     label: 'By month',
     short: 'month',
     description: 'Group Jan…Dec',
-    icon: CalendarDays
+    icon: CalendarIcon
   },
   {
     value: 'byDayOfWeek',
     label: 'By weekday',
     short: 'dow',
     description: 'Group Mon…Sun',
-    icon: CalendarClock
+    icon: CalendarIcon
   },
   {
     value: 'byTime',
     label: 'Time of day',
     short: 'tod',
     description: '00:00 → 23:59 only',
-    icon: Clock
+    icon: ClockIcon
   },
   {
     value: 'random',
     label: 'Shuffle',
     short: 'rand',
     description: 'Random seeded order',
-    icon: Shuffle
+    icon: ShuffleIcon
   }
 ]
 
@@ -185,14 +182,14 @@ export const BOOL_MODES: ModeOption[] = [
     label: 'Boolean',
     short: 't/f',
     description: 'True before false',
-    icon: CircleDot
+    icon: RadioButtonIcon
   },
   {
     value: 'random',
     label: 'Shuffle',
     short: 'rand',
     description: 'Random seeded order',
-    icon: Shuffle
+    icon: ShuffleIcon
   }
 ]
 
@@ -450,7 +447,7 @@ export const PRESETS: PresetDef[] = [
   {
     id: 'newest',
     label: 'Newest first',
-    icon: CalendarClock,
+    icon: CalendarIcon,
     description: 'Sort by the first timestamp, descending',
     build: (cols) => {
       const col = pickColumn(cols, 'date')
@@ -460,7 +457,7 @@ export const PRESETS: PresetDef[] = [
   {
     id: 'oldest',
     label: 'Oldest first',
-    icon: Clock,
+    icon: ClockIcon,
     description: 'Sort by the first timestamp, ascending',
     build: (cols) => {
       const col = pickColumn(cols, 'date')
@@ -470,7 +467,7 @@ export const PRESETS: PresetDef[] = [
   {
     id: 'az',
     label: 'A → Z',
-    icon: ArrowDownAZ,
+    icon: SortAscendingIcon,
     description: 'First text column, alphabetical',
     build: (cols) => {
       const col = pickColumn(cols, 'string')
@@ -480,7 +477,7 @@ export const PRESETS: PresetDef[] = [
   {
     id: 'za',
     label: 'Z → A',
-    icon: ArrowDownZA,
+    icon: SortDescendingIcon,
     description: 'First text column, reversed',
     build: (cols) => {
       const col = pickColumn(cols, 'string')
@@ -490,7 +487,7 @@ export const PRESETS: PresetDef[] = [
   {
     id: 'largest',
     label: 'Largest first',
-    icon: ArrowDown10,
+    icon: SortDescendingIcon,
     description: 'First numeric column, descending',
     build: (cols) => {
       const col = pickColumn(cols, 'numeric')
@@ -500,7 +497,7 @@ export const PRESETS: PresetDef[] = [
   {
     id: 'smallest',
     label: 'Smallest first',
-    icon: ArrowDown01,
+    icon: SortAscendingIcon,
     description: 'First numeric column, ascending',
     build: (cols) => {
       const col = pickColumn(cols, 'numeric')
@@ -510,7 +507,7 @@ export const PRESETS: PresetDef[] = [
   {
     id: 'shuffle',
     label: 'Shuffle',
-    icon: Shuffle,
+    icon: ShuffleIcon,
     description: 'Random seeded order (any column)',
     build: (cols) => {
       const col = cols[0]

@@ -1,4 +1,4 @@
-import { X, BarChart2 } from 'lucide-react'
+import { ChartBarIcon, CloseIcon } from '@/components/icons'
 import type { ColumnStats, HistogramBucket, CommonValue } from '@shared/index'
 import { Button, Badge, ScrollArea, Separator, Skeleton } from '@data-peek/ui'
 
@@ -170,7 +170,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
     >
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2">
-          <BarChart2 className="size-4 text-muted-foreground" />
+          <ChartBarIcon className="size-4 text-muted-foreground" />
           <span className="text-sm font-medium">Column Stats</span>
         </div>
         <Button
@@ -180,7 +180,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
           data-testid="column-stats-close"
           onClick={onClose}
         >
-          <X className="size-3" />
+          <CloseIcon className="size-3" />
         </Button>
       </div>
 

@@ -1,14 +1,13 @@
 import {
-  Download,
-  Loader2,
-  AlertCircle,
-  PanelBottomClose,
-  PanelBottom,
-  Timer,
-  ActivitySquare,
-  Share2,
-  Play
-} from 'lucide-react'
+  ActivityIcon,
+  DownloadIcon,
+  ErrorIcon,
+  PanelBottomIcon,
+  PlayIcon,
+  ShareIcon,
+  SpinnerIcon,
+  TimerIcon
+} from '@/components/icons'
 import {
   Button,
   keys,
@@ -209,11 +208,11 @@ export function QueryResults({
               onClick={() => setIsResultsCollapsed(false)}
               title="Show results panel"
             >
-              <PanelBottom className="size-3.5" />
+              <PanelBottomIcon className="size-3.5" />
             </Button>
             {tabError ? (
               <span className="flex items-center gap-1.5 text-xs text-red-400">
-                <AlertCircle className="size-3" />
+                <ErrorIcon className="size-3" />
                 Query Error
               </span>
             ) : hasResults ? (
@@ -256,7 +255,7 @@ export function QueryResults({
           ) : tabError ? (
             <div className="flex-1 flex items-center justify-center p-4">
               <div className="max-w-md text-center space-y-2">
-                <AlertCircle className="size-8 text-red-400 mx-auto" />
+                <ErrorIcon className="size-8 text-red-400 mx-auto" />
                 <h3 className="font-medium text-red-400">Query Error</h3>
                 <p className="text-sm text-muted-foreground">{tabError}</p>
               </div>
@@ -383,7 +382,7 @@ export function QueryResults({
                     onClick={() => setIsResultsCollapsed(true)}
                     title="Collapse results panel"
                   >
-                    <PanelBottomClose className="size-3.5" />
+                    <PanelBottomIcon className="size-3.5" />
                   </Button>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     {hasMultipleResults ? (
@@ -420,7 +419,7 @@ export function QueryResults({
                             className="gap-1.5 h-7"
                             onClick={() => setShowTelemetryPanel(!showTelemetryPanel)}
                           >
-                            <Timer className="size-3.5" />
+                            <TimerIcon className="size-3.5" />
                             Telemetry
                           </Button>
                         </TooltipTrigger>
@@ -433,55 +432,55 @@ export function QueryResults({
                     </TooltipProvider>
                   )}
                   {tabResult && can.performanceAnalysis && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant={showPerfPanel ? 'secondary' : 'ghost'}
-                              size="sm"
-                              className="gap-1.5 h-7"
-                              onClick={
-                                perfAnalysis
-                                  ? () => setShowPerfPanel(!showPerfPanel)
-                                  : handleAnalyzePerformance
-                              }
-                              disabled={isPerfAnalyzing}
-                            >
-                              {isPerfAnalyzing ? (
-                                <Loader2 className="size-3.5 animate-spin" />
-                              ) : (
-                                <ActivitySquare className="size-3.5" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={showPerfPanel ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="gap-1.5 h-7"
+                            onClick={
+                              perfAnalysis
+                                ? () => setShowPerfPanel(!showPerfPanel)
+                                : handleAnalyzePerformance
+                            }
+                            disabled={isPerfAnalyzing}
+                          >
+                            {isPerfAnalyzing ? (
+                              <SpinnerIcon className="size-3.5 animate-spin" />
+                            ) : (
+                              <ActivityIcon className="size-3.5" />
+                            )}
+                            {perfAnalysis &&
+                              perfAnalysis.issueCount.critical + perfAnalysis.issueCount.warning >
+                                0 && (
+                                <Badge
+                                  variant="secondary"
+                                  className={`h-4 px-1.5 text-[10px] ${
+                                    perfAnalysis.issueCount.critical > 0
+                                      ? 'bg-red-500/20 text-red-500'
+                                      : 'bg-yellow-500/20 text-yellow-500'
+                                  }`}
+                                >
+                                  {perfAnalysis.issueCount.critical +
+                                    perfAnalysis.issueCount.warning}
+                                </Badge>
                               )}
-                              {perfAnalysis &&
-                                perfAnalysis.issueCount.critical + perfAnalysis.issueCount.warning >
-                                  0 && (
-                                  <Badge
-                                    variant="secondary"
-                                    className={`h-4 px-1.5 text-[10px] ${
-                                      perfAnalysis.issueCount.critical > 0
-                                        ? 'bg-red-500/20 text-red-500'
-                                        : 'bg-yellow-500/20 text-yellow-500'
-                                    }`}
-                                  >
-                                    {perfAnalysis.issueCount.critical +
-                                      perfAnalysis.issueCount.warning}
-                                  </Badge>
-                                )}
-                              Analyze
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p className="text-xs">
-                              {perfAnalysis
-                                ? showPerfPanel
-                                  ? 'Hide performance analysis'
-                                  : 'Show performance analysis'
-                                : 'Analyze query for performance issues'}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
+                            Analyze
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-xs">
+                            {perfAnalysis
+                              ? showPerfPanel
+                                ? 'Hide performance analysis'
+                                : 'Show performance analysis'
+                              : 'Analyze query for performance issues'}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <MaskingToolbar tabId={tabId} />
                   <TooltipProvider>
                     <Tooltip>
@@ -492,7 +491,7 @@ export function QueryResults({
                           className="gap-1.5 h-7"
                           onClick={() => setShareResultsOpen(true)}
                         >
-                          <Share2 className="size-3.5" />
+                          <ShareIcon className="size-3.5" />
                           Share
                         </Button>
                       </TooltipTrigger>
@@ -504,7 +503,7 @@ export function QueryResults({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="gap-1.5 h-7">
-                        <Download className="size-3.5" />
+                        <DownloadIcon className="size-3.5" />
                         Export
                       </Button>
                     </DropdownMenuTrigger>
@@ -546,7 +545,7 @@ export function QueryResults({
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-3 max-w-sm">
                 <div className="size-10 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-                  <Play className="size-5 text-muted-foreground" />
+                  <PlayIcon className="size-5 text-muted-foreground" />
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">

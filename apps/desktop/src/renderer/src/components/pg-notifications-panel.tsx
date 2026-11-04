@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Bell,
-  BellOff,
-  Copy,
-  Trash2,
-  Send,
-  ChevronDown,
-  ChevronUp,
-  X,
-  Loader2,
-  AlertCircle
-} from 'lucide-react'
+  BellIcon,
+  BellSlashIcon,
+  CaretDownIcon,
+  CaretUpIcon,
+  CloseIcon,
+  CopyIcon,
+  ErrorIcon,
+  SendIcon,
+  SpinnerIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -117,7 +117,7 @@ function EventRow({ event, isFresh }: { event: PgNotificationEvent; isFresh: boo
           {copied ? (
             <span className="text-[10px] text-green-500">ok</span>
           ) : (
-            <Copy className="size-3" />
+            <CopyIcon className="size-3" />
           )}
         </Button>
       </div>
@@ -253,7 +253,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
     return (
       <div className="flex flex-1 items-center justify-center text-center p-8">
         <div className="space-y-2">
-          <AlertCircle className="size-8 text-muted-foreground mx-auto" />
+          <ErrorIcon className="size-8 text-muted-foreground mx-auto" />
           <p className="text-sm font-medium">PostgreSQL only</p>
           <p className="text-xs text-muted-foreground">
             LISTEN/NOTIFY is a PostgreSQL feature. Connect to a PostgreSQL database to use this
@@ -294,9 +294,9 @@ export function PgNotificationsPanel({ tabId }: Props) {
               className="h-8 shrink-0"
             >
               {isSubscribing ? (
-                <Loader2 className="size-3 animate-spin" />
+                <SpinnerIcon className="size-3 animate-spin" />
               ) : (
-                <Bell className="size-3 mr-1" />
+                <BellIcon className="size-3 mr-1" />
               )}
               Listen
             </Button>
@@ -305,7 +305,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
 
         {subscribeError && (
           <p className="text-xs text-destructive flex items-center gap-1">
-            <AlertCircle className="size-3" />
+            <ErrorIcon className="size-3" />
             {subscribeError}
           </p>
         )}
@@ -328,7 +328,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
                   className="ml-0.5 hover:text-destructive transition-colors"
                   title="Unsubscribe"
                 >
-                  <X className="size-3" />
+                  <CloseIcon className="size-3" />
                 </button>
               </Badge>
             ))}
@@ -369,7 +369,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
           onClick={handleClearAll}
           title="Clear all events"
         >
-          <Trash2 className="size-3" />
+          <TrashIcon className="size-3" />
         </Button>
       </div>
 
@@ -377,7 +377,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
         <div className="text-sm">
           {filteredEvents.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center gap-2">
-              <BellOff className="size-8 text-muted-foreground/50" />
+              <BellSlashIcon className="size-8 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">
                 {activeChannels.length === 0
                   ? 'Subscribe to a channel to start receiving notifications'
@@ -403,12 +403,12 @@ export function PgNotificationsPanel({ tabId }: Props) {
               type="button"
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors w-full"
             >
-              <Send className="size-3" />
+              <SendIcon className="size-3" />
               <span>Send notification</span>
               {isSendOpen ? (
-                <ChevronDown className="size-3 ml-auto" />
+                <CaretDownIcon className="size-3 ml-auto" />
               ) : (
-                <ChevronUp className="size-3 ml-auto" />
+                <CaretUpIcon className="size-3 ml-auto" />
               )}
             </button>
           </CollapsibleTrigger>
@@ -437,7 +437,7 @@ export function PgNotificationsPanel({ tabId }: Props) {
               />
               {sendError && (
                 <p className="text-xs text-destructive flex items-center gap-1">
-                  <AlertCircle className="size-3" />
+                  <ErrorIcon className="size-3" />
                   {sendError}
                 </p>
               )}
@@ -448,9 +448,9 @@ export function PgNotificationsPanel({ tabId }: Props) {
                 className="self-end"
               >
                 {isSending ? (
-                  <Loader2 className="size-3 mr-1 animate-spin" />
+                  <SpinnerIcon className="size-3 mr-1 animate-spin" />
                 ) : (
-                  <Send className="size-3 mr-1" />
+                  <SendIcon className="size-3 mr-1" />
                 )}
                 Send
               </Button>

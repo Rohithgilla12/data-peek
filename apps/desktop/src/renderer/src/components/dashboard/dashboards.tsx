@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  LayoutDashboard,
-  ChevronRight,
-  MoreHorizontal,
-  Trash2,
-  Pencil,
-  Copy,
-  Plus,
-  ExternalLink
-} from 'lucide-react'
+  CaretRightIcon,
+  CopyIcon,
+  DashboardIcon,
+  EditIcon,
+  ExternalLinkIcon,
+  MoreIcon,
+  PlusIcon,
+  TrashIcon
+} from '@/components/icons'
 
 import {
   Badge,
@@ -112,7 +112,7 @@ export function Dashboards() {
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center">
           <CollapsibleTrigger className="flex items-center gap-1 flex-1">
-            <ChevronRight
+            <CaretRightIcon
               className={`size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             />
             <span>Dashboards</span>
@@ -133,7 +133,7 @@ export function Dashboards() {
                     onClick={() => setIsFormDialogOpen(true)}
                     className="mx-auto w-auto"
                   >
-                    <Plus className="size-4" />
+                    <PlusIcon className="size-4" />
                     <span>New Dashboard</span>
                   </SidebarMenuButton>
                 </div>
@@ -149,7 +149,7 @@ export function Dashboards() {
                           >
                             <div className="flex flex-col items-start gap-0.5 w-full min-w-0">
                               <div className="flex items-center gap-1.5 w-full">
-                                <LayoutDashboard className="size-3 text-muted-foreground" />
+                                <DashboardIcon className="size-3 text-muted-foreground" />
                                 <span className="text-xs truncate font-medium">{item.name}</span>
                               </div>
                               <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -187,7 +187,7 @@ export function Dashboards() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <SidebarMenuAction showOnHover>
-                          <MoreHorizontal />
+                          <MoreIcon />
                           <span className="sr-only">More</span>
                         </SidebarMenuAction>
                       </DropdownMenuTrigger>
@@ -197,15 +197,15 @@ export function Dashboards() {
                         align={isMobile ? 'end' : 'start'}
                       >
                         <DropdownMenuItem onClick={() => handleOpenDashboard(item)}>
-                          <ExternalLink className="text-muted-foreground" />
+                          <ExternalLinkIcon className="text-muted-foreground" />
                           <span>Open</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleEditDashboard(item)}>
-                          <Pencil className="text-muted-foreground" />
+                          <EditIcon className="text-muted-foreground" />
                           <span>Edit</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleDuplicateDashboard(item)}>
-                          <Copy className="text-muted-foreground" />
+                          <CopyIcon className="text-muted-foreground" />
                           <span>Duplicate</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
@@ -213,7 +213,7 @@ export function Dashboards() {
                           className="text-red-400"
                           onClick={() => handleDeleteDashboard(item.id)}
                         >
-                          <Trash2 className="text-red-400" />
+                          <TrashIcon className="text-red-400" />
                           <span>Delete</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -227,7 +227,7 @@ export function Dashboards() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsFormDialogOpen(true)}
                   >
-                    <LayoutDashboard className="size-4" />
+                    <DashboardIcon className="size-4" />
                     <span>View all ({sortedDashboards.length})</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -238,7 +238,7 @@ export function Dashboards() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsFormDialogOpen(true)}
                   >
-                    <Plus className="size-4" />
+                    <PlusIcon className="size-4" />
                     <span>New Dashboard</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

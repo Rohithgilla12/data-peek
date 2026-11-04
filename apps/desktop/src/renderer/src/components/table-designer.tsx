@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Plus,
-  Trash2,
-  Save,
-  X,
-  Code,
-  Loader2,
-  AlertCircle,
-  GripVertical,
-  Copy,
-  ChevronDown,
-  ChevronRight
-} from 'lucide-react'
+  CaretDownIcon,
+  CaretRightIcon,
+  CloseIcon,
+  CodeIcon,
+  CopyIcon,
+  DragHandleIcon,
+  ErrorIcon,
+  PlusIcon,
+  SaveIcon,
+  SpinnerIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -316,7 +316,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center space-y-4">
-          <AlertCircle className="size-12 text-muted-foreground mx-auto" />
+          <ErrorIcon className="size-12 text-muted-foreground mx-auto" />
           <div>
             <h2 className="text-lg font-medium">No Connection</h2>
             <p className="text-sm text-muted-foreground mt-1">
@@ -332,7 +332,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center space-y-4">
-          <Loader2 className="size-12 text-muted-foreground mx-auto animate-spin" />
+          <SpinnerIcon className="size-12 text-muted-foreground mx-auto animate-spin" />
           <p className="text-sm text-muted-foreground">Loading table definition...</p>
         </div>
       </div>
@@ -385,9 +385,9 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
             className="gap-1.5"
           >
             {isPreviewLoading ? (
-              <Loader2 className="size-3.5 animate-spin" />
+              <SpinnerIcon className="size-3.5 animate-spin" />
             ) : (
-              <Code className="size-3.5" />
+              <CodeIcon className="size-3.5" />
             )}
             Preview SQL
           </Button>
@@ -398,9 +398,9 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
             className="gap-1.5"
           >
             {state?.isSaving ? (
-              <Loader2 className="size-3.5 animate-spin" />
+              <SpinnerIcon className="size-3.5 animate-spin" />
             ) : (
-              <Save className="size-3.5" />
+              <SaveIcon className="size-3.5" />
             )}
             {tab.mode === 'create' ? 'Create Table' : 'Save Changes'}
           </Button>
@@ -410,7 +410,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
       {/* Error display */}
       {state?.error && (
         <div className="bg-destructive/10 text-destructive px-4 py-2 text-sm flex items-center gap-2">
-          <AlertCircle className="size-4 shrink-0" />
+          <ErrorIcon className="size-4 shrink-0" />
           {state.error}
           <Button
             variant="ghost"
@@ -418,7 +418,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
             className="ml-auto h-6 w-6 p-0"
             onClick={() => setError(tabId, null)}
           >
-            <X className="size-3" />
+            <CloseIcon className="size-3" />
           </Button>
         </div>
       )}
@@ -435,9 +435,9 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
               <CollapsibleTrigger className="w-full flex items-center justify-between p-3 hover:bg-muted/50">
                 <div className="flex items-center gap-2">
                   {expandedSections.columns ? (
-                    <ChevronDown className="size-4" />
+                    <CaretDownIcon className="size-4" />
                   ) : (
-                    <ChevronRight className="size-4" />
+                    <CaretRightIcon className="size-4" />
                   )}
                   <span className="font-medium">Columns</span>
                   <span className="text-xs text-muted-foreground">
@@ -453,7 +453,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
                     handleAddColumn()
                   }}
                 >
-                  <Plus className="size-3.5" />
+                  <PlusIcon className="size-3.5" />
                   Add Column
                 </Button>
               </CollapsibleTrigger>
@@ -468,7 +468,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
                         className="mt-2 gap-1.5"
                         onClick={handleAddColumn}
                       >
-                        <Plus className="size-3.5" />
+                        <PlusIcon className="size-3.5" />
                         Add your first column
                       </Button>
                     </div>
@@ -516,9 +516,9 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
               <CollapsibleTrigger className="w-full flex items-center justify-between p-3 hover:bg-muted/50">
                 <div className="flex items-center gap-2">
                   {expandedSections.constraints ? (
-                    <ChevronDown className="size-4" />
+                    <CaretDownIcon className="size-4" />
                   ) : (
-                    <ChevronRight className="size-4" />
+                    <CaretRightIcon className="size-4" />
                   )}
                   <span className="font-medium">Constraints</span>
                   <span className="text-xs text-muted-foreground">
@@ -553,9 +553,9 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
               <CollapsibleTrigger className="w-full flex items-center justify-between p-3 hover:bg-muted/50">
                 <div className="flex items-center gap-2">
                   {expandedSections.indexes ? (
-                    <ChevronDown className="size-4" />
+                    <CaretDownIcon className="size-4" />
                   ) : (
-                    <ChevronRight className="size-4" />
+                    <CaretRightIcon className="size-4" />
                   )}
                   <span className="font-medium">Indexes</span>
                   <span className="text-xs text-muted-foreground">
@@ -584,7 +584,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
           {validationErrors.length > 0 && (
             <div className="rounded-lg border border-border/40 p-4 space-y-2">
               <h3 className="font-medium text-sm flex items-center gap-2">
-                <AlertCircle className="size-4 text-yellow-500" />
+                <ErrorIcon className="size-4 text-yellow-500" />
                 Validation Issues
               </h3>
               <ul className="text-sm space-y-1">
@@ -597,9 +597,9 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
                     )}
                   >
                     {err.severity === 'error' ? (
-                      <X className="size-3" />
+                      <CloseIcon className="size-3" />
                     ) : (
-                      <AlertCircle className="size-3" />
+                      <ErrorIcon className="size-3" />
                     )}
                     {err.message}
                   </li>
@@ -625,7 +625,7 @@ export function TableDesigner({ tabId }: TableDesignerProps) {
               Close
             </Button>
             <Button onClick={handleSave} disabled={state?.isSaving}>
-              {state?.isSaving ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
+              {state?.isSaving ? <SpinnerIcon className="size-4 animate-spin mr-2" /> : null}
               Execute
             </Button>
           </DialogFooter>
@@ -670,7 +670,7 @@ function ColumnRow({
     >
       {/* Drag handle */}
       <div className="flex items-center justify-center">
-        <GripVertical className="size-4 text-muted-foreground/50 cursor-grab" />
+        <DragHandleIcon className="size-4 text-muted-foreground/50 cursor-grab" />
       </div>
 
       {/* Name */}
@@ -793,7 +793,7 @@ function ColumnRow({
           }}
           title="Duplicate column"
         >
-          <Copy className="size-3.5" />
+          <CopyIcon className="size-3.5" />
         </Button>
         <Button
           variant="ghost"
@@ -805,7 +805,7 @@ function ColumnRow({
           }}
           title="Remove column"
         >
-          <Trash2 className="size-3.5" />
+          <TrashIcon className="size-3.5" />
         </Button>
       </div>
     </div>

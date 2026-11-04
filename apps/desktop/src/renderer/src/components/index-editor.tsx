@@ -1,5 +1,12 @@
 import { useState } from 'react'
-import { Plus, Trash2, ChevronDown, ChevronRight, AlertCircle, Database } from 'lucide-react'
+import {
+  CaretDownIcon,
+  CaretRightIcon,
+  DatabaseIcon,
+  ErrorIcon,
+  PlusIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -105,7 +112,7 @@ export function IndexEditor({
           <p className="text-sm">No indexes defined.</p>
           <p className="text-xs mt-1">Primary key indexes are created automatically.</p>
           <Button variant="outline" size="sm" className="mt-3 gap-1.5" onClick={handleAddIndex}>
-            <Plus className="size-3.5" />
+            <PlusIcon className="size-3.5" />
             Add Index
           </Button>
         </div>
@@ -134,11 +141,11 @@ export function IndexEditor({
                   <CollapsibleTrigger asChild>
                     <div className="flex items-center gap-2 p-3 cursor-pointer hover:bg-muted/50">
                       {isExpanded ? (
-                        <ChevronDown className="size-4 text-muted-foreground" />
+                        <CaretDownIcon className="size-4 text-muted-foreground" />
                       ) : (
-                        <ChevronRight className="size-4 text-muted-foreground" />
+                        <CaretRightIcon className="size-4 text-muted-foreground" />
                       )}
-                      <Database className="size-4 text-muted-foreground" />
+                      <DatabaseIcon className="size-4 text-muted-foreground" />
                       <span className="text-sm font-medium">
                         {index.name ||
                           `Index on (${index.columns.map((c) => c.name).join(', ') || '...'})`}
@@ -151,7 +158,7 @@ export function IndexEditor({
                       <span className="text-xs text-muted-foreground ml-auto mr-2">
                         {index.method ?? 'btree'}
                       </span>
-                      {errors.length > 0 && <AlertCircle className="size-4 text-destructive" />}
+                      {errors.length > 0 && <ErrorIcon className="size-4 text-destructive" />}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -161,7 +168,7 @@ export function IndexEditor({
                           onRemove(index.id)
                         }}
                       >
-                        <Trash2 className="size-3.5" />
+                        <TrashIcon className="size-3.5" />
                       </Button>
                     </div>
                   </CollapsibleTrigger>
@@ -281,7 +288,7 @@ export function IndexEditor({
                                     className="h-7 w-7 p-0 text-destructive hover:text-destructive"
                                     onClick={() => removeColumnFromIndex(index.id, index, colIdx)}
                                   >
-                                    <Trash2 className="size-3.5" />
+                                    <TrashIcon className="size-3.5" />
                                   </Button>
                                 </div>
                               ))}
@@ -296,7 +303,7 @@ export function IndexEditor({
                             >
                               <SelectTrigger className="h-8 w-full">
                                 <div className="flex items-center gap-1.5 text-muted-foreground">
-                                  <Plus className="size-3.5" />
+                                  <PlusIcon className="size-3.5" />
                                   <span>Add column</span>
                                 </div>
                               </SelectTrigger>
@@ -400,7 +407,7 @@ export function IndexEditor({
 
           {/* Add index button */}
           <Button variant="outline" size="sm" className="w-full gap-1.5" onClick={handleAddIndex}>
-            <Plus className="size-3.5" />
+            <PlusIcon className="size-3.5" />
             Add Index
           </Button>
         </>

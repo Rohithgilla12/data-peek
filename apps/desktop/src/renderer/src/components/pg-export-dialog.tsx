@@ -11,7 +11,7 @@ import {
 import { usePgDumpStore } from '@/stores/pg-dump-store'
 import { useConnectionStore } from '@/stores'
 import type { PgExportMode, SchemaInfo } from '@shared/index'
-import { Download, Loader2, CheckCircle2, XCircle, X } from 'lucide-react'
+import { CloseIcon, DownloadIcon, ErrorIcon, SpinnerIcon, SuccessIcon } from '@/components/icons'
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -85,7 +85,7 @@ export function PgExportDialog() {
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Download className="size-4" />
+            <DownloadIcon className="size-4" />
             Export Database
           </DialogTitle>
           <DialogDescription>Export PostgreSQL database to a SQL file</DialogDescription>
@@ -215,7 +215,7 @@ export function PgExportDialog() {
               className="w-full"
               disabled={!getActiveConnection()}
             >
-              <Download className="size-4 mr-2" />
+              <DownloadIcon className="size-4 mr-2" />
               Export Database
             </Button>
           </div>
@@ -246,7 +246,7 @@ export function PgExportDialog() {
             </div>
 
             <Button variant="outline" onClick={cancelExport} className="w-full" size="sm">
-              <X className="size-4 mr-2" />
+              <CloseIcon className="size-4 mr-2" />
               Cancel
             </Button>
           </div>
@@ -254,7 +254,7 @@ export function PgExportDialog() {
 
         {isExporting && !exportProgress && (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <SpinnerIcon className="size-5 animate-spin text-muted-foreground" />
           </div>
         )}
 
@@ -263,9 +263,9 @@ export function PgExportDialog() {
           <div className="space-y-4 py-2">
             <div className="flex items-center gap-2">
               {exportResult.success ? (
-                <CheckCircle2 className="size-5 text-green-500" />
+                <SuccessIcon className="size-5 text-green-500" />
               ) : (
-                <XCircle className="size-5 text-destructive" />
+                <ErrorIcon className="size-5 text-destructive" />
               )}
               <span className="text-sm font-medium">
                 {exportResult.success ? 'Export complete' : 'Export failed'}
@@ -294,7 +294,7 @@ export function PgExportDialog() {
         {exportError && !exportResult && (
           <div className="space-y-4 py-2">
             <div className="flex items-center gap-2">
-              <XCircle className="size-5 text-destructive" />
+              <ErrorIcon className="size-5 text-destructive" />
               <span className="text-sm font-medium">Export failed</span>
             </div>
             <p className="text-xs text-destructive">{exportError}</p>

@@ -1,5 +1,15 @@
 import { useState, useMemo, useEffect } from 'react'
-import { Code2, Copy, Play, Trash2, Search, X, Filter, Pencil, Plus } from 'lucide-react'
+import {
+  CloseIcon,
+  CodeIcon,
+  CopyIcon,
+  EditIcon,
+  FilterIcon,
+  PlayIcon,
+  PlusIcon,
+  SearchIcon,
+  TrashIcon
+} from '@/components/icons'
 import type { SnippetCategory } from '@shared/index'
 import {
   Button,
@@ -129,7 +139,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col p-0 gap-0">
           <DialogHeader className="px-4 py-3 border-b shrink-0">
             <DialogTitle className="flex items-center gap-2">
-              <Code2 className="size-4" />
+              <CodeIcon className="size-4" />
               SQL Snippets
               <Badge variant="secondary" className="ml-2">
                 {filteredSnippets.length} snippets
@@ -139,7 +149,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
 
           <div className="px-4 py-3 border-b space-y-3 shrink-0">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search snippets..."
@@ -154,14 +164,14 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                   className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
                   onClick={() => setSearchQuery('')}
                 >
-                  <X className="size-4" />
+                  <CloseIcon className="size-4" />
                 </Button>
               )}
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-1.5">
-                <Filter className="size-3.5 text-muted-foreground" />
+                <FilterIcon className="size-3.5 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Filters:</span>
               </div>
 
@@ -205,7 +215,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                   setIsCreateDialogOpen(true)
                 }}
               >
-                <Plus className="size-3.5 mr-1.5" />
+                <PlusIcon className="size-3.5 mr-1.5" />
                 New Snippet
               </Button>
             </div>
@@ -217,13 +227,13 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                 <div className="text-center py-12 text-muted-foreground">
                   {allSnippets.length === 0 ? (
                     <div className="space-y-2">
-                      <Code2 className="size-8 mx-auto opacity-50" />
+                      <CodeIcon className="size-8 mx-auto opacity-50" />
                       <p>No snippets available</p>
                       <p className="text-xs">Create your first snippet to get started</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <Search className="size-8 mx-auto opacity-50" />
+                      <SearchIcon className="size-8 mx-auto opacity-50" />
                       <p>No snippets match your filters</p>
                     </div>
                   )}
@@ -254,7 +264,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                               variant="secondary"
                               className="text-[10px] font-mono px-2 py-0.5 bg-muted/70"
                             >
-                              <Code2 className="size-2.5 mr-1" />
+                              <CodeIcon className="size-2.5 mr-1" />
                               {snippet.triggerPrefix}
                             </Badge>
                           )}
@@ -285,7 +295,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                                 className="size-8 hover:bg-primary/10 hover:text-primary"
                                 onClick={() => handleInsertSnippet(snippet.template)}
                               >
-                                <Play className="size-4" />
+                                <PlayIcon className="size-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs">
@@ -303,7 +313,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                                 className="size-8 hover:bg-accent hover:text-foreground"
                                 onClick={() => handleCopySnippet(snippet.template)}
                               >
-                                <Copy className="size-4" />
+                                <CopyIcon className="size-4" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="text-xs">
@@ -323,7 +333,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                                     className="size-8 hover:bg-blue-500/10 hover:text-blue-500"
                                     onClick={() => handleEditSnippet(snippet.id)}
                                   >
-                                    <Pencil className="size-4" />
+                                    <EditIcon className="size-4" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="text-xs">
@@ -341,7 +351,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
                                     className="size-8 text-red-500 hover:text-red-600 hover:bg-red-500/10"
                                     onClick={() => handleDeleteSnippet(snippet.id)}
                                   >
-                                    <Trash2 className="size-4" />
+                                    <TrashIcon className="size-4" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="text-xs">

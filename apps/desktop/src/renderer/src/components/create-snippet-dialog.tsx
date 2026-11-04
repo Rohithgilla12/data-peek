@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Code2, Info } from 'lucide-react'
+import { CodeIcon, InfoIcon } from '@/components/icons'
 import type { Snippet, SnippetCategory } from '@shared/index'
 import {
   Button,
@@ -113,7 +113,7 @@ export function CreateSnippetDialog({
       <DialogContent className="max-w-2xl">
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Code2 className="size-5" />
+            <CodeIcon className="size-5" />
             {isEditing ? 'Edit Snippet' : 'Create New Snippet'}
           </DialogTitle>
         </DialogHeader>
@@ -173,7 +173,7 @@ export function CreateSnippetDialog({
                 <TooltipProvider>
                   <Tooltip delayDuration={200}>
                     <TooltipTrigger asChild>
-                      <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+                      <InfoIcon className="size-3.5 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent className="max-w-xs" side="top">
                       <p className="text-xs leading-relaxed">
@@ -203,7 +203,7 @@ export function CreateSnippetDialog({
               <TooltipProvider>
                 <Tooltip delayDuration={200}>
                   <TooltipTrigger asChild>
-                    <Info className="size-3.5 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
+                    <InfoIcon className="size-3.5 text-muted-foreground hover:text-foreground transition-colors cursor-help" />
                   </TooltipTrigger>
                   <TooltipContent className="max-w-md p-3" side="top">
                     <p className="text-xs leading-relaxed mb-2">

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from 'react'
-import { Plus } from 'lucide-react'
+import { PlusIcon } from '@/components/icons'
 import { Button } from '@data-peek/ui'
 import { TabBar } from '@/components/tab-bar'
 import { TabQueryEditor } from '@/components/tab-query-editor'
@@ -140,7 +140,7 @@ export function TabContainer() {
               Open a new tab or select a table from the sidebar
             </p>
             <Button onClick={handleNewTab} className="gap-2">
-              <Plus className="size-4" />
+              <PlusIcon className="size-4" />
               New Query
               <kbd className="ml-1 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-[10px] font-medium text-primary-foreground">
                 {window.electron.process.platform === 'darwin' ? '⌘' : 'Ctrl+'}T

@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { MinusIcon, TrendDownIcon, TrendUpIcon } from '@/components/icons'
 import { cn } from '@data-peek/ui'
 import type { KPIWidgetConfig } from '@shared/index'
 
@@ -98,11 +98,11 @@ function formatKPIValue(
 function TrendIcon({ direction }: { direction: 'up' | 'down' | 'neutral' }) {
   switch (direction) {
     case 'up':
-      return <TrendingUp className="size-4" />
+      return <TrendUpIcon className="size-4" />
     case 'down':
-      return <TrendingDown className="size-4" />
+      return <TrendDownIcon className="size-4" />
     default:
-      return <Minus className="size-4" />
+      return <MinusIcon className="size-4" />
   }
 }
 

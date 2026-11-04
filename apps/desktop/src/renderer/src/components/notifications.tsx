@@ -1,12 +1,12 @@
 import { useNotificationStore, type NotificationType } from '@/stores/notification-store'
-import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react'
+import { CloseIcon, ErrorIcon, InfoIcon, SuccessIcon, WarningIcon } from '@/components/icons'
 import { cn } from '@data-peek/ui'
 
-const iconMap: Record<NotificationType, typeof CheckCircle2> = {
-  success: CheckCircle2,
-  error: AlertCircle,
-  info: Info,
-  warning: AlertTriangle
+const iconMap: Record<NotificationType, typeof SuccessIcon> = {
+  success: SuccessIcon,
+  error: ErrorIcon,
+  info: InfoIcon,
+  warning: WarningIcon
 }
 
 const styleMap: Record<NotificationType, string> = {
@@ -75,7 +75,7 @@ export function Notifications() {
                 onClick={() => removeNotification(notification.id)}
                 className="shrink-0 p-0.5 hover:bg-accent rounded transition-colors"
               >
-                <X className="size-4 text-muted-foreground" />
+                <CloseIcon className="size-4 text-muted-foreground" />
               </button>
             )}
           </div>

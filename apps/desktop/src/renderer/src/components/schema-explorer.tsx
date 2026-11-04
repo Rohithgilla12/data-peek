@@ -1,36 +1,36 @@
 import * as React from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
-  ChevronRight,
-  Columns3,
-  Key,
-  RefreshCw,
-  Table2,
-  Database as SchemaIcon,
-  Loader2,
-  XCircle,
-  X,
-  Network,
-  Plus,
-  Pencil,
-  MoreHorizontal,
-  FunctionSquare,
-  ListOrdered,
-  Workflow,
-  ArrowRight,
-  Eye,
-  Play,
-  Filter,
-  Focus,
-  Upload,
-  Download,
-  Shuffle,
-  Link2,
-  Zap,
-  FileText,
-  Power,
-  Trash2
-} from 'lucide-react'
+  ArrowRightIcon,
+  CaretRightIcon,
+  CloseIcon,
+  ColumnsIcon,
+  DatabaseIcon,
+  DownloadIcon,
+  EditIcon,
+  ErrorIcon,
+  EyeIcon,
+  FileTextIcon,
+  FilterIcon,
+  FocusIcon,
+  FunctionIcon,
+  KeyIcon,
+  LinkIcon,
+  ListNumbersIcon,
+  MoreIcon,
+  NetworkIcon,
+  PlayIcon,
+  PlusIcon,
+  PowerIcon,
+  RefreshIcon,
+  ShuffleIcon,
+  SpinnerIcon,
+  TableIcon,
+  TrashIcon,
+  UploadIcon,
+  WorkflowIcon,
+  ZapIcon
+} from '@/components/icons'
 import { CsvImportDialog } from '@/components/csv-import-dialog'
 import { PgExportDialog } from '@/components/pg-export-dialog'
 import { PgImportDialog } from '@/components/pg-import-dialog'
@@ -119,7 +119,7 @@ function DataTypeBadge({ type }: { type: string }) {
 function SequenceRow({ sequence }: { sequence: SequenceInfo }) {
   return (
     <SidebarMenuSubButton className="cursor-default" title={formatSequenceDetail(sequence)}>
-      <ListOrdered className="size-3.5 text-violet-500" />
+      <ListNumbersIcon className="size-3.5 text-violet-500" />
       <span className="flex-1 truncate">{sequence.name}</span>
       <span className="text-[11px] text-muted-foreground truncate">
         {formatSequenceDetail(sequence)}
@@ -173,29 +173,29 @@ function TableActionsMenu({
           className="size-5 p-0 opacity-0 group-hover/table:opacity-100 transition-opacity"
           onClick={(e) => e.stopPropagation()}
         >
-          <MoreHorizontal className="size-3.5" />
+          <MoreIcon className="size-3.5" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-40">
         <DropdownMenuItem onClick={onView}>
-          <Table2 className="size-4 mr-2" />
+          <TableIcon className="size-4 mr-2" />
           View Data
         </DropdownMenuItem>
         {can.tableDesigner && (
           <DropdownMenuItem onClick={onEdit}>
-            <Pencil className="size-4 mr-2" />
+            <EditIcon className="size-4 mr-2" />
             Edit Table
           </DropdownMenuItem>
         )}
         {can.csvImport && (
           <DropdownMenuItem onClick={onImportCsv}>
-            <Upload className="size-4 mr-2" />
+            <UploadIcon className="size-4 mr-2" />
             Import CSV
           </DropdownMenuItem>
         )}
         {can.dataGenerator && (
           <DropdownMenuItem onClick={onGenerateData}>
-            <Shuffle className="size-4 mr-2" />
+            <ShuffleIcon className="size-4 mr-2" />
             Generate Data
           </DropdownMenuItem>
         )}
@@ -236,12 +236,12 @@ function TriggerSubItem({
     <SidebarMenuSubItem className={className} style={style}>
       <div className="flex items-center group/trigger">
         <Button variant="ghost" size="icon" className="size-5 p-0 mr-1" onClick={onToggle}>
-          <ChevronRight
+          <CaretRightIcon
             className={`size-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
           />
         </Button>
         <SidebarMenuSubButton className="flex-1 cursor-default" onClick={onToggle}>
-          <Zap
+          <ZapIcon
             className={`size-3.5 ${trigger.enabled ? 'text-amber-500' : 'text-muted-foreground'}`}
           />
           <span
@@ -261,21 +261,21 @@ function TriggerSubItem({
               className="size-5 p-0 opacity-0 group-hover/trigger:opacity-100 transition-opacity"
               onClick={(e) => e.stopPropagation()}
             >
-              <MoreHorizontal className="size-3.5" />
+              <MoreIcon className="size-3.5" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
             <DropdownMenuItem onClick={() => actions.onViewDefinition(trigger)}>
-              <FileText className="size-4 mr-2" />
+              <FileTextIcon className="size-4 mr-2" />
               View Definition
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => actions.onAlter(trigger)}>
-              <Pencil className="size-4 mr-2" />
+              <EditIcon className="size-4 mr-2" />
               Alter Trigger
             </DropdownMenuItem>
             {actions.supportsEnableDisable && (
               <DropdownMenuItem onClick={() => actions.onToggleEnabled(trigger)}>
-                <Power className="size-4 mr-2" />
+                <PowerIcon className="size-4 mr-2" />
                 {trigger.enabled ? 'Disable' : 'Enable'}
               </DropdownMenuItem>
             )}
@@ -284,7 +284,7 @@ function TriggerSubItem({
               onClick={() => actions.onDrop(trigger)}
               className="text-destructive focus:text-destructive"
             >
-              <Trash2 className="size-4 mr-2" />
+              <TrashIcon className="size-4 mr-2" />
               Drop Trigger
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -293,12 +293,12 @@ function TriggerSubItem({
       {isExpanded && (
         <div className="ml-6 border-l border-border/50 pl-2 py-1 space-y-0.5">
           <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-            <Table2 className="size-3 text-muted-foreground" />
+            <TableIcon className="size-3 text-muted-foreground" />
             <span className="text-muted-foreground">on</span>
             <span className="text-foreground truncate">{trigger.table}</span>
           </div>
           <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-            <ArrowRight className="size-3 text-amber-500" />
+            <ArrowRightIcon className="size-3 text-amber-500" />
             <span>{trigger.timing}</span>
             <span className="flex flex-wrap gap-1">
               {trigger.events.map((event) => (
@@ -313,24 +313,24 @@ function TriggerSubItem({
             </span>
           </div>
           <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-            <Columns3 className="size-3" />
+            <ColumnsIcon className="size-3" />
             <span>FOR EACH {trigger.orientation ?? 'ROW'}</span>
           </div>
           {trigger.functionName && (
             <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-              <FunctionSquare className="size-3 text-cyan-500" />
+              <FunctionIcon className="size-3 text-cyan-500" />
               <span className="truncate">{trigger.functionName}</span>
             </div>
           )}
           {trigger.condition && (
             <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-              <Filter className="size-3" />
+              <FilterIcon className="size-3" />
               <span className="truncate font-mono">WHEN {trigger.condition}</span>
             </div>
           )}
           {!trigger.enabled && (
             <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-              <Power className="size-3 text-red-400" />
+              <PowerIcon className="size-3 text-red-400" />
               <span className="text-red-400">disabled</span>
             </div>
           )}
@@ -463,7 +463,7 @@ function VirtualizedSchemaItems({
                     className="size-5 p-0 mr-1"
                     onClick={() => onToggleTable(tableKey)}
                   >
-                    <ChevronRight
+                    <CaretRightIcon
                       className={`size-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                     />
                   </Button>
@@ -471,7 +471,7 @@ function VirtualizedSchemaItems({
                     onClick={() => onTableClick(schemaName, table)}
                     className="flex-1"
                   >
-                    <Table2
+                    <TableIcon
                       className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : table.type === 'materialized_view' ? 'text-teal-500' : 'text-muted-foreground'}`}
                     />
                     <span className="flex-1 truncate">{table.name}</span>
@@ -501,7 +501,7 @@ function VirtualizedSchemaItems({
                     }}
                     title={`View ${table.name} data`}
                   >
-                    <Play className="size-3" />
+                    <PlayIcon className="size-3" />
                   </Button>
                   {table.type === 'table' && (
                     <TableActionsMenu
@@ -524,11 +524,11 @@ function VirtualizedSchemaItems({
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default group/col">
                               {column.isPrimaryKey ? (
-                                <Key className="size-3 text-yellow-500 shrink-0" />
+                                <KeyIcon className="size-3 text-yellow-500 shrink-0" />
                               ) : column.foreignKey ? (
-                                <Link2 className="size-3 text-blue-400 shrink-0" />
+                                <LinkIcon className="size-3 text-blue-400 shrink-0" />
                               ) : (
-                                <Columns3 className="size-3 shrink-0" />
+                                <ColumnsIcon className="size-3 shrink-0" />
                               )}
                               <span
                                 className={`truncate ${column.isPrimaryKey ? 'font-medium text-foreground' : ''}`}
@@ -641,15 +641,15 @@ function VirtualizedSchemaItems({
                     className="size-5 p-0 mr-1"
                     onClick={() => onToggleRoutine(routineKey)}
                   >
-                    <ChevronRight
+                    <CaretRightIcon
                       className={`size-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
                     />
                   </Button>
                   <SidebarMenuSubButton className="flex-1 cursor-default">
                     {routine.type === 'function' ? (
-                      <FunctionSquare className="size-3.5 text-cyan-500" />
+                      <FunctionIcon className="size-3.5 text-cyan-500" />
                     ) : (
-                      <Workflow className="size-3.5 text-orange-500" />
+                      <WorkflowIcon className="size-3.5 text-orange-500" />
                     )}
                     <span className="flex-1 truncate">{routine.name}</span>
                     <Badge
@@ -669,7 +669,7 @@ function VirtualizedSchemaItems({
                         className="size-5 p-0 opacity-0 group-hover/routine:opacity-100 transition-opacity"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <MoreHorizontal className="size-3.5" />
+                        <MoreIcon className="size-3.5" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-40">
@@ -683,7 +683,7 @@ function VirtualizedSchemaItems({
                           )
                         }
                       >
-                        <Play className="size-4 mr-2" />
+                        <PlayIcon className="size-4 mr-2" />
                         Execute
                       </DropdownMenuItem>
                     </DropdownMenuContent>
@@ -693,7 +693,7 @@ function VirtualizedSchemaItems({
                   <div className="ml-6 border-l border-border/50 pl-2 py-1 space-y-0.5">
                     {routine.returnType && (
                       <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-                        <ArrowRight className="size-3 text-cyan-500" />
+                        <ArrowRightIcon className="size-3 text-cyan-500" />
                         <span className="text-muted-foreground">returns</span>
                         <DataTypeBadge type={routine.returnType} />
                       </div>
@@ -703,7 +703,7 @@ function VirtualizedSchemaItems({
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default">
-                              <Columns3 className="size-3" />
+                              <ColumnsIcon className="size-3" />
                               <span>{param.name}</span>
                               <Badge
                                 variant="outline"
@@ -1270,7 +1270,7 @@ export function SchemaExplorer() {
         <SidebarGroupLabel>Schema</SidebarGroupLabel>
         <SidebarGroupContent>
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <SpinnerIcon className="size-5 animate-spin text-muted-foreground" />
           </div>
         </SidebarGroupContent>
       </SidebarGroup>
@@ -1289,12 +1289,12 @@ export function SchemaExplorer() {
             onClick={handleRefresh}
             title="Retry"
           >
-            <RefreshCw className="size-3.5" />
+            <RefreshIcon className="size-3.5" />
           </Button>
         </SidebarGroupLabel>
         <SidebarGroupContent>
           <div className="px-2 py-4 text-xs text-destructive text-center">
-            <XCircle className="size-4 mx-auto mb-2" />
+            <ErrorIcon className="size-4 mx-auto mb-2" />
             {schemaError}
           </div>
         </SidebarGroupContent>
@@ -1315,7 +1315,7 @@ export function SchemaExplorer() {
               onClick={() => handleCreateTable()}
               title="Create new table"
             >
-              <Plus className="size-3.5" />
+              <PlusIcon className="size-3.5" />
             </Button>
           )}
           <Button
@@ -1325,7 +1325,7 @@ export function SchemaExplorer() {
             onClick={handleOpenERD}
             title="View ERD diagram"
           >
-            <Network className="size-3.5" />
+            <NetworkIcon className="size-3.5" />
           </Button>
           {can.pgDump && (
             <>
@@ -1336,7 +1336,7 @@ export function SchemaExplorer() {
                 onClick={handleDatabaseExport}
                 title="Export database (pg_dump)"
               >
-                <Download className="size-3.5" />
+                <DownloadIcon className="size-3.5" />
               </Button>
               <Button
                 variant="ghost"
@@ -1345,7 +1345,7 @@ export function SchemaExplorer() {
                 onClick={handleDatabaseImport}
                 title="Import SQL file"
               >
-                <Upload className="size-3.5" />
+                <UploadIcon className="size-3.5" />
               </Button>
             </>
           )}
@@ -1357,7 +1357,7 @@ export function SchemaExplorer() {
                 className={`size-5 p-0 hover:bg-sidebar-accent ${isFilterActive ? 'text-primary' : ''}`}
                 title="Filter objects"
               >
-                <Filter className="size-3.5" />
+                <FilterIcon className="size-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-44">
@@ -1368,7 +1368,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowTables}
                 className="text-xs"
               >
-                <Table2 className="size-3.5 mr-2 text-muted-foreground" />
+                <TableIcon className="size-3.5 mr-2 text-muted-foreground" />
                 Tables
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
@@ -1376,7 +1376,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowViews}
                 className="text-xs"
               >
-                <Eye className="size-3.5 mr-2 text-purple-500" />
+                <EyeIcon className="size-3.5 mr-2 text-purple-500" />
                 Views
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
@@ -1384,7 +1384,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowMaterializedViews}
                 className="text-xs"
               >
-                <Table2 className="size-3.5 mr-2 text-teal-500" />
+                <TableIcon className="size-3.5 mr-2 text-teal-500" />
                 Materialized Views
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
@@ -1392,7 +1392,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowFunctions}
                 className="text-xs"
               >
-                <FunctionSquare className="size-3.5 mr-2 text-cyan-500" />
+                <FunctionIcon className="size-3.5 mr-2 text-cyan-500" />
                 Functions
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
@@ -1400,7 +1400,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowProcedures}
                 className="text-xs"
               >
-                <Workflow className="size-3.5 mr-2 text-orange-500" />
+                <WorkflowIcon className="size-3.5 mr-2 text-orange-500" />
                 Procedures
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
@@ -1408,7 +1408,7 @@ export function SchemaExplorer() {
                 onCheckedChange={setShowTriggers}
                 className="text-xs"
               >
-                <Zap className="size-3.5 mr-2 text-amber-500" />
+                <ZapIcon className="size-3.5 mr-2 text-amber-500" />
                 Triggers
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
@@ -1421,7 +1421,7 @@ export function SchemaExplorer() {
                 className={`size-5 p-0 hover:bg-sidebar-accent ${focusedSchema ? 'text-primary' : ''}`}
                 title={focusedSchema ? `Focused on: ${focusedSchema}` : 'Focus on schema'}
               >
-                <Focus className="size-3.5" />
+                <FocusIcon className="size-3.5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -1436,7 +1436,7 @@ export function SchemaExplorer() {
                 </DropdownMenuRadioItem>
                 {schemas.map((schema) => (
                   <DropdownMenuRadioItem key={schema.name} value={schema.name} className="text-xs">
-                    <SchemaIcon className="size-3.5 mr-2 text-muted-foreground" />
+                    <DatabaseIcon className="size-3.5 mr-2 text-muted-foreground" />
                     {schema.name}
                     <Badge variant="outline" className="ml-auto text-[10px] px-1 py-0">
                       {schema.tables.length}
@@ -1456,7 +1456,7 @@ export function SchemaExplorer() {
                   onClick={handleRefresh}
                   disabled={isRefreshingSchema}
                 >
-                  <RefreshCw className={`size-3.5 ${isRefreshingSchema ? 'animate-spin' : ''}`} />
+                  <RefreshIcon className={`size-3.5 ${isRefreshingSchema ? 'animate-spin' : ''}`} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom" className="text-xs">
@@ -1476,7 +1476,7 @@ export function SchemaExplorer() {
           <div className="px-2 pb-2">
             <div className="flex items-center justify-between gap-2 px-2 py-1.5 bg-primary/10 rounded-md text-xs">
               <div className="flex items-center gap-1.5 text-primary">
-                <Focus className="size-3" />
+                <FocusIcon className="size-3" />
                 <span className="font-medium">{focusedSchema}</span>
               </div>
               <Button
@@ -1486,7 +1486,7 @@ export function SchemaExplorer() {
                 onClick={handleClearFocus}
                 title="Clear focus"
               >
-                <X className="size-3" />
+                <CloseIcon className="size-3" />
               </Button>
             </div>
           </div>
@@ -1506,10 +1506,10 @@ export function SchemaExplorer() {
                 <SidebarMenuItem>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton>
-                      <ChevronRight
+                      <CaretRightIcon
                         className={`size-4 transition-transform ${expandedSchemas.has(schema.name) ? 'rotate-90' : ''}`}
                       />
-                      <SchemaIcon className="size-4 text-muted-foreground" />
+                      <DatabaseIcon className="size-4 text-muted-foreground" />
                       <span>{schema.name}</span>
                       <Badge variant="outline" className="ml-auto text-[11px] px-1.5 py-0">
                         {schema.tables.length +
@@ -1606,7 +1606,7 @@ export function SchemaExplorer() {
                                         size="icon"
                                         className="size-5 p-0 mr-1"
                                       >
-                                        <ChevronRight
+                                        <CaretRightIcon
                                           className={`size-3 transition-transform ${expandedTables.has(tableKey) ? 'rotate-90' : ''}`}
                                         />
                                       </Button>
@@ -1615,7 +1615,7 @@ export function SchemaExplorer() {
                                       onClick={() => handleTableClick(schema.name, table)}
                                       className="flex-1"
                                     >
-                                      <Table2
+                                      <TableIcon
                                         className={`size-3.5 ${table.type === 'view' ? 'text-purple-500' : table.type === 'materialized_view' ? 'text-teal-500' : 'text-muted-foreground'}`}
                                       />
                                       <span className="flex-1 truncate">{table.name}</span>
@@ -1651,7 +1651,7 @@ export function SchemaExplorer() {
                                       }}
                                       title={`View ${table.name} data`}
                                     >
-                                      <Play className="size-3" />
+                                      <PlayIcon className="size-3" />
                                     </Button>
                                     {table.type === 'table' && (
                                       <TableActionsMenu
@@ -1681,11 +1681,11 @@ export function SchemaExplorer() {
                                             <TooltipTrigger asChild>
                                               <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default group/col">
                                                 {column.isPrimaryKey ? (
-                                                  <Key className="size-3 text-yellow-500 shrink-0" />
+                                                  <KeyIcon className="size-3 text-yellow-500 shrink-0" />
                                                 ) : column.foreignKey ? (
-                                                  <Link2 className="size-3 text-blue-400 shrink-0" />
+                                                  <LinkIcon className="size-3 text-blue-400 shrink-0" />
                                                 ) : (
-                                                  <Columns3 className="size-3 shrink-0" />
+                                                  <ColumnsIcon className="size-3 shrink-0" />
                                                 )}
                                                 <span
                                                   className={`truncate ${
@@ -1787,16 +1787,16 @@ export function SchemaExplorer() {
                                         size="icon"
                                         className="size-5 p-0 mr-1"
                                       >
-                                        <ChevronRight
+                                        <CaretRightIcon
                                           className={`size-3 transition-transform ${expandedRoutines.has(routineKey) ? 'rotate-90' : ''}`}
                                         />
                                       </Button>
                                     </CollapsibleTrigger>
                                     <SidebarMenuSubButton className="flex-1 cursor-default">
                                       {routine.type === 'function' ? (
-                                        <FunctionSquare className="size-3.5 text-cyan-500" />
+                                        <FunctionIcon className="size-3.5 text-cyan-500" />
                                       ) : (
-                                        <Workflow className="size-3.5 text-orange-500" />
+                                        <WorkflowIcon className="size-3.5 text-orange-500" />
                                       )}
                                       <span className="flex-1">{routine.name}</span>
                                       <Badge
@@ -1818,7 +1818,7 @@ export function SchemaExplorer() {
                                           className="size-5 p-0 opacity-0 group-hover/routine:opacity-100 transition-opacity"
                                           onClick={(e) => e.stopPropagation()}
                                         >
-                                          <MoreHorizontal className="size-3.5" />
+                                          <MoreIcon className="size-3.5" />
                                         </Button>
                                       </DropdownMenuTrigger>
                                       <DropdownMenuContent align="end" className="w-40">
@@ -1832,7 +1832,7 @@ export function SchemaExplorer() {
                                             )
                                           }
                                         >
-                                          <Play className="size-4 mr-2" />
+                                          <PlayIcon className="size-4 mr-2" />
                                           Execute
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
@@ -1843,7 +1843,7 @@ export function SchemaExplorer() {
                                       {/* Return type for functions */}
                                       {routine.returnType && (
                                         <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground">
-                                          <ArrowRight className="size-3 text-cyan-500" />
+                                          <ArrowRightIcon className="size-3 text-cyan-500" />
                                           <span className="text-muted-foreground">returns</span>
                                           <DataTypeBadge type={routine.returnType} />
                                         </div>
@@ -1854,7 +1854,7 @@ export function SchemaExplorer() {
                                           <Tooltip>
                                             <TooltipTrigger asChild>
                                               <div className="flex items-center gap-1.5 py-0.5 px-1 text-xs text-muted-foreground hover:bg-accent/50 rounded cursor-default">
-                                                <Columns3 className="size-3" />
+                                                <ColumnsIcon className="size-3" />
                                                 <span>{param.name}</span>
                                                 <Badge
                                                   variant="outline"
