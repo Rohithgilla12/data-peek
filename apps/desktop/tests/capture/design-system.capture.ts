@@ -34,7 +34,6 @@ const test = recordingTest.extend({
 const OUT_DIR = resolve(__dirname, '..', '..', 'test-results', 'design-system')
 
 const THEMES = ['dark', 'light'] as const
-type Theme = (typeof THEMES)[number]
 
 const ASK_MESSAGES = [
   {
