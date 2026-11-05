@@ -34,12 +34,14 @@ import type {
   AdapterQueryResult,
   AdapterMultiQueryResult,
   ExplainResult,
-  QueryOptions
+  QueryOptions,
+  ReadOnlyQueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { toMSSQLConfig } from './mssql-client-config'
 import {
   withMSSQLPool,
+  withMSSQLRolledBackTransaction,
   withMSSQLTransaction,
   withDedicatedMSSQLConnection
 } from './mssql-pool-manager'
@@ -156,6 +158,64 @@ export function isDataReturningStatement(sqlText: string): boolean {
  */
 const SHOWPLAN_COLUMN = 'Microsoft SQL Server 2005 XML Showplan'
 
+function toAdapterResult(result: sql.IResult<unknown>): AdapterQueryResult {
+  const rows = result.recordset as Record<string, unknown>[]
+  const fields: QueryField[] = []
+
+  if (result.recordset?.columns) {
+    let colIndex = 0
+    for (const col of Object.values(result.recordset.columns)) {
+      const meta = col as { name: string; type?: { id?: number; name?: string } }
+      let dataTypeID: number | undefined
+      let dataType: string
+
+      // MSSQL returns empty string for unnamed columns (e.g., COUNT(*), SUM(), etc.)
+      // Generate a fallback name and remap the row data
+      const originalName = meta.name
+      const columnName = originalName || `column_${colIndex + 1}`
+
+      // If column name was empty, remap the row data to use the generated name
+      if (!originalName && rows.length > 0) {
+        for (const row of rows) {
+          if (originalName in row) {
+            row[columnName] = row[originalName]
+            delete row[originalName]
+          }
+        }
+      }
+
+      if (meta.type?.id) {
+        dataTypeID = meta.type.id
+        dataType = resolveMSSQLType(dataTypeID)
+      } else if (meta.type?.name) {
+        dataType = meta.type.name.toLowerCase()
+        const match = Object.entries(MSSQL_TYPE_MAP).find(
+          ([, name]) => name.toLowerCase() === dataType
+        )
+        dataTypeID = match ? Number(match[0]) : undefined
+      } else {
+        const inferred = inferTypeFromValue(rows[0]?.[columnName])
+        dataType = inferred.dataType
+        dataTypeID = inferred.dataTypeID
+      }
+
+      fields.push({
+        name: columnName,
+        dataType: dataType || 'nvarchar',
+        dataTypeID: dataTypeID || 231
+      })
+      colIndex++
+    }
+  } else if (rows.length > 0) {
+    for (const [name, value] of Object.entries(rows[0])) {
+      const inferred = inferTypeFromValue(value)
+      fields.push({ name, ...inferred })
+    }
+  }
+
+  return { rows, fields, rowCount: result.rowsAffected[0] ?? rows.length }
+}
+
 export class MSSQLAdapter implements DatabaseAdapter {
   readonly dbType = 'mssql' as const
 
@@ -168,63 +228,40 @@ export class MSSQLAdapter implements DatabaseAdapter {
   }
 
   async query(config: ConnectionConfig, sqlQuery: string): Promise<AdapterQueryResult> {
-    return withMSSQLPool(config, async (pool) => {
-      const result = await pool.request().query(sqlQuery)
-      const rows = result.recordset as Record<string, unknown>[]
-      const fields: QueryField[] = []
+    return withMSSQLPool(config, async (pool) =>
+      toAdapterResult(await pool.request().query(sqlQuery))
+    )
+  }
 
-      if (result.recordset?.columns) {
-        let colIndex = 0
-        for (const col of Object.values(result.recordset.columns)) {
-          const meta = col as { name: string; type?: { id?: number; name?: string } }
-          let dataTypeID: number | undefined
-          let dataType: string
-
-          // MSSQL returns empty string for unnamed columns (e.g., COUNT(*), SUM(), etc.)
-          // Generate a fallback name and remap the row data
-          const originalName = meta.name
-          const columnName = originalName || `column_${colIndex + 1}`
-
-          // If column name was empty, remap the row data to use the generated name
-          if (!originalName && rows.length > 0) {
-            for (const row of rows) {
-              if (originalName in row) {
-                row[columnName] = row[originalName]
-                delete row[originalName]
-              }
-            }
-          }
-
-          if (meta.type?.id) {
-            dataTypeID = meta.type.id
-            dataType = resolveMSSQLType(dataTypeID)
-          } else if (meta.type?.name) {
-            dataType = meta.type.name.toLowerCase()
-            const match = Object.entries(MSSQL_TYPE_MAP).find(
-              ([, name]) => name.toLowerCase() === dataType
-            )
-            dataTypeID = match ? Number(match[0]) : undefined
-          } else {
-            const inferred = inferTypeFromValue(rows[0]?.[columnName])
-            dataType = inferred.dataType
-            dataTypeID = inferred.dataTypeID
-          }
-
-          fields.push({
-            name: columnName,
-            dataType: dataType || 'nvarchar',
-            dataTypeID: dataTypeID || 231
-          })
-          colIndex++
-        }
-      } else if (rows.length > 0) {
-        for (const [name, value] of Object.entries(rows[0])) {
-          const inferred = inferTypeFromValue(value)
-          fields.push({ name, ...inferred })
-        }
+  /**
+   * SQL Server has no READ ONLY transaction, so the statement runs inside one that is
+   * always rolled back. The read guard refuses what a rollback can't undo (COMMIT,
+   * NEXT VALUE FOR).
+   */
+  async queryReadOnly(
+    config: ConnectionConfig,
+    sqlQuery: string,
+    options: ReadOnlyQueryOptions
+  ): Promise<AdapterQueryResult> {
+    return withMSSQLRolledBackTransaction(config, async (transaction) => {
+      const request = transaction.request()
+      if (options.executionId) registerQuery(options.executionId, { type: 'mssql', request })
+      // mssql has no per-request timeout (it ignores `request.timeout`), so bound
+      // the read ourselves by cancelling it.
+      let timedOut = false
+      const timer = setTimeout(() => {
+        timedOut = true
+        request.cancel()
+      }, options.timeoutMs)
+      try {
+        return toAdapterResult(await request.query(sqlQuery))
+      } catch (error) {
+        if (timedOut) throw new Error(`Query timed out after ${options.timeoutMs / 1000} s`)
+        throw error
+      } finally {
+        clearTimeout(timer)
+        if (options.executionId) unregisterQuery(options.executionId)
       }
-
-      return { rows, fields, rowCount: result.rowsAffected[0] ?? rows.length }
     })
   }
 

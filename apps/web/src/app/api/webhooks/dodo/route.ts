@@ -28,7 +28,7 @@ interface DodoWebhookPayload {
     // Common fields
     payment_id?: string;
     subscription_id?: string;
-    product_id?: string;
+    product_cart?: { product_id: string; quantity: number }[] | null;
     customer?: {
       email: string;
       name?: string;
@@ -180,6 +180,22 @@ export async function POST(request: NextRequest) {
       case "payment.succeeded": {
         const { data } = event;
 
+        // The Dodo business also sells other products (Float), and its webhooks
+        // fire for every payment, so only issue a license for data-peek's own.
+        const proProductId = process.env.DODO_PRO_PRODUCT_ID;
+        if (!proProductId) {
+          throw new Error("DODO_PRO_PRODUCT_ID is not configured");
+        }
+        const isDataPeekPurchase = (data.product_cart ?? []).some(
+          (item) => item.product_id === proProductId,
+        );
+        if (!isDataPeekPurchase) {
+          console.log(
+            `Ignoring payment ${data.payment_id}: not a data-peek product`,
+          );
+          break;
+        }
+
         if (!data.customer) {
           console.log("No customer data in payment.succeeded event");
           break;
@@ -240,7 +256,7 @@ export async function POST(request: NextRequest) {
           status: "active",
           maxActivations: 3,
           dodoPaymentId: data.payment_id,
-          dodoProductId: data.product_id,
+          dodoProductId: proProductId,
           updatesUntil,
         });
 

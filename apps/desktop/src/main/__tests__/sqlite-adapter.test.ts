@@ -155,6 +155,22 @@ describe('SQLiteAdapter', () => {
     })
   })
 
+  describe('queryReadOnly', () => {
+    it('returns rows for a read', async () => {
+      const result = await adapter.queryReadOnly(testConfig, 'SELECT name FROM users ORDER BY id')
+      expect(result.rows.map((r) => r.name)).toEqual(['Alice', 'Bob', 'Charlie'])
+    })
+
+    it('refuses a write and leaves the data untouched', async () => {
+      await expect(adapter.queryReadOnly(testConfig, 'DELETE FROM users')).rejects.toThrow(
+        /would write/
+      )
+      const db = new Database(testDbPath)
+      expect(db.prepare('SELECT COUNT(*) AS n FROM users').get()).toEqual({ n: 3 })
+      db.close()
+    })
+  })
+
   describe('queryMultiple', () => {
     it('should execute multiple statements', async () => {
       const result = await adapter.queryMultiple(

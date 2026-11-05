@@ -129,8 +129,9 @@ test.describe('Query menu', () => {
     await expect(window.locator('header').getByText(DEAD_CONNECTION.name)).toBeVisible({
       timeout: 5000
     })
-    // The restored tab predates the connection; open one bound to it.
-    await clickMenuItem(electronApp, 'New Tab')
+    // The restored tab predates the connection; open a SQL tab bound to it.
+    // (Query > New Tab opens Ask; Cmd/Ctrl+Shift+T opens the SQL editor.)
+    await window.keyboard.press(process.platform === 'darwin' ? 'Meta+Shift+t' : 'Control+Shift+t')
     await expect(window.locator('.monaco-editor').first()).toBeVisible({ timeout: 30_000 })
   })
 

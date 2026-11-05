@@ -3,10 +3,7 @@ import type { ConnectionConfig } from '@shared/index'
 
 const mockAdapter = {
   dbType: 'postgresql',
-  query: vi.fn(),
-  beginTransaction: vi.fn(),
-  queryInTransaction: vi.fn(),
-  rollbackTransaction: vi.fn()
+  queryReadOnly: vi.fn()
 }
 
 vi.mock('../lib/logger', () => ({
@@ -18,7 +15,6 @@ vi.mock('../db-adapter', () => ({
 }))
 
 import { assertSingleReadStatement, runReadOnlyQuery, MCP_MAX_ROWS } from '../mcp/read-guard'
-import { getAdapter } from '../db-adapter'
 
 const pgConfig = {
   id: 'c1',
@@ -63,6 +59,24 @@ describe('assertSingleReadStatement', () => {
     )
   })
 
+  it.each([
+    [
+      'a COMMIT that would end the rolled-back transaction',
+      "SELECT 1 COMMIT WRITETEXT t.c @p N'x'"
+    ],
+    ['ROLLBACK inside a batch', 'SELECT 1 ROLLBACK'],
+    ['BEGIN TRAN inside a batch', 'SELECT 1 BEGIN TRAN'],
+    ['UPDATETEXT', "SELECT 1 UPDATETEXT t.c @p 0 NULL N'x'"],
+    ['NEXT VALUE FOR, which a rollback does not undo', 'SELECT NEXT VALUE FOR dbo.seq']
+  ])('rejects %s on SQL Server', (_label, sql) => {
+    expect(() => assertSingleReadStatement(sql, 'mssql')).toThrow(/read-only/i)
+  })
+
+  it('still accepts identifiers that merely contain those words', () => {
+    const sql = 'SELECT begin_at, committed_by FROM rollbacks_log'
+    expect(assertSingleReadStatement(sql, 'mssql')).toBe(sql)
+  })
+
   it('rejects PRAGMA', () => {
     expect(() => assertSingleReadStatement('PRAGMA user_version = 5', 'postgresql')).toThrow(
       /read-only/i
@@ -93,84 +107,37 @@ describe('assertSingleReadStatement', () => {
 describe('runReadOnlyQuery', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockAdapter.beginTransaction.mockResolvedValue(undefined)
-    mockAdapter.queryInTransaction.mockResolvedValue({ rows: [], fields: [], rowCount: 0 })
-    mockAdapter.rollbackTransaction.mockResolvedValue(undefined)
+    mockAdapter.queryReadOnly.mockResolvedValue({ rows: [], fields: [], rowCount: 0 })
   })
 
-  it('prefers a server-enforced queryReadOnly over the transaction path when the adapter has one', async () => {
-    const queryReadOnly = vi
-      .fn()
-      .mockResolvedValue({ rows: [{ n: 1 }, { n: 2 }], fields: [], rowCount: 2 })
-    const withReadOnly = { ...mockAdapter, queryReadOnly }
-    vi.mocked(getAdapter).mockReturnValueOnce(withReadOnly as never)
-
-    const result = await runReadOnlyQuery(pgConfig, 'SELECT 1', 1)
-
-    expect(queryReadOnly).toHaveBeenCalledWith(pgConfig, 'SELECT 1', {
+  it("runs the statement through the adapter's read-only path with a timeout", async () => {
+    await runReadOnlyQuery(pgConfig, '  SELECT 1  ', { executionId: 'exec-1' })
+    expect(mockAdapter.queryReadOnly).toHaveBeenCalledWith(pgConfig, 'SELECT 1', {
       timeoutMs: 30_000,
-      maxRows: 1
+      maxRows: MCP_MAX_ROWS,
+      executionId: 'exec-1'
     })
-    expect(mockAdapter.beginTransaction).not.toHaveBeenCalled()
-    expect(result.rows).toEqual([{ n: 1 }])
   })
 
-  it('runs postgres queries read-only, bounds them with a statement timeout, and rolls back', async () => {
-    mockAdapter.queryInTransaction
-      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET TRANSACTION READ ONLY
-      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET LOCAL statement_timeout
-      .mockResolvedValueOnce({ rows: [{ n: 1 }], fields: [], rowCount: 1 }) // the query
-
-    const result = await runReadOnlyQuery(pgConfig, 'SELECT 1')
-
-    expect(mockAdapter.beginTransaction).toHaveBeenCalledOnce()
-    expect(mockAdapter.queryInTransaction).toHaveBeenNthCalledWith(
-      1,
-      pgConfig,
-      expect.any(String),
-      'SET TRANSACTION READ ONLY'
-    )
-    expect(mockAdapter.queryInTransaction).toHaveBeenNthCalledWith(
-      2,
-      pgConfig,
-      expect.any(String),
-      expect.stringContaining('statement_timeout')
-    )
-    expect(mockAdapter.rollbackTransaction).toHaveBeenCalledOnce()
-    expect(result.rows).toEqual([{ n: 1 }])
-  })
-
-  it('rolls back even when the query throws', async () => {
-    mockAdapter.queryInTransaction
-      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET TRANSACTION READ ONLY
-      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET LOCAL statement_timeout
-      .mockRejectedValueOnce(new Error('syntax error'))
-
-    await expect(runReadOnlyQuery(pgConfig, 'SELECT oops')).rejects.toThrow('syntax error')
-    expect(mockAdapter.rollbackTransaction).toHaveBeenCalledOnce()
-  })
-
-  it('caps returned rows at maxRows', async () => {
+  it('caps returned rows at maxRows, and maxRows at MCP_MAX_ROWS', async () => {
     const rows = Array.from({ length: 600 }, (_, i) => ({ i }))
-    mockAdapter.queryInTransaction
-      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET TRANSACTION READ ONLY
-      .mockResolvedValueOnce({ rows: [], fields: [], rowCount: null }) // SET LOCAL statement_timeout
-      .mockResolvedValueOnce({ rows, fields: [], rowCount: 600 })
-
-    const result = await runReadOnlyQuery(pgConfig, 'SELECT * FROM big')
-    expect(result.rows).toHaveLength(MCP_MAX_ROWS)
+    mockAdapter.queryReadOnly.mockResolvedValue({ rows, fields: [], rowCount: 600 })
+    expect((await runReadOnlyQuery(pgConfig, 'SELECT * FROM big')).rows).toHaveLength(MCP_MAX_ROWS)
+    expect((await runReadOnlyQuery(pgConfig, 'SELECT 1', { maxRows: 2 })).rows).toHaveLength(2)
+    expect(mockAdapter.queryReadOnly).toHaveBeenLastCalledWith(
+      pgConfig,
+      'SELECT 1',
+      expect.objectContaining({ maxRows: 2 })
+    )
   })
 
-  it('falls back to plain query with keyword guard when adapter has no transactions', async () => {
-    const bare = {
-      dbType: 'mssql',
-      query: vi.fn().mockResolvedValue({ rows: [], fields: [], rowCount: 0 })
-    }
-    const { getAdapter } = await import('../db-adapter')
-    vi.mocked(getAdapter).mockReturnValueOnce(bare as never)
+  it('refuses a write before it reaches the database', async () => {
+    await expect(runReadOnlyQuery(pgConfig, 'DELETE FROM users')).rejects.toThrow(/read-only/i)
+    expect(mockAdapter.queryReadOnly).not.toHaveBeenCalled()
+  })
 
-    const mssqlConfig = { ...pgConfig, dbType: 'mssql' } as ConnectionConfig
-    await runReadOnlyQuery(mssqlConfig, 'SELECT 1')
-    expect(bare.query).toHaveBeenCalledWith(mssqlConfig, 'SELECT 1')
+  it('passes adapter errors through', async () => {
+    mockAdapter.queryReadOnly.mockRejectedValue(new Error('syntax error'))
+    await expect(runReadOnlyQuery(pgConfig, 'SELECT oops')).rejects.toThrow('syntax error')
   })
 })

@@ -1,6 +1,8 @@
 import * as React from 'react'
-import { Command as CommandPrimitive } from 'cmdk'
+import { Command as CommandPrimitive, useCommandState } from 'cmdk'
+import { openAsk } from '@/lib/open-ask'
 import {
+  AiIcon,
   BookmarkIcon,
   ClockIcon,
   CodeIcon,
@@ -59,6 +61,31 @@ const GROUP_LABELS: Record<string, string> = {
 }
 
 const GROUP_ORDER = ['tables', 'columns', 'routines', 'saved', 'snippets', 'history']
+
+/** When nothing matches, a question becomes an Ask tab instead of a dead end. */
+function AskOrEmpty({ question, onAsk }: { question: string; onAsk: () => void }) {
+  const matches = useCommandState((state) => state.filtered.count)
+  if (matches > 0) return null
+  if (question.length <= 2) {
+    return <p className="py-4 text-center text-xs text-muted-foreground">No results found</p>
+  }
+  return (
+    <CommandPrimitive.Group forceMount className="px-1 py-0.5">
+      <CommandPrimitive.Item
+        forceMount
+        value={`ask-question ${question}`}
+        onSelect={onAsk}
+        className="flex items-center gap-2 rounded px-1.5 py-1 text-xs cursor-pointer select-none data-[selected=true]:bg-primary/10 data-[selected=true]:text-foreground text-muted-foreground"
+      >
+        <AiIcon className="size-3.5 shrink-0 text-primary" />
+        <span className="flex-1 truncate">
+          Ask: <span className="text-foreground">{question}</span>
+        </span>
+        <ReturnKeyIcon className="size-3 shrink-0 opacity-40" />
+      </CommandPrimitive.Item>
+    </CommandPrimitive.Group>
+  )
+}
 
 export function SidebarOmnibar() {
   const inputRef = React.useRef<HTMLInputElement>(null)
@@ -348,9 +375,14 @@ export function SidebarOmnibar() {
         >
           <div className="min-h-0">
             <CommandPrimitive.List className="max-h-[min(60vh,400px)] overflow-y-auto border-t border-border/30 py-1">
-              <CommandPrimitive.Empty className="py-4 text-center text-xs text-muted-foreground">
-                No results found
-              </CommandPrimitive.Empty>
+              <AskOrEmpty
+                question={query.trim()}
+                onAsk={() => {
+                  openAsk(query.trim())
+                  setQuery('')
+                  inputRef.current?.blur()
+                }}
+              />
 
               {GROUP_ORDER.map((groupKey) => {
                 const groupItems = groupedItems[groupKey]

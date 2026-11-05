@@ -23,7 +23,7 @@ interface AISQLPreviewProps {
 }
 
 // Simple SQL syntax highlighting
-function highlightSQL(sql: string): React.ReactNode[] {
+export function highlightSQL(sql: string): React.ReactNode[] {
   const keywords =
     /\b(SELECT|FROM|WHERE|AND|OR|NOT|IN|LIKE|BETWEEN|IS|NULL|AS|ON|JOIN|LEFT|RIGHT|INNER|OUTER|FULL|CROSS|ORDER|BY|ASC|DESC|GROUP|HAVING|LIMIT|OFFSET|UNION|ALL|DISTINCT|CASE|WHEN|THEN|ELSE|END|INSERT|INTO|VALUES|UPDATE|SET|DELETE|CREATE|TABLE|INDEX|DROP|ALTER|WITH|RETURNING|NOW|INTERVAL|COUNT|SUM|AVG|MIN|MAX|COALESCE)\b/gi
   const operators = /([=<>!]+|[-+*/%])/g

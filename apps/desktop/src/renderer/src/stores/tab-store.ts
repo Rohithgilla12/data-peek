@@ -15,6 +15,7 @@ import { useWatchStore } from './watch-store'
 import { useTimeMachineStore } from './time-machine-store'
 import { usePerfIndicatorStore } from './perf-indicator-store'
 import { useDataGenStore } from './data-gen-store'
+import { useAskStore } from './ask-store'
 import { validateRefName } from '@/lib/cross-tab-name-validation'
 import type { SetTabNameResult } from '@/lib/cross-tab-types'
 import { isNamedQueryTab } from '@/lib/cross-tab-integration'
@@ -33,6 +34,7 @@ export interface MultiQueryResult {
 
 // Tab type discriminator
 export type TabType =
+  | 'ask'
   | 'query'
   | 'table-preview'
   | 'erd'
@@ -126,6 +128,11 @@ export interface SchemaIntelTab extends BaseTab {
   type: 'schema-intel'
 }
 
+// AI-first timeline: one composer for questions and SQL
+export interface AskTab extends BaseTab {
+  type: 'ask'
+}
+
 // Notebook tab
 export interface NotebookTab extends BaseTab {
   type: 'notebook'
@@ -133,6 +140,7 @@ export interface NotebookTab extends BaseTab {
 }
 
 export type Tab =
+  | AskTab
   | QueryTab
   | TablePreviewTab
   | ERDTab
@@ -166,6 +174,7 @@ function cancelInFlightQueries(tabs: Tab[]): void {
     useTimeMachineStore.getState().stop(tab.id)
     usePerfIndicatorStore.getState().clearTabAnalysis(tab.id)
     useDataGenStore.getState().removeTab(tab.id)
+    useAskStore.getState().clear(tab.id)
     useEditStore.getState().clearPendingChanges(tab.id)
   }
 }
@@ -203,6 +212,9 @@ interface TabState {
   activeTabId: string | null
 
   // Actions
+  createAskTab: (connectionId: string | null) => string
+  /** Pins an Ask tab opened before any connection was picked to the one it first asks. */
+  bindAskTab: (tabId: string, connectionId: string) => void
   createQueryTab: (connectionId: string | null, initialQuery?: string) => string
   createTablePreviewTab: (connectionId: string, schemaName: string, tableName: string) => string
   createForeignKeyTab: (
@@ -319,6 +331,30 @@ export const useTabStore = create<TabState>()(
     (set, get) => ({
       tabs: [],
       activeTabId: null,
+
+      createAskTab: (connectionId) => {
+        const id = crypto.randomUUID()
+        const tabs = get().tabs
+        const maxOrder = tabs.length > 0 ? Math.max(...tabs.map((t) => t.order)) : -1
+        const tab: AskTab = {
+          id,
+          type: 'ask',
+          title: 'Ask',
+          isPinned: false,
+          connectionId,
+          createdAt: Date.now(),
+          order: maxOrder + 1
+        }
+        set((state) => ({ tabs: [...state.tabs, tab], activeTabId: id }))
+        return id
+      },
+
+      bindAskTab: (tabId, connectionId) =>
+        set((state) => ({
+          tabs: mapTab(state.tabs, tabId, (t) =>
+            t.type === 'ask' && t.connectionId === null ? { ...t, connectionId } : t
+          )
+        })),
 
       createQueryTab: (connectionId, initialQuery = '') => {
         const id = crypto.randomUUID()
@@ -1188,9 +1224,9 @@ export const useTabStore = create<TabState>()(
         return typeof localStorage !== 'undefined' ? localStorage : ({} as unknown as Storage)
       }),
       partialize: (state) => ({
-        // Only persist pinned tabs
+        // Pinned tabs, plus Ask tabs: their conversation is the point of them
         tabs: state.tabs
-          .filter((t) => t.isPinned)
+          .filter((t) => t.isPinned || t.type === 'ask')
           .map((t): PersistedTab => {
             const base: PersistedTab = {
               id: t.id,
@@ -1201,7 +1237,7 @@ export const useTabStore = create<TabState>()(
               order: t.order
             }
 
-            if (t.type === 'erd') {
+            if (t.type === 'erd' || t.type === 'ask') {
               return base
             }
 
@@ -1256,6 +1292,10 @@ export const useTabStore = create<TabState>()(
         // Restore pinned tabs with full state on app load
         if (state) {
           state.tabs = state.tabs.map((t) => {
+            if (t.type === 'ask') {
+              return { ...t, type: 'ask' as const, createdAt: Date.now() } as AskTab
+            }
+
             // ERD tabs just need basic properties
             if (t.type === 'erd') {
               return {
@@ -1361,6 +1401,9 @@ export const useTabStore = create<TabState>()(
               type: 'query' as const
             }
           }) as Tab[]
+          // A crash or a quota-failed write can leave history for tabs that
+          // no longer exist; ask-store hydrates first because we import it.
+          useAskStore.getState().prune(state.tabs.filter((t) => t.type === 'ask').map((t) => t.id))
         }
       }
     }

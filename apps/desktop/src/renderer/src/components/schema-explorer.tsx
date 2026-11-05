@@ -1,6 +1,7 @@
 import * as React from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import {
+  AiIcon,
   ArrowRightIcon,
   CaretRightIcon,
   CloseIcon,
@@ -31,6 +32,7 @@ import {
   WorkflowIcon,
   ZapIcon
 } from '@/components/icons'
+import { askAboutTable, openAsk } from '@/lib/open-ask'
 import { CsvImportDialog } from '@/components/csv-import-dialog'
 import { PgExportDialog } from '@/components/pg-export-dialog'
 import { PgImportDialog } from '@/components/pg-import-dialog'
@@ -151,6 +153,7 @@ interface TriggerActions {
 
 function TableActionsMenu({
   can,
+  onAsk,
   onView,
   onEdit,
   onImportCsv,
@@ -158,6 +161,7 @@ function TableActionsMenu({
   onExport
 }: {
   can: CapabilityRow
+  onAsk: () => void
   onView: () => void
   onEdit: () => void
   onImportCsv: () => void
@@ -176,7 +180,11 @@ function TableActionsMenu({
           <MoreIcon className="size-3.5" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-40">
+      <DropdownMenuContent align="end" className="w-44">
+        <DropdownMenuItem onClick={onAsk}>
+          <AiIcon className="size-4 mr-2 text-primary" />
+          Ask about this table
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={onView}>
           <TableIcon className="size-4 mr-2" />
           View Data
@@ -420,7 +428,7 @@ function VirtualizedSchemaItems({
   return (
     <div
       ref={parentRef}
-      className="overflow-auto"
+      className="overflow-y-auto overflow-x-hidden"
       style={{
         height: Math.min(400, virtualizer.getTotalSize()),
         maxHeight: 400
@@ -429,7 +437,6 @@ function VirtualizedSchemaItems({
       <SidebarMenuSub
         style={{
           height: virtualizer.getTotalSize(),
-          width: '100%',
           position: 'relative'
         }}
       >
@@ -502,6 +509,7 @@ function VirtualizedSchemaItems({
                   {table.type === 'table' && (
                     <TableActionsMenu
                       can={can}
+                      onAsk={() => openAsk(askAboutTable(schemaName, table.name))}
                       onView={() => onTableClick(schemaName, table)}
                       onEdit={() => onEditTable(schemaName, table.name)}
                       onImportCsv={() => onImportCsv(schemaName, table.name)}
@@ -1655,6 +1663,9 @@ export function SchemaExplorer() {
                                     {table.type === 'table' && (
                                       <TableActionsMenu
                                         can={can}
+                                        onAsk={() =>
+                                          openAsk(askAboutTable(schema.name, table.name))
+                                        }
                                         onView={() => handleTableClick(schema.name, table)}
                                         onEdit={() => handleEditTable(schema.name, table.name)}
                                         onImportCsv={() => handleImportCsv(schema.name, table.name)}

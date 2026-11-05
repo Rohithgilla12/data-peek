@@ -38,7 +38,8 @@ import type {
   DedicatedClient,
   ExplainResult,
   NotificationClient,
-  QueryOptions
+  QueryOptions,
+  ReadOnlyQueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { requireSingleStatement, splitStatements } from '../lib/sql-parser'
@@ -129,6 +130,15 @@ export function isDataReturningStatement(sql: string): boolean {
   return false
 }
 
+function toAdapterResult(res: QueryResult): AdapterQueryResult {
+  const fields: QueryField[] = res.fields.map((f) => ({
+    name: f.name,
+    dataType: resolvePostgresType(f.dataTypeID),
+    dataTypeID: f.dataTypeID
+  }))
+  return { rows: res.rows, fields, rowCount: res.rowCount }
+}
+
 /**
  * PostgreSQL database adapter
  */
@@ -149,17 +159,37 @@ export class PostgresAdapter implements DatabaseAdapter {
   }
 
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
+    return withPgClient(config, async (client) => toAdapterResult(await client.query(sql)))
+  }
+
+  /** A READ ONLY transaction with a statement timeout, always rolled back. */
+  async queryReadOnly(
+    config: ConnectionConfig,
+    sql: string,
+    options: ReadOnlyQueryOptions
+  ): Promise<AdapterQueryResult> {
     return withPgClient(config, async (client) => {
-      const res = await client.query(sql)
-      const fields: QueryField[] = res.fields.map((f) => ({
-        name: f.name,
-        dataType: resolvePostgresType(f.dataTypeID),
-        dataTypeID: f.dataTypeID
-      }))
-      return {
-        rows: res.rows,
-        fields,
-        rowCount: res.rowCount
+      await client.query('BEGIN READ ONLY')
+      try {
+        // SET LOCAL is scoped to this transaction, which is always rolled back.
+        await client.query(`SET LOCAL statement_timeout = ${Math.floor(options.timeoutMs)}`)
+        if (options.executionId) {
+          registerQuery(options.executionId, { type: 'postgresql', client })
+        }
+        return toAdapterResult(await client.query(sql))
+      } finally {
+        if (options.executionId) unregisterQuery(options.executionId)
+        try {
+          await client.query('ROLLBACK')
+        } catch {
+          // Cancel already destroyed the client, or the connection died. Either
+          // way it must not go back to the pool mid-transaction.
+          try {
+            client.release(true)
+          } catch {
+            // already released by the cancel
+          }
+        }
       }
     })
   }

@@ -100,7 +100,7 @@ export function registerMcpTools(server: McpServer, deps: McpToolDeps): void {
         const conn = findConnection(deps, connectionId)
         const started = Date.now()
         try {
-          const result = await runReadOnlyQuery(conn, sql, maxRows)
+          const result = await runReadOnlyQuery(conn, sql, { maxRows })
           recordAudit({
             source: 'mcp',
             connectionId: conn.id ?? 'unsaved',

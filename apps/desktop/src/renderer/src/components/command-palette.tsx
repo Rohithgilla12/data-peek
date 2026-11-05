@@ -24,6 +24,8 @@ import {
 import { useTheme } from '@/components/theme-provider'
 import { DatabaseIcon as DatabaseBrandIcon } from '@/components/database-icons'
 import { useConnectionStore, useTabStore, useSettingsStore } from '@/stores'
+import { openAsk } from '@/lib/open-ask'
+import { useCommandState } from 'cmdk'
 import { useTimeMachineStore } from '@/stores/time-machine-store'
 import { useSavedQueryStore } from '@/stores/saved-queries-store'
 import { useAIStore } from '@/stores/ai-store'
@@ -74,6 +76,33 @@ const queryTypeColors: Record<string, string> = {
   SQL: 'bg-muted-foreground/10 text-muted-foreground'
 }
 
+/**
+ * Offers to ask the question only when no command matches, so typing a
+ * command name and pressing Enter still runs that command.
+ */
+function AskFallback({
+  question,
+  connectionName,
+  onAsk
+}: {
+  question: string
+  connectionName: string
+  onAsk: () => void
+}) {
+  const matches = useCommandState((state) => state.filtered.count)
+  if (matches > 0) return null
+  return (
+    <CommandGroup heading="Ask" forceMount>
+      <CommandItem forceMount value={`ask-question ${question}`} onSelect={onAsk}>
+        <AiIcon className="text-primary" />
+        <span className="truncate">
+          Ask {connectionName}: <span className="text-foreground">{question}</span>
+        </span>
+      </CommandItem>
+    </CommandGroup>
+  )
+}
+
 export function CommandPalette({
   isOpen,
   onClose,
@@ -92,6 +121,7 @@ export function CommandPalette({
   const fetchSchemas = useConnectionStore((s) => s.fetchSchemas)
 
   const createQueryTab = useTabStore((s) => s.createQueryTab)
+  const createAskTab = useTabStore((s) => s.createAskTab)
   const setActiveTab = useTabStore((s) => s.setActiveTab)
 
   const savedQueries = useSavedQueryStore((s) => s.savedQueries)
@@ -271,11 +301,24 @@ export function CommandPalette({
         />
 
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
+          {!(activePage === 'home' && search.trim().length > 2 && activeConnection) && (
+            <CommandEmpty>No results found.</CommandEmpty>
+          )}
 
           {/* HOME PAGE */}
           {activePage === 'home' && (
             <>
+              {search.trim().length > 2 && activeConnection && (
+                <AskFallback
+                  question={search.trim()}
+                  connectionName={activeConnection.name}
+                  onAsk={() => {
+                    openAsk(search.trim())
+                    onClose()
+                  }}
+                />
+              )}
+
               {/* AI Commands */}
               <CommandGroup heading="AI">
                 <CommandItem
@@ -343,6 +386,18 @@ export function CommandPalette({
               {/* Queries */}
               <CommandGroup heading="Queries">
                 <CommandItem
+                  value="ask-new"
+                  keywords={['ai', 'ask', 'question', 'chat', 'tab', 'create']}
+                  onSelect={() => {
+                    createAskTab(activeConnection?.id || null)
+                    onClose()
+                  }}
+                >
+                  <AiIcon className="text-primary" />
+                  <span>New Ask Tab</span>
+                  <CommandShortcut>{keys.mod}T</CommandShortcut>
+                </CommandItem>
+                <CommandItem
                   value="query-new"
                   keywords={['tab', 'editor', 'sql', 'create']}
                   onSelect={() => {
@@ -352,8 +407,8 @@ export function CommandPalette({
                   }}
                 >
                   <PlusIcon className="text-muted-foreground" />
-                  <span>New Query Tab</span>
-                  <CommandShortcut>{keys.mod}T</CommandShortcut>
+                  <span>New SQL Editor Tab</span>
+                  <CommandShortcut>{keys.mod}⇧T</CommandShortcut>
                 </CommandItem>
                 <CommandItem
                   value="saved-queries-menu"

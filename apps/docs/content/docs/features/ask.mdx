@@ -1,0 +1,75 @@
+---
+title: Ask
+description: One input for questions and SQL, answered by the AI subscription you already have
+---
+
+# Ask
+
+Ask is the tab data-peek opens by default. It has one input at the bottom. Type a question in plain English or type SQL, and each answer lands above it as a block you can re-run, edit, or open in the full editor.
+
+## Questions and SQL in one input
+
+The input decides what you typed as you type, and the chip on its left shows the result: **Ask** in blue or **SQL** in green.
+
+- A leading SQL verb alone isn't enough. `show tables` is SQL and `show me the newest orgs` is a question, because each verb also needs the structure real SQL has.
+- If it guesses wrong, press `Tab` to switch and lock the mode. `Escape` unlocks it.
+- SQL runs directly against the connection. It never goes to the AI.
+- A write the input only guessed was SQL (`delete …`, `update …`) waits for **Run it**. Press `Tab` to mark it as SQL first and it runs on `Enter`.
+
+| Key | Action |
+| --- | --- |
+| `Enter` | Ask, or run the SQL |
+| `Shift+Enter` | New line |
+| `Tab` | Switch between Ask and SQL |
+| `↑` / `↓` | Step through earlier inputs |
+| `Cmd/Ctrl+T` | New Ask tab |
+| `Cmd/Ctrl+Shift+T` | New SQL editor tab |
+
+## Ask from anywhere
+
+- **Command palette.** Type a question into `Cmd/Ctrl+K`. When no command matches, it offers **Ask _connection name_: …**, which opens an Ask tab and sends the question.
+- **Sidebar search.** When nothing in the sidebar search (`/`) matches what you typed, it offers **Ask: …** instead of "No results found".
+- **Schema tree.** A table's `…` menu has **Ask about this table**. You get what it stores, its key columns, how it relates to other tables, and what's notable in its data.
+- **SQL editor errors.** A failed query shows **Fix with AI**. The fix arrives as a diff over your query, as with `Cmd/Ctrl+I` below, and nothing changes until you accept it.
+
+## What happens to a question
+
+The assistant reads your schema, answers in a sentence or two, and writes the SQL. Then:
+
+- **Single read-only statements run on their own,** in a way the database itself keeps from writing: a read-only transaction on PostgreSQL and MySQL, a transaction that is always rolled back on SQL Server, a statement-level read-only check on SQLite, and `readonly` mode on ClickHouse. A function that writes fails or is undone. The block shows the rows, plus a chart or a single number when the question asked for one. Switch between the chart and the table from the block's header.
+- **Anything that can change data waits.** `INSERT`, `UPDATE`, `DELETE`, DDL, and anything with more than one statement show the SQL and a **Run it** button. Nothing touches the database until you click it. The same happens when the assistant itself flags a query for review.
+- **Failed queries offer Fix with AI.** The assistant sees the SQL and the error and answers with a corrected query.
+- **Follow-up chips** under each answer ask the next likely question in one click.
+- **Answers with several queries** ("give me a health report on invoices") run the first and list the rest under **More from this answer**. Each runs as its own block when you click it, through the same rules as SQL you type.
+
+Each question also carries the conversation so far. SQL you ran by hand is included as context, but only its text, row count, and column names. Row values are not sent.
+
+Hover a block's SQL to edit it. `Cmd/Ctrl+Enter` saves and re-runs. **Open in editor** moves the SQL into a regular query tab with the full results grid, inline editing, export, and plans.
+
+## Use the subscription you already have
+
+If the `claude`, `codex`, or `agy` CLI is installed and signed in, Ask finds it on launch. The input then shows **Use my Claude subscription** (or Codex, or Antigravity). One click makes it the active provider. There is no API key to paste, and queries go through the CLI you already pay for.
+
+When a provider is active, the header shows which one, and whether it runs on your subscription or on an API key. Click it to open AI settings. The header's **Ask** button opens a new Ask tab, and clicking the database name switches connection (`Cmd/Ctrl+P`). The previous chat panel is still on `Cmd/Ctrl+I` outside the editor, and in the command palette. Any provider from the [AI Assistant](/docs/features/ai-assistant) settings works in Ask.
+
+Without an AI provider, Ask still runs SQL.
+
+## Stop, and pick up later
+
+- **Stop** next to a thinking answer ends it at once and shuts down the CLI behind it, so it stops using your subscription.
+- **Cancel** on a running query stops it on the database too, including the read-only queries Ask runs on its own. SQLite runs queries synchronously, so a SQLite query finishes before it stops.
+- Ask tabs survive a restart. Each one keeps its last 40 blocks: the questions, answers, SQL, and the column names and row counts of each result. Result rows are not saved to disk, so after a restart you run a block again to see its rows. Error messages and the assistant's answers are kept as written, so they can quote a value the database returned. An answer that was still coming in when the app quit comes back marked **Interrupted**. A tab is named after its first question.
+- Closing an Ask tab deletes its history.
+
+## Edit SQL with AI
+
+In any SQL editor tab, press `Cmd/Ctrl+I`, describe the change ("only paid invoices from last month"), and press `Enter`. The change comes back as a diff over your query. `Enter` accepts it and `Escape` rejects it. Accepting is a normal edit, so `Cmd/Ctrl+Z` undoes it.
+
+Select part of the query first to change only that part. The assistant still sees the whole query, so aliases and joins stay consistent.
+
+If you keep typing in the query while the change is being written, accepting checks that the original text is still there. If it isn't, nothing is applied and you can try again. In the editor, `Cmd/Ctrl+I` replaces Monaco's own `Cmd+I` suggestion shortcut. `Ctrl+Space` still opens suggestions.
+
+## Limits
+
+- The inline grid shows the first 200 rows. Open the query in the editor for the rest.
+- Stopping an API-key provider frees the app at once, but the provider may still finish the request it already received. Stopping a CLI ends the process.

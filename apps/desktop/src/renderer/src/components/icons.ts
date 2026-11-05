@@ -115,6 +115,7 @@ export {
   PaperPlaneTiltIcon as SendIcon,
   GearIcon as SettingsIcon,
   ShareNetworkIcon as ShareIcon,
+  ShieldCheckIcon,
   CaretLineDownIcon as ShowEditorIcon,
   CaretLineUpIcon as ShowResultsIcon,
   ShuffleIcon,
@@ -145,6 +146,7 @@ export {
   UploadIcon,
   UserIcon,
   UsersIcon,
+  MagicWandIcon as WandIcon,
   WarningIcon,
   FlowArrowIcon as WorkflowIcon,
   LightningIcon as ZapIcon

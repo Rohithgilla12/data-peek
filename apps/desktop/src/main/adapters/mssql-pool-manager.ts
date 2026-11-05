@@ -85,6 +85,23 @@ export async function withMSSQLTransaction<T>(
   }
 }
 
+/** Run `fn` inside a transaction that is always rolled back, so it leaves no writes behind. */
+export async function withMSSQLRolledBackTransaction<T>(
+  config: ConnectionConfig,
+  fn: (transaction: sql.Transaction) => Promise<T>
+): Promise<T> {
+  const entry = await registry.getOrCreate(config)
+  const transaction = new sql.Transaction(entry.pool)
+  await transaction.begin()
+  try {
+    return await fn(transaction)
+  } finally {
+    await transaction.rollback().catch(() => {
+      // Already rolled back, or the connection died; either way the pool reclaims it.
+    })
+  }
+}
+
 /**
  * Run `fn` against a throwaway pool of exactly one connection, riding the connection's
  * shared tunnel.

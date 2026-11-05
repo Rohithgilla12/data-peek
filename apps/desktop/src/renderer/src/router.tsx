@@ -11,6 +11,7 @@ import {
 import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
 import {
   AiIcon,
+  CaretUpDownIcon,
   CommandIcon,
   MonitorIcon,
   MoonIcon,
@@ -49,6 +50,7 @@ import { LicenseStatusIndicator } from '@/components/license-status-indicator'
 import { LicenseActivationModal } from '@/components/license-activation-modal'
 import { LicenseSettingsModal } from '@/components/license-settings-modal'
 import { AIChatPanel, AISettingsModal } from '@/components/ai'
+import { ProviderPill } from '@/components/ask/ask-composer'
 import { SettingsModal } from '@/components/settings-modal'
 import { McpSettingsSection } from '@/components/mcp-settings-section'
 import { AuditSettingsSection } from '@/components/audit-settings-section'
@@ -111,6 +113,7 @@ function LayoutContent() {
 
   // Tab store for opening SQL in new tab
   const createQueryTab = useTabStore((s) => s.createQueryTab)
+  const createAskTab = useTabStore((s) => s.createAskTab)
   const setActiveTab = useTabStore((s) => s.setActiveTab)
   const syncActiveTabWithConnection = useTabStore((s) => s.syncActiveTabWithConnection)
 
@@ -182,7 +185,7 @@ function LayoutContent() {
   return (
     <>
       <AppSidebar />
-      <SidebarInset>
+      <SidebarInset className="h-svh min-w-0 overflow-hidden">
         <header
           className={cn(
             'titlebar-drag-region flex h-14 shrink-0 items-center gap-2 border-b border-border/40 bg-background/80 backdrop-blur-xl transition-[margin] duration-200 ease-linear',
@@ -191,25 +194,48 @@ function LayoutContent() {
         >
           <div className="flex flex-1 items-center gap-2 px-3">
             <SidebarTrigger className="titlebar-no-drag" />
-            <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-            <span className="text-sm font-medium text-muted-foreground">Data Peek</span>
-            {activeConnection && (
-              <>
-                <Separator
-                  orientation="vertical"
-                  className="mx-2 data-[orientation=vertical]:h-4"
-                />
-                <div className="flex items-center gap-1.5">
-                  <span
-                    className={`size-1.5 rounded-full ${activeConnection.isConnected ? 'bg-success' : 'bg-warning'}`}
-                  />
-                  <DatabaseIcon dbType={activeConnection.dbType} className="size-4" />
-                  <span className="text-sm text-foreground">{activeConnection.name}</span>
-                </div>
-              </>
-            )}
+            <Separator orientation="vertical" className="mr-1 data-[orientation=vertical]:h-4" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => openCommandPalette('connections:switch')}
+                  className="titlebar-no-drag flex items-center gap-1.5 rounded-md px-2 py-1 text-sm transition-colors hover:bg-muted/60"
+                >
+                  {activeConnection ? (
+                    <>
+                      <span
+                        className={cn(
+                          'size-1.5 rounded-full',
+                          activeConnection.isConnected ? 'bg-success' : 'bg-warning'
+                        )}
+                      />
+                      <DatabaseIcon dbType={activeConnection.dbType} className="size-4" />
+                      <span className="text-foreground">{activeConnection.name}</span>
+                    </>
+                  ) : (
+                    <span className="text-muted-foreground">Pick a database</span>
+                  )}
+                  <CaretUpDownIcon className="size-3 text-muted-foreground/60" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Switch database ({keys.mod}+P)</TooltipContent>
+            </Tooltip>
           </div>
           <div className="titlebar-no-drag ml-auto flex items-center gap-2 px-3">
+            <ProviderPill />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 gap-1.5 px-2 text-primary hover:text-primary"
+              onClick={() => createAskTab(activeConnection?.id ?? null)}
+            >
+              <AiIcon className="size-4" />
+              Ask
+              <kbd className="rounded border border-border/60 px-1 font-mono text-2xs text-muted-foreground">
+                {keys.mod}T
+              </kbd>
+            </Button>
             {/* Command Palette Button */}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -224,23 +250,6 @@ function LayoutContent() {
               </TooltipTrigger>
               <TooltipContent side="bottom">Command Palette ({keys.mod}+K)</TooltipContent>
             </Tooltip>
-            {/* AI Assistant Button */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={cn(
-                    'size-8',
-                    isAIConfigured ? 'text-primary hover:text-primary/80' : 'text-muted-foreground'
-                  )}
-                  onClick={toggleAIPanel}
-                >
-                  <AiIcon className="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">AI Assistant ({keys.mod}+I)</TooltipContent>
-            </Tooltip>
             <Separator orientation="vertical" className="data-[orientation=vertical]:h-4" />
             <LicenseStatusIndicator />
           </div>
@@ -252,7 +261,9 @@ function LayoutContent() {
           )}
         </header>
 
-        <Outlet />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-auto">
+          <Outlet />
+        </div>
       </SidebarInset>
 
       {/* Command Palette */}
@@ -553,7 +564,11 @@ function SettingsPage() {
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-2">Tab Management</h3>
               <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'T']} description="Create new query tab" />
+                <ShortcutRow keys={[keys.mod, 'T']} description="Create new Ask tab" />
+                <ShortcutRow
+                  keys={[keys.mod, keys.shift, 'T']}
+                  description="Create new SQL editor tab"
+                />
                 <ShortcutRow keys={[keys.mod, 'W']} description="Close current tab" />
                 <ShortcutRow keys={[keys.mod, '1-9']} description="Switch to tab by number" />
                 <ShortcutRow keys={[keys.mod, keys.alt, '→']} description="Switch to next tab" />

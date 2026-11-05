@@ -222,6 +222,15 @@ interface DataPeekApi {
       queryTimeoutMs?: number,
       sessionId?: string
     ) => Promise<IpcResponse<unknown>>
+    /**
+     * One statement the database keeps from writing; for SQL run without a click.
+     * Pass `executionId` to make it cancellable with `cancelQuery`.
+     */
+    queryReadOnly: (
+      config: ConnectionConfig,
+      query: string,
+      executionId?: string
+    ) => Promise<IpcResponse<unknown>>
     cancelQuery: (executionId: string) => Promise<IpcResponse<{ cancelled: boolean }>>
     schemas: (
       config: ConnectionConfig,
@@ -463,12 +472,15 @@ interface DataPeekApi {
       dbType: string,
       connectionId: string | undefined,
       resumeSessionId: string | undefined,
-      onEvent: (event: AIChatStreamEvent) => void
+      onEvent: (event: AIChatStreamEvent) => void,
+      requestId?: string
     ) => Promise<
       IpcResponse<AIChatResponse> & {
         meta?: { grounded: boolean; agentic: boolean; turns?: number; sessionId?: string }
       }
     >
+    /** Stops a chatStream started with that requestId; it resolves with error 'Cancelled'. */
+    cancelChatStream: (requestId: string) => Promise<IpcResponse<void>>
     // Chat history persistence (legacy API)
     getChatHistory: (connectionId: string) => Promise<IpcResponse<StoredChatMessage[]>>
     saveChatHistory: (

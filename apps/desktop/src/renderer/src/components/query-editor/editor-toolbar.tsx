@@ -102,8 +102,8 @@ export function EditorToolbar({
   const can = useCapabilities(tabConnection?.dbType)
 
   return (
-    <div className="flex items-center justify-between bg-muted/20 px-3 py-2">
-      <div className="flex items-center gap-2">
+    <div className="flex items-center justify-between gap-2 overflow-x-auto bg-muted/20 px-3 py-2 [scrollbar-width:thin] [scrollbar-color:var(--border)_transparent]">
+      <div className="flex shrink-0 items-center gap-2">
         <Button
           variant="ghost"
           size="sm"

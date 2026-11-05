@@ -34,7 +34,8 @@ import type {
   AdapterQueryResult,
   AdapterMultiQueryResult,
   ExplainResult,
-  QueryOptions
+  QueryOptions,
+  ReadOnlyQueryOptions
 } from '../db-adapter'
 import { registerQuery, unregisterQuery } from '../query-tracker'
 import { requireSingleStatement, splitStatements } from '../lib/sql-parser'
@@ -137,6 +138,20 @@ export function isDataReturningStatement(sql: string): boolean {
   return false
 }
 
+function toAdapterResult(rows: unknown, fields: unknown): AdapterQueryResult {
+  const queryFields: QueryField[] = ((fields ?? []) as mysql.FieldPacket[]).map((f) => ({
+    name: f.name,
+    dataType: resolveMySQLType(f.type ?? 253), // 253 = var_string as fallback
+    dataTypeID: f.type ?? 253
+  }))
+  const resultRows = Array.isArray(rows) ? rows : [rows]
+  return {
+    rows: resultRows as Record<string, unknown>[],
+    fields: queryFields,
+    rowCount: resultRows.length
+  }
+}
+
 /**
  * MySQL database adapter
  */
@@ -154,19 +169,36 @@ export class MySQLAdapter implements DatabaseAdapter {
   async query(config: ConnectionConfig, sql: string): Promise<AdapterQueryResult> {
     return withMySQLConnection(config, async (connection) => {
       const [rows, fields] = await connection.query(sql)
+      return toAdapterResult(rows, fields)
+    })
+  }
 
-      const queryFields: QueryField[] = (fields as mysql.FieldPacket[]).map((f) => ({
-        name: f.name,
-        dataType: resolveMySQLType(f.type ?? 253), // 253 = var_string as fallback
-        dataTypeID: f.type ?? 253
-      }))
-
-      const resultRows = Array.isArray(rows) ? rows : [rows]
-
-      return {
-        rows: resultRows as Record<string, unknown>[],
-        fields: queryFields,
-        rowCount: resultRows.length
+  /**
+   * Runs `sql` in a READ ONLY transaction that is always rolled back, so a stored
+   * function that writes fails with ER_CANT_EXECUTE_IN_READ_ONLY_TRANSACTION.
+   */
+  async queryReadOnly(
+    config: ConnectionConfig,
+    sql: string,
+    options: ReadOnlyQueryOptions
+  ): Promise<AdapterQueryResult> {
+    return withMySQLConnection(config, async (connection) => {
+      await connection.query('START TRANSACTION READ ONLY')
+      if (options.executionId) {
+        registerQuery(options.executionId, { type: 'mysql', connection })
+      }
+      try {
+        const [rows, fields] = await connection.query({ sql, timeout: options.timeoutMs })
+        return toAdapterResult(rows, fields)
+      } finally {
+        if (options.executionId) unregisterQuery(options.executionId)
+        try {
+          await connection.query('ROLLBACK')
+        } catch {
+          // Transaction state is unknown; don't hand this connection back to the
+          // pool. release() after destroy() is a no-op.
+          connection.destroy()
+        }
       }
     })
   }

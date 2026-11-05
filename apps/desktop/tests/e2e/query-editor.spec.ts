@@ -62,28 +62,12 @@ test.beforeEach(async ({ window }) => {
 type Page = import('@playwright/test').Page
 
 /**
- * Open a fresh query tab by using Cmd/Ctrl+T (the keyboard shortcut registered
- * in TabContainer / TabBar), then wait for the Monaco editor to be visible.
- *
- * We prefer the keyboard shortcut over clicking the "+" button because:
- *  - The "+" button has no accessible name (no text, aria-label not set) making
- *    it fragile to locate by role.
- *  - Cmd+T is registered as a global hotkey in TabContainer and fires
- *    `createQueryTab(activeConnectionId)` — exactly the same code path.
- *
- * If the empty-state "New Query" button is visible (no tabs open yet) we click
- * that instead, which also calls createQueryTab.
+ * Open a fresh SQL tab with Cmd/Ctrl+Shift+T, which TabContainer binds to
+ * `createQueryTab(activeConnectionId)`, then wait for the Monaco editor.
  */
 async function openQueryTab(window: Page) {
-  // If the empty-state "New Query" button is visible, click it directly.
-  const emptyStateBtn = window.getByRole('button', { name: /new query/i })
-  if (await emptyStateBtn.isVisible()) {
-    await emptyStateBtn.click()
-  } else {
-    // Use the keyboard shortcut Cmd+T / Ctrl+T to open a new query tab
-    const newTabShortcut = process.platform === 'darwin' ? 'Meta+t' : 'Control+t'
-    await window.keyboard.press(newTabShortcut)
-  }
+  // Cmd/Ctrl+T and the empty state open Ask; Cmd/Ctrl+Shift+T opens a SQL tab.
+  await window.keyboard.press(process.platform === 'darwin' ? 'Meta+Shift+t' : 'Control+Shift+t')
 
   // data-testid="query-tab-monaco" is stripped in the production build.
   // Fall back to the .monaco-editor class which is injected by Monaco itself

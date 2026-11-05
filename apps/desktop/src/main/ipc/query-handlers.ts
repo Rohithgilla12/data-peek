@@ -162,6 +162,51 @@ export function registerQueryHandlers(): void {
     }
   )
 
+  // AI-written SQL the app runs without a click: one statement the database
+  // itself keeps from writing (see DatabaseAdapter.queryReadOnly), so functions
+  // that write can't slip past the keyword check the renderer did first.
+  // `executionId` lets db:cancel-query abort it like any other query.
+  ipcMain.handle(
+    'db:query-read-only',
+    async (
+      _,
+      {
+        config,
+        query,
+        executionId
+      }: { config: ConnectionConfig; query: string; executionId?: string }
+    ) => {
+      const started = Date.now()
+      try {
+        const { runReadOnlyQuery } = await import('../mcp/read-guard')
+        const result = await runReadOnlyQuery(config, query, { executionId })
+        recordAudit({
+          source: 'editor',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType: config.dbType || 'postgresql',
+          sql: query,
+          rowCount: result.rows.length,
+          success: true
+        })
+        return { success: true, data: { ...result, durationMs: Date.now() - started } }
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error)
+        recordAudit({
+          source: 'editor',
+          connectionId: config.id ?? 'unsaved',
+          connectionName: config.name ?? config.database,
+          dbType: config.dbType || 'postgresql',
+          sql: query,
+          rowCount: null,
+          success: false,
+          error: message
+        })
+        return { success: false, error: message }
+      }
+    }
+  )
+
   // Cancel a running query by execution ID
   ipcMain.handle('db:cancel-query', async (_, executionId: string) => {
     log.debug('Cancelling query:', executionId)

@@ -411,7 +411,8 @@ export async function generateChatResponseStream(
   dbType: string,
   connectionId: string | undefined,
   resumeSessionId: string | undefined,
-  onEvent: (event: AIChatStreamEvent) => void
+  onEvent: (event: AIChatStreamEvent) => void,
+  signal?: AbortSignal
 ): Promise<{
   success: boolean
   data?: AIStructuredResponse
@@ -427,7 +428,8 @@ export async function generateChatResponseStream(
       dbType,
       connectionId,
       resumeSessionId,
-      onEvent
+      onEvent,
+      signal
     )
   }
 

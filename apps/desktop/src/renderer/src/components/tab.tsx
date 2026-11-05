@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import {
+  AiIcon,
   CloseIcon,
   FileCodeIcon,
   NetworkIcon,
@@ -83,13 +84,15 @@ export function Tab({
   }
 
   const Icon =
-    tab.type === 'query'
-      ? FileCodeIcon
-      : tab.type === 'erd'
-        ? NetworkIcon
-        : tab.type === 'schema-intel'
-          ? SearchCodeIcon
-          : TableIcon
+    tab.type === 'ask'
+      ? AiIcon
+      : tab.type === 'query'
+        ? FileCodeIcon
+        : tab.type === 'erd'
+          ? NetworkIcon
+          : tab.type === 'schema-intel'
+            ? SearchCodeIcon
+            : TableIcon
 
   return (
     <ContextMenu>

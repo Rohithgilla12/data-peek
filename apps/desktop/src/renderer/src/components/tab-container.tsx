@@ -1,6 +1,4 @@
 import { useCallback, useEffect, useMemo } from 'react'
-import { PlusIcon } from '@/components/icons'
-import { Button } from '@data-peek/ui'
 import { TabBar } from '@/components/tab-bar'
 import { TabQueryEditor } from '@/components/tab-query-editor'
 import { NotebookEditor } from '@/components/notebook-editor'
@@ -10,6 +8,7 @@ import { DataGenerator } from '@/components/data-generator'
 import { PgNotificationsPanel } from '@/components/pg-notifications-panel'
 import { HealthMonitor } from '@/components/health-monitor'
 import { SchemaIntelPanel } from '@/components/schema-intel'
+import { AskView } from '@/components/ask/ask-view'
 import { useTabStore, useConnectionStore } from '@/stores'
 import { useHotkeys, type UseHotkeyDefinition, type Hotkey } from '@tanstack/react-hotkeys'
 import type { NotebookTab, Tab } from '@/stores/tab-store'
@@ -20,6 +19,10 @@ function renderTabContent(
   schemas: Schema[],
   tabConnection?: ConnectionWithStatus | null
 ) {
+  if (tab.type === 'ask') {
+    return <AskView key={tab.id} tabId={tab.id} />
+  }
+
   if (tab.type === 'notebook') {
     return <NotebookEditor key={tab.id} tab={tab as NotebookTab} />
   }
@@ -72,6 +75,7 @@ export function TabContainer() {
   const tabs = useTabStore((s) => s.tabs)
   const activeTabId = useTabStore((s) => s.activeTabId)
   const createQueryTab = useTabStore((s) => s.createQueryTab)
+  const createAskTab = useTabStore((s) => s.createAskTab)
   const closeTab = useTabStore((s) => s.closeTab)
   const setActiveTab = useTabStore((s) => s.setActiveTab)
   const activeTab = useTabStore((s) => s.getActiveTab())
@@ -84,6 +88,10 @@ export function TabContainer() {
     : null
 
   const handleNewTab = useCallback(() => {
+    createAskTab(activeConnectionId)
+  }, [createAskTab, activeConnectionId])
+
+  const handleNewSqlTab = useCallback(() => {
     createQueryTab(activeConnectionId)
   }, [createQueryTab, activeConnectionId])
 
@@ -98,6 +106,7 @@ export function TabContainer() {
   const tabHotkeys = useMemo<UseHotkeyDefinition[]>(
     () => [
       { hotkey: 'Mod+T', callback: handleNewTab },
+      { hotkey: 'Mod+Shift+T', callback: handleNewSqlTab },
       { hotkey: 'Mod+W', callback: handleCloseTab },
       {
         hotkey: 'Mod+Alt+ArrowRight',
@@ -124,30 +133,15 @@ export function TabContainer() {
         }
       }))
     ],
-    [tabs, activeTabId, handleNewTab, handleCloseTab, setActiveTab]
+    [tabs, activeTabId, handleNewTab, handleNewSqlTab, handleCloseTab, setActiveTab]
   )
   useHotkeys(tabHotkeys)
 
-  // Empty state - no tabs open
   if (tabs.length === 0) {
     return (
       <div className="flex flex-1 flex-col overflow-hidden">
         <TabBar />
-        <div className="flex flex-1 items-center justify-center">
-          <div className="text-center space-y-3">
-            <h2 className="text-lg font-medium">Ready to query</h2>
-            <p className="font-sans text-sm text-muted-foreground">
-              Open a new tab or select a table from the sidebar
-            </p>
-            <Button onClick={handleNewTab} className="gap-2">
-              <PlusIcon className="size-4" />
-              New Query
-              <kbd className="ml-1 rounded bg-primary-foreground/20 px-1.5 py-0.5 text-2xs font-medium text-primary-foreground">
-                {window.electron.process.platform === 'darwin' ? '⌘' : 'Ctrl+'}T
-              </kbd>
-            </Button>
-          </div>
-        </div>
+        <AskView tabId={null} />
       </div>
     )
   }

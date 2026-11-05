@@ -11,6 +11,8 @@ const ICON_CONTEXT_VALUE = { 'aria-hidden': true } as const
 
 // Disable browser-like behaviors for native app feel
 ;(() => {
+  document.documentElement.dataset.platform = window.electron.process.platform
+
   // Prevent file drag/drop from navigating away
   document.addEventListener('dragover', (e) => e.preventDefault())
   document.addEventListener('drop', (e) => e.preventDefault())

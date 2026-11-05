@@ -18,7 +18,9 @@ data-peek is designed for keyboard-first workflows. This guide covers all availa
 | `Cmd/Ctrl + C` | Copy the focused cell |
 | `Cmd/Ctrl + S` | Save pending changes (in edit mode) |
 | `Cmd/Ctrl + K` | Open command palette |
-| `Cmd/Ctrl + T` | New query tab |
+| `Cmd/Ctrl + T` | New Ask tab |
+| `Cmd/Ctrl + Shift + T` | New SQL editor tab |
+| `Cmd/Ctrl + I` (in the editor) | Edit the query or selection with AI |
 | `Cmd/Ctrl + W` | Close current tab |
 | `Escape` | Close inspector / Exit edit mode / Cancel |
 
@@ -30,7 +32,8 @@ Navigate and manage query tabs without using the mouse.
 
 | Shortcut | Action |
 |----------|--------|
-| `Cmd/Ctrl + T` | Create new query tab |
+| `Cmd/Ctrl + T` | Create new Ask tab |
+| `Cmd/Ctrl + Shift + T` | Create new SQL editor tab |
 | `Cmd/Ctrl + W` | Close current tab |
 | `Cmd/Ctrl + 1-9` | Switch to tab 1-9 |
 | `Cmd/Ctrl + Alt + →` | Switch to next tab |
