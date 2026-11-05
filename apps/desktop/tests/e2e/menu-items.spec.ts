@@ -118,7 +118,7 @@ test('menu accelerators match the editor and do not collide', async ({ electronA
 })
 
 test.describe('Query menu', () => {
-  test.beforeEach(async ({ electronApp, window }) => {
+  test.beforeEach(async ({ window }) => {
     await window.evaluate((cfg) => window.api.connections.add(cfg), DEAD_CONNECTION)
     await expect(window.getByText('Loading...')).toBeHidden({ timeout: 8000 })
     await window.locator('[data-sidebar="menu-button"]').first().click()
