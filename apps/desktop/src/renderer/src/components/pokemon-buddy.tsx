@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { X } from 'lucide-react'
+import { CloseIcon } from '@/components/icons'
 import {
   usePokemonBuddyStore,
   getActivePokemon,
@@ -23,7 +23,7 @@ function MoveEffect({ move, onComplete }: { move: PokemonMove; onComplete: () =>
   return (
     <div className="pokemon-move-effect absolute -top-12 left-1/2 -translate-x-1/2 pointer-events-none">
       <div
-        className="px-3 py-1.5 rounded-full text-xs font-bold text-white whitespace-nowrap animate-move-float"
+        className="px-3 py-1.5 rounded-full text-xs font-semibold text-white whitespace-nowrap animate-move-float"
         style={{ backgroundColor: color, boxShadow: `0 0 12px ${color}80` }}
       >
         {move.name}!
@@ -51,13 +51,11 @@ function AchievementToast({
 
   return (
     <div className="absolute -top-20 right-0 animate-achievement-pop">
-      <div className="flex items-center gap-2 rounded-lg border border-yellow-500/30 bg-card px-3 py-2 shadow-lg">
+      <div className="flex items-center gap-2 rounded-lg border border-warning/30 bg-card px-3 py-2 shadow-lg">
         <span className="text-lg">{icon}</span>
         <div className="min-w-0">
-          <div className="text-xs font-bold text-yellow-400">{name}</div>
-          <div className="text-[10px] text-muted-foreground truncate max-w-[140px]">
-            {description}
-          </div>
+          <div className="text-xs font-semibold text-warning">{name}</div>
+          <div className="text-2xs text-muted-foreground truncate max-w-[140px]">{description}</div>
         </div>
       </div>
     </div>
@@ -84,7 +82,7 @@ function PokemonSelector({
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
-          <X className="size-3.5" />
+          <CloseIcon className="size-3.5" />
         </button>
       </div>
       <div className="grid grid-cols-4 gap-1.5">
@@ -107,7 +105,7 @@ function PokemonSelector({
               className="size-10"
               draggable={false}
             />
-            <span className="text-[9px] text-muted-foreground leading-none">{pokemon.name}</span>
+            <span className="text-2xs text-muted-foreground leading-none">{pokemon.name}</span>
           </button>
         ))}
       </div>
@@ -135,7 +133,7 @@ function MovesPanel({
           onClick={onClose}
           className="text-muted-foreground hover:text-foreground transition-colors"
         >
-          <X className="size-3.5" />
+          <CloseIcon className="size-3.5" />
         </button>
       </div>
       <div className="grid grid-cols-2 gap-1.5">
@@ -153,9 +151,9 @@ function MovesPanel({
               border: `1px solid ${getTypeColor(move.type)}40`
             }}
           >
-            <span className="text-[10px] font-bold text-foreground">{move.name}</span>
+            <span className="text-2xs font-semibold text-foreground">{move.name}</span>
             <span
-              className="text-[8px] font-medium uppercase tracking-wider"
+              className="text-2xs font-medium uppercase tracking-wider"
               style={{ color: getTypeColor(move.type) }}
             >
               {move.type}
@@ -334,8 +332,8 @@ export function PokemonBuddy() {
         {isExpanded && (
           <div className="absolute bottom-full right-0 mb-2 w-48 rounded-lg border border-border/50 bg-card p-2.5 shadow-xl animate-fade-in-up">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs font-bold text-foreground">{pokemon.name}</span>
-              <span className="text-[10px] text-muted-foreground">Lv.{buddyLevel}</span>
+              <span className="text-xs font-semibold text-foreground">{pokemon.name}</span>
+              <span className="text-2xs text-muted-foreground">Lv.{buddyLevel}</span>
             </div>
 
             {/* XP bar */}
@@ -347,7 +345,7 @@ export function PokemonBuddy() {
                 />
               </div>
               <div className="flex justify-between mt-0.5">
-                <span className="text-[9px] text-muted-foreground">
+                <span className="text-2xs text-muted-foreground">
                   XP: {buddyXp}/{xpNeeded}
                 </span>
               </div>
@@ -358,7 +356,7 @@ export function PokemonBuddy() {
               {pokemon.types.map((type) => (
                 <span
                   key={type}
-                  className="rounded-full px-2 py-0.5 text-[9px] font-bold uppercase text-white"
+                  className="rounded-full px-2 py-0.5 text-2xs font-semibold uppercase text-white"
                   style={{ backgroundColor: getTypeColor(type) }}
                 >
                   {type}
@@ -374,7 +372,7 @@ export function PokemonBuddy() {
                   setIsExpanded(false)
                   setShowMoves(true)
                 }}
-                className="flex-1 rounded-md bg-accent px-2 py-1 text-[10px] font-medium text-foreground hover:bg-accent/80 transition-colors"
+                className="flex-1 rounded-md bg-accent px-2 py-1 text-2xs font-medium text-foreground hover:bg-accent/80 transition-colors"
               >
                 Moves
               </button>
@@ -384,7 +382,7 @@ export function PokemonBuddy() {
                   setIsExpanded(false)
                   setShowSelector(true)
                 }}
-                className="flex-1 rounded-md bg-accent px-2 py-1 text-[10px] font-medium text-foreground hover:bg-accent/80 transition-colors"
+                className="flex-1 rounded-md bg-accent px-2 py-1 text-2xs font-medium text-foreground hover:bg-accent/80 transition-colors"
               >
                 Switch
               </button>
@@ -394,7 +392,7 @@ export function PokemonBuddy() {
                 className="rounded-md bg-accent p-1 text-muted-foreground hover:text-foreground hover:bg-accent/80 transition-colors"
                 title="Hide buddy"
               >
-                <X className="size-3" />
+                <CloseIcon className="size-3" />
               </button>
             </div>
           </div>
@@ -432,7 +430,7 @@ export function PokemonBuddy() {
             onError={handleSpriteError}
           />
           {/* Level badge */}
-          <div className="absolute -top-1 -right-1 rounded-full bg-primary px-1.5 py-0.5 text-[8px] font-bold text-primary-foreground shadow-sm">
+          <div className="absolute -top-1 -right-1 rounded-full bg-primary px-1.5 py-0.5 text-2xs font-semibold text-primary-foreground shadow-sm">
             {buddyLevel}
           </div>
         </div>

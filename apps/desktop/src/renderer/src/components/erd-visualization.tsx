@@ -23,7 +23,16 @@ import {
   type Node
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Check, ChevronsUpDown, Columns3, Filter, GitBranch, Key, X } from 'lucide-react'
+import { CATEGORICAL_COLORS } from '@/lib/chart-palette'
+import {
+  CaretUpDownIcon,
+  CheckIcon,
+  CloseIcon,
+  ColumnsIcon,
+  FilterIcon,
+  GitBranchIcon,
+  KeyIcon
+} from '@/components/icons'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
 interface TableNodeData extends Record<string, unknown> {
@@ -47,16 +56,16 @@ function ClusterNode({ data }: { data: ClusterNodeData }) {
     <div
       className="rounded-2xl border-2 border-dashed transition-all"
       style={{
-        backgroundColor: `${data.color}08`,
-        borderColor: `${data.color}30`,
+        backgroundColor: tint(data.color, 4),
+        borderColor: tint(data.color, 19),
         width: '100%',
         height: '100%'
       }}
     >
       <div
-        className="absolute -top-3 left-4 px-2 py-0.5 rounded-full text-[10px] font-medium tracking-wide uppercase"
+        className="absolute -top-3 left-4 px-2 py-0.5 rounded-full text-2xs font-medium tracking-wide uppercase"
         style={{
-          backgroundColor: `${data.color}20`,
+          backgroundColor: tint(data.color, 12),
           color: data.color
         }}
       >
@@ -82,27 +91,27 @@ function TableNode({ data }: { data: TableNodeData }) {
       <div
         className="px-3 py-2.5 border-b"
         style={{
-          background: data.isHub
-            ? `linear-gradient(135deg, ${data.clusterColor}15, ${data.clusterColor}08)`
-            : 'var(--muted)',
-          borderColor: data.isHub ? `${data.clusterColor}30` : 'var(--border)'
+          background: data.isHub ? tint(data.clusterColor, 8) : 'var(--muted)',
+          borderColor: data.isHub ? tint(data.clusterColor, 19) : 'var(--border)'
         }}
       >
         <div className="flex items-center gap-2">
-          {data.isHub && <GitBranch className="size-3.5" style={{ color: data.clusterColor }} />}
+          {data.isHub && (
+            <GitBranchIcon className="size-3.5" style={{ color: data.clusterColor }} />
+          )}
           <div className="flex-1">
             <div
-              className={cn('font-semibold text-sm', data.isHub && 'font-bold')}
+              className={cn('font-medium text-sm', data.isHub && 'font-semibold')}
               style={{ color: data.isHub ? data.clusterColor : 'var(--foreground)' }}
             >
               {data.label}
             </div>
-            <div className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+            <div className="text-2xs text-muted-foreground flex items-center gap-1.5">
               <span>{data.schemaName}</span>
               {data.relationshipCount > 0 && (
                 <>
                   <span className="opacity-40">·</span>
-                  <span style={{ color: `${data.clusterColor}90` }}>
+                  <span style={{ color: tint(data.clusterColor, 56) }}>
                     {data.relationshipCount} relation{data.relationshipCount !== 1 ? 's' : ''}
                   </span>
                 </>
@@ -136,28 +145,26 @@ function TableNode({ data }: { data: TableNodeData }) {
                 type="target"
                 position={Position.Left}
                 id={`${column.name}-target`}
-                className="!bg-amber-500 !w-2.5 !h-2.5 !border-2 !border-background"
+                className="!bg-cat-yellow !w-2.5 !h-2.5 !border-2 !border-background"
               />
             )}
 
             {column.isPrimaryKey ? (
-              <Key className="size-3.5 text-amber-500 shrink-0" />
+              <KeyIcon className="size-3.5 text-cat-yellow shrink-0" />
             ) : column.foreignKey ? (
-              <Key className="size-3.5 shrink-0" style={{ color: data.clusterColor }} />
+              <KeyIcon className="size-3.5 text-cat-blue shrink-0" />
             ) : (
-              <Columns3 className="size-3.5 text-muted-foreground/60 shrink-0" />
+              <ColumnsIcon className="size-3.5 text-muted-foreground/60 shrink-0" />
             )}
 
             <span className={cn('flex-1 truncate', column.isPrimaryKey && 'font-medium')}>
               {column.name}
             </span>
 
-            <span className="text-[10px] text-muted-foreground/70 font-mono">
-              {column.dataType}
-            </span>
+            <span className="text-2xs text-muted-foreground/70 font-mono">{column.dataType}</span>
 
             {!column.isNullable && !column.isPrimaryKey && (
-              <span className="text-red-400/80 text-[10px] font-bold">*</span>
+              <span className="text-destructive/80 text-2xs font-semibold">*</span>
             )}
           </div>
         ))}
@@ -175,19 +182,13 @@ interface ERDVisualizationProps {
   schemas: SchemaInfo[]
 }
 
-// Cluster color palette - distinctive, accessible colors
-const CLUSTER_COLORS = [
-  '#6366f1', // Indigo
-  '#10b981', // Emerald
-  '#f59e0b', // Amber
-  '#ec4899', // Pink
-  '#8b5cf6', // Violet
-  '#06b6d4', // Cyan
-  '#f97316', // Orange
-  '#14b8a6', // Teal
-  '#a855f7', // Purple
-  '#84cc16' // Lime
-]
+// Cluster colours cycle through the categorical palette
+const CLUSTER_COLORS = CATEGORICAL_COLORS
+
+// Translucent tint of a CSS colour (hex alpha suffixes do not work with var() values)
+function tint(color: string, percent: number): string {
+  return `color-mix(in oklab, ${color} ${percent}%, transparent)`
+}
 
 // Graph utilities for relationship-based layout
 interface TableGraph {
@@ -610,7 +611,9 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                 c.component.includes(sourceTableKey)
               )
               const edgeColor =
-                clusterIndex >= 0 ? CLUSTER_COLORS[clusterIndex % CLUSTER_COLORS.length] : '#6366f1'
+                clusterIndex >= 0
+                  ? CLUSTER_COLORS[clusterIndex % CLUSTER_COLORS.length]
+                  : 'var(--primary)'
 
               edges.push({
                 id: `${sourceTableKey}.${column.name}->${targetTableKey}.${column.foreignKey.referencedColumn}`,
@@ -632,7 +635,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                   height: 20
                 },
                 label: column.foreignKey.constraintName,
-                labelStyle: { fontSize: 9, fill: '#888', fontWeight: 500 },
+                labelStyle: { fontSize: 9, fill: 'var(--muted-foreground)', fontWeight: 500 },
                 labelBgStyle: {
                   fill: 'var(--background)',
                   fillOpacity: 0.9
@@ -670,7 +673,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground">
         <div className="text-center space-y-2">
-          <GitBranch className="size-12 mx-auto opacity-20" />
+          <GitBranchIcon className="size-12 mx-auto opacity-20" />
           <p>No tables found to visualize</p>
         </div>
       </div>
@@ -690,14 +693,14 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
         <Popover open={tableFilterOpen} onOpenChange={setTableFilterOpen}>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs">
-              <Filter className="size-3" />
+              <FilterIcon className="size-3" />
               Filter Tables
               {selectedTables.size > 0 && (
-                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-2xs">
                   {selectedTables.size}
                 </Badge>
               )}
-              <ChevronsUpDown className="size-3 opacity-50" />
+              <CaretUpDownIcon className="size-3 opacity-50" />
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-[300px] p-0" align="start">
@@ -726,7 +729,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                           <button
                             type="button"
                             onClick={() => selectSchema(schemaName)}
-                            className="text-[10px] text-primary hover:underline"
+                            className="text-2xs text-primary hover:underline"
                           >
                             Select all
                           </button>
@@ -747,7 +750,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                                     : 'opacity-50'
                                 )}
                               >
-                                {selectedTables.has(table.key) && <Check className="size-3" />}
+                                {selectedTables.has(table.key) && <CheckIcon className="size-3" />}
                               </div>
                               <span className="truncate">{table.table}</span>
                             </button>
@@ -767,7 +770,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                   className="w-full h-7 text-xs"
                   onClick={clearSelection}
                 >
-                  <X className="size-3 mr-1" />
+                  <CloseIcon className="size-3 mr-1" />
                   Clear selection ({selectedTables.size})
                 </Button>
               </div>
@@ -784,11 +787,11 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
                 <Badge
                   key={key}
                   variant="secondary"
-                  className="h-5 text-[10px] gap-1 cursor-pointer hover:bg-secondary/80"
+                  className="h-5 text-2xs gap-1 cursor-pointer hover:bg-secondary/80"
                   onClick={() => toggleTable(key)}
                 >
                   {key.split('.')[1]}
-                  <X className="size-2.5" />
+                  <CloseIcon className="size-2.5" />
                 </Badge>
               ))}
           </div>
@@ -806,7 +809,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
         </span>
         {clusterCount > 0 && (
           <span className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-indigo-500/60" />
+            <span className="size-2 rounded-full bg-muted-foreground/60" />
             {clusterCount +
               (tableCount - clusterCount > clusterCount
                 ? tableCount - clusterCount - clusterCount
@@ -815,7 +818,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
           </span>
         )}
         <span className="flex items-center gap-1.5">
-          <span className="size-2 rounded-full bg-amber-500/60" />
+          <span className="size-2 rounded-full bg-muted-foreground/60" />
           {relationshipCount} relationship{relationshipCount !== 1 ? 's' : ''}
         </span>
         <span className="ml-auto opacity-70">
@@ -840,7 +843,7 @@ export function ERDVisualization({ schemas }: ERDVisualizationProps) {
           }}
           proOptions={{ hideAttribution: true }}
         >
-          <Background color="#888" gap={24} size={1} />
+          <Background color="var(--border)" gap={24} size={1} />
           <Controls className="!bg-background/90 !border-border !rounded-lg !shadow-lg" />
           <MiniMap
             nodeColor={(node) => {

@@ -1,19 +1,19 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
-  Clock,
-  Play,
-  Pause,
-  Trash2,
-  Search,
-  X,
-  Pencil,
-  Plus,
-  AlertCircle,
-  CheckCircle,
-  Timer,
-  History,
-  RefreshCw
-} from 'lucide-react'
+  ClockIcon,
+  CloseIcon,
+  EditIcon,
+  ErrorIcon,
+  HistoryIcon,
+  PauseIcon,
+  PlayIcon,
+  PlusIcon,
+  RefreshIcon,
+  SearchIcon,
+  SuccessIcon,
+  TimerIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -95,11 +95,11 @@ function formatFutureTime(timestamp: number): string {
 function getStatusColor(status: ScheduledQueryStatus): string {
   switch (status) {
     case 'active':
-      return 'bg-green-500/10 text-green-500 border-green-500/20'
+      return 'bg-success/10 text-success border-success/30'
     case 'paused':
-      return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+      return 'bg-warning/10 text-warning border-warning/30'
     case 'error':
-      return 'bg-red-500/10 text-red-500 border-red-500/20'
+      return 'bg-destructive/10 text-destructive border-destructive/30'
     default:
       return 'bg-muted text-muted-foreground border-border'
   }
@@ -114,11 +114,11 @@ function getStatusColor(status: ScheduledQueryStatus): string {
 function getStatusIcon(status: ScheduledQueryStatus) {
   switch (status) {
     case 'active':
-      return <CheckCircle className="size-3" />
+      return <SuccessIcon className="size-3" />
     case 'paused':
-      return <Pause className="size-3" />
+      return <PauseIcon className="size-3" />
     case 'error':
-      return <AlertCircle className="size-3" />
+      return <ErrorIcon className="size-3" />
     default:
       return null
   }
@@ -265,7 +265,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col p-0 gap-0">
           <DialogHeader className="px-4 py-3 border-b shrink-0">
             <DialogTitle className="flex items-center gap-2">
-              <Clock className="size-4" />
+              <ClockIcon className="size-4" />
               Scheduled Queries
               <Badge variant="secondary" className="ml-2">
                 {filteredQueries.length} {filteredQueries.length === 1 ? 'schedule' : 'schedules'}
@@ -279,7 +279,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                   setFormOpen(true)
                 }}
               >
-                <Plus className="size-4 mr-1" />
+                <PlusIcon className="size-4 mr-1" />
                 New Schedule
               </Button>
             </DialogTitle>
@@ -288,7 +288,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
           {/* Search and Filters */}
           <div className="px-4 py-3 border-b space-y-3 shrink-0">
             <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 type="text"
                 placeholder="Search scheduled queries..."
@@ -303,7 +303,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                   className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
                   onClick={() => setSearchQuery('')}
                 >
-                  <X className="size-4" />
+                  <CloseIcon className="size-4" />
                 </Button>
               )}
             </div>
@@ -333,7 +333,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                 <div className="text-center py-12 text-muted-foreground">
                   {scheduledQueries.length === 0 ? (
                     <div className="space-y-2">
-                      <Clock className="size-8 mx-auto opacity-50" />
+                      <ClockIcon className="size-8 mx-auto opacity-50" />
                       <p>No scheduled queries yet</p>
                       <p className="text-xs">Create a schedule to run queries automatically</p>
                       <Button
@@ -342,13 +342,13 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                         className="mt-2"
                         onClick={() => setFormOpen(true)}
                       >
-                        <Plus className="size-4 mr-1" />
+                        <PlusIcon className="size-4 mr-1" />
                         Create Schedule
                       </Button>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <Search className="size-8 mx-auto opacity-50" />
+                      <SearchIcon className="size-8 mx-auto opacity-50" />
                       <p>No schedules match your filters</p>
                     </div>
                   )}
@@ -365,12 +365,12 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                           <span className="font-medium text-sm truncate">{query.name}</span>
                           <Badge
                             variant="outline"
-                            className={cn('text-[10px] gap-1', getStatusColor(query.status))}
+                            className={cn('text-2xs gap-1', getStatusColor(query.status))}
                           >
                             {getStatusIcon(query.status)}
                             {query.status}
                           </Badge>
-                          <Badge variant="outline" className="text-[10px]">
+                          <Badge variant="outline" className="text-2xs">
                             {getConnectionName(query.connectionId)}
                           </Badge>
                         </div>
@@ -385,26 +385,26 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                           {query.query}
                         </pre>
 
-                        <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
+                        <div className="flex items-center gap-4 mt-2 text-2xs text-muted-foreground">
                           <span className="flex items-center gap-1">
-                            <Timer className="size-3" />
+                            <TimerIcon className="size-3" />
                             {getScheduleLabel(query.schedule)}
                           </span>
                           {query.status === 'active' && query.nextRunAt && (
-                            <span className="flex items-center gap-1 text-green-600">
-                              <RefreshCw className="size-3" />
+                            <span className="flex items-center gap-1 text-success">
+                              <RefreshIcon className="size-3" />
                               Next: {formatFutureTime(query.nextRunAt)}
                             </span>
                           )}
                           {query.lastRunAt && (
                             <span className="flex items-center gap-1">
-                              <History className="size-3" />
+                              <HistoryIcon className="size-3" />
                               Last: {formatRelativeTime(query.lastRunAt)}
                             </span>
                           )}
                           {query.lastError && (
-                            <span className="flex items-center gap-1 text-red-500">
-                              <AlertCircle className="size-3" />
+                            <span className="flex items-center gap-1 text-destructive">
+                              <ErrorIcon className="size-3" />
                               {query.lastError.slice(0, 50)}
                               {query.lastError.length > 50 && '...'}
                             </span>
@@ -424,9 +424,9 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                                 disabled={runningNow === query.id}
                               >
                                 {runningNow === query.id ? (
-                                  <RefreshCw className="size-3.5 animate-spin" />
+                                  <RefreshIcon className="size-3.5 animate-spin" />
                                 ) : (
-                                  <Play className="size-3.5" />
+                                  <PlayIcon className="size-3.5" />
                                 )}
                               </Button>
                             </TooltipTrigger>
@@ -444,9 +444,9 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                                 onClick={() => handleTogglePause(query)}
                               >
                                 {query.status === 'active' ? (
-                                  <Pause className="size-3.5" />
+                                  <PauseIcon className="size-3.5" />
                                 ) : (
-                                  <Play className="size-3.5" />
+                                  <PlayIcon className="size-3.5" />
                                 )}
                               </Button>
                             </TooltipTrigger>
@@ -465,7 +465,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                                 className="size-7"
                                 onClick={() => handleViewRuns(query)}
                               >
-                                <History className="size-3.5" />
+                                <HistoryIcon className="size-3.5" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>View run history</TooltipContent>
@@ -481,7 +481,7 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                                 className="size-7"
                                 onClick={() => handleEdit(query)}
                               >
-                                <Pencil className="size-3.5" />
+                                <EditIcon className="size-3.5" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Edit</TooltipContent>
@@ -494,10 +494,10 @@ export function ScheduledQueriesDialog({ open, onOpenChange }: ScheduledQueriesD
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-7 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => handleDelete(query.id)}
                               >
-                                <Trash2 className="size-3.5" />
+                                <TrashIcon className="size-3.5" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>Delete</TooltipContent>

@@ -1,5 +1,13 @@
 import { useState, useCallback, useRef, useEffect, useMemo, memo } from 'react'
-import { Play, MoreHorizontal, GripVertical, Check, X, Pin, PinOff } from 'lucide-react'
+import {
+  CheckIcon,
+  CloseIcon,
+  DragHandleIcon,
+  MoreIcon,
+  PinIcon,
+  PinOffIcon,
+  PlayIcon
+} from '@/components/icons'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { useSortable } from '@dnd-kit/sortable'
@@ -81,7 +89,7 @@ function ResultTable({ result }: { result: QueryResult }) {
         </tbody>
       </table>
       {isTruncated && (
-        <p className="text-[10px] text-muted-foreground px-2 py-1.5 border-t border-border/30">
+        <p className="text-2xs text-muted-foreground px-2 py-1.5 border-t border-border/30">
           Showing {MAX_DISPLAY_ROWS} of {result.rows.length} rows
         </p>
       )}
@@ -93,8 +101,8 @@ function StatusIcon({ status }: { status: 'idle' | 'running' | 'success' | 'erro
   if (status === 'idle') return null
   if (status === 'running')
     return <span className="size-2 rounded-full bg-primary animate-pulse shrink-0" />
-  if (status === 'success') return <Check className="size-3 text-emerald-500 shrink-0" />
-  return <X className="size-3 text-destructive shrink-0" />
+  if (status === 'success') return <CheckIcon className="size-3 text-success shrink-0" />
+  return <CloseIcon className="size-3 text-destructive shrink-0" />
 }
 
 export const NotebookCell = memo(function NotebookCell({
@@ -215,7 +223,7 @@ export const NotebookCell = memo(function NotebookCell({
       className={cn(
         'group relative rounded-lg border transition-all duration-150',
         'border-border/50 bg-card',
-        isFocused && 'border-primary/30 shadow-[0_0_0_1px_oklch(0.55_0.15_250/0.3)]',
+        isFocused && 'border-primary/30 ring-1 ring-primary/30',
         isDragging && 'opacity-50 shadow-lg z-10'
       )}
       onClick={onFocus}
@@ -239,12 +247,12 @@ export const NotebookCell = memo(function NotebookCell({
           )}
           onClick={(e) => e.stopPropagation()}
         >
-          <GripVertical className="size-3.5" />
+          <DragHandleIcon className="size-3.5" />
         </button>
 
         <span
           className={cn(
-            'text-[10px] font-medium px-1.5 py-0.5 rounded font-mono uppercase tracking-wide',
+            'text-2xs font-medium px-1.5 py-0.5 rounded font-mono uppercase tracking-wide',
             cell.type === 'sql' ? 'text-primary bg-primary/10' : 'text-muted-foreground bg-muted/50'
           )}
         >
@@ -254,13 +262,13 @@ export const NotebookCell = memo(function NotebookCell({
         <StatusIcon status={status} />
 
         {durationMs !== null && status !== 'running' && (
-          <span className="text-[10px] text-muted-foreground font-mono">
+          <span className="text-2xs text-muted-foreground font-mono">
             {durationMs < 1000 ? `${durationMs}ms` : `${(durationMs / 1000).toFixed(2)}s`}
           </span>
         )}
 
         {liveResult && status === 'success' && (
-          <span className="text-[10px] text-muted-foreground font-mono">
+          <span className="text-2xs text-muted-foreground font-mono">
             {liveResult.rows.length} row{liveResult.rows.length !== 1 ? 's' : ''}
           </span>
         )}
@@ -278,7 +286,7 @@ export const NotebookCell = memo(function NotebookCell({
               runQuery()
             }}
           >
-            <Play className="size-3" />
+            <PlayIcon className="size-3" />
           </Button>
         )}
 
@@ -290,7 +298,7 @@ export const NotebookCell = memo(function NotebookCell({
               className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
               onClick={(e) => e.stopPropagation()}
             >
-              <MoreHorizontal className="size-3" />
+              <MoreIcon className="size-3" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
@@ -301,7 +309,7 @@ export const NotebookCell = memo(function NotebookCell({
                   handlePinResult()
                 }}
               >
-                <Pin className="size-3.5 mr-2" />
+                <PinIcon className="size-3.5 mr-2" />
                 Pin result
               </DropdownMenuItem>
             )}
@@ -312,7 +320,7 @@ export const NotebookCell = memo(function NotebookCell({
                   handleUnpinResult()
                 }}
               >
-                <PinOff className="size-3.5 mr-2" />
+                <PinOffIcon className="size-3.5 mr-2" />
                 Unpin result
               </DropdownMenuItem>
             )}
@@ -324,7 +332,7 @@ export const NotebookCell = memo(function NotebookCell({
                 onDelete()
               }}
             >
-              <X className="size-3.5 mr-2" />
+              <CloseIcon className="size-3.5 mr-2" />
               Delete cell
             </DropdownMenuItem>
           </DropdownMenuContent>
@@ -409,8 +417,8 @@ export const NotebookCell = memo(function NotebookCell({
           {!liveError && !liveResult && hasPinnedResult && (
             <div>
               <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-border/20">
-                <Pin className="size-3 text-muted-foreground/60" />
-                <span className="text-[10px] text-muted-foreground">
+                <PinIcon weight="fill" className="size-3 text-muted-foreground/60" />
+                <span className="text-2xs text-muted-foreground">
                   Pinned — ran {new Date(pinnedResult.executedAt).toLocaleString()}
                   {pinnedResult.durationMs
                     ? ` · ${pinnedResult.durationMs < 1000 ? `${pinnedResult.durationMs}ms` : `${(pinnedResult.durationMs / 1000).toFixed(2)}s`}`
@@ -436,7 +444,7 @@ export const NotebookCell = memo(function NotebookCell({
 
           {!liveError && !liveResult && !hasPinnedResult && status === 'idle' && (
             <div className="px-3 py-2">
-              <p className="text-[10px] text-muted-foreground/50">Not yet executed — ⇧⏎ to run</p>
+              <p className="text-2xs text-muted-foreground/50">Not yet executed — ⇧⏎ to run</p>
             </div>
           )}
         </div>

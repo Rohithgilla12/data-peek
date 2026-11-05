@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ChevronDown, Check } from 'lucide-react'
+import { CaretDownIcon, CheckIcon } from '@/components/icons'
 import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
@@ -47,7 +47,7 @@ const SelectTrigger = React.forwardRef<HTMLButtonElement, SelectTriggerProps>(
           {...props}
         >
           {children}
-          <ChevronDown className="h-4 w-4 opacity-50" />
+          <CaretDownIcon className="h-4 w-4 opacity-50" />
         </button>
       </DropdownMenuTrigger>
     )
@@ -103,7 +103,7 @@ function SelectItem({ value, children, className }: SelectItemProps) {
       {children}
       {isSelected && (
         <span className="absolute right-2 flex h-3.5 w-3.5 items-center justify-center">
-          <Check className="h-4 w-4" />
+          <CheckIcon className="h-4 w-4" />
         </span>
       )}
     </DropdownMenuItem>

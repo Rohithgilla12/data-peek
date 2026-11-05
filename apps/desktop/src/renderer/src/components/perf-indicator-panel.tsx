@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import {
-  X,
-  RefreshCw,
-  AlertCircle,
-  AlertTriangle,
-  Info,
-  ChevronDown,
-  ChevronRight,
-  Repeat
-} from 'lucide-react'
+  CaretDownIcon,
+  CaretRightIcon,
+  CloseIcon,
+  ErrorIcon,
+  InfoIcon,
+  RefreshIcon,
+  RepeatIcon,
+  WarningIcon
+} from '@/components/icons'
 import { cn, Button, Badge } from '@data-peek/ui'
 import { PerfIssueCard } from './perf-issue-card'
 import type {
@@ -65,13 +65,13 @@ export function PerfIndicatorPanel({
               <Badge
                 variant="secondary"
                 className={cn(
-                  'h-5 px-1.5 text-[10px] cursor-pointer transition-opacity',
-                  'bg-red-500/20 text-red-500 hover:bg-red-500/30',
+                  'h-5 px-1.5 text-2xs cursor-pointer transition-opacity',
+                  'bg-destructive/10 text-destructive hover:bg-destructive/30',
                   !showCritical && 'opacity-40'
                 )}
                 onClick={() => onToggleSeverity('critical')}
               >
-                <AlertCircle className="size-3 mr-0.5" />
+                <ErrorIcon className="size-3 mr-0.5" />
                 {analysis.issueCount.critical}
               </Badge>
             )}
@@ -79,13 +79,13 @@ export function PerfIndicatorPanel({
               <Badge
                 variant="secondary"
                 className={cn(
-                  'h-5 px-1.5 text-[10px] cursor-pointer transition-opacity',
-                  'bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30',
+                  'h-5 px-1.5 text-2xs cursor-pointer transition-opacity',
+                  'bg-warning/10 text-warning hover:bg-warning/30',
                   !showWarning && 'opacity-40'
                 )}
                 onClick={() => onToggleSeverity('warning')}
               >
-                <AlertTriangle className="size-3 mr-0.5" />
+                <WarningIcon className="size-3 mr-0.5" />
                 {analysis.issueCount.warning}
               </Badge>
             )}
@@ -93,20 +93,20 @@ export function PerfIndicatorPanel({
               <Badge
                 variant="secondary"
                 className={cn(
-                  'h-5 px-1.5 text-[10px] cursor-pointer transition-opacity',
-                  'bg-blue-500/20 text-blue-500 hover:bg-blue-500/30',
+                  'h-5 px-1.5 text-2xs cursor-pointer transition-opacity',
+                  'bg-primary/20 text-primary hover:bg-primary/30',
                   !showInfo && 'opacity-40'
                 )}
                 onClick={() => onToggleSeverity('info')}
               >
-                <Info className="size-3 mr-0.5" />
+                <InfoIcon className="size-3 mr-0.5" />
                 {analysis.issueCount.info}
               </Badge>
             )}
           </div>
 
           {totalIssues === 0 && (
-            <span className="text-xs text-green-500 font-medium">No issues found</span>
+            <span className="text-xs text-success font-medium">No issues found</span>
           )}
         </div>
 
@@ -121,11 +121,11 @@ export function PerfIndicatorPanel({
             onClick={onReanalyze}
             disabled={isAnalyzing}
           >
-            <RefreshCw className={cn('size-3.5', isAnalyzing && 'animate-spin')} />
+            <RefreshIcon className={cn('size-3.5', isAnalyzing && 'animate-spin')} />
             Re-analyze
           </Button>
           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={onClose}>
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
       </div>
@@ -157,16 +157,16 @@ export function PerfIndicatorPanel({
               className="w-full flex items-center gap-2 px-4 py-2.5 hover:bg-muted/30 transition-colors"
               onClick={() => setShowNplusOne(!showNplusOne)}
             >
-              <Repeat className="size-4 text-yellow-500" />
+              <RepeatIcon className="size-4 text-warning" />
               <span className="text-sm font-medium">N+1 Query Patterns</span>
-              <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">
+              <Badge variant="secondary" className="h-5 px-1.5 text-2xs">
                 {analysis.nplusOnePatterns.length}
               </Badge>
               <div className="flex-1" />
               {showNplusOne ? (
-                <ChevronDown className="size-4 text-muted-foreground" />
+                <CaretDownIcon className="size-4 text-muted-foreground" />
               ) : (
-                <ChevronRight className="size-4 text-muted-foreground" />
+                <CaretRightIcon className="size-4 text-muted-foreground" />
               )}
             </button>
 
@@ -183,9 +183,9 @@ export function PerfIndicatorPanel({
         {/* Empty state */}
         {totalIssues === 0 && analysis.nplusOnePatterns.length === 0 && (
           <div className="px-4 py-8 text-center">
-            <div className="size-12 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-3">
+            <div className="size-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-3">
               <svg
-                className="size-6 text-green-500"
+                className="size-6 text-success"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -198,7 +198,7 @@ export function PerfIndicatorPanel({
                 />
               </svg>
             </div>
-            <p className="text-sm font-medium text-green-500">Query looks good!</p>
+            <p className="text-sm font-medium text-success">Query looks good!</p>
             <p className="text-xs text-muted-foreground mt-1">
               No performance issues detected in this query.
             </p>
@@ -278,13 +278,13 @@ function NplusOneCard({ pattern }: NplusOneCardProps) {
   const [expanded, setExpanded] = useState(false)
 
   return (
-    <div className="border border-yellow-500/30 bg-yellow-500/5 rounded-md overflow-hidden">
+    <div className="border border-warning/30 bg-warning/10 rounded-md overflow-hidden">
       <button
         type="button"
         className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-muted/30 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
-        <Repeat className="size-4 text-yellow-500 shrink-0" />
+        <RepeatIcon className="size-4 text-warning shrink-0" />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{pattern.occurrences} similar queries</span>
@@ -297,9 +297,9 @@ function NplusOneCard({ pattern }: NplusOneCardProps) {
           </p>
         </div>
         {expanded ? (
-          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+          <CaretDownIcon className="size-4 text-muted-foreground shrink-0" />
         ) : (
-          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+          <CaretRightIcon className="size-4 text-muted-foreground shrink-0" />
         )}
       </button>
 
@@ -314,7 +314,7 @@ function NplusOneCard({ pattern }: NplusOneCardProps) {
             {pattern.querySamples.map((query, i) => (
               <pre
                 key={i}
-                className="text-[11px] bg-muted/50 rounded p-1.5 overflow-x-auto font-mono text-muted-foreground"
+                className="text-2xs bg-muted/50 rounded p-1.5 overflow-x-auto font-mono text-muted-foreground"
               >
                 {query}
               </pre>

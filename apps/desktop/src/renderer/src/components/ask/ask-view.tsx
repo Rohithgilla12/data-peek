@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react'
-import { ChevronRight, Sparkles } from 'lucide-react'
+import { AiIcon, CaretRightIcon } from '@/components/icons'
 import type { DatabaseType, SchemaInfo } from '@shared/index'
 import { buildFullyQualifiedTableRef, buildSelectQuery } from '@/lib/sql-helpers'
 import { DatabaseIcon } from '@/components/database-icons'
@@ -76,7 +76,7 @@ function ConnectionPrompt() {
     <div className="flex flex-1 items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <h1 className="font-sans text-xl font-semibold tracking-tight">Pick a database</h1>
-        <p className="mt-1 font-sans text-[13px] text-muted-foreground">
+        <p className="mt-1 font-sans text-sm text-muted-foreground">
           {connections.length > 0
             ? 'Then ask it anything, or type SQL.'
             : 'Add a connection from the sidebar to get started.'}
@@ -87,15 +87,15 @@ function ConnectionPrompt() {
               key={c.id}
               type="button"
               onClick={() => selectConnection(c.id)}
-              className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
             >
               <DatabaseIcon dbType={c.dbType} className="size-4" />
               <span className="flex-1 truncate text-foreground">{c.name}</span>
-              <span className="font-mono text-[10px] text-muted-foreground/50">
+              <span className="font-mono text-2xs text-muted-foreground/50">
                 {c.host || c.database}
               </span>
               {i < 9 && (
-                <kbd className="rounded border border-border/60 px-1 font-mono text-[10px] text-muted-foreground/60">
+                <kbd className="rounded border border-border/60 px-1 font-mono text-2xs text-muted-foreground/60">
                   {isMac ? '⌘⇧' : 'Ctrl+Shift+'}
                   {i + 1}
                 </kbd>
@@ -199,7 +199,7 @@ export function AskView({ tabId }: { tabId: string | null }) {
             <h1 className="font-sans text-xl font-semibold tracking-tight text-foreground">
               What do you want to know?
             </h1>
-            <p className="mt-1 font-sans text-[13px] text-muted-foreground">
+            <p className="mt-1 font-sans text-sm text-muted-foreground">
               Ask in plain English and the assistant writes the SQL, runs it if it only reads, and
               explains what came back. Or type SQL and it runs directly.
             </p>
@@ -210,12 +210,12 @@ export function AskView({ tabId }: { tabId: string | null }) {
                     key={s.text}
                     type="button"
                     onClick={() => composer.current?.fill(s.text, s.mode)}
-                    className="group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-[13px] text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                    className="group flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left text-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
                   >
                     {s.mode === 'sql' ? (
-                      <ChevronRight className="size-3.5 text-emerald-400/70" />
+                      <CaretRightIcon className="size-3.5 text-success/70" />
                     ) : (
-                      <Sparkles className="size-3.5 text-primary/70" />
+                      <AiIcon className="size-3.5 text-primary/70" />
                     )}
                     <span className={s.mode === 'sql' ? 'font-mono text-xs' : 'font-sans'}>
                       {s.text}
@@ -257,7 +257,7 @@ export function AskView({ tabId }: { tabId: string | null }) {
             onSubmit={ask}
           />
         ) : (
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-[13px]">
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-sm">
             <DatabaseIcon dbType={connection.dbType} className="size-4" />
             <span className="flex-1 text-muted-foreground">
               This tab asks <span className="text-foreground">{connection.name}</span>
@@ -266,7 +266,7 @@ export function AskView({ tabId }: { tabId: string | null }) {
             <button
               type="button"
               onClick={() => selectConnection(connection.id)}
-              className="rounded border border-primary/40 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/10"
+              className="rounded border border-primary/40 px-2 py-0.5 text-2xs text-primary hover:bg-primary/10"
             >
               {activeConnectionId ? 'Switch to' : 'Connect to'} {connection.name}
             </button>

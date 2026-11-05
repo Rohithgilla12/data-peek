@@ -1,5 +1,14 @@
 import { useState, useMemo, useEffect } from 'react'
-import { ChevronRight, Code2, Copy, MoreHorizontal, Play, Plus, Search, X } from 'lucide-react'
+import {
+  CaretRightIcon,
+  CloseIcon,
+  CodeIcon,
+  CopyIcon,
+  MoreIcon,
+  PlayIcon,
+  PlusIcon,
+  SearchIcon
+} from '@/components/icons'
 
 import {
   Badge,
@@ -90,12 +99,12 @@ export function Snippets() {
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center">
           <CollapsibleTrigger className="flex items-center gap-1 flex-1">
-            <ChevronRight
+            <CaretRightIcon
               className={`size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             />
             <span>Snippets</span>
             {allSnippets.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[11px] px-1.5 py-0">
+              <Badge variant="outline" className="ml-1 text-2xs px-1.5 py-0 tabular-nums">
                 {allSnippets.length}
               </Badge>
             )}
@@ -107,14 +116,14 @@ export function Snippets() {
             }}
             title="Create snippet"
           >
-            <Plus className="size-3.5" />
+            <PlusIcon className="size-3.5" />
           </SidebarGroupAction>
         </SidebarGroupLabel>
         <CollapsibleContent>
           <SidebarGroupContent>
             <div className="px-2 pb-2">
               <div className="relative">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+                <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
                 <Input
                   type="text"
                   placeholder="Search snippets..."
@@ -129,7 +138,7 @@ export function Snippets() {
                     onClick={() => setSearchQuery('')}
                     className="absolute right-1.5 top-1/2 -translate-y-1/2 size-4 flex items-center justify-center text-muted-foreground hover:text-foreground"
                   >
-                    <X className="size-3" />
+                    <CloseIcon className="size-3" />
                   </button>
                 )}
               </div>
@@ -154,16 +163,16 @@ export function Snippets() {
                               <div className="flex items-center gap-2 w-full">
                                 <Badge
                                   variant="outline"
-                                  className={`text-[10px] px-1.5 py-0.5 font-medium shrink-0 border-0 ${getSnippetCategoryColor(snippet.category)}`}
+                                  className={`text-2xs px-1.5 py-0.5 font-medium shrink-0 border-0 ${getSnippetCategoryColor(snippet.category)}`}
                                 >
                                   {snippet.category.toUpperCase()}
                                 </Badge>
                                 <span className="text-xs font-medium truncate">{snippet.name}</span>
                               </div>
-                              <div className="flex items-center gap-2 text-[10px] text-muted-foreground/70 pl-0.5">
+                              <div className="flex items-center gap-2 text-2xs text-muted-foreground/70 pl-0.5">
                                 {snippet.triggerPrefix && (
                                   <span className="flex items-center gap-1 bg-muted/50 px-1.5 py-0.5 rounded">
-                                    <Code2 className="size-2.5" />
+                                    <CodeIcon className="size-2.5" />
                                     <span className="font-mono">{snippet.triggerPrefix}</span>
                                   </span>
                                 )}
@@ -187,7 +196,7 @@ export function Snippets() {
                               </p>
                             </div>
                             <div className="px-3 py-2 bg-popover">
-                              <pre className="text-[11px] font-mono leading-relaxed text-popover-foreground/90 whitespace-pre-wrap">
+                              <pre className="text-2xs font-mono leading-relaxed text-popover-foreground/90 whitespace-pre-wrap">
                                 {cleanSnippetTemplate(snippet.template)}
                               </pre>
                             </div>
@@ -198,7 +207,7 @@ export function Snippets() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <SidebarMenuAction showOnHover>
-                          <MoreHorizontal />
+                          <MoreIcon />
                           <span className="sr-only">More</span>
                         </SidebarMenuAction>
                       </DropdownMenuTrigger>
@@ -208,11 +217,11 @@ export function Snippets() {
                         align={isMobile ? 'end' : 'start'}
                       >
                         <DropdownMenuItem onClick={() => handleSnippetClick(snippet.template)}>
-                          <Play className="text-muted-foreground" />
+                          <PlayIcon className="text-muted-foreground" />
                           <span>Insert in editor</span>
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => handleCopySnippet(snippet.template)}>
-                          <Copy className="text-muted-foreground" />
+                          <CopyIcon className="text-muted-foreground" />
                           <span>Copy snippet</span>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -226,7 +235,7 @@ export function Snippets() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsSnippetsDialogOpen(true)}
                   >
-                    <MoreHorizontal />
+                    <MoreIcon />
                     <span>View all ({filteredSnippets.length})</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

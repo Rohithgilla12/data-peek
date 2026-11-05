@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { ArrowLeft, GitCompareArrows, Trash2 } from 'lucide-react'
+import { ArrowLeftIcon, GitDiffIcon, TrashIcon } from '@/components/icons'
 import { Badge, Button } from '@data-peek/ui'
 import { DataTable } from '@/components/data-table'
 import { useTimeMachineStore } from '@/stores/time-machine-store'
@@ -48,27 +48,21 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
       <div className="flex items-center gap-2 rounded-md border border-primary/30 bg-primary/5 px-3 py-1.5 mb-2 shrink-0 text-xs">
         {compareRun && diff ? (
           <>
-            <GitCompareArrows className="size-3.5 text-primary shrink-0" />
+            <GitDiffIcon className="size-3.5 text-primary shrink-0" />
             <span className="font-medium">
               {formatFullTime(compareRun.capturedAt)} → {formatFullTime(snapshot.capturedAt)}
             </span>
             <span className="flex items-center gap-1.5 text-muted-foreground tabular-nums">
-              <Badge
-                variant="secondary"
-                className="h-4 px-1.5 text-[10px] bg-green-500/15 text-green-500"
-              >
+              <Badge variant="secondary" className="h-4 px-1.5 text-2xs bg-success/10 text-success">
                 +{diff.addedRowKeys.size} added
               </Badge>
               <Badge
                 variant="secondary"
-                className="h-4 px-1.5 text-[10px] bg-red-500/15 text-red-400"
+                className="h-4 px-1.5 text-2xs bg-destructive/10 text-destructive"
               >
                 −{diff.removedRowKeys.size} removed
               </Badge>
-              <Badge
-                variant="secondary"
-                className="h-4 px-1.5 text-[10px] bg-amber-500/15 text-amber-500"
-              >
+              <Badge variant="secondary" className="h-4 px-1.5 text-2xs bg-warning/10 text-warning">
                 {changedCells} cells changed
               </Badge>
             </span>
@@ -93,7 +87,7 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
               {snapshot.rowCount} rows · {snapshot.durationMs}ms · read-only
             </span>
             {snapshot.truncated && (
-              <span className="text-amber-500">
+              <span className="text-warning">
                 first {snapshot.storedRowCount} of {snapshot.rowCount} rows stored
               </span>
             )}
@@ -103,11 +97,11 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-red-400"
+            className="h-6 gap-1 px-2 text-xs text-muted-foreground hover:text-destructive"
             onClick={() => void useTimeMachineStore.getState().deleteRun(tabId, snapshot.id)}
             title="Delete this run from history"
           >
-            <Trash2 className="size-3" />
+            <TrashIcon className="size-3" />
           </Button>
           <Button
             variant="secondary"
@@ -115,7 +109,7 @@ export function TimeMachineView({ tabId, pageSize }: TimeMachineViewProps) {
             className="h-6 gap-1 px-2 text-xs"
             onClick={() => void useTimeMachineStore.getState().selectRun(tabId, null)}
           >
-            <ArrowLeft className="size-3" />
+            <ArrowLeftIcon className="size-3" />
             Back to live
           </Button>
         </div>

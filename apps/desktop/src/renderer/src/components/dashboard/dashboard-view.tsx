@@ -1,16 +1,16 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
 import {
-  LayoutDashboard,
-  Plus,
-  RefreshCw,
-  Settings,
-  Pencil,
-  ArrowLeft,
-  Clock,
-  Timer,
-  Sparkles
-} from 'lucide-react'
+  AiIcon,
+  ArrowLeftIcon,
+  ClockIcon,
+  DashboardIcon,
+  EditIcon,
+  PlusIcon,
+  RefreshIcon,
+  SettingsIcon,
+  TimerIcon
+} from '@/components/icons'
 
 import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@data-peek/ui'
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
@@ -139,14 +139,14 @@ export function DashboardView() {
   if (!dashboard) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center p-6">
-        <LayoutDashboard className="size-12 text-muted-foreground mb-4" />
+        <DashboardIcon className="size-12 text-muted-foreground mb-4" />
         <h2 className="text-xl font-semibold mb-2">Dashboard not found</h2>
         <p className="text-muted-foreground mb-4">
           The dashboard you&apos;re looking for doesn&apos;t exist or has been deleted.
         </p>
         <Link to="/">
           <Button variant="outline">
-            <ArrowLeft className="size-4 mr-2" />
+            <ArrowLeftIcon className="size-4 mr-2" />
             Back to Query Editor
           </Button>
         </Link>
@@ -160,7 +160,7 @@ export function DashboardView() {
         <div className="flex items-center gap-3">
           <Link to="/">
             <Button variant="ghost" size="sm">
-              <ArrowLeft className="size-4" />
+              <ArrowLeftIcon className="size-4" />
             </Button>
           </Link>
           <div>
@@ -176,7 +176,7 @@ export function DashboardView() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-                    <Timer className="size-3" />
+                    <TimerIcon className="size-3" />
                     <span>Auto</span>
                   </div>
                 </TooltipTrigger>
@@ -187,20 +187,20 @@ export function DashboardView() {
             </TooltipProvider>
           )}
           <Button variant="outline" size="sm" onClick={() => setIsAddWidgetOpen(true)}>
-            <Plus className="size-4 mr-2" />
+            <PlusIcon className="size-4 mr-2" />
             Add Widget
           </Button>
           <Button
             variant="outline"
             size="sm"
-            className="text-blue-400 hover:text-blue-300"
+            className="text-primary hover:text-primary/80"
             onClick={() => setIsAIWidgetOpen(true)}
           >
-            <Sparkles className="size-4 mr-2" />
+            <AiIcon className="size-4 mr-2" />
             Ask AI
           </Button>
           <Button size="sm" onClick={() => setIsAIDashboardOpen(true)}>
-            <Sparkles className="size-4 mr-2" />
+            <AiIcon className="size-4 mr-2" />
             Generate
           </Button>
           <Button
@@ -209,7 +209,7 @@ export function DashboardView() {
             onClick={handleRefresh}
             disabled={isRefreshing || dashboard.widgets.length === 0}
           >
-            <RefreshCw className={`size-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshIcon className={`size-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           <TooltipProvider>
@@ -220,7 +220,7 @@ export function DashboardView() {
                   size="sm"
                   onClick={() => setIsScheduleDialogOpen(true)}
                 >
-                  <Clock className="size-4" />
+                  <ClockIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -235,18 +235,18 @@ export function DashboardView() {
           >
             {editMode ? (
               <>
-                <Settings className="size-4 mr-2" />
+                <SettingsIcon className="size-4 mr-2" />
                 Done Editing
               </>
             ) : (
               <>
-                <Pencil className="size-4 mr-2" />
+                <EditIcon className="size-4 mr-2" />
                 Edit Layout
               </>
             )}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
-            <Settings className="size-4" />
+            <SettingsIcon className="size-4" />
           </Button>
         </div>
       </div>
@@ -313,19 +313,19 @@ function EmptyDashboard({ onAddWidget, onGenerateAI }: EmptyDashboardProps) {
     <div className="flex flex-1 flex-col items-center justify-center p-6">
       <div className="flex flex-col items-center max-w-md text-center">
         <div className="flex size-16 items-center justify-center rounded-full bg-muted mb-4">
-          <LayoutDashboard className="size-8 text-muted-foreground" />
+          <DashboardIcon className="size-8 text-muted-foreground" />
         </div>
         <h2 className="text-xl font-semibold mb-2">No widgets yet</h2>
-        <p className="text-muted-foreground mb-6">
+        <p className="font-sans text-muted-foreground mb-6">
           Describe what you want and let AI build the whole dashboard — or add widgets yourself.
         </p>
         <div className="flex items-center gap-2">
           <Button onClick={onGenerateAI}>
-            <Sparkles className="size-4 mr-2" />
+            <AiIcon className="size-4 mr-2" />
             Generate with AI
           </Button>
           <Button variant="outline" onClick={onAddWidget}>
-            <Plus className="size-4 mr-2" />
+            <PlusIcon className="size-4 mr-2" />
             Add Widget
           </Button>
         </div>

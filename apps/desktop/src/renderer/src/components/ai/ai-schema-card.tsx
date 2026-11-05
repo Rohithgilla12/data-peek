@@ -1,5 +1,12 @@
 import * as React from 'react'
-import { Table2, Key, ChevronDown, ChevronUp, Hash, Type } from 'lucide-react'
+import {
+  CaretDownIcon,
+  CaretUpIcon,
+  HashIcon,
+  KeyIcon,
+  TableIcon,
+  TypeIcon
+} from '@/components/icons'
 import { cn } from '@data-peek/ui'
 
 interface Column {
@@ -21,7 +28,7 @@ const getTypeStyle = (type: string) => {
   const lowerType = type.toLowerCase()
 
   if (lowerType.includes('int') || lowerType.includes('serial') || lowerType.includes('numeric')) {
-    return { icon: Hash, color: 'text-amber-400' }
+    return { icon: HashIcon, color: 'text-cat-blue' }
   }
   if (
     lowerType.includes('char') ||
@@ -29,22 +36,22 @@ const getTypeStyle = (type: string) => {
     lowerType.includes('string') ||
     lowerType.includes('varchar')
   ) {
-    return { icon: Type, color: 'text-emerald-400' }
+    return { icon: TypeIcon, color: 'text-cat-green' }
   }
   if (lowerType.includes('bool')) {
-    return { icon: null, color: 'text-purple-400' }
+    return { icon: null, color: 'text-cat-yellow' }
   }
   if (lowerType.includes('date') || lowerType.includes('time') || lowerType.includes('stamp')) {
-    return { icon: null, color: 'text-blue-400' }
+    return { icon: null, color: 'text-cat-orange' }
   }
   if (lowerType.includes('uuid')) {
-    return { icon: null, color: 'text-pink-400' }
+    return { icon: null, color: 'text-cat-purple' }
   }
   if (lowerType.includes('json')) {
-    return { icon: null, color: 'text-cyan-400' }
+    return { icon: null, color: 'text-cat-pink' }
   }
 
-  return { icon: null, color: 'text-zinc-400' }
+  return { icon: null, color: 'text-muted-foreground' }
 }
 
 export function AISchemaCard({ table }: AISchemaCardProps) {
@@ -54,23 +61,17 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
   const displayColumns = isExpanded ? table.columns : table.columns.slice(0, 5)
 
   return (
-    <div
-      className={cn(
-        'rounded-xl overflow-hidden',
-        'bg-gradient-to-b from-zinc-900/60 to-zinc-900/40',
-        'border border-zinc-800/60'
-      )}
-    >
+    <div className={cn('rounded-xl overflow-hidden', 'bg-card', 'border border-border')}>
       {/* Header */}
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between px-3 py-2 border-b border-zinc-800/30 bg-zinc-900/40 hover:bg-zinc-800/30 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40 hover:bg-muted transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Table2 className="size-3.5 text-blue-400" />
-          <span className="text-[11px] font-semibold text-zinc-200">{table.name}</span>
-          <span className="text-[10px] text-zinc-500">
+          <TableIcon className="size-3.5 text-primary" />
+          <span className="text-2xs font-semibold text-foreground">{table.name}</span>
+          <span className="text-2xs text-muted-foreground">
             {table.columns.length} column{table.columns.length !== 1 ? 's' : ''}
           </span>
         </div>
@@ -78,14 +79,14 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
         <div className="flex items-center gap-2">
           {pkColumns.length > 0 && (
             <div className="flex items-center gap-1">
-              <Key className="size-3 text-amber-400" />
-              <span className="text-[9px] text-amber-400/70">{pkColumns.length} PK</span>
+              <KeyIcon className="size-3 text-cat-yellow" />
+              <span className="text-2xs text-cat-yellow/70">{pkColumns.length} PK</span>
             </div>
           )}
           {isExpanded ? (
-            <ChevronUp className="size-3.5 text-zinc-500" />
+            <CaretUpIcon className="size-3.5 text-muted-foreground" />
           ) : (
-            <ChevronDown className="size-3.5 text-zinc-500" />
+            <CaretDownIcon className="size-3.5 text-muted-foreground" />
           )}
         </div>
       </button>
@@ -100,15 +101,15 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
               key={column.name}
               className={cn(
                 'flex items-center justify-between px-2 py-1 rounded-md',
-                'hover:bg-zinc-800/30 transition-colors'
+                'hover:bg-muted transition-colors'
               )}
             >
               <div className="flex items-center gap-2">
-                {column.isPrimaryKey && <Key className="size-3 text-amber-400" />}
+                {column.isPrimaryKey && <KeyIcon className="size-3 text-cat-yellow" />}
                 <span
                   className={cn(
-                    'text-[11px] font-mono',
-                    column.isPrimaryKey ? 'text-zinc-200 font-medium' : 'text-zinc-400'
+                    'text-2xs font-mono',
+                    column.isPrimaryKey ? 'text-foreground font-medium' : 'text-muted-foreground'
                   )}
                 >
                   {column.name}
@@ -116,8 +117,8 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className={cn('text-[10px] font-mono', typeStyle.color)}>{column.type}</span>
-                {column.nullable && <span className="text-[9px] text-zinc-600">NULL</span>}
+                <span className={cn('text-2xs font-mono', typeStyle.color)}>{column.type}</span>
+                {column.nullable && <span className="text-2xs text-muted-foreground">NULL</span>}
               </div>
             </div>
           )
@@ -125,7 +126,7 @@ export function AISchemaCard({ table }: AISchemaCardProps) {
 
         {/* Show more indicator */}
         {!isExpanded && table.columns.length > 5 && (
-          <div className="px-2 py-1 text-[10px] text-zinc-500 text-center">
+          <div className="px-2 py-1 text-2xs text-muted-foreground text-center">
             +{table.columns.length - 5} more columns
           </div>
         )}

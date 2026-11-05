@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { FileCode, Table2, Pin, X, Network, SearchCode, Sparkles } from 'lucide-react'
+import {
+  AiIcon,
+  CloseIcon,
+  FileCodeIcon,
+  NetworkIcon,
+  PinIcon,
+  SearchCodeIcon,
+  TableIcon
+} from '@/components/icons'
 import {
   cn,
   ContextMenu,
@@ -77,14 +85,14 @@ export function Tab({
 
   const Icon =
     tab.type === 'ask'
-      ? Sparkles
+      ? AiIcon
       : tab.type === 'query'
-        ? FileCode
+        ? FileCodeIcon
         : tab.type === 'erd'
-          ? Network
+          ? NetworkIcon
           : tab.type === 'schema-intel'
-            ? SearchCode
-            : Table2
+            ? SearchCodeIcon
+            : TableIcon
 
   return (
     <ContextMenu>
@@ -105,22 +113,24 @@ export function Tab({
           )}
         >
           {/* Pin indicator */}
-          {tab.isPinned && <Pin className="size-3 shrink-0 text-muted-foreground" />}
+          {tab.isPinned && (
+            <PinIcon weight="fill" className="size-3 shrink-0 text-muted-foreground" />
+          )}
 
           {/* Tab icon */}
           <Icon
             className={cn(
               'size-4 shrink-0',
               tab.type === 'table-preview'
-                ? 'text-blue-500'
+                ? 'text-cat-blue'
                 : tab.type === 'erd'
-                  ? 'text-purple-500'
+                  ? 'text-cat-purple'
                   : 'text-muted-foreground'
             )}
           />
 
           {/* Dirty indicator */}
-          {isDirty && <span className="size-2 shrink-0 rounded-full bg-yellow-500" />}
+          {isDirty && <span className="size-2 shrink-0 rounded-full bg-warning" />}
 
           {/* Watching indicator — pulses while polling, dimmed when paused */}
           {isWatching && (
@@ -132,9 +142,9 @@ export function Tab({
               )}
             >
               {!isPaused && (
-                <span className="absolute inline-flex size-2 rounded-full bg-amber-500/40 motion-safe:animate-ping" />
+                <span className="absolute inline-flex size-2 rounded-full bg-warning/40 motion-safe:animate-ping" />
               )}
-              <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
+              <span className="relative inline-flex size-1.5 rounded-full bg-warning" />
             </span>
           )}
 
@@ -169,7 +179,7 @@ export function Tab({
               title={nameError ?? undefined}
               className={cn(
                 'w-24 bg-transparent text-sm outline-none border-b',
-                nameError ? 'border-red-500' : 'border-primary/50'
+                nameError ? 'border-destructive' : 'border-primary/50'
               )}
             />
           ) : refName ? (
@@ -191,7 +201,7 @@ export function Tab({
               }}
               className="ml-auto shrink-0 rounded p-0.5 opacity-0 transition-opacity hover:bg-muted group-hover:opacity-100"
             >
-              <X className="size-3.5" />
+              <CloseIcon className="size-3.5" />
             </button>
           )}
         </div>
@@ -199,12 +209,12 @@ export function Tab({
       <ContextMenuContent>
         {tab.isPinned ? (
           <ContextMenuItem onClick={onUnpin}>
-            <Pin className="mr-2 size-4" />
+            <PinIcon className="mr-2 size-4" />
             Unpin Tab
           </ContextMenuItem>
         ) : (
           <ContextMenuItem onClick={onPin}>
-            <Pin className="mr-2 size-4" />
+            <PinIcon className="mr-2 size-4" />
             Pin Tab
           </ContextMenuItem>
         )}
@@ -226,7 +236,7 @@ export function Tab({
         {isQuery && <ContextMenuSeparator />}
         {!tab.isPinned && (
           <ContextMenuItem onClick={onClose}>
-            <X className="mr-2 size-4" />
+            <CloseIcon className="mr-2 size-4" />
             Close Tab
           </ContextMenuItem>
         )}

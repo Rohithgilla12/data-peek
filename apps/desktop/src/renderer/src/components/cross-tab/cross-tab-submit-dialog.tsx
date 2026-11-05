@@ -9,7 +9,7 @@ import {
   DialogTitle,
   Label
 } from '@data-peek/ui'
-import { Layers } from 'lucide-react'
+import { LayersIcon } from '@/components/icons'
 import type { ResolveForRunSummary } from '@/lib/cross-tab-integration'
 
 interface CrossTabSubmitDialogProps {
@@ -38,7 +38,7 @@ export function CrossTabSubmitDialog({
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Layers className="size-4" />
+            <LayersIcon className="size-4" />
             Running with {summary?.refCount ?? 0} tab{' '}
             {summary?.refCount === 1 ? 'reference' : 'references'}
           </DialogTitle>

@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { ArrowUp, ArrowDown, ChevronDown, Dices, X } from 'lucide-react'
+import { ArrowDownIcon, ArrowUpIcon, CaretDownIcon, CloseIcon, DiceIcon } from '@/components/icons'
 import { Button, Popover, PopoverContent, PopoverTrigger, cn } from '@data-peek/ui'
 import {
   modeLabel,
@@ -25,7 +25,7 @@ function PriorityBadge({ rank }: { rank: number }) {
     <span
       className={cn(
         'inline-flex items-center justify-center size-4 rounded-full',
-        'text-[9px] font-mono font-semibold tabular-nums shrink-0',
+        'text-2xs font-mono font-semibold tabular-nums shrink-0',
         'transition-colors duration-200',
         classes
       )}
@@ -177,15 +177,15 @@ export function SortChipItem({
           )}
         >
           {chip.direction === 'asc' ? (
-            <ArrowUp className="size-3" />
+            <ArrowUpIcon className="size-3" />
           ) : (
-            <ArrowDown className="size-3" />
+            <ArrowDownIcon className="size-3" />
           )}
         </span>
       </button>
 
       {chip.mode !== 'default' && (
-        <span className="px-1 rounded-sm text-[9px] font-mono lowercase text-primary/80 bg-primary/[0.08]">
+        <span className="px-1 rounded-sm text-2xs font-mono lowercase text-primary/80 bg-primary/[0.08]">
           {modeShort}
         </span>
       )}
@@ -202,11 +202,11 @@ export function SortChipItem({
               'transition-colors duration-100'
             )}
           >
-            <ChevronDown className="size-3" />
+            <CaretDownIcon className="size-3" />
           </button>
         </PopoverTrigger>
         <PopoverContent align="start" className="w-56 p-1">
-          <div className="px-2 py-1 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
+          <div className="px-2 py-1 text-2xs font-medium text-muted-foreground/60 uppercase tracking-wider">
             Mode
           </div>
           {modes.map((m) => {
@@ -229,7 +229,7 @@ export function SortChipItem({
               >
                 <Icon className="size-3 text-primary/70 shrink-0" />
                 <span className="font-medium">{m.label}</span>
-                <span className="ml-auto text-[10px] text-muted-foreground/70 truncate">
+                <span className="ml-auto text-2xs text-muted-foreground/70 truncate">
                   {m.description}
                 </span>
               </button>
@@ -237,7 +237,7 @@ export function SortChipItem({
           })}
 
           <div className="mt-1 pt-1 border-t border-border/40">
-            <div className="px-2 py-1 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider">
+            <div className="px-2 py-1 text-2xs font-medium text-muted-foreground/60 uppercase tracking-wider">
               Nulls
             </div>
             <div className="flex gap-1 px-1 pb-1">
@@ -267,9 +267,9 @@ export function SortChipItem({
                 className="w-full justify-start h-7 text-xs gap-2"
                 onClick={onReseed}
               >
-                <Dices className="size-3" />
+                <DiceIcon className="size-3" />
                 Reroll seed
-                <span className="ml-auto font-mono text-[10px] text-muted-foreground/70">
+                <span className="ml-auto font-mono text-2xs text-muted-foreground/70">
                   {chip.seed}
                 </span>
               </Button>
@@ -286,7 +286,7 @@ export function SortChipItem({
                 onRemove()
               }}
             >
-              <X className="size-3" />
+              <CloseIcon className="size-3" />
               Remove sort
             </Button>
           </div>

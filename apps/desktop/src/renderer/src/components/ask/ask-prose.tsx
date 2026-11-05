@@ -8,7 +8,7 @@ const components: Components = {
   ol: ({ children }) => <ol className="mt-1.5 list-decimal space-y-0.5 pl-4">{children}</ol>,
   strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
   code: ({ children }) => (
-    <code className="rounded bg-muted/70 px-1 py-px font-mono text-[12px] text-foreground/90">
+    <code className="rounded bg-muted/70 px-1 py-px font-mono text-xs text-foreground/90">
       {children}
     </code>
   ),
@@ -25,7 +25,7 @@ export function AskProse({ text, muted }: { text: string; muted?: boolean }) {
   return (
     <div
       className={cn(
-        'font-sans text-[13px] leading-relaxed',
+        'font-sans text-sm leading-relaxed',
         muted ? 'text-muted-foreground' : 'text-foreground/85'
       )}
     >

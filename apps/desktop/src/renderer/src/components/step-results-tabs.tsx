@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Pin, X } from 'lucide-react'
+import { CloseIcon, PinIcon } from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import type { StatementResult } from '@shared/index'
 import { useStepStore } from '@/stores/step-store'
@@ -49,7 +49,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
               }
             }}
           >
-            <Pin className="size-2.5 text-amber-500" />
+            <PinIcon weight="fill" className="size-2.5 text-warning" />
             <span>#{p.statementIndex + 1}</span>
             <button
               type="button"
@@ -61,7 +61,7 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
               }}
               className="opacity-0 group-hover:opacity-100 hover:text-destructive"
             >
-              <X className="size-2.5" />
+              <CloseIcon className="size-2.5" />
             </button>
           </div>
         ))}
@@ -91,10 +91,10 @@ export function StepResultsTabs({ tabId }: StepResultsTabsProps) {
           <Button
             size="sm"
             variant="ghost"
-            className="h-6 text-[10px] text-amber-500"
+            className="h-6 text-2xs text-warning"
             onClick={() => pinResult(tabId, session.lastResult!.statementIndex)}
           >
-            <Pin className="size-3 mr-1" /> Pin
+            <PinIcon className="size-3 mr-1" /> Pin
           </Button>
         )}
       </div>
@@ -121,13 +121,13 @@ function ResultPreview({ result }: { result: StatementResult }) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-[11px] font-mono">
+      <table className="w-full text-2xs font-mono">
         <thead>
           <tr className="border-b border-border/50">
             {columns.map((c) => (
               <th
                 key={c}
-                className="text-left px-3 py-1.5 text-muted-foreground font-medium text-[10px] uppercase tracking-wider"
+                className="text-left px-3 py-1.5 text-muted-foreground font-medium text-2xs uppercase tracking-wider"
               >
                 {c}
               </th>
@@ -154,7 +154,7 @@ function ResultPreview({ result }: { result: StatementResult }) {
         </tbody>
       </table>
       {result.rows.length > 100 && (
-        <div className="px-3 py-1 text-[10px] text-muted-foreground/60">
+        <div className="px-3 py-1 text-2xs text-muted-foreground/60">
           Showing 100 of {result.rows.length} rows
         </div>
       )}

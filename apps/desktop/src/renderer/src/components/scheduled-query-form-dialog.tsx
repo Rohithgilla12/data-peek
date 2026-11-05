@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Clock, AlertCircle } from 'lucide-react'
+import { ClockIcon, ErrorIcon } from '@/components/icons'
 import {
   Button,
   Input,
@@ -194,7 +194,7 @@ export function ScheduledQueryFormDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Clock className="size-4" />
+            <ClockIcon className="size-4" />
             {editingQuery ? 'Edit Scheduled Query' : 'Create Scheduled Query'}
           </DialogTitle>
         </DialogHeader>
@@ -283,8 +283,8 @@ export function ScheduledQueryFormDialog({
                 className="font-mono"
               />
               {cronError && (
-                <p className="text-xs text-red-500 flex items-center gap-1">
-                  <AlertCircle className="size-3" />
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <ErrorIcon className="size-3" />
                   {cronError}
                 </p>
               )}

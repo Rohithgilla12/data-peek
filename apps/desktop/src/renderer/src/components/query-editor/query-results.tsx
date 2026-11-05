@@ -1,15 +1,15 @@
 import {
-  Download,
-  Loader2,
-  AlertCircle,
-  Wand2,
-  PanelBottomClose,
-  PanelBottom,
-  Timer,
-  ActivitySquare,
-  Share2,
-  Play
-} from 'lucide-react'
+  ActivityIcon,
+  DownloadIcon,
+  ErrorIcon,
+  HideResultsIcon,
+  ShowResultsIcon,
+  PlayIcon,
+  ShareIcon,
+  SpinnerIcon,
+  TimerIcon,
+  WandIcon
+} from '@/components/icons'
 import {
   Button,
   keys,
@@ -213,19 +213,19 @@ export function QueryResults({
               onClick={() => setIsResultsCollapsed(false)}
               title="Show results panel"
             >
-              <PanelBottom className="size-3.5" />
+              <ShowResultsIcon className="size-3.5" />
             </Button>
             {tabError ? (
-              <span className="flex items-center gap-1.5 text-xs text-red-400">
-                <AlertCircle className="size-3" />
+              <span className="flex items-center gap-1.5 text-xs text-destructive">
+                <ErrorIcon className="size-3" />
                 Query Error
               </span>
             ) : hasResults ? (
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-3 text-xs text-muted-foreground tabular-nums">
                 {hasMultipleResults ? (
                   <>
                     <span className="flex items-center gap-1.5">
-                      <span className="size-1.5 rounded-full bg-green-500" />
+                      <span className="size-1.5 rounded-full bg-success" />
                       {statementResults.length} statements
                     </span>
                     <span className="text-muted-foreground/60">
@@ -235,7 +235,7 @@ export function QueryResults({
                 ) : (
                   <>
                     <span className="flex items-center gap-1.5">
-                      <span className="size-1.5 rounded-full bg-green-500" />
+                      <span className="size-1.5 rounded-full bg-success" />
                       {tabResult?.rowCount ?? 0} rows
                     </span>
                     <span className="text-muted-foreground/60">{tabResult?.durationMs}ms</span>
@@ -246,7 +246,7 @@ export function QueryResults({
               <span className="text-xs text-muted-foreground">No results</span>
             )}
           </div>
-          <span className="text-[10px] text-muted-foreground/50">Results collapsed</span>
+          <span className="text-2xs text-muted-foreground/50">Results collapsed</span>
         </div>
       ) : (
         <>
@@ -260,8 +260,8 @@ export function QueryResults({
           ) : tabError ? (
             <div className="flex-1 flex items-center justify-center p-4">
               <div className="max-w-md text-center space-y-2">
-                <AlertCircle className="size-8 text-red-400 mx-auto" />
-                <h3 className="font-medium text-red-400">Query Error</h3>
+                <ErrorIcon className="size-8 text-destructive mx-auto" />
+                <h3 className="font-medium text-destructive">Query Error</h3>
                 <p className="text-sm text-muted-foreground">{tabError}</p>
                 {onFixWithAi && (
                   <Button
@@ -270,7 +270,7 @@ export function QueryResults({
                     className="mt-2 h-7 gap-1.5 text-xs"
                     onClick={() => onFixWithAi(tabError)}
                   >
-                    <Wand2 className="size-3.5" /> Fix with AI
+                    <WandIcon className="size-3.5" /> Fix with AI
                   </Button>
                 )}
               </div>
@@ -299,11 +299,11 @@ export function QueryResults({
                       >
                         <span
                           className={`size-1.5 rounded-full ${
-                            stmt.isDataReturning ? 'bg-green-500' : 'bg-blue-500'
+                            stmt.isDataReturning ? 'bg-success' : 'bg-primary'
                           } ${isActive ? 'opacity-80' : ''}`}
                         />
                         {label}
-                        <span className={`text-[10px] ${isActive ? 'opacity-70' : 'opacity-50'}`}>
+                        <span className={`text-2xs ${isActive ? 'opacity-70' : 'opacity-50'}`}>
                           {stmt.durationMs}ms
                         </span>
                       </button>
@@ -397,13 +397,13 @@ export function QueryResults({
                     onClick={() => setIsResultsCollapsed(true)}
                     title="Collapse results panel"
                   >
-                    <PanelBottomClose className="size-3.5" />
+                    <HideResultsIcon className="size-3.5" />
                   </Button>
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground tabular-nums">
                     {hasMultipleResults ? (
                       <>
                         <span className="flex items-center gap-1.5">
-                          <span className="size-1.5 rounded-full bg-green-500" />
+                          <span className="size-1.5 rounded-full bg-success" />
                           {activeStatementResult?.rowCount ?? 0}{' '}
                           {activeStatementResult?.isDataReturning ? 'rows' : 'affected'}
                         </span>
@@ -415,7 +415,7 @@ export function QueryResults({
                     ) : (
                       <>
                         <span className="flex items-center gap-1.5">
-                          <span className="size-1.5 rounded-full bg-green-500" />
+                          <span className="size-1.5 rounded-full bg-success" />
                           {tabResult?.rowCount ?? 0} rows returned
                         </span>
                         <span>{tabResult?.durationMs}ms</span>
@@ -434,7 +434,7 @@ export function QueryResults({
                             className="gap-1.5 h-7"
                             onClick={() => setShowTelemetryPanel(!showTelemetryPanel)}
                           >
-                            <Timer className="size-3.5" />
+                            <TimerIcon className="size-3.5" />
                             Telemetry
                           </Button>
                         </TooltipTrigger>
@@ -447,55 +447,55 @@ export function QueryResults({
                     </TooltipProvider>
                   )}
                   {tabResult && can.performanceAnalysis && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant={showPerfPanel ? 'secondary' : 'ghost'}
-                              size="sm"
-                              className="gap-1.5 h-7"
-                              onClick={
-                                perfAnalysis
-                                  ? () => setShowPerfPanel(!showPerfPanel)
-                                  : handleAnalyzePerformance
-                              }
-                              disabled={isPerfAnalyzing}
-                            >
-                              {isPerfAnalyzing ? (
-                                <Loader2 className="size-3.5 animate-spin" />
-                              ) : (
-                                <ActivitySquare className="size-3.5" />
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant={showPerfPanel ? 'secondary' : 'ghost'}
+                            size="sm"
+                            className="gap-1.5 h-7"
+                            onClick={
+                              perfAnalysis
+                                ? () => setShowPerfPanel(!showPerfPanel)
+                                : handleAnalyzePerformance
+                            }
+                            disabled={isPerfAnalyzing}
+                          >
+                            {isPerfAnalyzing ? (
+                              <SpinnerIcon className="size-3.5 animate-spin" />
+                            ) : (
+                              <ActivityIcon className="size-3.5" />
+                            )}
+                            {perfAnalysis &&
+                              perfAnalysis.issueCount.critical + perfAnalysis.issueCount.warning >
+                                0 && (
+                                <Badge
+                                  variant="secondary"
+                                  className={`h-4 px-1.5 text-2xs ${
+                                    perfAnalysis.issueCount.critical > 0
+                                      ? 'bg-destructive/10 text-destructive'
+                                      : 'bg-warning/10 text-warning'
+                                  }`}
+                                >
+                                  {perfAnalysis.issueCount.critical +
+                                    perfAnalysis.issueCount.warning}
+                                </Badge>
                               )}
-                              {perfAnalysis &&
-                                perfAnalysis.issueCount.critical + perfAnalysis.issueCount.warning >
-                                  0 && (
-                                  <Badge
-                                    variant="secondary"
-                                    className={`h-4 px-1.5 text-[10px] ${
-                                      perfAnalysis.issueCount.critical > 0
-                                        ? 'bg-red-500/20 text-red-500'
-                                        : 'bg-yellow-500/20 text-yellow-500'
-                                    }`}
-                                  >
-                                    {perfAnalysis.issueCount.critical +
-                                      perfAnalysis.issueCount.warning}
-                                  </Badge>
-                                )}
-                              Analyze
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <p className="text-xs">
-                              {perfAnalysis
-                                ? showPerfPanel
-                                  ? 'Hide performance analysis'
-                                  : 'Show performance analysis'
-                                : 'Analyze query for performance issues'}
-                            </p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
+                            Analyze
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top">
+                          <p className="text-xs">
+                            {perfAnalysis
+                              ? showPerfPanel
+                                ? 'Hide performance analysis'
+                                : 'Show performance analysis'
+                              : 'Analyze query for performance issues'}
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                   <MaskingToolbar tabId={tabId} />
                   <TooltipProvider>
                     <Tooltip>
@@ -506,7 +506,7 @@ export function QueryResults({
                           className="gap-1.5 h-7"
                           onClick={() => setShareResultsOpen(true)}
                         >
-                          <Share2 className="size-3.5" />
+                          <ShareIcon className="size-3.5" />
                           Share
                         </Button>
                       </TooltipTrigger>
@@ -518,7 +518,7 @@ export function QueryResults({
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="gap-1.5 h-7">
-                        <Download className="size-3.5" />
+                        <DownloadIcon className="size-3.5" />
                         Export
                       </Button>
                     </DropdownMenuTrigger>
@@ -560,33 +560,33 @@ export function QueryResults({
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center space-y-3 max-w-sm">
                 <div className="size-10 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-                  <Play className="size-5 text-muted-foreground" />
+                  <PlayIcon className="size-5 text-muted-foreground" />
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">
                     {tabQuery.trim() ? 'Ready to execute' : 'Write a query to get started'}
                   </p>
-                  <p className="text-xs text-muted-foreground/60">
+                  <p className="font-sans text-xs text-muted-foreground/60">
                     {tabQuery.trim()
                       ? `Press ${keys.mod}+Enter to run your query`
                       : 'Browse the schema explorer to view tables, or type a SQL query above'}
                   </p>
                 </div>
                 <div className="flex items-center justify-center gap-4 pt-1">
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                  <div className="flex items-center gap-1.5 text-2xs text-muted-foreground/50">
                     <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
                       {keys.mod}Enter
                     </kbd>
                     <span>Run</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                  <div className="flex items-center gap-1.5 text-2xs text-muted-foreground/50">
                     <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">
                       {keys.mod}
                       {keys.shift}F
                     </kbd>
                     <span>Format</span>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/50">
+                  <div className="flex items-center gap-1.5 text-2xs text-muted-foreground/50">
                     <kbd className="rounded bg-muted/80 px-1.5 py-0.5 font-mono">{keys.mod}K</kbd>
                     <span>Search</span>
                   </div>

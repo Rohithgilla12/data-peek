@@ -1,4 +1,11 @@
-import { BarChart3, LineChart, AreaChart, PieChart, Hash, Table2 } from 'lucide-react'
+import {
+  AreaChartIcon,
+  ChartBarIcon,
+  HashIcon,
+  LineChartIcon,
+  PieChartIcon,
+  TableIcon
+} from '@/components/icons'
 import type { WidgetType, ChartWidgetType, KPIFormat } from '@shared/index'
 import type { WidgetSuggestion } from './ai-widget-suggestion'
 
@@ -8,23 +15,28 @@ export const WIDGET_TYPES: {
   type: WidgetType
   label: string
   description: string
-  icon: typeof Hash
+  icon: typeof HashIcon
 }[] = [
   {
     type: 'chart',
     label: 'Chart',
     description: 'Visualize trends and comparisons',
-    icon: BarChart3
+    icon: ChartBarIcon
   },
-  { type: 'kpi', label: 'KPI Metric', description: 'Display key numbers and trends', icon: Hash },
-  { type: 'table', label: 'Table', description: 'Show tabular data preview', icon: Table2 }
+  {
+    type: 'kpi',
+    label: 'KPI Metric',
+    description: 'Display key numbers and trends',
+    icon: HashIcon
+  },
+  { type: 'table', label: 'Table', description: 'Show tabular data preview', icon: TableIcon }
 ]
 
-export const CHART_TYPES: { type: ChartWidgetType; label: string; icon: typeof BarChart3 }[] = [
-  { type: 'bar', label: 'Bar Chart', icon: BarChart3 },
-  { type: 'line', label: 'Line Chart', icon: LineChart },
-  { type: 'area', label: 'Area Chart', icon: AreaChart },
-  { type: 'pie', label: 'Pie Chart', icon: PieChart }
+export const CHART_TYPES: { type: ChartWidgetType; label: string; icon: typeof ChartBarIcon }[] = [
+  { type: 'bar', label: 'Bar Chart', icon: ChartBarIcon },
+  { type: 'line', label: 'Line Chart', icon: LineChartIcon },
+  { type: 'area', label: 'Area Chart', icon: AreaChartIcon },
+  { type: 'pie', label: 'Pie Chart', icon: PieChartIcon }
 ]
 
 export const KPI_FORMATS: { format: KPIFormat; label: string }[] = [

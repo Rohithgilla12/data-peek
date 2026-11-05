@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import {
-  Plus,
-  Trash2,
-  Key,
-  Link2,
-  CheckSquare,
-  Fingerprint,
-  ChevronDown,
-  ChevronRight,
-  AlertCircle
-} from 'lucide-react'
+  CaretDownIcon,
+  CaretRightIcon,
+  CheckSquareIcon,
+  ErrorIcon,
+  FingerprintIcon,
+  KeyIcon,
+  LinkIcon,
+  PlusIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -37,11 +37,11 @@ import type {
 } from '@data-peek/shared'
 import type { ValidationError } from '@/stores/ddl-store'
 
-const CONSTRAINT_TYPES: { type: ConstraintType; label: string; icon: typeof Key }[] = [
-  { type: 'primary_key', label: 'Primary Key', icon: Key },
-  { type: 'foreign_key', label: 'Foreign Key', icon: Link2 },
-  { type: 'unique', label: 'Unique', icon: Fingerprint },
-  { type: 'check', label: 'Check', icon: CheckSquare }
+const CONSTRAINT_TYPES: { type: ConstraintType; label: string; icon: typeof KeyIcon }[] = [
+  { type: 'primary_key', label: 'Primary Key', icon: KeyIcon },
+  { type: 'foreign_key', label: 'Foreign Key', icon: LinkIcon },
+  { type: 'unique', label: 'Unique', icon: FingerprintIcon },
+  { type: 'check', label: 'Check', icon: CheckSquareIcon }
 ]
 
 const REFERENTIAL_ACTIONS: { value: ReferentialAction; label: string }[] = [
@@ -96,7 +96,7 @@ export function ConstraintEditor({
 
   const getConstraintIcon = (type: ConstraintType) => {
     const config = CONSTRAINT_TYPES.find((t) => t.type === type)
-    return config?.icon ?? Key
+    return config?.icon ?? KeyIcon
   }
 
   const getConstraintLabel = (type: ConstraintType) => {
@@ -127,7 +127,7 @@ export function ConstraintEditor({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="mt-3 gap-1.5">
-                <Plus className="size-3.5" />
+                <PlusIcon className="size-3.5" />
                 Add Constraint
               </Button>
             </DropdownMenuTrigger>
@@ -166,9 +166,9 @@ export function ConstraintEditor({
                   <CollapsibleTrigger asChild>
                     <div className="flex items-center gap-2 p-3 cursor-pointer hover:bg-muted/50">
                       {isExpanded ? (
-                        <ChevronDown className="size-4 text-muted-foreground" />
+                        <CaretDownIcon className="size-4 text-muted-foreground" />
                       ) : (
-                        <ChevronRight className="size-4 text-muted-foreground" />
+                        <CaretRightIcon className="size-4 text-muted-foreground" />
                       )}
                       <Icon className="size-4 text-muted-foreground" />
                       <span className="text-sm font-medium">
@@ -179,7 +179,7 @@ export function ConstraintEditor({
                         {constraint.columns.length !== 1 ? 's' : ''})
                       </span>
                       {errors.length > 0 && (
-                        <AlertCircle className="size-4 text-destructive ml-auto" />
+                        <ErrorIcon className="size-4 text-destructive ml-auto" />
                       )}
                       <Button
                         variant="ghost"
@@ -190,7 +190,7 @@ export function ConstraintEditor({
                           onRemove(constraint.id)
                         }}
                       >
-                        <Trash2 className="size-3.5" />
+                        <TrashIcon className="size-3.5" />
                       </Button>
                     </div>
                   </CollapsibleTrigger>
@@ -295,7 +295,7 @@ export function ConstraintEditor({
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="w-full gap-1.5">
-                <Plus className="size-3.5" />
+                <PlusIcon className="size-3.5" />
                 Add Constraint
               </Button>
             </DropdownMenuTrigger>

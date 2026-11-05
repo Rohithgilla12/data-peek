@@ -29,26 +29,26 @@ import {
   SelectValue
 } from '@data-peek/ui'
 import {
-  Sparkles,
-  Clock,
-  Key,
-  Hash,
-  Type,
-  Calendar,
-  ToggleLeft,
-  Braces,
-  Link2,
-  List,
-  Copy,
-  Plus,
-  X,
-  AlertCircle,
-  ChevronDown,
-  ChevronUp,
-  Search,
-  Check,
-  ChevronsUpDown
-} from 'lucide-react'
+  DiceIcon,
+  BracesIcon,
+  CalendarIcon,
+  CaretDownIcon,
+  CaretUpDownIcon,
+  CaretUpIcon,
+  CheckIcon,
+  ClockIcon,
+  CloseIcon,
+  CopyIcon,
+  ErrorIcon,
+  HashIcon,
+  KeyIcon,
+  LinkIcon,
+  ListIcon,
+  PlusIcon,
+  SearchIcon,
+  ToggleLeftIcon,
+  TypeIcon
+} from '@/components/icons'
 import type { ColumnInfo } from '@data-peek/shared'
 
 // Field type detection
@@ -94,30 +94,30 @@ function getFieldType(column: ColumnInfo): FieldType {
 
 // Field type icons
 const fieldTypeIcons: Record<FieldType, React.ElementType> = {
-  uuid: Key,
-  text: Type,
-  number: Hash,
-  boolean: ToggleLeft,
-  date: Calendar,
-  time: Clock,
-  datetime: Calendar,
-  json: Braces,
-  enum: List,
-  foreignKey: Link2
+  uuid: KeyIcon,
+  text: TypeIcon,
+  number: HashIcon,
+  boolean: ToggleLeftIcon,
+  date: CalendarIcon,
+  time: ClockIcon,
+  datetime: CalendarIcon,
+  json: BracesIcon,
+  enum: ListIcon,
+  foreignKey: LinkIcon
 }
 
 // Field type colors
 const fieldTypeColors: Record<FieldType, string> = {
-  uuid: 'text-purple-400',
-  text: 'text-green-400',
-  number: 'text-blue-400',
-  boolean: 'text-yellow-400',
-  date: 'text-orange-400',
-  time: 'text-orange-400',
-  datetime: 'text-orange-400',
-  json: 'text-pink-400',
-  enum: 'text-cyan-400',
-  foreignKey: 'text-blue-400'
+  uuid: 'text-cat-purple',
+  text: 'text-cat-green',
+  number: 'text-cat-blue',
+  boolean: 'text-cat-yellow',
+  date: 'text-cat-orange',
+  time: 'text-cat-orange',
+  datetime: 'text-cat-orange',
+  json: 'text-cat-pink',
+  enum: 'text-cat-cyan',
+  foreignKey: 'text-cat-blue'
 }
 
 /** FK reference value with display label */
@@ -197,18 +197,15 @@ function SmartField({
       <div className="flex items-center gap-2">
         <Icon className={cn('size-3.5', iconColor)} />
         <Label className="text-sm font-medium">{column.name}</Label>
-        {isRequired && <span className="text-red-400 text-xs">*</span>}
+        {isRequired && <span className="text-destructive text-xs">*</span>}
         {column.isPrimaryKey && (
-          <Badge
-            variant="outline"
-            className="text-[9px] px-1.5 py-0 text-amber-500 border-amber-500/30"
-          >
+          <Badge variant="outline" className="text-2xs px-1.5 py-0 text-warning border-warning/30">
             PK
           </Badge>
         )}
         <Badge
           variant="outline"
-          className={cn('text-[9px] px-1.5 py-0 font-mono ml-auto', iconColor)}
+          className={cn('text-2xs px-1.5 py-0 font-mono ml-auto', iconColor)}
         >
           {column.dataType}
         </Badge>
@@ -223,7 +220,7 @@ function SmartField({
               value={displayValue}
               onChange={(e) => onChange(e.target.value || null)}
               placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-              className="font-mono text-xs h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-purple-500/50"
+              className="font-mono text-xs h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-purple/50"
             />
             <TooltipProvider>
               <Tooltip>
@@ -232,10 +229,10 @@ function SmartField({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-9 gap-1.5 text-purple-400 border-purple-500/30 hover:bg-purple-500/10 hover:text-purple-300"
+                    className="h-9 gap-1.5 text-cat-purple border-cat-purple/30 hover:bg-cat-purple/10 hover:text-cat-purple/80"
                     onClick={generateUUID}
                   >
-                    <Sparkles className="size-3.5" />
+                    <DiceIcon className="size-3.5" />
                     Generate
                   </Button>
                 </TooltipTrigger>
@@ -251,7 +248,7 @@ function SmartField({
             <Switch
               checked={value === true}
               onCheckedChange={(checked) => onChange(checked)}
-              className="data-[state=checked]:bg-yellow-500"
+              className="data-[state=checked]:bg-warning"
             />
             <span className="text-sm text-muted-foreground">
               {value === null ? 'NULL' : value ? 'true' : 'false'}
@@ -289,7 +286,7 @@ function SmartField({
                   onChange(e.target.value)
                 }
               }}
-              className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-orange-500/50"
+              className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-orange/50"
             />
             <TooltipProvider>
               <Tooltip>
@@ -298,10 +295,10 @@ function SmartField({
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-9 gap-1.5 text-orange-400 border-orange-500/30 hover:bg-orange-500/10 hover:text-orange-300"
+                    className="h-9 gap-1.5 text-cat-orange border-cat-orange/30 hover:bg-cat-orange/10 hover:text-cat-orange/80"
                     onClick={setNow}
                   >
-                    <Clock className="size-3.5" />
+                    <ClockIcon className="size-3.5" />
                     Now
                   </Button>
                 </TooltipTrigger>
@@ -325,7 +322,7 @@ function SmartField({
               }
             }}
             placeholder={hasDefault ? `Default: ${column.defaultValue}` : '0'}
-            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-blue-500/50 font-mono"
+            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-blue/50 font-mono"
           />
         )}
 
@@ -349,14 +346,14 @@ function SmartField({
               }
             }}
             placeholder='{"key": "value"}'
-            className="min-h-[80px] flex-1 bg-muted/30 border-border/50 focus-visible:ring-pink-500/50 font-mono text-xs resize-y"
+            className="min-h-[80px] flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-pink/50 font-mono text-xs resize-y"
           />
         )}
 
         {/* Enum Field */}
         {fieldType === 'enum' && Array.isArray(enumValues) && enumValues.length > 0 ? (
           <Select value={displayValue || ''} onValueChange={(v) => onChange(v || null)}>
-            <SelectTrigger className="h-9 flex-1 bg-muted/30 border-border/50 focus:ring-cyan-500/50">
+            <SelectTrigger className="h-9 flex-1 bg-muted/30 border-border/50 focus:ring-cat-cyan/50">
               <SelectValue placeholder="Select value..." />
             </SelectTrigger>
             <SelectContent>
@@ -373,7 +370,7 @@ function SmartField({
             value={displayValue}
             onChange={(e) => onChange(e.target.value || null)}
             placeholder="Enter enum value..."
-            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cyan-500/50"
+            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-cyan/50"
           />
         ) : null}
 
@@ -383,7 +380,7 @@ function SmartField({
             value={displayValue}
             onChange={(e) => onChange(e.target.value || null)}
             placeholder={hasDefault ? `Default: ${column.defaultValue}` : 'Enter value...'}
-            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-green-500/50"
+            className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-success/50"
           />
         )}
 
@@ -392,7 +389,7 @@ function SmartField({
           <div className="flex gap-2 flex-1">
             {loadingFkValues ? (
               <div className="h-9 flex-1 bg-muted/30 border border-border/50 rounded-md flex items-center px-3 gap-2">
-                <div className="size-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                <div className="size-3 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
                 <span className="text-xs text-muted-foreground">Loading values...</span>
               </div>
             ) : foreignKeyValues && foreignKeyValues.length > 0 ? (
@@ -412,7 +409,7 @@ function SmartField({
                     >
                       {displayValue || `Select from ${column.foreignKey?.referencedTable}...`}
                     </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <CaretUpDownIcon className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent
@@ -421,7 +418,7 @@ function SmartField({
                 >
                   {/* Search input */}
                   <div className="flex items-center border-b px-3 py-2">
-                    <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
+                    <SearchIcon className="mr-2 h-4 w-4 shrink-0 opacity-50" />
                     <input
                       placeholder="Search..."
                       value={fkSearchQuery}
@@ -435,7 +432,7 @@ function SmartField({
                         className="h-6 w-6 shrink-0"
                         onClick={() => setFkSearchQuery('')}
                       >
-                        <X className="h-3 w-3" />
+                        <CloseIcon className="h-3 w-3" />
                       </Button>
                     )}
                   </div>
@@ -454,7 +451,7 @@ function SmartField({
                           setFkSearchQuery('')
                         }}
                       >
-                        <Check
+                        <CheckIcon
                           className={cn(
                             'mr-2 h-4 w-4',
                             value === null ? 'opacity-100' : 'opacity-0'
@@ -479,7 +476,7 @@ function SmartField({
                             setFkSearchQuery('')
                           }}
                         >
-                          <Check
+                          <CheckIcon
                             className={cn('mr-2 h-4 w-4', isSelected ? 'opacity-100' : 'opacity-0')}
                           />
                           <span className="font-mono text-xs">{fk.value}</span>
@@ -508,7 +505,7 @@ function SmartField({
                 value={displayValue}
                 onChange={(e) => onChange(e.target.value || null)}
                 placeholder={`Enter ${column.foreignKey?.referencedColumn} value...`}
-                className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-blue-500/50 font-mono text-xs"
+                className="h-9 flex-1 bg-muted/30 border-border/50 focus-visible:ring-cat-blue/50 font-mono text-xs"
               />
             )}
             {column.foreignKey && (
@@ -517,9 +514,9 @@ function SmartField({
                   <TooltipTrigger asChild>
                     <Badge
                       variant="outline"
-                      className="h-9 px-2 text-[10px] text-blue-400 border-blue-500/30 flex items-center gap-1 shrink-0"
+                      className="h-9 px-2 text-2xs text-cat-blue border-cat-blue/30 flex items-center gap-1 shrink-0"
                     >
-                      <Link2 className="size-3" />
+                      <LinkIcon className="size-3" />
                       {column.foreignKey.referencedTable}
                     </Badge>
                   </TooltipTrigger>
@@ -545,7 +542,7 @@ function SmartField({
                   className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
                   onClick={clearValue}
                 >
-                  <X className="size-4" />
+                  <CloseIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent>Set to NULL</TooltipContent>
@@ -556,7 +553,7 @@ function SmartField({
 
       {/* Helper text */}
       {hasDefault && (
-        <p className="text-[10px] text-muted-foreground pl-5">
+        <p className="text-2xs text-muted-foreground pl-5">
           Default: <code className="bg-muted/50 px-1 rounded">{column.defaultValue}</code>
         </p>
       )}
@@ -654,10 +651,10 @@ export function AddRowSheet({
             <div
               className={cn(
                 'size-10 rounded-lg flex items-center justify-center',
-                isDuplicate ? 'bg-amber-500/10 text-amber-500' : 'bg-green-500/10 text-green-500'
+                isDuplicate ? 'bg-warning/10 text-warning' : 'bg-success/10 text-success'
               )}
             >
-              {isDuplicate ? <Copy className="size-5" /> : <Plus className="size-5" />}
+              {isDuplicate ? <CopyIcon className="size-5" /> : <PlusIcon className="size-5" />}
             </div>
             <div>
               <SheetTitle className="text-base">
@@ -681,11 +678,11 @@ export function AddRowSheet({
             {requiredColumns.length > 0 && (
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="size-3.5 text-red-400" />
-                  <span className="text-xs font-medium text-red-400 uppercase tracking-wider">
+                  <ErrorIcon className="size-3.5 text-destructive" />
+                  <span className="text-xs font-medium text-destructive uppercase tracking-wider">
                     Required Fields
                   </span>
-                  <div className="h-px flex-1 bg-red-500/20" />
+                  <div className="h-px flex-1 bg-destructive/10" />
                 </div>
                 {requiredColumns.map((col) => (
                   <SmartField
@@ -712,14 +709,12 @@ export function AddRowSheet({
                   <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Optional Fields
                   </span>
-                  <span className="text-[10px] text-muted-foreground">
-                    ({optionalColumns.length})
-                  </span>
+                  <span className="text-2xs text-muted-foreground">({optionalColumns.length})</span>
                   <div className="h-px flex-1 bg-border/50" />
                   {showOptional ? (
-                    <ChevronUp className="size-4 text-muted-foreground" />
+                    <CaretUpIcon className="size-4 text-muted-foreground" />
                   ) : (
-                    <ChevronDown className="size-4 text-muted-foreground" />
+                    <CaretDownIcon className="size-4 text-muted-foreground" />
                   )}
                 </button>
                 {showOptional && (
@@ -752,17 +747,19 @@ export function AddRowSheet({
               onClick={handleSubmit}
               className={cn(
                 'flex-1 h-10 gap-2',
-                isDuplicate ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'
+                isDuplicate
+                  ? 'bg-warning text-warning-foreground hover:bg-warning/90'
+                  : 'bg-success text-success-foreground hover:bg-success/90'
               )}
             >
               {isDuplicate ? (
                 <>
-                  <Copy className="size-4" />
+                  <CopyIcon className="size-4" />
                   Duplicate Row
                 </>
               ) : (
                 <>
-                  <Plus className="size-4" />
+                  <PlusIcon className="size-4" />
                   Add Row
                 </>
               )}

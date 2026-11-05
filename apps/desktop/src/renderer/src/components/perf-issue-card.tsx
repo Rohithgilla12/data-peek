@@ -1,20 +1,20 @@
 import { useState } from 'react'
 import {
-  AlertTriangle,
-  AlertCircle,
-  Info,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Check,
-  Database,
-  Clock,
-  Repeat,
-  Play,
-  Code,
-  Loader2,
-  Filter
-} from 'lucide-react'
+  CaretDownIcon,
+  CaretRightIcon,
+  CheckIcon,
+  ClockIcon,
+  CodeIcon,
+  CopyIcon,
+  DatabaseIcon,
+  ErrorIcon,
+  FilterIcon,
+  InfoIcon,
+  PlayIcon,
+  RepeatIcon,
+  SpinnerIcon,
+  WarningIcon
+} from '@/components/icons'
 import { cn, Button } from '@data-peek/ui'
 import type { PerformanceIssue, PerformanceIssueType } from '@data-peek/shared'
 import { useConnectionStore } from '../stores/connection-store'
@@ -37,25 +37,25 @@ const ISSUE_TYPE_LABELS: Record<PerformanceIssueType, string> = {
 }
 
 const ISSUE_TYPE_ICONS: Record<PerformanceIssueType, React.ElementType> = {
-  missing_index: Database,
-  n_plus_one: Repeat,
-  slow_query: Clock,
-  high_filter_ratio: AlertTriangle,
-  row_estimate_off: Info,
-  disk_spill: AlertCircle,
-  poor_pruning: Filter
+  missing_index: DatabaseIcon,
+  n_plus_one: RepeatIcon,
+  slow_query: ClockIcon,
+  high_filter_ratio: WarningIcon,
+  row_estimate_off: InfoIcon,
+  disk_spill: ErrorIcon,
+  poor_pruning: FilterIcon
 }
 
 const severityClasses = {
-  critical: 'border-red-500/30 bg-red-500/5',
-  warning: 'border-yellow-500/30 bg-yellow-500/5',
-  info: 'border-blue-500/30 bg-blue-500/5'
+  critical: 'border-destructive/30 bg-destructive/10',
+  warning: 'border-warning/30 bg-warning/10',
+  info: 'border-primary/30 bg-primary/10'
 }
 
 const severityIconClasses = {
-  critical: 'text-red-500',
-  warning: 'text-yellow-500',
-  info: 'text-blue-500'
+  critical: 'text-destructive',
+  warning: 'text-warning',
+  info: 'text-primary'
 }
 
 export function PerfIssueCard({
@@ -72,10 +72,10 @@ export function PerfIssueCard({
 
   const SeverityIcon =
     issue.severity === 'critical'
-      ? AlertCircle
+      ? ErrorIcon
       : issue.severity === 'warning'
-        ? AlertTriangle
-        : Info
+        ? WarningIcon
+        : InfoIcon
 
   const TypeIcon = ISSUE_TYPE_ICONS[issue.type]
 
@@ -126,15 +126,15 @@ export function PerfIssueCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="font-medium text-sm truncate">{issue.title}</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+            <span className="text-2xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
               {ISSUE_TYPE_LABELS[issue.type]}
             </span>
           </div>
         </div>
         {isExpanded ? (
-          <ChevronDown className="size-4 text-muted-foreground shrink-0" />
+          <CaretDownIcon className="size-4 text-muted-foreground shrink-0" />
         ) : (
-          <ChevronRight className="size-4 text-muted-foreground shrink-0" />
+          <CaretRightIcon className="size-4 text-muted-foreground shrink-0" />
         )}
       </button>
 
@@ -167,7 +167,7 @@ export function PerfIssueCard({
               <div className="text-xs font-medium text-muted-foreground">Suggested index</div>
 
               <div className="relative">
-                <pre className="text-xs bg-black/60 border border-border/40 text-emerald-400 rounded-md p-2.5 pr-10 overflow-x-auto font-mono">
+                <pre className="text-xs bg-muted border border-border text-success rounded-md p-2.5 pr-10 overflow-x-auto font-mono">
                   {issue.indexSuggestion}
                 </pre>
                 <Button
@@ -177,9 +177,9 @@ export function PerfIssueCard({
                   onClick={handleCopyIndex}
                 >
                   {copied ? (
-                    <Check className="size-3 text-green-500" />
+                    <CheckIcon className="size-3 text-success" />
                   ) : (
-                    <Copy className="size-3" />
+                    <CopyIcon className="size-3" />
                   )}
                 </Button>
               </div>
@@ -191,40 +191,40 @@ export function PerfIssueCard({
                   className="h-7 text-xs text-muted-foreground gap-1"
                   onClick={() => setShowJson(!showJson)}
                 >
-                  <Code className="size-3.5" />
+                  <CodeIcon className="size-3.5" />
                   {showJson ? 'Hide raw issue' : 'View raw issue'}
                 </Button>
 
                 <Button
                   variant="default"
                   size="sm"
-                  className="h-8 gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium shadow-md"
+                  className="h-8 gap-1.5 bg-success text-success-foreground hover:bg-success/90 font-medium shadow-md"
                   onClick={handleApplyFix}
                   disabled={isApplying || applySuccess}
                 >
                   {isApplying ? (
                     <>
-                      <Loader2 className="size-3.5 animate-spin" />
+                      <SpinnerIcon className="size-3.5 animate-spin" />
                       Applying Index...
                     </>
                   ) : applySuccess ? (
                     <>
-                      <Check className="size-3.5 text-white" />
+                      <CheckIcon className="size-3.5" />
                       Index Applied!
                     </>
                   ) : (
                     <>
-                      <Play className="size-3.5 fill-white" />
+                      <PlayIcon className="size-3.5" />
                       Apply Index & Re-run
                     </>
                   )}
                 </Button>
               </div>
 
-              {applyError && <p className="break-words text-xs text-red-400">{applyError}</p>}
+              {applyError && <p className="break-words text-xs text-destructive">{applyError}</p>}
 
               {showJson && (
-                <div className="mt-2 bg-black/80 border border-border/40 rounded p-2.5 text-[11px] font-mono text-purple-300 max-h-36 overflow-auto">
+                <div className="mt-2 bg-muted border border-border rounded p-2.5 text-2xs font-mono text-foreground max-h-36 overflow-auto">
                   <pre>{JSON.stringify(issue, null, 2)}</pre>
                 </div>
               )}
@@ -240,7 +240,7 @@ export function PerfIssueCard({
                 {issue.relatedQueries.slice(0, 3).map((query, i) => (
                   <pre
                     key={i}
-                    className="text-[11px] bg-muted/50 rounded p-1.5 overflow-x-auto font-mono text-muted-foreground truncate"
+                    className="text-2xs bg-muted/50 rounded p-1.5 overflow-x-auto font-mono text-muted-foreground truncate"
                   >
                     {query}
                   </pre>
@@ -257,7 +257,7 @@ export function PerfIssueCard({
               <span
                 className={cn(
                   'font-medium',
-                  issue.actualValue > issue.threshold ? 'text-red-500' : 'text-muted-foreground'
+                  issue.actualValue > issue.threshold ? 'text-destructive' : 'text-muted-foreground'
                 )}
               >
                 <span className="font-medium">Actual:</span> {issue.actualValue.toFixed(2)}ms

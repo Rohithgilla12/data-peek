@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Braces, ChevronDown, ChevronRight as ChevronRightIcon, Copy, Check } from 'lucide-react'
+import { BracesIcon, CaretDownIcon, CaretRightIcon, CheckIcon, CopyIcon } from '@/components/icons'
 import {
   Button,
   Tooltip,
@@ -37,14 +37,14 @@ function JsonTreeNode({
   const hasChildren = isObject && Object.keys(value as object).length > 0
 
   const getValueDisplay = () => {
-    if (value === null) return <span className="text-orange-400">null</span>
+    if (value === null) return <span className="text-cat-orange">null</span>
     if (value === undefined) return <span className="text-muted-foreground">undefined</span>
     if (typeof value === 'boolean')
-      return <span className="text-yellow-400">{value ? 'true' : 'false'}</span>
-    if (typeof value === 'number') return <span className="text-blue-400">{value}</span>
+      return <span className="text-cat-yellow">{value ? 'true' : 'false'}</span>
+    if (typeof value === 'number') return <span className="text-cat-blue">{value}</span>
     if (typeof value === 'string') {
       const truncated = value.length > 100 ? value.slice(0, 100) + '...' : value
-      return <span className="text-green-400">&quot;{truncated}&quot;</span>
+      return <span className="text-cat-green">&quot;{truncated}&quot;</span>
     }
     return null
   }
@@ -54,7 +54,7 @@ function JsonTreeNode({
       <div className="flex items-start gap-1 py-0.5">
         {keyName !== undefined && (
           <>
-            <span className="text-purple-400 shrink-0">&quot;{keyName}&quot;</span>
+            <span className="text-cat-purple shrink-0">&quot;{keyName}&quot;</span>
             <span className="text-muted-foreground shrink-0">:</span>
           </>
         )}
@@ -79,16 +79,16 @@ function JsonTreeNode({
             className="p-0.5 hover:bg-accent/50 rounded shrink-0"
           >
             {isExpanded ? (
-              <ChevronDown className="size-3 text-muted-foreground" />
+              <CaretDownIcon className="size-3 text-muted-foreground" />
             ) : (
-              <ChevronRightIcon className="size-3 text-muted-foreground" />
+              <CaretRightIcon className="size-3 text-muted-foreground" />
             )}
           </button>
         )}
         {!hasChildren && <span className="w-4" />}
         {keyName !== undefined && (
           <>
-            <span className="text-purple-400">&quot;{keyName}&quot;</span>
+            <span className="text-cat-purple">&quot;{keyName}&quot;</span>
             <span className="text-muted-foreground">:</span>
           </>
         )}
@@ -212,7 +212,7 @@ export function JsonCellEditor({
       <SheetContent side="right" className="w-[500px] sm:max-w-[500px] flex flex-col">
         <SheetHeader className="shrink-0">
           <SheetTitle className="flex items-center gap-2">
-            <Braces className="size-4 text-amber-500" />
+            <BracesIcon className="size-4 text-muted-foreground" />
             Edit {columnName || 'JSON'} Data
           </SheetTitle>
           <SheetDescription>Edit JSON content in the editor below</SheetDescription>
@@ -229,12 +229,12 @@ export function JsonCellEditor({
             >
               {copied ? (
                 <>
-                  <Check className="size-3 text-green-500" />
+                  <CheckIcon className="size-3 text-success" />
                   Copied!
                 </>
               ) : (
                 <>
-                  <Copy className="size-3" />
+                  <CopyIcon className="size-3" />
                   Copy
                 </>
               )}
@@ -244,13 +244,13 @@ export function JsonCellEditor({
               Cancel
             </Button>
             <Button size="sm" className="h-7 gap-1.5" onClick={handleSave}>
-              <Check className="size-3" />
+              <CheckIcon className="size-3" />
               Save
             </Button>
           </div>
 
           {error && (
-            <div className="text-xs text-red-500 bg-red-500/10 border border-red-500/20 rounded-md px-3 py-2">
+            <div className="text-xs text-destructive bg-destructive/10 border border-destructive/30 rounded-md px-3 py-2">
               {error}
             </div>
           )}
@@ -274,7 +274,7 @@ export function JsonCellEditor({
             <div className="shrink-0">
               <p className="text-xs text-muted-foreground mb-1.5">Preview</p>
               <div className="max-h-32 overflow-auto bg-muted/30 rounded-lg border border-border/50 p-2">
-                <div className="font-mono text-[10px]">
+                <div className="font-mono text-2xs">
                   <JsonTreeNode value={parsedValue} depth={0} expandAll={expandJsonByDefault} />
                 </div>
               </div>
@@ -323,14 +323,14 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
               }}
               className="flex items-center gap-1.5 text-left hover:bg-accent/50 px-1.5 py-0.5 -mx-1 rounded transition-colors group"
             >
-              <Braces className="size-3.5 text-amber-500 shrink-0" />
+              <BracesIcon className="size-3.5 text-muted-foreground shrink-0" />
               <span className="font-mono text-xs text-muted-foreground group-hover:text-foreground truncate max-w-[200px]">
                 {preview}
               </span>
             </button>
           </TooltipTrigger>
           <TooltipContent side="bottom" className="max-w-md max-h-48 overflow-auto">
-            <pre className="font-mono text-[10px] whitespace-pre-wrap">
+            <pre className="font-mono text-2xs whitespace-pre-wrap">
               {fullPreview.length > 500 ? fullPreview.slice(0, 500) + '\n...' : fullPreview}
             </pre>
           </TooltipContent>
@@ -341,7 +341,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
         <SheetContent side="right" className="w-[500px] sm:max-w-[500px] flex flex-col">
           <SheetHeader className="shrink-0">
             <SheetTitle className="flex items-center gap-2">
-              <Braces className="size-4 text-amber-500" />
+              <BracesIcon className="size-4 text-muted-foreground" />
               {columnName || 'JSON'} Data
             </SheetTitle>
             <SheetDescription>View and copy JSON content</SheetDescription>
@@ -358,12 +358,12 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
               >
                 {copied ? (
                   <>
-                    <Check className="size-3 text-green-500" />
+                    <CheckIcon className="size-3 text-success" />
                     Copied!
                   </>
                 ) : (
                   <>
-                    <Copy className="size-3" />
+                    <CopyIcon className="size-3" />
                     Copy JSON
                   </>
                 )}
@@ -381,7 +381,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
             <div className="shrink-0">
               <p className="text-xs text-muted-foreground mb-1.5">Raw JSON</p>
               <div className="max-h-32 overflow-auto bg-muted/30 rounded-lg border border-border/50 p-2">
-                <pre className="font-mono text-[10px] text-muted-foreground whitespace-pre-wrap break-all">
+                <pre className="font-mono text-2xs text-muted-foreground whitespace-pre-wrap break-all">
                   {typeof value === 'string' ? value : JSON.stringify(parsedValue, null, 2)}
                 </pre>
               </div>

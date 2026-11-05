@@ -313,7 +313,7 @@ function HighlightedSQL({
   const lineCount = lines.length
 
   return (
-    <div className="flex font-mono text-[13px] leading-[1.7]">
+    <div className="flex font-mono text-sm leading-[1.7]">
       <div
         className="shrink-0 select-none pr-4 text-right"
         style={{
@@ -402,7 +402,7 @@ function WindowChrome({
       </div>
       {showBadge && connectionType && (
         <div
-          className="flex items-center gap-1.5 font-mono text-[11px]"
+          className="flex items-center gap-1.5 font-mono text-2xs"
           style={{
             color: light ? 'oklch(0.45 0.04 250)' : 'oklch(0.6 0.04 250)'
           }}
@@ -461,7 +461,7 @@ export function ShareQueryDialog({
             {showLineNumbers ? (
               <HighlightedSQL sql={query} theme={theme} background={background} />
             ) : (
-              <code className="font-mono text-[13px] leading-[1.7] whitespace-pre-wrap break-words">
+              <code className="font-mono text-sm leading-[1.7] whitespace-pre-wrap break-words">
                 {tokenizeSQL(query).map((token, i) => {
                   const colors = getSyntaxColors(theme, background)
                   const color = colors[token.type as keyof typeof colors] ?? colors.default

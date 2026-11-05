@@ -13,7 +13,15 @@ import {
 import { usePgDumpStore } from '@/stores/pg-dump-store'
 import { useConnectionStore } from '@/stores'
 import type { PgImportOnError } from '@shared/index'
-import { Upload, Loader2, CheckCircle2, XCircle, X, AlertTriangle, ChevronDown } from 'lucide-react'
+import {
+  CaretDownIcon,
+  CloseIcon,
+  ErrorIcon,
+  SpinnerIcon,
+  SuccessIcon,
+  UploadIcon,
+  WarningIcon
+} from '@/components/icons'
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`
@@ -68,7 +76,7 @@ export function PgImportDialog() {
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Upload className="size-4" />
+            <UploadIcon className="size-4" />
             Import SQL File
           </DialogTitle>
           <DialogDescription>Import a .sql dump file into the connected database</DialogDescription>
@@ -114,7 +122,7 @@ export function PgImportDialog() {
               className="w-full"
               disabled={!getActiveConnection()}
             >
-              <Upload className="size-4 mr-2" />
+              <UploadIcon className="size-4 mr-2" />
               Choose File & Import
             </Button>
           </div>
@@ -148,13 +156,13 @@ export function PgImportDialog() {
             </div>
 
             {importProgress.currentStatement && (
-              <p className="text-[11px] text-muted-foreground font-mono truncate">
+              <p className="text-2xs text-muted-foreground font-mono truncate">
                 {importProgress.currentStatement}
               </p>
             )}
 
             <Button variant="outline" onClick={cancelImport} className="w-full" size="sm">
-              <X className="size-4 mr-2" />
+              <CloseIcon className="size-4 mr-2" />
               Cancel
             </Button>
           </div>
@@ -162,7 +170,7 @@ export function PgImportDialog() {
 
         {isImporting && !importProgress && (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <SpinnerIcon className="size-5 animate-spin text-muted-foreground" />
           </div>
         )}
 
@@ -171,11 +179,11 @@ export function PgImportDialog() {
           <div className="space-y-4 py-2">
             <div className="flex items-center gap-2">
               {importResult.success && importResult.statementsFailed === 0 ? (
-                <CheckCircle2 className="size-5 text-green-500" />
+                <SuccessIcon className="size-5 text-success" />
               ) : importResult.success && importResult.statementsFailed > 0 ? (
-                <AlertTriangle className="size-5 text-yellow-500" />
+                <WarningIcon className="size-5 text-warning" />
               ) : (
-                <XCircle className="size-5 text-destructive" />
+                <ErrorIcon className="size-5 text-destructive" />
               )}
               <span className="text-sm font-medium">
                 {importResult.success && importResult.statementsFailed === 0
@@ -189,9 +197,7 @@ export function PgImportDialog() {
             <div className="space-y-1 text-xs text-muted-foreground">
               <p>{importResult.statementsExecuted.toLocaleString()} statements executed</p>
               {importResult.statementsSkipped > 0 && (
-                <p className="text-yellow-500">
-                  {importResult.statementsSkipped} statements skipped
-                </p>
+                <p className="text-warning">{importResult.statementsSkipped} statements skipped</p>
               )}
               {importResult.statementsFailed > 0 && (
                 <p className="text-destructive">
@@ -211,7 +217,7 @@ export function PgImportDialog() {
                   onClick={() => setErrorsExpanded(!errorsExpanded)}
                 >
                   <span>{importResult.errors.length} error(s)</span>
-                  <ChevronDown
+                  <CaretDownIcon
                     className={`size-3.5 transition-transform ${errorsExpanded ? 'rotate-180' : ''}`}
                   />
                 </Button>
@@ -223,7 +229,7 @@ export function PgImportDialog() {
                         <p className="text-destructive font-medium">
                           Statement {err.statementIndex + 1}
                         </p>
-                        <p className="font-mono text-[11px] text-muted-foreground truncate">
+                        <p className="font-mono text-2xs text-muted-foreground truncate">
                           {err.statement}
                         </p>
                         <p className="text-destructive">{err.error}</p>
@@ -249,7 +255,7 @@ export function PgImportDialog() {
         {importError && !importResult && (
           <div className="space-y-4 py-2">
             <div className="flex items-center gap-2">
-              <XCircle className="size-5 text-destructive" />
+              <ErrorIcon className="size-5 text-destructive" />
               <span className="text-sm font-medium">Import failed</span>
             </div>
             <p className="text-xs text-destructive">{importError}</p>

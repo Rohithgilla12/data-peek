@@ -1,4 +1,4 @@
-import { Copy, Check, FileCode, AlertCircle } from 'lucide-react'
+import { CheckIcon, CopyIcon, ErrorIcon, FileCodeIcon } from '@/components/icons'
 import {
   Button,
   Badge,
@@ -26,11 +26,11 @@ interface SqlPreviewModalProps {
 function getOperationColor(type: string): string {
   switch (type) {
     case 'insert':
-      return 'text-green-500 border-green-500/30'
+      return 'text-success border-success/30'
     case 'update':
-      return 'text-amber-500 border-amber-500/30'
+      return 'text-warning border-warning/30'
     case 'delete':
-      return 'text-red-500 border-red-500/30'
+      return 'text-destructive border-destructive/30'
     default:
       return 'text-muted-foreground'
   }
@@ -73,7 +73,7 @@ export function SqlPreviewModal({
       <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FileCode className="size-5 text-primary" />
+            <FileCodeIcon className="size-5 text-primary" />
             SQL Preview
           </DialogTitle>
           <DialogDescription>
@@ -85,17 +85,17 @@ export function SqlPreviewModal({
         <div className="flex items-center gap-2 py-2 border-b border-border/50">
           <span className="text-sm text-muted-foreground">Summary:</span>
           {insertCount > 0 && (
-            <Badge variant="outline" className="text-green-500 border-green-500/30 text-xs">
+            <Badge variant="outline" className="text-success border-success/30 text-xs">
               {insertCount} INSERT
             </Badge>
           )}
           {updateCount > 0 && (
-            <Badge variant="outline" className="text-amber-500 border-amber-500/30 text-xs">
+            <Badge variant="outline" className="text-warning border-warning/30 text-xs">
               {updateCount} UPDATE
             </Badge>
           )}
           {deleteCount > 0 && (
-            <Badge variant="outline" className="text-red-500 border-red-500/30 text-xs">
+            <Badge variant="outline" className="text-destructive border-destructive/30 text-xs">
               {deleteCount} DELETE
             </Badge>
           )}
@@ -108,12 +108,12 @@ export function SqlPreviewModal({
           >
             {copied ? (
               <>
-                <Check className="size-3 text-green-500" />
+                <CheckIcon className="size-3 text-success" />
                 Copied!
               </>
             ) : (
               <>
-                <Copy className="size-3" />
+                <CopyIcon className="size-3" />
                 Copy All
               </>
             )}
@@ -124,7 +124,7 @@ export function SqlPreviewModal({
         <div className="flex-1 min-h-0 overflow-auto space-y-3 py-2">
           {sqlStatements.length === 0 ? (
             <div className="flex items-center justify-center h-32 text-muted-foreground">
-              <AlertCircle className="size-4 mr-2" />
+              <ErrorIcon className="size-4 mr-2" />
               No SQL statements to preview
             </div>
           ) : (
@@ -138,7 +138,7 @@ export function SqlPreviewModal({
                     <span className="text-xs text-muted-foreground">#{index + 1}</span>
                     <Badge
                       variant="outline"
-                      className={cn('text-[10px] px-1.5', getOperationColor(statement.type))}
+                      className={cn('text-2xs px-1.5', getOperationColor(statement.type))}
                     >
                       {getOperationLabel(statement.type)}
                     </Badge>
@@ -149,7 +149,7 @@ export function SqlPreviewModal({
                     className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
                     onClick={() => copy(statement.sql)}
                   >
-                    <Copy className="size-3" />
+                    <CopyIcon className="size-3" />
                   </Button>
                 </div>
                 <pre className="p-3 text-xs font-mono overflow-x-auto whitespace-pre-wrap break-words bg-muted/10">
@@ -162,10 +162,10 @@ export function SqlPreviewModal({
 
         {/* Commit error */}
         {error && (
-          <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm">
-            <AlertCircle className="size-4 text-red-500 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm">
+            <ErrorIcon className="size-4 text-destructive shrink-0 mt-0.5" />
             <div className="min-w-0 flex-1">
-              <p className="font-medium text-red-600">Commit failed</p>
+              <p className="font-medium text-destructive">Commit failed</p>
               <p className="mt-0.5 text-xs text-muted-foreground break-words font-mono whitespace-pre-wrap">
                 {error}
               </p>
@@ -174,10 +174,10 @@ export function SqlPreviewModal({
         )}
 
         {/* Warning */}
-        <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg text-sm">
-          <AlertCircle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-2 p-3 bg-warning/10 border border-warning/30 rounded-lg text-sm">
+          <ErrorIcon className="size-4 text-warning shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium text-amber-600">Review Carefully</p>
+            <p className="font-medium text-warning">Review Carefully</p>
             <p className="text-xs text-muted-foreground mt-0.5">
               These changes will be executed within a single transaction. If any statement fails,
               all changes will be rolled back.
@@ -192,7 +192,7 @@ export function SqlPreviewModal({
           <Button
             onClick={onConfirm}
             disabled={isLoading || sqlStatements.length === 0}
-            className="bg-green-600 hover:bg-green-700"
+            className="bg-success text-success-foreground hover:bg-success/90"
           >
             {isLoading ? (
               <>

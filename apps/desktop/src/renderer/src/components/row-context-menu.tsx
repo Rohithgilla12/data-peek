@@ -62,7 +62,7 @@ export function RowContextMenu({
         {(onDuplicate || onDelete) && <ContextMenuSeparator />}
         {onDuplicate && <ContextMenuItem onClick={onDuplicate}>Duplicate Row</ContextMenuItem>}
         {onDelete && (
-          <ContextMenuItem className="text-red-500 focus:text-red-500" onClick={onDelete}>
+          <ContextMenuItem className="text-destructive focus:text-destructive" onClick={onDelete}>
             Delete Row
           </ContextMenuItem>
         )}

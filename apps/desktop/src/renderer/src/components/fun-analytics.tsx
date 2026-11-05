@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import {
-  Flame,
-  Zap,
-  Trophy,
-  Target,
-  Clock,
-  Database,
-  TrendingUp,
-  RotateCcw,
-  ChevronRight,
-  Sparkles
-} from 'lucide-react'
+  FunIcon,
+  CaretRightIcon,
+  ClockIcon,
+  DatabaseIcon,
+  FireIcon,
+  TargetIcon,
+  TrendUpIcon,
+  TrophyIcon,
+  UndoIcon,
+  ZapIcon
+} from '@/components/icons'
 import {
   usePokemonBuddyStore,
   getActivePokemon,
@@ -52,7 +52,7 @@ function StatCard({
   subtitle,
   color
 }: {
-  icon: typeof Flame
+  icon: typeof FireIcon
   label: string
   value: string
   subtitle?: string
@@ -67,12 +67,10 @@ function StatCard({
         <Icon className="size-3.5" style={{ color: color ?? 'var(--muted-foreground)' }} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] text-muted-foreground leading-none">{label}</div>
+        <div className="text-2xs text-muted-foreground leading-none">{label}</div>
         <div className="text-xs font-semibold text-foreground leading-snug">{value}</div>
         {subtitle && (
-          <div className="text-[9px] text-muted-foreground/70 leading-tight truncate">
-            {subtitle}
-          </div>
+          <div className="text-2xs text-muted-foreground/70 leading-tight truncate">{subtitle}</div>
         )}
       </div>
     </div>
@@ -101,10 +99,10 @@ function AchievementBadge({
     >
       <span className="text-sm">{achievement.icon}</span>
       <div className="min-w-0 flex-1">
-        <div className="text-[10px] font-medium text-foreground leading-none truncate">
+        <div className="text-2xs font-medium text-foreground leading-none truncate">
           {unlocked ? achievement.name : '???'}
         </div>
-        <div className="text-[9px] text-muted-foreground leading-tight truncate">
+        <div className="text-2xs text-muted-foreground leading-tight truncate">
           {achievement.description}
         </div>
       </div>
@@ -144,9 +142,9 @@ export function FunAnalytics() {
       <SidebarGroup>
         <SidebarGroupLabel asChild>
           <CollapsibleTrigger>
-            <Sparkles className="size-4 mr-1" />
+            <FunIcon className="size-4 mr-1" />
             Fun Stats
-            <ChevronRight className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
+            <CaretRightIcon className="ml-auto size-3.5 transition-transform group-data-[state=open]/collapsible:rotate-90" />
           </CollapsibleTrigger>
         </SidebarGroupLabel>
         <CollapsibleContent>
@@ -161,11 +159,11 @@ export function FunAnalytics() {
                   draggable={false}
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                  <div className="text-2xs font-semibold text-primary uppercase tracking-wider">
                     {title}
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-2xs text-muted-foreground">
                       Lv.{buddyLevel} {pokemon.name}
                     </span>
                   </div>
@@ -177,7 +175,7 @@ export function FunAnalytics() {
                         style={{ width: `${(buddyXp / xpNeeded) * 100}%` }}
                       />
                     </div>
-                    <div className="text-[8px] text-muted-foreground/70 mt-0.5">
+                    <div className="text-2xs text-muted-foreground/70 mt-0.5">
                       {buddyXp}/{xpNeeded} XP to next level
                     </div>
                   </div>
@@ -187,21 +185,21 @@ export function FunAnalytics() {
               {/* Key metrics */}
               <div className="space-y-0.5">
                 <StatCard
-                  icon={Target}
+                  icon={TargetIcon}
                   label="Queries Run"
                   value={formatNumber(totalQueries)}
                   subtitle={`${successRate}% success rate`}
                   color="#6b8cf5"
                 />
                 <StatCard
-                  icon={Database}
+                  icon={DatabaseIcon}
                   label="Rows Fetched"
                   value={formatNumber(totalRowsFetched)}
                   subtitle={totalRowsFetched > 0 ? getRowComparison(totalRowsFetched) : undefined}
                   color="#78C850"
                 />
                 <StatCard
-                  icon={Zap}
+                  icon={ZapIcon}
                   label="Fastest Query"
                   value={fastestQueryMs < 0 ? '—' : formatDuration(fastestQueryMs)}
                   subtitle={
@@ -210,21 +208,21 @@ export function FunAnalytics() {
                   color="#F8D030"
                 />
                 <StatCard
-                  icon={Flame}
+                  icon={FireIcon}
                   label="Current Streak"
                   value={`${currentStreak} ${currentStreak === 1 ? 'query' : 'queries'}`}
                   subtitle={bestStreak > 0 ? `Best: ${bestStreak} in a row` : undefined}
                   color="#F08030"
                 />
                 <StatCard
-                  icon={Clock}
+                  icon={ClockIcon}
                   label="Total Query Time"
                   value={formatDuration(totalQueryTimeMs)}
                   subtitle={`Avg: ${avgQueryTime} per query`}
                   color="#A040A0"
                 />
                 <StatCard
-                  icon={TrendingUp}
+                  icon={TrendUpIcon}
                   label="Error Count"
                   value={failedQueries.toString()}
                   subtitle={
@@ -240,11 +238,11 @@ export function FunAnalytics() {
               <button
                 type="button"
                 onClick={() => setShowAchievements(!showAchievements)}
-                className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-[11px] font-medium text-foreground hover:bg-accent/50 transition-colors"
+                className="flex w-full items-center gap-1.5 rounded-md px-2 py-1.5 text-2xs font-medium text-foreground hover:bg-accent/50 transition-colors"
               >
-                <Trophy className="size-3.5 text-yellow-500" />
+                <TrophyIcon className="size-3.5 text-warning" />
                 Achievements ({achievements.length}/{ACHIEVEMENTS.length})
-                <ChevronRight
+                <CaretRightIcon
                   className={cn(
                     'ml-auto size-3 transition-transform',
                     showAchievements && 'rotate-90'
@@ -276,9 +274,9 @@ export function FunAnalytics() {
                       resetStats()
                     }
                   }}
-                  className="flex w-full items-center justify-center gap-1 rounded-md px-2 py-1 text-[10px] text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/30 transition-colors"
+                  className="flex w-full items-center justify-center gap-1 rounded-md px-2 py-1 text-2xs text-muted-foreground/60 hover:text-muted-foreground hover:bg-accent/30 transition-colors"
                 >
-                  <RotateCcw className="size-3" />
+                  <UndoIcon className="size-3" />
                   Reset Stats
                 </button>
               )}

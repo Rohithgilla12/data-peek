@@ -1,16 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  Loader2,
-  Database,
-  CheckCircle2,
-  XCircle,
-  Link,
-  Settings2,
-  FolderOpen,
-  ChevronDown,
-  Eye,
-  EyeOff
-} from 'lucide-react'
+  CaretDownIcon,
+  DatabaseIcon,
+  ErrorIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  FolderOpenIcon,
+  LinkIcon,
+  SlidersIcon,
+  SpinnerIcon,
+  SuccessIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -491,7 +491,7 @@ export function AddConnectionDialog({
       >
         <DialogHeader className="border-b px-5 py-4 text-left">
           <DialogTitle className="flex items-center gap-2 text-base">
-            <Database className="size-4" />
+            <DatabaseIcon className="size-4" />
             {isEditMode ? 'Edit Connection' : 'Add Connection'}
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -521,7 +521,7 @@ export function AddConnectionDialog({
                 <Icon className="size-4 shrink-0" />
                 {DB_TYPE_LABELS[type]}
                 {beta && (
-                  <span className="ml-auto rounded border px-1 font-mono text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <span className="ml-auto rounded border px-1 font-mono text-2xs uppercase tracking-wide text-muted-foreground">
                     Beta
                   </span>
                 )}
@@ -542,7 +542,7 @@ export function AddConnectionDialog({
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <Settings2 className="size-4" />
+                  <SlidersIcon className="size-4" />
                   Manual
                 </button>
                 <button
@@ -554,7 +554,7 @@ export function AddConnectionDialog({
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <Link className="size-4" />
+                  <LinkIcon className="size-4" />
                   Connection String
                 </button>
               </div>
@@ -570,7 +570,7 @@ export function AddConnectionDialog({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Optional. Defaults to host/database if empty.
               </p>
             </div>
@@ -578,7 +578,7 @@ export function AddConnectionDialog({
             {/* Environment Tag */}
             <div className="flex flex-col gap-2">
               <span className="text-sm font-medium">Environment</span>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Optional. Adds a visual indicator to help identify this connection.
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -696,16 +696,16 @@ export function AddConnectionDialog({
                       }}
                       title="Browse for SQLite database file"
                     >
-                      <FolderOpen className="size-4" />
+                      <FolderOpenIcon className="size-4" />
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-sans text-xs text-muted-foreground">
                     Enter the path to your SQLite database file, or use :memory: for an in-memory
                     database.
                   </p>
                 </div>
                 <div className="rounded-md bg-muted/50 border border-border/50 px-3 py-2">
-                  <p className="text-xs text-muted-foreground">
+                  <p className="font-sans text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">
                       Turso / libSQL support coming soon.
                     </span>{' '}
@@ -733,7 +733,7 @@ export function AddConnectionDialog({
                   onChange={(e) => handleConnectionStringChange(e.target.value)}
                   className="font-mono text-sm"
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="font-sans text-xs text-muted-foreground">
                   Format:{' '}
                   {dbType === 'mysql'
                     ? 'mysql://user:password@host:port/database'
@@ -825,7 +825,7 @@ export function AddConnectionDialog({
                       value={schema}
                       onChange={(e) => setSchema(e.target.value)}
                     />
-                    <p className="text-xs text-muted-foreground">
+                    <p className="font-sans text-xs text-muted-foreground">
                       Sets <code className="font-mono">search_path</code> so unqualified table names
                       resolve here, and focuses the sidebar on this schema. Comma-separate for a
                       fallback chain (e.g. <code className="font-mono">bbl, public</code>). Leave
@@ -880,7 +880,7 @@ export function AddConnectionDialog({
                         className="px-3"
                         title={showDatabasePassword ? 'Hide password' : 'Show password'}
                       >
-                        {showDatabasePassword ? <EyeOff /> : <Eye />}
+                        {showDatabasePassword ? <EyeSlashIcon /> : <EyeIcon />}
                       </Button>
                     </div>
                   </div>
@@ -934,7 +934,7 @@ export function AddConnectionDialog({
                             Verify server certificate (strict)
                           </label>
                         </div>
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="mt-1 font-sans text-xs text-muted-foreground">
                           Off by default — most cloud DBs (AWS RDS, Supabase, Neon, DigitalOcean)
                           use self-signed or private-CA certs that fail strict verification. Enable
                           only if you have the CA certificate below or a public CA cert.
@@ -958,7 +958,7 @@ export function AddConnectionDialog({
                           placeholder="/path/to/ca-certificate.pem"
                           className="mt-1"
                         />
-                        <p className="mt-1 text-xs text-muted-foreground">
+                        <p className="mt-1 font-sans text-xs text-muted-foreground">
                           Path to a CA certificate file for servers with private CA certificates.
                         </p>
                       </div>
@@ -975,7 +975,7 @@ export function AddConnectionDialog({
                         className="flex w-full items-center justify-between rounded-md border bg-muted/50 px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
                       >
                         <span>Advanced Options</span>
-                        <ChevronDown
+                        <CaretDownIcon
                           className={`size-4 transition-transform ${mssqlAdvancedOpen ? 'rotate-180' : ''}`}
                         />
                       </button>
@@ -1017,7 +1017,7 @@ export function AddConnectionDialog({
                         </label>
                       </div>
 
-                      <p className="text-xs text-muted-foreground">
+                      <p className="font-sans text-xs text-muted-foreground">
                         Query timeout can be configured in Settings → Database.
                       </p>
                     </CollapsibleContent>
@@ -1040,18 +1040,18 @@ export function AddConnectionDialog({
             role={testResult === 'success' ? 'status' : 'alert'}
             className={`mx-5 mb-3 flex max-h-32 shrink-0 items-start gap-2 overflow-y-auto rounded-md p-3 text-sm ${
               testResult === 'success'
-                ? 'bg-green-500/10 text-green-500'
+                ? 'bg-success/10 text-success'
                 : 'bg-destructive/10 text-destructive'
             }`}
           >
             {testResult === 'success' ? (
               <>
-                <CheckCircle2 className="mt-0.5 size-4 shrink-0" />
+                <SuccessIcon className="mt-0.5 size-4 shrink-0" />
                 Connection successful!
               </>
             ) : (
               <>
-                <XCircle className="mt-0.5 size-4 shrink-0" />
+                <ErrorIcon className="mt-0.5 size-4 shrink-0" />
                 <span className="min-w-0 break-words">{testError}</span>
               </>
             )}
@@ -1068,7 +1068,7 @@ export function AddConnectionDialog({
           >
             {isTesting ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
                 Testing...
               </>
             ) : (
@@ -1085,7 +1085,7 @@ export function AddConnectionDialog({
           >
             {isSaving ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
                 {isEditMode ? 'Updating...' : 'Saving...'}
               </>
             ) : isEditMode ? (

@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Bookmark, ChevronRight, MoreHorizontal, Play, Copy, Trash2, Pencil } from 'lucide-react'
+import {
+  BookmarkIcon,
+  CaretRightIcon,
+  CopyIcon,
+  EditIcon,
+  MoreIcon,
+  PlayIcon,
+  TrashIcon
+} from '@/components/icons'
 
 import {
   Badge,
@@ -51,17 +59,17 @@ function getQueryType(query: string): string {
 function getQueryTypeColor(type: string): string {
   switch (type) {
     case 'SELECT':
-      return 'bg-blue-500/10 text-blue-500'
+      return 'bg-cat-blue/10 text-cat-blue'
     case 'INSERT':
-      return 'bg-green-500/10 text-green-500'
+      return 'bg-cat-green/10 text-cat-green'
     case 'UPDATE':
-      return 'bg-yellow-500/10 text-yellow-500'
+      return 'bg-cat-yellow/10 text-cat-yellow'
     case 'DELETE':
-      return 'bg-red-500/10 text-red-500'
+      return 'bg-destructive/10 text-destructive'
     case 'CREATE':
     case 'ALTER':
     case 'DROP':
-      return 'bg-purple-500/10 text-purple-500'
+      return 'bg-cat-purple/10 text-cat-purple'
     default:
       return 'bg-muted text-muted-foreground'
   }
@@ -134,12 +142,12 @@ export function SavedQueries() {
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center">
           <CollapsibleTrigger className="flex items-center gap-1 flex-1">
-            <ChevronRight
+            <CaretRightIcon
               className={`size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             />
             <span>Saved Queries</span>
             {sortedQueries.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[11px] px-1.5 py-0">
+              <Badge variant="outline" className="ml-1 text-2xs px-1.5 py-0 tabular-nums">
                 {sortedQueries.length}
               </Badge>
             )}
@@ -168,13 +176,13 @@ export function SavedQueries() {
                                 <div className="flex items-center gap-1.5 w-full">
                                   <Badge
                                     variant="outline"
-                                    className={`text-[11px] px-1.5 py-0 shrink-0 ${getQueryTypeColor(queryType)}`}
+                                    className={`text-2xs px-1.5 py-0 shrink-0 ${getQueryTypeColor(queryType)}`}
                                   >
                                     {queryType}
                                   </Badge>
                                   <span className="text-xs truncate font-medium">{item.name}</span>
                                 </div>
-                                <span className="text-[11px] text-muted-foreground font-mono truncate w-full">
+                                <span className="text-2xs text-muted-foreground font-mono truncate w-full">
                                   {truncateQuery(item.query)}
                                 </span>
                               </div>
@@ -196,7 +204,7 @@ export function SavedQueries() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <SidebarMenuAction showOnHover>
-                            <MoreHorizontal />
+                            <MoreIcon />
                             <span className="sr-only">More</span>
                           </SidebarMenuAction>
                         </DropdownMenuTrigger>
@@ -206,25 +214,25 @@ export function SavedQueries() {
                           align={isMobile ? 'end' : 'start'}
                         >
                           <DropdownMenuItem onClick={() => handleLoadQuery(item)}>
-                            <Play className="text-muted-foreground" />
+                            <PlayIcon className="text-muted-foreground" />
                             <span>Open in new tab</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => navigator.clipboard.writeText(item.query)}
                           >
-                            <Copy className="text-muted-foreground" />
+                            <CopyIcon className="text-muted-foreground" />
                             <span>Copy query</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => handleEditQuery(item)}>
-                            <Pencil className="text-muted-foreground" />
+                            <EditIcon className="text-muted-foreground" />
                             <span>Edit</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-400"
+                            className="text-destructive"
                             onClick={() => handleDeleteQuery(item.id)}
                           >
-                            <Trash2 className="text-red-400" />
+                            <TrashIcon className="text-destructive" />
                             <span>Delete</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -239,7 +247,7 @@ export function SavedQueries() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsDialogOpen(true)}
                   >
-                    <Bookmark className="size-4" />
+                    <BookmarkIcon className="size-4" />
                     <span>View all ({sortedQueries.length})</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -250,7 +258,7 @@ export function SavedQueries() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsDialogOpen(true)}
                   >
-                    <MoreHorizontal className="size-4" />
+                    <MoreIcon className="size-4" />
                     <span>Manage saved queries</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

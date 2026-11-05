@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { DiffEditor } from '@monaco-editor/react'
 import type { editor, IRange } from 'monaco-editor'
-import { Check, Sparkles, Square, X } from 'lucide-react'
+import { AiIcon, CheckIcon, CloseIcon, StopIcon } from '@/components/icons'
 import type { ConnectionConfig, SchemaInfo } from '@shared/index'
 import { Button, cn } from '@data-peek/ui'
 import { useTheme } from '@/components/theme-provider'
@@ -222,7 +222,7 @@ export function AiEditBar({
   return (
     <div className="mb-2 overflow-hidden rounded-md border border-primary/40 bg-card">
       <div className="flex items-center gap-2 px-2.5 py-1.5">
-        <Sparkles className="size-3.5 shrink-0 text-primary" />
+        <AiIcon className="size-3.5 shrink-0 text-primary" />
         {phase.status === 'thinking' ? (
           <div className="flex flex-1 items-center gap-2 text-xs text-muted-foreground">
             <span className="size-1.5 animate-pulse rounded-full bg-primary" />
@@ -248,16 +248,16 @@ export function AiEditBar({
                 : 'Change this query: "only paid invoices from last month"'
             }
             aria-label="Describe the change"
-            className="flex-1 bg-transparent font-sans text-[13px] outline-none placeholder:text-muted-foreground/50"
+            className="flex-1 bg-transparent font-sans text-sm outline-none placeholder:text-muted-foreground/50"
           />
         )}
         {phase.status === 'thinking' ? (
           <button
             type="button"
             onClick={close}
-            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <Square className="size-2.5" /> Stop
+            <StopIcon className="size-2.5" /> Stop
           </button>
         ) : (
           <button
@@ -266,7 +266,7 @@ export function AiEditBar({
             onClick={close}
             className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
-            <X className="size-3" />
+            <CloseIcon className="size-3" />
           </button>
         )}
       </div>
@@ -294,14 +294,14 @@ export function AiEditBar({
             dark={dark}
           />
           <div className="flex items-center justify-end gap-2 border-t border-border/50 px-2.5 py-1.5">
-            <span className={cn('mr-auto text-[11px] text-muted-foreground/70')}>
+            <span className={cn('mr-auto text-2xs text-muted-foreground/70')}>
               {isMac ? '⌘Z' : 'Ctrl+Z'} undoes it after you accept
             </span>
-            <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={close}>
+            <Button size="sm" variant="ghost" className="h-6 px-2 text-2xs" onClick={close}>
               Reject <kbd className="ml-1 opacity-60">esc</kbd>
             </Button>
-            <Button size="sm" className="h-6 gap-1 px-2 text-[11px]" onClick={accept}>
-              <Check className="size-3" /> Accept <kbd className="ml-1 opacity-60">↵</kbd>
+            <Button size="sm" className="h-6 gap-1 px-2 text-2xs" onClick={accept}>
+              <CheckIcon className="size-3" /> Accept <kbd className="ml-1 opacity-60">↵</kbd>
             </Button>
           </div>
         </div>

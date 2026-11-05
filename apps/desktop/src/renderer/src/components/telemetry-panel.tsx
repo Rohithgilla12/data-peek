@@ -7,16 +7,16 @@ import {
   type TimingPhase
 } from '@data-peek/shared'
 import {
-  X,
-  Activity,
-  Zap,
-  Database,
-  Clock,
-  ArrowDownToLine,
-  FileCode,
-  BarChart3,
-  GanttChart
-} from 'lucide-react'
+  ActivityIcon,
+  ArrowLineDownIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CloseIcon,
+  DatabaseIcon,
+  FileCodeIcon,
+  GanttChartIcon,
+  ZapIcon
+} from '@/components/icons'
 import type { TelemetryViewMode } from '@/stores/telemetry-store'
 
 interface TelemetryPanelProps {
@@ -40,8 +40,7 @@ const PHASE_CONFIG: Record<
     label: string
     shortLabel: string
     color: string
-    glowColor: string
-    icon: typeof Activity
+    icon: typeof ActivityIcon
     description: string
     isConnectionPhase?: boolean
   }
@@ -49,59 +48,52 @@ const PHASE_CONFIG: Record<
   tcp_handshake: {
     label: 'TCP Handshake',
     shortLabel: 'TCP',
-    color: 'from-violet-500 to-purple-600',
-    glowColor: 'shadow-violet-500/30',
-    icon: Zap,
+    color: 'bg-cat-purple',
+    icon: ZapIcon,
     description: 'TCP connection establishment',
     isConnectionPhase: true
   },
   db_handshake: {
     label: 'DB Handshake',
     shortLabel: 'AUTH',
-    color: 'from-purple-500 to-fuchsia-600',
-    glowColor: 'shadow-purple-500/30',
-    icon: Database,
+    color: 'bg-cat-pink',
+    icon: DatabaseIcon,
     description: 'Database authentication and protocol handshake',
     isConnectionPhase: true
   },
   network_latency: {
     label: 'Network Latency',
     shortLabel: 'NET',
-    color: 'from-blue-500 to-cyan-500',
-    glowColor: 'shadow-blue-500/30',
-    icon: Activity,
+    color: 'bg-cat-blue',
+    icon: ActivityIcon,
     description: 'Round-trip time to server'
   },
   planning: {
     label: 'Query Planning',
     shortLabel: 'PLAN',
-    color: 'from-cyan-500 to-teal-500',
-    glowColor: 'shadow-cyan-500/30',
-    icon: FileCode,
+    color: 'bg-cat-cyan',
+    icon: FileCodeIcon,
     description: 'Query plan generation'
   },
   execution: {
     label: 'Execution',
     shortLabel: 'EXEC',
-    color: 'from-emerald-500 to-green-500',
-    glowColor: 'shadow-emerald-500/30',
-    icon: Zap,
+    color: 'bg-cat-green',
+    icon: ZapIcon,
     description: 'Server-side query execution'
   },
   download: {
     label: 'Data Transfer',
     shortLabel: 'XFER',
-    color: 'from-amber-500 to-orange-500',
-    glowColor: 'shadow-amber-500/30',
-    icon: ArrowDownToLine,
+    color: 'bg-cat-orange',
+    icon: ArrowLineDownIcon,
     description: 'Data transfer from server'
   },
   parse: {
     label: 'Parse & Decode',
     shortLabel: 'PARSE',
-    color: 'from-orange-500 to-red-500',
-    glowColor: 'shadow-orange-500/30',
-    icon: FileCode,
+    color: 'bg-cat-yellow',
+    icon: FileCodeIcon,
     description: 'Client-side result parsing'
   }
 }
@@ -187,21 +179,21 @@ function StatBadge({
     <div
       className={cn(
         'flex items-baseline gap-1.5 px-2.5 py-1.5 rounded-md',
-        'bg-gradient-to-b from-muted/80 to-muted/40',
+        'bg-muted/60',
         'border border-border/50',
-        variant === 'min' && 'border-emerald-500/30',
-        variant === 'max' && 'border-amber-500/30',
+        variant === 'min' && 'border-success/30',
+        variant === 'max' && 'border-warning/30',
         variant === 'highlight' && 'border-primary/40 bg-primary/5'
       )}
     >
-      <span className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-medium">
+      <span className="text-2xs uppercase tracking-wider text-muted-foreground/70 font-medium">
         {label}
       </span>
       <span
         className={cn(
           'font-mono text-xs tabular-nums',
-          variant === 'min' && 'text-emerald-500',
-          variant === 'max' && 'text-amber-500',
+          variant === 'min' && 'text-success',
+          variant === 'max' && 'text-warning',
           variant === 'highlight' && 'text-primary',
           variant === 'default' && 'text-foreground'
         )}
@@ -345,7 +337,7 @@ export function TelemetryPanel({
     <div
       className={cn(
         'border-t border-border/60',
-        'bg-gradient-to-b from-card/95 to-muted/30',
+        'bg-card',
         'backdrop-blur-sm',
         'animate-in slide-in-from-bottom-2 fade-in duration-200'
       )}
@@ -356,8 +348,8 @@ export function TelemetryPanel({
           {/* Title with pulse indicator */}
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Clock className="size-4 text-primary" />
-              <span className="absolute -top-0.5 -right-0.5 size-1.5 bg-emerald-500 rounded-full animate-pulse" />
+              <ClockIcon className="size-4 text-primary" />
+              <span className="absolute -top-0.5 -right-0.5 size-1.5 bg-success rounded-full animate-pulse" />
             </div>
             <h3 className="text-sm font-semibold tracking-tight">Query Telemetry</h3>
           </div>
@@ -373,7 +365,7 @@ export function TelemetryPanel({
 
             {telemetry?.rowCount !== undefined && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <span className="size-1 bg-emerald-500 rounded-full" />
+                <span className="size-1 bg-success rounded-full" />
                 <span className="font-mono tabular-nums">
                   {telemetry.rowCount.toLocaleString()}
                 </span>
@@ -383,7 +375,7 @@ export function TelemetryPanel({
 
             {telemetry?.bytesReceived && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <span className="size-1 bg-blue-500 rounded-full" />
+                <span className="size-1 bg-primary rounded-full" />
                 <span className="font-mono tabular-nums">
                   {formatBytes(telemetry.bytesReceived)}
                 </span>
@@ -392,7 +384,7 @@ export function TelemetryPanel({
 
             {benchmark && (
               <div className="flex items-center gap-1.5 text-muted-foreground">
-                <span className="size-1 bg-amber-500 rounded-full" />
+                <span className="size-1 bg-warning rounded-full" />
                 <span className="font-mono tabular-nums">{benchmark.runCount}</span>
                 <span className="text-muted-foreground/60">runs</span>
               </div>
@@ -435,7 +427,7 @@ export function TelemetryPanel({
               )}
               title="Proportional bars"
             >
-              <BarChart3 className="size-3.5" />
+              <ChartBarIcon className="size-3.5" />
             </button>
             <button
               type="button"
@@ -448,7 +440,7 @@ export function TelemetryPanel({
               )}
               title="Timeline waterfall"
             >
-              <GanttChart className="size-3.5" />
+              <GanttChartIcon className="size-3.5" />
             </button>
           </div>
 
@@ -475,7 +467,7 @@ export function TelemetryPanel({
             className="size-7 p-0 text-muted-foreground hover:text-foreground"
             onClick={onClose}
           >
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
       </div>
@@ -507,7 +499,7 @@ export function TelemetryPanel({
                     />
                     <span
                       className={cn(
-                        'text-[11px] font-medium uppercase tracking-wide',
+                        'text-2xs font-medium uppercase tracking-wide',
                         'text-muted-foreground/80 group-hover:text-foreground',
                         'transition-colors duration-150'
                       )}
@@ -520,15 +512,12 @@ export function TelemetryPanel({
                   <div className="flex-1 relative h-6">
                     {/* Track */}
                     <div className="absolute inset-0 bg-muted/50 rounded-sm overflow-hidden">
-                      {/* Fill with gradient */}
+                      {/* Fill */}
                       <div
                         className={cn(
                           'h-full rounded-sm',
-                          'bg-gradient-to-r',
                           config.color,
-                          'transition-all duration-500 ease-out',
-                          'group-hover:shadow-lg',
-                          config.glowColor
+                          'transition-all duration-500 ease-out'
                         )}
                         style={{
                           width: `${widthPercent}%`,
@@ -547,7 +536,7 @@ export function TelemetryPanel({
                     >
                       <span
                         className={cn(
-                          'font-mono text-[11px] font-medium tabular-nums',
+                          'font-mono text-2xs font-medium tabular-nums',
                           widthPercent > 30 ? 'text-white/90 drop-shadow-sm' : 'text-foreground/80'
                         )}
                       >
@@ -567,7 +556,7 @@ export function TelemetryPanel({
                       )}
                     >
                       <div className="text-xs font-medium">{config.label}</div>
-                      <div className="text-[10px] text-muted-foreground">{config.description}</div>
+                      <div className="text-2xs text-muted-foreground">{config.description}</div>
                     </div>
                   </div>
                 </div>
@@ -592,7 +581,7 @@ export function TelemetryPanel({
                 className="absolute bottom-0 flex flex-col items-center"
                 style={{ left: `calc(112px + ${marker.position}% * (100% - 112px) / 100)` }}
               >
-                <span className="text-[9px] font-mono text-muted-foreground/60 tabular-nums mb-1">
+                <span className="text-2xs font-mono text-muted-foreground/60 tabular-nums mb-1">
                   {marker.label}
                 </span>
                 <div className="w-px h-1.5 bg-border/60" />
@@ -623,7 +612,7 @@ export function TelemetryPanel({
                     />
                     <span
                       className={cn(
-                        'text-[11px] font-medium uppercase tracking-wide',
+                        'text-2xs font-medium uppercase tracking-wide',
                         'text-muted-foreground/80 group-hover:text-foreground',
                         'transition-colors duration-150'
                       )}
@@ -650,11 +639,8 @@ export function TelemetryPanel({
                     <div
                       className={cn(
                         'absolute top-0.5 bottom-0.5 rounded-sm',
-                        'bg-gradient-to-r',
                         config.color,
                         'transition-all duration-300 ease-out',
-                        'group-hover:shadow-md',
-                        config.glowColor,
                         'min-w-[4px]'
                       )}
                       style={{
@@ -665,7 +651,7 @@ export function TelemetryPanel({
                       {/* Duration label inside bar if wide enough */}
                       {widthPercent > 8 && (
                         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-                          <span className="font-mono text-[10px] font-medium text-white/90 drop-shadow-sm tabular-nums">
+                          <span className="font-mono text-2xs font-medium text-white/90 drop-shadow-sm tabular-nums">
                             {formatDuration(duration)}
                           </span>
                         </div>
@@ -678,7 +664,7 @@ export function TelemetryPanel({
                         className="absolute top-0 bottom-0 flex items-center pl-1"
                         style={{ left: `${startPercent + widthPercent}%` }}
                       >
-                        <span className="font-mono text-[10px] font-medium text-foreground/70 tabular-nums whitespace-nowrap">
+                        <span className="font-mono text-2xs font-medium text-foreground/70 tabular-nums whitespace-nowrap">
                           {formatDuration(duration)}
                         </span>
                       </div>
@@ -698,8 +684,8 @@ export function TelemetryPanel({
                       style={{ left: `${startPercent}%` }}
                     >
                       <div className="text-xs font-medium">{config.label}</div>
-                      <div className="text-[10px] text-muted-foreground">{config.description}</div>
-                      <div className="text-[10px] text-muted-foreground/70 mt-1 font-mono">
+                      <div className="text-2xs text-muted-foreground">{config.description}</div>
+                      <div className="text-2xs text-muted-foreground/70 mt-1 font-mono">
                         {formatDuration(start)} → {formatDuration(start + duration)}
                       </div>
                     </div>
@@ -730,11 +716,11 @@ export function TelemetryPanel({
       {/* Connection status */}
       {telemetry?.connectionReused !== undefined && (
         <div className="px-4 py-1.5 border-t border-border/30 bg-muted/10">
-          <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60">
+          <div className="flex items-center gap-2 text-2xs text-muted-foreground/60">
             <span
               className={cn(
                 'size-1.5 rounded-full',
-                telemetry.connectionReused ? 'bg-emerald-500/80' : 'bg-amber-500/80'
+                telemetry.connectionReused ? 'bg-success/80' : 'bg-warning/80'
               )}
             />
             <span>{telemetry.connectionReused ? 'Connection pooled' : 'New connection'}</span>

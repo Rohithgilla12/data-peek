@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react'
+import { MinusIcon, SpinnerIcon, TrendDownIcon, TrendUpIcon } from '@/components/icons'
 import { cn } from '@data-peek/ui'
 
 type MetricFormat = 'number' | 'currency' | 'percent' | 'duration'
@@ -75,11 +75,11 @@ function formatMetricValue(value: number | string | null, format: MetricFormat):
 function TrendIcon({ direction }: { direction: TrendDirection }) {
   switch (direction) {
     case 'up':
-      return <TrendingUp className="size-3.5" />
+      return <TrendUpIcon className="size-3.5" />
     case 'down':
-      return <TrendingDown className="size-3.5" />
+      return <TrendDownIcon className="size-3.5" />
     default:
-      return <Minus className="size-3.5" />
+      return <MinusIcon className="size-3.5" />
   }
 }
 
@@ -87,9 +87,9 @@ function TrendIcon({ direction }: { direction: TrendDirection }) {
 function getTrendColorClass(direction: TrendDirection): string {
   switch (direction) {
     case 'up':
-      return 'text-green-500'
+      return 'text-success'
     case 'down':
-      return 'text-red-500'
+      return 'text-destructive'
     default:
       return 'text-muted-foreground'
   }
@@ -101,13 +101,10 @@ export function AIMetricCard({ metric, className }: AIMetricCardProps) {
   return (
     <div
       className={cn(
-        'relative rounded-xl border border-border/50 bg-gradient-to-br from-background to-muted/20 p-4 overflow-hidden',
+        'relative rounded-xl border border-border/50 bg-card p-4 overflow-hidden',
         className
       )}
     >
-      {/* Decorative gradient */}
-      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-500/5 to-purple-500/5 rounded-full blur-2xl -translate-y-8 translate-x-8" />
-
       <div className="relative">
         {/* Label */}
         <p className="text-xs text-muted-foreground font-medium mb-1">{label}</p>
@@ -115,16 +112,16 @@ export function AIMetricCard({ metric, className }: AIMetricCardProps) {
         {/* Value */}
         {isLoading ? (
           <div className="flex items-center gap-2 h-10">
-            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+            <SpinnerIcon className="size-5 animate-spin text-muted-foreground" />
             <span className="text-sm text-muted-foreground">Loading...</span>
           </div>
         ) : error ? (
           <div className="h-10 flex items-center">
-            <span className="text-sm text-red-400">{error}</span>
+            <span className="text-sm text-destructive">{error}</span>
           </div>
         ) : (
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold tracking-tight">
+            <span className="text-3xl font-semibold tracking-tight">
               {formatMetricValue(value, format)}
             </span>
           </div>

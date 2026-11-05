@@ -1,4 +1,12 @@
-import { CheckCircle2, Database, FileText, Loader2, Play, RefreshCw, Search } from 'lucide-react'
+import {
+  DatabaseIcon,
+  FileTextIcon,
+  PlayIcon,
+  RefreshIcon,
+  SearchIcon,
+  SpinnerIcon,
+  SuccessIcon
+} from '@/components/icons'
 
 import { SQLEditor } from '@/components/sql-editor'
 import {
@@ -118,7 +126,7 @@ export function SourceStep({
               : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          <FileText className="size-4" />
+          <FileTextIcon className="size-4" />
           Saved Query
         </button>
         <button
@@ -131,7 +139,7 @@ export function SourceStep({
               : 'text-muted-foreground hover:text-foreground'
           )}
         >
-          <Database className="size-4" />
+          <DatabaseIcon className="size-4" />
           Write SQL
         </button>
       </div>
@@ -139,7 +147,7 @@ export function SourceStep({
       {sourceType === 'saved-query' ? (
         <div className="space-y-3">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               placeholder="Search saved queries..."
               value={querySearch}
@@ -151,7 +159,7 @@ export function SourceStep({
             <div className="p-1.5 space-y-1">
               {filteredQueries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <FileText className="size-8 text-muted-foreground/50 mb-2" />
+                  <FileTextIcon className="size-8 text-muted-foreground/50 mb-2" />
                   <p className="text-sm text-muted-foreground">No saved queries found</p>
                 </div>
               ) : (
@@ -284,14 +292,14 @@ export function ConfigStep({
           type="button"
           onClick={onPreviewQuery}
           disabled={isLoadingPreview}
-          className="w-full flex items-center justify-between p-4 rounded-xl bg-linear-to-r from-primary/5 to-primary/10 border border-primary/20 hover:border-primary/40 transition-all duration-200 group"
+          className="w-full flex items-center justify-between p-4 rounded-xl bg-primary/10 border border-primary/20 hover:border-primary/40 transition-all duration-200 group"
         >
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
               {isLoadingPreview ? (
-                <Loader2 className="size-5 text-primary animate-spin" />
+                <SpinnerIcon className="size-5 text-primary animate-spin" />
               ) : (
-                <Play className="size-5 text-primary" />
+                <PlayIcon className="size-5 text-primary" />
               )}
             </div>
             <div className="text-left">
@@ -308,12 +316,10 @@ export function ConfigStep({
           )}
         </button>
       ) : (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-success/10 border border-success/30">
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="size-4 text-emerald-500" />
-            <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-              Preview loaded
-            </span>
+            <SuccessIcon className="size-4 text-success" />
+            <span className="text-sm font-medium text-success">Preview loaded</span>
             <span className="text-xs text-muted-foreground">
               {previewData.length} row{previewData.length !== 1 ? 's' : ''},{' '}
               {availableColumns.length} column{availableColumns.length !== 1 ? 's' : ''}
@@ -326,9 +332,9 @@ export function ConfigStep({
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             {isLoadingPreview ? (
-              <Loader2 className="size-3 animate-spin" />
+              <SpinnerIcon className="size-3 animate-spin" />
             ) : (
-              <RefreshCw className="size-3" />
+              <RefreshIcon className="size-3" />
             )}
             Refresh
           </button>
@@ -436,7 +442,7 @@ function ChartConfig({ chartType, xKey, yKeys, availableColumns, dispatch }: Cha
               )}
             >
               <ct.icon className="size-4" />
-              <span className="text-[11px] font-medium">{ct.label.replace(' Chart', '')}</span>
+              <span className="text-2xs font-medium">{ct.label.replace(' Chart', '')}</span>
             </button>
           ))}
         </div>
@@ -475,13 +481,13 @@ function ChartConfig({ chartType, xKey, yKeys, availableColumns, dispatch }: Cha
       </div>
       {availableColumns.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide mr-1">
+          <span className="text-2xs text-muted-foreground uppercase tracking-wide mr-1">
             Columns:
           </span>
           {availableColumns.map((col) => (
             <span
               key={col}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
+              className="text-2xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
             >
               {col}
             </span>
@@ -601,13 +607,13 @@ function KPIConfig({
 
       {availableColumns.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide mr-1">
+          <span className="text-2xs text-muted-foreground uppercase tracking-wide mr-1">
             Columns:
           </span>
           {availableColumns.map((col) => (
             <span
               key={col}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
+              className="text-2xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground font-mono"
             >
               {col}
             </span>
@@ -649,7 +655,7 @@ function WidgetWidthSelector({ widgetWidth, dispatch }: WidgetWidthSelectorProps
             )}
           >
             <span>{option.label}</span>
-            <span className="text-[10px] text-muted-foreground">{option.width}</span>
+            <span className="text-2xs text-muted-foreground">{option.width}</span>
           </button>
         ))}
       </div>

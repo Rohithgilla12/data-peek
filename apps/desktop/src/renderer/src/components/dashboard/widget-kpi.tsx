@@ -1,4 +1,4 @@
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { MinusIcon, TrendDownIcon, TrendUpIcon } from '@/components/icons'
 import { cn } from '@data-peek/ui'
 import type { KPIWidgetConfig } from '@shared/index'
 
@@ -98,11 +98,11 @@ function formatKPIValue(
 function TrendIcon({ direction }: { direction: 'up' | 'down' | 'neutral' }) {
   switch (direction) {
     case 'up':
-      return <TrendingUp className="size-4" />
+      return <TrendUpIcon className="size-4" />
     case 'down':
-      return <TrendingDown className="size-4" />
+      return <TrendDownIcon className="size-4" />
     default:
-      return <Minus className="size-4" />
+      return <MinusIcon className="size-4" />
   }
 }
 
@@ -111,7 +111,7 @@ function TrendIcon({ direction }: { direction: 'up' | 'down' | 'neutral' }) {
  *
  * @param direction - The trend direction: 'up', 'down', or 'neutral'.
  * @param trendType - Optional qualifier indicating which direction is considered favorable: `'up-good'` (up is good) or `'down-good'` (down is good).
- * @returns The Tailwind-like text color class to apply to the trend element (e.g., `'text-green-500'`, `'text-red-500'`, or `'text-muted-foreground'`).
+ * @returns The Tailwind-like text color class to apply to the trend element (e.g., `'text-success'`, `'text-destructive'`, or `'text-muted-foreground'`).
  */
 function getTrendColorClass(
   direction: 'up' | 'down' | 'neutral',
@@ -120,8 +120,8 @@ function getTrendColorClass(
   const upIsGood = trendType !== 'down-good'
 
   if (direction === 'neutral') return 'text-muted-foreground'
-  if (direction === 'up') return upIsGood ? 'text-green-500' : 'text-red-500'
-  return upIsGood ? 'text-red-500' : 'text-green-500'
+  if (direction === 'up') return upIsGood ? 'text-success' : 'text-destructive'
+  return upIsGood ? 'text-destructive' : 'text-success'
 }
 
 /**
@@ -171,7 +171,7 @@ export function WidgetKPI({ config, data }: WidgetKPIProps) {
   return (
     <div className="flex h-full flex-col items-center justify-center p-2">
       <p className="text-xs text-muted-foreground font-medium mb-1 text-center">{label}</p>
-      <div className="text-3xl font-bold tracking-tight text-center">{formattedValue}</div>
+      <div className="text-3xl font-semibold tracking-tight text-center">{formattedValue}</div>
       {trend && (
         <div
           className={cn(

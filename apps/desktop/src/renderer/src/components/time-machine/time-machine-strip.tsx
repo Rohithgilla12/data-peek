@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { History, Loader2, X } from 'lucide-react'
+import { CloseIcon, HistoryIcon, SpinnerIcon } from '@/components/icons'
 import { cn, Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@data-peek/ui'
 import type { TimeMachineRunMeta } from '@data-peek/shared'
 import { useTimeMachineStore } from '@/stores/time-machine-store'
@@ -96,9 +96,9 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
       className="flex items-center gap-2 border-b border-border/40 bg-muted/10 px-3 py-1.5 shrink-0"
     >
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0">
-        <History className="size-3.5" />
+        <HistoryIcon className="size-3.5" />
         <span className="font-medium">Time Machine</span>
-        {state.isLoading && <Loader2 className="size-3 animate-spin" />}
+        {state.isLoading && <SpinnerIcon className="size-3 animate-spin" />}
       </div>
 
       {chronological.length > 1 && (
@@ -108,7 +108,7 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
       )}
 
       {state.error ? (
-        <span className="text-xs text-red-400 truncate">{state.error}</span>
+        <span className="text-xs text-destructive truncate">{state.error}</span>
       ) : chronological.length === 0 ? (
         <span className="text-xs text-muted-foreground/60">
           No runs captured yet — successful SELECTs are snapshotted automatically
@@ -153,7 +153,7 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
                       {!run.hasRows && ' · too large to store — metadata only'}
                       {unchanged && ' · no change vs previous run'}
                     </p>
-                    <p className="text-[10px] text-muted-foreground">
+                    <p className="text-2xs text-muted-foreground">
                       Click to view · ⌥-click to compare with the selected run
                     </p>
                   </TooltipContent>
@@ -171,7 +171,7 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
                 : 'bg-background text-muted-foreground hover:bg-muted hover:text-foreground ring-1 ring-border'
             )}
           >
-            <span className="size-1.5 rounded-full bg-green-500" />
+            <span className="size-1.5 rounded-full bg-success" />
             Live
           </button>
         </div>
@@ -184,7 +184,7 @@ export function TimeMachineStrip({ tabId, connectionId, sql }: TimeMachineStripP
         onClick={() => useTimeMachineStore.getState().closeStrip(tabId)}
         title="Close Time Machine"
       >
-        <X className="size-3.5" />
+        <CloseIcon className="size-3.5" />
       </Button>
     </div>
   )

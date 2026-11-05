@@ -1,16 +1,16 @@
 import * as React from 'react'
 import {
-  Eye,
-  EyeOff,
-  Check,
-  AlertCircle,
-  Loader2,
-  Sparkles,
-  ExternalLink,
-  Trash2,
-  Key,
-  CheckCircle2
-} from 'lucide-react'
+  AiIcon,
+  CheckIcon,
+  ErrorIcon,
+  ExternalLinkIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  KeyIcon,
+  SpinnerIcon,
+  SuccessIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Input,
@@ -253,14 +253,14 @@ export function AISettingsModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[520px] gap-0 p-0 overflow-hidden">
         {/* Decorative header gradient */}
-        <div className="h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+        <div className="h-1 bg-primary" />
 
         <DialogHeader className="px-6 pt-6 pb-4">
           <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-sm" />
-              <div className="relative flex items-center justify-center size-10 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-                <Sparkles className="size-5 text-blue-400" />
+              <div className="absolute -inset-1 bg-primary/10 rounded-full" />
+              <div className="relative flex items-center justify-center size-10 rounded-full bg-primary/10 border border-primary/20">
+                <AiIcon className="size-5 text-primary" />
               </div>
             </div>
             <div>
@@ -288,25 +288,22 @@ export function AISettingsModal({
                     className={cn(
                       'relative flex flex-col items-center gap-1 p-2 rounded-lg border transition-all',
                       selectedProvider === p.id
-                        ? 'bg-blue-500/10 border-blue-500/30 text-blue-400'
+                        ? 'bg-primary/10 border-primary/30 text-primary'
                         : hasConfig
-                          ? 'border-green-500/30 hover:border-green-500/50 hover:bg-green-500/5 text-muted-foreground'
+                          ? 'border-success/30 hover:border-success/50 hover:bg-success/5 text-muted-foreground'
                           : 'border-border/50 hover:border-border hover:bg-muted/50 text-muted-foreground'
                     )}
                   >
                     {hasConfig && (
                       <div className="absolute -top-1 -right-1">
-                        <CheckCircle2
-                          className={cn(
-                            'size-3.5',
-                            isActive ? 'text-green-500' : 'text-green-500/60'
-                          )}
+                        <SuccessIcon
+                          className={cn('size-3.5', isActive ? 'text-success' : 'text-success/60')}
                         />
                       </div>
                     )}
-                    <span className="text-[10px] font-medium">{p.name}</span>
+                    <span className="text-2xs font-medium">{p.name}</span>
                     {isActive && hasConfig && (
-                      <span className="text-[8px] px-1 py-0.5 rounded bg-green-500/20 text-green-400">
+                      <span className="text-2xs px-1 py-0.5 rounded bg-success/10 text-success">
                         Active
                       </span>
                     )}
@@ -314,7 +311,7 @@ export function AISettingsModal({
                 )
               })}
             </div>
-            <p className="text-[10px] text-muted-foreground">{providerConfig.description}</p>
+            <p className="font-sans text-2xs text-muted-foreground">{providerConfig.description}</p>
           </div>
 
           {/* API Key Input */}
@@ -328,15 +325,15 @@ export function AISettingsModal({
                   href={providerConfig.keyUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
+                  className="flex items-center gap-1 text-2xs text-primary hover:underline"
                 >
                   Get API Key
-                  <ExternalLink className="size-3" />
+                  <ExternalLinkIcon className="size-3" />
                 </a>
               </div>
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <Key className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <KeyIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
                     id="api-key"
                     type={showKey ? 'text' : 'password'}
@@ -354,7 +351,7 @@ export function AISettingsModal({
                     onClick={() => setShowKey(!showKey)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                    {showKey ? <EyeSlashIcon className="size-4" /> : <EyeIcon className="size-4" />}
                   </button>
                 </div>
                 <Button
@@ -365,25 +362,25 @@ export function AISettingsModal({
                   className="shrink-0"
                 >
                   {isValidating ? (
-                    <Loader2 className="size-4 animate-spin" />
+                    <SpinnerIcon className="size-4 animate-spin" />
                   ) : validationResult === 'success' ? (
-                    <Check className="size-4 text-green-500" />
+                    <CheckIcon className="size-4 text-success" />
                   ) : validationResult === 'error' ? (
-                    <AlertCircle className="size-4 text-red-500" />
+                    <ErrorIcon className="size-4 text-destructive" />
                   ) : (
                     'Test'
                   )}
                 </Button>
               </div>
               {validationResult === 'success' && (
-                <p className="text-[10px] text-green-500 flex items-center gap-1">
-                  <Check className="size-3" />
+                <p className="text-2xs text-success flex items-center gap-1">
+                  <CheckIcon className="size-3" />
                   API key is valid
                 </p>
               )}
               {validationResult === 'error' && (
-                <p className="text-[10px] text-red-500 flex items-center gap-1">
-                  <AlertCircle className="size-3" />
+                <p className="text-2xs text-destructive flex items-center gap-1">
+                  <ErrorIcon className="size-3" />
                   Invalid API key
                 </p>
               )}
@@ -395,32 +392,32 @@ export function AISettingsModal({
             <div className="space-y-2">
               <Label className="text-xs">{providerConfig.name}</Label>
               {isDetecting ? (
-                <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
-                  <Loader2 className="size-3.5 animate-spin" />
+                <p className="text-2xs text-muted-foreground flex items-center gap-1.5">
+                  <SpinnerIcon className="size-3.5 animate-spin" />
                   Looking for the local CLI…
                 </p>
               ) : harness?.available ? (
-                <div className="flex items-center gap-1.5 rounded-lg border border-green-500/30 bg-green-500/5 px-3 py-2">
-                  <CheckCircle2 className="size-4 text-green-500 shrink-0" />
-                  <span className="text-[11px] text-green-400">
+                <div className="flex items-center gap-1.5 rounded-lg border border-success/30 bg-success/10 px-3 py-2">
+                  <SuccessIcon className="size-4 text-success shrink-0" />
+                  <span className="text-2xs text-success">
                     Detected{harness.version ? ` · ${harness.version}` : ''} —{' '}
                     {renderHint(HARNESS_HINTS[selectedProvider]?.detected)}
                   </span>
                 </div>
               ) : (
-                <div className="space-y-1.5 rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2">
-                  <span className="text-[11px] text-amber-400 flex items-center gap-1.5">
-                    <AlertCircle className="size-3.5 shrink-0" />
+                <div className="space-y-1.5 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2">
+                  <span className="text-2xs text-warning flex items-center gap-1.5">
+                    <ErrorIcon className="size-3.5 shrink-0" />
                     {renderHint(HARNESS_HINTS[selectedProvider]?.missing)}
                   </span>
                   <a
                     href={providerConfig.keyUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex items-center gap-1 text-[10px] text-blue-400 hover:underline"
+                    className="flex items-center gap-1 text-2xs text-primary hover:underline"
                   >
                     Setup guide
-                    <ExternalLink className="size-3" />
+                    <ExternalLinkIcon className="size-3" />
                   </a>
                 </div>
               )}
@@ -441,7 +438,7 @@ export function AISettingsModal({
                 placeholder="http://localhost:11434"
                 className="font-mono text-xs"
               />
-              <p className="text-[10px] text-muted-foreground">
+              <p className="font-sans text-2xs text-muted-foreground">
                 Make sure Ollama is running locally
               </p>
             </div>
@@ -460,12 +457,12 @@ export function AISettingsModal({
                     <div className="flex items-center gap-2">
                       <span>{m.name}</span>
                       {m.recommended && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        <span className="text-2xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                           Recommended
                         </span>
                       )}
                       {m.description && (
-                        <span className="text-[10px] text-muted-foreground">{m.description}</span>
+                        <span className="text-2xs text-muted-foreground">{m.description}</span>
                       )}
                     </div>
                   </SelectItem>
@@ -482,7 +479,7 @@ export function AISettingsModal({
               disabled={!canSaveConfig || (!needsKey && isActiveProvider)}
               className="flex-1"
             >
-              {isSaving ? <Loader2 className="size-4 animate-spin mr-1" /> : null}
+              {isSaving ? <SpinnerIcon className="size-4 animate-spin mr-1" /> : null}
               {needsKey
                 ? `${hasProviderConfig(selectedProvider) ? 'Update' : 'Save'} ${providerConfig.name} Key`
                 : isActiveProvider
@@ -500,16 +497,16 @@ export function AISettingsModal({
                 variant="ghost"
                 onClick={handleRemoveProviderConfig}
                 disabled={isSaving}
-                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                className="text-destructive hover:text-destructive hover:bg-destructive/10"
               >
-                <Trash2 className="size-4" />
+                <TrashIcon className="size-4" />
               </Button>
             )}
           </div>
 
           {/* Info box */}
           <div className="p-3 rounded-lg bg-muted/30 border border-border/50">
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="font-sans text-2xs text-muted-foreground leading-relaxed">
               Your API keys are stored locally and securely. They are never sent to our servers. All
               AI requests are made directly from your machine to the provider. Configure multiple
               providers and switch between them anytime.

@@ -159,6 +159,14 @@ Minimal, technical, monospace-native. Dark mode is the primary design target. De
 
 OKLCH blue (hue 250°) is the canonical accent color across all apps. Desktop app is the source of truth — marketing site, docs, and video assets all use the same blue palette (`#6b8cf5` bright / `#3b52c4` deep). Full details in `.impeccable.md`.
 
+### Design System
+
+Tokens, type scale, font rule, and icon rules are documented in `.impeccable.md`. In short:
+
+- Icons come only from `@/components/icons` (renderer) or `packages/ui/src/icons.ts`. Never import Phosphor or lucide directly.
+- Colours are tokens (`success`, `warning`, `destructive`, `primary`, `cat-*`). No raw palette classes and no `text-[…]` sizes; use `text-2xs` (11px minimum) through `text-lg`. `font-sans` is for prose only, and nothing heavier than `font-semibold`.
+- `src/renderer/src/__tests__/design-system-guard.test.ts` enforces all of this.
+
 ### Design Principles
 
 1. **Data is the UI** — Query results and schemas are the primary interface. Chrome minimizes its footprint.

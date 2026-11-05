@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { Plus, Sparkles } from 'lucide-react'
+import { AiIcon, PlusIcon } from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import {
   DndContext,
@@ -215,15 +215,13 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
         )}
 
         {connection && (
-          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/50">
+          <span className="text-2xs font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground border border-border/50">
             {connection.name}
           </span>
         )}
 
         {lastSavedAt && (
-          <span className="text-[10px] text-muted-foreground">
-            Saved {formatTimeAgo(lastSavedAt)}
-          </span>
+          <span className="text-2xs text-muted-foreground">Saved {formatTimeAgo(lastSavedAt)}</span>
         )}
 
         <div className="flex-1" />
@@ -234,7 +232,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
           className="h-7 gap-1.5 text-xs"
           onClick={() => handleAddCell('sql')}
         >
-          <Plus className="size-3" />
+          <PlusIcon className="size-3" />
           SQL
         </Button>
 
@@ -244,17 +242,17 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
           className="h-7 gap-1.5 text-xs"
           onClick={() => handleAddCell('markdown')}
         >
-          <Plus className="size-3" />
+          <PlusIcon className="size-3" />
           Note
         </Button>
 
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 gap-1.5 text-xs text-blue-400 hover:text-blue-300"
+          className="h-7 gap-1.5 text-xs text-primary hover:text-primary/80"
           onClick={() => openAICell()}
         >
-          <Sparkles className="size-3" />
+          <AiIcon className="size-3" />
           AI cell
         </Button>
       </div>
@@ -270,7 +268,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
                 className="gap-1.5 text-xs"
                 onClick={() => handleAddCell('sql')}
               >
-                <Plus className="size-3" />
+                <PlusIcon className="size-3" />
                 SQL cell
               </Button>
               <Button
@@ -279,11 +277,11 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
                 className="gap-1.5 text-xs"
                 onClick={() => handleAddCell('markdown')}
               >
-                <Plus className="size-3" />
+                <PlusIcon className="size-3" />
                 Note cell
               </Button>
               <Button size="sm" className="gap-1.5 text-xs" onClick={() => openAICell()}>
-                <Sparkles className="size-3" />
+                <AiIcon className="size-3" />
                 AI cell
               </Button>
             </div>
@@ -321,7 +319,7 @@ export function NotebookEditor({ tab }: NotebookEditorProps) {
         )}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-4 px-4 py-1.5 border-t border-border/30 bg-background/80 backdrop-blur-sm text-[10px] text-muted-foreground/60 pointer-events-none z-20">
+      <div className="fixed bottom-0 left-0 right-0 flex items-center justify-center gap-4 px-4 py-1.5 border-t border-border/30 bg-background/80 backdrop-blur-sm text-2xs text-muted-foreground/60 pointer-events-none z-20">
         <span>⇧⏎ Run &amp; advance</span>
         <span>⌘⏎ Run cell</span>
         <span>⌘J/⌘K Navigate</span>
@@ -362,14 +360,14 @@ function InsertPoint({ onInsert }: InsertPointProps) {
         <button
           type="button"
           onClick={() => onInsert('sql')}
-          className="text-[10px] text-muted-foreground/60 hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted/50 transition-colors font-mono"
+          className="text-2xs text-muted-foreground/60 hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted/50 transition-colors font-mono"
         >
           + SQL
         </button>
         <button
           type="button"
           onClick={() => onInsert('markdown')}
-          className="text-[10px] text-muted-foreground/60 hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted/50 transition-colors font-mono"
+          className="text-2xs text-muted-foreground/60 hover:text-foreground px-1.5 py-0.5 rounded hover:bg-muted/50 transition-colors font-mono"
         >
           + Note
         </button>

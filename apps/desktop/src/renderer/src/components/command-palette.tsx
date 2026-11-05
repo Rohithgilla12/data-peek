@@ -1,28 +1,28 @@
 import * as React from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
-  Sparkles,
-  Database,
-  FileCode2,
-  Settings,
-  Moon,
-  Sun,
-  Monitor,
-  Plus,
-  LayoutGrid,
-  ChevronRight,
-  Bookmark,
-  RefreshCw,
-  Keyboard,
-  ChevronLeft,
-  Pin,
-  PinOff,
-  Pencil,
-  History
-} from 'lucide-react'
+  AiIcon,
+  BookmarkIcon,
+  CaretLeftIcon,
+  CaretRightIcon,
+  DatabaseIcon,
+  EditIcon,
+  FileCodeIcon,
+  HistoryIcon,
+  KeyboardIcon,
+  LayoutGridIcon,
+  MonitorIcon,
+  MoonIcon,
+  PinIcon,
+  PinOffIcon,
+  PlusIcon,
+  RefreshIcon,
+  SettingsIcon,
+  SunIcon
+} from '@/components/icons'
 
 import { useTheme } from '@/components/theme-provider'
-import { DatabaseIcon } from '@/components/database-icons'
+import { DatabaseIcon as DatabaseBrandIcon } from '@/components/database-icons'
 import { useConnectionStore, useTabStore, useSettingsStore } from '@/stores'
 import { openAsk } from '@/lib/open-ask'
 import { useCommandState } from 'cmdk'
@@ -65,15 +65,15 @@ interface CommandPaletteProps {
 
 // Query type badge colors
 const queryTypeColors: Record<string, string> = {
-  SELECT: 'bg-blue-500/20 text-blue-400',
-  INSERT: 'bg-green-500/20 text-green-400',
-  UPDATE: 'bg-yellow-500/20 text-yellow-400',
-  DELETE: 'bg-red-500/20 text-red-400',
-  CREATE: 'bg-purple-500/20 text-purple-400',
-  ALTER: 'bg-purple-500/20 text-purple-400',
-  DROP: 'bg-purple-500/20 text-purple-400',
-  EXPLAIN: 'bg-orange-500/20 text-orange-400',
-  SQL: 'bg-zinc-500/20 text-zinc-400'
+  SELECT: 'bg-cat-blue/10 text-cat-blue',
+  INSERT: 'bg-cat-green/10 text-cat-green',
+  UPDATE: 'bg-cat-yellow/10 text-cat-yellow',
+  DELETE: 'bg-destructive/10 text-destructive',
+  CREATE: 'bg-cat-purple/10 text-cat-purple',
+  ALTER: 'bg-cat-purple/10 text-cat-purple',
+  DROP: 'bg-cat-purple/10 text-cat-purple',
+  EXPLAIN: 'bg-cat-orange/10 text-cat-orange',
+  SQL: 'bg-muted-foreground/10 text-muted-foreground'
 }
 
 /**
@@ -94,7 +94,7 @@ function AskFallback({
   return (
     <CommandGroup heading="Ask" forceMount>
       <CommandItem forceMount value={`ask-question ${question}`} onSelect={onAsk}>
-        <Sparkles className="text-primary" />
+        <AiIcon className="text-primary" />
         <span className="truncate">
           Ask {connectionName}: <span className="text-foreground">{question}</span>
         </span>
@@ -285,7 +285,7 @@ export function CommandPalette({
               onClick={popPage}
               className="flex items-center gap-1 hover:text-foreground transition-colors"
             >
-              <ChevronLeft className="size-3" />
+              <CaretLeftIcon className="size-3" />
               Back
             </button>
             <span className="text-muted-foreground/50">|</span>
@@ -329,7 +329,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <Sparkles className="text-blue-400" />
+                  <AiIcon className="text-primary" />
                   <span>Open AI Assistant</span>
                   <CommandShortcut>{keys.mod}I</CommandShortcut>
                 </CommandItem>
@@ -341,7 +341,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <Sparkles className="text-blue-400" />
+                  <AiIcon className="text-primary" />
                   <span>AI Settings</span>
                 </CommandItem>
               </CommandGroup>
@@ -355,9 +355,9 @@ export function CommandPalette({
                   keywords={['database', 'connect', 'switch', 'manage']}
                   onSelect={() => pushPage('connections')}
                 >
-                  <Database className="text-emerald-400" />
+                  <DatabaseIcon className="text-muted-foreground" />
                   <span>Connections</span>
-                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                  <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
                 {/* Quick access to top 3 connections */}
                 {connections.slice(0, 3).map((conn, index) => (
@@ -367,10 +367,10 @@ export function CommandPalette({
                     keywords={[conn.dbType, conn.host || '', conn.database]}
                     onSelect={() => handleSelectConnection(conn.id)}
                   >
-                    <DatabaseIcon dbType={conn.dbType} className="size-4" />
+                    <DatabaseBrandIcon dbType={conn.dbType} className="size-4" />
                     <span className="truncate">{conn.name}</span>
                     {conn.id === activeConnection?.id && (
-                      <span className="ml-2 text-[10px] text-emerald-400">Active</span>
+                      <span className="ml-2 text-2xs text-success">Active</span>
                     )}
                     <CommandShortcut>
                       {keys.mod}
@@ -393,7 +393,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <Sparkles className="text-primary" />
+                  <AiIcon className="text-primary" />
                   <span>New Ask Tab</span>
                   <CommandShortcut>{keys.mod}T</CommandShortcut>
                 </CommandItem>
@@ -406,7 +406,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <Plus className="text-amber-400" />
+                  <PlusIcon className="text-muted-foreground" />
                   <span>New SQL Editor Tab</span>
                   <CommandShortcut>{keys.mod}⇧T</CommandShortcut>
                 </CommandItem>
@@ -415,9 +415,9 @@ export function CommandPalette({
                   keywords={['bookmark', 'favorites', 'history', 'pinned']}
                   onSelect={() => pushPage('saved-queries')}
                 >
-                  <Bookmark className="text-amber-400" />
+                  <BookmarkIcon className="text-muted-foreground" />
                   <span>Saved Queries</span>
-                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                  <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
                 <CommandItem
                   value="query-time-machine"
@@ -436,7 +436,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <History className="text-amber-400" />
+                  <HistoryIcon className="text-muted-foreground" />
                   <span>Toggle Time Machine</span>
                   <CommandShortcut>
                     {keys.mod}
@@ -457,7 +457,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <Settings className="text-purple-400" />
+                  <SettingsIcon className="text-muted-foreground" />
                   <span>Settings</span>
                 </CommandItem>
                 <CommandItem
@@ -468,7 +468,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <LayoutGrid className="text-purple-400" />
+                  <LayoutGridIcon className="text-muted-foreground" />
                   <span>Toggle Sidebar</span>
                   <CommandShortcut>{keys.mod}B</CommandShortcut>
                 </CommandItem>
@@ -480,7 +480,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <Keyboard className="text-purple-400" />
+                  <KeyboardIcon className="text-muted-foreground" />
                   <span>Keyboard Shortcuts</span>
                 </CommandItem>
               </CommandGroup>
@@ -494,10 +494,10 @@ export function CommandPalette({
                   keywords={['theme', 'dark', 'light', 'mode']}
                   onSelect={() => pushPage('appearance')}
                 >
-                  <Moon className="text-pink-400" />
+                  <MoonIcon className="text-muted-foreground" />
                   <span>Change Theme</span>
                   <span className="ml-auto text-xs text-muted-foreground capitalize">{theme}</span>
-                  <ChevronRight className="size-4 text-muted-foreground" />
+                  <CaretRightIcon className="size-4 text-muted-foreground" />
                 </CommandItem>
               </CommandGroup>
             </>
@@ -514,10 +514,10 @@ export function CommandPalette({
                     keywords={[conn.dbType, conn.host || '', conn.database]}
                     onSelect={() => handleSelectConnection(conn.id)}
                   >
-                    <DatabaseIcon dbType={conn.dbType} className="size-4" />
+                    <DatabaseBrandIcon dbType={conn.dbType} className="size-4" />
                     <span className="truncate">{conn.name}</span>
                     {conn.id === activeConnection?.id && (
-                      <span className="ml-2 text-[10px] text-emerald-400">Active</span>
+                      <span className="ml-2 text-2xs text-success">Active</span>
                     )}
                     {index < 9 && (
                       <CommandShortcut>
@@ -538,18 +538,18 @@ export function CommandPalette({
                   keywords={['switch', 'browse', 'list']}
                   onSelect={() => pushPage('connections:switch')}
                 >
-                  <Database className="text-emerald-400" />
+                  <DatabaseIcon className="text-muted-foreground" />
                   <span>All Connections</span>
-                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                  <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
                 <CommandItem
                   value="connections-edit"
                   keywords={['modify', 'change', 'update']}
                   onSelect={() => pushPage('connections:edit')}
                 >
-                  <Pencil className="text-emerald-400" />
+                  <EditIcon className="text-muted-foreground" />
                   <span>Edit Connection</span>
-                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                  <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
                 {onOpenAddConnection && (
                   <CommandItem
@@ -560,7 +560,7 @@ export function CommandPalette({
                       onClose()
                     }}
                   >
-                    <Plus className="text-emerald-400" />
+                    <PlusIcon className="text-muted-foreground" />
                     <span>Add New Connection</span>
                   </CommandItem>
                 )}
@@ -574,7 +574,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <RefreshCw className="text-emerald-400" />
+                  <RefreshIcon className="text-muted-foreground" />
                   <span>Refresh Schema</span>
                 </CommandItem>
               </CommandGroup>
@@ -595,7 +595,7 @@ export function CommandPalette({
                       onClose()
                     }}
                   >
-                    <Plus className="text-emerald-400" />
+                    <PlusIcon className="text-muted-foreground" />
                     <span>Add New Connection</span>
                   </CommandItem>
                 )}
@@ -604,9 +604,9 @@ export function CommandPalette({
                   keywords={['modify', 'change', 'update', 'edit']}
                   onSelect={() => pushPage('connections:edit')}
                 >
-                  <Pencil className="text-emerald-400" />
+                  <EditIcon className="text-muted-foreground" />
                   <span>Edit Connection</span>
-                  <ChevronRight className="ml-auto size-4 text-muted-foreground" />
+                  <CaretRightIcon className="ml-auto size-4 text-muted-foreground" />
                 </CommandItem>
                 <CommandItem
                   value="connections-refresh-schema"
@@ -618,7 +618,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <RefreshCw className="text-emerald-400" />
+                  <RefreshIcon className="text-muted-foreground" />
                   <span>Refresh Schema</span>
                 </CommandItem>
               </CommandGroup>
@@ -633,7 +633,7 @@ export function CommandPalette({
                     keywords={[conn.dbType, conn.host || '', conn.database]}
                     onSelect={() => handleSelectConnection(conn.id)}
                   >
-                    <DatabaseIcon dbType={conn.dbType} className="size-4" />
+                    <DatabaseBrandIcon dbType={conn.dbType} className="size-4" />
                     <div className="flex flex-col min-w-0">
                       <span className="truncate">{conn.name}</span>
                       <span className="text-xs text-muted-foreground truncate">
@@ -641,7 +641,7 @@ export function CommandPalette({
                       </span>
                     </div>
                     {conn.id === activeConnection?.id && (
-                      <span className="ml-auto text-[10px] text-emerald-400">Active</span>
+                      <span className="ml-auto text-2xs text-success">Active</span>
                     )}
                     {index < 9 && (
                       <CommandShortcut>
@@ -669,7 +669,7 @@ export function CommandPalette({
                     onClose()
                   }}
                 >
-                  <DatabaseIcon dbType={conn.dbType} className="size-4" />
+                  <DatabaseBrandIcon dbType={conn.dbType} className="size-4" />
                   <div className="flex flex-col min-w-0">
                     <span className="truncate">{conn.name}</span>
                     <span className="text-xs text-muted-foreground truncate">
@@ -677,7 +677,7 @@ export function CommandPalette({
                     </span>
                   </div>
                   {conn.id === activeConnection?.id && (
-                    <span className="ml-auto text-[10px] text-emerald-400">Active</span>
+                    <span className="ml-auto text-2xs text-success">Active</span>
                   )}
                 </CommandItem>
               ))}
@@ -699,13 +699,13 @@ export function CommandPalette({
                         onSelect={() => handleSelectQuery(query)}
                         className="group"
                       >
-                        <FileCode2 className="text-amber-400 shrink-0" />
+                        <FileCodeIcon className="text-muted-foreground shrink-0" />
                         <div className="flex flex-col min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="truncate">{query.name}</span>
                             <span
                               className={cn(
-                                'px-1.5 py-0.5 rounded text-[10px] font-medium',
+                                'px-1.5 py-0.5 rounded text-2xs font-medium',
                                 queryTypeColors[queryType]
                               )}
                             >
@@ -728,15 +728,15 @@ export function CommandPalette({
                           className={cn(
                             'p-1 rounded hover:bg-accent transition-colors',
                             query.isPinned
-                              ? 'text-amber-400'
+                              ? 'text-warning'
                               : 'text-muted-foreground opacity-0 group-hover:opacity-100'
                           )}
                           title={query.isPinned ? 'Unpin' : 'Pin'}
                         >
                           {query.isPinned ? (
-                            <PinOff className="size-3" />
+                            <PinOffIcon className="size-3" />
                           ) : (
-                            <Pin className="size-3" />
+                            <PinIcon className="size-3" />
                           )}
                         </button>
                       </CommandItem>
@@ -763,9 +763,9 @@ export function CommandPalette({
                   onClose()
                 }}
               >
-                <Sun className="text-pink-400" />
+                <SunIcon className="text-muted-foreground" />
                 <span>Light</span>
-                {theme === 'light' && <span className="ml-auto text-xs text-pink-400">Active</span>}
+                {theme === 'light' && <span className="ml-auto text-xs text-primary">Active</span>}
               </CommandItem>
               <CommandItem
                 value="theme-dark"
@@ -775,9 +775,9 @@ export function CommandPalette({
                   onClose()
                 }}
               >
-                <Moon className="text-pink-400" />
+                <MoonIcon className="text-muted-foreground" />
                 <span>Dark</span>
-                {theme === 'dark' && <span className="ml-auto text-xs text-pink-400">Active</span>}
+                {theme === 'dark' && <span className="ml-auto text-xs text-primary">Active</span>}
               </CommandItem>
               <CommandItem
                 value="theme-system"
@@ -787,30 +787,28 @@ export function CommandPalette({
                   onClose()
                 }}
               >
-                <Monitor className="text-pink-400" />
+                <MonitorIcon className="text-muted-foreground" />
                 <span>System</span>
-                {theme === 'system' && (
-                  <span className="ml-auto text-xs text-pink-400">Active</span>
-                )}
+                {theme === 'system' && <span className="ml-auto text-xs text-primary">Active</span>}
               </CommandItem>
             </CommandGroup>
           )}
         </CommandList>
 
         {/* Footer */}
-        <div className="flex items-center justify-between px-3 py-2 border-t text-[10px] text-muted-foreground">
+        <div className="flex items-center justify-between px-3 py-2 border-t text-2xs text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-muted border text-[10px]">↑↓</kbd>
+              <kbd className="px-1 py-0.5 rounded bg-muted border text-2xs">↑↓</kbd>
               navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1 py-0.5 rounded bg-muted border text-[10px]">↵</kbd>
+              <kbd className="px-1 py-0.5 rounded bg-muted border text-2xs">↵</kbd>
               select
             </span>
             {pages.length > 1 && (
               <span className="flex items-center gap-1">
-                <kbd className="px-1 py-0.5 rounded bg-muted border text-[10px]">⌫</kbd>
+                <kbd className="px-1 py-0.5 rounded bg-muted border text-2xs">⌫</kbd>
                 back
               </span>
             )}
@@ -820,20 +818,4 @@ export function CommandPalette({
       </Command>
     </CommandDialog>
   )
-}
-
-// Re-export icons for backward compatibility
-export {
-  Sparkles,
-  Database,
-  FileCode2,
-  Settings,
-  Moon,
-  Sun,
-  Monitor,
-  Plus,
-  LayoutGrid,
-  Bookmark,
-  RefreshCw,
-  Keyboard
 }

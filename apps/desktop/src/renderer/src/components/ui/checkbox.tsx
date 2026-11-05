@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Check } from 'lucide-react'
+import { CheckIcon } from '@/components/icons'
 import { cn } from '@/lib/utils'
 
 interface CheckboxProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onChange'> {
@@ -24,7 +24,7 @@ const Checkbox = React.forwardRef<HTMLButtonElement, CheckboxProps>(
         )}
         {...props}
       >
-        {checked && <Check className="h-3 w-3 mx-auto" />}
+        {checked && <CheckIcon className="h-3 w-3 mx-auto" />}
       </button>
     )
   }

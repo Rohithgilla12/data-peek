@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react'
-import { ChevronDown, Plus, Settings, Loader2, Pencil, Trash2, Copy } from 'lucide-react'
+import {
+  CaretDownIcon,
+  CopyIcon,
+  EditIcon,
+  PlusIcon,
+  SettingsIcon,
+  SpinnerIcon,
+  TrashIcon
+} from '@/components/icons'
 
 import {
   SidebarMenu,
@@ -33,7 +41,7 @@ function EnvironmentBadge({ environment }: { environment?: ConnectionEnvironment
   if (!resolved) return null
   return (
     <span
-      className="shrink-0 rounded px-1.5 py-px text-[0.625rem] font-semibold uppercase tracking-wide font-mono leading-none"
+      className="shrink-0 rounded px-1.5 py-px text-2xs font-semibold uppercase tracking-wide font-mono leading-none"
       style={{
         backgroundColor: `color-mix(in oklch, ${resolved.color} 15%, transparent)`,
         borderWidth: '1px',
@@ -130,7 +138,7 @@ export function ConnectionSwitcher() {
         <SidebarMenuItem>
           <SidebarMenuButton className="w-fit px-1.5">
             <div className="flex aspect-square size-5 items-center justify-center">
-              <Loader2 className="size-4 animate-spin text-muted-foreground" />
+              <SpinnerIcon className="size-4 animate-spin text-muted-foreground" />
             </div>
             <span className="truncate font-medium text-muted-foreground">Loading...</span>
           </SidebarMenuButton>
@@ -146,7 +154,7 @@ export function ConnectionSwitcher() {
           <SidebarMenuItem>
             <SidebarMenuButton className="w-fit px-1.5" onClick={() => setIsAddDialogOpen(true)}>
               <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-5 items-center justify-center rounded-md">
-                <Plus className="size-3" />
+                <PlusIcon className="size-3" />
               </div>
               <span className="truncate font-medium">Add connection</span>
             </SidebarMenuButton>
@@ -175,17 +183,17 @@ export function ConnectionSwitcher() {
                   className="size-4 text-sidebar-primary"
                 />
                 {activeConnection?.isConnected && (
-                  <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-green-500 ring-1 ring-sidebar" />
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-success ring-1 ring-sidebar" />
                 )}
                 {activeConnection?.isConnecting && (
-                  <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-yellow-500 ring-1 ring-sidebar animate-pulse" />
+                  <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-warning ring-1 ring-sidebar animate-pulse" />
                 )}
               </div>
               <span className="truncate font-medium">
                 {activeConnection?.name || 'Select connection'}
               </span>
               <EnvironmentBadge environment={activeConnection?.environment} />
-              <ChevronDown className="opacity-50" />
+              <CaretDownIcon className="opacity-50" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -206,12 +214,12 @@ export function ConnectionSwitcher() {
               >
                 <div className="relative flex size-6 shrink-0 items-center justify-center rounded-xs border">
                   {connection.isConnecting ? (
-                    <Loader2 className="size-4 shrink-0 animate-spin" />
+                    <SpinnerIcon className="size-4 shrink-0 animate-spin" />
                   ) : (
                     <DatabaseIcon dbType={connection.dbType} className="size-4 shrink-0" />
                   )}
                   {connection.isConnected && !connection.isConnecting && (
-                    <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-green-500 ring-1 ring-background" />
+                    <span className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-success ring-1 ring-background" />
                   )}
                 </div>
                 <div className="flex flex-1 min-w-0 flex-col gap-0.5">
@@ -230,7 +238,7 @@ export function ConnectionSwitcher() {
                     className="p-1 hover:bg-muted rounded"
                     title="Duplicate connection"
                   >
-                    <Copy className="size-3.5" />
+                    <CopyIcon className="size-3.5" />
                   </button>
                   <button
                     type="button"
@@ -238,7 +246,7 @@ export function ConnectionSwitcher() {
                     className="p-1 hover:bg-muted rounded"
                     title="Edit connection"
                   >
-                    <Pencil className="size-3.5" />
+                    <EditIcon className="size-3.5" />
                   </button>
                   <button
                     type="button"
@@ -246,7 +254,7 @@ export function ConnectionSwitcher() {
                     className="p-1 hover:bg-destructive/10 hover:text-destructive rounded"
                     title="Delete connection"
                   >
-                    <Trash2 className="size-3.5" />
+                    <TrashIcon className="size-3.5" />
                   </button>
                 </div>
                 {index < 9 && (
@@ -257,13 +265,13 @@ export function ConnectionSwitcher() {
             <DropdownMenuSeparator />
             <DropdownMenuItem className="gap-2 p-2" onClick={() => setIsAddDialogOpen(true)}>
               <div className="bg-background flex size-6 items-center justify-center rounded-md border">
-                <Plus className="size-4" />
+                <PlusIcon className="size-4" />
               </div>
               <div className="text-muted-foreground font-medium">Add connection</div>
             </DropdownMenuItem>
             <DropdownMenuItem className="gap-2 p-2" onClick={handleManageConnections}>
               <div className="bg-background flex size-6 items-center justify-center rounded-md border">
-                <Settings className="size-4" />
+                <SettingsIcon className="size-4" />
               </div>
               <div className="text-muted-foreground font-medium">Manage connections</div>
             </DropdownMenuItem>

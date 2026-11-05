@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Sparkles, Loader2, AlertTriangle } from 'lucide-react'
+import { AiIcon, SpinnerIcon, WarningIcon } from '@/components/icons'
 import {
   Button,
   Dialog,
@@ -101,7 +101,7 @@ export function NotebookAICellDialog({
       <DialogContent className="sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="size-4 text-blue-400" />
+            <AiIcon className="size-4 text-primary" />
             AI cell
           </DialogTitle>
           <DialogDescription>
@@ -119,12 +119,12 @@ export function NotebookAICellDialog({
           rows={3}
           autoFocus
           placeholder="e.g. monthly signups for the last 6 months"
-          className="w-full resize-none rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm outline-none focus:border-blue-500/50"
+          className="w-full resize-none rounded-lg border border-border/60 bg-muted/30 px-3 py-2 text-sm outline-none focus:border-primary/50"
         />
 
         {error && (
-          <div className="flex items-start gap-2 rounded-lg border border-red-500/30 bg-red-500/5 p-2 text-red-400">
-            <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+          <div className="flex items-start gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-2 text-destructive">
+            <WarningIcon className="size-4 shrink-0 mt-0.5" />
             <span className="text-xs">{error}</span>
           </div>
         )}
@@ -136,12 +136,12 @@ export function NotebookAICellDialog({
           <Button onClick={handleGenerate} disabled={loading || !prompt.trim()}>
             {loading ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
                 Generating…
               </>
             ) : (
               <>
-                <Sparkles className="size-4" />
+                <AiIcon className="size-4" />
                 Add AI cell
               </>
             )}

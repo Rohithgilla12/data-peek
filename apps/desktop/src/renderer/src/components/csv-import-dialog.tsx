@@ -26,7 +26,13 @@ import {
   TableHeader,
   TableRow
 } from '@data-peek/ui'
-import { Upload, FileSpreadsheet, CheckCircle2, XCircle, AlertCircle, Loader2 } from 'lucide-react'
+import {
+  ErrorIcon,
+  FileSpreadsheetIcon,
+  SpinnerIcon,
+  SuccessIcon,
+  UploadIcon
+} from '@/components/icons'
 import { useImportStore, inferColumnTypes, type ParsedCsvFile } from '@/stores/import-store'
 import { useConnectionStore } from '@/stores'
 import { buildFullyQualifiedTableRef, quoteIdentifier } from '@/lib/sql-helpers'
@@ -167,7 +173,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
       <SheetContent side="right" className="w-[600px] sm:max-w-[600px] flex flex-col">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
-            <FileSpreadsheet className="size-5" />
+            <FileSpreadsheetIcon className="size-5" />
             Import CSV
           </SheetTitle>
           <SheetDescription>
@@ -204,7 +210,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                 onDragLeave={() => setIsDragging(false)}
                 onDrop={handleFileDrop}
               >
-                <Upload className="size-10 mx-auto mb-3 text-muted-foreground" />
+                <UploadIcon className="size-10 mx-auto mb-3 text-muted-foreground" />
                 <p className="text-sm font-medium">Drop a CSV file here</p>
                 <p className="text-xs text-muted-foreground mt-1">or</p>
                 <Button
@@ -229,7 +235,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
           {step === 2 && file && (
             <div className="space-y-4 pr-4">
               <div className="flex items-center gap-2 p-3 bg-muted rounded-md">
-                <FileSpreadsheet className="size-4 text-muted-foreground" />
+                <FileSpreadsheetIcon className="size-4 text-muted-foreground" />
                 <span className="text-sm font-medium">{file.name}</span>
                 <Badge variant="outline" className="ml-auto">
                   {file.rows.length} rows
@@ -330,7 +336,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                             <TableRow key={col.name}>
                               <TableCell className="text-xs font-mono">{col.name}</TableCell>
                               <TableCell className="text-xs">
-                                <Badge variant="outline" className="text-[11px]">
+                                <Badge variant="outline" className="text-2xs">
                                   {col.dataType}
                                 </Badge>
                               </TableCell>
@@ -404,7 +410,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                     <div className="flex items-center gap-1">
                       <span className="text-sm font-mono truncate">{header}</span>
                       {!isUnmapped && !hasMatch && !createNewTable && (
-                        <AlertCircle className="size-3 text-yellow-500 shrink-0" />
+                        <ErrorIcon className="size-3 text-warning shrink-0" />
                       )}
                     </div>
                     <Select
@@ -547,7 +553,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
               {isImporting && progress && (
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
-                    <Loader2 className="size-4 animate-spin text-primary" />
+                    <SpinnerIcon className="size-4 animate-spin text-primary" />
                     <span className="text-sm font-medium capitalize">{progress.phase}…</span>
                   </div>
                   <Progress value={progressPercent} className="h-2" />
@@ -565,7 +571,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
 
               {isImporting && !progress && (
                 <div className="flex items-center gap-2">
-                  <Loader2 className="size-4 animate-spin" />
+                  <SpinnerIcon className="size-4 animate-spin" />
                   <span className="text-sm">Preparing…</span>
                 </div>
               )}
@@ -574,9 +580,9 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     {result.success ? (
-                      <CheckCircle2 className="size-5 text-green-500" />
+                      <SuccessIcon className="size-5 text-success" />
                     ) : (
-                      <XCircle className="size-5 text-destructive" />
+                      <ErrorIcon className="size-5 text-destructive" />
                     )}
                     <span className="font-medium">
                       {result.success ? 'Import complete' : 'Import failed'}
@@ -584,15 +590,17 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div className="rounded-md bg-muted p-3 text-center">
-                      <p className="text-lg font-bold">{result.rowsImported.toLocaleString()}</p>
+                      <p className="text-lg font-semibold">
+                        {result.rowsImported.toLocaleString()}
+                      </p>
                       <p className="text-xs text-muted-foreground">Imported</p>
                     </div>
                     <div className="rounded-md bg-muted p-3 text-center">
-                      <p className="text-lg font-bold">{result.rowsSkipped.toLocaleString()}</p>
+                      <p className="text-lg font-semibold">{result.rowsSkipped.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">Skipped</p>
                     </div>
                     <div className="rounded-md bg-muted p-3 text-center">
-                      <p className="text-lg font-bold">{result.rowsFailed.toLocaleString()}</p>
+                      <p className="text-lg font-semibold">{result.rowsFailed.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">Failed</p>
                     </div>
                   </div>
@@ -605,7 +613,7 @@ export function CsvImportDialog({ defaultSchema, defaultTable }: CsvImportDialog
 
               {error && !result && (
                 <div className="flex items-center gap-2 text-destructive">
-                  <XCircle className="size-4" />
+                  <ErrorIcon className="size-4" />
                   <span className="text-sm">{error}</span>
                 </div>
               )}

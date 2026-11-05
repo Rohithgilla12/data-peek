@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { X, Search, DatabaseZap } from 'lucide-react'
+import { CloseIcon, DatabaseIcon, SearchIcon } from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import { getTypeColor } from '@/lib/type-colors'
 import { useClickCopy } from '@/hooks'
@@ -217,7 +217,7 @@ function FilterChipButton({
         isEditing
           ? 'border-primary/50 bg-primary/10 ring-1 ring-primary/20'
           : copied
-            ? 'border-green-500/50 bg-green-500/10'
+            ? 'border-success/30 bg-success/10'
             : 'border-border/60 bg-muted/50'
       )}
     >
@@ -225,7 +225,7 @@ function FilterChipButton({
         {chipDisplayLabel(chip)}
       </span>
       {copied && (
-        <span className="absolute inset-0 flex items-center justify-center gap-1 text-green-400 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
+        <span className="absolute inset-0 flex items-center justify-center gap-1 text-success motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
           <svg
             className="size-3"
             viewBox="0 0 16 16"
@@ -240,7 +240,7 @@ function FilterChipButton({
               className="motion-safe:[stroke-dasharray:20] motion-safe:[stroke-dashoffset:20] motion-safe:animate-[check-draw_300ms_ease-out_forwards]"
             />
           </svg>
-          <span className="text-[10px] font-medium">Copied</span>
+          <span className="text-2xs font-medium">Copied</span>
         </span>
       )}
       <span
@@ -261,7 +261,7 @@ function FilterChipButton({
           }
         }}
       >
-        <X className="size-3 text-muted-foreground hover:text-foreground" />
+        <CloseIcon className="size-3 text-muted-foreground hover:text-foreground" />
       </span>
     </button>
   )
@@ -609,7 +609,7 @@ export function SmartFilterBar({
       if (!chip.column) {
         return (
           <span className="flex items-center gap-1">
-            <Search className="size-3 text-muted-foreground" />
+            <SearchIcon className="size-3 text-muted-foreground" />
             <span className="text-foreground">{chip.value}</span>
           </span>
         )
@@ -666,7 +666,7 @@ export function SmartFilterBar({
           hasActiveFilters ? 'border-primary/20 bg-primary/[0.02]' : 'border-border/30'
         )}
       >
-        <Search
+        <SearchIcon
           className={cn(
             'size-3.5 shrink-0 transition-colors duration-200',
             hasActiveFilters ? 'text-primary/70' : 'text-muted-foreground/50'
@@ -731,17 +731,17 @@ export function SmartFilterBar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1"
+              className="h-6 px-1.5 text-2xs text-muted-foreground hover:text-foreground gap-1"
               onClick={clearAll}
             >
-              <X className="size-3" />
+              <CloseIcon className="size-3" />
               Clear
             </Button>
           )}
 
           <span
             className={cn(
-              'text-[11px] tabular-nums transition-colors duration-200',
+              'text-2xs tabular-nums transition-colors duration-200',
               isFiltered ? 'text-primary' : 'text-muted-foreground/60'
             )}
           >
@@ -761,23 +761,23 @@ export function SmartFilterBar({
       {hasActiveFilters && onApplyToQuery && (
         <div
           className={cn(
-            'flex items-center justify-between px-2.5 py-1 border-b border-amber-500/10 bg-amber-500/[0.03]',
+            'flex items-center justify-between px-2.5 py-1 border-b border-warning/30 bg-warning/[0.03]',
             'motion-safe:animate-in motion-safe:fade-in-0 motion-safe:slide-in-from-top-1 motion-safe:duration-200'
           )}
         >
-          <span className="text-[11px] text-amber-400/70">
+          <span className="text-2xs text-warning/70">
             Filtering {totalRows.toLocaleString()} loaded rows client-side
           </span>
           <Button
             variant="ghost"
             size="sm"
             className={cn(
-              'h-6 gap-1.5 text-[11px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10',
+              'h-6 gap-1.5 text-2xs text-warning hover:text-warning hover:bg-warning/10',
               'motion-safe:animate-pulse motion-safe:[animation-duration:3s] motion-safe:[animation-iteration-count:3]'
             )}
             onClick={onApplyToQuery}
           >
-            <DatabaseZap className="size-3" />
+            <DatabaseIcon className="size-3" />
             Apply to Query
           </Button>
         </div>
@@ -796,7 +796,7 @@ export function SmartFilterBar({
         >
           {builderStep === 'column' && (
             <>
-              <div className="px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
+              <div className="px-2.5 py-1.5 text-2xs font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
                 {inputValue ? 'Matching columns' : 'Select column'}
               </div>
               {(dropdownItems as FilterColumn[]).length === 0 ? (
@@ -821,7 +821,7 @@ export function SmartFilterBar({
                     onMouseEnter={() => setHighlightedIndex(i)}
                   >
                     <span className="font-medium">{col.name}</span>
-                    <span className={cn('text-[10px]', getTypeColor(col.dataType))}>
+                    <span className={cn('text-2xs', getTypeColor(col.dataType))}>
                       {col.dataType}
                     </span>
                   </button>
@@ -848,7 +848,7 @@ export function SmartFilterBar({
                       cancelBuilding()
                     }}
                   >
-                    <Search className="size-3" />
+                    <SearchIcon className="size-3" />
                     Search all columns for &ldquo;{inputValue.trim()}&rdquo;
                   </button>
                 </>
@@ -858,7 +858,7 @@ export function SmartFilterBar({
 
           {builderStep === 'operator' && selectedColumn && (
             <>
-              <div className="px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
+              <div className="px-2.5 py-1.5 text-2xs font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
                 Operator for{' '}
                 <span className={getTypeColor(selectedColumn.dataType)}>{selectedColumn.name}</span>
               </div>
@@ -878,7 +878,7 @@ export function SmartFilterBar({
                   onMouseEnter={() => setHighlightedIndex(i)}
                 >
                   <span className="font-mono font-medium">{op.label}</span>
-                  <span className="text-[10px] text-muted-foreground">{op.description}</span>
+                  <span className="text-2xs text-muted-foreground">{op.description}</span>
                 </button>
               ))}
             </>

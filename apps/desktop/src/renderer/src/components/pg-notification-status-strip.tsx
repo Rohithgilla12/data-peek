@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { RotateCw, Loader2 } from 'lucide-react'
+import { RefreshIcon, SpinnerIcon } from '@/components/icons'
 import { cn } from '@data-peek/ui'
 import type { PgNotificationConnectionStatus } from '@data-peek/shared'
 import { usePgNotificationStore } from '@/stores'
@@ -54,34 +54,34 @@ function toneClasses(tone: Tone): {
   switch (tone) {
     case 'ok':
       return {
-        dot: 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]',
-        text: 'text-emerald-500',
-        border: 'border-emerald-500/30',
-        glow: 'from-emerald-500/10 via-emerald-500/5 to-transparent',
-        bar: 'bg-emerald-500'
+        dot: 'bg-success',
+        text: 'text-success',
+        border: 'border-success/30',
+        glow: 'bg-success/10',
+        bar: 'bg-success'
       }
     case 'warn':
       return {
-        dot: 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)]',
-        text: 'text-amber-500',
-        border: 'border-amber-500/30',
-        glow: 'from-amber-500/15 via-amber-500/5 to-transparent',
-        bar: 'bg-amber-500'
+        dot: 'bg-warning',
+        text: 'text-warning',
+        border: 'border-warning/30',
+        glow: 'bg-warning/10',
+        bar: 'bg-warning'
       }
     case 'err':
       return {
-        dot: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)]',
-        text: 'text-rose-500',
-        border: 'border-rose-500/30',
-        glow: 'from-rose-500/15 via-rose-500/5 to-transparent',
-        bar: 'bg-rose-500'
+        dot: 'bg-destructive',
+        text: 'text-destructive',
+        border: 'border-destructive/30',
+        glow: 'bg-destructive/10',
+        bar: 'bg-destructive'
       }
     default:
       return {
         dot: 'bg-muted-foreground/50',
         text: 'text-muted-foreground',
         border: 'border-border',
-        glow: 'from-muted/20 via-transparent to-transparent',
+        glow: 'bg-muted/20',
         bar: 'bg-muted-foreground/40'
       }
   }
@@ -260,7 +260,7 @@ export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCoun
     <div className={cn('relative overflow-hidden border-b shrink-0 font-mono text-xs', t.border)}>
       <div
         className={cn(
-          'absolute inset-0 bg-gradient-to-r pointer-events-none transition-opacity duration-500',
+          'absolute inset-0 pointer-events-none transition-opacity duration-500',
           t.glow
         )}
       />
@@ -309,7 +309,7 @@ export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCoun
           <Sparkline samples={samples} tone={tone} />
 
           {reconnecting && countdown && (
-            <span className="text-amber-500 shrink-0 tabular-nums">retry in {countdown}</span>
+            <span className="text-warning shrink-0 tabular-nums">retry in {countdown}</span>
           )}
 
           {(failed || reconnecting) && (
@@ -326,9 +326,9 @@ export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCoun
               title="Reconnect now"
             >
               {isManualReconnecting ? (
-                <Loader2 className="size-3 animate-spin" />
+                <SpinnerIcon className="size-3 animate-spin" />
               ) : (
-                <RotateCw className="size-3" />
+                <RefreshIcon className="size-3" />
               )}
               Retry now
             </button>
@@ -346,7 +346,7 @@ export function PgNotificationStatusStrip({ connectionId, hostLabel, channelCoun
       )}
 
       {(failed || reconnectError) && (
-        <div className="relative px-3 pb-1.5 text-[11px] text-rose-500/80 truncate">
+        <div className="relative px-3 pb-1.5 text-2xs text-destructive/80 truncate">
           {reconnectError ?? status?.lastError ?? 'Connection lost'}
         </div>
       )}

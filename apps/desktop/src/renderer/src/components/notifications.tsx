@@ -1,26 +1,26 @@
 import { useNotificationStore, type NotificationType } from '@/stores/notification-store'
-import { X, CheckCircle2, AlertCircle, Info, AlertTriangle } from 'lucide-react'
+import { CloseIcon, ErrorIcon, InfoIcon, SuccessIcon, WarningIcon } from '@/components/icons'
 import { cn, Progress } from '@data-peek/ui'
 
-const iconMap: Record<NotificationType, typeof CheckCircle2> = {
-  success: CheckCircle2,
-  error: AlertCircle,
-  info: Info,
-  warning: AlertTriangle
+const iconMap: Record<NotificationType, typeof SuccessIcon> = {
+  success: SuccessIcon,
+  error: ErrorIcon,
+  info: InfoIcon,
+  warning: WarningIcon
 }
 
 const styleMap: Record<NotificationType, string> = {
-  success: 'border-green-500/30 bg-green-500/10',
-  error: 'border-red-500/30 bg-red-500/10',
-  info: 'border-blue-500/30 bg-blue-500/10',
-  warning: 'border-yellow-500/30 bg-yellow-500/10'
+  success: 'border-success/30 bg-success/10',
+  error: 'border-destructive/30 bg-destructive/10',
+  info: 'border-primary/30 bg-primary/10',
+  warning: 'border-warning/30 bg-warning/10'
 }
 
 const iconStyleMap: Record<NotificationType, string> = {
-  success: 'text-green-500',
-  error: 'text-red-500',
-  info: 'text-blue-500',
-  warning: 'text-yellow-500'
+  success: 'text-success',
+  error: 'text-destructive',
+  info: 'text-primary',
+  warning: 'text-warning'
 }
 
 export function Notifications() {
@@ -48,12 +48,14 @@ export function Notifications() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium">{notification.title}</p>
               {notification.message && (
-                <p className="text-xs text-muted-foreground mt-0.5">{notification.message}</p>
+                <p className="font-sans text-xs text-muted-foreground mt-0.5">
+                  {notification.message}
+                </p>
               )}
               {notification.progress !== undefined && (
                 <div className="mt-2.5 flex items-center gap-2">
                   <Progress value={notification.progress} className="h-1.5 flex-1" />
-                  <span className="text-[11px] font-mono text-muted-foreground w-8 text-right shrink-0">
+                  <span className="text-2xs font-mono text-muted-foreground w-8 text-right shrink-0">
                     {notification.progress}%
                   </span>
                 </div>
@@ -83,7 +85,7 @@ export function Notifications() {
                 onClick={() => removeNotification(notification.id)}
                 className="shrink-0 p-0.5 hover:bg-accent rounded transition-colors"
               >
-                <X className="size-4 text-muted-foreground" />
+                <CloseIcon className="size-4 text-muted-foreground" />
               </button>
             )}
           </div>

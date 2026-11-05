@@ -69,7 +69,7 @@ export function AuditSettingsSection() {
       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
         Audit Log
       </h3>
-      <p className="text-xs text-muted-foreground">
+      <p className="font-sans text-xs text-muted-foreground">
         Records SQL statements data-peek executes — editor, edits, DDL, scheduled, and agent (MCP) —
         in a local file on this machine. Not recorded: the explain panel, schema reads, and agent
         writes you reject. SQL text can contain data values. Off by default; prunable and deletable.
@@ -79,7 +79,7 @@ export function AuditSettingsSection() {
         <div className="space-y-0.5">
           <Label htmlFor="audit-enabled">Enable audit log</Label>
           {!status.available && (
-            <p className="text-xs text-muted-foreground">
+            <p className="font-sans text-xs text-muted-foreground">
               Audit storage unavailable on this system
             </p>
           )}
@@ -97,7 +97,9 @@ export function AuditSettingsSection() {
       <div className="flex items-center justify-between">
         <div className="space-y-0.5">
           <Label htmlFor="audit-retention">Retention (days)</Label>
-          <p className="text-xs text-muted-foreground">Entries older than this are pruned</p>
+          <p className="font-sans text-xs text-muted-foreground">
+            Entries older than this are pruned
+          </p>
         </div>
         <Input
           id="audit-retention"

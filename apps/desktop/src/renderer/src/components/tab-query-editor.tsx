@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Database } from 'lucide-react'
+import { DatabaseIcon } from '@/components/icons'
 import { usePanelCollapse } from '@/hooks/use-panel-collapse'
 import { useCapabilities } from '@/hooks/use-capabilities'
 
@@ -933,11 +933,11 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
       <div className="flex flex-1 items-center justify-center">
         <div className="text-center space-y-4">
           <div className="size-16 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-            <Database className="size-8 text-muted-foreground" />
+            <DatabaseIcon className="size-8 text-muted-foreground" />
           </div>
           <div>
             <h2 className="text-lg font-medium">No Connection</h2>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="font-sans text-sm text-muted-foreground mt-1">
               This tab&apos;s connection is no longer available.
               <br />
               Select a different connection from the sidebar.
@@ -956,7 +956,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           <span className="text-sm font-medium">Entity Relationship Diagram</span>
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
             <span
-              className={`size-1.5 rounded-full ${tabConnection.isConnected ? 'bg-green-500' : 'bg-yellow-500'}`}
+              className={`size-1.5 rounded-full ${tabConnection.isConnected ? 'bg-success' : 'bg-warning'}`}
             />
             {tabConnection.name}
           </span>
@@ -1150,7 +1150,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
           }
           refsSlot={
             refsSummary ? (
-              <code className="text-[10px] bg-muted/50 px-2 py-0.5 rounded">
+              <code className="text-2xs bg-muted/50 px-2 py-0.5 rounded">
                 {refsSummary.refCount} {refsSummary.refCount === 1 ? 'ref' : 'refs'} ·{' '}
                 {refsSummary.rowsInlined.toLocaleString()} rows inlined
               </code>

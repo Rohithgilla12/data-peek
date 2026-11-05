@@ -1,23 +1,22 @@
 import * as React from 'react'
 import {
-  X,
-  Settings,
-  Sparkles,
-  Send,
-  Loader2,
-  Database,
-  DatabaseZap,
-  Trash2,
-  Lightbulb,
-  Maximize2,
-  Minimize2,
-  Plus,
-  MessageSquare,
-  ChevronLeft,
-  MoreHorizontal,
-  Pencil,
-  Check
-} from 'lucide-react'
+  AiIcon,
+  CaretLeftIcon,
+  ChatIcon,
+  CheckIcon,
+  CloseIcon,
+  DatabaseIcon,
+  EditIcon,
+  LightbulbIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  MoreIcon,
+  PlusIcon,
+  SendIcon,
+  SettingsIcon,
+  SpinnerIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -610,7 +609,7 @@ export function AIChatPanel({
       {/* Backdrop with gradient */}
       <div
         role="presentation"
-        className="fixed inset-0 z-40 bg-gradient-to-r from-transparent via-black/20 to-black/40 transition-opacity duration-300"
+        className="fixed inset-0 z-40 bg-black/30 transition-opacity duration-300"
         onClick={onClose}
       />
 
@@ -618,7 +617,7 @@ export function AIChatPanel({
       <div
         className={cn(
           'fixed inset-y-0 right-0 z-50 flex flex-col',
-          'bg-gradient-to-b from-background via-background to-background/95',
+          'bg-background',
           'border-l border-border/50',
           'shadow-2xl shadow-black/20',
           'transition-all duration-300 ease-out'
@@ -626,7 +625,7 @@ export function AIChatPanel({
         style={{ width: `${panelWidth}px` }}
       >
         {/* Decorative top gradient line */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500/0 via-blue-500/70 to-purple-500/0" />
+        <div className="absolute top-0 left-0 right-0 h-[2px] bg-primary/50" />
 
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
@@ -639,13 +638,13 @@ export function AIChatPanel({
                 className="size-8"
                 onClick={() => setShowSessionsList(false)}
               >
-                <ChevronLeft className="size-4" />
+                <CaretLeftIcon className="size-4" />
               </Button>
             ) : (
               <div className="relative">
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-full blur-sm" />
-                <div className="relative flex items-center justify-center size-8 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
-                  <Sparkles className="size-4 text-blue-400" />
+                <div className="absolute -inset-1 bg-primary/10 rounded-full" />
+                <div className="relative flex items-center justify-center size-8 rounded-full bg-primary/10 border border-primary/20">
+                  <AiIcon className="size-4 text-primary" />
                 </div>
               </div>
             )}
@@ -657,13 +656,13 @@ export function AIChatPanel({
                   <button
                     type="button"
                     onClick={() => connection && setShowSessionsList(true)}
-                    className="font-semibold text-sm hover:text-blue-400 transition-colors flex items-center gap-1.5 truncate max-w-[200px]"
+                    className="font-semibold text-sm hover:text-primary transition-colors flex items-center gap-1.5 truncate max-w-[200px]"
                     disabled={!connection}
                   >
-                    <MessageSquare className="size-3 shrink-0" />
+                    <ChatIcon className="size-3 shrink-0" />
                     <span className="truncate">{currentSession?.title || 'AI Assistant'}</span>
                   </button>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="text-2xs text-muted-foreground">
                     {sessions.length} chat{sessions.length !== 1 ? 's' : ''} • Click to switch
                   </p>
                 </>
@@ -683,7 +682,7 @@ export function AIChatPanel({
                       onClick={handleNewSession}
                       disabled={!connection}
                     >
-                      <Plus className="size-3.5" />
+                      <PlusIcon className="size-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">New chat</TooltipContent>
@@ -698,9 +697,9 @@ export function AIChatPanel({
                       onClick={() => setIsExpanded(!isExpanded)}
                     >
                       {isExpanded ? (
-                        <Minimize2 className="size-3.5" />
+                        <MinimizeIcon className="size-3.5" />
                       ) : (
-                        <Maximize2 className="size-3.5" />
+                        <MaximizeIcon className="size-3.5" />
                       )}
                     </Button>
                   </TooltipTrigger>
@@ -718,7 +717,7 @@ export function AIChatPanel({
                       onClick={handleClearChat}
                       disabled={messages.length === 0}
                     >
-                      <Trash2 className="size-3.5" />
+                      <TrashIcon className="size-3.5" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom">Clear chat</TooltipContent>
@@ -729,14 +728,14 @@ export function AIChatPanel({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="size-7" onClick={onOpenSettings}>
-                  <Settings className="size-3.5" />
+                  <SettingsIcon className="size-3.5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">AI Settings</TooltipContent>
             </Tooltip>
 
             <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
-              <X className="size-4" />
+              <CloseIcon className="size-4" />
             </Button>
           </div>
         </div>
@@ -744,12 +743,12 @@ export function AIChatPanel({
         {/* Connection Context Bar */}
         {connection && !showSessionsList && (
           <div className="flex items-center gap-2 px-4 py-2 border-b border-border/30 bg-muted/20">
-            <Database className="size-3.5 text-muted-foreground" />
+            <DatabaseIcon className="size-3.5 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">Connected to</span>
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-mono">
+            <Badge variant="secondary" className="text-2xs px-1.5 py-0 font-mono">
               {connection.name || connection.database}
             </Badge>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-2xs text-muted-foreground">
               {tableCount} table{tableCount !== 1 ? 's' : ''} available
             </span>
           </div>
@@ -762,9 +761,9 @@ export function AIChatPanel({
             <div className="p-4 border-b border-border/30">
               <Button
                 onClick={handleNewSession}
-                className="w-full gap-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                className="w-full gap-2 bg-primary hover:bg-primary/90"
               >
-                <Plus className="size-4" />
+                <PlusIcon className="size-4" />
                 New Chat
               </Button>
             </div>
@@ -774,9 +773,9 @@ export function AIChatPanel({
               <div className="p-2 space-y-1">
                 {sessions.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-center px-4">
-                    <MessageSquare className="size-10 text-muted-foreground/30 mb-3" />
+                    <ChatIcon className="size-10 text-muted-foreground/30 mb-3" />
                     <p className="text-sm text-muted-foreground">No chat sessions yet</p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">
+                    <p className="font-sans text-xs text-muted-foreground/60 mt-1">
                       Click &quot;New Chat&quot; to start a conversation
                     </p>
                   </div>
@@ -787,7 +786,7 @@ export function AIChatPanel({
                       className={cn(
                         'group flex items-start gap-2 p-3 rounded-lg cursor-pointer transition-all',
                         session.id === currentSessionId
-                          ? 'bg-blue-500/10 border border-blue-500/20'
+                          ? 'bg-primary/10 border border-primary/20'
                           : 'hover:bg-muted/50'
                       )}
                       role="button"
@@ -800,12 +799,10 @@ export function AIChatPanel({
                         }
                       }}
                     >
-                      <MessageSquare
+                      <ChatIcon
                         className={cn(
                           'size-4 shrink-0 mt-0.5',
-                          session.id === currentSessionId
-                            ? 'text-blue-400'
-                            : 'text-muted-foreground'
+                          session.id === currentSessionId ? 'text-primary' : 'text-muted-foreground'
                         )}
                       />
                       <div className="flex-1 min-w-0">
@@ -822,7 +819,7 @@ export function AIChatPanel({
                               }}
                               onClick={(e) => e.stopPropagation()}
                               autoFocus
-                              className="flex-1 text-sm bg-background border border-border rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="flex-1 text-sm bg-background border border-border rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-primary"
                             />
                             <Button
                               size="icon"
@@ -833,13 +830,13 @@ export function AIChatPanel({
                                 handleSaveTitle()
                               }}
                             >
-                              <Check className="size-3" />
+                              <CheckIcon className="size-3" />
                             </Button>
                           </div>
                         ) : (
                           <p className="text-sm font-medium truncate">{session.title}</p>
                         )}
-                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                        <p className="text-2xs text-muted-foreground mt-0.5">
                           {session.messages.length} message
                           {session.messages.length !== 1 ? 's' : ''} •{' '}
                           {new Date(session.updatedAt).toLocaleDateString()}
@@ -854,7 +851,7 @@ export function AIChatPanel({
                               className="size-6 opacity-0 group-hover:opacity-100 transition-opacity"
                               onClick={(e) => e.stopPropagation()}
                             >
-                              <MoreHorizontal className="size-3.5" />
+                              <MoreIcon className="size-3.5" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-40">
@@ -864,7 +861,7 @@ export function AIChatPanel({
                                 handleStartEditTitle(session)
                               }}
                             >
-                              <Pencil className="size-3.5 mr-2" />
+                              <EditIcon className="size-3.5 mr-2" />
                               Rename
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -872,9 +869,9 @@ export function AIChatPanel({
                                 e.stopPropagation()
                                 handleDeleteSession(session.id)
                               }}
-                              className="text-red-500 focus:text-red-500"
+                              className="text-destructive focus:text-destructive"
                             >
-                              <Trash2 className="size-3.5 mr-2" />
+                              <TrashIcon className="size-3.5 mr-2" />
                               Delete
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -892,17 +889,17 @@ export function AIChatPanel({
         {!isConfigured && (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <div className="relative mb-4">
-              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-full blur-xl" />
-              <div className="relative flex items-center justify-center size-16 rounded-full bg-gradient-to-br from-blue-500/5 to-purple-500/5 border border-border">
-                <Sparkles className="size-8 text-blue-400/50" />
+              <div className="absolute -inset-4 bg-primary/10 rounded-full" />
+              <div className="relative flex items-center justify-center size-16 rounded-full bg-primary/10 border border-border">
+                <AiIcon className="size-8 text-primary/50" />
               </div>
             </div>
             <h3 className="font-semibold mb-2">Configure AI Assistant</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-[280px]">
+            <p className="font-sans text-sm text-muted-foreground mb-4 max-w-[280px]">
               Add your API key to start asking questions about your database in natural language.
             </p>
             <Button onClick={onOpenSettings} className="gap-2">
-              <Settings className="size-4" />
+              <SettingsIcon className="size-4" />
               Configure API Key
             </Button>
           </div>
@@ -912,17 +909,17 @@ export function AIChatPanel({
         {isConfigured && !connection && (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <div className="relative mb-4">
-              <div className="absolute -inset-4 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-full blur-xl" />
-              <div className="relative flex items-center justify-center size-16 rounded-full bg-gradient-to-br from-amber-500/5 to-orange-500/5 border border-amber-500/20">
-                <DatabaseZap className="size-8 text-amber-400/50" />
+              <div className="absolute -inset-4 bg-warning/10 rounded-full" />
+              <div className="relative flex items-center justify-center size-16 rounded-full bg-warning/10 border border-warning/30">
+                <DatabaseIcon className="size-8 text-warning/50" />
               </div>
             </div>
             <h3 className="font-semibold mb-2">Connect to a Database</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-[280px]">
+            <p className="font-sans text-sm text-muted-foreground mb-4 max-w-[280px]">
               Select a database connection to start asking questions about your data.
             </p>
             <p className="text-xs text-muted-foreground/60">
-              Use <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">⌘P</kbd> to
+              Use <kbd className="px-1.5 py-0.5 rounded bg-muted text-2xs font-mono">⌘P</kbd> to
               open the connection picker
             </p>
           </div>
@@ -936,8 +933,8 @@ export function AIChatPanel({
                 {messages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <div className="relative mb-6">
-                      <div className="absolute -inset-3 bg-gradient-to-r from-blue-500/5 to-purple-500/5 rounded-full blur-lg animate-pulse" />
-                      <Lightbulb className="relative size-10 text-muted-foreground/30" />
+                      <div className="absolute -inset-3 bg-primary/10 rounded-full animate-pulse" />
+                      <LightbulbIcon className="relative size-10 text-muted-foreground/30" />
                     </div>
                     <p className="text-sm text-muted-foreground mb-6">
                       Ask me anything about your database
@@ -963,21 +960,21 @@ export function AIChatPanel({
                     already showing live activity (avoids a double "Thinking"). */}
                 {isLoading && !messages.some((m) => m.streaming) && (
                   <div className="flex items-start gap-3 animate-in fade-in-0 slide-in-from-bottom-2 duration-200">
-                    <div className="flex items-center justify-center size-7 rounded-full bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20 shrink-0">
-                      <Sparkles className="size-3.5 text-blue-400" />
+                    <div className="flex items-center justify-center size-7 rounded-full bg-primary/10 border border-primary/20 shrink-0">
+                      <AiIcon className="size-3.5 text-primary" />
                     </div>
                     <div className="flex items-center gap-2 py-2">
                       <div className="flex gap-1">
                         <span
-                          className="size-1.5 rounded-full bg-blue-400 animate-bounce"
+                          className="size-1.5 rounded-full bg-primary animate-bounce"
                           style={{ animationDelay: '0ms' }}
                         />
                         <span
-                          className="size-1.5 rounded-full bg-blue-400 animate-bounce"
+                          className="size-1.5 rounded-full bg-primary animate-bounce"
                           style={{ animationDelay: '150ms' }}
                         />
                         <span
-                          className="size-1.5 rounded-full bg-blue-400 animate-bounce"
+                          className="size-1.5 rounded-full bg-primary animate-bounce"
                           style={{ animationDelay: '300ms' }}
                         />
                       </div>
@@ -989,20 +986,20 @@ export function AIChatPanel({
             </ScrollArea>
 
             {/* Input Area */}
-            <div className="p-4 border-t border-border/50 bg-gradient-to-t from-muted/20 to-transparent">
+            <div className="p-4 border-t border-border/50 bg-muted/20">
               <div
                 className={cn(
                   'relative flex items-end gap-2 rounded-xl',
                   'bg-background/80 backdrop-blur-sm',
                   'border border-border/50',
                   'p-2 transition-all duration-200',
-                  'focus-within:border-blue-500/30 focus-within:ring-2 focus-within:ring-blue-500/10'
+                  'focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/10'
                 )}
               >
                 {/* @-mention autocomplete menu (tables + columns) */}
                 {mentionOpen && (
                   <div className="absolute bottom-full left-0 mb-2 w-72 max-h-56 overflow-auto rounded-lg border border-border/60 bg-popover shadow-xl z-50 py-1">
-                    <div className="px-2.5 py-1 text-[10px] uppercase tracking-wide text-muted-foreground/50">
+                    <div className="px-2.5 py-1 text-2xs uppercase tracking-wide text-muted-foreground/50">
                       Reference a table or column
                     </div>
                     {mentionItems.map((item, i) => (
@@ -1017,12 +1014,12 @@ export function AIChatPanel({
                         className={cn(
                           'flex w-full items-center justify-between gap-2 px-2.5 py-1.5 text-left text-xs',
                           i === mentionIndex
-                            ? 'bg-blue-500/15 text-blue-200'
+                            ? 'bg-primary/10 text-primary/80'
                             : 'text-foreground/80 hover:bg-muted/40'
                         )}
                       >
                         <span className="font-mono truncate">{item.label}</span>
-                        <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                        <span className="text-2xs text-muted-foreground/60 shrink-0">
                           {item.detail}
                         </span>
                       </button>
@@ -1041,7 +1038,7 @@ export function AIChatPanel({
                   rows={1}
                   className={cn(
                     'flex-1 resize-none bg-transparent',
-                    'text-sm placeholder:text-muted-foreground/50',
+                    'text-sm placeholder:font-sans placeholder:text-muted-foreground/50',
                     'focus:outline-none',
                     'min-h-[36px] max-h-[120px] py-2 px-2'
                   )}
@@ -1060,20 +1057,20 @@ export function AIChatPanel({
                   className={cn(
                     'size-8 rounded-lg shrink-0 transition-all duration-200',
                     input.trim()
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-lg shadow-blue-500/20'
+                      ? 'bg-primary hover:bg-primary/90'
                       : 'bg-muted text-muted-foreground'
                   )}
                   onClick={handleSendMessage}
                   disabled={!input.trim() || isLoading}
                 >
                   {isLoading ? (
-                    <Loader2 className="size-4 animate-spin" />
+                    <SpinnerIcon className="size-4 animate-spin" />
                   ) : (
-                    <Send className="size-4" />
+                    <SendIcon className="size-4" />
                   )}
                 </Button>
               </div>
-              <p className="text-[10px] text-muted-foreground/50 mt-2 text-center">
+              <p className="text-2xs text-muted-foreground/50 mt-2 text-center">
                 Press Enter to send, Shift+Enter for new line · Type @ to reference a table
               </p>
             </div>

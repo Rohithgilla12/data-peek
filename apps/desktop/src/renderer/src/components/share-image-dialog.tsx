@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@data-peek/ui'
-import { Copy, Download, Check, Loader2 } from 'lucide-react'
+import { CheckIcon, CopyIcon, DownloadIcon, SpinnerIcon } from '@/components/icons'
 
 type BackgroundStyle =
   | 'brand-blue'
@@ -249,7 +249,7 @@ export function ShareImageDialog({
 
                 {showBranding && (
                   <div
-                    className="mt-3 flex items-center justify-end gap-1.5 font-mono text-[0.6875rem] tracking-wide"
+                    className="mt-3 flex items-center justify-end gap-1.5 font-mono text-2xs tracking-wide"
                     style={{
                       color: theme === 'light' ? 'oklch(0.55 0.02 250)' : 'oklch(0.55 0.08 250)'
                     }}
@@ -328,19 +328,19 @@ export function ShareImageDialog({
               className="gap-2"
             >
               {isGenerating ? (
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
               ) : (
-                <Download className="size-4" />
+                <DownloadIcon className="size-4" />
               )}
               Save as PNG
             </Button>
             <Button onClick={handleCopyToClipboard} disabled={isGenerating} className="gap-2">
               {isGenerating ? (
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
               ) : isCopied ? (
-                <Check className="size-4" />
+                <CheckIcon className="size-4" />
               ) : (
-                <Copy className="size-4" />
+                <CopyIcon className="size-4" />
               )}
               {isCopied ? 'Copied!' : 'Copy to Clipboard'}
             </Button>

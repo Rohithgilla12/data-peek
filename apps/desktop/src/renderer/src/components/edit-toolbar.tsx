@@ -1,15 +1,15 @@
 import * as React from 'react'
 import {
-  Pencil,
-  PencilOff,
-  Plus,
-  Save,
-  RotateCcw,
-  AlertTriangle,
-  FileCode,
-  ChevronDown,
-  PanelRight
-} from 'lucide-react'
+  CaretDownIcon,
+  EditIcon,
+  EditOffIcon,
+  FileCodeIcon,
+  PanelRightIcon,
+  PlusIcon,
+  SaveIcon,
+  UndoIcon,
+  WarningIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -106,19 +106,19 @@ export function EditToolbar({
               size="sm"
               className={cn(
                 'h-7 gap-1.5 text-xs transition-all',
-                isEditMode && 'bg-amber-600 hover:bg-amber-700 text-white'
+                isEditMode && 'bg-warning hover:bg-warning/90 text-warning-foreground'
               )}
               onClick={handleToggleEditMode}
               disabled={!canEdit || noPrimaryKey}
             >
               {isEditMode ? (
                 <>
-                  <PencilOff className="size-3" />
+                  <EditOffIcon className="size-3" />
                   Exit Edit
                 </>
               ) : (
                 <>
-                  <Pencil className="size-3" />
+                  <EditIcon className="size-3" />
                   Edit
                 </>
               )}
@@ -126,7 +126,7 @@ export function EditToolbar({
           </TooltipTrigger>
           <TooltipContent side="bottom">
             {noPrimaryKey ? (
-              <p className="text-xs text-red-400">Cannot edit: table has no primary key</p>
+              <p className="text-xs text-destructive">Cannot edit: table has no primary key</p>
             ) : !canEdit ? (
               <p className="text-xs">Cannot edit views or query results</p>
             ) : isEditMode ? (
@@ -141,8 +141,8 @@ export function EditToolbar({
         {noPrimaryKey && (
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center gap-1 text-amber-500">
-                <AlertTriangle className="size-3.5" />
+              <div className="flex items-center gap-1 text-warning">
+                <WarningIcon className="size-3.5" />
                 <span className="text-xs">No PK</span>
               </div>
             </TooltipTrigger>
@@ -164,10 +164,10 @@ export function EditToolbar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 gap-1.5 text-xs text-green-600 border-green-600/30 hover:bg-green-600/10"
+                  className="h-7 gap-1.5 text-xs text-success border-success/30 hover:bg-success/10"
                   onClick={onAddRowWithSheet}
                 >
-                  <Plus className="size-3" />
+                  <PlusIcon className="size-3" />
                   Add Row
                 </Button>
               </TooltipTrigger>
@@ -189,28 +189,28 @@ export function EditToolbar({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 gap-1 text-xs text-green-600 border-green-600/30 hover:bg-green-600/10"
+                  className="h-7 gap-1 text-xs text-success border-success/30 hover:bg-success/10"
                 >
-                  <Plus className="size-3" />
+                  <PlusIcon className="size-3" />
                   Add Row
-                  <ChevronDown className="size-3 ml-0.5" />
+                  <CaretDownIcon className="size-3 ml-0.5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-48">
                 <DropdownMenuItem onClick={onAddRowWithSheet} className="gap-2">
-                  <PanelRight className="size-4 text-green-500" />
+                  <PanelRightIcon className="size-4 text-success" />
                   <div className="flex flex-col">
                     <span>Add with Form</span>
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-2xs text-muted-foreground">
                       Smart fields & validation
                     </span>
                   </div>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onAddRow} className="gap-2">
-                  <Plus className="size-4 text-muted-foreground" />
+                  <PlusIcon className="size-4 text-muted-foreground" />
                   <div className="flex flex-col">
                     <span>Quick Add</span>
-                    <span className="text-[10px] text-muted-foreground">Inline row editing</span>
+                    <span className="text-2xs text-muted-foreground">Inline row editing</span>
                   </div>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -225,7 +225,7 @@ export function EditToolbar({
                   {pendingChanges.updates > 0 && (
                     <Badge
                       variant="outline"
-                      className="text-amber-500 border-amber-500/30 text-[10px] px-1.5"
+                      className="text-warning border-warning/30 text-2xs px-1.5"
                     >
                       {pendingChanges.updates} modified
                     </Badge>
@@ -233,7 +233,7 @@ export function EditToolbar({
                   {pendingChanges.inserts > 0 && (
                     <Badge
                       variant="outline"
-                      className="text-green-500 border-green-500/30 text-[10px] px-1.5"
+                      className="text-success border-success/30 text-2xs px-1.5"
                     >
                       {pendingChanges.inserts} new
                     </Badge>
@@ -241,7 +241,7 @@ export function EditToolbar({
                   {pendingChanges.deletes > 0 && (
                     <Badge
                       variant="outline"
-                      className="text-red-500 border-red-500/30 text-[10px] px-1.5"
+                      className="text-destructive border-destructive/30 text-2xs px-1.5"
                     >
                       {pendingChanges.deletes} deleted
                     </Badge>
@@ -263,7 +263,7 @@ export function EditToolbar({
                     className="h-7 gap-1.5 text-xs"
                     onClick={onPreviewSql}
                   >
-                    <FileCode className="size-3" />
+                    <FileCodeIcon className="size-3" />
                     Preview SQL
                   </Button>
                 </TooltipTrigger>
@@ -283,7 +283,7 @@ export function EditToolbar({
                   onClick={handleDiscardChanges}
                   disabled={!hasChanges}
                 >
-                  <RotateCcw className="size-3" />
+                  <UndoIcon className="size-3" />
                   Discard
                 </Button>
               </TooltipTrigger>
@@ -300,7 +300,7 @@ export function EditToolbar({
                 <Button
                   variant="default"
                   size="sm"
-                  className="h-7 gap-1.5 text-xs bg-green-600 hover:bg-green-700"
+                  className="h-7 gap-1.5 text-xs bg-success text-success-foreground hover:bg-success/90"
                   onClick={onSaveChanges}
                   disabled={!hasChanges || isCommitting}
                 >
@@ -311,7 +311,7 @@ export function EditToolbar({
                     </>
                   ) : (
                     <>
-                      <Save className="size-3" />
+                      <SaveIcon className="size-3" />
                       Save ({totalChanges})
                     </>
                   )}
@@ -339,7 +339,7 @@ export function EditToolbar({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmDiscard}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-destructive hover:bg-destructive/90"
             >
               Discard Changes
             </AlertDialogAction>
@@ -359,7 +359,10 @@ export function EditToolbar({
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmExit} className="bg-red-600 hover:bg-red-700">
+            <AlertDialogAction
+              onClick={handleConfirmExit}
+              className="bg-destructive hover:bg-destructive/90"
+            >
               Exit & Discard
             </AlertDialogAction>
           </AlertDialogFooter>

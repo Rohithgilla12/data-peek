@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { Loader2, AlertTriangle } from 'lucide-react'
+import { SpinnerIcon, WarningIcon } from '@/components/icons'
 import type { AIReportWidget, ConnectionConfig } from '@data-peek/shared'
 import { isReadOnlySql } from '@data-peek/shared'
 import { AIChart } from './ai-chart'
@@ -55,19 +55,19 @@ function ReportWidgetView({
   if (loading) {
     return (
       <div className="rounded-lg border border-border/50 bg-muted/20 p-4 flex items-center gap-2">
-        <Loader2 className="size-4 animate-spin text-blue-400" />
+        <SpinnerIcon className="size-4 animate-spin text-primary" />
         <span className="text-xs text-muted-foreground">{widget.title}…</span>
       </div>
     )
   }
   if (error) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-3">
-        <div className="flex items-start gap-2 text-red-400">
-          <AlertTriangle className="size-4 shrink-0 mt-0.5" />
+      <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+        <div className="flex items-start gap-2 text-destructive">
+          <WarningIcon className="size-4 shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-medium">{widget.title}</p>
-            <p className="text-[11px] opacity-70 mt-0.5">{error}</p>
+            <p className="text-2xs opacity-70 mt-0.5">{error}</p>
           </div>
         </div>
       </div>

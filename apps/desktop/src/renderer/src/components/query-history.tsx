@@ -1,5 +1,12 @@
 import { useState, useMemo, useEffect } from 'react'
-import { ChevronRight, Clock, Copy, MoreHorizontal, Play, Trash2 } from 'lucide-react'
+import {
+  CaretRightIcon,
+  ClockIcon,
+  CopyIcon,
+  MoreIcon,
+  PlayIcon,
+  TrashIcon
+} from '@/components/icons'
 
 import {
   Badge,
@@ -80,12 +87,12 @@ export function QueryHistory() {
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center">
           <CollapsibleTrigger className="flex items-center gap-1 flex-1">
-            <ChevronRight
+            <CaretRightIcon
               className={`size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             />
             <span>History</span>
             {filteredHistory.length > 0 && (
-              <Badge variant="outline" className="ml-1 text-[11px] px-1.5 py-0">
+              <Badge variant="outline" className="ml-1 text-2xs px-1.5 py-0 tabular-nums">
                 {filteredHistory.length}
               </Badge>
             )}
@@ -97,7 +104,7 @@ export function QueryHistory() {
             }}
             title="Clear history"
           >
-            <Trash2 className="size-3.5" />
+            <TrashIcon className="size-3.5" />
           </SidebarGroupAction>
         </SidebarGroupLabel>
         <CollapsibleContent>
@@ -123,7 +130,7 @@ export function QueryHistory() {
                                 <div className="flex items-center gap-1.5 w-full">
                                   <Badge
                                     variant="outline"
-                                    className={`text-[11px] px-1.5 py-0 shrink-0 ${getQueryTypeColor(queryType)}`}
+                                    className={`text-2xs px-1.5 py-0 shrink-0 ${getQueryTypeColor(queryType)}`}
                                   >
                                     {queryType}
                                   </Badge>
@@ -131,18 +138,18 @@ export function QueryHistory() {
                                     {truncateQuery(item.query)}
                                   </span>
                                 </div>
-                                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                                <div className="flex items-center gap-2 text-2xs text-muted-foreground">
                                   <span className="flex items-center gap-0.5">
-                                    <Clock className="size-3" />
+                                    <ClockIcon className="size-3" />
                                     {formatRelativeTime(item.timestamp)}
                                   </span>
                                   {item.status === 'success' ? (
                                     <>
-                                      <span>{item.rowCount} rows</span>
-                                      <span>{item.durationMs}ms</span>
+                                      <span className="tabular-nums">{item.rowCount} rows</span>
+                                      <span className="tabular-nums">{item.durationMs}ms</span>
                                     </>
                                   ) : (
-                                    <span className="text-red-400">error</span>
+                                    <span className="text-destructive">error</span>
                                   )}
                                 </div>
                               </div>
@@ -158,7 +165,7 @@ export function QueryHistory() {
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <SidebarMenuAction showOnHover>
-                            <MoreHorizontal />
+                            <MoreIcon />
                             <span className="sr-only">More</span>
                           </SidebarMenuAction>
                         </DropdownMenuTrigger>
@@ -168,21 +175,21 @@ export function QueryHistory() {
                           align={isMobile ? 'end' : 'start'}
                         >
                           <DropdownMenuItem onClick={() => handleQueryClick(item.query)}>
-                            <Play className="text-muted-foreground" />
+                            <PlayIcon className="text-muted-foreground" />
                             <span>Load in editor</span>
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => navigator.clipboard.writeText(item.query)}
                           >
-                            <Copy className="text-muted-foreground" />
+                            <CopyIcon className="text-muted-foreground" />
                             <span>Copy query</span>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-400"
+                            className="text-destructive"
                             onClick={() => removeFromHistory(item.id)}
                           >
-                            <Trash2 className="text-red-400" />
+                            <TrashIcon className="text-destructive" />
                             <span>Delete from history</span>
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -197,7 +204,7 @@ export function QueryHistory() {
                     className="text-sidebar-foreground/70"
                     onClick={() => setIsHistoryDialogOpen(true)}
                   >
-                    <MoreHorizontal />
+                    <MoreIcon />
                     <span>View all ({filteredHistory.length})</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

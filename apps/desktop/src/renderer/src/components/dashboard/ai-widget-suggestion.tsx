@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import {
-  Sparkles,
-  Loader2,
-  BarChart3,
-  LineChart,
-  AreaChart,
-  PieChart,
-  Hash,
-  Table2
-} from 'lucide-react'
+  AiIcon,
+  AreaChartIcon,
+  ChartBarIcon,
+  HashIcon,
+  LineChartIcon,
+  PieChartIcon,
+  SpinnerIcon,
+  TableIcon
+} from '@/components/icons'
 
 import { Badge } from '@data-peek/ui'
 import type { ChartWidgetType, KPIFormat, WidgetType } from '@shared/index'
@@ -31,11 +31,11 @@ export interface WidgetSuggestion {
   reason: string
 }
 
-const CHART_ICONS: Record<ChartWidgetType, typeof BarChart3> = {
-  bar: BarChart3,
-  line: LineChart,
-  area: AreaChart,
-  pie: PieChart
+const CHART_ICONS: Record<ChartWidgetType, typeof ChartBarIcon> = {
+  bar: ChartBarIcon,
+  line: LineChartIcon,
+  area: AreaChartIcon,
+  pie: PieChartIcon
 }
 
 /**
@@ -221,11 +221,11 @@ export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidget
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2">
-        <Sparkles className="size-4 text-purple-500" />
+        <AiIcon className="size-4 text-primary" />
         <span className="text-sm font-medium">AI Suggestions</span>
         {isAnalyzing && (
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Loader2 className="size-3 animate-spin" />
+            <SpinnerIcon className="size-3 animate-spin" />
             Analyzing data...
           </div>
         )}
@@ -238,8 +238,8 @@ export function AIWidgetSuggestion({ queryResult, onSuggestionSelect }: AIWidget
               suggestion.type === 'chart' && suggestion.chartType
                 ? CHART_ICONS[suggestion.chartType]
                 : suggestion.type === 'kpi'
-                  ? Hash
-                  : Table2
+                  ? HashIcon
+                  : TableIcon
 
             return (
               <button

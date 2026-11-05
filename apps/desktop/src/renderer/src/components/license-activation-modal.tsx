@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Loader2, Key, ExternalLink } from 'lucide-react'
+import { ExternalLinkIcon, KeyIcon, SpinnerIcon } from '@/components/icons'
 import {
   Button,
   Input,
@@ -84,7 +84,7 @@ export function LicenseActivationModal({ open, onOpenChange }: LicenseActivation
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Key className="size-5" />
+            <KeyIcon className="size-5" />
             Activate License
           </DialogTitle>
           <DialogDescription>
@@ -137,7 +137,7 @@ export function LicenseActivationModal({ open, onOpenChange }: LicenseActivation
                 className="inline-flex items-center gap-1 text-primary hover:underline"
               >
                 Purchase one
-                <ExternalLink className="size-3" />
+                <ExternalLinkIcon className="size-3" />
               </a>
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -149,7 +149,7 @@ export function LicenseActivationModal({ open, onOpenChange }: LicenseActivation
                 className="inline-flex items-center gap-1 text-primary hover:underline"
               >
                 License Dashboard
-                <ExternalLink className="size-3" />
+                <ExternalLinkIcon className="size-3" />
               </a>
             </p>
           </div>
@@ -162,7 +162,7 @@ export function LicenseActivationModal({ open, onOpenChange }: LicenseActivation
           <Button onClick={handleActivate} disabled={!isValid || isLoading}>
             {isLoading ? (
               <>
-                <Loader2 className="size-4 animate-spin" />
+                <SpinnerIcon className="size-4 animate-spin" />
                 Activating...
               </>
             ) : (

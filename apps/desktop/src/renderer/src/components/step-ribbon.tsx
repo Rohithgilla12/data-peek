@@ -1,5 +1,11 @@
 import { useMemo } from 'react'
-import { Play, SkipForward, FastForward, Square, RefreshCw } from 'lucide-react'
+import {
+  FastForwardIcon,
+  PlayIcon,
+  RefreshIcon,
+  SkipForwardIcon,
+  StopIcon
+} from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import type { SessionState } from '@shared/index'
 import { useStepStore } from '@/stores/step-store'
@@ -46,7 +52,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
       {/* Top-edge progress bar */}
       <div className="absolute inset-x-0 top-0 h-[2px] bg-border/40">
         <div
-          className="h-full bg-gradient-to-r from-primary to-cyan-400 transition-[width] duration-300 ease-out"
+          className="h-full bg-primary transition-[width] duration-300 ease-out"
           style={{ width: `${progressPct}%` }}
         />
       </div>
@@ -66,7 +72,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
       {/* Statement preview */}
       <div className="flex-1 text-xs font-mono text-muted-foreground overflow-hidden text-ellipsis whitespace-nowrap">
         {session.state === 'done' ? (
-          <span className="text-green-500">
+          <span className="text-success">
             Complete — {session.statements.length} statements executed
           </span>
         ) : session.state === 'errored' && session.lastError ? (
@@ -91,9 +97,9 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
           disabled={!canNext}
           className="h-7 text-xs"
         >
-          <Play className="size-3 mr-1" />
+          <PlayIcon className="size-3 mr-1" />
           Next
-          <kbd className="ml-2 opacity-60 text-[10px]">⇧↵</kbd>
+          <kbd className="ml-2 opacity-60 text-2xs">⇧↵</kbd>
         </Button>
         <Button
           size="sm"
@@ -102,7 +108,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
           disabled={!canNext}
           className="h-7 text-xs"
         >
-          <SkipForward className="size-3 mr-1" />
+          <SkipForwardIcon className="size-3 mr-1" />
           Skip
         </Button>
         <Button
@@ -112,7 +118,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
           disabled={!canNext}
           className="h-7 text-xs"
         >
-          <FastForward className="size-3 mr-1" />
+          <FastForwardIcon className="size-3 mr-1" />
           Continue
         </Button>
         {canRetry && (
@@ -120,9 +126,9 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
             size="sm"
             variant="ghost"
             onClick={() => retryStep(tabId)}
-            className="h-7 text-xs text-amber-500 hover:text-amber-400"
+            className="h-7 text-xs text-warning hover:text-warning"
           >
-            <RefreshCw className="size-3 mr-1" />
+            <RefreshIcon className="size-3 mr-1" />
             Retry
           </Button>
         )}
@@ -133,7 +139,7 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
           disabled={isRunning}
           className="h-7 text-xs text-destructive hover:text-destructive"
         >
-          <Square className="size-3 mr-1" />
+          <StopIcon className="size-3 mr-1" />
           Stop
         </Button>
       </div>
@@ -144,12 +150,12 @@ export function StepRibbon({ tabId }: StepRibbonProps) {
 function StatusDot({ state }: { state: SessionState }) {
   const color =
     state === 'running'
-      ? 'bg-amber-500 animate-pulse'
+      ? 'bg-warning animate-pulse'
       : state === 'paused' || state === 'idle'
         ? 'bg-primary'
         : state === 'errored'
           ? 'bg-destructive'
-          : 'bg-green-500'
+          : 'bg-success'
   return <div className={cn('size-2 rounded-full', color)} />
 }
 

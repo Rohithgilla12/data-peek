@@ -1,4 +1,4 @@
-import { X, BarChart2 } from 'lucide-react'
+import { ChartBarIcon, CloseIcon } from '@/components/icons'
 import type { ColumnStats, HistogramBucket, CommonValue } from '@shared/index'
 import { Button, Badge, ScrollArea, Separator, Skeleton } from '@data-peek/ui'
 
@@ -40,7 +40,7 @@ function Histogram({ buckets }: HistogramProps) {
       {buckets.map((bucket, i) => (
         <div key={i} className="flex items-center gap-2">
           <div className="w-20 text-right shrink-0">
-            <span className="text-[10px] text-muted-foreground font-mono">
+            <span className="text-2xs text-muted-foreground font-mono">
               {formatNumber(bucket.min, 0)}
             </span>
           </div>
@@ -51,7 +51,7 @@ function Histogram({ buckets }: HistogramProps) {
             />
           </div>
           <div className="w-12 shrink-0">
-            <span className="text-[10px] text-muted-foreground font-mono">
+            <span className="text-2xs text-muted-foreground font-mono">
               {formatNumber(bucket.count, 0)}
             </span>
           </div>
@@ -80,7 +80,7 @@ function CommonValuesList({ values }: CommonValuesProps) {
                 item.value
               )}
             </span>
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-2xs text-muted-foreground">
               {formatNumber(item.count, 0)} ({formatPercentage(item.percentage)})
             </span>
           </div>
@@ -115,14 +115,14 @@ function BooleanBar({ trueCount, falseCount, nullCount }: BooleanBarProps) {
       <div className="flex h-6 rounded overflow-hidden gap-0.5">
         {truePct > 0 && (
           <div
-            className="bg-green-500/70 flex items-center justify-center"
+            className="bg-success/70 flex items-center justify-center"
             style={{ width: `${truePct}%` }}
             title={`true: ${trueCount}`}
           />
         )}
         {falsePct > 0 && (
           <div
-            className="bg-red-500/70 flex items-center justify-center"
+            className="bg-destructive/70 flex items-center justify-center"
             style={{ width: `${falsePct}%` }}
             title={`false: ${falseCount}`}
           />
@@ -137,11 +137,11 @@ function BooleanBar({ trueCount, falseCount, nullCount }: BooleanBarProps) {
       </div>
       <div className="flex gap-3 text-xs">
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-sm bg-green-500/70 inline-block" />
+          <span className="w-2 h-2 rounded-sm bg-success/70 inline-block" />
           true: {formatNumber(trueCount, 0)} ({formatPercentage(truePct)})
         </span>
         <span className="flex items-center gap-1">
-          <span className="w-2 h-2 rounded-sm bg-red-500/70 inline-block" />
+          <span className="w-2 h-2 rounded-sm bg-destructive/70 inline-block" />
           false: {formatNumber(falseCount, 0)} ({formatPercentage(falsePct)})
         </span>
         {nullCount > 0 && (
@@ -170,7 +170,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
     >
       <div className="flex items-center justify-between px-3 py-2 border-b border-border/50 shrink-0">
         <div className="flex items-center gap-2">
-          <BarChart2 className="size-4 text-muted-foreground" />
+          <ChartBarIcon className="size-4 text-muted-foreground" />
           <span className="text-sm font-medium">Column Stats</span>
         </div>
         <Button
@@ -180,7 +180,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
           data-testid="column-stats-close"
           onClick={onClose}
         >
-          <X className="size-3" />
+          <CloseIcon className="size-3" />
         </Button>
       </div>
 
@@ -204,11 +204,11 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium font-mono">{stats.column}</span>
-                  <Badge variant="outline" className="text-[9px] px-1 py-0 font-mono">
+                  <Badge variant="outline" className="text-2xs px-1 py-0 font-mono">
                     {stats.dataType}
                   </Badge>
                 </div>
-                <Badge variant="secondary" className="text-[9px] px-1.5 py-0">
+                <Badge variant="secondary" className="text-2xs px-1.5 py-0">
                   {stats.statsType}
                 </Badge>
               </div>
@@ -231,7 +231,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                 <>
                   <Separator />
                   <div className="space-y-0.5">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
+                    <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
                       Numeric
                     </p>
                     <StatRow label="Min" value={stats.min != null ? String(stats.min) : null} />
@@ -253,7 +253,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                     <>
                       <Separator />
                       <div className="space-y-2">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                        <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium">
                           Distribution
                         </p>
                         <Histogram buckets={stats.histogram} />
@@ -267,7 +267,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                 <>
                   <Separator />
                   <div className="space-y-0.5">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
+                    <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
                       Length
                     </p>
                     <StatRow
@@ -287,7 +287,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                     <>
                       <Separator />
                       <div className="space-y-2">
-                        <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                        <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium">
                           Top values
                         </p>
                         <CommonValuesList values={stats.commonValues} totalRows={stats.totalRows} />
@@ -301,7 +301,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                 <>
                   <Separator />
                   <div className="space-y-0.5">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
+                    <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium pb-0.5">
                       Range
                     </p>
                     <StatRow label="Min" value={stats.min != null ? String(stats.min) : null} />
@@ -314,7 +314,7 @@ export function ColumnStatsPanel({ stats, isLoading, error, onClose }: ColumnSta
                 <>
                   <Separator />
                   <div className="space-y-2">
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium">
+                    <p className="text-2xs text-muted-foreground uppercase tracking-wide font-medium">
                       Distribution
                     </p>
                     <BooleanBar

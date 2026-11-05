@@ -1,5 +1,13 @@
 import * as React from 'react'
-import { Check, X, RotateCcw, Braces, FileText, Copy, Expand } from 'lucide-react'
+import {
+  BracesIcon,
+  CheckIcon,
+  CloseIcon,
+  CopyIcon,
+  FileTextIcon,
+  MaximizeIcon,
+  UndoIcon
+} from '@/components/icons'
 import {
   Input,
   Button,
@@ -79,7 +87,7 @@ function TextCellEditor({
       <SheetContent side="right" className="w-[500px] sm:max-w-[500px] flex flex-col">
         <SheetHeader className="shrink-0">
           <SheetTitle className="flex items-center gap-2">
-            <FileText className="size-4 text-blue-500" />
+            <FileTextIcon className="size-4 text-primary" />
             Edit {columnName || 'Text'}
           </SheetTitle>
           <SheetDescription>Edit text content in the editor below</SheetDescription>
@@ -96,12 +104,12 @@ function TextCellEditor({
             >
               {copied ? (
                 <>
-                  <Check className="size-3 text-green-500" />
+                  <CheckIcon className="size-3 text-success" />
                   Copied!
                 </>
               ) : (
                 <>
-                  <Copy className="size-3" />
+                  <CopyIcon className="size-3" />
                   Copy
                 </>
               )}
@@ -112,13 +120,13 @@ function TextCellEditor({
               Cancel
             </Button>
             <Button size="sm" className="h-7 gap-1.5" onClick={handleSave}>
-              <Check className="size-3" />
+              <CheckIcon className="size-3" />
               Save
             </Button>
           </div>
 
           <div className="text-xs text-muted-foreground">
-            Press <kbd className="px-1 py-0.5 bg-muted rounded text-[10px]">⌘/Ctrl + Enter</kbd> to
+            Press <kbd className="px-1 py-0.5 bg-muted rounded text-2xs">⌘/Ctrl + Enter</kbd> to
             save
           </div>
 
@@ -323,8 +331,8 @@ export function EditableCell({
     if (isJson && isJsonEditorOpen) {
       return (
         <>
-          <div className="flex items-center gap-1.5 text-amber-500">
-            <Braces className="size-3.5" />
+          <div className="flex items-center gap-1.5 text-warning">
+            <BracesIcon className="size-3.5" />
             <span className="text-xs">Editing...</span>
           </div>
           <JsonCellEditor
@@ -347,8 +355,8 @@ export function EditableCell({
     if (isTextEditorOpen) {
       return (
         <>
-          <div className="flex items-center gap-1.5 text-blue-500">
-            <FileText className="size-3.5" />
+          <div className="flex items-center gap-1.5 text-primary">
+            <FileTextIcon className="size-3.5" />
             <span className="text-xs">Editing...</span>
           </div>
           <TextCellEditor
@@ -421,7 +429,7 @@ export function EditableCell({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="size-6 text-blue-500 hover:text-blue-400 hover:bg-blue-500/10"
+                  className="size-6 text-primary hover:text-primary hover:bg-primary/10"
                   onClick={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
@@ -429,7 +437,7 @@ export function EditableCell({
                   }}
                   onMouseDown={(e) => e.preventDefault()} // Prevent blur
                 >
-                  <Expand className="size-3" />
+                  <MaximizeIcon className="size-3" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="top">
@@ -440,18 +448,18 @@ export function EditableCell({
           <Button
             variant="ghost"
             size="icon"
-            className="size-6 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+            className="size-6 text-success hover:text-success hover:bg-success/10"
             onClick={() => onSave(parseValue(editValue, dataType))}
           >
-            <Check className="size-3" />
+            <CheckIcon className="size-3" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className="size-6 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+            className="size-6 text-destructive hover:text-destructive hover:bg-destructive/10"
             onClick={onCancel}
           >
-            <X className="size-3" />
+            <CloseIcon className="size-3" />
           </Button>
         </div>
       </div>
@@ -479,15 +487,15 @@ export function EditableCell({
       >
         {/* Modified indicator - amber left border */}
         {isModified && !isNewRow && !isDeleted && (
-          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-amber-500 rounded-full" />
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-warning rounded-full" />
         )}
         {/* New row indicator - green left border */}
         {isNewRow && (
-          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-green-500 rounded-full" />
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-success rounded-full" />
         )}
         {/* Deleted indicator - red left border */}
         {isDeleted && (
-          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-red-500 rounded-full" />
+          <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-destructive rounded-full" />
         )}
 
         <Tooltip>
@@ -500,8 +508,8 @@ export function EditableCell({
                 'text-left truncate max-w-[300px] px-1.5 py-0.5 rounded transition-colors cursor-text',
                 !isDeleted && 'hover:bg-accent/50',
                 isNull && 'text-muted-foreground/50 italic',
-                isModified && !isNewRow && 'bg-amber-500/10',
-                isNewRow && 'bg-green-500/10',
+                isModified && !isNewRow && 'bg-warning/10',
+                isNewRow && 'bg-success/10',
                 isDeleted && 'line-through text-muted-foreground cursor-not-allowed'
               )}
             >
@@ -512,11 +520,11 @@ export function EditableCell({
             <div className="space-y-1">
               <p className="text-xs font-mono break-all">{displayValue}</p>
               {isModified && !isNewRow && (
-                <p className="text-[10px] text-muted-foreground">
+                <p className="text-2xs text-muted-foreground">
                   Original: {formatForInput(originalValue, dataType) || 'NULL'}
                 </p>
               )}
-              {!isDeleted && <p className="text-[10px] text-muted-foreground">Click to edit</p>}
+              {!isDeleted && <p className="text-2xs text-muted-foreground">Click to edit</p>}
             </div>
           </TooltipContent>
         </Tooltip>
@@ -531,7 +539,7 @@ export function EditableCell({
                 className="size-5 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
                 onClick={onRevert}
               >
-                <RotateCcw className="size-3" />
+                <UndoIcon className="size-3" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="top">

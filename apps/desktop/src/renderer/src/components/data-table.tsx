@@ -8,7 +8,16 @@ import {
   type ColumnDef
 } from '@tanstack/react-table'
 import { useVirtualizer, type Virtualizer } from '@tanstack/react-virtual'
-import { ArrowUpDown, ArrowUp, ArrowDown, Link2, Copy, BarChart2, Lock, Unlock } from 'lucide-react'
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ArrowsDownUpIcon,
+  ChartBarIcon,
+  CopyIcon,
+  LinkIcon,
+  LockIcon,
+  UnlockIcon
+} from '@/components/icons'
 import type { ForeignKeyInfo } from '@data-peek/shared'
 import { RowContextMenu } from '@/components/row-context-menu'
 import {
@@ -171,7 +180,7 @@ const CellValue = React.memo(function CellValue({
         type="button"
         onClick={() => copy(String(value))}
         className={`text-xs font-mono px-1.5 py-0.5 -mx-1 rounded hover:bg-accent/50 transition-colors ${
-          boolVal ? 'text-green-500' : 'text-red-400'
+          boolVal ? 'text-success' : 'text-destructive'
         }`}
       >
         {String(value)}
@@ -197,7 +206,7 @@ const CellValue = React.memo(function CellValue({
           <button
             type="button"
             onClick={() => copy(stringValue)}
-            className={`text-left truncate max-w-[300px] hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${isMono ? 'font-mono text-xs' : ''}`}
+            className={`text-left truncate max-w-[300px] hover:bg-accent/50 px-1 -mx-1 rounded transition-colors ${isMono ? 'font-mono text-xs tabular-nums' : ''}`}
           >
             {isLong ? stringValue.substring(0, 50) + '...' : stringValue}
           </button>
@@ -211,10 +220,10 @@ const CellValue = React.memo(function CellValue({
               className="size-6 shrink-0"
               onClick={() => copy(stringValue)}
             >
-              <Copy className="size-3" />
+              <CopyIcon className="size-3" />
             </Button>
           </div>
-          {copied && <p className="text-xs text-green-500 mt-1">Copied!</p>}
+          {copied && <p className="text-xs text-success mt-1">Copied!</p>}
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -388,29 +397,29 @@ export function DataTable<TData extends Record<string, unknown>>({
                     title="Click to sort, Shift+click for multi-sort"
                   >
                     <span>{displayName}</span>
-                    {isMasked && <Lock className="ml-1 size-3 text-amber-500" />}
-                    {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
+                    {isMasked && <LockIcon className="ml-1 size-3 text-warning" />}
+                    {col.foreignKey && <LinkIcon className="ml-1 size-3 text-cat-blue" />}
                     <Badge
                       variant="outline"
-                      className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                      className={`ml-1.5 text-2xs px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
                     >
                       {col.dataType}
                     </Badge>
                     {activeChip ? (
                       <span className="ml-1 inline-flex items-center gap-0.5">
                         {activeChip.direction === 'asc' ? (
-                          <ArrowUp className="size-3 text-primary" />
+                          <ArrowUpIcon className="size-3 text-primary" />
                         ) : (
-                          <ArrowDown className="size-3 text-primary" />
+                          <ArrowDownIcon className="size-3 text-primary" />
                         )}
                         {sortChips.length > 1 && (
-                          <span className="text-[9px] font-mono font-semibold text-primary/80 tabular-nums">
+                          <span className="text-2xs font-mono font-semibold text-primary/80 tabular-nums">
                             {activeRank}
                           </span>
                         )}
                       </span>
                     ) : (
-                      <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                      <ArrowsDownUpIcon className="ml-1 size-3 opacity-50" />
                     )}
                   </Button>
                   {(onColumnStatsClick || tabId) && (
@@ -423,13 +432,13 @@ export function DataTable<TData extends Record<string, unknown>>({
                           className="size-5 ml-0.5 opacity-0 group-hover/head:opacity-100 hover:opacity-100 focus:opacity-100"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <BarChart2 className="size-3" />
+                          <ChartBarIcon className="size-3" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         {onColumnStatsClick && (
                           <DropdownMenuItem onClick={() => onColumnStatsClick(col)}>
-                            <BarChart2 className="size-3 mr-2" />
+                            <ChartBarIcon className="size-3 mr-2" />
                             Column Statistics
                           </DropdownMenuItem>
                         )}
@@ -438,12 +447,12 @@ export function DataTable<TData extends Record<string, unknown>>({
                           <DropdownMenuItem onClick={() => toggleColumnMask(tabId, col.name)}>
                             {isMasked ? (
                               <>
-                                <Unlock className="size-3 mr-2" />
+                                <UnlockIcon className="size-3 mr-2" />
                                 Unmask Column
                               </>
                             ) : (
                               <>
-                                <Lock className="size-3 mr-2" />
+                                <LockIcon className="size-3 mr-2" />
                                 Mask Column
                               </>
                             )}
@@ -454,7 +463,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                   )}
                 </div>
                 {col.foreignKey && (
-                  <span className="text-[9px] text-muted-foreground px-2 -mt-0.5">
+                  <span className="text-2xs text-muted-foreground px-2 -mt-0.5">
                     → {col.foreignKey.referencedTable}
                   </span>
                 )}

@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  BookOpen,
-  ChevronRight,
-  Plus,
-  MoreHorizontal,
-  Trash2,
-  FolderOpen,
-  Upload
-} from 'lucide-react'
+  BookOpenIcon,
+  CaretRightIcon,
+  FolderOpenIcon,
+  MoreIcon,
+  PlusIcon,
+  TrashIcon,
+  UploadIcon
+} from '@/components/icons'
 
 import {
   Collapsible,
@@ -154,13 +154,13 @@ export function NotebookSidebar() {
   const renderNotebookItem = (nb: Notebook) => (
     <SidebarMenuItem key={nb.id}>
       <SidebarMenuButton onClick={() => handleOpen(nb)} className="h-auto py-1.5">
-        <BookOpen className="size-4 shrink-0" />
+        <BookOpenIcon className="size-4 shrink-0" />
         <span className="text-xs truncate">{nb.title}</span>
       </SidebarMenuButton>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <SidebarMenuAction showOnHover>
-            <MoreHorizontal />
+            <MoreIcon />
             <span className="sr-only">More</span>
           </SidebarMenuAction>
         </DropdownMenuTrigger>
@@ -170,12 +170,12 @@ export function NotebookSidebar() {
           align={isMobile ? 'end' : 'start'}
         >
           <DropdownMenuItem onClick={() => handleOpen(nb)}>
-            <BookOpen className="text-muted-foreground" />
+            <BookOpenIcon className="text-muted-foreground" />
             <span>Open notebook</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-red-400" onClick={() => handleDelete(nb)}>
-            <Trash2 className="text-red-400" />
+          <DropdownMenuItem className="text-destructive" onClick={() => handleDelete(nb)}>
+            <TrashIcon className="text-destructive" />
             <span>Delete</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -188,7 +188,7 @@ export function NotebookSidebar() {
       <SidebarGroup className="group-data-[collapsible=icon]:hidden">
         <SidebarGroupLabel className="flex items-center">
           <CollapsibleTrigger className="flex items-center gap-1 flex-1">
-            <ChevronRight
+            <CaretRightIcon
               className={`size-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`}
             />
             <span>Notebooks</span>
@@ -199,16 +199,16 @@ export function NotebookSidebar() {
                 onClick={(e) => e.stopPropagation()}
                 title="New or import notebook"
               >
-                <Plus className="size-3.5" />
+                <PlusIcon className="size-3.5" />
               </SidebarGroupAction>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48">
               <DropdownMenuItem onClick={handleCreate}>
-                <Plus className="text-muted-foreground" />
+                <PlusIcon className="text-muted-foreground" />
                 <span>New notebook</span>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={handleImportClick}>
-                <Upload className="text-muted-foreground" />
+                <UploadIcon className="text-muted-foreground" />
                 <span>Import .dpnb…</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -250,9 +250,9 @@ export function NotebookSidebar() {
                         <SidebarMenuItem>
                           <CollapsibleTrigger asChild>
                             <SidebarMenuButton className="h-auto py-1.5">
-                              <FolderOpen className="size-4 shrink-0" />
+                              <FolderOpenIcon className="size-4 shrink-0" />
                               <span className="text-xs truncate flex-1">{folder}</span>
-                              <ChevronRight
+                              <CaretRightIcon
                                 className={`size-3 transition-transform ml-auto ${isFolderExpanded ? 'rotate-90' : ''}`}
                               />
                             </SidebarMenuButton>

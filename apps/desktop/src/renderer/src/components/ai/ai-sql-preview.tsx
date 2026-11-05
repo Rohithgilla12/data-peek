@@ -1,14 +1,14 @@
 import * as React from 'react'
 import {
-  Play,
-  Copy,
-  Check,
-  ExternalLink,
-  ChevronDown,
-  ChevronUp,
-  Code2,
-  Loader2
-} from 'lucide-react'
+  CaretDownIcon,
+  CaretUpIcon,
+  CheckIcon,
+  CodeIcon,
+  CopyIcon,
+  ExternalLinkIcon,
+  PlayIcon,
+  SpinnerIcon
+} from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 
@@ -35,7 +35,7 @@ export function highlightSQL(sql: string): React.ReactNode[] {
   return parts.map((part, partIndex) => {
     if (part.match(/^--/) || part.match(/^\/\*/)) {
       return (
-        <span key={partIndex} className="text-zinc-500 italic">
+        <span key={partIndex} className="text-muted-foreground italic">
           {part}
         </span>
       )
@@ -58,25 +58,25 @@ export function highlightSQL(sql: string): React.ReactNode[] {
       // Determine type and apply styling
       if (fullMatch.match(keywords)) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-blue-400 font-semibold">
+          <span key={`${partIndex}-${match.index}`} className="text-cat-blue font-semibold">
             {fullMatch}
           </span>
         )
       } else if (fullMatch.startsWith("'")) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-emerald-400">
+          <span key={`${partIndex}-${match.index}`} className="text-cat-green">
             {fullMatch}
           </span>
         )
       } else if (fullMatch.match(/^\d+$/)) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-amber-400">
+          <span key={`${partIndex}-${match.index}`} className="text-cat-orange">
             {fullMatch}
           </span>
         )
       } else if (fullMatch.match(operators)) {
         tokens.push(
-          <span key={`${partIndex}-${match.index}`} className="text-purple-400">
+          <span key={`${partIndex}-${match.index}`} className="text-cat-purple">
             {fullMatch}
           </span>
         )
@@ -113,30 +113,30 @@ export function AISQLPreview({
     <div
       className={cn(
         'relative rounded-xl overflow-hidden',
-        'bg-gradient-to-b from-zinc-900/80 to-zinc-900/60',
-        'border border-zinc-800/80',
+        'bg-card',
+        'border border-border',
         'shadow-lg shadow-black/10'
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-zinc-800/50 bg-zinc-900/50">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40">
         <div className="flex items-center gap-2">
-          <Code2 className="size-3.5 text-blue-400" />
-          <span className="text-[11px] font-medium text-zinc-400">Generated SQL</span>
+          <CodeIcon className="size-3.5 text-primary" />
+          <span className="text-2xs font-medium text-muted-foreground">Generated SQL</span>
           {lines.length > 3 && (
             <button
               type="button"
               onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground transition-colors"
             >
               {isExpanded ? (
                 <>
-                  <ChevronUp className="size-3" />
+                  <CaretUpIcon className="size-3" />
                   Collapse
                 </>
               ) : (
                 <>
-                  <ChevronDown className="size-3" />
+                  <CaretDownIcon className="size-3" />
                   Expand ({lines.length} lines)
                 </>
               )}
@@ -147,16 +147,16 @@ export function AISQLPreview({
         <button
           type="button"
           onClick={() => copy(sql)}
-          className="flex items-center gap-1 text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          className="flex items-center gap-1 text-2xs text-muted-foreground hover:text-foreground transition-colors"
         >
           {copied ? (
             <>
-              <Check className="size-3 text-green-500" />
-              <span className="text-green-500">Copied</span>
+              <CheckIcon className="size-3 text-success" />
+              <span className="text-success">Copied</span>
             </>
           ) : (
             <>
-              <Copy className="size-3" />
+              <CopyIcon className="size-3" />
               Copy
             </>
           )}
@@ -170,33 +170,31 @@ export function AISQLPreview({
           !isExpanded && lines.length > 3 && 'max-h-[80px] overflow-hidden'
         )}
       >
-        <pre className="font-mono text-xs leading-relaxed text-zinc-300 whitespace-pre-wrap">
+        <pre className="font-mono text-xs leading-relaxed text-foreground whitespace-pre-wrap">
           {highlightSQL(sql)}
         </pre>
 
         {/* Gradient fade when collapsed */}
         {!isExpanded && lines.length > 3 && (
-          <div className="absolute bottom-12 left-0 right-0 h-8 bg-gradient-to-t from-zinc-900 to-transparent pointer-events-none" />
+          <div className="absolute bottom-12 left-0 right-0 h-8 bg-gradient-to-t from-card to-transparent pointer-events-none" />
         )}
       </div>
 
       {/* Explanation */}
       {explanation && (
-        <div className="px-3 py-2 border-t border-zinc-800/30 bg-zinc-900/30">
-          <p className="text-[11px] text-zinc-400 leading-relaxed">{explanation}</p>
+        <div className="px-3 py-2 border-t border-border bg-muted/40">
+          <p className="font-sans text-2xs text-muted-foreground leading-relaxed">{explanation}</p>
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 px-3 py-2 border-t border-zinc-800/50 bg-zinc-900/30">
+      <div className="flex items-center gap-2 px-3 py-2 border-t border-border bg-muted/40">
         {!requiresConfirmation && (
           <Button
             size="sm"
             className={cn(
               'h-7 gap-1.5 text-xs font-medium',
-              'bg-gradient-to-r from-blue-500 to-blue-600',
-              'hover:from-blue-600 hover:to-blue-700',
-              'shadow-md shadow-blue-500/20',
+              'bg-primary hover:bg-primary/90',
               'transition-all duration-200'
             )}
             onClick={onExecute}
@@ -204,12 +202,12 @@ export function AISQLPreview({
           >
             {isExecuting ? (
               <>
-                <Loader2 className="size-3 animate-spin" />
+                <SpinnerIcon className="size-3 animate-spin" />
                 Running...
               </>
             ) : (
               <>
-                <Play className="size-3" />
+                <PlayIcon className="size-3" />
                 Run Query
               </>
             )}
@@ -222,12 +220,12 @@ export function AISQLPreview({
           className={cn(
             'h-7 gap-1.5 text-xs',
             requiresConfirmation
-              ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-medium'
-              : 'text-zinc-400 hover:text-zinc-200'
+              ? 'bg-warning text-warning-foreground hover:bg-warning/90 font-medium'
+              : 'text-muted-foreground hover:text-foreground'
           )}
           onClick={onOpenInTab}
         >
-          <ExternalLink className="size-3" />
+          <ExternalLinkIcon className="size-3" />
           {requiresConfirmation ? 'Review in Tab' : 'Open in Tab'}
         </Button>
       </div>

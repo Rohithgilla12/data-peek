@@ -1,21 +1,21 @@
 import { useState, useMemo } from 'react'
 import {
-  ChevronRight,
-  Clock,
-  HardDrive,
-  Rows3,
-  AlertTriangle,
-  Activity,
-  BarChart3,
-  X,
-  Zap,
-  ArrowUpDown,
-  Users,
-  Timer,
-  TrendingUp,
-  Filter,
-  Database
-} from 'lucide-react'
+  ActivityIcon,
+  ArrowsDownUpIcon,
+  CaretRightIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CloseIcon,
+  DatabaseIcon,
+  FilterIcon,
+  HardDriveIcon,
+  RowsIcon,
+  TimerIcon,
+  TrendUpIcon,
+  UsersIcon,
+  WarningIcon,
+  ZapIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -101,7 +101,7 @@ function TextPlanView({
     <div className="flex flex-col h-full bg-background border-l border-border">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30 shrink-0">
         <div className="flex items-center gap-2">
-          <BarChart3 className="size-4 text-primary" />
+          <ChartBarIcon className="size-4 text-primary" />
           <span className="font-medium text-sm">Query Execution Plan</span>
         </div>
         <div className="flex items-center gap-3">
@@ -109,7 +109,7 @@ function TextPlanView({
             Total: <span className="font-mono text-foreground">{durationMs}ms</span>
           </span>
           <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
       </div>
@@ -125,19 +125,19 @@ function getNodeTypeInfo(nodeType: string): { color: string; bgColor: string } {
   const type = nodeType.toLowerCase()
 
   if (type.includes('seq scan')) {
-    return { color: 'text-orange-500', bgColor: 'bg-orange-500/10' }
+    return { color: 'text-cat-orange', bgColor: 'bg-cat-orange/10' }
   }
   if (type.includes('index') || type.includes('bitmap')) {
-    return { color: 'text-green-500', bgColor: 'bg-green-500/10' }
+    return { color: 'text-cat-green', bgColor: 'bg-cat-green/10' }
   }
   if (type.includes('hash') || type.includes('merge') || type.includes('nested')) {
-    return { color: 'text-blue-500', bgColor: 'bg-blue-500/10' }
+    return { color: 'text-cat-blue', bgColor: 'bg-cat-blue/10' }
   }
   if (type.includes('sort') || type.includes('aggregate') || type.includes('group')) {
-    return { color: 'text-purple-500', bgColor: 'bg-purple-500/10' }
+    return { color: 'text-cat-purple', bgColor: 'bg-cat-purple/10' }
   }
   if (type.includes('limit') || type.includes('result')) {
-    return { color: 'text-gray-500', bgColor: 'bg-gray-500/10' }
+    return { color: 'text-muted-foreground', bgColor: 'bg-muted' }
   }
 
   return { color: 'text-muted-foreground', bgColor: 'bg-muted' }
@@ -154,29 +154,29 @@ function calculateCostPercentage(nodeCost: number, totalCost: number): number {
 function getTimeBarColor(timePercentage: number, actualTimeMs: number): string {
   // If absolute time is very fast (< 10ms), always green
   if (actualTimeMs < 10) {
-    return '[&>div]:bg-green-500'
+    return '[&>div]:bg-success'
   }
 
   // If absolute time is reasonably fast (< 100ms), cap at yellow
   if (actualTimeMs < 100) {
-    return timePercentage > 50 ? '[&>div]:bg-yellow-500' : '[&>div]:bg-green-500'
+    return timePercentage > 50 ? '[&>div]:bg-warning' : '[&>div]:bg-success'
   }
 
   // For slower operations, use relative percentage thresholds
   // but with higher absolute time requirements
   if (actualTimeMs > 1000 && timePercentage > 50) {
-    return '[&>div]:bg-red-500'
+    return '[&>div]:bg-destructive'
   }
 
   if (actualTimeMs > 500 && timePercentage > 50) {
-    return '[&>div]:bg-yellow-500'
+    return '[&>div]:bg-warning'
   }
 
   if (timePercentage > 75 && actualTimeMs > 200) {
-    return '[&>div]:bg-yellow-500'
+    return '[&>div]:bg-warning'
   }
 
-  return '[&>div]:bg-green-500'
+  return '[&>div]:bg-success'
 }
 
 // Get warning indicators for potential issues
@@ -243,7 +243,7 @@ function PlanNodeView({
               className="group flex items-start gap-2 w-full text-left hover:bg-muted/50 rounded p-1.5 -ml-1.5 transition-colors"
             >
               {hasChildren ? (
-                <ChevronRight
+                <CaretRightIcon
                   className={cn(
                     'size-4 mt-0.5 text-muted-foreground transition-transform shrink-0',
                     isOpen && 'rotate-90'
@@ -280,17 +280,14 @@ function PlanNodeView({
                   )}
 
                   {node['Join Type'] && (
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-2xs">
                       {node['Join Type']}
                     </Badge>
                   )}
 
                   {node['Parallel Aware'] && (
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] text-blue-500 border-blue-500/30"
-                    >
-                      <Zap className="size-2.5 mr-0.5" />
+                    <Badge variant="outline" className="text-2xs text-primary border-primary/30">
+                      <ZapIcon className="size-2.5 mr-0.5" />
                       Parallel
                     </Badge>
                   )}
@@ -298,20 +295,20 @@ function PlanNodeView({
                   {node['Async Capable'] && (
                     <Badge
                       variant="outline"
-                      className="text-[10px] text-purple-500 border-purple-500/30"
+                      className="text-2xs text-cat-purple border-cat-purple/30"
                     >
                       Async
                     </Badge>
                   )}
 
-                  {warnings.length > 0 && <AlertTriangle className="size-3.5 text-yellow-500" />}
+                  {warnings.length > 0 && <WarningIcon className="size-3.5 text-warning" />}
                 </div>
 
                 {/* Metrics Row - Primary */}
                 <div className="flex items-center gap-4 mt-1.5 text-xs text-muted-foreground flex-wrap">
                   {node['Actual Rows'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <Rows3 className="size-3" />
+                      <RowsIcon className="size-3" />
                       <span className="font-mono">{node['Actual Rows'].toLocaleString()}</span> rows
                       {node['Actual Loops'] && node['Actual Loops'] > 1 && (
                         <span className="text-muted-foreground/70"> x{node['Actual Loops']}</span>
@@ -320,13 +317,13 @@ function PlanNodeView({
                       {node['Plan Rows'] !== undefined && node['Actual Rows'] !== undefined && (
                         <span
                           className={cn(
-                            'text-[10px]',
+                            'text-2xs',
                             node['Plan Rows'] === node['Actual Rows']
-                              ? 'text-green-500'
+                              ? 'text-success'
                               : Math.abs(node['Plan Rows'] - node['Actual Rows']) /
                                     Math.max(node['Plan Rows'], node['Actual Rows'], 1) >
                                   0.5
-                                ? 'text-orange-500'
+                                ? 'text-warning'
                                 : 'text-muted-foreground/70'
                           )}
                         >
@@ -338,12 +335,12 @@ function PlanNodeView({
 
                   {node['Actual Total Time'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <Clock className="size-3" />
+                      <ClockIcon className="size-3" />
                       <span className="font-mono">{node['Actual Total Time'].toFixed(2)}</span> ms
                       {/* Show startup time if significant */}
                       {node['Actual Startup Time'] !== undefined &&
                         node['Actual Startup Time'] > 0.1 && (
-                          <span className="text-[10px] text-muted-foreground/70">
+                          <span className="text-2xs text-muted-foreground/70">
                             (startup: {node['Actual Startup Time'].toFixed(2)}ms)
                           </span>
                         )}
@@ -352,7 +349,7 @@ function PlanNodeView({
 
                   {node['Total Cost'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <Activity className="size-3" />
+                      <ActivityIcon className="size-3" />
                       cost: <span className="font-mono">{node['Total Cost'].toFixed(0)}</span>
                       <span className="text-muted-foreground/70">({costPercentage}%)</span>
                     </span>
@@ -360,12 +357,12 @@ function PlanNodeView({
 
                   {/* Parallel workers */}
                   {node['Workers Launched'] !== undefined && node['Workers Launched'] > 0 && (
-                    <span className="flex items-center gap-1 text-blue-500">
-                      <Users className="size-3" />
+                    <span className="flex items-center gap-1 text-primary">
+                      <UsersIcon className="size-3" />
                       <span className="font-mono">{node['Workers Launched']}</span>
                       {node['Workers Planned'] &&
                         node['Workers Launched'] < node['Workers Planned'] && (
-                          <span className="text-orange-500">/{node['Workers Planned']}</span>
+                          <span className="text-warning">/{node['Workers Planned']}</span>
                         )}
                       workers
                     </span>
@@ -377,15 +374,13 @@ function PlanNodeView({
                   {/* Buffer stats */}
                   {node['Shared Hit Blocks'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <HardDrive className="size-3" />
+                      <HardDriveIcon className="size-3" />
                       hits: <span className="font-mono">{node['Shared Hit Blocks']}</span>
                       {node['Shared Read Blocks'] ? (
-                        <span className="text-orange-500">reads: {node['Shared Read Blocks']}</span>
+                        <span className="text-warning">reads: {node['Shared Read Blocks']}</span>
                       ) : null}
                       {node['Shared Dirtied Blocks'] ? (
-                        <span className="text-yellow-500">
-                          dirty: {node['Shared Dirtied Blocks']}
-                        </span>
+                        <span className="text-warning">dirty: {node['Shared Dirtied Blocks']}</span>
                       ) : null}
                     </span>
                   )}
@@ -394,11 +389,11 @@ function PlanNodeView({
                   {(node['I/O Read Time'] !== undefined ||
                     node['I/O Write Time'] !== undefined) && (
                     <span className="flex items-center gap-1">
-                      <Timer className="size-3" />
+                      <TimerIcon className="size-3" />
                       {node['I/O Read Time'] !== undefined && (
                         <span>
                           read:{' '}
-                          <span className="font-mono text-orange-500">
+                          <span className="font-mono text-warning">
                             {node['I/O Read Time'].toFixed(2)}ms
                           </span>
                         </span>
@@ -406,7 +401,7 @@ function PlanNodeView({
                       {node['I/O Write Time'] !== undefined && (
                         <span>
                           write:{' '}
-                          <span className="font-mono text-orange-500">
+                          <span className="font-mono text-warning">
                             {node['I/O Write Time'].toFixed(2)}ms
                           </span>
                         </span>
@@ -418,12 +413,12 @@ function PlanNodeView({
                   {node['Rows Removed by Filter'] !== undefined &&
                     node['Rows Removed by Filter'] > 0 && (
                       <span className="flex items-center gap-1">
-                        <Filter className="size-3" />
+                        <FilterIcon className="size-3" />
                         <span
                           className={cn(
                             'font-mono',
                             node['Rows Removed by Filter'] > (node['Actual Rows'] ?? 0) * 10
-                              ? 'text-orange-500'
+                              ? 'text-warning'
                               : ''
                           )}
                         >
@@ -436,7 +431,7 @@ function PlanNodeView({
                   {/* Heap fetches for index scans */}
                   {node['Heap Fetches'] !== undefined && (
                     <span className="flex items-center gap-1">
-                      <Database className="size-3" />
+                      <DatabaseIcon className="size-3" />
                       <span className="font-mono">
                         {node['Heap Fetches'].toLocaleString()}
                       </span>{' '}
@@ -447,8 +442,8 @@ function PlanNodeView({
                   {/* Temp blocks (spilling to disk) */}
                   {(node['Temp Read Blocks'] !== undefined ||
                     node['Temp Written Blocks'] !== undefined) && (
-                    <span className="flex items-center gap-1 text-orange-500">
-                      <HardDrive className="size-3" />
+                    <span className="flex items-center gap-1 text-warning">
+                      <HardDriveIcon className="size-3" />
                       temp:
                       {node['Temp Read Blocks'] !== undefined && (
                         <span className="font-mono">r:{node['Temp Read Blocks']}</span>
@@ -463,18 +458,18 @@ function PlanNodeView({
                 {/* Sort details */}
                 {node['Sort Key'] && (
                   <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <ArrowUpDown className="size-3" />
-                    <span className="font-mono text-[11px]">{node['Sort Key'].join(', ')}</span>
+                    <ArrowsDownUpIcon className="size-3" />
+                    <span className="font-mono text-2xs">{node['Sort Key'].join(', ')}</span>
                     {node['Sort Method'] && (
-                      <Badge variant="outline" className="text-[10px] h-4">
+                      <Badge variant="outline" className="text-2xs h-4">
                         {node['Sort Method']}
                       </Badge>
                     )}
                     {node['Sort Space Used'] !== undefined && (
                       <span
                         className={cn(
-                          'text-[10px]',
-                          node['Sort Space Type'] === 'Disk' ? 'text-orange-500' : ''
+                          'text-2xs',
+                          node['Sort Space Type'] === 'Disk' ? 'text-warning' : ''
                         )}
                       >
                         {node['Sort Space Used']}kB {node['Sort Space Type']}
@@ -486,9 +481,9 @@ function PlanNodeView({
                 {/* Group key */}
                 {node['Group Key'] && (
                   <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <TrendingUp className="size-3" />
-                    <span className="text-[10px]">GROUP BY</span>
-                    <span className="font-mono text-[11px]">{node['Group Key'].join(', ')}</span>
+                    <TrendUpIcon className="size-3" />
+                    <span className="text-2xs">GROUP BY</span>
+                    <span className="font-mono text-2xs">{node['Group Key'].join(', ')}</span>
                   </div>
                 )}
 
@@ -511,34 +506,34 @@ function PlanNodeView({
                   node['Hash Cond'] ||
                   node['Merge Cond'] ||
                   node['Recheck Cond']) && (
-                  <div className="mt-1.5 text-[11px] text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded space-y-0.5">
+                  <div className="mt-1.5 text-2xs text-muted-foreground font-mono bg-muted/50 px-2 py-1 rounded space-y-0.5">
                     {node['Index Cond'] && (
                       <div className="flex gap-2">
-                        <span className="text-green-600 dark:text-green-400">Index Cond:</span>
+                        <span className="text-success">Index Cond:</span>
                         <span>{node['Index Cond']}</span>
                       </div>
                     )}
                     {node['Filter'] && (
                       <div className="flex gap-2">
-                        <span className="text-blue-600 dark:text-blue-400">Filter:</span>
+                        <span className="text-cat-blue">Filter:</span>
                         <span>{node['Filter']}</span>
                       </div>
                     )}
                     {node['Recheck Cond'] && (
                       <div className="flex gap-2">
-                        <span className="text-purple-600 dark:text-purple-400">Recheck:</span>
+                        <span className="text-cat-purple">Recheck:</span>
                         <span>{node['Recheck Cond']}</span>
                       </div>
                     )}
                     {node['Hash Cond'] && (
                       <div className="flex gap-2">
-                        <span className="text-cyan-600 dark:text-cyan-400">Hash Cond:</span>
+                        <span className="text-cat-cyan">Hash Cond:</span>
                         <span>{node['Hash Cond']}</span>
                       </div>
                     )}
                     {node['Merge Cond'] && (
                       <div className="flex gap-2">
-                        <span className="text-amber-600 dark:text-amber-400">Merge Cond:</span>
+                        <span className="text-warning">Merge Cond:</span>
                         <span>{node['Merge Cond']}</span>
                       </div>
                     )}
@@ -549,11 +544,8 @@ function PlanNodeView({
                 {warnings.length > 0 && (
                   <div className="mt-1.5 space-y-1">
                     {warnings.map((warning, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-1.5 text-[11px] text-yellow-600 dark:text-yellow-500"
-                      >
-                        <AlertTriangle className="size-3 shrink-0 mt-0.5" />
+                      <div key={i} className="flex items-start gap-1.5 text-2xs text-warning">
+                        <WarningIcon className="size-3 shrink-0 mt-0.5" />
                         {warning}
                       </div>
                     ))}
@@ -654,18 +646,18 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30 shrink-0">
           <div className="flex items-center gap-2">
-            <BarChart3 className="size-4 text-primary" />
+            <ChartBarIcon className="size-4 text-primary" />
             <span className="font-medium text-sm">Query Execution Plan</span>
           </div>
           <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
         {/* Empty state */}
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="text-center space-y-3">
             <div className="size-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
-              <AlertTriangle className="size-6 text-muted-foreground" />
+              <WarningIcon className="size-6 text-muted-foreground" />
             </div>
             <div>
               <p className="text-sm font-medium">No execution plan available</p>
@@ -684,7 +676,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/40 bg-muted/30 shrink-0">
         <div className="flex items-center gap-2">
-          <BarChart3 className="size-4 text-primary" />
+          <ChartBarIcon className="size-4 text-primary" />
           <span className="font-medium text-sm">Query Execution Plan</span>
         </div>
         <div className="flex items-center gap-3">
@@ -706,7 +698,7 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
             </span>
           </div>
           <Button variant="ghost" size="icon" className="size-7" onClick={onClose}>
-            <X className="size-4" />
+            <CloseIcon className="size-4" />
           </Button>
         </div>
       </div>
@@ -714,13 +706,13 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
       {/* Summary Stats */}
       <div className="px-4 py-2 border-b border-border/40 flex items-center gap-4 text-xs shrink-0 flex-wrap">
         <div className="flex items-center gap-1.5">
-          <Activity className="size-3 text-muted-foreground" />
+          <ActivityIcon className="size-3 text-muted-foreground" />
           <span className="text-muted-foreground">Cost:</span>
           <span className="font-mono font-medium">{totalCost.toFixed(0)}</span>
         </div>
         {rootPlan['Actual Rows'] !== undefined && (
           <div className="flex items-center gap-1.5">
-            <Rows3 className="size-3 text-muted-foreground" />
+            <RowsIcon className="size-3 text-muted-foreground" />
             <span className="text-muted-foreground">Rows:</span>
             <span className="font-mono font-medium">
               {rootPlan['Actual Rows'].toLocaleString()}
@@ -735,21 +727,21 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
         )}
         {(stats.totalBufferHits > 0 || stats.totalBufferReads > 0) && (
           <div className="flex items-center gap-1.5">
-            <HardDrive className="size-3 text-muted-foreground" />
+            <HardDriveIcon className="size-3 text-muted-foreground" />
             <span className="text-muted-foreground">Buffers:</span>
-            <span className="font-mono font-medium text-green-600 dark:text-green-400">
+            <span className="font-mono font-medium text-success">
               {stats.totalBufferHits.toLocaleString()} hits
             </span>
             {stats.totalBufferReads > 0 && (
-              <span className="font-mono font-medium text-orange-500">
+              <span className="font-mono font-medium text-warning">
                 {stats.totalBufferReads.toLocaleString()} reads
               </span>
             )}
           </div>
         )}
         {stats.totalTempBlocks > 0 && (
-          <div className="flex items-center gap-1.5 text-orange-500">
-            <HardDrive className="size-3" />
+          <div className="flex items-center gap-1.5 text-warning">
+            <HardDriveIcon className="size-3" />
             <span>Temp:</span>
             <span className="font-mono font-medium">{stats.totalTempBlocks} blocks</span>
           </div>
@@ -757,16 +749,13 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
         <div className="flex items-center gap-1.5 ml-auto">
           <span className="text-muted-foreground">{stats.nodeCount} nodes</span>
           {stats.hasParallel && (
-            <Badge variant="outline" className="text-[10px] h-4 text-blue-500 border-blue-500/30">
-              <Zap className="size-2 mr-0.5" />
+            <Badge variant="outline" className="text-2xs h-4 text-primary border-primary/30">
+              <ZapIcon className="size-2 mr-0.5" />
               Parallel
             </Badge>
           )}
           {stats.hasSeqScan && (
-            <Badge
-              variant="outline"
-              className="text-[10px] h-4 text-orange-500 border-orange-500/30"
-            >
+            <Badge variant="outline" className="text-2xs h-4 text-warning border-warning/30">
               Seq Scan
             </Badge>
           )}
@@ -779,21 +768,21 @@ export function ExecutionPlanViewer({ plan, durationMs, onClose }: ExecutionPlan
       </div>
 
       {/* Legend */}
-      <div className="px-4 py-2 border-t border-border/40 flex items-center gap-4 text-[10px] text-muted-foreground shrink-0">
+      <div className="px-4 py-2 border-t border-border/40 flex items-center gap-4 text-2xs text-muted-foreground shrink-0">
         <span className="flex items-center gap-1">
-          <div className="size-2 rounded bg-orange-500" />
+          <div className="size-2 rounded bg-cat-orange" />
           Seq Scan
         </span>
         <span className="flex items-center gap-1">
-          <div className="size-2 rounded bg-green-500" />
+          <div className="size-2 rounded bg-cat-green" />
           Index Scan
         </span>
         <span className="flex items-center gap-1">
-          <div className="size-2 rounded bg-blue-500" />
+          <div className="size-2 rounded bg-cat-blue" />
           Join
         </span>
         <span className="flex items-center gap-1">
-          <div className="size-2 rounded bg-purple-500" />
+          <div className="size-2 rounded bg-cat-purple" />
           Sort/Aggregate
         </span>
       </div>

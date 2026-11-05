@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Activity,
-  BellRing,
-  Pause,
-  Play,
-  Plus,
-  Square,
-  RotateCw,
-  Eye,
-  EyeOff,
-  AlertTriangle,
-  Trash2
-} from 'lucide-react'
+  ActivityIcon,
+  BellRingingIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  PauseIcon,
+  PlayIcon,
+  PlusIcon,
+  RefreshIcon,
+  StopIcon,
+  TrashIcon,
+  WarningIcon
+} from '@/components/icons'
 import {
   cn,
   Button,
@@ -241,34 +241,33 @@ export function WatchButton({
                 }}
                 className={cn(
                   'gap-1.5 h-7 px-2.5 transition-colors',
-                  enabled &&
-                    !paused &&
-                    !held &&
-                    'text-amber-500 bg-amber-500/10 hover:bg-amber-500/15',
+                  enabled && !paused && !held && 'text-warning bg-warning/10 hover:bg-warning/15',
                   enabled && (paused || held) && 'text-muted-foreground bg-muted/50',
-                  enabled && alertFlash && 'text-rose-500 bg-rose-500/10 hover:bg-rose-500/15'
+                  enabled &&
+                    alertFlash &&
+                    'text-destructive bg-destructive/10 hover:bg-destructive/15'
                 )}
                 data-watch-active={enabled || undefined}
                 data-watch-held={held || undefined}
               >
                 {enabled ? (
                   paused ? (
-                    <EyeOff className="size-3.5" />
+                    <EyeSlashIcon className="size-3.5" />
                   ) : held ? (
-                    <Pause className="size-3.5" />
+                    <PauseIcon className="size-3.5" />
                   ) : alertFlash ? (
-                    <BellRing className="size-3.5" />
+                    <BellRingingIcon className="size-3.5" />
                   ) : (
                     <span
                       aria-hidden
                       className="relative inline-flex size-2 items-center justify-center"
                     >
-                      <span className="absolute inline-flex size-2 rounded-full bg-amber-500/40 motion-safe:animate-ping" />
-                      <span className="relative inline-flex size-1.5 rounded-full bg-amber-500" />
+                      <span className="absolute inline-flex size-2 rounded-full bg-warning/40 motion-safe:animate-ping" />
+                      <span className="relative inline-flex size-1.5 rounded-full bg-warning" />
                     </span>
                   )
                 ) : (
-                  <Eye className="size-3.5" />
+                  <EyeIcon className="size-3.5" />
                 )}
                 <span className="text-xs font-medium tabular-nums">{buttonLabel}</span>
               </Button>
@@ -287,32 +286,28 @@ export function WatchButton({
       >
         <div className="border-b px-3 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Activity className="size-3.5 text-amber-500" />
+            <ActivityIcon className="size-3.5 text-warning" />
             <span className="text-xs font-semibold">Watching</span>
           </div>
           <div className="flex items-center gap-2">
             {held && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Pause className="size-3" />
+              <span className="flex items-center gap-1 text-2xs text-muted-foreground">
+                <PauseIcon className="size-3" />
                 grid held
               </span>
             )}
             {lastSnap?.error && (
-              <span className="flex items-center gap-1 text-[10px] text-destructive">
-                <AlertTriangle className="size-3" />
+              <span className="flex items-center gap-1 text-2xs text-destructive">
+                <WarningIcon className="size-3" />
                 error
               </span>
             )}
           </div>
         </div>
-        {held && (
-          <p className="px-3 pt-2 text-[10px] leading-snug text-amber-600 dark:text-amber-400">
-            {holdMessage}
-          </p>
-        )}
+        {held && <p className="px-3 pt-2 text-2xs leading-snug text-warning">{holdMessage}</p>}
 
         <div className="px-3 py-2 space-y-2">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">
             Cadence
           </span>
           <div className="grid grid-cols-3 gap-1">
@@ -325,9 +320,9 @@ export function WatchButton({
                   watchScheduler.reschedule(tabId)
                 }}
                 className={cn(
-                  'rounded border px-2 py-1 text-[11px] font-medium transition-colors',
+                  'rounded border px-2 py-1 text-2xs font-medium transition-colors',
                   config.cadenceMs === ms
-                    ? 'border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                    ? 'border-warning/30 bg-warning/10 text-warning'
                     : 'border-border hover:bg-muted'
                 )}
               >
@@ -350,39 +345,39 @@ export function WatchButton({
         </div>
 
         <div className="border-t px-3 py-2 space-y-1">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">
             Row count
           </span>
           <WatchSparkline points={watchState?.metrics ?? []} />
         </div>
 
         <div className="border-t px-3 py-2 space-y-1.5">
-          <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <span className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">
             Alerts
           </span>
           {alerts.length > 0 && (
             <ul className="space-y-1">
               {alerts.map((alert) => (
                 <li key={alert.id} className="flex items-center gap-1.5 text-xs">
-                  <BellRing
+                  <BellRingingIcon
                     className={cn(
                       'size-3 shrink-0',
-                      alert.firedCount > 0 ? 'text-rose-500' : 'text-muted-foreground'
+                      alert.firedCount > 0 ? 'text-destructive' : 'text-muted-foreground'
                     )}
                   />
                   <span className="flex-1 truncate">{describeAlertCondition(alert.condition)}</span>
                   {alert.firedCount > 0 && (
-                    <span className="tabular-nums text-[10px] text-rose-500">
+                    <span className="tabular-nums text-2xs text-destructive">
                       {alert.firedCount}×
                     </span>
                   )}
                   <button
                     type="button"
                     aria-label="Remove alert"
-                    className="text-muted-foreground hover:text-rose-500 transition-colors"
+                    className="text-muted-foreground hover:text-destructive transition-colors"
                     onClick={() => removeAlert(tabId, alert.id)}
                   >
-                    <Trash2 className="size-3" />
+                    <TrashIcon className="size-3" />
                   </button>
                 </li>
               ))}
@@ -392,7 +387,7 @@ export function WatchButton({
             <select
               value={draftKind}
               onChange={(e) => setDraftKind(e.target.value as AlertDraftKind)}
-              className="h-6 flex-1 rounded border bg-transparent px-1 text-[11px]"
+              className="h-6 flex-1 rounded border bg-transparent px-1 text-2xs"
               aria-label="Alert condition"
             >
               {ALERT_DRAFT_OPTIONS.map((o) => (
@@ -412,7 +407,7 @@ export function WatchButton({
                 }}
                 placeholder="100"
                 aria-label="Alert threshold"
-                className="h-6 w-16 rounded border bg-transparent px-1.5 text-[11px] tabular-nums"
+                className="h-6 w-16 rounded border bg-transparent px-1.5 text-2xs tabular-nums"
               />
             )}
             <Button
@@ -423,15 +418,15 @@ export function WatchButton({
               onClick={handleAddAlert}
               aria-label="Add alert"
             >
-              <Plus className="size-3.5" />
+              <PlusIcon className="size-3.5" />
             </Button>
           </div>
-          <p className="text-[10px] leading-snug text-muted-foreground">
+          <p className="text-2xs leading-snug text-muted-foreground">
             Fires an OS notification. Thresholds re-arm when the condition clears.
           </p>
         </div>
 
-        <div className="border-t px-3 py-2 grid grid-cols-3 gap-2 text-[10px] text-muted-foreground">
+        <div className="border-t px-3 py-2 grid grid-cols-3 gap-2 text-2xs text-muted-foreground">
           <div>
             <div className="text-foreground tabular-nums text-sm font-medium">
               {totals?.ticksRun ?? 0}
@@ -442,8 +437,8 @@ export function WatchButton({
             <div
               className={cn(
                 'text-foreground tabular-nums text-sm font-medium',
-                rowDelta > 0 && 'text-emerald-500',
-                rowDelta < 0 && 'text-rose-500'
+                rowDelta > 0 && 'text-success',
+                rowDelta < 0 && 'text-destructive'
               )}
             >
               {rowDelta > 0 ? '+' : ''}
@@ -470,7 +465,7 @@ export function WatchButton({
                 watchScheduler.triggerNow(tabId)
               }}
             >
-              <Play className="size-3.5" />
+              <PlayIcon className="size-3.5" />
               Resume
             </Button>
           ) : (
@@ -480,7 +475,7 @@ export function WatchButton({
               className="h-7 gap-1.5 flex-1"
               onClick={() => pause(tabId)}
             >
-              <Pause className="size-3.5" />
+              <PauseIcon className="size-3.5" />
               Pause
             </Button>
           )}
@@ -491,22 +486,22 @@ export function WatchButton({
             onClick={() => watchScheduler.triggerNow(tabId)}
             title="Run now (⇧⌘0)"
           >
-            <RotateCw className="size-3.5" />
+            <RefreshIcon className="size-3.5" />
             Run
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 text-rose-500 hover:text-rose-500"
+            className="h-7 gap-1.5 text-destructive hover:text-destructive"
             onClick={() => {
               stop(tabId)
               watchScheduler.unregister(tabId)
               setOpen(false)
             }}
           >
-            <Square className="size-3.5" />
+            <StopIcon className="size-3.5" />
             Stop
-            <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-[9px] font-medium">
+            <kbd className="ml-1 rounded bg-muted px-1 py-0.5 text-2xs font-medium">
               {keys.mod}
               {keys.shift}W
             </kbd>

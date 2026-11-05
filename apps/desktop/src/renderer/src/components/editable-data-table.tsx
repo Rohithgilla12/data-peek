@@ -51,19 +51,19 @@ import {
 } from '@tanstack/react-table'
 import { useVirtualizer, type Virtualizer } from '@tanstack/react-virtual'
 import {
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  BarChart2,
-  Copy,
-  Link2,
-  Lock,
-  MoreHorizontal,
-  RotateCcw,
-  Trash2,
-  Unlock,
-  X
-} from 'lucide-react'
+  ArrowDownIcon,
+  ArrowUpIcon,
+  ArrowsDownUpIcon,
+  ChartBarIcon,
+  CloseIcon,
+  CopyIcon,
+  LinkIcon,
+  LockIcon,
+  MoreIcon,
+  TrashIcon,
+  UndoIcon,
+  UnlockIcon
+} from '@/components/icons'
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import * as React from 'react'
 import { CellGridInspector, CellGridOverlays, useCellGrid } from '@/components/cell-grid'
@@ -192,7 +192,7 @@ function CopyableCell({
       className={cn(
         'relative cursor-default inline-flex items-center',
         'transition-[background-color] duration-200',
-        copied && 'rounded bg-green-500/10'
+        copied && 'rounded bg-success/10'
       )}
       onClick={() => handleClick(value)}
       onDoubleClick={onDoubleClick ? handleDoubleClick : undefined}
@@ -204,7 +204,7 @@ function CopyableCell({
       {copied && (
         <span className="absolute inset-0 flex items-center px-1 motion-safe:animate-in motion-safe:fade-in-0 motion-safe:duration-150">
           <svg
-            className="size-3 text-green-400 mr-1"
+            className="size-3 text-success mr-1"
             viewBox="0 0 16 16"
             fill="none"
             stroke="currentColor"
@@ -217,7 +217,7 @@ function CopyableCell({
               className="motion-safe:[stroke-dasharray:20] motion-safe:[stroke-dashoffset:20] motion-safe:animate-[check-draw_300ms_ease-out_forwards]"
             />
           </svg>
-          <span className="text-[10px] text-green-400 font-medium">Copied</span>
+          <span className="text-2xs text-success font-medium">Copied</span>
         </span>
       )}
     </span>
@@ -712,7 +712,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       className="size-6 text-muted-foreground hover:text-foreground"
                       onClick={() => unmarkRowForDeletion(tabId, originalRow)}
                     >
-                      <RotateCcw className="size-3" />
+                      <UndoIcon className="size-3" />
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent>Restore row</TooltipContent>
@@ -725,7 +725,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       size="icon"
                       className="size-6 text-muted-foreground hover:text-foreground"
                     >
-                      <MoreHorizontal className="size-3" />
+                      <MoreIcon className="size-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="start" className="w-40">
@@ -733,15 +733,15 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       onClick={() => handleDuplicateRow(originalRow)}
                       className="gap-2"
                     >
-                      <Copy className="size-4 text-amber-500" />
+                      <CopyIcon className="size-4 text-warning" />
                       Duplicate Row
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={() => markRowForDeletion(tabId, originalRow)}
-                      className="gap-2 text-red-500 focus:text-red-500"
+                      className="gap-2 text-destructive focus:text-destructive"
                     >
-                      <Trash2 className="size-4" />
+                      <TrashIcon className="size-4" />
                       Delete Row
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -781,33 +781,33 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 >
                   <span>{displayName}</span>
                   {col.isPrimaryKey && (
-                    <span className="ml-1 text-amber-500" title="Primary Key">
+                    <span className="ml-1" title="Primary Key">
                       🔑
                     </span>
                   )}
-                  {isMasked && <Lock className="ml-1 size-3 text-amber-500" />}
-                  {col.foreignKey && <Link2 className="ml-1 size-3 text-blue-400" />}
+                  {isMasked && <LockIcon className="ml-1 size-3 text-warning" />}
+                  {col.foreignKey && <LinkIcon className="ml-1 size-3 text-cat-blue" />}
                   <Badge
                     variant="outline"
-                    className={`ml-1.5 text-[9px] px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
+                    className={`ml-1.5 text-2xs px-1 py-0 font-mono ${getTypeColor(col.dataType)}`}
                   >
                     {col.dataType}
                   </Badge>
                   {activeChip ? (
                     <span className="ml-1 inline-flex items-center gap-0.5">
                       {activeChip.direction === 'asc' ? (
-                        <ArrowUp className="size-3 text-primary" />
+                        <ArrowUpIcon className="size-3 text-primary" />
                       ) : (
-                        <ArrowDown className="size-3 text-primary" />
+                        <ArrowDownIcon className="size-3 text-primary" />
                       )}
                       {sortChips.length > 1 && (
-                        <span className="text-[9px] font-mono font-semibold text-primary/80 tabular-nums">
+                        <span className="text-2xs font-mono font-semibold text-primary/80 tabular-nums">
                           {activeRank}
                         </span>
                       )}
                     </span>
                   ) : (
-                    <ArrowUpDown className="ml-1 size-3 opacity-50" />
+                    <ArrowsDownUpIcon className="ml-1 size-3 opacity-50" />
                   )}
                 </Button>
                 <DropdownMenu>
@@ -819,13 +819,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       className="size-5 ml-0.5 opacity-0 group-hover/head:opacity-100 hover:opacity-100 focus:opacity-100"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <MoreHorizontal className="size-3" />
+                      <MoreIcon className="size-3" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     {onColumnStatsClick && (
                       <DropdownMenuItem onClick={() => onColumnStatsClick(col)}>
-                        <BarChart2 className="size-3 mr-2" />
+                        <ChartBarIcon className="size-3 mr-2" />
                         Column Statistics
                       </DropdownMenuItem>
                     )}
@@ -833,12 +833,12 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                     <DropdownMenuItem onClick={() => toggleColumnMask(tabId, col.name)}>
                       {isMasked ? (
                         <>
-                          <Unlock className="size-3 mr-2" />
+                          <UnlockIcon className="size-3 mr-2" />
                           Unmask Column
                         </>
                       ) : (
                         <>
-                          <Lock className="size-3 mr-2" />
+                          <LockIcon className="size-3 mr-2" />
                           Mask Column
                         </>
                       )}
@@ -847,7 +847,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 </DropdownMenu>
               </div>
               {col.foreignKey && (
-                <span className="text-[9px] text-muted-foreground px-2 -mt-0.5">
+                <span className="text-2xs text-muted-foreground px-2 -mt-0.5">
                   → {col.foreignKey.referencedTable}
                 </span>
               )}
@@ -990,7 +990,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 <span
                   className={cn(
                     'text-xs font-mono px-1.5 py-0.5 rounded',
-                    boolVal ? 'text-green-500' : 'text-red-400',
+                    boolVal ? 'text-success' : 'text-destructive',
                     canActivate && 'hover:bg-accent/50'
                   )}
                 >
@@ -1209,7 +1209,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                 onPreviewSql={handlePreviewSql}
               />
               {newRows.length > 0 && (
-                <span className="text-xs text-green-500 ml-auto">+{newRows.length} new</span>
+                <span className="text-xs text-success ml-auto">+{newRows.length} new</span>
               )}
             </div>
           )}
@@ -1292,7 +1292,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                                   data-index={virtualRow.index}
                                   className={cn(
                                     'hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center',
-                                    isDeleted && 'bg-red-500/5'
+                                    isDeleted && 'bg-destructive/10'
                                   )}
                                   style={{
                                     position: 'absolute',
@@ -1354,7 +1354,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                           <TableRow
                             className={cn(
                               'hover:bg-accent/30 border-border/30 transition-colors',
-                              isDeleted && 'bg-red-500/5'
+                              isDeleted && 'bg-destructive/10'
                             )}
                             style={
                               decoration.isAdded && !isDeleted ? INLINE_ADDED_ROW_STYLE : undefined
@@ -1393,16 +1393,16 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   newRows.map((newRow) => (
                     <TableRow
                       key={newRow.id}
-                      className="hover:bg-accent/30 border-border/30 bg-green-500/5"
+                      className="hover:bg-accent/30 border-border/30 bg-success/10"
                     >
                       <TableCell className="py-2 text-sm whitespace-nowrap">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-6 text-muted-foreground hover:text-red-500"
+                          className="size-6 text-muted-foreground hover:text-destructive"
                           onClick={() => removeNewRow(tabId, newRow.id)}
                         >
-                          <X className="size-3" />
+                          <CloseIcon className="size-3" />
                         </Button>
                       </TableCell>
                       {columnDefs.map((col) => (

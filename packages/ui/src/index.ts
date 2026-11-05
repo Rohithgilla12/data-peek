@@ -168,3 +168,4 @@ export {
 } from "./components/sheet";
 export { useIsMobile } from "./hooks/use-mobile";
 export { cn, keys, isMac, shortcut } from "./lib/utils";
+export * from "./icons";

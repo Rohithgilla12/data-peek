@@ -1,4 +1,4 @@
-import { Eye, EyeOff, FolderOpen } from 'lucide-react'
+import { EyeIcon, EyeSlashIcon, FolderOpenIcon } from '@/components/icons'
 import {
   Button,
   Input,
@@ -118,7 +118,7 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
               className="px-3"
               title={showSshPassword ? 'Hide password' : 'Show password'}
             >
-              {showSshPassword ? <EyeOff /> : <Eye />}
+              {showSshPassword ? <EyeSlashIcon /> : <EyeIcon />}
             </Button>
           </div>
         </div>
@@ -144,7 +144,7 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
                 onClick={handleFilePickerClick}
                 className="px-3"
               >
-                <FolderOpen className="size-4" />
+                <FolderOpenIcon className="size-4" />
               </Button>
             </div>
           </div>
@@ -169,7 +169,7 @@ export function SSHConfigSection({ config, onConfigChange }: SSHConfigSectionPro
                 className="px-3"
                 title={showPassphrase ? 'Hide passphrase' : 'Show passphrase'}
               >
-                {showPassphrase ? <EyeOff /> : <Eye />}
+                {showPassphrase ? <EyeSlashIcon /> : <EyeIcon />}
               </Button>
             </div>
           </div>

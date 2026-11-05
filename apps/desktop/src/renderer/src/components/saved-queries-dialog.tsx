@@ -1,20 +1,20 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import {
-  Bookmark,
-  Copy,
-  Play,
-  Trash2,
-  Search,
-  X,
-  Pencil,
-  FolderOpen,
-  ChevronRight,
-  ChevronDown,
-  Hash,
-  Clock,
-  BarChart3,
-  SortAsc
-} from 'lucide-react'
+  BookmarkIcon,
+  CaretDownIcon,
+  CaretRightIcon,
+  ChartBarIcon,
+  ClockIcon,
+  CloseIcon,
+  CopyIcon,
+  EditIcon,
+  FolderOpenIcon,
+  HashIcon,
+  PlayIcon,
+  SearchIcon,
+  SortAscendingIcon,
+  TrashIcon
+} from '@/components/icons'
 import {
   Button,
   Badge,
@@ -78,19 +78,19 @@ function getQueryType(query: string): string {
 function getQueryTypeColor(type: string): string {
   switch (type) {
     case 'SELECT':
-      return 'bg-blue-500/10 text-blue-500 border-blue-500/20'
+      return 'bg-cat-blue/10 text-cat-blue border-cat-blue/20'
     case 'INSERT':
-      return 'bg-green-500/10 text-green-500 border-green-500/20'
+      return 'bg-cat-green/10 text-cat-green border-cat-green/20'
     case 'UPDATE':
-      return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20'
+      return 'bg-cat-yellow/10 text-cat-yellow border-cat-yellow/20'
     case 'DELETE':
-      return 'bg-red-500/10 text-red-500 border-red-500/20'
+      return 'bg-destructive/10 text-destructive border-destructive/20'
     case 'CREATE':
     case 'ALTER':
     case 'DROP':
-      return 'bg-purple-500/10 text-purple-500 border-purple-500/20'
+      return 'bg-cat-purple/10 text-cat-purple border-cat-purple/20'
     case 'EXPLAIN':
-      return 'bg-orange-500/10 text-orange-500 border-orange-500/20'
+      return 'bg-cat-orange/10 text-cat-orange border-cat-orange/20'
     default:
       return 'bg-muted text-muted-foreground border-border'
   }
@@ -258,7 +258,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
       <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-4 py-3 border-b shrink-0">
           <DialogTitle className="flex items-center gap-2">
-            <Bookmark className="size-4" />
+            <BookmarkIcon className="size-4" />
             Saved Queries
             <Badge variant="secondary" className="ml-2">
               {filteredQueries.length} {filteredQueries.length === 1 ? 'query' : 'queries'}
@@ -269,7 +269,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
         {/* Search and Filters */}
         <div className="px-4 py-3 border-b space-y-3 shrink-0">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search saved queries..."
@@ -284,7 +284,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                 className="absolute right-1 top-1/2 -translate-y-1/2 size-7"
                 onClick={() => setSearchQuery('')}
               >
-                <X className="size-4" />
+                <CloseIcon className="size-4" />
               </Button>
             )}
           </div>
@@ -292,7 +292,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={selectedFolder} onValueChange={setSelectedFolder}>
               <SelectTrigger className="w-[140px] h-8 text-xs">
-                <FolderOpen className="size-3 mr-1.5" />
+                <FolderOpenIcon className="size-3 mr-1.5" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -309,7 +309,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
             {tags.length > 0 && (
               <Select value={selectedTag} onValueChange={setSelectedTag}>
                 <SelectTrigger className="w-[120px] h-8 text-xs">
-                  <Hash className="size-3 mr-1.5" />
+                  <HashIcon className="size-3 mr-1.5" />
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -325,7 +325,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
 
             <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
               <SelectTrigger className="w-[130px] h-8 text-xs">
-                <SortAsc className="size-3 mr-1.5" />
+                <SortAscendingIcon className="size-3 mr-1.5" />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -345,13 +345,13 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
               <div className="text-center py-12 text-muted-foreground">
                 {savedQueries.length === 0 ? (
                   <div className="space-y-2">
-                    <Bookmark className="size-8 mx-auto opacity-50" />
+                    <BookmarkIcon className="size-8 mx-auto opacity-50" />
                     <p>No saved queries yet</p>
                     <p className="text-xs">Save a query from the editor to see it here</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <Search className="size-8 mx-auto opacity-50" />
+                    <SearchIcon className="size-8 mx-auto opacity-50" />
                     <p>No queries match your filters</p>
                   </div>
                 )}
@@ -365,15 +365,15 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                 >
                   <CollapsibleTrigger className="flex items-center gap-2 w-full text-left hover:bg-muted/50 rounded-md px-2 py-1.5 transition-colors">
                     {expandedFolders.has(group.folder) ? (
-                      <ChevronDown className="size-4 text-muted-foreground" />
+                      <CaretDownIcon className="size-4 text-muted-foreground" />
                     ) : (
-                      <ChevronRight className="size-4 text-muted-foreground" />
+                      <CaretRightIcon className="size-4 text-muted-foreground" />
                     )}
-                    <FolderOpen className="size-4 text-muted-foreground" />
+                    <FolderOpenIcon className="size-4 text-muted-foreground" />
                     <span className="text-sm font-medium">
                       {group.folder === '(ungrouped)' ? 'Ungrouped' : group.folder}
                     </span>
-                    <Badge variant="secondary" className="ml-auto text-[10px]">
+                    <Badge variant="secondary" className="ml-auto text-2xs">
                       {group.queries.length}
                     </Badge>
                   </CollapsibleTrigger>
@@ -394,12 +394,12 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                 <span className="font-medium text-sm truncate">{query.name}</span>
                                 <Badge
                                   variant="outline"
-                                  className={cn('text-[10px]', getQueryTypeColor(queryType))}
+                                  className={cn('text-2xs', getQueryTypeColor(queryType))}
                                 >
                                   {queryType}
                                 </Badge>
                                 {connectionName && (
-                                  <Badge variant="outline" className="text-[10px]">
+                                  <Badge variant="outline" className="text-2xs">
                                     {connectionName}
                                   </Badge>
                                 )}
@@ -415,15 +415,15 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                 {query.query}
                               </pre>
 
-                              <div className="flex items-center gap-3 mt-2 text-[10px] text-muted-foreground">
+                              <div className="flex items-center gap-3 mt-2 text-2xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
-                                  <Clock className="size-3" />
+                                  <ClockIcon className="size-3" />
                                   {query.lastUsedAt
                                     ? formatRelativeTime(query.lastUsedAt)
                                     : 'Never used'}
                                 </span>
                                 <span className="flex items-center gap-1">
-                                  <BarChart3 className="size-3" />
+                                  <ChartBarIcon className="size-3" />
                                   {query.usageCount} uses
                                 </span>
                                 {query.tags.length > 0 && (
@@ -432,13 +432,13 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                       <Badge
                                         key={tag}
                                         variant="secondary"
-                                        className="text-[9px] px-1 py-0"
+                                        className="text-2xs px-1 py-0"
                                       >
                                         {tag}
                                       </Badge>
                                     ))}
                                     {query.tags.length > 3 && (
-                                      <span className="text-[9px]">+{query.tags.length - 3}</span>
+                                      <span className="text-2xs">+{query.tags.length - 3}</span>
                                     )}
                                   </div>
                                 )}
@@ -455,7 +455,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                       className="size-7"
                                       onClick={() => handleLoadQuery(query)}
                                     >
-                                      <Play className="size-3.5" />
+                                      <PlayIcon className="size-3.5" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>Open in new tab</TooltipContent>
@@ -471,7 +471,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                       className="size-7"
                                       onClick={() => handleCopyQuery(query.query)}
                                     >
-                                      <Copy className="size-3.5" />
+                                      <CopyIcon className="size-3.5" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>Copy query</TooltipContent>
@@ -488,7 +488,7 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                         className="size-7"
                                         onClick={() => onEditQuery(query)}
                                       >
-                                        <Pencil className="size-3.5" />
+                                        <EditIcon className="size-3.5" />
                                       </Button>
                                     </TooltipTrigger>
                                     <TooltipContent>Edit query</TooltipContent>
@@ -502,10 +502,10 @@ export function SavedQueriesDialog({ open, onOpenChange, onEditQuery }: SavedQue
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="size-7 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                                      className="size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                       onClick={() => handleDeleteQuery(query.id)}
                                     >
-                                      <Trash2 className="size-3.5" />
+                                      <TrashIcon className="size-3.5" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>Delete</TooltipContent>

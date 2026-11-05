@@ -9,7 +9,15 @@ import {
   type ErrorComponentProps
 } from '@tanstack/react-router'
 import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
-import { Moon, Sun, Monitor, Sparkles, Command, AlertTriangle, ChevronsUpDown } from 'lucide-react'
+import {
+  AiIcon,
+  CaretUpDownIcon,
+  CommandIcon,
+  MonitorIcon,
+  MoonIcon,
+  SunIcon,
+  WarningIcon
+} from '@/components/icons'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { usePokemonTracker } from '@/hooks/use-pokemon-tracker'
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
@@ -199,7 +207,7 @@ function LayoutContent() {
                       <span
                         className={cn(
                           'size-1.5 rounded-full',
-                          activeConnection.isConnected ? 'bg-green-500' : 'bg-yellow-500'
+                          activeConnection.isConnected ? 'bg-success' : 'bg-warning'
                         )}
                       />
                       <DatabaseIcon dbType={activeConnection.dbType} className="size-4" />
@@ -208,7 +216,7 @@ function LayoutContent() {
                   ) : (
                     <span className="text-muted-foreground">Pick a database</span>
                   )}
-                  <ChevronsUpDown className="size-3 text-muted-foreground/60" />
+                  <CaretUpDownIcon className="size-3 text-muted-foreground/60" />
                 </button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Switch database ({keys.mod}+P)</TooltipContent>
@@ -222,9 +230,9 @@ function LayoutContent() {
               className="h-8 gap-1.5 px-2 text-primary hover:text-primary"
               onClick={() => createAskTab(activeConnection?.id ?? null)}
             >
-              <Sparkles className="size-4" />
+              <AiIcon className="size-4" />
               Ask
-              <kbd className="rounded border border-border/60 px-1 font-mono text-[10px] text-muted-foreground">
+              <kbd className="rounded border border-border/60 px-1 font-mono text-2xs text-muted-foreground">
                 {keys.mod}T
               </kbd>
             </Button>
@@ -237,7 +245,7 @@ function LayoutContent() {
                   className="size-8 text-muted-foreground hover:text-foreground"
                   onClick={() => setIsCommandPaletteOpen(true)}
                 >
-                  <Command className="size-4" />
+                  <CommandIcon className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">Command Palette ({keys.mod}+K)</TooltipContent>
@@ -370,7 +378,7 @@ function ThemeOption({
 }: {
   value: 'light' | 'dark' | 'system'
   label: string
-  icon: typeof Sun
+  icon: typeof SunIcon
   currentTheme: string
   onSelect: (theme: 'light' | 'dark' | 'system') => void
 }) {
@@ -454,7 +462,7 @@ function SettingsPage() {
         {/* License */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">License</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Manage your data-peek license for commercial use.
           </p>
           <div className="flex items-center justify-between">
@@ -469,8 +477,8 @@ function SettingsPage() {
                   <span
                     className={`size-2 rounded-full ${
                       licenseStatus?.daysUntilExpiry && licenseStatus.daysUntilExpiry <= 0
-                        ? 'bg-amber-500'
-                        : 'bg-green-500'
+                        ? 'bg-warning'
+                        : 'bg-success'
                     }`}
                   />
                   <span className="text-sm capitalize">
@@ -495,28 +503,28 @@ function SettingsPage() {
         {/* Appearance */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Appearance</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Choose your preferred theme for the application.
           </p>
           <div className="grid grid-cols-3 gap-3">
             <ThemeOption
               value="light"
               label="Light"
-              icon={Sun}
+              icon={SunIcon}
               currentTheme={theme}
               onSelect={setTheme}
             />
             <ThemeOption
               value="dark"
               label="Dark"
-              icon={Moon}
+              icon={MoonIcon}
               currentTheme={theme}
               onSelect={setTheme}
             />
             <ThemeOption
               value="system"
               label="System"
-              icon={Monitor}
+              icon={MonitorIcon}
               currentTheme={theme}
               onSelect={setTheme}
             />
@@ -526,13 +534,13 @@ function SettingsPage() {
         {/* Fun Features */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Fun Features</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Enable fun features to personalize your experience.
           </p>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="pokemon-buddy">Pokemon Buddy</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Show a friendly Pokemon buddy in the sidebar
               </p>
             </div>
@@ -547,7 +555,7 @@ function SettingsPage() {
         {/* Keyboard Shortcuts */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Keyboard Shortcuts</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             All available keyboard shortcuts in the application.
           </p>
 
@@ -646,7 +654,7 @@ function SettingsPage() {
         {/* Connections */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Connections</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="font-sans text-sm text-muted-foreground">
             Manage your database connections and credentials.
           </p>
         </div>
@@ -654,13 +662,13 @@ function SettingsPage() {
         {/* Editor */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Query Editor</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Customize the query editor appearance and behavior.
           </p>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="hide-editor">Hide query editor by default</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Start with the query editor collapsed when opening table previews
               </p>
             </div>
@@ -673,7 +681,9 @@ function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="hide-quick-query-panel">Hide quick query panel by default</Label>
-              <p className="text-xs text-muted-foreground">Hide the quick query panel by default</p>
+              <p className="font-sans text-xs text-muted-foreground">
+                Hide the quick query panel by default
+              </p>
             </div>
             <Switch
               id="hide-quick-query-panel"
@@ -686,13 +696,13 @@ function SettingsPage() {
         {/* JSON Display */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">JSON Display</h2>
-          <p className="text-sm text-muted-foreground mb-4">
+          <p className="font-sans text-sm text-muted-foreground mb-4">
             Configure how JSON data is displayed in results.
           </p>
           <div className="flex items-center justify-between mb-4">
             <div className="space-y-0.5">
               <Label htmlFor="expand-json">Expand JSON by default</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Automatically expand all JSON objects when viewing
               </p>
             </div>
@@ -705,7 +715,7 @@ function SettingsPage() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="json-depth">Default JSON expansion depth</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 How many levels deep JSON should be expanded
               </p>
             </div>
@@ -727,11 +737,13 @@ function SettingsPage() {
         {/* Database */}
         <div className="rounded-lg border border-border/50 bg-card p-4">
           <h2 className="text-lg font-medium mb-2">Database</h2>
-          <p className="text-sm text-muted-foreground mb-4">Configure database query behavior.</p>
+          <p className="font-sans text-sm text-muted-foreground mb-4">
+            Configure database query behavior.
+          </p>
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor="query-timeout">Query timeout (seconds)</Label>
-              <p className="text-xs text-muted-foreground">
+              <p className="font-sans text-xs text-muted-foreground">
                 Maximum time to wait for a query to complete. Set to 0 for no timeout.
               </p>
             </div>
@@ -766,7 +778,7 @@ function RouteErrorComponent({ error, reset }: ErrorComponentProps) {
   return (
     <div className="flex flex-1 items-center justify-center p-8">
       <div className="flex flex-col items-center gap-4 max-w-md text-center">
-        <AlertTriangle className="size-10 text-amber-500" />
+        <WarningIcon className="size-10 text-warning" />
         <h2 className="text-lg font-semibold">Something went wrong</h2>
         <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
           {error.message}
@@ -808,7 +820,7 @@ export class RootErrorBoundary extends Component<
       return (
         <div className="flex h-screen w-screen items-center justify-center bg-background text-foreground p-8">
           <div className="flex flex-col items-center gap-4 max-w-md text-center">
-            <AlertTriangle className="size-10 text-amber-500" />
+            <WarningIcon className="size-10 text-warning" />
             <h2 className="text-lg font-semibold">Something went wrong</h2>
             <pre className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 max-w-full overflow-auto whitespace-pre-wrap">
               {this.state.error?.message}

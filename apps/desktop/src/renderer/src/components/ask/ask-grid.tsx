@@ -83,7 +83,7 @@ export function AskGrid({ result }: { result: AskResult }) {
         </tbody>
       </table>
       {result.rowCount > rows.length && (
-        <p className="px-3 py-1.5 text-[11px] text-muted-foreground">
+        <p className="px-3 py-1.5 text-2xs text-muted-foreground">
           Showing {rows.length} of {result.rowCount.toLocaleString()}. Open in the editor for the
           full grid.
         </p>

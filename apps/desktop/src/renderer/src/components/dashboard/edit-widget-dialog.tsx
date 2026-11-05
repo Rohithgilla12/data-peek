@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Check, Play, Loader2, FileText, Database } from 'lucide-react'
+import { CheckIcon, DatabaseIcon, FileTextIcon, PlayIcon, SpinnerIcon } from '@/components/icons'
 
 import {
   Button,
@@ -279,7 +279,7 @@ export function EditWidgetDialog({
                 className="flex-1"
                 onClick={() => setSourceType('saved-query')}
               >
-                <FileText className="size-4 mr-2" />
+                <FileTextIcon className="size-4 mr-2" />
                 Saved Query
               </Button>
               <Button
@@ -288,7 +288,7 @@ export function EditWidgetDialog({
                 className="flex-1"
                 onClick={() => setSourceType('inline')}
               >
-                <Database className="size-4 mr-2" />
+                <DatabaseIcon className="size-4 mr-2" />
                 Write SQL
               </Button>
             </div>
@@ -330,7 +330,7 @@ export function EditWidgetDialog({
                   <SelectItem key={conn.id} value={conn.id}>
                     <span className="flex items-center gap-2">
                       <span
-                        className={`size-2 rounded-full ${conn.isConnected ? 'bg-green-500' : 'bg-gray-400'}`}
+                        className={`size-2 rounded-full ${conn.isConnected ? 'bg-success' : 'bg-muted-foreground'}`}
                       />
                       {conn.name}
                     </span>
@@ -350,12 +350,12 @@ export function EditWidgetDialog({
             >
               {isLoadingPreview ? (
                 <>
-                  <Loader2 className="size-3 mr-2 animate-spin" />
+                  <SpinnerIcon className="size-3 mr-2 animate-spin" />
                   Loading...
                 </>
               ) : (
                 <>
-                  <Play className="size-3 mr-2" />
+                  <PlayIcon className="size-3 mr-2" />
                   Preview Data
                 </>
               )}
@@ -575,12 +575,12 @@ export function EditWidgetDialog({
           <Button onClick={handleSubmit} disabled={!canSubmit() || isSubmitting}>
             {isSubmitting ? (
               <>
-                <Loader2 className="size-4 mr-2 animate-spin" />
+                <SpinnerIcon className="size-4 mr-2 animate-spin" />
                 Saving...
               </>
             ) : (
               <>
-                <Check className="size-4 mr-2" />
+                <CheckIcon className="size-4 mr-2" />
                 Save Changes
               </>
             )}

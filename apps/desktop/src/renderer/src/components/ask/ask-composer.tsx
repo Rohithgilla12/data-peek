@@ -1,5 +1,5 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
-import { ArrowUp, ChevronRight, Sparkles } from 'lucide-react'
+import { AiIcon, ArrowUpIcon, CaretRightIcon } from '@/components/icons'
 import { cn } from '@data-peek/ui'
 import { classifyInput, type AskMode } from '@/lib/ask-input'
 import { useAskProvider } from '@/hooks/use-ask-provider'
@@ -27,7 +27,7 @@ const isMac = window.electron.process.platform === 'darwin'
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="rounded border border-border/60 bg-muted/50 px-1 font-mono text-[10px] text-muted-foreground">
+    <kbd className="rounded border border-border/60 bg-muted/50 px-1 font-mono text-2xs text-muted-foreground">
       {children}
     </kbd>
   )
@@ -42,10 +42,10 @@ export function ProviderPill() {
         type="button"
         onClick={openSettings}
         title="AI settings"
-        className="flex items-center gap-1.5 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className="flex items-center gap-1.5 rounded px-1.5 py-0.5 text-2xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
         <span
-          className={cn('size-1.5 rounded-full', isSubscription ? 'bg-emerald-400' : 'bg-primary')}
+          className={cn('size-1.5 rounded-full', isSubscription ? 'bg-success' : 'bg-primary')}
         />
         {label}
         <span className="text-muted-foreground/50">
@@ -62,9 +62,9 @@ export function ProviderPill() {
             key={cli.id}
             type="button"
             onClick={() => void activate(cli.id)}
-            className="flex items-center gap-1 rounded border border-primary/40 px-1.5 py-0.5 text-[11px] text-primary transition-colors hover:bg-primary/10"
+            className="flex items-center gap-1 rounded border border-primary/40 px-1.5 py-0.5 text-2xs text-primary transition-colors hover:bg-primary/10"
           >
-            <Sparkles className="size-3" /> Use my {cli.label} subscription
+            <AiIcon className="size-3" /> Use my {cli.label} subscription
           </button>
         ))}
       </div>
@@ -72,7 +72,7 @@ export function ProviderPill() {
   }
   if (detected === null) {
     return (
-      <span className="px-1.5 py-0.5 text-[11px] text-muted-foreground/60">
+      <span className="px-1.5 py-0.5 text-2xs text-muted-foreground/60">
         Looking for your AI CLI
       </span>
     )
@@ -81,7 +81,7 @@ export function ProviderPill() {
     <button
       type="button"
       onClick={openSettings}
-      className="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground"
+      className="rounded px-1.5 py-0.5 text-2xs text-muted-foreground hover:bg-muted hover:text-foreground"
     >
       Connect an AI
     </button>
@@ -157,7 +157,7 @@ export const AskComposer = forwardRef<AskComposerHandle, AskComposerProps>(funct
         className={cn(
           'rounded-lg border bg-card shadow-lg shadow-black/20 transition-colors',
           mode === 'sql'
-            ? 'border-emerald-500/30 focus-within:border-emerald-500/60'
+            ? 'border-success/30 focus-within:border-success/60'
             : 'border-border focus-within:border-primary/60'
         )}
       >
@@ -167,11 +167,11 @@ export const AskComposer = forwardRef<AskComposerHandle, AskComposerProps>(funct
             onClick={() => setLocked(mode === 'ask' ? 'sql' : 'ask')}
             title="Switch between asking and running SQL (Tab)"
             className={cn(
-              'mt-px flex h-5 shrink-0 items-center gap-1 rounded px-1.5 font-mono text-[10px] font-semibold uppercase tracking-wider transition-colors',
-              mode === 'sql' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-primary/15 text-primary'
+              'mt-px flex h-5 shrink-0 items-center gap-1 rounded px-1.5 font-mono text-2xs font-semibold uppercase tracking-wider transition-colors',
+              mode === 'sql' ? 'bg-success/10 text-success' : 'bg-primary/15 text-primary'
             )}
           >
-            {mode === 'sql' ? <ChevronRight className="size-3" /> : <Sparkles className="size-3" />}
+            {mode === 'sql' ? <CaretRightIcon className="size-3" /> : <AiIcon className="size-3" />}
             {mode === 'sql' ? 'SQL' : 'Ask'}
             {!locked && text.trim() && <span className="font-normal opacity-50">auto</span>}
           </button>
@@ -189,7 +189,7 @@ export const AskComposer = forwardRef<AskComposerHandle, AskComposerProps>(funct
             placeholder={`Ask about ${connectionName}, or type SQL`}
             aria-label="Ask a question or type SQL"
             className={cn(
-              'max-h-60 min-h-[22px] flex-1 resize-none bg-transparent text-[13px] leading-[22px] text-foreground outline-none placeholder:text-muted-foreground/50',
+              'max-h-60 min-h-[22px] flex-1 resize-none bg-transparent text-sm leading-[22px] text-foreground outline-none placeholder:text-muted-foreground/50',
               mode === 'sql' ? 'font-mono' : 'font-sans'
             )}
           />
@@ -204,17 +204,17 @@ export const AskComposer = forwardRef<AskComposerHandle, AskComposerProps>(funct
             className={cn(
               'ml-auto flex size-6 items-center justify-center rounded-md transition-colors disabled:opacity-30',
               mode === 'sql'
-                ? 'bg-emerald-500/90 text-black hover:bg-emerald-400'
+                ? 'bg-success/90 text-black hover:bg-success'
                 : 'bg-primary text-primary-foreground hover:bg-primary/90'
             )}
           >
-            <ArrowUp className="size-3.5" />
+            <ArrowUpIcon className="size-3.5" />
           </button>
         </div>
       </div>
-      <div className="mt-1.5 flex items-center gap-3 px-1 text-[10px] text-muted-foreground/60">
+      <div className="mt-1.5 flex items-center gap-3 px-1 text-2xs text-muted-foreground/60">
         {blocked && text.trim() ? (
-          <span className="text-amber-400/80">
+          <span className="text-warning/80">
             {provider
               ? 'Still answering the last question. SQL runs meanwhile.'
               : 'Connect an AI to ask questions. SQL still runs without one.'}

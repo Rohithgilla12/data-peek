@@ -12,7 +12,7 @@ import {
   sortableKeyboardCoordinates,
   horizontalListSortingStrategy
 } from '@dnd-kit/sortable'
-import { Plus } from 'lucide-react'
+import { PlusIcon } from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import { Tab } from '@/components/tab'
 import { useTabStore, useConnectionStore } from '@/stores'
@@ -107,7 +107,7 @@ export function TabBar({ className }: TabBarProps) {
         className="h-9 w-9 shrink-0 rounded-none border-r border-border/40 hover:bg-muted/50"
         onClick={handleNewTab}
       >
-        <Plus className="size-4" />
+        <PlusIcon className="size-4" />
       </Button>
     </div>
   )

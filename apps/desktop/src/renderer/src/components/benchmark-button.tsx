@@ -11,7 +11,7 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@data-peek/ui'
-import { Timer, Loader2, ChevronDown, Gauge } from 'lucide-react'
+import { CaretDownIcon, GaugeIcon, SpinnerIcon, TimerIcon } from '@/components/icons'
 
 interface BenchmarkButtonProps {
   onBenchmark: (runCount: number) => void
@@ -42,20 +42,20 @@ export function BenchmarkButton({ onBenchmark, isRunning, disabled }: BenchmarkB
                 className={cn(
                   'gap-1.5 h-7 px-2.5',
                   'transition-all duration-200',
-                  isRunning && 'text-amber-500 bg-amber-500/10'
+                  isRunning && 'text-warning bg-warning/10'
                 )}
                 disabled={isRunning || disabled}
               >
                 {isRunning ? (
                   <>
-                    <Loader2 className="size-3.5 animate-spin" />
+                    <SpinnerIcon className="size-3.5 animate-spin" />
                     <span className="text-xs font-medium">Running...</span>
                   </>
                 ) : (
                   <>
-                    <Gauge className="size-3.5" />
+                    <GaugeIcon className="size-3.5" />
                     <span className="text-xs font-medium">Benchmark</span>
-                    <ChevronDown className="size-3 ml-0.5 opacity-60" />
+                    <CaretDownIcon className="size-3 ml-0.5 opacity-60" />
                   </>
                 )}
               </Button>
@@ -70,7 +70,7 @@ export function BenchmarkButton({ onBenchmark, isRunning, disabled }: BenchmarkB
             >
               <div className="px-2 py-1.5">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Timer className="size-3.5" />
+                  <TimerIcon className="size-3.5" />
                   <span className="font-medium">Run iterations</span>
                 </div>
               </div>
@@ -86,11 +86,11 @@ export function BenchmarkButton({ onBenchmark, isRunning, disabled }: BenchmarkB
                 >
                   <div className="flex flex-col">
                     <span className="font-medium">{label}</span>
-                    <span className="text-[10px] text-muted-foreground">{description}</span>
+                    <span className="text-2xs text-muted-foreground">{description}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     {count >= 100 && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                      <span className="text-2xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
                         {count >= 500 ? 'PRECISE' : 'DETAILED'}
                       </span>
                     )}
@@ -110,7 +110,7 @@ export function BenchmarkButton({ onBenchmark, isRunning, disabled }: BenchmarkB
         >
           <div className="space-y-1.5">
             <p className="text-xs font-medium">Performance Benchmark</p>
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-2xs text-muted-foreground leading-relaxed">
               Run the query multiple times to collect timing statistics including average, p90, p95,
               and p99 latencies.
             </p>

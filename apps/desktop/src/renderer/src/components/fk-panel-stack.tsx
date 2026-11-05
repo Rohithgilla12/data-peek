@@ -1,5 +1,13 @@
 import * as React from 'react'
-import { X, Link2, ChevronRight, Loader2, AlertCircle, Copy, Check } from 'lucide-react'
+import {
+  CaretRightIcon,
+  CheckIcon,
+  CloseIcon,
+  CopyIcon,
+  ErrorIcon,
+  LinkIcon,
+  SpinnerIcon
+} from '@/components/icons'
 import { Button, Badge } from '@data-peek/ui'
 import type { ForeignKeyInfo, ConnectionConfig, ColumnInfo } from '@data-peek/shared'
 
@@ -65,9 +73,9 @@ function FKPanel({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2">
-          <Link2 className="size-4 text-blue-400" />
+          <LinkIcon className="size-4 text-cat-blue" />
           <span className="font-medium">{panel.foreignKey.referencedTable}</span>
-          <Badge variant="outline" className="text-[10px]">
+          <Badge variant="outline" className="text-2xs">
             {panel.foreignKey.referencedSchema}
           </Badge>
         </div>
@@ -78,7 +86,7 @@ function FKPanel({
         <div className="flex items-center gap-1 px-4 py-2 text-xs text-muted-foreground border-b border-border/50 overflow-x-auto">
           {breadcrumbs.map((crumb, i) => (
             <React.Fragment key={i}>
-              {i > 0 && <ChevronRight className="size-3 shrink-0" />}
+              {i > 0 && <CaretRightIcon className="size-3 shrink-0" />}
               <span className={i === breadcrumbs.length - 1 ? 'text-foreground font-medium' : ''}>
                 {crumb}
               </span>
@@ -91,11 +99,11 @@ function FKPanel({
       <div className="flex-1 overflow-auto p-4">
         {panel.isLoading ? (
           <div className="flex items-center justify-center h-32">
-            <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            <SpinnerIcon className="size-6 animate-spin text-muted-foreground" />
           </div>
         ) : panel.error ? (
           <div className="flex flex-col items-center justify-center h-32 gap-2 text-center">
-            <AlertCircle className="size-8 text-red-400" />
+            <ErrorIcon className="size-8 text-destructive" />
             <p className="text-sm text-muted-foreground">{panel.error}</p>
           </div>
         ) : panel.data ? (
@@ -111,9 +119,9 @@ function FKPanel({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 mb-0.5">
                         <span className="text-xs text-muted-foreground">{key}</span>
-                        {hasFK && <Link2 className="size-3 text-blue-400" />}
+                        {hasFK && <LinkIcon className="size-3 text-cat-blue" />}
                         {columnInfo?.isPrimaryKey && (
-                          <Badge variant="secondary" className="text-[9px] px-1 py-0">
+                          <Badge variant="secondary" className="text-2xs px-1 py-0">
                             PK
                           </Badge>
                         )}
@@ -130,7 +138,7 @@ function FKPanel({
                               onDrillDown(columnInfo!.foreignKey!, value)
                             }
                           }}
-                          className="text-sm text-blue-400 hover:text-blue-300 hover:underline cursor-pointer font-mono text-left break-all"
+                          className="text-sm text-primary hover:text-primary/80 hover:underline cursor-pointer font-mono text-left break-all"
                         >
                           {String(value)}
                         </button>
@@ -149,9 +157,9 @@ function FKPanel({
                       onClick={() => handleCopy(key, value)}
                     >
                       {copiedField === key ? (
-                        <Check className="size-3 text-green-500" />
+                        <CheckIcon className="size-3 text-success" />
                       ) : (
-                        <Copy className="size-3" />
+                        <CopyIcon className="size-3" />
                       )}
                     </Button>
                   </div>
@@ -172,7 +180,7 @@ function FKPanel({
           {panel.foreignKey.referencedColumn} = {String(panel.value)}
         </span>
         <Button variant="outline" size="sm" className="h-7 gap-1.5" onClick={onClose}>
-          <X className="size-3" />
+          <CloseIcon className="size-3" />
           Close
         </Button>
       </div>

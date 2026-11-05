@@ -1,5 +1,11 @@
 import * as React from 'react'
-import { ArrowDownUp, ArrowRight, Check, Loader2, X } from 'lucide-react'
+import {
+  ArrowRightIcon,
+  ArrowsDownUpIcon,
+  CheckIcon,
+  CloseIcon,
+  SpinnerIcon
+} from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import { getTypeColor } from '@/lib/type-colors'
 import { SortChipItem } from '@/components/sort/sort-chip'
@@ -28,8 +34,8 @@ function SortStatus({
 }) {
   if (isSortingOnServer) {
     return (
-      <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-        <Loader2 className="size-3 animate-spin" />
+      <span className="flex items-center gap-1.5 text-2xs text-muted-foreground">
+        <SpinnerIcon className="size-3 animate-spin" />
         sorting…
       </span>
     )
@@ -37,8 +43,8 @@ function SortStatus({
 
   if (scope.kind === 'server') {
     return (
-      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <Check className="size-3 text-primary/70" />
+      <span className="flex items-center gap-1 text-2xs text-muted-foreground">
+        <CheckIcon className="size-3 text-primary/70" />
         sorted on server
       </span>
     )
@@ -46,8 +52,8 @@ function SortStatus({
 
   if (scope.kind === 'complete') {
     return (
-      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-        <Check className="size-3 text-primary/70" />
+      <span className="flex items-center gap-1 text-2xs text-muted-foreground">
+        <CheckIcon className="size-3 text-primary/70" />
         sorted {scope.rows.toLocaleString()} rows
       </span>
     )
@@ -56,7 +62,7 @@ function SortStatus({
   const total = scope.total
   return (
     <span className="flex items-center gap-2">
-      <span className="text-[10px] text-amber-500/90">
+      <span className="text-2xs text-warning/90">
         {total === null
           ? `sorting ${scope.loaded.toLocaleString()} loaded rows`
           : `sorting ${scope.loaded.toLocaleString()} of ${total.toLocaleString()} loaded`}
@@ -65,12 +71,12 @@ function SortStatus({
         <Button
           variant="ghost"
           size="sm"
-          className="h-6 px-1.5 text-[10px] text-primary/90 hover:text-primary gap-1"
+          className="h-6 px-1.5 text-2xs text-primary/90 hover:text-primary gap-1"
           onClick={onSortWholeSet}
           title="Rewrite ORDER BY and re-run so the sort covers every row"
         >
           {total === null ? 'Sort all rows' : `Sort all ${total.toLocaleString()}`}
-          <ArrowRight className="size-3" />
+          <ArrowRightIcon className="size-3" />
         </Button>
       )}
     </span>
@@ -424,7 +430,7 @@ export function SmartSortBar({
           hasSort ? 'border-primary/20 bg-primary/[0.02]' : 'border-border/30'
         )}
       >
-        <ArrowDownUp
+        <ArrowsDownUpIcon
           className={cn(
             'size-3.5 shrink-0 transition-colors duration-200',
             hasSort ? 'text-primary/70' : 'text-muted-foreground/50'
@@ -494,10 +500,10 @@ export function SmartSortBar({
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-foreground gap-1"
+              className="h-6 px-1.5 text-2xs text-muted-foreground hover:text-foreground gap-1"
               onClick={clearAll}
             >
-              <X className="size-3" />
+              <CloseIcon className="size-3" />
               Clear
             </Button>
           )}
@@ -516,7 +522,7 @@ export function SmartSortBar({
         >
           {availablePresets.length > 0 && (
             <>
-              <div className="px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
+              <div className="px-2.5 py-1.5 text-2xs font-medium text-muted-foreground/60 uppercase tracking-wider border-b border-border/30">
                 Quick presets
               </div>
               {availablePresets.map((preset, i) => {
@@ -539,7 +545,7 @@ export function SmartSortBar({
                   >
                     <Icon className="size-3 text-primary/70 shrink-0" />
                     <span className="font-medium">{preset.label}</span>
-                    <span className="ml-auto text-[10px] text-muted-foreground/70 truncate">
+                    <span className="ml-auto text-2xs text-muted-foreground/70 truncate">
                       {preset.description}
                     </span>
                   </button>
@@ -550,7 +556,7 @@ export function SmartSortBar({
 
           {filteredColumns.length > 0 && (
             <>
-              <div className="px-2.5 py-1.5 text-[10px] font-medium text-muted-foreground/60 uppercase tracking-wider border-y border-border/30">
+              <div className="px-2.5 py-1.5 text-2xs font-medium text-muted-foreground/60 uppercase tracking-wider border-y border-border/30">
                 {query ? 'Matching columns' : 'Columns'}
               </div>
               {filteredColumns.map((col, i) => {
@@ -572,7 +578,7 @@ export function SmartSortBar({
                     onMouseEnter={() => setHighlighted(idx)}
                   >
                     <span className="font-medium">{col.name}</span>
-                    <span className={cn('text-[10px]', getTypeColor(col.dataType))}>
+                    <span className={cn('text-2xs', getTypeColor(col.dataType))}>
                       {col.dataType}
                     </span>
                   </button>
@@ -588,7 +594,7 @@ export function SmartSortBar({
           )}
 
           {availableColumns.length === 0 && query === '' && (
-            <div className="px-2.5 py-2 text-[10px] text-muted-foreground/60 text-center border-t border-border/30">
+            <div className="px-2.5 py-2 text-2xs text-muted-foreground/60 text-center border-t border-border/30">
               All columns are in the sort stack
             </div>
           )}

@@ -1,12 +1,12 @@
 import {
-  Copy,
-  Download,
-  FileCode2,
-  FileJson,
-  FileSpreadsheet,
-  FileText,
-  type LucideIcon
-} from 'lucide-react'
+  CopyIcon,
+  DownloadIcon,
+  FileCodeIcon,
+  FileJsonIcon,
+  FileSpreadsheetIcon,
+  FileTextIcon,
+  type IconComponent
+} from '@/components/icons'
 import {
   DropdownMenuItem,
   DropdownMenuSub,
@@ -18,12 +18,12 @@ import type { ExportDestination, ExportFormat } from '@/lib/export'
 const exportFormats: Array<{
   format: ExportFormat
   label: string
-  Icon: LucideIcon
+  Icon: IconComponent
 }> = [
-  { format: 'csv', label: 'CSV', Icon: FileSpreadsheet },
-  { format: 'json', label: 'JSON', Icon: FileJson },
-  { format: 'sql', label: 'SQL', Icon: FileCode2 },
-  { format: 'markdown', label: 'Markdown', Icon: FileText }
+  { format: 'csv', label: 'CSV', Icon: FileSpreadsheetIcon },
+  { format: 'json', label: 'JSON', Icon: FileJsonIcon },
+  { format: 'sql', label: 'SQL', Icon: FileCodeIcon },
+  { format: 'markdown', label: 'Markdown', Icon: FileTextIcon }
 ]
 
 interface ExportMenuItemsProps {
@@ -41,11 +41,11 @@ export function ExportMenuItems({ onSelect }: ExportMenuItemsProps) {
           </DropdownMenuSubTrigger>
           <DropdownMenuSubContent className="w-44">
             <DropdownMenuItem onClick={() => onSelect(format, 'download')}>
-              <Download className="size-4 text-muted-foreground" />
+              <DownloadIcon className="size-4 text-muted-foreground" />
               Download file
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onSelect(format, 'clipboard')}>
-              <Copy className="size-4 text-muted-foreground" />
+              <CopyIcon className="size-4 text-muted-foreground" />
               Copy to clipboard
             </DropdownMenuItem>
           </DropdownMenuSubContent>

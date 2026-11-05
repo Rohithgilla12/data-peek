@@ -51,7 +51,7 @@ export function WatchSparkline({ points, className }: WatchSparklineProps) {
     return (
       <div
         className={cn(
-          'flex h-9 items-center justify-center rounded border border-dashed text-[10px] text-muted-foreground',
+          'flex h-9 items-center justify-center rounded border border-dashed text-2xs text-muted-foreground',
           className
         )}
       >
@@ -76,14 +76,14 @@ export function WatchSparkline({ points, className }: WatchSparklineProps) {
             stroke="currentColor"
             strokeWidth={1.5}
             vectorEffect="non-scaling-stroke"
-            className="text-amber-500"
+            className="text-warning"
           />
         )}
         {errorDots.map((cx, i) => (
-          <circle key={i} cx={cx} cy={H - PAD} r={2} className="fill-rose-500" />
+          <circle key={i} cx={cx} cy={H - PAD} r={2} className="fill-destructive" />
         ))}
       </svg>
-      <div className="flex justify-between text-[10px] tabular-nums text-muted-foreground">
+      <div className="flex justify-between text-2xs tabular-nums text-muted-foreground">
         <span>
           min {min} · max {max}
         </span>

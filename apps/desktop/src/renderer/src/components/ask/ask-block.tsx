@@ -1,20 +1,20 @@
 import { useState } from 'react'
 import {
-  AlertTriangle,
-  BarChart3,
-  ChevronRight,
-  Copy,
-  ExternalLink,
-  Pencil,
-  Play,
-  RotateCw,
-  ShieldCheck,
-  Sparkles,
-  Square,
-  Table2,
-  Wand2,
-  X
-} from 'lucide-react'
+  AiIcon,
+  CaretRightIcon,
+  ChartBarIcon,
+  CloseIcon,
+  CopyIcon,
+  EditIcon,
+  ExternalLinkIcon,
+  PlayIcon,
+  RefreshIcon,
+  ShieldCheckIcon,
+  StopIcon,
+  TableIcon,
+  WandIcon,
+  WarningIcon
+} from '@/components/icons'
 import { Button, cn } from '@data-peek/ui'
 import { AIChart } from '@/components/ai/ai-chart'
 import { highlightSQL } from '@/components/ai/ai-sql-preview'
@@ -116,18 +116,18 @@ function SqlPane({
           rows={Math.min(14, draft.split('\n').length + 1)}
           className="block w-full resize-none bg-transparent px-3 py-2 font-mono text-xs leading-5 text-foreground outline-none"
         />
-        <div className="flex items-center justify-end gap-2 px-3 pb-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-end gap-2 px-3 pb-2 text-2xs text-muted-foreground">
           <span>esc to cancel</span>
           <Button
             size="sm"
-            className="h-6 gap-1 px-2 text-[11px]"
+            className="h-6 gap-1 px-2 text-2xs"
             onClick={() => {
               onSave(draft)
               setDraft(null)
               onRun()
             }}
           >
-            <Play className="size-3" /> Run
+            <PlayIcon className="size-3" /> Run
           </Button>
         </div>
       </div>
@@ -145,17 +145,17 @@ function SqlPane({
         <button
           type="button"
           onClick={() => setExpanded(!expanded)}
-          className="w-full border-t border-border/40 px-3 py-1 text-left text-[11px] text-muted-foreground hover:bg-muted/40 hover:text-foreground"
+          className="w-full border-t border-border/40 px-3 py-1 text-left text-2xs text-muted-foreground hover:bg-muted/40 hover:text-foreground"
         >
           {expanded ? 'Show less' : `Show all ${lines.length} lines`}
         </button>
       )}
       <div className="absolute right-1.5 top-1.5 flex gap-0.5 opacity-0 transition-opacity group-hover/sql:opacity-100">
         <IconButton label="Edit SQL" onClick={() => setDraft(sql)}>
-          <Pencil className="size-3" />
+          <EditIcon className="size-3" />
         </IconButton>
         <IconButton label="Copy SQL" onClick={() => void navigator.clipboard.writeText(sql)}>
-          <Copy className="size-3" />
+          <CopyIcon className="size-3" />
         </IconButton>
       </div>
     </div>
@@ -169,9 +169,7 @@ function Metric({ result, visual }: { result: AskResult; visual: AskVisual & { k
     result.columns[0]?.name
   return (
     <div className="px-4 py-4">
-      <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
-        {visual.label}
-      </div>
+      <div className="text-2xs uppercase tracking-wider text-muted-foreground">{visual.label}</div>
       <div className="mt-1 font-mono text-3xl font-semibold tabular-nums text-foreground">
         {column ? formatMetric(row[column], visual.format) : '—'}
       </div>
@@ -197,7 +195,7 @@ function ResultPane({
   const showVisual = view === 'visual' && visual && result.rows.length > 0
   return (
     <div>
-      <div className="flex h-7 items-center gap-3 border-b border-border/50 px-3 text-[11px] text-muted-foreground">
+      <div className="flex h-7 items-center gap-3 border-b border-border/50 px-3 text-2xs text-muted-foreground">
         <span className="tabular-nums">
           {result.rowCount.toLocaleString()} row{result.rowCount === 1 ? '' : 's'}
           {result.columns.length === 0 && ' affected'}
@@ -214,7 +212,7 @@ function ResultPane({
                   view === 'visual' && 'bg-muted text-foreground'
                 )}
               >
-                {canChart ? <BarChart3 className="size-3" /> : <Sparkles className="size-3" />}
+                {canChart ? <ChartBarIcon className="size-3" /> : <AiIcon className="size-3" />}
                 {canChart ? 'Chart' : 'Metric'}
               </button>
               <button
@@ -225,7 +223,7 @@ function ResultPane({
                   view === 'table' && 'bg-muted text-foreground'
                 )}
               >
-                <Table2 className="size-3" /> Table
+                <TableIcon className="size-3" /> Table
               </button>
             </div>
           )}
@@ -234,7 +232,7 @@ function ResultPane({
             onClick={() => onOpen(sql)}
             className="flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground"
           >
-            <ExternalLink className="size-3" /> Open in editor
+            <ExternalLinkIcon className="size-3" /> Open in editor
           </button>
         </div>
       </div>
@@ -277,14 +275,14 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
         <span
           className={cn(
             'mt-0.5 flex size-5 shrink-0 items-center justify-center rounded',
-            isAsk ? 'bg-primary/15 text-primary' : 'bg-emerald-500/10 text-emerald-400'
+            isAsk ? 'bg-primary/15 text-primary' : 'bg-success/10 text-success'
           )}
         >
-          {isAsk ? <Sparkles className="size-3" /> : <ChevronRight className="size-3.5" />}
+          {isAsk ? <AiIcon className="size-3" /> : <CaretRightIcon className="size-3.5" />}
         </span>
         <p
           className={cn(
-            'min-w-0 flex-1 whitespace-pre-wrap break-words pt-px text-[13px] leading-5',
+            'min-w-0 flex-1 whitespace-pre-wrap break-words pt-px text-sm leading-5',
             isAsk ? 'font-sans font-medium text-foreground' : 'font-mono text-foreground/90'
           )}
         >
@@ -294,19 +292,19 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
           <div className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover/block:opacity-100">
             {sql && (run.status === 'done' || run.status === 'error') && (
               <IconButton label="Run again" onClick={actions.run}>
-                <RotateCw className="size-3" />
+                <RefreshIcon className="size-3" />
               </IconButton>
             )}
             {sql && (
               <IconButton label="Open in editor" onClick={() => actions.openInEditor(sql)}>
-                <ExternalLink className="size-3" />
+                <ExternalLinkIcon className="size-3" />
               </IconButton>
             )}
             <IconButton label="Remove" onClick={actions.remove}>
-              <X className="size-3" />
+              <CloseIcon className="size-3" />
             </IconButton>
           </div>
-          <span className="whitespace-nowrap pl-1 text-right text-[10px] tabular-nums text-muted-foreground/50">
+          <span className="whitespace-nowrap pl-1 text-right text-2xs tabular-nums text-muted-foreground/50">
             {time}
           </span>
         </div>
@@ -324,9 +322,9 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
               <button
                 type="button"
                 onClick={actions.stop}
-                className="ml-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] hover:bg-muted hover:text-foreground"
+                className="ml-1 flex items-center gap-1 rounded px-1.5 py-0.5 text-2xs hover:bg-muted hover:text-foreground"
               >
-                <Square className="size-2.5" /> Stop
+                <StopIcon className="size-2.5" /> Stop
               </button>
             </div>
             {ai.narration && <AskProse text={ai.narration} muted />}
@@ -340,7 +338,7 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
               ai.message === 'Stopped' ? 'text-muted-foreground' : 'text-destructive'
             )}
           >
-            <AlertTriangle className="mt-px size-3.5 shrink-0" />
+            <WarningIcon className="mt-px size-3.5 shrink-0" />
             {ai.message}
           </p>
         )}
@@ -349,13 +347,13 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
           <div className="space-y-1.5">
             {ai.narration && <AskProse text={ai.narration} />}
             {ai.grounded && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400/80">
-                <ShieldCheck className="size-3" /> Checked against live data
+              <span className="inline-flex items-center gap-1 text-2xs text-success/80">
+                <ShieldCheckIcon className="size-3" /> Checked against live data
               </span>
             )}
             {ai.warning && (
-              <p className="flex items-start gap-1.5 text-xs text-amber-400">
-                <AlertTriangle className="mt-px size-3 shrink-0" />
+              <p className="flex items-start gap-1.5 text-xs text-warning">
+                <WarningIcon className="mt-px size-3 shrink-0" />
                 {ai.warning}
               </p>
             )}
@@ -367,16 +365,16 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
             {isAsk && <SqlPane sql={sql} onSave={actions.editSql} onRun={actions.run} />}
 
             {run.status === 'needs-approval' && (
-              <div className="flex items-center gap-3 bg-amber-500/5 px-3 py-2 text-xs">
-                <AlertTriangle className="size-3.5 shrink-0 text-amber-400" />
-                <span className="flex-1 text-amber-200/90">{run.reason} Nothing has run yet.</span>
+              <div className="flex items-center gap-3 bg-warning/5 px-3 py-2 text-xs">
+                <WarningIcon className="size-3.5 shrink-0 text-warning" />
+                <span className="flex-1 text-foreground/90">{run.reason} Nothing has run yet.</span>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-6 gap-1 border-amber-500/40 px-2 text-[11px]"
+                  className="h-6 gap-1 border-warning/40 px-2 text-2xs"
                   onClick={actions.run}
                 >
-                  <Play className="size-3" /> Run it
+                  <PlayIcon className="size-3" /> Run it
                 </Button>
               </div>
             )}
@@ -386,10 +384,10 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6 gap-1 px-2 text-[11px]"
+                  className="h-6 gap-1 px-2 text-2xs"
                   onClick={actions.run}
                 >
-                  <Play className="size-3" /> Run
+                  <PlayIcon className="size-3" /> Run
                 </Button>
               </div>
             )}
@@ -403,14 +401,14 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
                   onClick={actions.cancel}
                   className="ml-auto flex items-center gap-1 rounded px-1.5 py-0.5 hover:bg-muted hover:text-foreground"
                 >
-                  <Square className="size-2.5" /> Cancel
+                  <StopIcon className="size-2.5" /> Cancel
                 </button>
               </div>
             )}
 
             {run.status === 'error' && (
               <div className="flex items-start gap-2 px-3 py-2 text-xs">
-                <AlertTriangle className="mt-px size-3.5 shrink-0 text-destructive" />
+                <WarningIcon className="mt-px size-3.5 shrink-0 text-destructive" />
                 <span className="flex-1 whitespace-pre-wrap font-mono text-destructive/90">
                   {run.message}
                 </span>
@@ -418,12 +416,12 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-6 shrink-0 gap-1 px-2 text-[11px]"
+                    className="h-6 shrink-0 gap-1 px-2 text-2xs"
                     onClick={() =>
                       actions.ask(`Fix: ${run.message.split('\n')[0]}`, fixPrompt(sql, run.message))
                     }
                   >
-                    <Wand2 className="size-3" /> Fix with AI
+                    <WandIcon className="size-3" /> Fix with AI
                   </Button>
                 )}
               </div>
@@ -442,7 +440,7 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
 
         {ai?.status === 'done' && ai.more.length > 0 && (
           <div className="space-y-0.5">
-            <div className="text-[11px] text-muted-foreground/70">More from this answer</div>
+            <div className="text-2xs text-muted-foreground/70">More from this answer</div>
             {ai.more.map((m) => (
               <button
                 key={m.sql}
@@ -451,7 +449,7 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
                 title={m.sql}
                 className="flex w-full items-center gap-2 rounded px-1.5 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
               >
-                <Play className="size-3 text-emerald-400/70" />
+                <PlayIcon className="size-3 text-success/70" />
                 {m.title}
               </button>
             ))}
@@ -465,7 +463,7 @@ export function AskBlockView({ block, actions }: { block: Block; actions: AskBlo
                 key={s}
                 type="button"
                 onClick={() => actions.ask(s)}
-                className="rounded-full border border-border/60 px-2.5 py-0.5 font-sans text-[11px] text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                className="rounded-full border border-border/60 px-2.5 py-0.5 font-sans text-2xs text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
               >
                 {s}
               </button>

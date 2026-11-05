@@ -1,5 +1,5 @@
 import { useCallback } from 'react'
-import { X, Square, Minus } from 'lucide-react'
+import { CloseIcon, MinusIcon, SquareIcon } from '@/components/icons'
 import { Button } from '@data-peek/ui'
 
 export function TitlebarActions() {
@@ -23,7 +23,7 @@ export function TitlebarActions() {
         className="h-14 w-9.5 text-muted-foreground rounded-none"
         onClick={handleMinimize}
       >
-        <Minus className="size-3.5" />
+        <MinusIcon className="size-3.5" />
       </Button>
       <Button
         variant="ghost"
@@ -31,15 +31,15 @@ export function TitlebarActions() {
         className="h-14 w-9.5 text-muted-foreground rounded-none"
         onClick={handleMaximize}
       >
-        <Square className="size-3" />
+        <SquareIcon className="size-3" />
       </Button>
       <Button
         variant="ghost"
         size="icon"
-        className="h-14 w-9.5 text-muted-foreground rounded-none hover:bg-red-500!"
+        className="h-14 w-9.5 text-muted-foreground rounded-none hover:bg-destructive!"
         onClick={handleClose}
       >
-        <X className="size-4" />
+        <CloseIcon className="size-4" />
       </Button>
     </div>
   )

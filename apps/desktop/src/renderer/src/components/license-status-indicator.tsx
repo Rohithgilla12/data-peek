@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Check, AlertCircle, User } from 'lucide-react'
+import { CheckIcon, ErrorIcon, UserIcon } from '@/components/icons'
 import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@data-peek/ui'
 import { useLicenseStore } from '@/stores/license-store'
 
@@ -40,7 +40,7 @@ export function LicenseStatusIndicator() {
               className="h-6 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
               onClick={handleClick}
             >
-              <User className="size-3" />
+              <UserIcon className="size-3" />
               Personal Use
             </Button>
           </TooltipTrigger>
@@ -64,10 +64,10 @@ export function LicenseStatusIndicator() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 gap-1.5 px-2 text-xs text-amber-500 hover:text-amber-400"
+              className="h-6 gap-1.5 px-2 text-xs text-warning hover:text-warning"
               onClick={handleClick}
             >
-              <AlertCircle className="size-3" />
+              <ErrorIcon className="size-3" />
               License Expired
             </Button>
           </TooltipTrigger>
@@ -93,10 +93,10 @@ export function LicenseStatusIndicator() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 gap-1.5 px-2 text-xs text-amber-500 hover:text-amber-400"
+              className="h-6 gap-1.5 px-2 text-xs text-warning hover:text-warning"
               onClick={handleClick}
             >
-              <AlertCircle className="size-3" />
+              <ErrorIcon className="size-3" />
               {status.daysUntilExpiry} days left
             </Button>
           </TooltipTrigger>
@@ -117,10 +117,10 @@ export function LicenseStatusIndicator() {
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 gap-1.5 px-2 text-xs text-green-500 hover:text-green-400"
+            className="h-6 gap-1.5 px-2 text-xs text-success hover:text-success"
             onClick={handleClick}
           >
-            <Check className="size-3" />
+            <CheckIcon className="size-3" />
             Pro License
           </Button>
         </TooltipTrigger>

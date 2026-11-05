@@ -2,18 +2,18 @@ import * as React from 'react'
 import { Command as CommandPrimitive, useCommandState } from 'cmdk'
 import { openAsk } from '@/lib/open-ask'
 import {
-  Search,
-  Table2,
-  Columns3,
-  Key,
-  Bookmark,
-  Clock,
-  Code2,
-  FunctionSquare,
-  Workflow,
-  CornerDownLeft,
-  Sparkles
-} from 'lucide-react'
+  AiIcon,
+  BookmarkIcon,
+  ClockIcon,
+  CodeIcon,
+  ColumnsIcon,
+  FunctionIcon,
+  KeyIcon,
+  ReturnKeyIcon,
+  SearchIcon,
+  TableIcon,
+  WorkflowIcon
+} from '@/components/icons'
 
 import { cn } from '@data-peek/ui'
 import {
@@ -77,11 +77,11 @@ function AskOrEmpty({ question, onAsk }: { question: string; onAsk: () => void }
         onSelect={onAsk}
         className="flex items-center gap-2 rounded px-1.5 py-1 text-xs cursor-pointer select-none data-[selected=true]:bg-primary/10 data-[selected=true]:text-foreground text-muted-foreground"
       >
-        <Sparkles className="size-3.5 shrink-0 text-primary" />
+        <AiIcon className="size-3.5 shrink-0 text-primary" />
         <span className="flex-1 truncate">
           Ask: <span className="text-foreground">{question}</span>
         </span>
-        <CornerDownLeft className="size-3 shrink-0 opacity-40" />
+        <ReturnKeyIcon className="size-3 shrink-0 opacity-40" />
       </CommandPrimitive.Item>
     </CommandPrimitive.Group>
   )
@@ -198,13 +198,13 @@ export function SidebarOmnibar() {
           sublabel: schema.name,
           group: 'tables',
           icon: (
-            <Table2
+            <TableIcon
               className={cn(
                 'size-3.5',
                 table.type === 'view'
-                  ? 'text-purple-500'
+                  ? 'text-cat-purple'
                   : table.type === 'materialized_view'
-                    ? 'text-teal-500'
+                    ? 'text-cat-teal'
                     : 'text-muted-foreground'
               )}
             />
@@ -220,9 +220,9 @@ export function SidebarOmnibar() {
             sublabel: `${table.name}.${col.dataType}`,
             group: 'columns',
             icon: col.isPrimaryKey ? (
-              <Key className="size-3.5 text-yellow-500" />
+              <KeyIcon className="size-3.5 text-cat-yellow" />
             ) : (
-              <Columns3 className="size-3.5 text-muted-foreground" />
+              <ColumnsIcon className="size-3.5 text-muted-foreground" />
             ),
             keywords: [table.name, schema.name, col.dataType],
             onSelect: () => handleTableClick(schema.name, table)
@@ -238,9 +238,9 @@ export function SidebarOmnibar() {
           group: 'routines',
           icon:
             routine.type === 'function' ? (
-              <FunctionSquare className="size-3.5 text-cyan-500" />
+              <FunctionIcon className="size-3.5 text-cat-cyan" />
             ) : (
-              <Workflow className="size-3.5 text-orange-500" />
+              <WorkflowIcon className="size-3.5 text-cat-orange" />
             ),
           keywords: [schema.name, routine.type, ...(routine.parameters?.map((p) => p.name) ?? [])],
           onSelect: () => handleRoutineSelect(schema.name, routine)
@@ -254,7 +254,7 @@ export function SidebarOmnibar() {
         label: sq.name,
         sublabel: sq.description || sq.query.replace(/\s+/g, ' ').slice(0, 50),
         group: 'saved',
-        icon: <Bookmark className="size-3.5 text-amber-500" />,
+        icon: <BookmarkIcon weight="fill" className="size-3.5 text-muted-foreground" />,
         keywords: [sq.query, sq.description ?? ''],
         onSelect: () => handleQuerySelect(sq.query)
       })
@@ -267,7 +267,7 @@ export function SidebarOmnibar() {
         label: snippet.name,
         sublabel: snippet.description,
         group: 'snippets',
-        icon: <Code2 className="size-3.5 text-emerald-500" />,
+        icon: <CodeIcon className="size-3.5 text-muted-foreground" />,
         keywords: [snippet.category, snippet.description, snippet.template],
         onSelect: () => handleSnippetSelect(snippet.template)
       })
@@ -282,7 +282,7 @@ export function SidebarOmnibar() {
         label: h.query.replace(/\s+/g, ' ').slice(0, 60),
         sublabel: `${h.rowCount} rows`,
         group: 'history',
-        icon: <Clock className="size-3.5 text-muted-foreground" />,
+        icon: <ClockIcon className="size-3.5 text-muted-foreground" />,
         keywords: [h.query],
         onSelect: () => handleQuerySelect(h.query)
       })
@@ -347,7 +347,7 @@ export function SidebarOmnibar() {
         }}
       >
         <div className="flex items-center px-2 gap-1.5">
-          <Search className="size-3.5 shrink-0 text-muted-foreground/60" />
+          <SearchIcon className="size-3.5 shrink-0 text-muted-foreground/60" />
           <CommandPrimitive.Input
             ref={inputRef}
             value={query}
@@ -360,7 +360,7 @@ export function SidebarOmnibar() {
             className="flex h-7 w-full bg-transparent py-1.5 text-xs outline-none placeholder:text-muted-foreground/50"
           />
           {!isActive && (
-            <kbd className="pointer-events-none shrink-0 rounded border border-border/50 bg-sidebar-accent/50 px-1 py-0.5 text-[10px] font-mono text-muted-foreground/50">
+            <kbd className="pointer-events-none shrink-0 rounded border border-border/50 bg-sidebar-accent/50 px-1 py-0.5 text-2xs font-mono text-muted-foreground/50">
               /
             </kbd>
           )}
@@ -392,7 +392,7 @@ export function SidebarOmnibar() {
                   <CommandPrimitive.Group
                     key={groupKey}
                     heading={GROUP_LABELS[groupKey]}
-                    className="px-1 py-0.5 [&_[cmdk-group-heading]]:px-1.5 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-[10px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground/60"
+                    className="px-1 py-0.5 [&_[cmdk-group-heading]]:px-1.5 [&_[cmdk-group-heading]]:py-1 [&_[cmdk-group-heading]]:text-2xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:text-muted-foreground/60"
                   >
                     {groupItems.map((item) => (
                       <CommandPrimitive.Item
@@ -407,11 +407,11 @@ export function SidebarOmnibar() {
                           <HighlightMatch text={item.label} query={query} />
                         </span>
                         {item.sublabel && (
-                          <span className="shrink-0 text-[10px] text-muted-foreground/50 max-w-[120px] truncate">
+                          <span className="shrink-0 text-2xs text-muted-foreground/50 max-w-[120px] truncate">
                             {item.sublabel}
                           </span>
                         )}
-                        <CornerDownLeft className="size-3 shrink-0 opacity-0 [[data-selected=true]_&]:opacity-40 transition-opacity" />
+                        <ReturnKeyIcon className="size-3 shrink-0 opacity-0 [[data-selected=true]_&]:opacity-40 transition-opacity" />
                       </CommandPrimitive.Item>
                     ))}
                   </CommandPrimitive.Group>
