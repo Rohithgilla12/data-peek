@@ -37,7 +37,7 @@ const tabs = () => useTabStore.getState()
 
 describe('deleting a connection', () => {
   beforeEach(() => {
-    useTabStore.setState({ tabs: [], activeTabId: null, focusRequest: 0 })
+    useTabStore.setState({ tabs: [], activeTabId: null })
     useConnectionStore.setState({
       connections: [conn('a'), conn('b')],
       activeConnectionId: 'a',
