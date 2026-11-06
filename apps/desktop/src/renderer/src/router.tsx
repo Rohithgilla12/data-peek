@@ -52,9 +52,10 @@ import { LicenseActivationModal } from '@/components/license-activation-modal'
 import { LicenseSettingsModal } from '@/components/license-settings-modal'
 import { AIChatPanel, AISettingsModal } from '@/components/ai'
 import { ProviderPill } from '@/components/ask/ask-composer'
-import { SettingsModal } from '@/components/settings-modal'
 import { McpSettingsSection } from '@/components/mcp-settings-section'
 import { AuditSettingsSection } from '@/components/audit-settings-section'
+import { TimeMachineSettingsSection } from '@/components/time-machine-settings-section'
+import { useTabShortcuts } from '@/hooks/use-tab-shortcuts'
 import { Notifications } from '@/components/notifications'
 import { PokemonBuddy } from '@/components/pokemon-buddy'
 import { useAIStore } from '@/stores/ai-store'
@@ -88,9 +89,6 @@ function LayoutContent() {
   // Add connection dialog state (for command palette integration)
   const [isAddConnectionOpen, setIsAddConnectionOpen] = useState(false)
   const [editConnectionId, setEditConnectionId] = useState<string | null>(null)
-
-  // Settings modal state
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   // License modal states from store
   const isActivationModalOpen = useLicenseStore((s) => s.isActivationModalOpen)
@@ -141,18 +139,16 @@ function LayoutContent() {
     loadConfigFromMain()
   }, [loadConfigFromMain])
 
-  // Listen for settings menu event
-  useEffect(() => {
-    const cleanup = window.api.menu.onOpenSettings(() => {
-      setIsSettingsOpen(true)
-    })
-    return cleanup
-  }, [])
+  const router = useRouter()
+  const navigate = useNavigate()
+
+  // Settings menu item / Mod+, opens the settings page
+  useEffect(() => window.api.menu.onOpenSettings(() => navigate({ to: '/settings' })), [navigate])
+
+  useTabShortcuts()
 
   // Tabs only render on the index route. When something opens or focuses a tab while another
   // page (settings, a dashboard) is showing, bring the workspace back into view.
-  const router = useRouter()
-  const navigate = useNavigate()
   const focusRequest = useTabStore((s) => s.focusRequest)
   useEffect(() => {
     if (focusRequest === handledFocusRequest) return
@@ -311,9 +307,6 @@ function LayoutContent() {
         connection={editConnectionId ? connections.find((c) => c.id === editConnectionId) : null}
       />
 
-      {/* Settings Modal */}
-      <SettingsModal open={isSettingsOpen} onOpenChange={setIsSettingsOpen} />
-
       {/* License Modals */}
       <LicenseActivationModal open={isActivationModalOpen} onOpenChange={closeActivationModal} />
       <LicenseSettingsModal open={isSettingsModalOpen} onOpenChange={closeSettingsModal} />
@@ -463,7 +456,8 @@ function SettingsPage() {
     pokemonBuddyEnabled,
     setPokemonBuddyEnabled,
     jsonExpandDepth,
-    setJsonExpandDepth
+    setJsonExpandDepth,
+    resetSettings
   } = useSettingsStore()
 
   return (
@@ -473,6 +467,9 @@ function SettingsPage() {
           ← Back
         </Link>
         <h1 className="text-2xl font-semibold">Settings</h1>
+        <Button variant="ghost" size="sm" className="ml-auto" onClick={resetSettings}>
+          Reset to Defaults
+        </Button>
       </div>
       <div className="space-y-6 max-w-2xl pb-10">
         {/* License */}
@@ -771,7 +768,8 @@ function SettingsPage() {
               value={queryTimeoutMs === 0 ? '' : queryTimeoutMs / 1000}
               placeholder="0"
               onChange={(e) => {
-                const seconds = e.target.value ? parseFloat(e.target.value) : 0
+                const parsed = e.target.value ? parseFloat(e.target.value) : 0
+                const seconds = isNaN(parsed) || parsed < 0 ? 0 : parsed
                 setQueryTimeoutMs(Math.round(seconds * 1000))
               }}
             />
@@ -783,6 +781,9 @@ function SettingsPage() {
 
         {/* Audit Logging */}
         <AuditSettingsSection />
+
+        {/* Time Machine */}
+        <TimeMachineSettingsSection />
       </div>
     </div>
   )
