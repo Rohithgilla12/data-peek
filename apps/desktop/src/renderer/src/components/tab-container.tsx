@@ -1,4 +1,3 @@
-import { useCallback, useEffect, useMemo } from 'react'
 import { TabBar } from '@/components/tab-bar'
 import { TabQueryEditor } from '@/components/tab-query-editor'
 import { NotebookEditor } from '@/components/notebook-editor'
@@ -10,7 +9,6 @@ import { HealthMonitor } from '@/components/health-monitor'
 import { SchemaIntelPanel } from '@/components/schema-intel'
 import { AskView } from '@/components/ask/ask-view'
 import { useTabStore, useConnectionStore } from '@/stores'
-import { useHotkeys, type UseHotkeyDefinition, type Hotkey } from '@tanstack/react-hotkeys'
 import type { NotebookTab, Tab } from '@/stores/tab-store'
 import type { ConnectionWithStatus, Schema } from '@/stores/connection-store'
 
@@ -73,69 +71,13 @@ function renderTabContent(
 
 export function TabContainer() {
   const tabs = useTabStore((s) => s.tabs)
-  const activeTabId = useTabStore((s) => s.activeTabId)
-  const createQueryTab = useTabStore((s) => s.createQueryTab)
-  const createAskTab = useTabStore((s) => s.createAskTab)
-  const closeTab = useTabStore((s) => s.closeTab)
-  const setActiveTab = useTabStore((s) => s.setActiveTab)
   const activeTab = useTabStore((s) => s.getActiveTab())
 
-  const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
   const schemas = useConnectionStore((s) => s.schemas)
   const connections = useConnectionStore((s) => s.connections)
   const tabConnection = activeTab?.connectionId
     ? connections.find((c) => c.id === activeTab.connectionId)
     : null
-
-  const handleNewTab = useCallback(() => {
-    createAskTab(activeConnectionId)
-  }, [createAskTab, activeConnectionId])
-
-  const handleNewSqlTab = useCallback(() => {
-    createQueryTab(activeConnectionId)
-  }, [createQueryTab, activeConnectionId])
-
-  const handleCloseTab = useCallback(() => {
-    if (activeTabId) closeTab(activeTabId)
-  }, [activeTabId, closeTab])
-
-  useEffect(() => window.api.menu.onNewTab(handleNewTab), [handleNewTab])
-  useEffect(() => window.api.menu.onCloseTab(handleCloseTab), [handleCloseTab])
-
-  // Keyboard shortcuts
-  const tabHotkeys = useMemo<UseHotkeyDefinition[]>(
-    () => [
-      { hotkey: 'Mod+T', callback: handleNewTab },
-      { hotkey: 'Mod+Shift+T', callback: handleNewSqlTab },
-      { hotkey: 'Mod+W', callback: handleCloseTab },
-      {
-        hotkey: 'Mod+Alt+ArrowRight',
-        callback: () => {
-          if (tabs.length <= 1 || !activeTabId) return
-          const currentIndex = tabs.findIndex((t) => t.id === activeTabId)
-          const nextIndex = currentIndex >= tabs.length - 1 ? 0 : currentIndex + 1
-          setActiveTab(tabs[nextIndex].id)
-        }
-      },
-      {
-        hotkey: 'Mod+Alt+ArrowLeft',
-        callback: () => {
-          if (tabs.length <= 1 || !activeTabId) return
-          const currentIndex = tabs.findIndex((t) => t.id === activeTabId)
-          const nextIndex = currentIndex <= 0 ? tabs.length - 1 : currentIndex - 1
-          setActiveTab(tabs[nextIndex].id)
-        }
-      },
-      ...Array.from({ length: 9 }, (_, i) => ({
-        hotkey: `Mod+${i + 1}` as Hotkey,
-        callback: () => {
-          if (tabs[i]) setActiveTab(tabs[i].id)
-        }
-      }))
-    ],
-    [tabs, activeTabId, handleNewTab, handleNewSqlTab, handleCloseTab, setActiveTab]
-  )
-  useHotkeys(tabHotkeys)
 
   if (tabs.length === 0) {
     return (

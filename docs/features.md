@@ -431,7 +431,7 @@ Features planned for future releases:
 - Inline data editing
 - AI Assistant chat panel
 - AI-generated charts
-- Settings modal
+- Settings page
 - Dark/Light theme comparison
 
 ---
