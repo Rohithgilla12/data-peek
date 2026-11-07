@@ -6,9 +6,10 @@ import {
   Outlet,
   Link,
   useRouter,
+  useNavigate,
   type ErrorComponentProps
 } from '@tanstack/react-router'
-import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, Component, type ReactNode } from 'react'
 import {
   AiIcon,
   CaretUpDownIcon,
@@ -143,6 +144,18 @@ function LayoutContent() {
     })
     return cleanup
   }, [])
+
+  // Tabs only render on the index route. When something opens or focuses a tab while another
+  // page (settings, a dashboard) is showing, bring the workspace back into view.
+  const router = useRouter()
+  const navigate = useNavigate()
+  const focusRequest = useTabStore((s) => s.focusRequest)
+  const lastFocusRequest = useRef(focusRequest)
+  useEffect(() => {
+    if (focusRequest === lastFocusRequest.current) return
+    lastFocusRequest.current = focusRequest
+    if (router.state.location.pathname !== '/') navigate({ to: '/' })
+  }, [focusRequest, navigate, router])
 
   // Sync active query tab's connection when the active connection changes
   useEffect(() => {
