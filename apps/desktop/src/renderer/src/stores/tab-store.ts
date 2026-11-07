@@ -234,7 +234,8 @@ interface TabState {
   closeTab: (tabId: string) => void
   /**
    * A connection was deleted: close tabs that only make sense with it (tables, ERD, monitors…)
-   * and detach query/notebook tabs so their SQL survives without pointing at a dead connection.
+   * and detach query/notebook/ask tabs so their content survives without pointing at a dead
+   * connection.
    */
   forgetConnection: (connectionId: string) => void
   closeAllTabs: () => void
@@ -748,7 +749,8 @@ export const useTabStore = create<TabState>()(
         if (affected.length === 0) return
         cancelInFlightQueries(affected)
 
-        const keepsContent = (t: Tab) => t.type === 'query' || t.type === 'notebook'
+        const keepsContent = (t: Tab) =>
+          t.type === 'query' || t.type === 'notebook' || t.type === 'ask'
         const tabs = state.tabs.flatMap((t): Tab[] => {
           if (t.connectionId !== connectionId) return [t]
           if (!keepsContent(t)) return []

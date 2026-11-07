@@ -47,16 +47,18 @@ describe('deleting a connection', () => {
     vi.clearAllMocks()
   })
 
-  it('closes connection-bound tabs and detaches query tabs, keeping their SQL', async () => {
+  it('closes connection-bound tabs and detaches query and ask tabs, keeping their content', async () => {
     const query = tabs().createQueryTab('a', 'SELECT 1')
     tabs().createTablePreviewTab('a', 'public', 'users')
     tabs().createERDTab('a')
+    const ask = tabs().createAskTab('a')
     const other = tabs().createQueryTab('b', 'SELECT 2')
     deleteConnection.mockResolvedValue({ success: true })
 
     await useConnectionStore.getState().removeConnection('a')
 
-    expect(tabs().tabs.map((t) => t.id)).toEqual([query, other])
+    expect(tabs().tabs.map((t) => t.id)).toEqual([query, ask, other])
+    expect(tabs().getTab(ask)?.connectionId).toBeNull()
     const detached = tabs().getTab(query)
     expect(detached?.connectionId).toBeNull()
     expect(detached && 'query' in detached && detached.query).toBe('SELECT 1')
