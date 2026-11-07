@@ -79,6 +79,8 @@ interface ConnectionState {
   setConnections: (connections: ConnectionWithStatus[]) => void
   addConnection: (connection: Connection) => void
   removeConnection: (id: string) => Promise<void>
+  /** Replace the connection list, dropping the active connection if it no longer exists */
+  pruneConnections: (connections: ConnectionWithStatus[]) => void
   updateConnection: (id: string, updates: Partial<Connection>) => Promise<void>
 
   setActiveConnection: (id: string | null) => void
@@ -169,16 +171,25 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   removeConnection: async (id) => {
     try {
       const result = await window.api.connections.delete(id)
-      if (result.success) {
-        set((state) => ({
-          connections: state.connections.filter((c) => c.id !== id),
-          activeConnectionId: state.activeConnectionId === id ? null : state.activeConnectionId
-        }))
-      } else {
-        console.error('Failed to delete connection:', result.error)
+      if (!result.success) {
+        notify.error('Could not delete connection', result.error)
+        return
       }
+      get().pruneConnections(get().connections.filter((c) => c.id !== id))
     } catch (error) {
-      console.error('Failed to delete connection:', error)
+      notify.error(
+        'Could not delete connection',
+        error instanceof Error ? error.message : String(error)
+      )
+    }
+  },
+
+  pruneConnections: (connections) => {
+    set({ connections })
+    // Go through setActiveConnection so schemas and the window title are cleared too.
+    const { activeConnectionId } = get()
+    if (activeConnectionId && !connections.some((c) => c.id === activeConnectionId)) {
+      get().setActiveConnection(null)
     }
   },
 
@@ -423,7 +434,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
             error: existing?.error
           }
         })
-        set({ connections: newConnections })
+        get().pruneConnections(newConnections)
       }
     } catch (error) {
       console.error('Failed to refresh connections:', error)
