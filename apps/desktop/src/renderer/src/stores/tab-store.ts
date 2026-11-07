@@ -348,7 +348,11 @@ export const useTabStore = create<TabState>()(
           createdAt: Date.now(),
           order: maxOrder + 1
         }
-        set((state) => ({ tabs: [...state.tabs, tab], activeTabId: id }))
+        set((state) => ({
+          tabs: [...state.tabs, tab],
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
+        }))
         return id
       },
 

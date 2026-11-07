@@ -18,7 +18,9 @@ describe('focusRequest', () => {
 
   it('bumps when a tab is created', () => {
     useTabStore.getState().createTablePreviewTab('conn', 'public', 'users')
-    expect(focusRequest()).toBe(1)
+    useTabStore.getState().createQueryTab('conn')
+    useTabStore.getState().createAskTab('conn')
+    expect(focusRequest()).toBe(3)
   })
 
   it('bumps when an existing tab is re-focused, even if it is already active', () => {
