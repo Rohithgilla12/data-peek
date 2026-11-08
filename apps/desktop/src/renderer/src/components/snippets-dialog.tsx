@@ -107,6 +107,7 @@ export function SnippetsDialog({ open, onOpenChange }: SnippetsDialogProps) {
       const currentQuery = activeTab.query || ''
       const newQuery = currentQuery ? `${currentQuery}\n\n${cleanedTemplate}` : cleanedTemplate
       updateTabQuery(activeTabId, newQuery)
+      useTabStore.getState().setActiveTab(activeTabId)
     } else if (activeConnectionId) {
       createQueryTab(activeConnectionId, cleanedTemplate)
     }

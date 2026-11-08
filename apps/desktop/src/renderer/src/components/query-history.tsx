@@ -77,6 +77,7 @@ export function QueryHistory() {
       (activeTab.type === 'query' || activeTab.type === 'table-preview')
     ) {
       updateTabQuery(activeTabId, query)
+      useTabStore.getState().setActiveTab(activeTabId)
     } else if (activeConnectionId) {
       createQueryTab(activeConnectionId, query)
     }

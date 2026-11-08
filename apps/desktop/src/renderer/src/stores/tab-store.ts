@@ -227,6 +227,8 @@ interface TabState {
   // Tab collection
   tabs: Tab[]
   activeTabId: string | null
+  /** Bumped whenever a tab is opened or focused, so the shell can bring the workspace into view */
+  focusRequest: number
 
   // Actions
   createAskTab: (connectionId: string | null) => string
@@ -354,6 +356,7 @@ export const useTabStore = create<TabState>()(
     (set, get) => ({
       tabs: [],
       activeTabId: null,
+      focusRequest: 0,
 
       createAskTab: (connectionId) => {
         const id = crypto.randomUUID()
@@ -368,7 +371,11 @@ export const useTabStore = create<TabState>()(
           createdAt: Date.now(),
           order: maxOrder + 1
         }
-        set((state) => ({ tabs: [...state.tabs, tab], activeTabId: id }))
+        set((state) => ({
+          tabs: [...state.tabs, tab],
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
+        }))
         return id
       },
 
@@ -406,7 +413,8 @@ export const useTabStore = create<TabState>()(
 
         set((state) => ({
           tabs: [...state.tabs, newTab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
 
         return id
@@ -457,7 +465,8 @@ export const useTabStore = create<TabState>()(
 
         set((state) => ({
           tabs: [...state.tabs, newTab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
 
         return id
@@ -513,7 +522,8 @@ export const useTabStore = create<TabState>()(
 
         set((state) => ({
           tabs: [...state.tabs, newTab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
 
         return id
@@ -525,7 +535,7 @@ export const useTabStore = create<TabState>()(
           (t) => t.type === 'erd' && t.connectionId === connectionId
         )
         if (existingTab) {
-          set({ activeTabId: existingTab.id })
+          set({ activeTabId: existingTab.id, focusRequest: get().focusRequest + 1 })
           return existingTab.id
         }
 
@@ -545,7 +555,8 @@ export const useTabStore = create<TabState>()(
 
         set((state) => ({
           tabs: [...state.tabs, newTab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
 
         return id
@@ -562,7 +573,7 @@ export const useTabStore = create<TabState>()(
               (t as TableDesignerTab).tableName === tableName
           )
           if (existingTab) {
-            set({ activeTabId: existingTab.id })
+            set({ activeTabId: existingTab.id, focusRequest: get().focusRequest + 1 })
             return existingTab.id
           }
         }
@@ -588,7 +599,8 @@ export const useTabStore = create<TabState>()(
 
         set((state) => ({
           tabs: [...state.tabs, newTab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
 
         return id
@@ -614,7 +626,8 @@ export const useTabStore = create<TabState>()(
 
         set((state) => ({
           tabs: [...state.tabs, newTab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
 
         return id
@@ -625,7 +638,7 @@ export const useTabStore = create<TabState>()(
           (t) => t.type === 'pg-notifications' && t.connectionId === connectionId
         )
         if (existing) {
-          set({ activeTabId: existing.id })
+          set({ activeTabId: existing.id, focusRequest: get().focusRequest + 1 })
           return existing.id
         }
 
@@ -645,7 +658,8 @@ export const useTabStore = create<TabState>()(
 
         set((state) => ({
           tabs: [...state.tabs, newTab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
 
         return id
@@ -656,7 +670,7 @@ export const useTabStore = create<TabState>()(
           (t) => t.type === 'health-monitor' && t.connectionId === connectionId
         )
         if (existing) {
-          set({ activeTabId: existing.id })
+          set({ activeTabId: existing.id, focusRequest: get().focusRequest + 1 })
           return existing.id
         }
 
@@ -676,7 +690,8 @@ export const useTabStore = create<TabState>()(
 
         set((state) => ({
           tabs: [...state.tabs, newTab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
 
         return id
@@ -687,7 +702,7 @@ export const useTabStore = create<TabState>()(
           (t) => t.type === 'schema-intel' && t.connectionId === connectionId
         )
         if (existing) {
-          set({ activeTabId: existing.id })
+          set({ activeTabId: existing.id, focusRequest: get().focusRequest + 1 })
           return existing.id
         }
 
@@ -707,7 +722,8 @@ export const useTabStore = create<TabState>()(
 
         set((state) => ({
           tabs: [...state.tabs, newTab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
 
         return id
@@ -718,7 +734,7 @@ export const useTabStore = create<TabState>()(
           (t) => t.type === 'notebook' && (t as NotebookTab).notebookId === notebookId
         )
         if (existingTab) {
-          set({ activeTabId: existingTab.id })
+          set({ activeTabId: existingTab.id, focusRequest: get().focusRequest + 1 })
           return existingTab.id
         }
 
@@ -735,7 +751,8 @@ export const useTabStore = create<TabState>()(
         }
         set((state) => ({
           tabs: [...state.tabs, tab],
-          activeTabId: id
+          activeTabId: id,
+          focusRequest: get().focusRequest + 1
         }))
         return id
       },
@@ -842,7 +859,7 @@ export const useTabStore = create<TabState>()(
       },
 
       setActiveTab: (tabId) => {
-        set({ activeTabId: tabId })
+        set({ activeTabId: tabId, focusRequest: get().focusRequest + 1 })
       },
 
       updateTabQuery: (tabId, query) => {

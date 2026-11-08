@@ -6,6 +6,7 @@ import {
   Outlet,
   Link,
   useRouter,
+  useNavigate,
   type ErrorComponentProps
 } from '@tanstack/react-router'
 import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
@@ -63,6 +64,10 @@ import { useHotkeys, type UseHotkeyDefinition, type Hotkey } from '@tanstack/rea
 
 // Command palette page type for direct navigation
 type CommandPalettePage = 'home' | 'connections' | 'connections:switch' | 'saved-queries'
+
+// Last tab focus request the shell acted on. Module-level so a request made while the layout
+// was unmounted (e.g. behind the error boundary) is still honoured when it remounts.
+let handledFocusRequest = 0
 
 // Inner layout component that has access to sidebar context
 function LayoutContent() {
@@ -143,6 +148,17 @@ function LayoutContent() {
     })
     return cleanup
   }, [])
+
+  // Tabs only render on the index route. When something opens or focuses a tab while another
+  // page (settings, a dashboard) is showing, bring the workspace back into view.
+  const router = useRouter()
+  const navigate = useNavigate()
+  const focusRequest = useTabStore((s) => s.focusRequest)
+  useEffect(() => {
+    if (focusRequest === handledFocusRequest) return
+    handledFocusRequest = focusRequest
+    if (router.state.location.pathname !== '/') navigate({ to: '/' })
+  }, [focusRequest, navigate, router])
 
   // Sync active query tab's connection when the active connection changes
   useEffect(() => {

@@ -148,6 +148,7 @@ export function SidebarOmnibar() {
       ) {
         const current = activeTab.query || ''
         updateTabQuery(activeTabId, current ? `${current}\n${cleaned}` : cleaned)
+        useTabStore.getState().setActiveTab(activeTabId)
       } else {
         const connection = getActiveConnection()
         if (connection) createQueryTab(connection.id, cleaned)
