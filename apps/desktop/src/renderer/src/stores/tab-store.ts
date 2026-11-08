@@ -179,6 +179,23 @@ function cancelInFlightQueries(tabs: Tab[]): void {
   }
 }
 
+/**
+ * Stop work a surviving tab was doing against a connection that is going away, without
+ * discarding the tab's own content (SQL, Ask conversation). Compare cancelInFlightQueries,
+ * which tears everything down for a tab that is closing.
+ */
+function stopConnectionWork(tab: Tab): void {
+  if (isExecutableTab(tab) && tab.isExecuting && tab.executionId) {
+    void window.api.db.cancelQuery(tab.executionId).catch(() => {})
+  }
+  useWatchStore.getState().stop(tab.id)
+  useEditStore.getState().clearPendingChanges(tab.id)
+  const ask = useAskStore.getState()
+  for (const block of ask.sessions[tab.id]?.blocks ?? []) {
+    ask.cancel(tab.id, block.id)
+  }
+}
+
 function mapTab(tabs: Tab[], id: string, updater: (t: Tab) => Tab): Tab[] {
   const idx = tabs.findIndex((t) => t.id === id)
   if (idx === -1) return tabs
@@ -232,6 +249,12 @@ interface TabState {
   createSchemaIntelTab: (connectionId: string) => string
   createNotebookTab: (connectionId: string, notebookId: string, title: string) => string
   closeTab: (tabId: string) => void
+  /**
+   * A connection was deleted: close tabs that only make sense with it (tables, ERD, monitors…)
+   * and detach query/notebook/ask tabs so their content survives without pointing at a dead
+   * connection.
+   */
+  forgetConnection: (connectionId: string) => void
   closeAllTabs: () => void
   closeOtherTabs: (tabId: string) => void
   closeTabsToRight: (tabId: string) => void
@@ -735,6 +758,42 @@ export const useTabStore = create<TabState>()(
 
           return { tabs: newTabs, activeTabId: newActiveId }
         })
+      },
+
+      forgetConnection: (connectionId) => {
+        const state = get()
+        const affected = state.tabs.filter((t) => t.connectionId === connectionId)
+        if (affected.length === 0) return
+
+        const keepsContent = (t: Tab) =>
+          t.type === 'query' || t.type === 'notebook' || t.type === 'ask'
+        cancelInFlightQueries(affected.filter((t) => !keepsContent(t)))
+        affected.filter(keepsContent).forEach(stopConnectionWork)
+        const tabs = state.tabs.flatMap((t): Tab[] => {
+          if (t.connectionId !== connectionId) return [t]
+          if (!keepsContent(t)) return []
+          const detached = { ...t, connectionId: null }
+          return [
+            isExecutableTab(detached)
+              ? { ...detached, isExecuting: false, executionId: null }
+              : detached
+          ]
+        })
+
+        // If the active tab was closed, fall back to its nearest surviving neighbour.
+        let activeTabId = state.activeTabId
+        const survivors = new Set(tabs.map((t) => t.id))
+        if (activeTabId && !survivors.has(activeTabId)) {
+          const index = state.tabs.findIndex((t) => t.id === activeTabId)
+          const after = state.tabs.slice(index + 1).find((t) => survivors.has(t.id))
+          const before = state.tabs
+            .slice(0, index)
+            .reverse()
+            .find((t) => survivors.has(t.id))
+          activeTabId = (after ?? before)?.id ?? null
+        }
+
+        set({ tabs, activeTabId })
       },
 
       closeAllTabs: () => {
@@ -1409,3 +1468,13 @@ export const useTabStore = create<TabState>()(
     }
   )
 )
+
+// Keep tabs consistent with the connection list, whether a connection was deleted here or in
+// another window (connections sync across windows via refreshConnections).
+useConnectionStore.subscribe((state, prev) => {
+  if (state.connections === prev.connections) return
+  const remaining = new Set(state.connections.map((c) => c.id))
+  for (const c of prev.connections) {
+    if (!remaining.has(c.id)) useTabStore.getState().forgetConnection(c.id)
+  }
+})
