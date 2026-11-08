@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useTabStore } from '../tab-store'
 import { useConnectionStore, type ConnectionWithStatus } from '../connection-store'
 import { useNotificationStore } from '../notification-store'
+import { useAskStore } from '../ask-store'
 
 vi.stubGlobal('crypto', {
   randomUUID: () => 'test-uuid-' + Math.random().toString(36).slice(2)
@@ -76,6 +77,28 @@ describe('deleting a connection', () => {
 
     expect(tabs().activeTabId).toBe(last)
     expect(tabs().tabs.map((t) => t.id)).toEqual([first, last])
+  })
+
+  it('keeps an Ask conversation but cancels its running query', async () => {
+    const ask = tabs().createAskTab('a')
+    useAskStore.setState({
+      sessions: {
+        [ask]: {
+          blocks: [
+            { id: 'done', run: { status: 'idle' } },
+            { id: 'live', run: { status: 'running', executionId: 'exec-ask' } }
+          ]
+        }
+      } as never
+    })
+    deleteConnection.mockResolvedValue({ success: true })
+
+    await useConnectionStore.getState().removeConnection('a')
+
+    const blocks = useAskStore.getState().sessions[ask]?.blocks ?? []
+    expect(blocks.map((b) => b.id)).toEqual(['done', 'live'])
+    expect(blocks[1].run.status).toBe('error')
+    expect(cancelQuery).toHaveBeenCalledWith('exec-ask')
   })
 
   it('cancels a query still running on the deleted connection', async () => {

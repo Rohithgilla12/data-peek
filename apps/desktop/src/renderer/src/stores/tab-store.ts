@@ -179,6 +179,23 @@ function cancelInFlightQueries(tabs: Tab[]): void {
   }
 }
 
+/**
+ * Stop work a surviving tab was doing against a connection that is going away, without
+ * discarding the tab's own content (SQL, Ask conversation). Compare cancelInFlightQueries,
+ * which tears everything down for a tab that is closing.
+ */
+function stopConnectionWork(tab: Tab): void {
+  if (isExecutableTab(tab) && tab.isExecuting && tab.executionId) {
+    void window.api.db.cancelQuery(tab.executionId).catch(() => {})
+  }
+  useWatchStore.getState().stop(tab.id)
+  useEditStore.getState().clearPendingChanges(tab.id)
+  const ask = useAskStore.getState()
+  for (const block of ask.sessions[tab.id]?.blocks ?? []) {
+    ask.cancel(tab.id, block.id)
+  }
+}
+
 function mapTab(tabs: Tab[], id: string, updater: (t: Tab) => Tab): Tab[] {
   const idx = tabs.findIndex((t) => t.id === id)
   if (idx === -1) return tabs
@@ -747,10 +764,11 @@ export const useTabStore = create<TabState>()(
         const state = get()
         const affected = state.tabs.filter((t) => t.connectionId === connectionId)
         if (affected.length === 0) return
-        cancelInFlightQueries(affected)
 
         const keepsContent = (t: Tab) =>
           t.type === 'query' || t.type === 'notebook' || t.type === 'ask'
+        cancelInFlightQueries(affected.filter((t) => !keepsContent(t)))
+        affected.filter(keepsContent).forEach(stopConnectionWork)
         const tabs = state.tabs.flatMap((t): Tab[] => {
           if (t.connectionId !== connectionId) return [t]
           if (!keepsContent(t)) return []
