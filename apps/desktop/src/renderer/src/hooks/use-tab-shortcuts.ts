@@ -9,7 +9,8 @@ import { useConnectionStore, useTabStore } from '@/stores'
  *
  * Registered by the app shell rather than the tab container so they keep working on routes
  * that don't render tabs. Opening or focusing a tab brings the workspace back into view via
- * the tab store's focusRequest; closing only acts while the tabs are actually on screen.
+ * the tab store's focusRequest. Close Tab on another page (settings, a dashboard) closes that
+ * page instead, so it never closes a tab you can't see.
  */
 export function useTabShortcuts() {
   const router = useRouter()
@@ -26,7 +27,11 @@ export function useTabShortcuts() {
     }
 
     const closeTab = () => {
-      if (router.state.location.pathname !== '/') return
+      // Off the workspace, "close" closes the page you're on rather than a tab you can't see.
+      if (router.state.location.pathname !== '/') {
+        void router.navigate({ to: '/' })
+        return
+      }
       const { activeTabId } = tabs()
       if (activeTabId) tabs().closeTab(activeTabId)
     }
