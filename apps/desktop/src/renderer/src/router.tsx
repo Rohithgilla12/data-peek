@@ -9,7 +9,7 @@ import {
   useNavigate,
   type ErrorComponentProps
 } from '@tanstack/react-router'
-import { useState, useEffect, useCallback, useMemo, useRef, Component, type ReactNode } from 'react'
+import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
 import {
   AiIcon,
   CaretUpDownIcon,
@@ -64,6 +64,10 @@ import { useHotkeys, type UseHotkeyDefinition, type Hotkey } from '@tanstack/rea
 
 // Command palette page type for direct navigation
 type CommandPalettePage = 'home' | 'connections' | 'connections:switch' | 'saved-queries'
+
+// Last tab focus request the shell acted on. Module-level so a request made while the layout
+// was unmounted (e.g. behind the error boundary) is still honoured when it remounts.
+let handledFocusRequest = 0
 
 // Inner layout component that has access to sidebar context
 function LayoutContent() {
@@ -150,10 +154,9 @@ function LayoutContent() {
   const router = useRouter()
   const navigate = useNavigate()
   const focusRequest = useTabStore((s) => s.focusRequest)
-  const lastFocusRequest = useRef(focusRequest)
   useEffect(() => {
-    if (focusRequest === lastFocusRequest.current) return
-    lastFocusRequest.current = focusRequest
+    if (focusRequest === handledFocusRequest) return
+    handledFocusRequest = focusRequest
     if (router.state.location.pathname !== '/') navigate({ to: '/' })
   }, [focusRequest, navigate, router])
 
