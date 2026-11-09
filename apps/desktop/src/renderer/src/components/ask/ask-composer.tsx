@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 import { AiIcon, ArrowUpIcon, CaretRightIcon } from '@/components/icons'
 import { cn } from '@data-peek/ui'
+import { providerNeedsKey } from '@shared/index'
 import { classifyInput, type AskMode } from '@/lib/ask-input'
 import { useAskProvider } from '@/hooks/use-ask-provider'
 
@@ -49,7 +50,7 @@ export function ProviderPill() {
         />
         {label}
         <span className="text-muted-foreground/50">
-          {isSubscription ? 'your subscription' : 'API key'}
+          {isSubscription ? 'your subscription' : providerNeedsKey(provider) ? 'API key' : 'local'}
         </span>
       </button>
     )

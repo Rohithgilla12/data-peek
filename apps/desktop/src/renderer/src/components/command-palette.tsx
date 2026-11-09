@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { useNavigate } from '@tanstack/react-router'
 import {
   AiIcon,
   BookmarkIcon,
@@ -45,6 +44,7 @@ import {
 } from '@data-peek/ui'
 import type { SavedQuery } from '@shared/index'
 import { fuzzyFilter, getQueryType } from '@/lib/command-search'
+import { useOpenSettings } from '@/hooks/use-open-settings'
 
 // Page types for navigation
 type CommandPage =
@@ -110,7 +110,6 @@ export function CommandPalette({
   onOpenEditConnection,
   initialPage = 'home'
 }: CommandPaletteProps) {
-  const navigate = useNavigate()
   const { toggleSidebar } = useSidebar()
   const { setTheme, theme } = useTheme()
 
@@ -131,7 +130,7 @@ export function CommandPalette({
   const isInitialized = useSavedQueryStore((s) => s.isInitialized)
 
   const openAIPanel = useAIStore((s) => s.openPanel)
-  const openAISettings = useAIStore((s) => s.openSettings)
+  const openSettings = useOpenSettings()
 
   // State
   const [search, setSearch] = React.useState('')
@@ -337,7 +336,7 @@ export function CommandPalette({
                   value="ai-settings"
                   keywords={['api', 'key', 'provider', 'openai', 'anthropic']}
                   onSelect={() => {
-                    openAISettings()
+                    openSettings('ai')
                     onClose()
                   }}
                 >
@@ -453,7 +452,7 @@ export function CommandPalette({
                   value="nav-settings"
                   keywords={['preferences', 'config']}
                   onSelect={() => {
-                    navigate({ to: '/settings' })
+                    openSettings()
                     onClose()
                   }}
                 >
@@ -476,7 +475,7 @@ export function CommandPalette({
                   value="nav-shortcuts"
                   keywords={['hotkeys', 'keybindings']}
                   onSelect={() => {
-                    navigate({ to: '/settings' })
+                    openSettings('shortcuts')
                     onClose()
                   }}
                 >

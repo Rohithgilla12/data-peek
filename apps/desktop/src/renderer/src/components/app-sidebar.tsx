@@ -155,7 +155,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <SidebarMenu>
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
-                  <Link to="/settings">
+                  <Link to="/settings" search={{ section: 'general' }}>
                     <SlidersIcon className="size-4" />
                     <span>Settings</span>
                   </Link>

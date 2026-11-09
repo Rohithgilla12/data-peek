@@ -4,7 +4,6 @@ import {
   CopyIcon,
   EditIcon,
   PlusIcon,
-  SettingsIcon,
   SpinnerIcon,
   TrashIcon
 } from '@/components/icons'
@@ -30,7 +29,6 @@ import {
   AlertDialogTitle
 } from '@data-peek/ui'
 import { useConnectionStore, type Connection } from '@/stores'
-import { useNavigate } from '@tanstack/react-router'
 import { AddConnectionDialog } from './add-connection-dialog'
 import { DatabaseIcon } from './database-icons'
 import { resolveEnvironment } from '@/lib/environment'
@@ -56,7 +54,6 @@ function EnvironmentBadge({ environment }: { environment?: ConnectionEnvironment
 }
 
 export function ConnectionSwitcher() {
-  const navigate = useNavigate()
   const connections = useConnectionStore((s) => s.connections)
   const activeConnectionId = useConnectionStore((s) => s.activeConnectionId)
   const selectConnection = useConnectionStore((s) => s.selectConnection)
@@ -86,10 +83,6 @@ export function ConnectionSwitcher() {
 
   const handleSelectConnection = (connectionId: string) => {
     selectConnection(connectionId)
-  }
-
-  const handleManageConnections = () => {
-    navigate({ to: '/settings' })
   }
 
   const handleEditConnection = (e: React.MouseEvent, connection: Connection) => {
@@ -268,12 +261,6 @@ export function ConnectionSwitcher() {
                 <PlusIcon className="size-4" />
               </div>
               <div className="text-muted-foreground font-medium">Add connection</div>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2 p-2" onClick={handleManageConnections}>
-              <div className="bg-background flex size-6 items-center justify-center rounded-md border">
-                <SettingsIcon className="size-4" />
-              </div>
-              <div className="text-muted-foreground font-medium">Manage connections</div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

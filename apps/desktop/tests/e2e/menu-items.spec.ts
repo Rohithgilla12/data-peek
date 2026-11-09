@@ -98,6 +98,11 @@ test('File > New Tab and File > Close Tab open and close a tab', async ({
   await expect(closeTabButtons(window)).toHaveCount(before)
 })
 
+test('the Settings menu item opens the settings page', async ({ electronApp, window }) => {
+  await clickMenuItem(electronApp, process.platform === 'darwin' ? 'Settings...' : 'Settings')
+  await expect(window.getByRole('heading', { name: 'General', level: 1 })).toBeVisible()
+})
+
 test('menu accelerators match the editor and do not collide', async ({ electronApp, window }) => {
   // The app replaces Electron's default menu once the renderer is up.
   await expect(window.getByText('Loading...')).toBeHidden({ timeout: 8000 })

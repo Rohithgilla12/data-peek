@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { AIProvider } from '@shared/index'
 import { AI_PROVIDERS, isHarnessProvider } from '@shared/index'
 import { useAIStore } from '@/stores/ai-store'
+import { useOpenSettings } from '@/hooks/use-open-settings'
 
 const SUBSCRIPTION_CLIS = [
   { id: 'claude-cli', label: 'Claude' },
@@ -45,7 +46,8 @@ export function useAskProvider() {
   const provider = useAIStore((s) => s.multiProviderConfig?.activeProvider)
   const setProviderConfig = useAIStore((s) => s.setProviderConfig)
   const setActiveProvider = useAIStore((s) => s.setActiveProvider)
-  const openSettings = useAIStore((s) => s.openSettings)
+  const openSettingsPage = useOpenSettings()
+  const openSettings = useCallback(() => openSettingsPage('ai'), [openSettingsPage])
   const [detected, setDetected] = useState<DetectedCli[] | null>(null)
 
   useEffect(() => {

@@ -5,65 +5,46 @@ description: Configure data-peek preferences
 
 # Settings
 
-Access settings via `Cmd+,` (macOS) / `Ctrl+,` (Windows/Linux), or through the command palette (`Cmd+K` on macOS / `Ctrl+K` on Windows/Linux).
+Every preference lives on one page. Open it with `Cmd+,` (macOS) / `Ctrl+,` (Windows/Linux), from **Settings** at the bottom of the sidebar, or from the command palette (`Cmd/Ctrl+K`). The page has six sections, listed on its left.
 
-## Query Editor
+## General
 
-### Hide Query Editor by Default
+- **Appearance.** Light, dark, or match the system.
+- **Collapse the editor for table previews.** Opening a table shows its rows first, with the editor one click away. Default off.
+- **Hide the quick query panel.** Keeps the sidebar to schemas and saved items. Default off.
+- **Query timeout.** Cancel queries that run longer than this many seconds. Leave empty for no limit. Default no limit.
+- **Expand JSON cells** and **JSON expansion depth.** How JSON values open in results. Default collapsed, depth 2.
+- **Pokemon buddy.** An optional companion in the sidebar.
 
-When enabled, table preview tabs open with the query editor collapsed. You can still expand it by clicking the editor header.
+**Reset to defaults** at the bottom of General restores these values.
 
-**Default:** Off
+You can cancel a running query with the **Cancel** button that appears while it runs. This works for PostgreSQL, MySQL, SQL Server, and ClickHouse.
 
-**Use Case:** Enable this if you primarily use data-peek for browsing data rather than writing queries.
+## AI
 
-## Quick Query Panel
+The top of the section shows which AI is in use and lets you pick its model. Below it, providers are grouped by how you pay:
 
-### Hide Quick Query Panel by Default
+- **Your subscription.** Claude Code, Codex, and Antigravity run through the CLI you already pay for and are signed in to. data-peek checks whether each is installed. Click **Use** to switch to it. No key needed.
+- **API key.** OpenAI, Anthropic, Google, Groq, DeepSeek, Mistral, xAI, and GLM. Click **Add key**, paste it, optionally **Test** it, and **Save**. Saving your first key also makes that provider active. After that, **Use** switches between saved providers.
+- **Local.** Ollama. Set its URL and click **Use**.
 
-When enabled, the quick query panel in the sidebar is hidden by default.
+Keys stay on your machine, and requests go straight to the provider. See [AI Assistant](/docs/features/ai-assistant) for what the AI can do.
 
-**Default:** Off
+## Integrations
 
-**Use Case:** Hide this if you prefer using the full query editor instead of quick queries.
+The [MCP server](/docs/features/mcp-server) lets local AI agents query your connections. Turn it on, set its port, and copy the command to register it with your agent.
 
-## JSON Display
+## History & privacy
 
-### Expand JSON by Default
+Time Machine keeps a history of your query runs, which you can turn off or wipe. The audit log records what ran against your databases, with retention, an integrity check, and export.
 
-When enabled, JSON columns automatically expand in the results viewer.
+## Shortcuts
 
-**Default:** Off
+Every keyboard shortcut, grouped by where it applies.
 
-**Use Case:** Enable this if you frequently work with JSON data and want to see it expanded immediately.
+## License
 
-## Database
-
-### Query Timeout
-
-Maximum time (in seconds) to wait for a query to complete. Set to 0 for no timeout.
-
-**Default:** 0 (no timeout)
-
-**Use Case:** Set a timeout to prevent long-running queries from blocking your workflow. Useful when exploring unfamiliar databases.
-
-### Cancel Running Queries
-
-You can cancel a running query by clicking the **Cancel** button that appears during query execution. This works for PostgreSQL, MySQL, SQL Server, and ClickHouse.
-
-## AI Settings
-
-AI settings are configured separately through the AI panel. See [AI Assistant](/docs/features/ai-assistant) for configuration details.
-
-### Configurable Options
-
-- **Provider**: OpenAI or Anthropic
-- **API Key**: Your API key (stored securely in OS keychain)
-- **Model**: Select from available models for your provider
-
-## Resetting Settings
-
-Click **Reset to Defaults** to restore all settings to their original values.
+Your license status. Activate a commercial license or manage an existing one.
 
 ## Settings Storage
 

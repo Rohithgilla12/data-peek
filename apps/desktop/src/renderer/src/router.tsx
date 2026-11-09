@@ -4,24 +4,15 @@ import {
   createRoute,
   createMemoryHistory,
   Outlet,
-  Link,
   useRouter,
   useNavigate,
   type ErrorComponentProps
 } from '@tanstack/react-router'
 import { useState, useEffect, useCallback, useMemo, Component, type ReactNode } from 'react'
-import {
-  AiIcon,
-  CaretUpDownIcon,
-  CommandIcon,
-  MonitorIcon,
-  MoonIcon,
-  SunIcon,
-  WarningIcon
-} from '@/components/icons'
+import { AiIcon, CaretUpDownIcon, CommandIcon, WarningIcon } from '@/components/icons'
 import { useAutoUpdater } from '@/hooks/use-auto-updater'
 import { usePokemonTracker } from '@/hooks/use-pokemon-tracker'
-import { ThemeProvider, useTheme } from '@/components/theme-provider'
+import { ThemeProvider } from '@/components/theme-provider'
 import { CommandPalette } from '@/components/command-palette'
 import { McpApprovalDialog } from '@/components/mcp-approval-dialog'
 import { SavedQueriesDialog } from '@/components/saved-queries-dialog'
@@ -33,9 +24,6 @@ import {
   SidebarProvider,
   SidebarTrigger,
   useSidebar,
-  Switch,
-  Label,
-  Input,
   cn,
   keys,
   Button,
@@ -50,11 +38,11 @@ import { AddConnectionDialog } from '@/components/add-connection-dialog'
 import { LicenseStatusIndicator } from '@/components/license-status-indicator'
 import { LicenseActivationModal } from '@/components/license-activation-modal'
 import { LicenseSettingsModal } from '@/components/license-settings-modal'
-import { AIChatPanel, AISettingsModal } from '@/components/ai'
+import { AIChatPanel } from '@/components/ai'
+import { SettingsPage } from '@/components/settings/settings-page'
+import { parseSettingsSection, type SettingsSection } from '@/components/settings/sections'
+import { useOpenSettings } from '@/hooks/use-open-settings'
 import { ProviderPill } from '@/components/ask/ask-composer'
-import { McpSettingsSection } from '@/components/mcp-settings-section'
-import { AuditSettingsSection } from '@/components/audit-settings-section'
-import { TimeMachineSettingsSection } from '@/components/time-machine-settings-section'
 import { useTabShortcuts } from '@/hooks/use-tab-shortcuts'
 import { Notifications } from '@/components/notifications'
 import { PokemonBuddy } from '@/components/pokemon-buddy'
@@ -100,15 +88,8 @@ function LayoutContent() {
   const isAIPanelOpen = useAIStore((s) => s.isPanelOpen)
   const toggleAIPanel = useAIStore((s) => s.togglePanel)
   const closeAIPanel = useAIStore((s) => s.closePanel)
-  const isAISettingsOpen = useAIStore((s) => s.isSettingsOpen)
-  const openAISettings = useAIStore((s) => s.openSettings)
-  const closeAISettings = useAIStore((s) => s.closeSettings)
-  const multiProviderConfig = useAIStore((s) => s.multiProviderConfig)
+  const openSettings = useOpenSettings()
   const isAIConfigured = useAIStore((s) => s.isConfigured)
-  const setProviderConfig = useAIStore((s) => s.setProviderConfig)
-  const removeProviderConfig = useAIStore((s) => s.removeProviderConfig)
-  const setActiveProvider = useAIStore((s) => s.setActiveProvider)
-  const setActiveModel = useAIStore((s) => s.setActiveModel)
   const loadConfigFromMain = useAIStore((s) => s.loadConfigFromMain)
 
   // Get schemas for AI context
@@ -143,7 +124,7 @@ function LayoutContent() {
   const navigate = useNavigate()
 
   // Settings menu item / Mod+, opens the settings page
-  useEffect(() => window.api.menu.onOpenSettings(() => navigate({ to: '/settings' })), [navigate])
+  useEffect(() => window.api.menu.onOpenSettings(() => openSettings()), [openSettings])
 
   useTabShortcuts()
 
@@ -315,42 +296,14 @@ function LayoutContent() {
       <AIChatPanel
         isOpen={isAIPanelOpen}
         onClose={closeAIPanel}
-        onOpenSettings={openAISettings}
+        onOpenSettings={() => {
+          closeAIPanel()
+          openSettings('ai')
+        }}
         connection={activeConnection || null}
         schemas={schemas}
         isConfigured={isAIConfigured}
         onOpenInTab={handleAIOpenInTab}
-      />
-
-      {/* AI Settings Modal */}
-      <AISettingsModal
-        isOpen={isAISettingsOpen}
-        onClose={closeAISettings}
-        multiProviderConfig={multiProviderConfig}
-        onSaveProviderConfig={async (provider, config) => {
-          // Save to local store
-          setProviderConfig(provider, config)
-          // Save to main process
-          await window.api.ai.setProviderConfig(provider, config)
-        }}
-        onRemoveProviderConfig={async (provider) => {
-          // Remove from local store
-          removeProviderConfig(provider)
-          // Remove from main process
-          await window.api.ai.removeProviderConfig(provider)
-        }}
-        onSetActiveProvider={async (provider) => {
-          // Set active in local store
-          setActiveProvider(provider)
-          // Set active in main process
-          await window.api.ai.setActiveProvider(provider)
-        }}
-        onSetActiveModel={async (provider, model) => {
-          // Set model in local store
-          setActiveModel(provider, model)
-          // Set model in main process
-          await window.api.ai.setActiveModel(provider, model)
-        }}
       />
     </>
   )
@@ -374,418 +327,6 @@ function RootLayout() {
         {pokemonBuddyEnabled && <PokemonBuddy />}
       </SidebarProvider>
     </ThemeProvider>
-  )
-}
-
-// Theme Option Component
-function ThemeOption({
-  value,
-  label,
-  icon: Icon,
-  currentTheme,
-  onSelect
-}: {
-  value: 'light' | 'dark' | 'system'
-  label: string
-  icon: typeof SunIcon
-  currentTheme: string
-  onSelect: (theme: 'light' | 'dark' | 'system') => void
-}) {
-  const isSelected = currentTheme === value
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(value)}
-      className={cn(
-        'flex flex-col items-center gap-2 rounded-lg border-2 p-4 transition-all',
-        isSelected
-          ? 'border-primary bg-primary/5'
-          : 'border-border/50 hover:border-border hover:bg-muted/50'
-      )}
-    >
-      <div
-        className={cn(
-          'flex size-12 items-center justify-center rounded-full',
-          isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-        )}
-      >
-        <Icon className="size-6" />
-      </div>
-      <span className={cn('text-sm font-medium', isSelected && 'text-primary')}>{label}</span>
-    </button>
-  )
-}
-
-// Keyboard shortcut display component
-function ShortcutRow({ keys, description }: { keys: string[]; description: string }) {
-  return (
-    <div className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-      <span className="text-sm text-foreground">{description}</span>
-      <div className="flex items-center gap-1">
-        {keys.map((key, index) => (
-          <span key={index} className="flex items-center gap-1">
-            {index > 0 && <span className="text-xs text-muted-foreground">+</span>}
-            <kbd className="px-2 py-1 text-xs font-semibold text-foreground bg-muted border border-border/50 rounded shadow-sm">
-              {key}
-            </kbd>
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-// Settings Page
-function SettingsPage() {
-  const { theme, setTheme } = useTheme()
-  const licenseStatus = useLicenseStore((s) => s.status)
-  const openSettingsModal = useLicenseStore((s) => s.openSettingsModal)
-  const openActivationModal = useLicenseStore((s) => s.openActivationModal)
-
-  // App settings
-  const {
-    hideQueryEditorByDefault,
-    expandJsonByDefault,
-    setHideQueryEditorByDefault,
-    setExpandJsonByDefault,
-    hideQuickQueryPanel,
-    setHideQuickQueryPanel,
-    queryTimeoutMs,
-    setQueryTimeoutMs,
-    pokemonBuddyEnabled,
-    setPokemonBuddyEnabled,
-    jsonExpandDepth,
-    setJsonExpandDepth,
-    resetSettings
-  } = useSettingsStore()
-
-  return (
-    <div className="flex flex-1 flex-col p-6 overflow-auto">
-      <div className="flex items-center gap-4 mb-6">
-        <Link to="/" className="text-muted-foreground hover:text-foreground transition-colors">
-          ← Back
-        </Link>
-        <h1 className="text-2xl font-semibold">Settings</h1>
-        <Button variant="ghost" size="sm" className="ml-auto" onClick={resetSettings}>
-          Reset to Defaults
-        </Button>
-      </div>
-      <div className="space-y-6 max-w-2xl pb-10">
-        {/* License */}
-        <div className="rounded-lg border border-border/50 bg-card p-4">
-          <h2 className="text-lg font-medium mb-2">License</h2>
-          <p className="font-sans text-sm text-muted-foreground mb-4">
-            Manage your data-peek license for commercial use.
-          </p>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {licenseStatus?.type === 'personal' ? (
-                <>
-                  <span className="size-2 rounded-full bg-muted-foreground" />
-                  <span className="text-sm">Personal Use (Free)</span>
-                </>
-              ) : (
-                <>
-                  <span
-                    className={`size-2 rounded-full ${
-                      licenseStatus?.daysUntilExpiry && licenseStatus.daysUntilExpiry <= 0
-                        ? 'bg-warning'
-                        : 'bg-success'
-                    }`}
-                  />
-                  <span className="text-sm capitalize">
-                    {licenseStatus?.type} License
-                    {licenseStatus?.email && ` (${licenseStatus.email})`}
-                  </span>
-                </>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={() =>
-                licenseStatus?.type === 'personal' ? openActivationModal() : openSettingsModal()
-              }
-              className="text-sm text-primary hover:underline"
-            >
-              {licenseStatus?.type === 'personal' ? 'Activate License' : 'Manage License'}
-            </button>
-          </div>
-        </div>
-
-        {/* Appearance */}
-        <div className="rounded-lg border border-border/50 bg-card p-4">
-          <h2 className="text-lg font-medium mb-2">Appearance</h2>
-          <p className="font-sans text-sm text-muted-foreground mb-4">
-            Choose your preferred theme for the application.
-          </p>
-          <div className="grid grid-cols-3 gap-3">
-            <ThemeOption
-              value="light"
-              label="Light"
-              icon={SunIcon}
-              currentTheme={theme}
-              onSelect={setTheme}
-            />
-            <ThemeOption
-              value="dark"
-              label="Dark"
-              icon={MoonIcon}
-              currentTheme={theme}
-              onSelect={setTheme}
-            />
-            <ThemeOption
-              value="system"
-              label="System"
-              icon={MonitorIcon}
-              currentTheme={theme}
-              onSelect={setTheme}
-            />
-          </div>
-        </div>
-
-        {/* Fun Features */}
-        <div className="rounded-lg border border-border/50 bg-card p-4">
-          <h2 className="text-lg font-medium mb-2">Fun Features</h2>
-          <p className="font-sans text-sm text-muted-foreground mb-4">
-            Enable fun features to personalize your experience.
-          </p>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="pokemon-buddy">Pokemon Buddy</Label>
-              <p className="font-sans text-xs text-muted-foreground">
-                Show a friendly Pokemon buddy in the sidebar
-              </p>
-            </div>
-            <Switch
-              id="pokemon-buddy"
-              checked={pokemonBuddyEnabled}
-              onCheckedChange={setPokemonBuddyEnabled}
-            />
-          </div>
-        </div>
-
-        {/* Keyboard Shortcuts */}
-        <div className="rounded-lg border border-border/50 bg-card p-4">
-          <h2 className="text-lg font-medium mb-2">Keyboard Shortcuts</h2>
-          <p className="font-sans text-sm text-muted-foreground mb-4">
-            All available keyboard shortcuts in the application.
-          </p>
-
-          <div className="space-y-4">
-            {/* Tab Management */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">Tab Management</h3>
-              <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'T']} description="Create new Ask tab" />
-                <ShortcutRow
-                  keys={[keys.mod, keys.shift, 'T']}
-                  description="Create new SQL editor tab"
-                />
-                <ShortcutRow keys={[keys.mod, 'W']} description="Close current tab" />
-                <ShortcutRow keys={[keys.mod, '1-9']} description="Switch to tab by number" />
-                <ShortcutRow keys={[keys.mod, keys.alt, '→']} description="Switch to next tab" />
-                <ShortcutRow
-                  keys={[keys.mod, keys.alt, '←']}
-                  description="Switch to previous tab"
-                />
-              </div>
-            </div>
-
-            {/* Connections */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">Connections</h3>
-              <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'P']} description="Open connection picker" />
-                <ShortcutRow
-                  keys={[keys.mod, keys.shift, '1-9']}
-                  description="Switch to connection by number"
-                />
-              </div>
-            </div>
-
-            {/* Sidebar */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">Sidebar</h3>
-              <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'B']} description="Toggle sidebar visibility" />
-              </div>
-            </div>
-
-            {/* Query Editor */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">Query Editor</h3>
-              <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'Enter']} description="Execute/run current query" />
-                <ShortcutRow keys={[keys.mod, keys.shift, 'F']} description="Format SQL query" />
-                <ShortcutRow keys={[keys.mod, keys.shift, 'W']} description="Toggle Watch Mode" />
-                <ShortcutRow
-                  keys={[keys.mod, keys.shift, 'H']}
-                  description="Toggle Time Machine run history"
-                />
-              </div>
-            </div>
-
-            {/* Data Editing */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">Data Editing</h3>
-              <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'S']} description="Save pending changes" />
-                <ShortcutRow keys={[keys.mod, keys.shift, 'Z']} description="Discard all changes" />
-                <ShortcutRow keys={[keys.mod, keys.shift, 'A']} description="Add new row" />
-                <ShortcutRow keys={['Escape']} description="Exit edit mode" />
-              </div>
-            </div>
-
-            {/* Foreign Keys */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">Foreign Keys</h3>
-              <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'Click']} description="Open foreign key in new tab" />
-                <ShortcutRow keys={['Click']} description="Open foreign key in side panel" />
-              </div>
-            </div>
-
-            {/* AI Assistant */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">AI Assistant</h3>
-              <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'I']} description="Toggle AI assistant panel" />
-              </div>
-            </div>
-
-            {/* General */}
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">General</h3>
-              <div className="space-y-1">
-                <ShortcutRow keys={[keys.mod, 'K']} description="Open command palette" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Connections */}
-        <div className="rounded-lg border border-border/50 bg-card p-4">
-          <h2 className="text-lg font-medium mb-2">Connections</h2>
-          <p className="font-sans text-sm text-muted-foreground">
-            Manage your database connections and credentials.
-          </p>
-        </div>
-
-        {/* Editor */}
-        <div className="rounded-lg border border-border/50 bg-card p-4">
-          <h2 className="text-lg font-medium mb-2">Query Editor</h2>
-          <p className="font-sans text-sm text-muted-foreground mb-4">
-            Customize the query editor appearance and behavior.
-          </p>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="hide-editor">Hide query editor by default</Label>
-              <p className="font-sans text-xs text-muted-foreground">
-                Start with the query editor collapsed when opening table previews
-              </p>
-            </div>
-            <Switch
-              id="hide-editor"
-              checked={hideQueryEditorByDefault}
-              onCheckedChange={setHideQueryEditorByDefault}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="hide-quick-query-panel">Hide quick query panel by default</Label>
-              <p className="font-sans text-xs text-muted-foreground">
-                Hide the quick query panel by default
-              </p>
-            </div>
-            <Switch
-              id="hide-quick-query-panel"
-              checked={hideQuickQueryPanel}
-              onCheckedChange={setHideQuickQueryPanel}
-            />
-          </div>
-        </div>
-
-        {/* JSON Display */}
-        <div className="rounded-lg border border-border/50 bg-card p-4">
-          <h2 className="text-lg font-medium mb-2">JSON Display</h2>
-          <p className="font-sans text-sm text-muted-foreground mb-4">
-            Configure how JSON data is displayed in results.
-          </p>
-          <div className="flex items-center justify-between mb-4">
-            <div className="space-y-0.5">
-              <Label htmlFor="expand-json">Expand JSON by default</Label>
-              <p className="font-sans text-xs text-muted-foreground">
-                Automatically expand all JSON objects when viewing
-              </p>
-            </div>
-            <Switch
-              id="expand-json"
-              checked={expandJsonByDefault}
-              onCheckedChange={setExpandJsonByDefault}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="json-depth">Default JSON expansion depth</Label>
-              <p className="font-sans text-xs text-muted-foreground">
-                How many levels deep JSON should be expanded
-              </p>
-            </div>
-            <Input
-              id="json-depth"
-              type="number"
-              min={1}
-              max={10}
-              className="w-24"
-              value={jsonExpandDepth}
-              onChange={(e) => {
-                const val = parseInt(e.target.value)
-                if (!isNaN(val)) setJsonExpandDepth(val)
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Database */}
-        <div className="rounded-lg border border-border/50 bg-card p-4">
-          <h2 className="text-lg font-medium mb-2">Database</h2>
-          <p className="font-sans text-sm text-muted-foreground mb-4">
-            Configure database query behavior.
-          </p>
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="query-timeout">Query timeout (seconds)</Label>
-              <p className="font-sans text-xs text-muted-foreground">
-                Maximum time to wait for a query to complete. Set to 0 for no timeout.
-              </p>
-            </div>
-            <Input
-              id="query-timeout"
-              type="number"
-              min={0}
-              className="w-24"
-              value={queryTimeoutMs === 0 ? '' : queryTimeoutMs / 1000}
-              placeholder="0"
-              onChange={(e) => {
-                const parsed = e.target.value ? parseFloat(e.target.value) : 0
-                const seconds = isNaN(parsed) || parsed < 0 ? 0 : parsed
-                setQueryTimeoutMs(Math.round(seconds * 1000))
-              }}
-            />
-          </div>
-        </div>
-
-        {/* MCP Server */}
-        <McpSettingsSection />
-
-        {/* Audit Logging */}
-        <AuditSettingsSection />
-
-        {/* Time Machine */}
-        <TimeMachineSettingsSection />
-      </div>
-    </div>
   )
 }
 
@@ -886,6 +427,9 @@ const indexRoute = createRoute({
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/settings',
+  validateSearch: (search: Record<string, unknown>): { section?: SettingsSection } => ({
+    section: parseSettingsSection(search.section)
+  }),
   component: SettingsPage,
   errorComponent: RouteErrorComponent
 })
