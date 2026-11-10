@@ -20,6 +20,12 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createGroq } from '@ai-sdk/groq'
 import type { AIConfig } from '@shared/index'
 
+/** Ollama serves its OpenAI-compatible API under /v1; users usually enter the bare host. */
+export function ollamaBaseUrl(url: string | undefined): string {
+  const base = (url || 'http://localhost:11434').replace(/\/+$/, '')
+  return base.endsWith('/v1') ? base : `${base}/v1`
+}
+
 export function createProviderClient(config: AIConfig) {
   switch (config.provider) {
     case 'openai': {
@@ -76,7 +82,7 @@ export function createProviderClient(config: AIConfig) {
 
     case 'ollama': {
       const ollama = createOpenAI({
-        baseURL: config.baseUrl || 'http://localhost:11434/v1',
+        baseURL: ollamaBaseUrl(config.baseUrl),
         apiKey: 'ollama'
       })
       return ollama(config.model)

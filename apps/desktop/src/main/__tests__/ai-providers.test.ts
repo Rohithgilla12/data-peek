@@ -14,7 +14,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { AI_PROVIDERS, isHarnessProvider, type AIConfig, type AIProvider } from '@shared/index'
-import { createProviderClient } from '../ai-providers'
+import { createProviderClient, ollamaBaseUrl } from '../ai-providers'
 
 function configFor(provider: AIProvider): AIConfig {
   return {
@@ -66,5 +66,21 @@ describe('createProviderClient', () => {
         model: 'y'
       })
     ).toThrow()
+  })
+})
+
+describe('ollamaBaseUrl', () => {
+  it('appends /v1 to the bare host the settings page saves', () => {
+    expect(ollamaBaseUrl('http://localhost:11434')).toBe('http://localhost:11434/v1')
+    expect(ollamaBaseUrl('http://gpu-box:11434/')).toBe('http://gpu-box:11434/v1')
+  })
+
+  it('keeps a URL that already points at /v1', () => {
+    expect(ollamaBaseUrl('http://localhost:11434/v1')).toBe('http://localhost:11434/v1')
+    expect(ollamaBaseUrl('http://localhost:11434/v1/')).toBe('http://localhost:11434/v1')
+  })
+
+  it('defaults to the local Ollama when no URL is saved', () => {
+    expect(ollamaBaseUrl(undefined)).toBe('http://localhost:11434/v1')
   })
 })

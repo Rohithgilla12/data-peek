@@ -209,7 +209,7 @@ function LicenseSection() {
   const openSettingsModal = useLicenseStore((s) => s.openSettingsModal)
   const openActivationModal = useLicenseStore((s) => s.openActivationModal)
   const isPersonal = !status || status.type === 'personal'
-  const expired = !!status?.daysUntilExpiry && status.daysUntilExpiry <= 0
+  const expired = status?.daysUntilExpiry != null && status.daysUntilExpiry <= 0
 
   return (
     <SettingsGroup title="Status">

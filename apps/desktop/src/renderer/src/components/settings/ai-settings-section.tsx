@@ -48,6 +48,15 @@ function defaultModel(p: ProviderInfo): string {
   return p.models.find((m) => m.recommended)?.id ?? p.models[0]?.id ?? ''
 }
 
+function isHttpUrl(value: string): boolean {
+  try {
+    const { protocol } = new URL(value)
+    return protocol === 'http:' || protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 const actions = {
   async save(id: AIProvider, config: AIProviderConfig) {
     const res = await window.api.ai.setProviderConfig(id, config)
@@ -97,6 +106,7 @@ export function AISettingsSection() {
     isActive: active === p.id,
     isSaved: isSaved(config, p.id),
     savedConfig: config?.providers?.[p.id],
+    model: config?.activeModels?.[p.id] || defaultModel(p),
     onUse: activate,
     onRemove: (id: AIProvider) => run(() => actions.remove(id)),
     onSave: (id: AIProvider, c: AIProviderConfig) =>
@@ -226,6 +236,7 @@ interface RowProps {
   isActive: boolean
   isSaved: boolean
   savedConfig: AIProviderConfig | undefined
+  model: string
   onUse: (id: AIProvider, save?: AIProviderConfig) => Promise<void>
   onSave: (id: AIProvider, config: AIProviderConfig) => Promise<void>
   onRemove: (id: AIProvider) => Promise<void>
@@ -360,7 +371,16 @@ function SubscriptionRow({ provider, isActive, onUse }: RowProps) {
   )
 }
 
-function KeyRow({ provider, isActive, isSaved, savedConfig, onUse, onSave, onRemove }: RowProps) {
+function KeyRow({
+  provider,
+  isActive,
+  isSaved,
+  savedConfig,
+  model,
+  onUse,
+  onSave,
+  onRemove
+}: RowProps) {
   const [open, setOpen] = useState(false)
   const [key, setKey] = useState(savedConfig?.apiKey ?? '')
   const [showKey, setShowKey] = useState(false)
@@ -378,7 +398,7 @@ function KeyRow({ provider, isActive, isSaved, savedConfig, onUse, onSave, onRem
   const runTest = async () => {
     setTest('testing')
     const res = await window.api.ai
-      .validateKey({ provider: provider.id, apiKey: key, model: defaultModel(provider) })
+      .validateKey({ provider: provider.id, apiKey: key, model })
       .catch(() => null)
     setTest(res?.success && res.data?.valid ? 'ok' : 'fail')
   }
@@ -483,13 +503,14 @@ function LocalRow({ provider, isActive, savedConfig, onUse }: RowProps) {
   useEffect(() => setUrl(savedUrl), [savedUrl])
 
   const dirty = url !== savedUrl
+  const valid = isHttpUrl(url)
 
   return (
     <div>
       <RowHeader name={provider.name} detail={provider.description}>
         <UseButton
           isActive={isActive && !dirty}
-          disabled={!url}
+          disabled={!valid}
           onClick={() => onUse(provider.id, { baseUrl: url })}
         />
       </RowHeader>
@@ -499,8 +520,14 @@ function LocalRow({ provider, isActive, savedConfig, onUse }: RowProps) {
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           placeholder={OLLAMA_DEFAULT_URL}
+          aria-invalid={!valid}
           className="font-mono text-xs"
         />
+        {!valid && (
+          <p className="text-2xs text-destructive mt-1">
+            Enter a full URL, like {OLLAMA_DEFAULT_URL}
+          </p>
+        )}
       </div>
     </div>
   )
