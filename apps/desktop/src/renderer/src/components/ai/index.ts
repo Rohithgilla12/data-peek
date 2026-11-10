@@ -5,7 +5,6 @@ export { AISQLPreview } from './ai-sql-preview'
 export { AIQueryResult } from './ai-query-result'
 export { AISchemaCard } from './ai-schema-card'
 export { AISuggestions } from './ai-suggestions'
-export { AISettingsModal } from './ai-settings-modal'
 
 // Types
 export type {

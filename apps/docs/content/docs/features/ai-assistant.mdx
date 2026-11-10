@@ -19,11 +19,11 @@ data-peek includes a powerful AI assistant that helps you write SQL queries, gen
 
 ### Choose a provider
 
-Open **AI Settings** (from the AI panel or the command palette) and pick one provider. The app always uses whichever provider is marked **Active** — you can switch anytime.
+Open **Settings → AI** (from the AI panel, the provider name in the header, or the command palette) and pick one provider. The app uses whichever provider is marked **In use**, and you can switch anytime.
 
-- **Claude Code (local CLI)** — _no API key._ If you have the `claude` CLI installed and signed in, select the tile and click **Use Claude Code**. That single click makes it active — nothing else to configure. See [Bring your own harness](#bring-your-own-harness-claude-code) below.
-- **API-key providers** (OpenAI, Anthropic, Google, …) — paste your key, click **Save … Key**, then **Set Active**. Keys are stored in your OS keychain and only ever sent to that provider.
-- **Ollama** — local models, no key; point it at your Ollama URL and click **Use Ollama**.
+- **Claude Code (local CLI)** — _no API key._ If you have the `claude` CLI installed and signed in, click **Use** on its row under **Your subscription**. That single click makes it active, with nothing else to configure. See [Bring your own harness](#bring-your-own-harness-claude-code) below.
+- **API-key providers** (OpenAI, Anthropic, Google, …) — click **Add key**, paste your key, and click **Save**. If no AI is set up yet, saving also makes it active. Otherwise click **Use**. Keys are stored in your OS keychain and only ever sent to that provider.
+- **Ollama** — local models, no key; set your Ollama URL and click **Use**.
 
 To use _only_ the local Claude CLI, just make **Claude Code (local CLI)** the active provider — the others can stay configured but unused.
 
@@ -53,8 +53,8 @@ New in v0.27: instead of pasting an API key, point the assistant at the `claude`
 </video>
 
 1. Install the Claude Code CLI and sign in (run `claude` once).
-2. In AI Settings, choose **Claude Code (local CLI)** — no API key required.
-3. Enable the MCP server (Settings → MCP) so the assistant can query your database.
+2. In **Settings → AI**, click **Use** on **Claude Code (local CLI)**. No API key required.
+3. Enable the MCP server (Settings → Integrations) so the assistant can query your database.
 4. Ask in plain English. The reply **streams in live** — you see the answer as it's written, and while it grounds itself you get a running indicator of each step ("_Running query…_", "_Reading schema…_"). Read-only queries run automatically, and grounded answers show a **"Grounded against your database"** badge.
 
 ## New in v0.28

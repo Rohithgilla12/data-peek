@@ -72,6 +72,7 @@ import { useTimeMachineStore } from '@/stores/time-machine-store'
 import { useStepStore } from '@/stores/step-store'
 import { DDL_KEYWORD_REGEX } from '@shared/index'
 import type { editor as monacoEditor } from 'monaco-editor'
+import { useOpenSettings } from '@/hooks/use-open-settings'
 
 interface TabQueryEditorProps {
   tabId: string
@@ -191,7 +192,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
   const [aiEditOpen, setAiEditOpen] = useState(false)
   const [aiEditInstruction, setAiEditInstruction] = useState<string | undefined>()
   const aiConfigured = useAIStore((s) => s.isConfigured)
-  const openAISettings = useAIStore((s) => s.openSettings)
+  const openSettings = useOpenSettings()
   const toggleAIPanel = useAIStore((s) => s.togglePanel)
 
   // Panel collapse state (extracted to hook)
@@ -1084,7 +1085,7 @@ export function TabQueryEditor({ tabId }: TabQueryEditorProps) {
                 // Monaco owns ⌘I here, so when an inline edit can't happen it
                 // falls back to what ⌘I does everywhere else: the AI panel.
                 if (stepSession || !tabConnection) toggleAIPanel()
-                else if (!aiConfigured) openAISettings()
+                else if (!aiConfigured) openSettings('ai')
                 else setAiEditOpen(true)
               }}
               value={tab.query}

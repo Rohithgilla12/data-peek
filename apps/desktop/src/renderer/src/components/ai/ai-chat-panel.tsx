@@ -894,13 +894,14 @@ export function AIChatPanel({
                 <AiIcon className="size-8 text-primary/50" />
               </div>
             </div>
-            <h3 className="font-semibold mb-2">Configure AI Assistant</h3>
+            <h3 className="font-semibold mb-2">Set up AI</h3>
             <p className="font-sans text-sm text-muted-foreground mb-4 max-w-[280px]">
-              Add your API key to start asking questions about your database in natural language.
+              Use a Claude Code, Codex, or Antigravity subscription you already have, or add an API
+              key.
             </p>
             <Button onClick={onOpenSettings} className="gap-2">
               <SettingsIcon className="size-4" />
-              Configure API Key
+              Open AI settings
             </Button>
           </div>
         )}

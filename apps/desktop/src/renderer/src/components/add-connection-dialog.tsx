@@ -1018,7 +1018,7 @@ export function AddConnectionDialog({
                       </div>
 
                       <p className="font-sans text-xs text-muted-foreground">
-                        Query timeout can be configured in Settings → Database.
+                        Query timeout can be configured in Settings → General → Editor.
                       </p>
                     </CollapsibleContent>
                   </Collapsible>

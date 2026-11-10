@@ -142,7 +142,7 @@ For power users and teams:
 | Feature | Description |
 |---------|-------------|
 | **Natural Language Queries** | Ask questions in plain English, get SQL queries |
-| **Multi-Provider Support** | Choose OpenAI, Anthropic, Google, Groq, or local Ollama |
+| **Multi-Provider Support** | Use your Claude Code, Codex, or Antigravity subscription, an API key (OpenAI, Anthropic, Google, Groq, and more), or local Ollama. Set up in Settings → AI |
 | **Schema Awareness** | AI understands your tables, columns, and relationships |
 | **Inline Execution** | Run AI-generated queries and see results in chat |
 | **Chart Generation** | Create bar, line, pie, and area charts from data |
@@ -303,7 +303,7 @@ For power users and teams:
 | **Resizable Panels** | Drag to resize sidebar and editor |
 | **Collapsible Sidebar** | Maximize workspace when needed |
 | **Collapsible Query Editor** | Hide/show query panel to focus on results |
-| **Settings Modal** | Configure preferences via UI (persisted) |
+| **Settings** | One page for every preference: General, AI, Integrations, History & privacy, Shortcuts, License (`Cmd/Ctrl+,`) |
 | **Loading States** | Clear feedback during operations |
 | **Error Handling** | Helpful error messages with details |
 | **Empty States** | Guided prompts when there's no data |

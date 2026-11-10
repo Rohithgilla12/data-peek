@@ -41,7 +41,6 @@ interface AIState {
 
   // UI State
   isPanelOpen: boolean
-  isSettingsOpen: boolean
   isLoading: boolean
 
   // Conversations (keyed by connection ID)
@@ -62,9 +61,6 @@ interface AIState {
   togglePanel: () => void
   openPanel: () => void
   closePanel: () => void
-
-  openSettings: () => void
-  closeSettings: () => void
 
   setLoading: (loading: boolean) => void
 
@@ -108,7 +104,6 @@ export const useAIStore = create<AIState>()(
       config: null,
       isConfigured: false,
       isPanelOpen: false,
-      isSettingsOpen: false,
       isLoading: false,
       conversations: {},
 
@@ -234,22 +229,10 @@ export const useAIStore = create<AIState>()(
       },
 
       // Panel actions
-      togglePanel: () => {
-        const { isPanelOpen, isConfigured } = get()
-        if (!isConfigured && !isPanelOpen) {
-          // Open settings if not configured
-          set({ isSettingsOpen: true })
-        } else {
-          set({ isPanelOpen: !isPanelOpen })
-        }
-      },
+      togglePanel: () => set({ isPanelOpen: !get().isPanelOpen }),
 
       openPanel: () => set({ isPanelOpen: true }),
       closePanel: () => set({ isPanelOpen: false }),
-
-      // Settings actions
-      openSettings: () => set({ isSettingsOpen: true }),
-      closeSettings: () => set({ isSettingsOpen: false }),
 
       // Loading state
       setLoading: (loading) => set({ isLoading: loading }),
@@ -319,5 +302,4 @@ export const useAIConfig = () => useAIStore((state) => state.config)
 export const useAIMultiProviderConfig = () => useAIStore((state) => state.multiProviderConfig)
 export const useAIConfigured = () => useAIStore((state) => state.isConfigured)
 export const useAIPanelOpen = () => useAIStore((state) => state.isPanelOpen)
-export const useAISettingsOpen = () => useAIStore((state) => state.isSettingsOpen)
 export const useAILoading = () => useAIStore((state) => state.isLoading)
