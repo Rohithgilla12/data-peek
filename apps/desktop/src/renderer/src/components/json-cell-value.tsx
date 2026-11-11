@@ -20,10 +20,7 @@ export function isInitiallyExpanded(
   depth: number,
   { expandAll = false, maxDepth = 2 }: { expandAll?: boolean; maxDepth?: number } = {}
 ): boolean {
-  if (expandAll) {
-    return depth < (maxDepth ?? 2)
-  }
-  return depth < 2
+  return depth < (expandAll ? maxDepth : 2)
 }
 
 function JsonTreeNode({
