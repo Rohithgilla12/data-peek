@@ -16,21 +16,34 @@ import {
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { useSettingsStore } from '@/stores/settings-store'
 
-// Recursive JSON tree viewer component
+export function isInitiallyExpanded(
+  depth: number,
+  { expandAll = false, maxDepth = 2 }: { expandAll?: boolean; maxDepth?: number } = {}
+): boolean {
+  if (expandAll) {
+    return depth < (maxDepth ?? 2)
+  }
+  return depth < 2
+}
+
 function JsonTreeNode({
   keyName,
   value,
   depth = 0,
   isLast = true,
-  expandAll = false
+  expandAll = false,
+  maxDepth = 2
 }: {
   keyName?: string
   value: unknown
   depth?: number
   isLast?: boolean
   expandAll?: boolean
+  maxDepth?: number
 }) {
-  const [isExpanded, setIsExpanded] = React.useState(expandAll || depth < 2)
+  const [isExpanded, setIsExpanded] = React.useState(
+    isInitiallyExpanded(depth, { expandAll, maxDepth })
+  )
 
   const isObject = value !== null && typeof value === 'object'
   const isArray = Array.isArray(value)
@@ -114,6 +127,7 @@ function JsonTreeNode({
               depth={depth + 1}
               isLast={idx === entries.length - 1}
               expandAll={expandAll}
+              maxDepth={maxDepth}
             />
           ))}
         </div>
@@ -178,6 +192,7 @@ export function JsonCellEditor({
   onCancel: () => void
 }) {
   const expandJsonByDefault = useSettingsStore((s) => s.expandJsonByDefault)
+  const jsonExpandDepth = useSettingsStore((s) => s.jsonExpandDepth)
   const [editValue, setEditValue] = React.useState(() => {
     if (typeof value === 'string') return value
     return JSON.stringify(value, null, 2)
@@ -275,7 +290,12 @@ export function JsonCellEditor({
               <p className="text-xs text-muted-foreground mb-1.5">Preview</p>
               <div className="max-h-32 overflow-auto bg-muted/30 rounded-lg border border-border/50 p-2">
                 <div className="font-mono text-2xs">
-                  <JsonTreeNode value={parsedValue} depth={0} expandAll={expandJsonByDefault} />
+                  <JsonTreeNode
+                    value={parsedValue}
+                    depth={0}
+                    expandAll={expandJsonByDefault}
+                    maxDepth={jsonExpandDepth}
+                  />
                 </div>
               </div>
             </div>
@@ -291,6 +311,7 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
   const [isOpen, setIsOpen] = React.useState(false)
   const { copied, copy } = useCopyToClipboard()
   const expandJsonByDefault = useSettingsStore((s) => s.expandJsonByDefault)
+  const jsonExpandDepth = useSettingsStore((s) => s.jsonExpandDepth)
 
   if (value === null || value === undefined) {
     return <span className="text-muted-foreground/50 italic">NULL</span>
@@ -373,7 +394,11 @@ export function JsonCellValue({ value, columnName }: { value: unknown; columnNam
             {/* JSON Tree View */}
             <div className="flex-1 min-h-0 overflow-auto bg-muted/30 rounded-lg border border-border/50 p-3">
               <div className="font-mono text-xs leading-relaxed">
-                <JsonTreeNode value={parsedValue} expandAll={expandJsonByDefault} />
+                <JsonTreeNode
+                  value={parsedValue}
+                  expandAll={expandJsonByDefault}
+                  maxDepth={jsonExpandDepth}
+                />
               </div>
             </div>
 
