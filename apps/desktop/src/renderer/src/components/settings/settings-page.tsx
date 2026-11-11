@@ -165,7 +165,7 @@ function GeneralSection() {
             className="w-24"
             value={s.jsonExpandDepth}
             onChange={(e) => {
-              const val = parseInt(e.target.value)
+              const val = parseInt(e.target.value, 10)
               if (!isNaN(val)) s.setJsonExpandDepth(val)
             }}
           />
