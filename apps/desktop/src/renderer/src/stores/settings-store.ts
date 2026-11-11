@@ -50,13 +50,18 @@ const defaultSettings: AppSettings = {
   timeMachineEnabled: true
 }
 
+export function clampJsonExpandDepth(depth: unknown): number {
+  if (typeof depth !== 'number' || !Number.isFinite(depth)) return defaultSettings.jsonExpandDepth
+  return Math.min(10, Math.max(1, Math.round(depth)))
+}
+
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
       ...defaultSettings,
       setHideQueryEditorByDefault: (value) => set({ hideQueryEditorByDefault: value }),
       setExpandJsonByDefault: (value) => set({ expandJsonByDefault: value }),
-      setJsonExpandDepth: (depth) => set({ jsonExpandDepth: depth }),
+      setJsonExpandDepth: (depth) => set({ jsonExpandDepth: clampJsonExpandDepth(depth) }),
       setQueryTimeoutMs: (value) => set({ queryTimeoutMs: value }),
       setDefaultPageSize: (size) => set({ defaultPageSize: size }),
       setPokemonBuddyEnabled: (value) => set({ pokemonBuddyEnabled: value }),
@@ -66,7 +71,15 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'data-peek-settings',
-      storage: createJSONStorage(() => localStorage)
+      storage: createJSONStorage(() => localStorage),
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<AppSettings>
+        return {
+          ...current,
+          ...saved,
+          jsonExpandDepth: clampJsonExpandDepth(saved.jsonExpandDepth ?? current.jsonExpandDepth)
+        }
+      }
     }
   )
 )

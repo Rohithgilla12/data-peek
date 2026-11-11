@@ -166,7 +166,7 @@ function GeneralSection() {
             value={s.jsonExpandDepth}
             onChange={(e) => {
               const val = parseInt(e.target.value, 10)
-              if (!isNaN(val)) s.setJsonExpandDepth(Math.min(10, Math.max(1, val)))
+              if (!isNaN(val)) s.setJsonExpandDepth(val)
             }}
           />
         </SettingRow>
