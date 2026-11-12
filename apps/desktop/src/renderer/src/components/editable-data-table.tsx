@@ -66,7 +66,13 @@ import {
 } from '@/components/icons'
 import { useHotkeys, type UseHotkeyDefinition } from '@tanstack/react-hotkeys'
 import * as React from 'react'
-import { CellGridInspector, CellGridOverlays, useCellGrid } from '@/components/cell-grid'
+import {
+  CellGridInspector,
+  CellGridOverlays,
+  CellSelectionStats,
+  type CellPosition,
+  useCellGrid
+} from '@/components/cell-grid'
 import { WatchDecorationOverlay } from '@/components/cell-grid/watch-decoration-overlay'
 import { useWatchStore } from '@/stores/watch-store'
 import {
@@ -1173,6 +1179,37 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     enabled: shouldVirtualize
   })
 
+  const getCellSnapshot = React.useCallback(
+    (pos: CellPosition) => {
+      const row = rows[pos.row]
+      const targetCol = isEditMode ? columnDefs[pos.col - 1] : columnDefs[pos.col]
+      if (!row || !targetCol) return { value: undefined, columnName: '', dataType: '' }
+      // Re-evaluate when tab edits change
+      void tabEdit
+      const isMasked = effectiveMasked.has(targetCol.name)
+      const rawValue = isCellModified(tabId, row.original, targetCol.name)
+        ? getModifiedCellValue(tabId, row.original, targetCol.name)
+        : row.original[targetCol.name]
+
+      return {
+        value: isMasked ? null : rawValue,
+        columnName: targetCol.name,
+        dataType: targetCol.dataType,
+        isMasked
+      }
+    },
+    [
+      rows,
+      columnDefs,
+      isEditMode,
+      effectiveMasked,
+      tabId,
+      tabEdit,
+      isCellModified,
+      getModifiedCellValue
+    ]
+  )
+
   return (
     <TooltipProvider>
       <div className="flex flex-col h-full min-h-0">
@@ -1442,6 +1479,9 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
             />
           </div>
         </div>
+
+        {/* Selection Stats */}
+        <CellSelectionStats selection={cellGrid.selection} getCell={getCellSnapshot} />
 
         {/* Pagination */}
         {onServerPaginationChange && serverTotalRowCount != null ? (

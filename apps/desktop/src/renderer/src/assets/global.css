@@ -43,6 +43,9 @@
   --cat-pink: oklch(0.54 0.16 350);
   --cat-teal: oklch(0.5 0.1 180);
   --radius: 0.625rem;
+  --cell-selection-fill: oklch(0.45 0.15 250 / 0.16);
+  --cell-selection-border: oklch(0.45 0.15 250 / 0.4);
+  --cell-match-fill: oklch(0.53 0.13 70 / 0.25);
   --sidebar: oklch(0.97 0.005 250 / 0.8);
   --sidebar-foreground: oklch(0.25 0 0);
   --sidebar-primary: oklch(0.2046 0 0);
@@ -114,6 +117,9 @@
   --cat-purple: oklch(0.72 0.14 300);
   --cat-pink: oklch(0.74 0.14 350);
   --cat-teal: oklch(0.76 0.11 180);
+  --cell-selection-fill: oklch(0.65 0.15 250 / 0.18);
+  --cell-selection-border: oklch(0.65 0.15 250 / 0.5);
+  --cell-match-fill: oklch(0.8 0.14 80 / 0.3);
   --sidebar: oklch(0.18 0.01 260 / 0.85);
   --sidebar-foreground: oklch(0.85 0 0);
   --sidebar-primary: oklch(0.92 0 0);

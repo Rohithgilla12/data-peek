@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest'
-import { buildGeometry } from '../cell-grid-types'
+import {
+  buildGeometry,
+  rangeBounds,
+  containsCell,
+  selectionContains,
+  iterateSelection,
+  type CellRange,
+  type CellSelection
+} from '../cell-grid-types'
 
 describe('buildGeometry', () => {
   it('returns the input rowHeight and headerHeight verbatim', () => {
@@ -65,5 +73,164 @@ describe('buildGeometry', () => {
     const lastOffset = geom.columnOffsets[geom.columnOffsets.length - 1]
     const lastWidth = widths[widths.length - 1]
     expect(lastOffset + lastWidth).toBe(geom.totalWidth)
+  })
+})
+
+describe('rangeBounds', () => {
+  it('normalizes single-cell range where anchor equals active', () => {
+    const range: CellRange = { anchor: { row: 3, col: 4 }, active: { row: 3, col: 4 } }
+    expect(rangeBounds(range)).toEqual({ r1: 3, c1: 4, r2: 3, c2: 4 })
+  })
+
+  it('preserves order when anchor is top-left and active is bottom-right', () => {
+    const range: CellRange = { anchor: { row: 1, col: 2 }, active: { row: 5, col: 8 } }
+    expect(rangeBounds(range)).toEqual({ r1: 1, c1: 2, r2: 5, c2: 8 })
+  })
+
+  it('normalizes when anchor is bottom-right and active is top-left', () => {
+    const range: CellRange = { anchor: { row: 5, col: 8 }, active: { row: 1, col: 2 } }
+    expect(rangeBounds(range)).toEqual({ r1: 1, c1: 2, r2: 5, c2: 8 })
+  })
+
+  it('normalizes when only row is inverted', () => {
+    const range: CellRange = { anchor: { row: 10, col: 2 }, active: { row: 4, col: 7 } }
+    expect(rangeBounds(range)).toEqual({ r1: 4, c1: 2, r2: 10, c2: 7 })
+  })
+
+  it('normalizes when only col is inverted', () => {
+    const range: CellRange = { anchor: { row: 2, col: 9 }, active: { row: 6, col: 1 } }
+    expect(rangeBounds(range)).toEqual({ r1: 2, c1: 1, r2: 6, c2: 9 })
+  })
+})
+
+describe('containsCell', () => {
+  const range: CellRange = { anchor: { row: 2, col: 3 }, active: { row: 5, col: 7 } }
+
+  it('returns true for inner cells', () => {
+    expect(containsCell(range, { row: 3, col: 4 })).toBe(true)
+    expect(containsCell(range, { row: 4, col: 6 })).toBe(true)
+  })
+
+  it('returns true for all four boundary corners', () => {
+    expect(containsCell(range, { row: 2, col: 3 })).toBe(true)
+    expect(containsCell(range, { row: 2, col: 7 })).toBe(true)
+    expect(containsCell(range, { row: 5, col: 3 })).toBe(true)
+    expect(containsCell(range, { row: 5, col: 7 })).toBe(true)
+  })
+
+  it('returns false for cells strictly outside row bounds', () => {
+    expect(containsCell(range, { row: 1, col: 5 })).toBe(false)
+    expect(containsCell(range, { row: 6, col: 5 })).toBe(false)
+  })
+
+  it('returns false for cells strictly outside column bounds', () => {
+    expect(containsCell(range, { row: 3, col: 2 })).toBe(false)
+    expect(containsCell(range, { row: 3, col: 8 })).toBe(false)
+  })
+
+  it('works correctly with an inverted range', () => {
+    const inverted: CellRange = { anchor: { row: 5, col: 7 }, active: { row: 2, col: 3 } }
+    expect(containsCell(inverted, { row: 3, col: 4 })).toBe(true)
+    expect(containsCell(inverted, { row: 2, col: 3 })).toBe(true)
+    expect(containsCell(inverted, { row: 1, col: 3 })).toBe(false)
+    expect(containsCell(inverted, { row: 3, col: 8 })).toBe(false)
+  })
+
+  it('correctly tests single-cell range', () => {
+    const single: CellRange = { anchor: { row: 2, col: 2 }, active: { row: 2, col: 2 } }
+    expect(containsCell(single, { row: 2, col: 2 })).toBe(true)
+    expect(containsCell(single, { row: 2, col: 3 })).toBe(false)
+    expect(containsCell(single, { row: 3, col: 2 })).toBe(false)
+  })
+})
+
+describe('selectionContains', () => {
+  const selection: CellSelection = {
+    primary: { anchor: { row: 1, col: 1 }, active: { row: 3, col: 3 } },
+    additional: [
+      { anchor: { row: 6, col: 6 }, active: { row: 6, col: 6 } },
+      { anchor: { row: 8, col: 2 }, active: { row: 9, col: 4 } }
+    ]
+  }
+
+  it('returns true for cell in primary range', () => {
+    expect(selectionContains(selection, { row: 2, col: 2 })).toBe(true)
+    expect(selectionContains(selection, { row: 1, col: 1 })).toBe(true)
+    expect(selectionContains(selection, { row: 3, col: 3 })).toBe(true)
+  })
+
+  it('returns true for cell in an additional range', () => {
+    expect(selectionContains(selection, { row: 6, col: 6 })).toBe(true)
+    expect(selectionContains(selection, { row: 8, col: 3 })).toBe(true)
+    expect(selectionContains(selection, { row: 9, col: 4 })).toBe(true)
+  })
+
+  it('returns false for cell outside all ranges', () => {
+    expect(selectionContains(selection, { row: 0, col: 0 })).toBe(false)
+    expect(selectionContains(selection, { row: 4, col: 4 })).toBe(false)
+    expect(selectionContains(selection, { row: 7, col: 6 })).toBe(false)
+  })
+
+  it('works when additional is empty', () => {
+    const singleRangeSelection: CellSelection = {
+      primary: { anchor: { row: 2, col: 2 }, active: { row: 4, col: 4 } },
+      additional: []
+    }
+    expect(selectionContains(singleRangeSelection, { row: 3, col: 3 })).toBe(true)
+    expect(selectionContains(singleRangeSelection, { row: 5, col: 5 })).toBe(false)
+  })
+})
+
+describe('iterateSelection', () => {
+  it('yields a single cell for single-cell selection', () => {
+    const selection: CellSelection = {
+      primary: { anchor: { row: 2, col: 3 }, active: { row: 2, col: 3 } },
+      additional: []
+    }
+    const cells = [...iterateSelection(selection)]
+    expect(cells).toEqual([{ row: 2, col: 3 }])
+  })
+
+  it('yields all cells in row-major order for primary range', () => {
+    const selection: CellSelection = {
+      primary: { anchor: { row: 1, col: 2 }, active: { row: 2, col: 4 } },
+      additional: []
+    }
+    const cells = [...iterateSelection(selection)]
+    expect(cells).toEqual([
+      { row: 1, col: 2 },
+      { row: 1, col: 3 },
+      { row: 1, col: 4 },
+      { row: 2, col: 2 },
+      { row: 2, col: 3 },
+      { row: 2, col: 4 }
+    ])
+  })
+
+  it('yields correctly when primary range is inverted', () => {
+    const selection: CellSelection = {
+      primary: { anchor: { row: 2, col: 3 }, active: { row: 1, col: 2 } },
+      additional: []
+    }
+    const cells = [...iterateSelection(selection)]
+    expect(cells).toEqual([
+      { row: 1, col: 2 },
+      { row: 1, col: 3 },
+      { row: 2, col: 2 },
+      { row: 2, col: 3 }
+    ])
+  })
+
+  it('yields primary range cells followed by additional range cells', () => {
+    const selection: CellSelection = {
+      primary: { anchor: { row: 0, col: 0 }, active: { row: 0, col: 1 } },
+      additional: [{ anchor: { row: 2, col: 2 }, active: { row: 2, col: 2 } }]
+    }
+    const cells = [...iterateSelection(selection)]
+    expect(cells).toEqual([
+      { row: 0, col: 0 },
+      { row: 0, col: 1 },
+      { row: 2, col: 2 }
+    ])
   })
 })

@@ -61,7 +61,7 @@ export const CopyFlash = React.memo(function CopyFlash({ event, geometry }: Copy
         }}
       >
         <CheckIcon size={10} />
-        copied
+        {event.count && event.count > 1 ? `copied ${event.count} cells` : 'copied'}
       </div>
     </div>
   )
