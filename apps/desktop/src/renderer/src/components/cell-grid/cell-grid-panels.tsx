@@ -1,6 +1,7 @@
 import type { ForeignKeyInfo } from '@data-peek/shared'
 import { CellFocusOverlay } from './cell-focus-overlay'
 import { CellInspector } from './cell-inspector'
+import { CellSelectionOverlay } from './cell-selection-overlay'
 import { CopyFlash } from './copy-flash'
 import type { UseCellGridResult } from './use-cell-grid'
 
@@ -51,12 +52,17 @@ export function CellGridInspector({
 }
 
 /**
- * The focus ring + row stripe + copy-flash pill. Lives inside the scroll
- * container so it tracks with horizontal/vertical scroll.
+ * The selection layer + focus ring + row stripe + copy-flash pill. Lives inside
+ * the scroll container so it tracks with horizontal/vertical scroll.
  */
 export function CellGridOverlays({ cellGrid }: { cellGrid: UseCellGridResult }) {
   return (
     <>
+      <CellSelectionOverlay
+        selection={cellGrid.selection}
+        geometry={cellGrid.geometry}
+        suppressed={cellGrid.inspectorOpen}
+      />
       <CellFocusOverlay
         focus={cellGrid.focus}
         geometry={cellGrid.geometry}

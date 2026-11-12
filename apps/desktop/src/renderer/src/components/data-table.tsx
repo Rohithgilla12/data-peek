@@ -57,7 +57,13 @@ import { getTypeColor } from '@/lib/type-colors'
 import { PaginationControls } from '@/components/pagination-controls'
 import { useSettingsStore } from '@/stores/settings-store'
 import { useMaskingStore } from '@/stores/masking-store'
-import { CellGridInspector, CellGridOverlays, useCellGrid } from '@/components/cell-grid'
+import {
+  CellGridInspector,
+  CellGridOverlays,
+  CellSelectionStats,
+  type CellPosition,
+  useCellGrid
+} from '@/components/cell-grid'
 import { WatchDecorationOverlay } from '@/components/cell-grid/watch-decoration-overlay'
 import { useWatchStore } from '@/stores/watch-store'
 import type { WatchDiff } from '@/lib/watch-types'
@@ -657,6 +663,20 @@ export function DataTable<TData extends Record<string, unknown>>({
     enabled: shouldVirtualize
   })
 
+  const getCellSnapshot = React.useCallback(
+    (pos: CellPosition) => {
+      const row = rows[pos.row]
+      const col = columnDefs[pos.col]
+      if (!row || !col) return { value: undefined, columnName: '', dataType: '' }
+      return {
+        value: row.original[col.name],
+        columnName: col.name,
+        dataType: col.dataType
+      }
+    },
+    [rows, columnDefs]
+  )
+
   // Time Machine's pinned diff and Watch Mode's live one are never both active
   // on the same grid — one comes from a compare view, the other from a watched
   // tab — so a single inline painter serves both.
@@ -842,6 +862,9 @@ export function DataTable<TData extends Record<string, unknown>>({
           )}
         </div>
       </div>
+
+      {/* Selection Stats */}
+      <CellSelectionStats selection={cellGrid.selection} getCell={getCellSnapshot} />
 
       {/* Pagination */}
       <PaginationControls
