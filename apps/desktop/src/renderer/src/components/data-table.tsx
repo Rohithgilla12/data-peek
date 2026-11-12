@@ -668,13 +668,15 @@ export function DataTable<TData extends Record<string, unknown>>({
       const row = rows[pos.row]
       const col = columnDefs[pos.col]
       if (!row || !col) return { value: undefined, columnName: '', dataType: '' }
+      const isMasked = effectiveMasked.has(col.name)
       return {
-        value: row.original[col.name],
+        value: isMasked ? null : row.original[col.name],
         columnName: col.name,
-        dataType: col.dataType
+        dataType: col.dataType,
+        isMasked
       }
     },
-    [rows, columnDefs]
+    [rows, columnDefs, effectiveMasked]
   )
 
   // Time Machine's pinned diff and Watch Mode's live one are never both active

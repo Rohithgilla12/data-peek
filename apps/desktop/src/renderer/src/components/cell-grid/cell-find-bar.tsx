@@ -74,6 +74,7 @@ export function CellFindBar({
   const regex = controlledRegex !== undefined ? controlledRegex : uncontrolledRegex
 
   const inputRef = React.useRef<HTMLInputElement | null>(null)
+  const previousFocusedElementRef = React.useRef<HTMLElement | null>(null)
 
   const setOpen = React.useCallback(
     (nextOpen: boolean) => {
@@ -88,6 +89,12 @@ export function CellFindBar({
   const handleClose = React.useCallback(() => {
     setOpen(false)
     onClose?.()
+    if (
+      previousFocusedElementRef.current &&
+      typeof previousFocusedElementRef.current.focus === 'function'
+    ) {
+      previousFocusedElementRef.current.focus()
+    }
   }, [setOpen, onClose])
 
   const handleNeedleChange = React.useCallback(
@@ -129,9 +136,12 @@ export function CellFindBar({
     onFindPrev?.(needle, { caseSensitive, regex })
   }, [needle, caseSensitive, regex, onFindPrev])
 
-  // Focus input whenever find bar opens
+  // Focus input whenever find bar opens, capturing the previous focused element
   React.useEffect(() => {
     if (isOpen) {
+      if (document.activeElement instanceof HTMLElement) {
+        previousFocusedElementRef.current = document.activeElement
+      }
       requestAnimationFrame(() => {
         inputRef.current?.focus()
         inputRef.current?.select()
@@ -197,6 +207,8 @@ export function CellFindBar({
   }
 
   const hasNeedle = needle.length > 0
+  const isMatchCountKnown = matchCount !== undefined
+  const hasZeroMatches = isMatchCountKnown && matchCount === 0
   const totalMatches = matchCount ?? 0
   const activeMatchNum =
     totalMatches > 0 && currentMatchIndex !== undefined ? currentMatchIndex + 1 : 1
@@ -206,6 +218,13 @@ export function CellFindBar({
       role="search"
       aria-label="Find in grid"
       data-testid="cell-find-bar"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          e.stopPropagation()
+          handleClose()
+        }
+      }}
       className={cn(
         'flex items-center gap-1.5 px-2 py-1 bg-background/95 backdrop-blur-sm border border-border shadow-sm rounded-md text-xs select-none',
         className
@@ -276,13 +295,15 @@ export function CellFindBar({
 
       <div className="flex items-center min-w-[70px] px-1 text-2xs font-mono tabular-nums text-muted-foreground">
         {hasNeedle ? (
-          totalMatches === 0 ? (
+          hasZeroMatches ? (
             <span className="text-destructive font-medium">No matches</span>
-          ) : (
+          ) : isMatchCountKnown ? (
             <span>
               {activeMatchNum} of {totalMatches} matches
             </span>
-          )
+          ) : currentMatchIndex !== undefined ? (
+            <span>Match {currentMatchIndex + 1}</span>
+          ) : null
         ) : null}
       </div>
 
@@ -292,7 +313,7 @@ export function CellFindBar({
           variant="ghost"
           size="icon"
           onClick={handleFindPrev}
-          disabled={!hasNeedle || totalMatches === 0}
+          disabled={!hasNeedle || hasZeroMatches}
           aria-label="Previous Match"
           title="Previous Match (Shift+Enter)"
           className="h-6 w-6 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
@@ -304,7 +325,7 @@ export function CellFindBar({
           variant="ghost"
           size="icon"
           onClick={handleFindNext}
-          disabled={!hasNeedle || totalMatches === 0}
+          disabled={!hasNeedle || hasZeroMatches}
           aria-label="Next Match"
           title="Next Match (Enter)"
           className="h-6 w-6 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"

@@ -70,6 +70,7 @@ export interface CellSnapshot {
   columnName: string
   dataType: string
   foreignKey?: ForeignKeyInfo
+  isMasked?: boolean
 }
 
 /**

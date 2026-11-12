@@ -148,4 +148,40 @@ describe('computeSelectionStats', () => {
     expect(stats.min).toBe(10)
     expect(stats.max).toBe(40)
   })
+
+  it('differentiates distinct values of different types (1 vs "1")', () => {
+    const grid = [[1, '1']]
+    const getCell = makeGetCell(grid)
+    const selection: CellSelection = {
+      primary: { anchor: { row: 0, col: 0 }, active: { row: 0, col: 1 } },
+      additional: []
+    }
+    const stats = computeSelectionStats(selection, getCell)
+    expect(stats.cellCount).toBe(2)
+    expect(stats.distinctCount).toBe(2)
+    expect(stats.numericCount).toBe(1)
+    expect(stats.sum).toBe(1)
+  })
+
+  it('excludes masked cells from sum/avg/min/max to protect privacy and sets hasMasked', () => {
+    const getCell = (pos: CellPosition): CellSnapshot => {
+      if (pos.col === 0) {
+        return { value: 100, columnName: 'ssn', dataType: 'int', isMasked: true }
+      }
+      return { value: 50, columnName: 'amount', dataType: 'int', isMasked: false }
+    }
+    const selection: CellSelection = {
+      primary: { anchor: { row: 0, col: 0 }, active: { row: 0, col: 1 } },
+      additional: []
+    }
+    const stats = computeSelectionStats(selection, getCell)
+    expect(stats.cellCount).toBe(2)
+    expect(stats.hasMasked).toBe(true)
+    // Only the unmasked cell (col 1: 50) is included
+    expect(stats.numericCount).toBe(1)
+    expect(stats.sum).toBe(50)
+    expect(stats.min).toBe(50)
+    expect(stats.max).toBe(50)
+    expect(stats.distinctCount).toBe(1)
+  })
 })

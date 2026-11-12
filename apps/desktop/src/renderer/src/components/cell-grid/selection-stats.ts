@@ -14,6 +14,7 @@ export interface SelectionStats {
   max?: number
   distinctCount: number
   nullCount: number
+  hasMasked?: boolean
 }
 
 export function computeSelectionStats(
@@ -26,6 +27,7 @@ export function computeSelectionStats(
   let min = Infinity
   let max = -Infinity
   let nullCount = 0
+  let hasMasked = false
 
   const distinctSet = new Set<string>()
   const visited = new Set<string>()
@@ -38,13 +40,20 @@ export function computeSelectionStats(
 
       cellCount++
       const snapshot = getCell(pos)
+
+      if (snapshot?.isMasked) {
+        hasMasked = true
+        continue
+      }
+
       const val = snapshot?.value
 
       if (val === null || val === undefined) {
         nullCount++
       } else {
-        const str = typeof val === 'object' ? JSON.stringify(val) : String(val)
-        distinctSet.add(str)
+        const distinctKey =
+          typeof val === 'object' ? `obj:${JSON.stringify(val)}` : `${typeof val}:${String(val)}`
+        distinctSet.add(distinctKey)
 
         if (typeof val === 'number' && Number.isFinite(val)) {
           numericCount++
@@ -67,14 +76,16 @@ export function computeSelectionStats(
       min,
       max,
       distinctCount,
-      nullCount
+      nullCount,
+      hasMasked: hasMasked ? true : undefined
     }
   }
 
   return {
     cellCount,
-    numericCount,
+    numericCount: 0,
     distinctCount,
-    nullCount
+    nullCount,
+    hasMasked: hasMasked ? true : undefined
   }
 }

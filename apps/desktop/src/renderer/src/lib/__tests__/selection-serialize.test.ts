@@ -32,8 +32,8 @@ describe('escapeTSVValue', () => {
     expect(escapeTSVValue('say "hi"\nsecond line')).toBe('"say ""hi""\nsecond line"')
   })
 
-  it('serializes objects to JSON', () => {
-    expect(escapeTSVValue({ a: 1 })).toBe('{"a":1}')
+  it('serializes objects to JSON and quotes if needed', () => {
+    expect(escapeTSVValue({ a: 1 })).toBe('"{""a"":1}"')
   })
 })
 
@@ -114,7 +114,7 @@ describe('serializeSelection', () => {
         additional: []
       }
       const result = serializeSelection(sel, 'tsv', getCell)
-      expect(result).toBe('"Bob\tBuilder"\tContractor, "Lead"\n\t"Line 1\nLine 2"')
+      expect(result).toBe('"Bob\tBuilder"\t"Contractor, ""Lead"""\n\t"Line 1\nLine 2"')
     })
   })
 
@@ -212,6 +212,55 @@ describe('serializeSelection', () => {
       }
       const result = serializeSelection(invertedSelection, 'tsv', getCell)
       expect(result).toBe('1\tAlice\n2\t"Bob\tBuilder"')
+    })
+  })
+
+  describe('Edge cases: Quotes, __proto__, duplicate columns', () => {
+    it('quotes TSV values that contain quotes and escapes inner quotes', () => {
+      const snapCell = (): CellSnapshot => ({
+        columnName: 'quote_col',
+        dataType: 'text',
+        value: '"Alice"'
+      })
+      const sel: CellSelection = {
+        primary: { anchor: { row: 0, col: 0 }, active: { row: 0, col: 0 } },
+        additional: []
+      }
+      const result = serializeSelection(sel, 'tsv', snapCell)
+      expect(result).toBe('"""Alice"""')
+    })
+
+    it('preserves columns named __proto__ in JSON serialization with includeHeaders', () => {
+      const snapCell = (): CellSnapshot => ({
+        columnName: '__proto__',
+        dataType: 'text',
+        value: 'custom_proto_value'
+      })
+      const sel: CellSelection = {
+        primary: { anchor: { row: 0, col: 0 }, active: { row: 0, col: 0 } },
+        additional: []
+      }
+      const json = serializeSelection(sel, 'json', snapCell, { includeHeaders: true })
+      expect(json).toContain('"__proto__": "custom_proto_value"')
+      const parsed = JSON.parse(json)
+      expect(parsed[0].__proto__).toBe('custom_proto_value')
+    })
+
+    it('disambiguates duplicate column names in JSON serialization with includeHeaders', () => {
+      const snapCell = (pos: CellPosition): CellSnapshot => {
+        if (pos.col === 0) return { columnName: 'id', dataType: 'int', value: 1 }
+        return { columnName: 'id', dataType: 'int', value: 2 }
+      }
+      const sel: CellSelection = {
+        primary: { anchor: { row: 0, col: 0 }, active: { row: 0, col: 1 } },
+        additional: []
+      }
+      const json = serializeSelection(sel, 'json', snapCell, { includeHeaders: true })
+      const parsed = JSON.parse(json)
+      expect(parsed[0]).toEqual({
+        id: 1,
+        id_2: 2
+      })
     })
   })
 })

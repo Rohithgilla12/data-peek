@@ -16,7 +16,7 @@ export function escapeTSVValue(value: unknown): string {
     return ''
   }
   const str = typeof value === 'object' ? JSON.stringify(value) : String(value)
-  if (str.includes('\t') || str.includes('\n') || str.includes('\r')) {
+  if (str.includes('\t') || str.includes('\n') || str.includes('\r') || str.includes('"')) {
     return `"${str.replace(/"/g, '""')}"`
   }
   return str
@@ -91,11 +91,23 @@ export function serializeSelection(
 
     case 'json': {
       if (options?.includeHeaders) {
+        const nameCount = new Map<string, number>()
+        const uniqueKeys = columnNames.map((name) => {
+          const count = nameCount.get(name) ?? 0
+          nameCount.set(name, count + 1)
+          return count === 0 ? name : `${name}_${count + 1}`
+        })
+
         const objects = rows.map((row) => {
-          const obj: Record<string, unknown> = {}
+          const obj = Object.create(null)
           row.forEach((cell, idx) => {
-            const colName = columnNames[idx]
-            obj[colName] = cell.value === undefined ? null : cell.value
+            const key = uniqueKeys[idx]
+            Object.defineProperty(obj, key, {
+              value: cell.value === undefined ? null : cell.value,
+              enumerable: true,
+              writable: true,
+              configurable: true
+            })
           })
           return obj
         })

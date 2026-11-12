@@ -1182,15 +1182,32 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   const getCellSnapshot = React.useCallback(
     (pos: CellPosition) => {
       const row = rows[pos.row]
-      const col = columnDefs[pos.col]
-      if (!row || !col) return { value: undefined, columnName: '', dataType: '' }
+      const targetCol = isEditMode ? columnDefs[pos.col - 1] : columnDefs[pos.col]
+      if (!row || !targetCol) return { value: undefined, columnName: '', dataType: '' }
+      // Re-evaluate when tab edits change
+      void tabEdit
+      const isMasked = effectiveMasked.has(targetCol.name)
+      const rawValue = isCellModified(tabId, row.original, targetCol.name)
+        ? getModifiedCellValue(tabId, row.original, targetCol.name)
+        : row.original[targetCol.name]
+
       return {
-        value: row.original[col.name],
-        columnName: col.name,
-        dataType: col.dataType
+        value: isMasked ? null : rawValue,
+        columnName: targetCol.name,
+        dataType: targetCol.dataType,
+        isMasked
       }
     },
-    [rows, columnDefs]
+    [
+      rows,
+      columnDefs,
+      isEditMode,
+      effectiveMasked,
+      tabId,
+      tabEdit,
+      isCellModified,
+      getModifiedCellValue
+    ]
   )
 
   return (

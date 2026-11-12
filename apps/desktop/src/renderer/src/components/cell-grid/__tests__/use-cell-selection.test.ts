@@ -1,49 +1,86 @@
-// @vitest-environment jsdom
-import { describe, it, expect, vi, beforeAll } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
-import { useCellSelection } from '../use-cell-selection'
-import type { CellPosition } from '../cell-grid-types'
+import { describe, it, expect } from 'vitest'
+import {
+  clampPos,
+  clampRange,
+  clampSelectionBounds,
+  extendSelectionRange,
+  toggleSparseCell,
+  extendSelectionByDelta,
+  extendSelectionToCol,
+  extendSelectionToBoundary,
+  selectAllCells,
+  samePosition,
+  PAGE_STEP
+} from '../use-cell-selection'
+import type { CellSelection } from '../cell-grid-types'
 
-describe('useCellSelection', () => {
-  beforeAll(() => {
-    Object.defineProperty(window.navigator, 'userAgent', {
-      value: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-      configurable: true
+describe('use-cell-selection pure logic', () => {
+  const rowCount = 10
+  const colCount = 5
+
+  describe('samePosition', () => {
+    it('compares positions correctly', () => {
+      expect(samePosition(null, null)).toBe(true)
+      expect(samePosition({ row: 1, col: 2 }, { row: 1, col: 2 })).toBe(true)
+      expect(samePosition({ row: 1, col: 2 }, { row: 1, col: 3 })).toBe(false)
+      expect(samePosition({ row: 1, col: 2 }, null)).toBe(false)
+      expect(samePosition(null, { row: 1, col: 2 })).toBe(false)
     })
-    if (typeof globalThis.HTMLInputElement === 'undefined') {
-      globalThis.HTMLInputElement = window.HTMLInputElement
-    }
-    if (typeof globalThis.HTMLTextAreaElement === 'undefined') {
-      globalThis.HTMLTextAreaElement = window.HTMLTextAreaElement
-    }
-    if (typeof globalThis.HTMLSelectElement === 'undefined') {
-      globalThis.HTMLSelectElement = window.HTMLSelectElement
-    }
-  })
-  const defaultOptions = {
-    rowCount: 10,
-    colCount: 5,
-    enabled: true,
-    focus: { row: 0, col: 0 } as CellPosition | null,
-    setFocus: vi.fn()
-  }
-
-  it('initializes with null selection', () => {
-    const { result } = renderHook(() => useCellSelection(defaultOptions))
-    expect(result.current.selection).toBeNull()
   })
 
-  describe('extendTo', () => {
-    it('creates primary range from focus anchor to target position', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, focus: { row: 1, col: 1 } })
-      )
+  describe('clampPos and clampRange', () => {
+    it('clamps cell position within grid boundaries', () => {
+      expect(clampPos({ row: -5, col: -2 }, 10, 5)).toEqual({ row: 0, col: 0 })
+      expect(clampPos({ row: 20, col: 10 }, 10, 5)).toEqual({ row: 9, col: 4 })
+      expect(clampPos({ row: 3, col: 2 }, 10, 5)).toEqual({ row: 3, col: 2 })
+    })
 
-      act(() => {
-        result.current.extendTo({ row: 3, col: 4 })
+    it('clamps range within bounds', () => {
+      const range = {
+        anchor: { row: -1, col: 0 },
+        active: { row: 20, col: 20 }
+      }
+      expect(clampRange(range, 10, 5)).toEqual({
+        anchor: { row: 0, col: 0 },
+        active: { row: 9, col: 4 }
       })
+    })
+  })
 
-      expect(result.current.selection).toEqual({
+  describe('clampSelectionBounds', () => {
+    it('returns null when selection is null or grid is empty', () => {
+      expect(clampSelectionBounds(null, 10, 5)).toBeNull()
+      const sel: CellSelection = {
+        primary: { anchor: { row: 0, col: 0 }, active: { row: 1, col: 1 } },
+        additional: []
+      }
+      expect(clampSelectionBounds(sel, 0, 5)).toBeNull()
+      expect(clampSelectionBounds(sel, 10, 0)).toBeNull()
+    })
+
+    it('clamps primary and additional ranges when rowCount shrinks', () => {
+      const sel: CellSelection = {
+        primary: { anchor: { row: 0, col: 0 }, active: { row: 8, col: 2 } },
+        additional: [{ anchor: { row: 7, col: 1 }, active: { row: 9, col: 4 } }]
+      }
+      const clamped = clampSelectionBounds(sel, 5, 3)
+      expect(clamped).toEqual({
+        primary: { anchor: { row: 0, col: 0 }, active: { row: 4, col: 2 } },
+        additional: [{ anchor: { row: 4, col: 1 }, active: { row: 4, col: 2 } }]
+      })
+    })
+  })
+
+  describe('extendSelectionRange', () => {
+    it('creates primary range from anchor fallback when current is null', () => {
+      const sel = extendSelectionRange(
+        null,
+        { row: 3, col: 4 },
+        { row: 1, col: 1 },
+        rowCount,
+        colCount
+      )
+      expect(sel).toEqual({
         primary: {
           anchor: { row: 1, col: 1 },
           active: { row: 3, col: 4 }
@@ -52,254 +89,160 @@ describe('useCellSelection', () => {
       })
     })
 
-    it('updates active position while preserving anchor on subsequent calls', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, focus: { row: 0, col: 0 } })
+    it('updates active position while preserving anchor when selection already exists', () => {
+      const initial = extendSelectionRange(
+        null,
+        { row: 2, col: 2 },
+        { row: 0, col: 0 },
+        rowCount,
+        colCount
       )
-
-      act(() => {
-        result.current.extendTo({ row: 2, col: 2 })
-      })
-      expect(result.current.selection?.primary.active).toEqual({ row: 2, col: 2 })
-
-      act(() => {
-        result.current.extendTo({ row: 5, col: 1 })
-      })
-      expect(result.current.selection?.primary.anchor).toEqual({ row: 0, col: 0 })
-      expect(result.current.selection?.primary.active).toEqual({ row: 5, col: 1 })
+      const next = extendSelectionRange(
+        initial,
+        { row: 5, col: 1 },
+        { row: 0, col: 0 },
+        rowCount,
+        colCount
+      )
+      expect(next?.primary.anchor).toEqual({ row: 0, col: 0 })
+      expect(next?.primary.active).toEqual({ row: 5, col: 1 })
     })
 
     it('clamps target position to grid bounds', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, rowCount: 10, colCount: 5 })
-      )
-
-      act(() => {
-        result.current.extendTo({ row: 20, col: 10 })
-      })
-
-      expect(result.current.selection?.primary.active).toEqual({ row: 9, col: 4 })
+      const sel = extendSelectionRange(null, { row: 25, col: 15 }, { row: 0, col: 0 }, 10, 5)
+      expect(sel?.primary.active).toEqual({ row: 9, col: 4 })
     })
 
-    it('initializes focus when focus is null', () => {
-      const setFocus = vi.fn()
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, focus: null, setFocus })
-      )
-
-      act(() => {
-        result.current.extendTo({ row: 2, col: 3 })
-      })
-
-      expect(setFocus).toHaveBeenCalledWith({ row: 2, col: 3 })
-      expect(result.current.selection?.primary.active).toEqual({ row: 2, col: 3 })
+    it('returns null if grid is empty', () => {
+      expect(extendSelectionRange(null, { row: 1, col: 1 }, { row: 0, col: 0 }, 0, 5)).toBeNull()
     })
   })
 
-  describe('toggleSparse', () => {
-    it('adds sparse cell as additional range when focus exists', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, focus: { row: 0, col: 0 } })
-      )
-
-      act(() => {
-        result.current.toggleSparse({ row: 2, col: 2 })
-      })
-
-      expect(result.current.selection).toEqual({
+  describe('toggleSparseCell', () => {
+    it('initializes primary and additional when focus differs from target cell', () => {
+      const sel = toggleSparseCell(null, { row: 2, col: 2 }, { row: 0, col: 0 }, rowCount, colCount)
+      expect(sel).toEqual({
         primary: { anchor: { row: 0, col: 0 }, active: { row: 0, col: 0 } },
         additional: [{ anchor: { row: 2, col: 2 }, active: { row: 2, col: 2 } }]
       })
     })
 
-    it('toggles off an already selected additional sparse cell', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, focus: { row: 0, col: 0 } })
-      )
-
-      act(() => {
-        result.current.toggleSparse({ row: 2, col: 2 })
+    it('initializes single primary range when focus matches target cell or is null', () => {
+      const sel = toggleSparseCell(null, { row: 0, col: 0 }, { row: 0, col: 0 }, rowCount, colCount)
+      expect(sel).toEqual({
+        primary: { anchor: { row: 0, col: 0 }, active: { row: 0, col: 0 } },
+        additional: []
       })
-      expect(result.current.selection?.additional).toHaveLength(1)
-
-      // Toggle again on same cell
-      act(() => {
-        result.current.toggleSparse({ row: 2, col: 2 })
-      })
-      expect(result.current.selection?.additional).toHaveLength(0)
     })
 
-    it('allows selecting multiple sparse cells', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, focus: { row: 0, col: 0 } })
-      )
-
-      act(() => {
-        result.current.toggleSparse({ row: 1, col: 1 })
-      })
-      act(() => {
-        result.current.toggleSparse({ row: 3, col: 3 })
-      })
-
-      expect(result.current.selection?.additional).toEqual([
+    it('adds subsequent sparse cells into additional ranges', () => {
+      let sel = toggleSparseCell(null, { row: 1, col: 1 }, { row: 0, col: 0 }, rowCount, colCount)
+      sel = toggleSparseCell(sel, { row: 3, col: 3 }, { row: 0, col: 0 }, rowCount, colCount)
+      expect(sel?.additional).toEqual([
         { anchor: { row: 1, col: 1 }, active: { row: 1, col: 1 } },
         { anchor: { row: 3, col: 3 }, active: { row: 3, col: 3 } }
       ])
     })
-  })
 
-  describe('clear', () => {
-    it('clears active selection to null', () => {
-      const { result } = renderHook(() => useCellSelection(defaultOptions))
+    it('toggles off an already selected additional sparse cell', () => {
+      let sel = toggleSparseCell(null, { row: 2, col: 2 }, { row: 0, col: 0 }, rowCount, colCount)
+      expect(sel?.additional).toHaveLength(1)
 
-      act(() => {
-        result.current.extendTo({ row: 2, col: 2 })
-      })
-      expect(result.current.selection).not.toBeNull()
+      sel = toggleSparseCell(sel, { row: 2, col: 2 }, { row: 0, col: 0 }, rowCount, colCount)
+      expect(sel?.additional).toHaveLength(0)
+    })
 
-      act(() => {
-        result.current.clear()
-      })
-      expect(result.current.selection).toBeNull()
+    it('promotes an additional cell to primary when primary single-cell is toggled off', () => {
+      let sel = toggleSparseCell(null, { row: 2, col: 2 }, { row: 0, col: 0 }, rowCount, colCount)
+      // primary is (0,0), additional is [(2,2)]
+      expect(sel?.primary.anchor).toEqual({ row: 0, col: 0 })
+
+      // Toggle off (0,0)
+      sel = toggleSparseCell(sel, { row: 0, col: 0 }, null, rowCount, colCount)
+      expect(sel?.primary).toEqual({ anchor: { row: 2, col: 2 }, active: { row: 2, col: 2 } })
+      expect(sel?.additional).toHaveLength(0)
+    })
+
+    it('returns null when primary is the only cell and is toggled off', () => {
+      const sel = toggleSparseCell(null, { row: 1, col: 1 }, null, rowCount, colCount)
+      const toggledOff = toggleSparseCell(sel, { row: 1, col: 1 }, null, rowCount, colCount)
+      expect(toggledOff).toBeNull()
     })
   })
 
-  describe('focus change reaction', () => {
-    it('collapses selection when focus changes (e.g. plain arrow navigation)', () => {
-      let focus: CellPosition | null = { row: 0, col: 0 }
-      const { result, rerender } = renderHook(() => useCellSelection({ ...defaultOptions, focus }))
-
-      act(() => {
-        result.current.extendTo({ row: 2, col: 2 })
-      })
-      expect(result.current.selection).not.toBeNull()
-
-      // Simulate plain navigation changing focus
-      focus = { row: 1, col: 0 }
-      rerender()
-
-      expect(result.current.selection).toBeNull()
-    })
-  })
-
-  describe('grid bounds reaction', () => {
-    it('clamps selection when rowCount shrinks', () => {
-      let rowCount = 10
-      const { result, rerender } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, rowCount })
-      )
-
-      act(() => {
-        result.current.extendTo({ row: 8, col: 2 })
-      })
-      expect(result.current.selection?.primary.active.row).toBe(8)
-
-      // Shrink rowCount to 5
-      rowCount = 5
-      rerender()
-
-      expect(result.current.selection?.primary.active.row).toBe(4)
-    })
-
-    it('clears selection when grid becomes empty', () => {
-      let rowCount = 10
-      const { result, rerender } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, rowCount })
-      )
-
-      act(() => {
-        result.current.extendTo({ row: 2, col: 2 })
-      })
-      expect(result.current.selection).not.toBeNull()
-
-      rowCount = 0
-      rerender()
-
-      expect(result.current.selection).toBeNull()
-    })
-  })
-
-  describe('keyboard navigation via hotkeys', () => {
-    it('extends selection with Shift+ArrowDown and Shift+ArrowRight', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, focus: { row: 0, col: 0 } })
-      )
-
-      // Fire Shift+ArrowDown
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: 'ArrowDown',
-            code: 'ArrowDown',
-            shiftKey: true,
-            bubbles: true
-          })
-        )
-      })
-
-      expect(result.current.selection?.primary).toEqual({
+  describe('extendSelectionByDelta', () => {
+    it('extends primary range active by delta', () => {
+      const sel = extendSelectionByDelta(null, 1, 0, { row: 0, col: 0 }, rowCount, colCount)
+      expect(sel?.primary).toEqual({
         anchor: { row: 0, col: 0 },
         active: { row: 1, col: 0 }
       })
 
-      // Fire Shift+ArrowRight
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: 'ArrowRight',
-            code: 'ArrowRight',
-            shiftKey: true,
-            bubbles: true
-          })
-        )
-      })
-
-      expect(result.current.selection?.primary).toEqual({
+      const right = extendSelectionByDelta(sel, 0, 2, { row: 0, col: 0 }, rowCount, colCount)
+      expect(right?.primary).toEqual({
         anchor: { row: 0, col: 0 },
-        active: { row: 1, col: 1 }
+        active: { row: 1, col: 2 }
       })
     })
 
-    it('extends selection with Shift+End and Shift+Home', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, focus: { row: 1, col: 1 }, colCount: 5 })
-      )
-
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', { key: 'End', code: 'End', shiftKey: true, bubbles: true })
-        )
+    it('handles negative deltas and clamps to 0', () => {
+      const sel = extendSelectionByDelta(null, -5, -5, { row: 2, col: 2 }, rowCount, colCount)
+      expect(sel?.primary).toEqual({
+        anchor: { row: 2, col: 2 },
+        active: { row: 0, col: 0 }
       })
+    })
 
-      expect(result.current.selection?.primary).toEqual({
+    it('supports page down and page up using PAGE_STEP', () => {
+      const paged = extendSelectionByDelta(null, PAGE_STEP, 0, { row: 0, col: 0 }, 100, 10)
+      expect(paged?.primary.active.row).toBe(PAGE_STEP)
+
+      const pagedBack = extendSelectionByDelta(paged, -PAGE_STEP, 0, { row: 0, col: 0 }, 100, 10)
+      expect(pagedBack?.primary.active.row).toBe(0)
+    })
+  })
+
+  describe('extendSelectionToCol and extendSelectionToBoundary', () => {
+    it('extends selection to target col', () => {
+      const sel = extendSelectionToCol(null, 4, { row: 1, col: 1 }, rowCount, colCount)
+      expect(sel?.primary).toEqual({
         anchor: { row: 1, col: 1 },
         active: { row: 1, col: 4 }
       })
 
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', { key: 'Home', code: 'Home', shiftKey: true, bubbles: true })
-        )
-      })
-
-      expect(result.current.selection?.primary).toEqual({
+      const home = extendSelectionToCol(sel, 0, { row: 1, col: 1 }, rowCount, colCount)
+      expect(home?.primary).toEqual({
         anchor: { row: 1, col: 1 },
         active: { row: 1, col: 0 }
       })
     })
 
-    it('selects all with Mod+A', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, rowCount: 10, colCount: 5 })
-      )
-
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', { key: 'a', code: 'KeyA', metaKey: true, bubbles: true })
-        )
+    it('extends selection to boundary corners (Mod+Home / Mod+End)', () => {
+      const topStart = extendSelectionToBoundary(null, 0, 0, { row: 5, col: 2 }, rowCount, colCount)
+      expect(topStart?.primary).toEqual({
+        anchor: { row: 5, col: 2 },
+        active: { row: 0, col: 0 }
       })
 
-      expect(result.current.selection).toEqual({
+      const bottomEnd = extendSelectionToBoundary(
+        null,
+        rowCount - 1,
+        colCount - 1,
+        { row: 5, col: 2 },
+        rowCount,
+        colCount
+      )
+      expect(bottomEnd?.primary).toEqual({
+        anchor: { row: 5, col: 2 },
+        active: { row: 9, col: 4 }
+      })
+    })
+  })
+
+  describe('selectAllCells', () => {
+    it('creates a range spanning the entire grid', () => {
+      const all = selectAllCells(10, 5)
+      expect(all).toEqual({
         primary: {
           anchor: { row: 0, col: 0 },
           active: { row: 9, col: 4 }
@@ -308,162 +251,9 @@ describe('useCellSelection', () => {
       })
     })
 
-    it('clears selection on Escape', () => {
-      const { result } = renderHook(() => useCellSelection(defaultOptions))
-
-      act(() => {
-        result.current.extendTo({ row: 3, col: 3 })
-      })
-      expect(result.current.selection).not.toBeNull()
-
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true })
-        )
-      })
-
-      expect(result.current.selection).toBeNull()
-    })
-
-    it('extends selection with Shift+ArrowUp and Shift+ArrowLeft', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({ ...defaultOptions, focus: { row: 3, col: 3 } })
-      )
-
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: 'ArrowUp',
-            code: 'ArrowUp',
-            shiftKey: true,
-            bubbles: true
-          })
-        )
-      })
-
-      expect(result.current.selection?.primary).toEqual({
-        anchor: { row: 3, col: 3 },
-        active: { row: 2, col: 3 }
-      })
-
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: 'ArrowLeft',
-            code: 'ArrowLeft',
-            shiftKey: true,
-            bubbles: true
-          })
-        )
-      })
-
-      expect(result.current.selection?.primary).toEqual({
-        anchor: { row: 3, col: 3 },
-        active: { row: 2, col: 2 }
-      })
-    })
-
-    it('extends selection with Shift+Mod+Home and Shift+Mod+End', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({
-          ...defaultOptions,
-          focus: { row: 5, col: 2 },
-          rowCount: 10,
-          colCount: 5
-        })
-      )
-
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: 'Home',
-            code: 'Home',
-            shiftKey: true,
-            metaKey: true,
-            bubbles: true
-          })
-        )
-      })
-
-      expect(result.current.selection?.primary).toEqual({
-        anchor: { row: 5, col: 2 },
-        active: { row: 0, col: 0 }
-      })
-
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: 'End',
-            code: 'End',
-            shiftKey: true,
-            metaKey: true,
-            bubbles: true
-          })
-        )
-      })
-
-      expect(result.current.selection?.primary).toEqual({
-        anchor: { row: 5, col: 2 },
-        active: { row: 9, col: 4 }
-      })
-    })
-
-    it('extends selection with Shift+PageDown and Shift+PageUp', () => {
-      const { result } = renderHook(() =>
-        useCellSelection({
-          ...defaultOptions,
-          focus: { row: 0, col: 0 },
-          rowCount: 100,
-          colCount: 10
-        })
-      )
-
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: 'PageDown',
-            code: 'PageDown',
-            shiftKey: true,
-            bubbles: true
-          })
-        )
-      })
-
-      expect(result.current.selection?.primary).toEqual({
-        anchor: { row: 0, col: 0 },
-        active: { row: 20, col: 0 }
-      })
-
-      act(() => {
-        document.dispatchEvent(
-          new KeyboardEvent('keydown', {
-            key: 'PageUp',
-            code: 'PageUp',
-            shiftKey: true,
-            bubbles: true
-          })
-        )
-      })
-
-      expect(result.current.selection?.primary).toEqual({
-        anchor: { row: 0, col: 0 },
-        active: { row: 0, col: 0 }
-      })
-    })
-
-    it('allows manually replacing selection via setSelection', () => {
-      const { result } = renderHook(() => useCellSelection(defaultOptions))
-
-      const customSelection = {
-        primary: { anchor: { row: 1, col: 0 }, active: { row: 1, col: 4 } },
-        additional: []
-      }
-
-      act(() => {
-        result.current.setSelection(customSelection)
-      })
-
-      expect(result.current.selection).toEqual(customSelection)
+    it('returns null if rowCount or colCount is 0', () => {
+      expect(selectAllCells(0, 5)).toBeNull()
+      expect(selectAllCells(10, 0)).toBeNull()
     })
   })
 })
