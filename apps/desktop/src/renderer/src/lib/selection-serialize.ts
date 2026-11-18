@@ -11,11 +11,18 @@ export interface SerializeSelectionOptions {
   includeHeaders?: boolean
 }
 
+/**
+ * The text a cell contributes to the clipboard, or null for an empty cell. Find
+ * matches against this same string, so what find highlights is what copy emits.
+ */
+export function cellText(value: unknown): string | null {
+  if (value === null || value === undefined) return null
+  return typeof value === 'object' ? JSON.stringify(value) : String(value)
+}
+
 export function escapeTSVValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return ''
-  }
-  const str = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  const str = cellText(value)
+  if (str === null) return ''
   if (str.includes('\t') || str.includes('\n') || str.includes('\r') || str.includes('"')) {
     return `"${str.replace(/"/g, '""')}"`
   }
@@ -23,10 +30,8 @@ export function escapeTSVValue(value: unknown): string {
 }
 
 export function escapeCSVValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return ''
-  }
-  const str = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  const str = cellText(value)
+  if (str === null) return ''
   if (str.includes(',') || str.includes('\n') || str.includes('\r') || str.includes('"')) {
     return `"${str.replace(/"/g, '""')}"`
   }
@@ -34,10 +39,8 @@ export function escapeCSVValue(value: unknown): string {
 }
 
 export function escapeMarkdownValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return ''
-  }
-  const str = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  const str = cellText(value)
+  if (str === null) return ''
   return str.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ')
 }
 

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   serializeSelection,
+  cellText,
   escapeTSVValue,
   escapeCSVValue,
   escapeMarkdownValue
@@ -262,5 +263,15 @@ describe('serializeSelection', () => {
         id_2: 2
       })
     })
+  })
+})
+
+describe('cellText', () => {
+  it('is null for empty cells and the copied text otherwise', () => {
+    expect(cellText(null)).toBeNull()
+    expect(cellText(undefined)).toBeNull()
+    expect(cellText(0)).toBe('0')
+    expect(cellText(false)).toBe('false')
+    expect(cellText({ a: [1, 2] })).toBe('{"a":[1,2]}')
   })
 })
