@@ -2,6 +2,7 @@ import { Metadata } from "next";
 import { Header } from "@/components/marketing/header";
 import { Hero } from "@/components/marketing/hero";
 import { FeatureShowcase } from "@/components/marketing/feature-showcase";
+import { AiSection } from "@/components/marketing/ai-section";
 import { Features } from "@/components/marketing/features";
 import { Pricing } from "@/components/marketing/pricing";
 import { Faq } from "@/components/marketing/faq";
@@ -12,7 +13,7 @@ import { generateMetadata as generateSeoMetadata } from "@/lib/seo";
 export const metadata: Metadata = generateSeoMetadata({
   title: "data-peek | Fast PostgreSQL Client for Developers",
   description:
-    "A lightning-fast, AI-powered database client. Query, explore, and edit PostgreSQL, MySQL, SQL Server, and SQLite, and query and browse ClickHouse (beta), with a keyboard-first experience. Free for personal use.",
+    "A lightning-fast SQL client with AI that runs on your Claude Code, Codex, or Antigravity subscription. Query, explore, and edit PostgreSQL, MySQL, SQL Server, and SQLite, and query ClickHouse (beta). Free for personal use.",
   keywords: [
     "PostgreSQL client",
     "MySQL client",
@@ -26,6 +27,9 @@ export const metadata: Metadata = generateSeoMetadata({
     "DBeaver alternative",
     "TablePlus alternative",
     "AI SQL assistant",
+    "Claude Code database client",
+    "Codex SQL client",
+    "AI SQL client",
     "database GUI",
     "SQL query tool",
     "database explorer",
@@ -40,6 +44,7 @@ export default function Home() {
       <main>
         <Hero />
         <FeatureShowcase />
+        <AiSection />
         <Features />
         <Pricing />
         <Faq />

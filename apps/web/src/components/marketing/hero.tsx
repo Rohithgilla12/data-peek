@@ -14,7 +14,7 @@ export function Hero() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
           <div className="lg:col-span-7">
             <div
-              className="inline-flex items-center gap-2 text-[11px] text-[var(--n-fg-muted)] h-7 px-2.5"
+              className="inline-flex items-center gap-2 text-[11px] text-[var(--n-fg-muted)] min-h-7 py-1 px-2.5"
               style={{ border: "1px solid var(--n-line-soft)" }}
             >
               <span
@@ -22,17 +22,15 @@ export function Hero() {
                 className="inline-block h-1.5 w-1.5 rounded-full"
                 style={{ background: "var(--n-accent)" }}
               />
-              v0.33 — ClickHouse support, now in beta
+              New — AI on your Claude Code or Codex plan
               <span aria-hidden className="text-[var(--n-fg-faint)]">
                 →
               </span>
               <Link
-                href="https://github.com/Rohithgilla12/data-peek/releases/tag/v0.33.0"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="/#ai"
                 className="text-[var(--n-fg-muted)] hover:text-[var(--n-fg)]"
               >
-                release notes
+                how it works
               </Link>
             </div>
 
@@ -51,9 +49,9 @@ export function Hero() {
 
             <p className="mt-6 max-w-[56ch] text-[15px] leading-[1.65] text-[var(--n-fg-muted)]">
               Connect, query, and edit data across Postgres, MySQL, SQL Server,
-              and SQLite, and query ClickHouse (beta). Inline edits, AI assist
-              with your own key, and a command palette for switching connections
-              and opening queries.
+              and SQLite, and query ClickHouse (beta). Ask questions in plain
+              English on the Claude Code, Codex, or Antigravity subscription you
+              already pay for, or bring your own key.
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -122,7 +120,8 @@ export function Hero() {
                 { k: "⌘K", v: "Command palette" },
                 { k: "⌘↵", v: "Run query" },
                 { k: "⌘E", v: "Export results" },
-                { k: "⌘/", v: "Ask AI (BYOK)" },
+                { k: "⌘T", v: "Ask AI, on your subscription" },
+                { k: "⌘I", v: "Edit SQL with AI" },
                 { k: "⌘⇧F", v: "Format SQL" },
               ].map((s) => (
                 <li

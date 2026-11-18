@@ -78,12 +78,13 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
     label: "AI",
     items: [
       {
-        title: "Ask, the default tab",
-        body: "One input for questions and SQL. Reads run on their own, writes wait for you, failed queries get a one-click fix.",
+        title: "Your subscription, not a new bill",
+        body: "Runs on the Claude Code, Codex, or Antigravity CLI you already pay for. Found when no AI is set up, one click to use.",
+        href: "#ai",
       },
       {
-        title: "Your subscription, not a new bill",
-        body: "Point it at the Claude Code, Codex, or Antigravity CLI you already pay for. Found on launch, one click to use.",
+        title: "Ask, the default tab",
+        body: "One input for questions and SQL. Reads run on their own, writes wait for you, failed queries get a one-click fix.",
       },
       {
         title: "⌘I to edit SQL",
@@ -100,7 +101,7 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
       },
       {
         title: "Bring your own key",
-        body: "OpenAI, Anthropic, Google, Groq — or Ollama for a local model. Keys never leave your machine.",
+        body: "OpenAI, Anthropic, Google, Groq, DeepSeek, Mistral, xAI, or GLM — or Ollama for a local model. Keys stay on your machine.",
       },
       {
         title: "MCP server",
@@ -221,7 +222,7 @@ export function Features() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end mb-14">
           <div className="lg:col-span-7">
             <div className="text-[10.5px] uppercase tracking-[0.18em] text-[var(--n-fg-faint)]">
-              03 — capabilities
+              04 — capabilities
             </div>
             <h2 className="mt-4 text-[36px] sm:text-[48px] leading-[1.02] tracking-[-0.02em] text-[var(--n-fg)] font-medium">
               Built for the part of the day
@@ -291,9 +292,9 @@ export function Features() {
             }
           />
           <Pillar
-            kicker="AI · BYOK"
-            title="Intelligence on your terms."
-            body="Bring a key from OpenAI, Anthropic, Google, Groq — or point at a local Ollama model. The app never brokers your traffic."
+            kicker="AI · your plan"
+            title="Runs on the AI you already pay for."
+            body="Claude Code, Codex, or Antigravity: data-peek drives the CLI you're signed in to. Or bring a key, or run Ollama locally. The app never brokers your traffic."
             footer={
               <div
                 className="flex flex-wrap gap-1.5 pt-3"
@@ -302,17 +303,21 @@ export function Features() {
                   paddingTop: "12px",
                 }}
               >
-                {["OpenAI", "Anthropic", "Google", "Groq", "Ollama"].map(
-                  (p) => (
-                    <span
-                      key={p}
-                      className="h-6 px-2 inline-flex items-center text-[10.5px] text-[var(--n-fg-muted)]"
-                      style={{ border: "1px solid var(--n-line-soft)" }}
-                    >
-                      {p}
-                    </span>
-                  ),
-                )}
+                {[
+                  "Claude Code",
+                  "Codex",
+                  "Antigravity",
+                  "API keys",
+                  "Ollama",
+                ].map((p) => (
+                  <span
+                    key={p}
+                    className="h-6 px-2 inline-flex items-center text-[10.5px] text-[var(--n-fg-muted)]"
+                    style={{ border: "1px solid var(--n-line-soft)" }}
+                  >
+                    {p}
+                  </span>
+                ))}
               </div>
             }
           />
