@@ -28,7 +28,10 @@ const FORMAT_LABEL: Record<SelectionFormat, string> = {
 }
 
 export interface SelectionCopyTarget {
-  /** True when a multi-cell selection exists and its primary range, the part copy serializes, holds pos. */
+  /**
+   * True when the primary range, the only part copy serializes, spans more than
+   * one cell and holds pos. Cmd/Ctrl+clicked cells alone don't qualify.
+   */
   covers: (pos: CellPosition) => boolean
   copy: (format: SelectionFormat, options?: SerializeSelectionOptions) => void
 }
@@ -147,8 +150,8 @@ export function useCellGrid({
         const current = selectionRef.current
         if (!current) return false
         const { r1, c1, r2, c2 } = rangeBounds(current.primary)
-        const isMulti = r1 !== r2 || c1 !== c2 || current.additional.length > 0
-        return isMulti && containsCell(current.primary, pos)
+        const primaryIsRange = r1 !== r2 || c1 !== c2
+        return primaryIsRange && containsCell(current.primary, pos)
       },
       copy: copySelection
     }),
