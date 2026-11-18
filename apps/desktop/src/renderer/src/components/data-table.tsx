@@ -642,7 +642,13 @@ export function DataTable<TData extends Record<string, unknown>>({
     [rows, columnDefs, effectiveMasked]
   )
 
+  const { pageIndex, pageSize: currentPageSize } = table.getState().pagination
+  const filterSortKey = React.useMemo(
+    () => JSON.stringify([sortChips, filterChips]),
+    [sortChips, filterChips]
+  )
   const cellGrid = useCellGrid({
+    rowOrderKey: `${filterSortKey}|${pageIndex}|${currentPageSize}`,
     rowCount: rows.length,
     colCount: columnDefs.length,
     columnKey,
@@ -762,6 +768,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                               row={row.original as Record<string, unknown>}
                               columns={contextMenuColumns}
                               selectionCopy={cellGrid.selectionCopy}
+                              maskedColumns={effectiveMasked}
                             >
                               <div
                                 role="row"
@@ -812,6 +819,7 @@ export function DataTable<TData extends Record<string, unknown>>({
                         row={row.original as Record<string, unknown>}
                         columns={contextMenuColumns}
                         selectionCopy={cellGrid.selectionCopy}
+                        maskedColumns={effectiveMasked}
                       >
                         <TableRow
                           className="hover:bg-accent/30 border-border/30 transition-colors"

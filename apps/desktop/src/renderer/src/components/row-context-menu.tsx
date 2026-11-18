@@ -26,6 +26,8 @@ interface RowContextMenuProps {
   onDelete?: () => void
   /** Offers "Copy Selection As" when the right-clicked cell is inside a multi-cell selection. */
   selectionCopy?: SelectionCopyTarget
+  /** Columns whose values copy as null, matching what the grid shows. */
+  maskedColumns?: ReadonlySet<string>
 }
 
 function cellPositionOf(target: EventTarget): { row: number; col: number } | null {
@@ -37,15 +39,29 @@ function cellPositionOf(target: EventTarget): { row: number; col: number } | nul
   return Number.isNaN(row) || Number.isNaN(col) ? null : { row, col }
 }
 
-function formatRowAsJson(row: Record<string, unknown>, columns: { name: string }[]): string {
+const NO_MASK: ReadonlySet<string> = new Set()
+
+function copyValue(row: Record<string, unknown>, name: string, masked: ReadonlySet<string>) {
+  return masked.has(name) ? null : row[name]
+}
+
+export function formatRowAsJson(
+  row: Record<string, unknown>,
+  columns: { name: string }[],
+  masked: ReadonlySet<string> = NO_MASK
+): string {
   const ordered: Record<string, unknown> = {}
-  for (const col of columns) ordered[col.name] = row[col.name]
+  for (const col of columns) ordered[col.name] = copyValue(row, col.name, masked)
   return JSON.stringify(ordered, null, 2)
 }
 
-function formatRowAsCsv(row: Record<string, unknown>, columns: { name: string }[]): string {
+export function formatRowAsCsv(
+  row: Record<string, unknown>,
+  columns: { name: string }[],
+  masked: ReadonlySet<string> = NO_MASK
+): string {
   const header = columns.map((c) => escapeCSVValue(c.name)).join(',')
-  const values = columns.map((c) => escapeCSVValue(row[c.name])).join(',')
+  const values = columns.map((c) => escapeCSVValue(copyValue(row, c.name, masked))).join(',')
   return `${header}\n${values}`
 }
 
@@ -64,7 +80,8 @@ export function RowContextMenu({
   columns,
   onDuplicate,
   onDelete,
-  selectionCopy
+  selectionCopy,
+  maskedColumns
 }: RowContextMenuProps) {
   const [offerSelectionCopy, setOfferSelectionCopy] = React.useState(false)
 
@@ -99,10 +116,14 @@ export function RowContextMenu({
             <ContextMenuSeparator />
           </>
         )}
-        <ContextMenuItem onClick={() => copy(formatRowAsJson(row, columns), 'Row (JSON)')}>
+        <ContextMenuItem
+          onClick={() => copy(formatRowAsJson(row, columns, maskedColumns), 'Row (JSON)')}
+        >
           Copy Row as JSON
         </ContextMenuItem>
-        <ContextMenuItem onClick={() => copy(formatRowAsCsv(row, columns), 'Row (CSV)')}>
+        <ContextMenuItem
+          onClick={() => copy(formatRowAsCsv(row, columns, maskedColumns), 'Row (CSV)')}
+        >
           Copy Row as CSV
         </ContextMenuItem>
         {(onDuplicate || onDelete) && <ContextMenuSeparator />}

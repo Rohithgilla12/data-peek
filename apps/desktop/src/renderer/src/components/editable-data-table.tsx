@@ -1174,7 +1174,13 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     ]
   )
 
+  const { pageIndex, pageSize: currentPageSize } = table.getState().pagination
+  const filterSortKey = React.useMemo(
+    () => JSON.stringify([sortChips, filterChips]),
+    [sortChips, filterChips]
+  )
   const cellGrid = useCellGrid({
+    rowOrderKey: `${filterSortKey}|${pageIndex}|${currentPageSize}`,
     rowCount: rows.length,
     colCount: columnDefs.length + gridColOffset,
     columnKey,
@@ -1314,6 +1320,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                                 row={originalRow}
                                 columns={contextMenuColumns}
                                 selectionCopy={cellGrid.selectionCopy}
+                                maskedColumns={effectiveMasked}
                                 onDuplicate={
                                   canEdit && editContext
                                     ? () => handleDuplicateRow(originalRow)
@@ -1380,6 +1387,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                           row={originalRow}
                           columns={contextMenuColumns}
                           selectionCopy={cellGrid.selectionCopy}
+                          maskedColumns={effectiveMasked}
                           onDuplicate={
                             canEdit && editContext
                               ? () => handleDuplicateRow(originalRow)

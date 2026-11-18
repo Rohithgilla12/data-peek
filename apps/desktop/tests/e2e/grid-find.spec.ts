@@ -304,10 +304,45 @@ test('masked columns copy as empty and never match find', async ({ window, elect
     .poll(() => electronApp.evaluate(({ clipboard }) => clipboard.readText()))
     .not.toContain('secret_')
 
+  await cell(window, 4, 0).click({ button: 'right' })
+  await window.getByRole('menuitem', { name: 'Copy Row as JSON' }).click()
+  await expect
+    .poll(() => electronApp.evaluate(({ clipboard }) => clipboard.readText()))
+    .toContain('"token": null')
+  expect(await electronApp.evaluate(({ clipboard }) => clipboard.readText())).toContain('"n": 5')
+
+  await cell(window, 4, 0).click({ button: 'right' })
+  await window.getByRole('menuitem', { name: 'Copy Row as CSV' }).click()
+  await expect
+    .poll(() => electronApp.evaluate(({ clipboard }) => clipboard.readText()))
+    .toBe('n,label,amount,token\n5,hay_5,50,')
+
   await cell(window, 0, 0).click()
   await window.keyboard.press(`${MOD}+f`)
   await window.getByRole('textbox', { name: 'Find in grid' }).fill('secret_')
   await expect(window.getByTestId('cell-find-bar')).toContainText('No matches')
+})
+
+test('sorting clears the selection so copy never takes rows nobody selected', async ({
+  window
+}) => {
+  await runSql(window, TEN_ROWS)
+  await expect(cell(window, 0, 0)).toBeVisible({ timeout: 15000 })
+
+  await cell(window, 0, 0).click()
+  await window.keyboard.press('Shift+ArrowDown')
+  await cell(window, 0, 0).click({ button: 'right' })
+  await expect(window.getByRole('menuitem', { name: 'Copy Selection As' })).toBeVisible()
+  await window.keyboard.press('Escape')
+
+  const sortN = window.locator('button[title="Click to sort, Shift+click for multi-sort"]').first()
+  await sortN.click()
+  if ((await cell(window, 0, 0).innerText()).trim() !== '10') await sortN.click()
+  await expect(cell(window, 0, 0)).toHaveText('10')
+
+  await cell(window, 0, 0).click({ button: 'right' })
+  await expect(window.getByRole('menuitem', { name: 'Copy Row as JSON' })).toBeVisible()
+  await expect(window.getByRole('menuitem', { name: 'Copy Selection As' })).toHaveCount(0)
 })
 
 /**

@@ -46,6 +46,12 @@ interface UseCellGridOptions {
    * and the inspector all read through it so none of them can leak a masked value.
    */
   getCell: (pos: CellPosition) => CellSnapshot
+  /**
+   * Changes whenever a different record can land at a position: sort, filter, or
+   * page. The selection is positional, so it clears rather than silently
+   * covering other records.
+   */
+  rowOrderKey: string
   columnWidths: number[]
   rowHeight: number
   headerHeight: number
@@ -77,6 +83,7 @@ export function useCellGrid({
   colCount,
   columnKey,
   getCell,
+  rowOrderKey,
   columnWidths,
   rowHeight,
   headerHeight,
@@ -186,6 +193,13 @@ export function useCellGrid({
   React.useEffect(() => {
     selectionRef.current = selection
   }, [selection])
+
+  const lastRowOrderKey = React.useRef(rowOrderKey)
+  React.useEffect(() => {
+    if (lastRowOrderKey.current === rowOrderKey) return
+    lastRowOrderKey.current = rowOrderKey
+    clearSelection()
+  }, [rowOrderKey, clearSelection])
 
   const lastColumnKey = React.useRef<string | null>(null)
   React.useEffect(() => {
