@@ -212,6 +212,8 @@ Built with Electron, React 19, TypeScript, Tailwind CSS 4, shadcn/ui, Zustand, a
 - [GitHub Sponsors](https://github.com/sponsors/Rohithgilla12) to support development
 - [@gillarohith](https://x.com/gillarohith) on X
 
+**Also by the maker:** [Float](https://float.gilla.fun), a floating scratchpad for macOS.
+
 <p align="center">
   <br />
   <a href="https://vercel.com/oss">
