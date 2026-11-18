@@ -6,6 +6,7 @@ import { SaleBanner } from "./sale-banner";
 
 const nav = [
   { href: "/#features", label: "Features" },
+  { href: "/#ai", label: "AI" },
   { href: "/#pricing", label: "Pricing" },
   { href: "/#faq", label: "FAQ" },
   { href: "/blog", label: "Changelog" },

@@ -221,7 +221,7 @@ const ALTERNATIVES = {
       {
         question: "What does data-peek add over TablePlus?",
         answer:
-          "Two main things: an open-source codebase under the MIT licence, and a built-in, schema-aware AI assistant that uses your own API key.",
+          "Two main things: an open-source codebase under the MIT licence, and a built-in, schema-aware AI assistant that runs on the Claude Code, Codex, or Antigravity subscription you already have, or on your own API key.",
       },
       {
         question: "Can I run both?",
@@ -238,7 +238,7 @@ const ALTERNATIVES = {
       },
       {
         feature: "AI Assistant",
-        datapeek: "Yes (BYOK)",
+        datapeek: "Yes (your Claude Code / Codex plan or key)",
         alternative: "No",
         datapeekWins: true,
       },

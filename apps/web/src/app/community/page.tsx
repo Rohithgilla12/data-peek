@@ -179,7 +179,7 @@ export default function CommunityPage() {
                 "All features unlocked",
                 "PostgreSQL, MySQL, SQL Server, SQLite, ClickHouse",
                 "Unlimited connections",
-                "AI Assistant (BYOK)",
+                "AI on your Claude Code / Codex plan",
                 "All future updates",
                 "Commercial use at school/OSS",
                 "3 device activations",

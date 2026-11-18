@@ -27,7 +27,7 @@ const personal: TierShape = {
   tagline: "Solo devs, OSS, side projects, students.",
   features: [
     "All features unlocked",
-    "AI assistant (bring your own key)",
+    "AI on your Claude Code, Codex, or Antigravity plan, or your own key",
     "Postgres, MySQL, SQL Server, SQLite, ClickHouse",
     "Unlimited connections & history",
     "All future updates",
@@ -178,7 +178,7 @@ export function Pricing() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end mb-12">
           <div className="lg:col-span-7">
             <div className="text-[10.5px] uppercase tracking-[0.18em] text-[var(--n-fg-faint)]">
-              04 — pricing
+              05 — pricing
             </div>
             <h2 className="mt-4 text-[36px] sm:text-[48px] leading-[1.02] tracking-[-0.02em] text-[var(--n-fg)] font-medium">
               Free for personal use.

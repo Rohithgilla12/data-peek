@@ -11,7 +11,11 @@ const faqs = [
   },
   {
     q: "How does the AI assistant work?",
-    a: "You bring your own API key. data-peek sends the question and relevant schema to your chosen provider (OpenAI, Anthropic, Google, Groq) — or to a local Ollama model if you want the prompt to never leave your machine.",
+    a: "If you have the Claude Code, Codex, or Antigravity CLI installed and signed in, data-peek finds it on launch and one click puts it to work on your existing plan, with no API key. You can also add a key for OpenAI, Anthropic, Google, Groq, DeepSeek, Mistral, xAI, or GLM, or run a local Ollama model so the prompt never leaves your machine. data-peek sends your question and the relevant schema straight to the provider you chose. AI-written SQL that only reads runs on its own, and writes wait for you.",
+  },
+  {
+    q: "Do I have to pay extra for the AI?",
+    a: "No. AI is free for personal use and included in Pro. On a Claude Code, Codex, or Antigravity subscription it uses the plan you already have, so there's no per-token bill. With an API key you pay your provider directly, and data-peek adds nothing on top.",
   },
   {
     q: "Which databases are supported?",
@@ -101,7 +105,7 @@ export function Faq() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           <div className="lg:col-span-4">
             <div className="text-[10.5px] uppercase tracking-[0.18em] text-[var(--n-fg-faint)]">
-              05 — questions
+              06 — questions
             </div>
             <h2 className="mt-4 text-[32px] sm:text-[40px] leading-[1.05] tracking-[-0.02em] text-[var(--n-fg)] font-medium">
               Straight answers,
