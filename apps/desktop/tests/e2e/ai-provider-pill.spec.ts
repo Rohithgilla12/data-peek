@@ -27,6 +27,7 @@ test('several detected CLIs collapse into one Choose AI menu', async ({ electron
   const trigger = window.getByRole('button', { name: 'Choose AI' })
   await expect(trigger).toBeVisible()
   await expect(window.getByText(/Use my .* subscription/)).toHaveCount(0)
+  await expect(window.getByRole('button', { name: /^Use / })).toHaveCount(0)
 
   const box = await trigger.boundingBox()
   expect(box, 'pill is laid out').not.toBeNull()
@@ -48,7 +49,7 @@ test('several detected CLIs collapse into one Choose AI menu', async ({ electron
   })
 
   await window.getByRole('menuitem', { name: /Codex/ }).click()
-  await expect(window.getByRole('button', { name: /Codex\s*your subscription/ })).toBeVisible()
+  await expect(window.getByRole('button', { name: /^Codex\s*your subscription$/ })).toBeVisible()
   const saved = await window.evaluate(() => window.api.ai.getMultiProviderConfig())
   expect(saved.data?.activeProvider, 'choice persisted in main').toBe('codex-cli')
 })
@@ -65,5 +66,5 @@ test('a single detected CLI is one click', async ({ electronApp, window }) => {
   })
 
   await pill.click()
-  await expect(window.getByRole('button', { name: /Claude\s*your subscription/ })).toBeVisible()
+  await expect(window.getByRole('button', { name: /^Claude\s*your subscription$/ })).toBeVisible()
 })
