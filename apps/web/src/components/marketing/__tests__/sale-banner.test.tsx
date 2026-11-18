@@ -59,13 +59,13 @@ describe("SaleBanner", () => {
   });
 
   it("stays hidden before the sale", async () => {
-    const { container } = await serverThenHydrate("2026-11-18T12:00:00Z");
+    const { container } = await serverThenHydrate("2026-11-10T12:00:00Z");
     expect(container.textContent).toBe("");
   });
 
   it("shows before the sale with ?sale=preview", async () => {
     const { container } = await serverThenHydrate(
-      "2026-11-18T12:00:00Z",
+      "2026-11-10T12:00:00Z",
       "?sale=preview",
     );
     expect(container.textContent).toContain(BANNER);

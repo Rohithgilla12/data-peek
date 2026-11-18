@@ -11,7 +11,7 @@ const params: DodoPayments.CheckoutSessionCreateParams = {
 };
 const session = { session_id: "cks_1", checkout_url: "https://pay/cks_1" };
 const duringSale = new Date("2026-11-27T12:00:00Z");
-const beforeSale = new Date("2026-11-18T12:00:00Z");
+const beforeSale = new Date("2026-11-10T12:00:00Z");
 
 function fakeClient(
   ...outcomes: Array<"ok" | Error>

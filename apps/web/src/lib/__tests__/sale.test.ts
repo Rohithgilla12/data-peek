@@ -10,8 +10,8 @@ import {
 
 describe("saleIsLive", () => {
   it.each([
-    ["2026-11-25T23:59:59.999Z", false],
-    ["2026-11-26T00:00:00.000Z", true],
+    ["2026-11-17T23:59:59.999Z", false],
+    ["2026-11-18T00:00:00.000Z", true],
     ["2026-12-01T23:59:59.000-08:00", true],
     ["2026-12-02T08:00:00.000Z", false],
     ["2027-11-27T00:00:00.000Z", false],
@@ -21,7 +21,7 @@ describe("saleIsLive", () => {
 });
 
 describe("saleIsShown", () => {
-  const before = new Date("2026-11-18T12:00:00Z");
+  const before = new Date("2026-11-10T12:00:00Z");
 
   it("shows the sale outside the window only with ?sale=preview", () => {
     expect(saleIsShown(before, "")).toBe(false);
