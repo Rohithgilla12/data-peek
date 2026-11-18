@@ -259,6 +259,11 @@ describe('escapeSQLIdentifier', () => {
     expect(escapeSQLIdentifier('order')).toBe('"order"')
   })
 
+  it('should quote mixed-case identifiers', () => {
+    expect(escapeSQLIdentifier('Post', 'postgresql')).toBe('"Post"')
+    expect(escapeSQLIdentifier('createdAt', 'postgresql')).toBe('"createdAt"')
+  })
+
   it('should escape double quotes in identifiers', () => {
     expect(escapeSQLIdentifier('my"column')).toBe('"my""column"')
   })
