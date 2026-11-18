@@ -29,7 +29,7 @@ describe("Pro price during Black Friday", () => {
   });
 
   it("shows sale pricing on the Pro card under ?sale=preview", () => {
-    at("2026-11-18T12:00:00Z", "?sale=preview");
+    at("2026-11-10T12:00:00Z", "?sale=preview");
     render(<Pricing />);
     expect(screen.getByText("$17.40")).toBeInTheDocument();
     expect(screen.getByText("$29")).toHaveClass("line-through");
@@ -40,7 +40,7 @@ describe("Pro price during Black Friday", () => {
   });
 
   it("keeps the regular Pro card outside the sale", () => {
-    at("2026-11-18T12:00:00Z");
+    at("2026-11-10T12:00:00Z");
     render(<Pricing />);
     expect(screen.getByText("$29")).not.toHaveClass("line-through");
     expect(screen.getByText("$99")).toHaveClass("line-through");

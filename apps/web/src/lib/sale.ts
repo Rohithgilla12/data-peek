@@ -5,7 +5,7 @@ export const PRO_PRICE_CENTS = 2900;
 export const BLACK_FRIDAY = {
   code: "BF26PEEK",
   percentOff: 40,
-  startsAt: "2026-11-26T00:00:00Z",
+  startsAt: "2026-11-18T00:00:00Z",
   endsAt: "2026-12-02T08:00:00Z", // exclusive; end of 1 Dec US Pacific
   sisterProduct: { name: "Float", code: "BF26FLOAT", url: FLOAT_URL },
 } as const;
