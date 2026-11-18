@@ -2,8 +2,26 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSaleShown } from "@/hooks/use-sale-shown";
+import {
+  BLACK_FRIDAY,
+  formatUsd,
+  PRO_PRICE_CENTS,
+  saleLastDay,
+  salePriceCents,
+} from "@/lib/sale";
 
-const personal = {
+type TierShape = {
+  name: string;
+  price: string;
+  priceMeta?: string;
+  oldPrice?: string;
+  badge?: string;
+  tagline: string;
+  features: string[];
+};
+
+const personal: TierShape = {
   name: "Personal",
   price: "$0",
   tagline: "Solo devs, OSS, side projects, students.",
@@ -16,11 +34,12 @@ const personal = {
   ],
 };
 
-const pro = {
+const pro: TierShape = {
   name: "Pro",
-  price: "$29",
+  price: formatUsd(PRO_PRICE_CENTS),
   priceMeta: "/ year",
   oldPrice: "$99",
+  badge: "70% off",
   tagline: "Commercial use inside a for-profit team.",
   features: [
     "Everything in Personal",
@@ -44,15 +63,6 @@ function Check() {
   );
 }
 
-type TierShape = {
-  name: string;
-  price: string;
-  priceMeta?: string;
-  oldPrice?: string;
-  tagline: string;
-  features: string[];
-};
-
 function Tier({
   tier,
   featured,
@@ -75,7 +85,7 @@ function Tier({
           <h3 className="text-[13px] uppercase tracking-[0.16em] text-[var(--n-fg)]">
             {tier.name}
           </h3>
-          {featured && (
+          {tier.badge && (
             <span
               className="text-[10px] uppercase tracking-[0.14em] h-5 px-1.5 inline-flex items-center"
               style={{
@@ -83,7 +93,7 @@ function Tier({
                 color: "var(--n-accent-ink)",
               }}
             >
-              70% off
+              {tier.badge}
             </span>
           )}
         </div>
@@ -152,7 +162,16 @@ function ProCheckoutButton() {
   );
 }
 
+const proOnSale: TierShape = {
+  ...pro,
+  price: formatUsd(salePriceCents(PRO_PRICE_CENTS)),
+  oldPrice: formatUsd(PRO_PRICE_CENTS),
+  badge: `Black Friday · ${BLACK_FRIDAY.percentOff}% off`,
+};
+
 export function Pricing() {
+  const saleShown = useSaleShown();
+
   return (
     <section id="pricing" className="relative">
       <div className="mx-auto max-w-[1240px] px-5 sm:px-8 py-24 sm:py-32">
@@ -188,8 +207,14 @@ export function Pricing() {
               Download — free
             </Link>
           </Tier>
-          <Tier tier={pro} featured>
+          <Tier tier={saleShown ? proOnSale : pro} featured>
             <ProCheckoutButton />
+            {saleShown && (
+              <p className="mt-3 text-center text-[11.5px] text-[var(--n-fg-muted)]">
+                Code {BLACK_FRIDAY.code} is applied at checkout, until{" "}
+                {saleLastDay} (Pacific time).
+              </p>
+            )}
           </Tier>
         </div>
 

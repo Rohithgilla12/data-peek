@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { HeroVideo } from "./hero-video";
+import { ProPrice } from "./pro-price";
 
 export function Hero() {
   return (
@@ -74,7 +75,10 @@ export function Hero() {
                 className="inline-flex h-10 items-center px-4 text-[13px] text-[var(--n-fg)]"
                 style={{ border: "1px solid var(--n-line)" }}
               >
-                Pro — $29/yr
+                <span>
+                  Pro — <ProPrice />
+                  /yr
+                </span>
               </Link>
               <Link
                 href="https://github.com/Rohithgilla12/data-peek"

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Header } from "@/components/marketing/header";
 import { Footer } from "@/components/marketing/footer";
+import { ProPrice } from "@/components/marketing/pro-price";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -230,7 +231,9 @@ export default function DownloadPage() {
                   asChild
                 >
                   <Link href="/#pricing">
-                    Get Pro License — $29
+                    <span>
+                      Get Pro License — <ProPrice />
+                    </span>
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Link>
                 </Button>
