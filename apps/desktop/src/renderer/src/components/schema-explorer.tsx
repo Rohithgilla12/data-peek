@@ -84,7 +84,8 @@ import {
   generateExportFilename,
   type ExportDestination,
   type ExportFormat,
-  type SQLExportOptions
+  type SQLExportOptions,
+  sqlDialectFor
 } from '@/lib/export'
 import { buildFullyQualifiedTableRef } from '@/lib/sql-helpers'
 import { ExportMenuItems } from '@/components/export-menu-items'
@@ -1072,7 +1073,11 @@ export function SchemaExplorer() {
       }
 
       const filename = generateExportFilename(tableName)
-      const sqlOptions: SQLExportOptions = { tableName, schemaName }
+      const sqlOptions: SQLExportOptions = {
+        tableName,
+        schemaName,
+        dialect: sqlDialectFor(activeDbType)
+      }
 
       if (destination === 'clipboard') {
         await copyExportToClipboard(exportData, format, format === 'sql' ? sqlOptions : undefined)

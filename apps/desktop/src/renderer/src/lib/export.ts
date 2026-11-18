@@ -5,6 +5,7 @@ export type { SQLDialect } from '@shared/sql-escape'
 
 import { escapeSQLIdentifier, escapeSQLValue } from '@shared/sql-escape'
 import type { SQLDialect } from '@shared/sql-escape'
+import type { DatabaseType } from '@shared/index'
 
 export type ExportFormat = 'csv' | 'json' | 'sql' | 'markdown'
 export type ExportDestination = 'download' | 'clipboard'
@@ -80,6 +81,18 @@ export function exportToMarkdown(data: ExportData, options?: MarkdownExportOptio
       .join(' | ')
   )
   return [`| ${headers} |`, `| ${separator} |`, ...rows.map((row) => `| ${row} |`)].join('\n')
+}
+
+/** The identifier/value dialect for a connection's database type. */
+export function sqlDialectFor(dbType: DatabaseType | undefined): SQLDialect {
+  switch (dbType) {
+    case 'postgresql':
+    case 'mysql':
+    case 'mssql':
+      return dbType
+    default:
+      return 'standard'
+  }
 }
 
 export interface SQLExportOptions {

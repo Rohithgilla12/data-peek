@@ -3,12 +3,13 @@ import {
   copyExportToClipboard,
   downloadExport,
   maskExportData,
+  sqlDialectFor,
   type ExportData,
   type ExportDestination,
   type ExportFormat,
   type SQLExportOptions
 } from '@/lib/export'
-import { notify } from '@/stores'
+import { notify, useConnectionStore } from '@/stores'
 import { useMaskingStore } from '@/stores/masking-store'
 import type { Tab } from '@/stores/tab-store'
 
@@ -54,9 +55,14 @@ export function useResultExport(tabId: string, tab: Tab | undefined) {
     return tab.result ?? null
   }
 
+  const dbType = useConnectionStore(
+    (s) => s.connections.find((c) => c.id === tab?.connectionId)?.dbType
+  )
+
   const getSQLExportOptions = (): SQLExportOptions => ({
     tableName: tab && tab.type === 'table-preview' ? tab.tableName : 'query_result',
-    schemaName: tab && tab.type === 'table-preview' ? tab.schemaName : undefined
+    schemaName: tab && tab.type === 'table-preview' ? tab.schemaName : undefined,
+    dialect: sqlDialectFor(dbType)
   })
 
   const doExport = async (

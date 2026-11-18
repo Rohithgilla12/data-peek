@@ -11,6 +11,7 @@ import {
   serializeExport,
   maskExportData,
   generateExportFilename,
+  sqlDialectFor,
   type ExportData
 } from '../export'
 
@@ -543,6 +544,14 @@ describe('exportToSQL', () => {
     const sql = exportToSQL(sampleData, { tableName: 'users', schemaName: 'public' })
 
     expect(sql).toContain('INSERT INTO public.users')
+  })
+
+  it('quotes mixed-case names for the connection dialect', () => {
+    const sql = (dbType: 'mysql' | 'postgresql') =>
+      exportToSQL(sampleData, { tableName: 'Customers', dialect: sqlDialectFor(dbType) })
+
+    expect(sql('mysql')).toContain('INSERT INTO `Customers`')
+    expect(sql('postgresql')).toContain('INSERT INTO "Customers"')
   })
 
   it('should quote reserved word table names', () => {
