@@ -1,6 +1,6 @@
 # data-peek motion kit
 
-Reusable, unnarrated motion graphics for the README and datapeek.dev. Six short seamless loops sharing one visual system (`design.md`, inherited from the v0.26 launch videos).
+Reusable, unnarrated motion graphics for the README and datapeek.dev. Seven short seamless loops sharing one visual system (`design.md`, inherited from the v0.26 launch videos).
 
 ## Shared envelope (every piece)
 
@@ -26,6 +26,7 @@ Reusable, unnarrated motion graphics for the README and datapeek.dev. Six short 
 | `query-plan/` | 6 s | An `EXPLAIN ANALYZE` plan grows into a tree node by node; timing bars fill and the hottest node lights up with its hint. |
 | `mcp-approval/` | 6 s | An agent asks to run a write; the real in-app approval dialog slides in with the SQL; Approve lands, then the result shows. |
 | `time-machine/` | 6 s | A timeline of past runs with a row-count sparkline; the scrubber drags back, a "viewing the past" banner appears, and two runs diff cell by cell. |
+| `ask-ai/` | 10 s | Choose AI picks Claude on your subscription; a plain-English question answers, runs on its own, and draws a chart; a write stops on **Run it**. |
 
 ## Exports (done by the master after render approval, not by builders)
 
@@ -41,4 +42,4 @@ cd .. && ./export.sh <piece> <poster-seconds>
 cp exports/<piece>.{mp4,webm,webp} exports/<piece>-poster.webp ../../../web/public/motion/
 ```
 
-Poster times used: hero 3.6, doctor-cli 5.42, query-plan 4.4, mcp-approval 3.0, watch-mode 3.0, time-machine 3.6. Each piece's `BRIEF.md` lists the source files its on-screen copy was taken from.
+Poster times used: hero 3.6, doctor-cli 5.42, query-plan 4.4, mcp-approval 3.0, watch-mode 3.0, time-machine 3.6, ask-ai 5.8. Each piece's `BRIEF.md` lists the source files its on-screen copy was taken from.

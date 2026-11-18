@@ -2,6 +2,7 @@
 renders/
 exports/
 snapshots/
+.hyperframes/
 # Scaffold boilerplate written by `hyperframes init`
 AGENTS.md
 CLAUDE.md

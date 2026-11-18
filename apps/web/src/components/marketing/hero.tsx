@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { HeroVideo } from "./hero-video";
+import { MotionLoop } from "./motion-loop";
 import { ProPrice } from "./pro-price";
 
 export function Hero() {
@@ -146,7 +146,10 @@ export function Hero() {
         </div>
 
         <div className="mt-14 sm:mt-20">
-          <HeroVideo />
+          <MotionLoop
+            name="hero"
+            label="A SQL query typed into data-peek returns 8 rows in 38 ms, then the view pulls back through the schema's tables into the data-peek logo"
+          />
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-[11px] text-[var(--n-fg-faint)]">
