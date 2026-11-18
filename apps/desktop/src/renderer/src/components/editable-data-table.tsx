@@ -70,8 +70,12 @@ import {
   CellGridInspector,
   CellGridOverlays,
   CellSelectionStats,
+  GridFindBar,
   type CellPosition,
-  useCellGrid
+  type CellSnapshot,
+  useCellGrid,
+  useGridFind,
+  useGridMetrics
 } from '@/components/cell-grid'
 import { WatchDecorationOverlay } from '@/components/cell-grid/watch-decoration-overlay'
 import { useWatchStore } from '@/stores/watch-store'
@@ -1101,18 +1105,17 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
   }, [sortChips, filterChips, table])
 
   const tableContainerRef = React.useRef<HTMLDivElement>(null)
+  const gridWrapperRef = React.useRef<HTMLDivElement>(null)
   const headerRef = React.useRef<HTMLTableRowElement>(null)
-  const [columnWidths, setColumnWidths] = React.useState<number[]>([])
 
   const rows = table.getRowModel().rows
   const shouldVirtualize = rows.length > VIRTUALIZATION_THRESHOLD
 
-  // Below the threshold `EditableWatchOverlay` can't paint — it positions
-  // rectangles from measured column widths, which only the virtualized path
-  // produces — so the row map further down tints rows and cells inline instead.
-  // Scoped to the non-virtualized case on purpose: this subscription re-renders
-  // the whole grid on every tick, which is only acceptable at <= 50 rows, and
-  // there the grid re-renders anyway since a tick replaces `tab.result`.
+  // Below the threshold the row map further down tints rows and cells inline
+  // instead of using `EditableWatchOverlay`. Scoped to the non-virtualized case
+  // on purpose: this subscription re-renders the whole grid on every tick, which
+  // is only acceptable at <= 50 rows, and there the grid re-renders anyway since
+  // a tick replaces `tab.result`.
   const inlineWatchDiff = useWatchStore((s) =>
     selectInlineWatchDiff(tabId ? s.states[tabId] : undefined, shouldVirtualize)
   )
@@ -1134,55 +1137,15 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
     overscan: 10
   })
 
-  const columnKey = columnDefs.map((c) => c.name).join(',')
-
-  React.useEffect(() => {
-    setColumnWidths([])
-  }, [columnKey])
-
-  React.useEffect(() => {
-    if (!shouldVirtualize || !headerRef.current) return
-
-    const measureWidths = () => {
-      const headerCells = headerRef.current?.querySelectorAll('th')
-      if (!headerCells) return
-      const widths = Array.from(headerCells, (cell) => cell.offsetWidth)
-      // Skip the update when widths haven't changed — otherwise every ResizeObserver
-      // tick churns geometry identity and re-renders the overlay layer.
-      setColumnWidths((prev) =>
-        prev.length === widths.length && prev.every((w, i) => w === widths[i]) ? prev : widths
-      )
-    }
-
-    const timeoutId = setTimeout(measureWidths, 0)
-
-    const resizeObserver = new ResizeObserver(measureWidths)
-    if (headerRef.current) {
-      resizeObserver.observe(headerRef.current)
-    }
-
-    return () => {
-      clearTimeout(timeoutId)
-      resizeObserver.disconnect()
-    }
-  }, [shouldVirtualize, columnKey])
-
-  const cellGrid = useCellGrid({
-    rows,
-    columnDefs,
-    columnWidths,
-    rowHeight: ROW_HEIGHT,
-    // Must match the sticky <TableHeader> row height; drift causes overlay misalignment.
-    headerHeight: 40,
-    containerRef: tableContainerRef,
-    virtualizer,
-    enabled: shouldVirtualize
-  })
+  // Edit mode prepends the `_select` column, so grid column N is columnDefs[N - 1].
+  const gridColOffset = isEditMode ? 1 : 0
+  const columnKey = `${gridColOffset}:${columnDefs.map((c) => c.name).join(',')}`
+  const { columnWidths, headerHeight } = useGridMetrics(headerRef, columnKey)
 
   const getCellSnapshot = React.useCallback(
-    (pos: CellPosition) => {
+    (pos: CellPosition): CellSnapshot => {
       const row = rows[pos.row]
-      const targetCol = isEditMode ? columnDefs[pos.col - 1] : columnDefs[pos.col]
+      const targetCol = columnDefs[pos.col - gridColOffset]
       if (!row || !targetCol) return { value: undefined, columnName: '', dataType: '' }
       // Re-evaluate when tab edits change
       void tabEdit
@@ -1195,19 +1158,61 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         value: isMasked ? null : rawValue,
         columnName: targetCol.name,
         dataType: targetCol.dataType,
+        foreignKey: targetCol.foreignKey,
         isMasked
       }
     },
     [
       rows,
       columnDefs,
-      isEditMode,
+      gridColOffset,
       effectiveMasked,
       tabId,
       tabEdit,
       isCellModified,
       getModifiedCellValue
     ]
+  )
+
+  const { pageIndex, pageSize: currentPageSize } = table.getState().pagination
+  const filterSortKey = React.useMemo(
+    () => JSON.stringify([sortChips, filterChips]),
+    [sortChips, filterChips]
+  )
+  const cellGrid = useCellGrid({
+    rowOrderKey: `${filterSortKey}|${pageIndex}|${currentPageSize}`,
+    rowCount: rows.length,
+    colCount: columnDefs.length + gridColOffset,
+    columnKey,
+    getCell: getCellSnapshot,
+    columnWidths,
+    rowHeight: ROW_HEIGHT,
+    headerHeight,
+    containerRef: tableContainerRef,
+    virtualizer
+  })
+
+  const find = useGridFind({
+    rows: table.getPrePaginationRowModel().rows,
+    columns: columnDefs,
+    maskedColumns: effectiveMasked,
+    pageIndex: table.getState().pagination.pageIndex,
+    pageSize: table.getState().pagination.pageSize,
+    setPageIndex: table.setPageIndex,
+    colOffset: gridColOffset,
+    pageRowCount: rows.length,
+    focusCell: cellGrid.setFocus,
+    returnFocusTo: tableContainerRef
+  })
+
+  const virtualItems = virtualizer.getVirtualItems()
+  const findRowWindow = shouldVirtualize
+    ? { start: virtualItems[0]?.index ?? 0, end: virtualItems.at(-1)?.index ?? -1 }
+    : undefined
+
+  const contextMenuColumns = React.useMemo(
+    () => columnDefs.map((c) => ({ name: c.name, dataType: c.dataType })),
+    [columnDefs]
   )
 
   return (
@@ -1253,11 +1258,16 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
         </div>
 
         {/* Table */}
-        <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
+        <div
+          ref={gridWrapperRef}
+          data-cell-grid
+          className="flex-1 min-h-0 border rounded-lg border-border/50 relative"
+        >
+          <GridFindBar find={find} target={gridWrapperRef} />
           <CellGridInspector
             cellGrid={cellGrid}
             rowCount={rows.length}
-            colCount={columnDefs.length}
+            colCount={columnDefs.length + gridColOffset}
             onForeignKeyOpen={onForeignKeyClick}
           />
           <div
@@ -1308,10 +1318,9 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                               <RowContextMenu
                                 key={row.id}
                                 row={originalRow}
-                                columns={columnDefs.map((c) => ({
-                                  name: c.name,
-                                  dataType: c.dataType
-                                }))}
+                                columns={contextMenuColumns}
+                                selectionCopy={cellGrid.selectionCopy}
+                                maskedColumns={effectiveMasked}
                                 onDuplicate={
                                   canEdit && editContext
                                     ? () => handleDuplicateRow(originalRow)
@@ -1362,7 +1371,7 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                       </td>
                     </tr>
                   ) : (
-                    rows.map((row) => {
+                    rows.map((row, rowIndex) => {
                       const originalRow = row.original as Record<string, unknown>
                       const isDeleted = isRowMarkedForDeletion(tabId, originalRow)
                       const decoration = resolveInlineRowDecoration(
@@ -1376,7 +1385,9 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                         <RowContextMenu
                           key={row.id}
                           row={originalRow}
-                          columns={columnDefs.map((c) => ({ name: c.name, dataType: c.dataType }))}
+                          columns={contextMenuColumns}
+                          selectionCopy={cellGrid.selectionCopy}
+                          maskedColumns={effectiveMasked}
                           onDuplicate={
                             canEdit && editContext
                               ? () => handleDuplicateRow(originalRow)
@@ -1393,11 +1404,16 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                               'hover:bg-accent/30 border-border/30 transition-colors',
                               isDeleted && 'bg-destructive/10'
                             )}
-                            style={
-                              decoration.isAdded && !isDeleted ? INLINE_ADDED_ROW_STYLE : undefined
-                            }
+                            style={{
+                              // Cells carry no vertical padding, so every row is exactly ROW_HEIGHT
+                              // whatever it holds: the cell-grid overlays assume uniform rows.
+                              height: ROW_HEIGHT,
+                              ...(decoration.isAdded && !isDeleted
+                                ? INLINE_ADDED_ROW_STYLE
+                                : undefined)
+                            }}
                           >
-                            {row.getVisibleCells().map((cell) => {
+                            {row.getVisibleCells().map((cell, cellIndex) => {
                               const isChangedCell = isInlineChangedCell(
                                 inlineWatchDiff,
                                 decoration,
@@ -1406,7 +1422,9 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                               return (
                                 <TableCell
                                   key={cell.id}
-                                  className="py-2 text-sm whitespace-nowrap"
+                                  data-cell-row={rowIndex}
+                                  data-cell-col={cellIndex}
+                                  className="py-0 text-sm whitespace-nowrap"
                                   style={isChangedCell ? INLINE_CHANGED_CELL_STYLE : undefined}
                                 >
                                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -1463,11 +1481,10 @@ export function EditableDataTable<TData extends Record<string, unknown>>({
                   ))}
               </TableBody>
             </table>
-            <CellGridOverlays cellGrid={cellGrid} />
+            <CellGridOverlays cellGrid={cellGrid} find={find} rowWindow={findRowWindow} />
             {/*
               Mutually exclusive with the inline tints on the rows above: this
-              overlay needs measured column widths, which only the virtualized
-              path produces. See lib/watch-inline-diff.ts.
+              overlay paints the virtualized path only. See lib/watch-inline-diff.ts.
             */}
             <EditableWatchOverlay
               tabId={tabId}
