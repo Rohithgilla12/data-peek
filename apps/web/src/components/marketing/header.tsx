@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import pkg from "../../../package.json";
+import { shortVersion } from "@/lib/version";
 import { SaleBanner } from "./sale-banner";
-
-const shortVersion = pkg.version.split(".").slice(0, 2).join(".");
 
 const nav = [
   { href: "/#features", label: "Features" },

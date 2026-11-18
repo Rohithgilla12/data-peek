@@ -143,11 +143,13 @@ More clips (command palette, ER diagrams, the AI assistant, inline editing) are 
 
 ### AI and agents
 
+<a href="https://www.datapeek.dev/#ai"><img src="apps/web/public/motion/ask-ai.webp" alt="data-peek picks Claude from the Choose AI menu, answers a plain-English question with SQL that runs on its own and draws a chart, then stops a write at Run it" width="100%" /></a>
+
 - **Ask** is the default tab (`Cmd/Ctrl+T`). One input takes a question or SQL. SQL runs directly. A question goes to your AI, which writes the SQL, runs it when it only reads, and explains what came back with a table, chart, or number. Writes wait for you to click Run, and a failed query has a one-click fix. The plain SQL editor is `Cmd/Ctrl+Shift+T`.
 - Ask from anywhere: type a question into `Cmd/Ctrl+K`, pick **Ask about this table** in the schema tree, or click **Fix with AI** on a failed query
 - In the SQL editor, `Cmd/Ctrl+I` rewrites the query or the selection from a sentence and shows the change as a diff to accept or reject
 - AI assistant that turns plain English into SQL and builds charts from results. It knows your schema.
-- Bring your own key (OpenAI, Anthropic, Google, Groq, or local Ollama models), or bring your own agent: point it at your installed Claude Code, Codex, or Antigravity CLI and use the subscription you already have
+- Runs on the Claude Code, Codex, or Antigravity subscription you already have: data-peek finds the installed CLI and one click puts it to work. Or bring your own key (OpenAI, Anthropic, Google, Groq, DeepSeek, Mistral, xAI, or GLM), or run a local Ollama model
 - A built-in [MCP server](https://docs.datapeek.dev/docs/features/mcp-server) (off by default) that exposes your connections to AI agents. Reads are capped and run read-only, and every write needs your approval in the app.
 
 ### Connections and security
