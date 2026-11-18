@@ -111,6 +111,7 @@ More clips (command palette, ER diagrams, the AI assistant, inline editing) are 
 
 - Inline editing with a preview of the generated `INSERT`/`UPDATE`/`DELETE` before you commit
 - Smart filters and sorting on results without re-running the query
+- Spreadsheet-style cell selection with live sum and average, find across every page of a result (`Cmd/Ctrl+F` in the grid), and copy a selection as TSV, CSV, JSON, or Markdown
 - Foreign key navigation, a JSON/JSONB editor, and one-click column statistics
 - Export to CSV, JSON, SQL `INSERT`s, or Markdown, or share a result as an image
 - CSV import with column mapping and type inference, PostgreSQL `.sql` dump import, and an FK-aware fake data generator

@@ -69,19 +69,49 @@ A hover toggle on each chip controls whether NULLs sort first or last.
 
 ## Keyboard Navigation
 
-The grid is fully keyboard-navigable — click a cell (or run a query) and drive with the keyboard:
+The grid is fully keyboard-navigable at every result size. Click a cell (or run a query) and drive with the keyboard:
 
-| Key                    | Action                         |
-| ---------------------- | ------------------------------ |
-| `↑` `↓` `←` `→`        | Move between cells             |
-| `Home` / `End`         | First / last column in the row |
-| `Cmd+Home` / `Cmd+End` | Top-left / bottom-right cell   |
-| `PageUp` / `PageDown`  | Jump 20 rows                   |
-| `Cmd+C`                | Copy the focused cell          |
-| `Enter`                | Open the cell inspector        |
-| `Escape`               | Close the inspector            |
+| Key                    | Action                                         |
+| ---------------------- | ---------------------------------------------- |
+| `↑` `↓` `←` `→`        | Move between cells                             |
+| `Home` / `End`         | First / last column in the row                 |
+| `Cmd+Home` / `Cmd+End` | Top-left / bottom-right cell                   |
+| `PageUp` / `PageDown`  | Jump 20 rows                                   |
+| `Cmd+C`                | Copy the focused cell, or the selection as TSV |
+| `Enter`                | Open the cell inspector                        |
+| `Escape`               | Close the inspector                            |
 
 Focus position is preserved across sorting, filtering, and pagination.
+
+## Selecting Cells
+
+Hold `Shift` with the arrow keys, `Home`/`End`, or `PageUp`/`PageDown` to grow a rectangular selection, or `Shift+Click` a cell to extend to it. `Cmd+A` selects every cell on the page, `Cmd+Click` adds or removes single cells, and `Escape` clears the selection.
+
+While more than one cell is selected, a bar under the grid shows the cell count and, for numeric cells, the sum, average, minimum, and maximum.
+
+`Cmd+C` copies the selection as tab-separated values without headers, ready to paste into a spreadsheet. For other formats, right-click a cell inside the selection and choose **Copy Selection As**:
+
+| Format           | Output                              |
+| ---------------- | ----------------------------------- |
+| TSV              | Tab-separated, no header row        |
+| TSV with headers | Tab-separated, column names first   |
+| CSV              | Comma-separated, column names first |
+| JSON             | An array of objects keyed by column |
+| Markdown         | A Markdown table                    |
+
+Copy uses the rectangle you extended with `Shift`. Cells added with `Cmd+Click` are not included. Masked columns copy as empty values in every format.
+
+## Find in Results
+
+With focus in the grid, press `Cmd+F` to open the find bar in the grid's top-right corner. Matching cells are highlighted, and `Enter` / `Shift+Enter` (or `Cmd+G` / `Cmd+Shift+G`) step through them, switching pages as needed. Find covers every page of the filtered, sorted result, not just the page on screen.
+
+- **Aa** (`Option+C` / `Alt+C`) matches case; by default find ignores case
+- **.\*** (`Option+R` / `Alt+R`) treats the text as a regular expression; an invalid pattern shows **Invalid regex** instead of results
+- Cells match on the same text that copy produces, so JSON values match their JSON text
+- Masked columns and NULL cells never match
+- `Escape` closes the bar and returns focus to the grid
+
+Outside the grid, `Cmd+F` still focuses the Smart Filter bar.
 
 ## Cell Inspector
 
@@ -177,13 +207,11 @@ Click **Explain** to view the query execution plan. See [Query Plans](/docs/feat
 
 Right-click any cell for:
 
-| Option               | Description                     |
-| -------------------- | ------------------------------- |
-| **Copy Cell**        | Copy the cell value             |
-| **Copy Row as JSON** | Copy entire row as JSON         |
-| **Copy Row as CSV**  | Copy the row with a header line |
-| **Copy Column**      | Copy all values in column       |
-| **Filter by Value**  | Add WHERE clause for this value |
+| Option                | Description                                                                  |
+| --------------------- | ---------------------------------------------------------------------------- |
+| **Copy Selection As** | Shown inside a multi-cell selection; see [Selecting Cells](#selecting-cells) |
+| **Copy Row as JSON**  | Copy entire row as JSON                                                      |
+| **Copy Row as CSV**   | Copy the row with a header line                                              |
 
 In [edit mode](/docs/features/inline-editing), the row menu also offers **Duplicate Row** and **Delete Row**. The context menu works on every row, including virtualized rows deep in large result sets.
 
