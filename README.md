@@ -24,6 +24,10 @@
 </p>
 
 <p align="center">
+  <b>Black Friday:</b> <a href="https://www.datapeek.dev/#pricing">Pro is 40% off</a> until 1 Dec, applied at checkout.
+</p>
+
+<p align="center">
   <a href="https://www.datapeek.dev">
     <img src="apps/web/public/motion/hero.webp" alt="A SQL query types itself in data-peek and returns 8 rows in 38 ms, then the view pulls back through the schema's tables into the data-peek logo" width="100%" />
   </a>
