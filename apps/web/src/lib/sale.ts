@@ -26,6 +26,13 @@ export function saleIsShown(now: Date, search: string): boolean {
   );
 }
 
+// endsAt is exclusive, so the last day is the Pacific date one ms before it.
+export const saleLastDay = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  timeZone: "America/Los_Angeles",
+}).format(endsAtMs - 1);
+
 export function salePriceCents(cents: number): number {
   return Math.floor((cents * (100 - BLACK_FRIDAY.percentOff)) / 100);
 }

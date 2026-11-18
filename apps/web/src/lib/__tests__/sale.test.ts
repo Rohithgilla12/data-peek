@@ -3,6 +3,7 @@ import {
   formatUsd,
   PRO_PRICE_CENTS,
   saleIsLive,
+  saleLastDay,
   saleIsShown,
   salePriceCents,
 } from "../sale";
@@ -45,5 +46,11 @@ describe("sale price", () => {
 
   it("drops the cents on whole dollars", () => {
     expect(formatUsd(PRO_PRICE_CENTS)).toBe("$29");
+  });
+});
+
+describe("saleLastDay", () => {
+  it("is the last Pacific day of the sale", () => {
+    expect(saleLastDay).toBe("1 Dec");
   });
 });
