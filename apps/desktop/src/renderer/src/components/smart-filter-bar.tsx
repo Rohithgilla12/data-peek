@@ -565,7 +565,9 @@ export function SmartFilterBar({
         const target = e.target as HTMLElement
         const isInEditor =
           target.closest('.monaco-editor') || target.closest('[data-monaco-editor]')
-        if (!isInEditor) {
+        // Inside a results grid, Mod+F belongs to the grid's find bar.
+        const isInGrid = target.closest('[data-cell-grid]')
+        if (!isInEditor && !isInGrid) {
           e.preventDefault()
           inputRef.current?.focus()
           if (!isBuilding) startBuilding()

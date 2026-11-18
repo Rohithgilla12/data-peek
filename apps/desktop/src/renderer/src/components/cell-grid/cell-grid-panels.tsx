@@ -1,9 +1,13 @@
+import type * as React from 'react'
 import type { ForeignKeyInfo } from '@data-peek/shared'
 import { CellFocusOverlay } from './cell-focus-overlay'
 import { CellInspector } from './cell-inspector'
 import { CellSelectionOverlay } from './cell-selection-overlay'
+import { CellFindBar } from './cell-find-bar'
 import { CopyFlash } from './copy-flash'
+import { FindMatchOverlay } from './find-match-overlay'
 import type { UseCellGridResult } from './use-cell-grid'
+import type { GridFind } from './use-grid-find'
 
 interface CellGridInspectorProps {
   cellGrid: UseCellGridResult
@@ -52,12 +56,65 @@ export function CellGridInspector({
 }
 
 /**
- * The selection layer + focus ring + row stripe + copy-flash pill. Lives inside
- * the scroll container so it tracks with horizontal/vertical scroll.
+ * The VS Code style find bar, floating top-right over the grid. Placed as a
+ * sibling of the scroll container so it stays put while the grid scrolls.
  */
-export function CellGridOverlays({ cellGrid }: { cellGrid: UseCellGridResult }) {
+export function GridFindBar({
+  find,
+  target
+}: {
+  find: GridFind
+  /** The element that owns Mod+F, Mod+G and Mod+Shift+G. */
+  target: React.RefObject<HTMLElement | null>
+}) {
+  const { result, query } = find
+  return (
+    <CellFindBar
+      open={find.open}
+      onOpenChange={find.setOpen}
+      onClose={find.close}
+      needle={query.needle}
+      onNeedleChange={(needle) => find.setQuery({ needle })}
+      caseSensitive={query.caseSensitive}
+      onCaseSensitiveChange={(caseSensitive) => find.setQuery({ caseSensitive })}
+      regex={query.regex}
+      onRegexChange={(regex) => find.setQuery({ regex })}
+      onFindNext={() => find.step(1)}
+      onFindPrev={() => find.step(-1)}
+      matchCount={result.kind === 'ok' ? result.matches.length : undefined}
+      currentMatchIndex={find.current ?? undefined}
+      error={result.kind === 'invalid-regex' ? result.message : undefined}
+      target={target}
+      className="absolute top-2 right-3 z-30"
+    />
+  )
+}
+
+/**
+ * The selection layer + focus ring + row stripe + copy-flash pill, plus find
+ * highlights when a find is given. Lives inside the scroll container so it
+ * tracks with horizontal/vertical scroll.
+ */
+export function CellGridOverlays({
+  cellGrid,
+  find,
+  rowWindow
+}: {
+  cellGrid: UseCellGridResult
+  find?: GridFind
+  /** Inclusive range of rendered rows, so find highlights skip rows that aren't on screen. */
+  rowWindow?: { start: number; end: number }
+}) {
   return (
     <>
+      {find?.open && (
+        <FindMatchOverlay
+          matches={find.pageMatches}
+          current={find.currentPos}
+          geometry={cellGrid.geometry}
+          rowWindow={rowWindow ?? { start: 0, end: Number.MAX_SAFE_INTEGER }}
+        />
+      )}
       <CellSelectionOverlay
         selection={cellGrid.selection}
         geometry={cellGrid.geometry}

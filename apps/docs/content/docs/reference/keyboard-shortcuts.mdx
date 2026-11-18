@@ -67,19 +67,44 @@ Shortcuts for navigating results and filtering or sorting table data.
 
 | Action | macOS | Windows/Linux |
 | :--- | :--- | :--- |
-| **Focus Smart Filter Bar** | `Cmd+F` | `Ctrl+F` |
+| **Focus Smart Filter Bar** (outside the grid) | `Cmd+F` | `Ctrl+F` |
 | **Open Smart Sort Bar** | `Cmd+Shift+S` | `Ctrl+Shift+S` |
 | **Move Between Cells** | `↑` `↓` `←` `→` | `↑` `↓` `←` `→` |
 | **First / Last Cell in Row** | `Home` / `End` | `Home` / `End` |
 | **First / Last Cell Overall** | `Cmd+Home` / `Cmd+End` | `Ctrl+Home` / `Ctrl+End` |
 | **Jump 20 Rows** | `PageUp` / `PageDown` | `PageUp` / `PageDown` |
-| **Copy Focused Cell** | `Cmd+C` | `Ctrl+C` |
+| **Copy Focused Cell or Selection** (TSV) | `Cmd+C` | `Ctrl+C` |
 | **Open Cell Inspector** | `Enter` | `Enter` |
-| **Close Cell Inspector** | `Escape` | `Escape` |
-| **Navigate Foreign Key** | `Cmd+Click` | `Ctrl+Click` |
+| **Close Cell Inspector / Clear Selection** | `Escape` | `Escape` |
+| **Open Foreign Key in New Tab** | `Cmd+Click` a foreign-key value | `Ctrl+Click` a foreign-key value |
+
+### Selecting Cells
+
+| Action | macOS | Windows/Linux |
+| :--- | :--- | :--- |
+| **Extend Selection** | `Shift+↑` `↓` `←` `→` | `Shift+↑` `↓` `←` `→` |
+| **Extend to First / Last Column** | `Shift+Home` / `Shift+End` | `Shift+Home` / `Shift+End` |
+| **Extend to First / Last Cell** | `Cmd+Shift+Home` / `Cmd+Shift+End` | `Ctrl+Shift+Home` / `Ctrl+Shift+End` |
+| **Extend 20 Rows** | `Shift+PageUp` / `Shift+PageDown` | `Shift+PageUp` / `Shift+PageDown` |
+| **Select All Cells on the Page** | `Cmd+A` | `Ctrl+A` |
+| **Extend Selection to a Cell** | `Shift+Click` | `Shift+Click` |
+| **Add or Remove a Cell** | `Cmd+Click` | `Ctrl+Click` |
+| **Clear Selection** | `Escape` | `Escape` |
+
+### Find in Results
+
+| Action | macOS | Windows/Linux |
+| :--- | :--- | :--- |
+| **Open Find** (focus in the grid) | `Cmd+F` | `Ctrl+F` |
+| **Next / Previous Match** | `Enter` / `Shift+Enter` | `Enter` / `Shift+Enter` |
+| **Next / Previous Match** (anywhere in the grid) | `Cmd+G` / `Cmd+Shift+G` | `Ctrl+G` / `Ctrl+Shift+G` |
+| **Toggle Match Case** | `Option+C` | `Alt+C` |
+| **Toggle Regular Expression** | `Option+R` | `Alt+R` |
+| **Close Find** | `Escape` | `Escape` |
 
 <Callout type="info">
-  - **`Cmd/Ctrl+F` focus conditions**: When the SQL editor has focus, `Cmd/Ctrl+F` opens editor search. Whenever focus is outside the SQL editor (including the results grid, sidebar, and other non-editor areas), `Cmd/Ctrl+F` focuses the mounted Smart Filter bar.
+  - **`Cmd/Ctrl+F` focus conditions**: When the SQL editor has focus, `Cmd/Ctrl+F` opens editor search. When focus is inside the results grid, it opens Find in Results. Everywhere else (sidebar, filter and sort bars, other non-editor areas), it focuses the mounted Smart Filter bar.
+  - **`Cmd/Ctrl+Click`**: On a foreign-key value it opens the referenced record in a new tab. On any other cell it adds that cell to the selection, or removes it.
   - **`Cmd/Ctrl+Shift+S` focus & menu overlap**: When focus is outside the SQL editor and unrelated input, textarea, or contenteditable elements, `Cmd/Ctrl+Shift+S` activates the Smart Sort bar on tabs where sorting is available. Note that this shortcut currently overlaps with the application menu accelerator for Saved Queries.
 </Callout>
 

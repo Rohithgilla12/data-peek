@@ -202,7 +202,7 @@ const ALTERNATIVES = {
     whenUsTitle: "When data-peek is the better fit",
     whenUs: [
       "You want an open-source client you can read, fork, and trust.",
-      "You want a built-in, bring-your-own-key AI assistant for writing and explaining SQL.",
+      "You want a built-in AI assistant for writing and explaining SQL that runs on your Claude Code or Codex plan, or on your own key.",
       "You are working across PostgreSQL, MySQL, SQL Server, or SQLite and want them free for personal use.",
     ],
     migration:
@@ -221,7 +221,7 @@ const ALTERNATIVES = {
       {
         question: "What does data-peek add over TablePlus?",
         answer:
-          "Two main things: an open-source codebase under the MIT licence, and a built-in, schema-aware AI assistant that uses your own API key.",
+          "Two main things: an open-source codebase under the MIT licence, and a built-in, schema-aware AI assistant that runs on the Claude Code, Codex, or Antigravity subscription you already have, or on your own API key.",
       },
       {
         question: "Can I run both?",
@@ -238,7 +238,7 @@ const ALTERNATIVES = {
       },
       {
         feature: "AI Assistant",
-        datapeek: "Yes (BYOK)",
+        datapeek: "Yes (your Claude Code / Codex plan or key)",
         alternative: "No",
         datapeekWins: true,
       },

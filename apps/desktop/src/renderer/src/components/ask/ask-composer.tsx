@@ -1,6 +1,14 @@
 import { forwardRef, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
-import { AiIcon, ArrowUpIcon, CaretRightIcon } from '@/components/icons'
-import { cn } from '@data-peek/ui'
+import { AiIcon, ArrowUpIcon, CaretDownIcon, CaretRightIcon } from '@/components/icons'
+import {
+  cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@data-peek/ui'
 import { providerNeedsKey } from '@shared/index'
 import { classifyInput, type AskMode } from '@/lib/ask-input'
 import { useAskProvider } from '@/hooks/use-ask-provider'
@@ -34,7 +42,14 @@ function Kbd({ children }: { children: React.ReactNode }) {
   )
 }
 
-/** Which AI answers, and whether it runs on a subscription or a metered key. */
+const pillClass =
+  'flex items-center gap-1.5 whitespace-nowrap rounded px-1.5 py-0.5 text-2xs transition-colors'
+
+/**
+ * Which AI answers, and whether it runs on a subscription or a metered key.
+ * Always one single-line control: it sits in the titlebar, where a row of
+ * per-CLI buttons wrapped and crowded out Ask.
+ */
 export function ProviderPill() {
   const { provider, label, isSubscription, detected, activate, openSettings } = useAskProvider()
   if (provider) {
@@ -43,7 +58,7 @@ export function ProviderPill() {
         type="button"
         onClick={openSettings}
         title="AI settings"
-        className="flex items-center gap-1.5 rounded px-1.5 py-0.5 text-2xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        className={cn(pillClass, 'text-muted-foreground hover:bg-muted hover:text-foreground')}
       >
         <span
           className={cn('size-1.5 rounded-full', isSubscription ? 'bg-success' : 'bg-primary')}
@@ -55,34 +70,57 @@ export function ProviderPill() {
       </button>
     )
   }
-  if (detected && detected.length > 0) {
+  if (detected && detected.length === 1) {
+    const [cli] = detected
     return (
-      <div className="flex items-center gap-1">
-        {detected.map((cli) => (
-          <button
-            key={cli.id}
-            type="button"
-            onClick={() => void activate(cli.id)}
-            className="flex items-center gap-1 rounded border border-primary/40 px-1.5 py-0.5 text-2xs text-primary transition-colors hover:bg-primary/10"
-          >
-            <AiIcon className="size-3" /> Use my {cli.label} subscription
+      <button
+        type="button"
+        onClick={() => void activate(cli.id)}
+        title={`Answer with your ${cli.label} subscription`}
+        className={cn(pillClass, 'text-primary hover:bg-primary/10')}
+      >
+        <span className="size-1.5 rounded-full border border-primary" />
+        Use {cli.label}
+        <span className="text-muted-foreground/50">your subscription</span>
+      </button>
+    )
+  }
+  if (detected && detected.length > 1) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" className={cn(pillClass, 'text-primary hover:bg-primary/10')}>
+            <span className="size-1.5 rounded-full border border-primary" />
+            Choose AI
+            <CaretDownIcon className="size-3 opacity-60" />
           </button>
-        ))}
-      </div>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-48">
+          <DropdownMenuLabel className="text-2xs font-normal text-muted-foreground">
+            Use your subscription
+          </DropdownMenuLabel>
+          {detected.map((cli) => (
+            <DropdownMenuItem key={cli.id} onSelect={() => void activate(cli.id)}>
+              <AiIcon className="size-3.5" />
+              {cli.label}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={openSettings}>Other providers…</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     )
   }
   if (detected === null) {
     return (
-      <span className="px-1.5 py-0.5 text-2xs text-muted-foreground/60">
-        Looking for your AI CLI
-      </span>
+      <span className={cn(pillClass, 'text-muted-foreground/60')}>Looking for your AI CLI</span>
     )
   }
   return (
     <button
       type="button"
       onClick={openSettings}
-      className="rounded px-1.5 py-0.5 text-2xs text-muted-foreground hover:bg-muted hover:text-foreground"
+      className={cn(pillClass, 'text-muted-foreground hover:bg-muted hover:text-foreground')}
     >
       Connect an AI
     </button>

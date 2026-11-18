@@ -35,7 +35,7 @@ describe("Pro price during Black Friday", () => {
     expect(screen.getByText("$29")).toHaveClass("line-through");
     expect(screen.getByText("Black Friday · 40% off")).toBeInTheDocument();
     expect(
-      screen.getByText(/Code BF26PEEK is applied at checkout, until 1 Dec\./),
+      screen.getByText(/Code BF26PEEK is applied at checkout, until 1 Dec \(Pacific time\)\./),
     ).toBeInTheDocument();
   });
 

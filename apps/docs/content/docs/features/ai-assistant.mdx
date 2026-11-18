@@ -22,7 +22,7 @@ data-peek includes a powerful AI assistant that helps you write SQL queries, gen
 Open **Settings → AI** (from the AI panel, the provider name in the header, or the command palette) and pick one provider. The app uses whichever provider is marked **In use**, and you can switch anytime.
 
 - **Claude Code (local CLI)** — _no API key._ If you have the `claude` CLI installed and signed in, click **Use** on its row under **Your subscription**. That single click makes it active, with nothing else to configure. See [Bring your own harness](#bring-your-own-harness-claude-code) below.
-- **API-key providers** (OpenAI, Anthropic, Google, …) — click **Add key**, paste your key, and click **Save**. If no AI is set up yet, saving also makes it active. Otherwise click **Use**. Keys are stored in your OS keychain and only ever sent to that provider.
+- **API-key providers** (OpenAI, Anthropic, Google, …) — click **Add key**, paste your key, and click **Save**. If no AI is set up yet, saving also makes it active. Otherwise click **Use**. Keys are stored on your device and only ever sent to that provider.
 - **Ollama** — local models, no key; set your Ollama URL and click **Use**.
 
 To use _only_ the local Claude CLI, just make **Claude Code (local CLI)** the active provider — the others can stay configured but unused.
@@ -204,7 +204,7 @@ You can refine queries in conversation:
 
 ## Privacy & Security
 
-- **BYOK model**: You use your own API key, so queries go directly to your chosen provider
+- **Your provider, directly**: A subscription CLI, your own API key, or Ollama. Requests go straight to the provider you chose, and data-peek never proxies them
 - **Schema context**: Only schema metadata (table/column names and types) is sent to the AI, not your actual data
 - **Local storage**: Conversation history is stored locally on your device
 - **No telemetry**: data-peek doesn't collect or transmit your queries or results

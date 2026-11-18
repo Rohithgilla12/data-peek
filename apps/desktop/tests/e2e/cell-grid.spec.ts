@@ -4,9 +4,9 @@ import { startSeededPostgres, type SeededPostgres } from './fixtures/postgres'
 /**
  * Keyboard cell-grid integration tests for the v0.23.0 feature.
  *
- * The cell-grid activates when a virtualized result mounts (row count > 50).
- * Tests use `generate_series` to produce 100-row results independent of seed
- * content so they're stable across seed edits.
+ * The cell-grid is active at every result size. Most tests use `generate_series`
+ * to produce 100-row (virtualized) results independent of seed content so they're
+ * stable across seed edits; grid-find.spec.ts covers the small, non-virtualized path.
  *
  * What's exercised end-to-end:
  *  - Auto-focus the first cell when a new query lands
@@ -18,13 +18,13 @@ import { startSeededPostgres, type SeededPostgres } from './fixtures/postgres'
  *  - Cmd+C copies the focused cell's value to the system clipboard, and the
  *    copy-flash pill appears
  *  - Esc closes the inspector and hands focus back to the grid so arrows resume
- *  - Small results (≤50 rows) do NOT mount the cell grid
+ *  - Small results (≤50 rows) mount the cell grid too
  *
  * Selector notes:
  *  - [data-cell-focus-overlay] — the cell focus ring (single DOM node)
  *  - [data-cell-row-stripe] — the row stripe behind the focus ring
  *  - [data-cell-inspector] — the docked inspector panel
- *  - [data-cell-row][data-cell-col] — every rendered virtualized cell
+ *  - [data-cell-row][data-cell-col] — every rendered cell, virtualized or not
  *  - .copy-flash-pill — the rising "copied" pill (class survives prod bundling)
  */
 
@@ -127,7 +127,7 @@ async function focusGrid(window: Page) {
 // Test 1: A 100-row result mounts the cell grid; smaller results don't
 // ---------------------------------------------------------------------------
 
-test('100-row result mounts the focus overlay; 5-row result does not', async ({ window }) => {
+test('100-row and 5-row results both mount the focus overlay', async ({ window }) => {
   await openQueryTab(window)
   await typeInMonaco(window, HUNDRED_ROW_QUERY)
   await runQuery(window)
@@ -146,14 +146,15 @@ test('100-row result mounts the focus overlay; 5-row result does not', async ({ 
   expect(offsets.y).toBe(40)
   expect(offsets.x).toBe(0)
 
-  // Now run a small (5-row) result and verify the overlay is gone.
+  // A small (5-row) result takes the plain-table path and still gets the grid.
   await typeInMonaco(window, 'SELECT i FROM generate_series(1, 5) AS i')
   await runQuery(window)
 
-  // Result has rendered; cell-grid should NOT have mounted (threshold > 50).
-  // Give the renderer a beat to swap result sets.
-  await window.waitForTimeout(500)
-  await expect(window.locator('[data-cell-focus-overlay]')).toHaveCount(0)
+  await expect(window.locator('[data-cell-row="4"][data-cell-col="0"]')).toBeVisible()
+  await expect(overlay).toBeVisible()
+  const smallOffsets = await readTransformOffsets(overlay)
+  expect(smallOffsets.x).toBe(0)
+  expect(smallOffsets.y).toBe(40)
 })
 
 // ---------------------------------------------------------------------------
