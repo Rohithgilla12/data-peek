@@ -4,17 +4,17 @@ const ways = [
   {
     kicker: "Your subscription",
     title: "Claude Code, Codex, Antigravity",
-    body: "data-peek finds the CLI you're already signed in to and drives it on your login. No key to paste, nothing stored, no second bill.",
+    body: "data-peek finds the installed CLI and runs it on the login you already have. No key to paste and no second bill.",
   },
   {
     kicker: "API key",
     title: "OpenAI, Anthropic, Google, and 5 more",
-    body: "Groq, DeepSeek, Mistral, xAI, and GLM too. Keys sit in your OS keychain and go straight to the provider.",
+    body: "Groq, DeepSeek, Mistral, xAI, and GLM too. Keys stay on your machine and go straight to the provider.",
   },
   {
     kicker: "Local",
     title: "Ollama",
-    body: "Run a model on your own machine and the prompt never leaves it.",
+    body: "Run Ollama on the same machine and the prompt never leaves it.",
   },
 ];
 
@@ -140,9 +140,9 @@ export function AiSection() {
             </h2>
             <p className="mt-6 text-[14px] leading-[1.65] text-[var(--n-fg-muted)] max-w-[52ch]">
               Ask your database questions in plain English on the Claude Code,
-              Codex, or Antigravity plan you already have. data-peek spots the
-              CLI on launch, and one click puts it to work. No API key, no
-              per-token meter, and no AI add-on to buy from us.
+              Codex, or Antigravity plan you already have. With no AI set up,
+              data-peek finds the installed CLI, and one click puts it to work.
+              No API key, no per-token meter, and no AI add-on to buy from us.
             </p>
 
             <ul className="mt-8 max-w-[52ch]">
@@ -196,9 +196,9 @@ export function AiSection() {
         </div>
 
         <p className="mt-6 text-[12px] text-[var(--n-fg-faint)]">
-          AI-written SQL that only reads runs on its own. Writes wait for you.
-          AI is free for personal use and included in Pro, and data-peek never
-          proxies your prompts.{" "}
+          AI-written reads run on their own unless the AI flags them for review.
+          Writes always wait for you. AI is free for personal use and included
+          in Pro, and data-peek never proxies your prompts.{" "}
           <Link
             href="https://docs.datapeek.dev/docs/features/ai-assistant"
             target="_blank"

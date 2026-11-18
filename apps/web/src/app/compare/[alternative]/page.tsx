@@ -202,7 +202,7 @@ const ALTERNATIVES = {
     whenUsTitle: "When data-peek is the better fit",
     whenUs: [
       "You want an open-source client you can read, fork, and trust.",
-      "You want a built-in, bring-your-own-key AI assistant for writing and explaining SQL.",
+      "You want a built-in AI assistant for writing and explaining SQL that runs on your Claude Code or Codex plan, or on your own key.",
       "You are working across PostgreSQL, MySQL, SQL Server, or SQLite and want them free for personal use.",
     ],
     migration:

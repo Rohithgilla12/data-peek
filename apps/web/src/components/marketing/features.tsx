@@ -79,7 +79,7 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
     items: [
       {
         title: "Your subscription, not a new bill",
-        body: "Runs on the Claude Code, Codex, or Antigravity CLI you already pay for. Found on launch, one click to use.",
+        body: "Runs on the Claude Code, Codex, or Antigravity CLI you already pay for. Found when no AI is set up, one click to use.",
         href: "#ai",
       },
       {
@@ -101,7 +101,7 @@ const categories: { id: string; label: string; items: Feature[] }[] = [
       },
       {
         title: "Bring your own key",
-        body: "OpenAI, Anthropic, Google, Groq, DeepSeek, Mistral, xAI, or GLM — or Ollama for a local model. Keys stay in your OS keychain.",
+        body: "OpenAI, Anthropic, Google, Groq, DeepSeek, Mistral, xAI, or GLM — or Ollama for a local model. Keys stay on your machine.",
       },
       {
         title: "MCP server",

@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     q: "How does the AI assistant work?",
-    a: "If you have the Claude Code, Codex, or Antigravity CLI installed and signed in, data-peek finds it on launch and one click puts it to work on your existing plan, with no API key. You can also add a key for OpenAI, Anthropic, Google, Groq, DeepSeek, Mistral, xAI, or GLM, or run a local Ollama model so the prompt never leaves your machine. data-peek sends your question and the relevant schema straight to the provider you chose. AI-written SQL that only reads runs on its own, and writes wait for you.",
+    a: "If you have the Claude Code, Codex, or Antigravity CLI installed and signed in, data-peek finds it when no AI is set up yet, and one click puts it to work on your existing plan, with no API key. You can also add a key for OpenAI, Anthropic, Google, Groq, DeepSeek, Mistral, xAI, or GLM, or run Ollama on your own machine so the prompt never leaves it. data-peek sends your question and the relevant schema straight to the provider you chose. AI-written reads run on their own unless the AI flags them for review, and writes always wait for you.",
   },
   {
     q: "Do I have to pay extra for the AI?",
