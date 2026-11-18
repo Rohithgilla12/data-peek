@@ -212,7 +212,7 @@ export function Pricing() {
             {saleShown && (
               <p className="mt-3 text-center text-[11.5px] text-[var(--n-fg-muted)]">
                 Code {BLACK_FRIDAY.code} is applied at checkout, until{" "}
-                {saleLastDay}.
+                {saleLastDay} (Pacific time).
               </p>
             )}
           </Tier>

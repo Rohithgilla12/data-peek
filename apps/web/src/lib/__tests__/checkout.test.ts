@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type DodoPayments from "dodopayments";
+import DodoPayments from "dodopayments";
 import { createCheckoutSession, type CheckoutClient } from "../checkout";
+
+function rejection(status: number, code: string) {
+  return new DodoPayments.APIError(status, { code }, code, undefined);
+}
 
 const params: DodoPayments.CheckoutSessionCreateParams = {
   product_cart: [{ product_id: "prd_test", quantity: 1 }],
@@ -47,7 +51,7 @@ describe("createCheckoutSession", () => {
 
   it("retries once without the code when Dodo rejects it, and logs", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => {});
-    const rejected = new Error("discount code not found");
+    const rejected = rejection(422, "INVALID_DISCOUNT_CODE");
     const client = fakeClient(rejected, "ok");
 
     await expect(
@@ -66,11 +70,29 @@ describe("createCheckoutSession", () => {
   it("surfaces the full-price error when the retry also fails", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const down = new Error("service unavailable");
-    const client = fakeClient(new Error("bad code"), down);
+    const client = fakeClient(rejection(400, "DISCOUNT_CODE_EXPIRED"), down);
 
     await expect(
       createCheckoutSession(client, params, duringSale),
     ).rejects.toBe(down);
     expect(client.calls).toHaveLength(2);
   });
+
+  it.each([
+    ["a Dodo outage", () => rejection(503, "SERVICE_UNAVAILABLE")],
+    ["a network failure", () => new Error("fetch failed")],
+  ])(
+    "does not drop the code on %s, so nobody is quietly charged full price",
+    async (_, makeError) => {
+      const error = makeError();
+      const client = fakeClient(error, "ok");
+
+      await expect(
+        createCheckoutSession(client, params, duringSale),
+      ).rejects.toBe(error);
+      expect(client.calls).toEqual([
+        { ...params, discount_codes: ["BF26PEEK"] },
+      ]);
+    },
+  );
 });
