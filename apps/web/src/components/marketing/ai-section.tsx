@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MotionLoop } from "./motion-loop";
 
 const ways = [
   {
@@ -24,110 +25,12 @@ const moves = [
   { k: "⇥", v: "Tab flips what you typed between a question and SQL" },
 ];
 
-function ChooseAiMock() {
-  return (
-    <div
-      aria-hidden
-      className="relative p-5 sm:p-6"
-      style={{
-        border: "1px solid var(--n-line)",
-        background: "var(--n-bg-sunken)",
-      }}
-    >
-      <div
-        className="flex min-w-0 items-center gap-2 pb-4"
-        style={{ borderBottom: "1px solid var(--n-line-soft)" }}
-      >
-        <span className="flex gap-1.5">
-          {[0, 1, 2].map((i) => (
-            <span
-              key={i}
-              className="h-2.5 w-2.5 rounded-full"
-              style={{ background: "var(--n-line)" }}
-            />
-          ))}
-        </span>
-        <span className="ml-3 min-w-0 truncate text-[11px] text-[var(--n-fg-faint)]">
-          data-peek · prod-replica
-        </span>
-        <span
-          className="ml-auto shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 h-6 px-2 text-[11px]"
-          style={{
-            color: "var(--n-accent)",
-            background: "var(--n-bg-raised)",
-            border: "1px solid var(--n-line-soft)",
-          }}
-        >
-          <span
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ border: "1px solid var(--n-accent)" }}
-          />
-          Choose AI
-          <span className="text-[9px] opacity-60">▼</span>
-        </span>
-      </div>
-
-      <div className="flex justify-end pt-2">
-        <div
-          className="w-[220px] py-1.5 text-[12.5px]"
-          style={{
-            border: "1px solid var(--n-line)",
-            background: "var(--n-bg-raised)",
-            boxShadow: "0 12px 32px -12px rgb(0 0 0 / 0.45)",
-          }}
-        >
-          <div className="px-3 py-1 text-[11px] text-[var(--n-fg-faint)]">
-            Use your subscription
-          </div>
-          {["Claude", "Codex", "Antigravity"].map((name, i) => (
-            <div
-              key={name}
-              className="flex items-center gap-2 px-3 h-7 text-[var(--n-fg)]"
-              style={i === 0 ? { background: "var(--n-bg-sunken)" } : undefined}
-            >
-              <span
-                className="text-[10px]"
-                style={{ color: "var(--n-accent)" }}
-              >
-                ✦
-              </span>
-              {name}
-            </div>
-          ))}
-          <div
-            className="my-1.5"
-            style={{ borderTop: "1px solid var(--n-line-soft)" }}
-          />
-          <div className="px-3 h-7 flex items-center text-[var(--n-fg-muted)]">
-            Other providers…
-          </div>
-        </div>
-      </div>
-
-      <div
-        className="mt-6 pt-4 flex items-center gap-2 text-[11px] text-[var(--n-fg-muted)]"
-        style={{ borderTop: "1px solid var(--n-line-soft)" }}
-      >
-        <span
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ background: "var(--n-accent)" }}
-        />
-        Claude
-        <span className="text-[var(--n-fg-faint)]">your subscription</span>
-        <span className="ml-auto text-[var(--n-fg-faint)]">
-          after one click
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export function AiSection() {
   return (
     <section id="ai" className="relative">
       <div className="mx-auto max-w-[1240px] px-5 sm:px-8 py-24 sm:py-32">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-          <div className="lg:col-span-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-end">
+          <div className="lg:col-span-7">
             <div className="text-[10.5px] uppercase tracking-[0.18em] text-[var(--n-fg-faint)]">
               03 — ai
             </div>
@@ -144,8 +47,10 @@ export function AiSection() {
               data-peek finds the installed CLI, and one click puts it to work.
               No API key to set up and no AI add-on to buy from us.
             </p>
+          </div>
 
-            <ul className="mt-8 max-w-[52ch]">
+          <div className="lg:col-span-5">
+            <ul className="max-w-[52ch]">
               {moves.map((m) => (
                 <li
                   key={m.k}
@@ -166,10 +71,13 @@ export function AiSection() {
               ))}
             </ul>
           </div>
+        </div>
 
-          <div className="lg:col-span-6">
-            <ChooseAiMock />
-          </div>
+        <div className="mt-12">
+          <MotionLoop
+            name="ask-ai"
+            label="In data-peek, Claude is picked from the Choose AI menu. A plain-English question comes back as SQL that runs on its own, with five rows and a chart. A write stops at Run it."
+          />
         </div>
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-4">

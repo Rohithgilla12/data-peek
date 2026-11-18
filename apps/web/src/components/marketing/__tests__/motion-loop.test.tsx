@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { HeroVideo } from "../hero-video";
+import { MotionLoop } from "../motion-loop";
 import { observers, setReducedMotion } from "../../../../vitest.setup";
 
-describe("HeroVideo", () => {
+describe("MotionLoop", () => {
   beforeEach(() => {
     observers.length = 0;
     setReducedMotion(false);
@@ -11,7 +11,7 @@ describe("HeroVideo", () => {
   });
 
   it("renders both sources, a poster, and explicit dimensions", () => {
-    render(<HeroVideo />);
+    render(<MotionLoop name="hero" label="hero loop" />);
     const video = screen.getByTestId("hero-video") as HTMLVideoElement;
 
     expect(video).toHaveAttribute("poster", "/motion/hero-poster.webp");
@@ -33,8 +33,21 @@ describe("HeroVideo", () => {
     ]);
   });
 
+  it("serves another kit loop by name, with its own label", () => {
+    render(<MotionLoop name="ask-ai" label="Ask on your subscription" />);
+    const video = screen.getByTestId("ask-ai-video") as HTMLVideoElement;
+
+    expect(video).toHaveAttribute("poster", "/motion/ask-ai-poster.webp");
+    expect(video).toHaveAttribute("aria-label", "Ask on your subscription");
+    expect(
+      Array.from(video.querySelectorAll("source")).map((s) =>
+        s.getAttribute("src"),
+      ),
+    ).toEqual(["/motion/ask-ai.webm", "/motion/ask-ai.mp4"]);
+  });
+
   it("plays when scrolled into view and pauses when it leaves", () => {
-    render(<HeroVideo />);
+    render(<MotionLoop name="hero" label="hero loop" />);
     const video = screen.getByTestId("hero-video") as HTMLVideoElement;
 
     expect(video.play).not.toHaveBeenCalled();
@@ -47,7 +60,7 @@ describe("HeroVideo", () => {
   });
 
   it("follows the newest entry when one notification batches several", () => {
-    render(<HeroVideo />);
+    render(<MotionLoop name="hero" label="hero loop" />);
     const video = screen.getByTestId("hero-video") as HTMLVideoElement;
 
     observers[0].emit(true, false);
@@ -59,12 +72,12 @@ describe("HeroVideo", () => {
   });
 
   it("ignores entries delivered after cleanup", () => {
-    const { rerender } = render(<HeroVideo />);
+    const { rerender } = render(<MotionLoop name="hero" label="hero loop" />);
     const video = screen.getByTestId("hero-video") as HTMLVideoElement;
     const stale = observers[0];
 
     setReducedMotion(true);
-    rerender(<HeroVideo />);
+    rerender(<MotionLoop name="hero" label="hero loop" />);
     // A visible entry that was already queued when the observer disconnected.
     stale.emit(true);
 
@@ -73,7 +86,7 @@ describe("HeroVideo", () => {
 
   it("never autoplays under prefers-reduced-motion, and exposes native controls instead", () => {
     setReducedMotion(true);
-    render(<HeroVideo />);
+    render(<MotionLoop name="hero" label="hero loop" />);
     const video = screen.getByTestId("hero-video") as HTMLVideoElement;
 
     // No visibility observer at all, so nothing can start playback.
@@ -83,13 +96,13 @@ describe("HeroVideo", () => {
   });
 
   it("pauses straight away when reduced motion is turned on mid-playback", () => {
-    const { rerender } = render(<HeroVideo />);
+    const { rerender } = render(<MotionLoop name="hero" label="hero loop" />);
     const video = screen.getByTestId("hero-video") as HTMLVideoElement;
     observers[0].emit(true);
     expect(video.play).toHaveBeenCalledTimes(1);
 
     setReducedMotion(true);
-    rerender(<HeroVideo />);
+    rerender(<MotionLoop name="hero" label="hero loop" />);
 
     expect(video.pause).toHaveBeenCalledTimes(1);
     expect(observers[0].disconnect).toHaveBeenCalled();
@@ -97,7 +110,7 @@ describe("HeroVideo", () => {
   });
 
   it("does not expose controls when motion is not reduced", () => {
-    render(<HeroVideo />);
+    render(<MotionLoop name="hero" label="hero loop" />);
     expect(screen.getByTestId("hero-video")).not.toHaveAttribute("controls");
   });
 });

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { appVersion } from "@/lib/version";
 import { Header } from "@/components/marketing/header";
 import { Footer } from "@/components/marketing/footer";
 import { ProPrice } from "@/components/marketing/pro-price";
@@ -118,7 +119,7 @@ export default function DownloadPage() {
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8 glass-card">
               <Zap className="w-3.5 h-3.5 text-(--color-warning)" />
               <span className="text-[10px] font-mono uppercase tracking-widest text-(--color-text-secondary)">
-                v0.19.0 — Latest Stable
+                v{appVersion} — Latest Stable
               </span>
             </div>
 

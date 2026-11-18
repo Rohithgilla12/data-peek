@@ -1,0 +1,78 @@
+{
+  "category": "ui-demo",
+  "category_note": "Hand-built product UI from repo source (no URL capture). Same window chrome, pointer, and envelope as mcp-approval.",
+  "duration_s": 10,
+  "fps": 30,
+  "canvas": {
+    "w": 1920,
+    "h": 1200,
+    "aspect": "16:10"
+  },
+  "style": "data-peek motion kit: dark devtool, monospace-native, quiet confidence. One cropped data-peek window on an Ask tab, no kit topbar so the answer block has room.",
+  "palette": [
+    "#101216",
+    "#171a20",
+    "#ebecee",
+    "#9aa0ad",
+    "#6b8cf5",
+    "#3b52c4",
+    "#4ade80",
+    "#f2555a",
+    "#2a2f3a",
+    "#f5b14c"
+  ],
+  "font": "Geist Variable + Geist Mono Variable (local woff2)",
+  "beats": [0.25, 1.6, 3.05, 4.4, 6.2, 7.98, 9.2],
+  "poster_s": 5.8,
+  "export": "mp4",
+  "seamless_loop": true,
+  "asset_needs": [],
+  "block": null,
+  "reused_techniques": {
+    "oversized-cursor": "macOS arrow path from mcp-approval, tip-anchored transform origin, glide then press",
+    "per-glyph-typing": "composer text split into glyph spans; tl.set reveals each glyph and moves the caret to its measured right edge",
+    "clip-reveal": "SQL lines and the answer card open with clip-path inset so empty layout never shows"
+  },
+  "content": {
+    "layout": {
+      "window": "x 100 to 1820, top 96, bleeds off the bottom edge; titlebar 70, tab strip 58",
+      "viewport": "Ask scroller 700 px tall; empty state bottom-aligned, blocks top-aligned and scrolled to keep the newest block in view",
+      "composer": "pinned under the scroller; hint row ends at y 1112, >= 80 px from the bottom edge",
+      "menu": "Choose AI dropdown opens above the composer pill, left-aligned to it"
+    },
+    "copy": {
+      "connection": "prod-replica",
+      "placeholder": "Ask about prod-replica, or type SQL",
+      "menu": ["Use your subscription", "Claude", "Codex", "Antigravity", "Other providers…"],
+      "pill_active": "Claude your subscription",
+      "gate_hint": "AI-written SQL that only reads runs on its own. Writes wait for you.",
+      "q1": "top 5 customers by revenue this month",
+      "sql1": "SELECT c.name, SUM(o.total) AS revenue\nFROM orders o JOIN customers c ON c.id = o.customer_id\nWHERE o.created_at >= date_trunc('month', now())\nGROUP BY c.name ORDER BY revenue DESC LIMIT 5;",
+      "result_meta": "5 rows · 38 ms · Chart | Table · Open in editor",
+      "rows": {
+        "Halcyon Labs": 48210,
+        "Ferro & Co": 41980,
+        "Brightline": 36450,
+        "Nordwave": 29730,
+        "Okafor Bakes": 24160
+      },
+      "q2": "mark order 4182 as refunded",
+      "sql2": "UPDATE orders\nSET status = 'refunded'\nWHERE id = 4182;",
+      "hold": "This statement can change data. Nothing has run yet.",
+      "button": "Run it"
+    },
+    "beats": [
+      { "id": "pick", "start": 0.25, "end": 1.6, "motion": "pointer glides to the composer Choose AI pill, press; menu scales in (expo.out 0.2 s); pointer to Claude, press; menu and composer pill fade; titlebar pill crossfades to the active state" },
+      { "id": "ask", "start": 1.6, "end": 3.05, "motion": "⌘ T kbd in the hint row flashes once; q1 types glyph by glyph with the auto chip; ↵ kbd flashes and send presses" },
+      { "id": "answer", "start": 3.05, "end": 6.2, "motion": "empty state out, block in, tab renames; Thinking ping; answer and SQL lines reveal; Running row; card unclips to the result and bars grow (expo.out, 0.07 s stagger). Dominant beat; poster at 5.8 s" },
+      { "id": "write", "start": 6.2, "end": 9.2, "motion": "q2 types; list scrolls to the new block; Thinking; SQL reveals; hold row lands and Run it gets a soft accent halo that breathes once. Nothing runs" },
+      { "id": "reset", "start": 9.2, "end": 10.0, "motion": "list fades (power2.in); titlebar pill, tab title, composer pill and empty state return; exact frame-0 state from about 9.8 s" }
+    ],
+    "ambient": "one radial glow breathing on sine.inOut, yoyo over the full 10 s so it returns to its frame-0 scale"
+  },
+  "truth_deviations": {
+    "chart_and_grid": "The real block shows the chart or the table (a Chart | Table toggle), never both, and the chart draws vertical bars. The piece shows the chart view with the toggle and the real '5 rows' meta instead of a grid beside a horizontal chart.",
+    "titlebar_pill": "The titlebar renders ProviderPill whenever the app runs, so frame 0 shows Choose AI in the titlebar as well as the composer instead of an empty slot.",
+    "cmd_t": "⌘T opens a new Ask tab; the piece highlights the composer's own '⌘ T new ask' hint instead of opening a second tab."
+  }
+}

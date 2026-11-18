@@ -3,17 +3,18 @@
 import { useEffect, useRef } from "react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 
-// Rendered from apps/video/hyperframes/motion-kit/hero (see KIT.md there).
-const SRC = "/motion/hero";
+// Loops are rendered from apps/video/hyperframes/motion-kit/<name> (see KIT.md
+// there) and exported to /public/motion at the kit's 1920 × 1200 canvas.
 const WIDTH = 1920;
 const HEIGHT = 1200;
 
 /**
- * The landing-page hero loop. Plays only while on screen, so a visitor who
- * scrolls past it stops paying for it. Under prefers-reduced-motion it never
- * autoplays; the poster shows with native controls so a click still plays it.
+ * A motion-kit loop. Plays only while on screen, so a visitor who scrolls past
+ * it stops paying for it. Under prefers-reduced-motion it never autoplays; the
+ * poster shows with native controls so a click still plays it.
  */
-export function HeroVideo() {
+export function MotionLoop({ name, label }: { name: string; label: string }) {
+  const src = `/motion/${name}`;
   const ref = useRef<HTMLVideoElement>(null);
   const reduced = useReducedMotion();
 
@@ -58,8 +59,8 @@ export function HeroVideo() {
   return (
     <video
       ref={ref}
-      data-testid="hero-video"
-      poster={`${SRC}-poster.webp`}
+      data-testid={`${name}-video`}
+      poster={`${src}-poster.webp`}
       width={WIDTH}
       height={HEIGHT}
       muted
@@ -67,7 +68,7 @@ export function HeroVideo() {
       playsInline
       preload="metadata"
       controls={reduced || undefined}
-      aria-label="A SQL query typed into data-peek returns 8 rows in 38 ms, then the view pulls back through the schema's tables into the data-peek logo"
+      aria-label={label}
       className="w-full h-auto block"
       style={{
         background: "var(--n-bg-sunken)",
@@ -76,8 +77,8 @@ export function HeroVideo() {
           "0 1px 0 oklch(1 0 0 / 0.04) inset, 0 40px 80px -20px oklch(0 0 0 / 0.5)",
       }}
     >
-      <source src={`${SRC}.webm`} type="video/webm" />
-      <source src={`${SRC}.mp4`} type="video/mp4" />
+      <source src={`${src}.webm`} type="video/webm" />
+      <source src={`${src}.mp4`} type="video/mp4" />
     </video>
   );
 }
