@@ -1,8 +1,8 @@
 import * as React from 'react'
 import type { Virtualizer } from '@tanstack/react-virtual'
-import type { ForeignKeyInfo } from '@data-peek/shared'
 import {
   buildGeometry,
+  containsCell,
   rangeBounds,
   type CellCopyEvent,
   type CellGridGeometry,
@@ -12,28 +12,42 @@ import {
 } from './cell-grid-types'
 import { useCellNavigation } from './use-cell-navigation'
 import { useCellSelection } from './use-cell-selection'
-import { serializeSelection } from '@/lib/selection-serialize'
+import {
+  cellText,
+  serializeSelection,
+  type SelectionFormat,
+  type SerializeSelectionOptions
+} from '@/lib/selection-serialize'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 
-interface CellGridRow {
-  original: Record<string, unknown>
+const FORMAT_LABEL: Record<SelectionFormat, string> = {
+  tsv: 'TSV',
+  csv: 'CSV',
+  json: 'JSON',
+  markdown: 'Markdown'
 }
 
-interface CellGridColumn {
-  name: string
-  dataType: string
-  foreignKey?: ForeignKeyInfo
+export interface SelectionCopyTarget {
+  /** True when a multi-cell selection exists and its primary range, the part copy serializes, holds pos. */
+  covers: (pos: CellPosition) => boolean
+  copy: (format: SelectionFormat, options?: SerializeSelectionOptions) => void
 }
 
 interface UseCellGridOptions {
-  rows: ReadonlyArray<CellGridRow>
-  columnDefs: ReadonlyArray<CellGridColumn>
+  rowCount: number
+  colCount: number
+  /** Identifies the result's schema; a change re-seeds focus at the first cell. */
+  columnKey: string
+  /**
+   * The table's view of a cell, with masked values already nulled. Copy, stats,
+   * and the inspector all read through it so none of them can leak a masked value.
+   */
+  getCell: (pos: CellPosition) => CellSnapshot
   columnWidths: number[]
   rowHeight: number
   headerHeight: number
   containerRef: React.RefObject<HTMLDivElement | null>
   virtualizer: Virtualizer<HTMLDivElement, Element>
-  enabled?: boolean
 }
 
 export interface UseCellGridResult {
@@ -44,6 +58,8 @@ export interface UseCellGridResult {
   inspectorCell: CellSnapshot | null
   copyFlash: CellCopyEvent | null
   selection: CellSelection | null
+  selectionCopy: SelectionCopyTarget
+  setFocus: (next: CellPosition | null) => void
   setSelection: (next: CellSelection | null) => void
   extendTo: (pos: CellPosition) => void
   toggleSparse: (pos: CellPosition) => void
@@ -54,35 +70,22 @@ export interface UseCellGridResult {
 }
 
 export function useCellGrid({
-  rows,
-  columnDefs,
+  rowCount,
+  colCount,
+  columnKey,
+  getCell,
   columnWidths,
   rowHeight,
   headerHeight,
   containerRef,
-  virtualizer,
-  enabled = true
+  virtualizer
 }: UseCellGridOptions): UseCellGridResult {
-  const rowCount = rows.length
-  const colCount = columnDefs.length
-
   const geometry = React.useMemo(
     () => buildGeometry(columnWidths, rowHeight, headerHeight),
     [columnWidths, rowHeight, headerHeight]
   )
 
-  const ready = enabled && columnWidths.length > 0
-
-  const getCell = React.useCallback(
-    (pos: CellPosition): CellSnapshot => {
-      const row = rows[pos.row]
-      const col = columnDefs[pos.col]
-      if (!row || !col) return { value: undefined, columnName: '', dataType: '' }
-      const value = row.original[col.name]
-      return { value, columnName: col.name, dataType: col.dataType, foreignKey: col.foreignKey }
-    },
-    [rows, columnDefs]
-  )
+  const ready = columnWidths.length > 0
 
   const [inspectorOpen, setInspectorOpen] = React.useState(false)
   const [copyFlash, setCopyFlash] = React.useState<CellCopyEvent | null>(null)
@@ -107,29 +110,49 @@ export function useCellGrid({
 
   const selectionRef = React.useRef<CellSelection | null>(null)
 
-  const handleCopy = React.useCallback(
-    (pos: CellPosition) => {
+  const copySelection = React.useCallback(
+    (format: SelectionFormat, options?: SerializeSelectionOptions) => {
       const currentSelection = selectionRef.current
-      if (currentSelection) {
-        const text = serializeSelection(currentSelection, 'tsv', getCell)
-        const { r1, c1, r2, c2 } = rangeBounds(currentSelection.primary)
-        const count = (r2 - r1 + 1) * (c2 - c1 + 1)
-        pendingFlash.current = {
-          pos: currentSelection.primary.active,
-          kind: 'range',
-          count
-        }
-        void copy(text)
-        return
+      if (!currentSelection) return
+      const text = serializeSelection(currentSelection, format, getCell, options)
+      const { r1, c1, r2, c2 } = rangeBounds(currentSelection.primary)
+      pendingFlash.current = {
+        pos: currentSelection.primary.active,
+        kind: 'range',
+        count: (r2 - r1 + 1) * (c2 - c1 + 1),
+        label: format === 'tsv' && !options?.includeHeaders ? undefined : FORMAT_LABEL[format]
       }
-
-      const { value } = getCell(pos)
-      if (value === null || value === undefined) return
-      const text = typeof value === 'object' ? JSON.stringify(value) : String(value)
-      pendingFlash.current = { pos, kind: 'cell', count: 1 }
       void copy(text)
     },
     [getCell, copy]
+  )
+
+  const handleCopy = React.useCallback(
+    (pos: CellPosition) => {
+      if (selectionRef.current) {
+        copySelection('tsv')
+        return
+      }
+      const text = cellText(getCell(pos).value)
+      if (text === null) return
+      pendingFlash.current = { pos, kind: 'cell', count: 1 }
+      void copy(text)
+    },
+    [getCell, copy, copySelection]
+  )
+
+  const selectionCopy = React.useMemo<SelectionCopyTarget>(
+    () => ({
+      covers: (pos) => {
+        const current = selectionRef.current
+        if (!current) return false
+        const { r1, c1, r2, c2 } = rangeBounds(current.primary)
+        const isMulti = r1 !== r2 || c1 !== c2 || current.additional.length > 0
+        return isMulti && containsCell(current.primary, pos)
+      },
+      copy: copySelection
+    }),
+    [copySelection]
   )
 
   const { focus, setFocus, move } = useCellNavigation({
@@ -161,8 +184,6 @@ export function useCellGrid({
     selectionRef.current = selection
   }, [selection])
 
-  // columnKey identifies "same schema" across filter/sort/pagination.
-  const columnKey = React.useMemo(() => columnDefs.map((c) => c.name).join(','), [columnDefs])
   const lastColumnKey = React.useRef<string | null>(null)
   React.useEffect(() => {
     if (!ready) return
@@ -214,11 +235,14 @@ export function useCellGrid({
       } else if (e.metaKey || e.ctrlKey) {
         toggleSparse(pos)
       } else {
+        // Selection only collapses when focus moves, so a plain click on the
+        // already-focused cell has to clear it explicitly.
+        clearSelection()
         setFocus(pos)
       }
       containerRef.current?.focus({ preventScroll: true })
     },
-    [ready, extendTo, toggleSparse, setFocus, containerRef]
+    [ready, extendTo, toggleSparse, clearSelection, setFocus, containerRef]
   )
 
   const inspectorCell = React.useMemo(
@@ -233,6 +257,8 @@ export function useCellGrid({
     inspectorCell,
     copyFlash,
     selection,
+    selectionCopy,
+    setFocus,
     setSelection,
     extendTo,
     toggleSparse,

@@ -4,7 +4,8 @@ import {
   cellText,
   escapeTSVValue,
   escapeCSVValue,
-  escapeMarkdownValue
+  escapeMarkdownValue,
+  SELECTION_COPY_CHOICES
 } from '../selection-serialize'
 import type {
   CellSelection,
@@ -273,5 +274,59 @@ describe('cellText', () => {
     expect(cellText(0)).toBe('0')
     expect(cellText(false)).toBe('false')
     expect(cellText({ a: [1, 2] })).toBe('{"a":[1,2]}')
+  })
+})
+
+describe('Copy Selection As', () => {
+  // A 2x2 grid whose second column is masked: the table's snapshot nulls it.
+  const rows = [
+    { id: 1, email: 'ada@example.com' },
+    { id: 2, email: 'bob@example.com' }
+  ]
+  const columns = ['id', 'email']
+  const maskedSnapshot = (pos: CellPosition): CellSnapshot => {
+    const columnName = columns[pos.col]
+    const isMasked = columnName === 'email'
+    const value = rows[pos.row][columnName as 'id' | 'email']
+    return { columnName, dataType: 'text', value: isMasked ? null : value, isMasked }
+  }
+  const all: CellSelection = {
+    primary: { anchor: { row: 0, col: 0 }, active: { row: 1, col: 1 } },
+    additional: []
+  }
+
+  function copyAs(label: string): string {
+    const choice = SELECTION_COPY_CHOICES.find((c) => c.label === label)
+    if (!choice) throw new Error(`no choice ${label}`)
+    return serializeSelection(all, choice.format, maskedSnapshot, {
+      includeHeaders: choice.includeHeaders
+    })
+  }
+
+  it('offers the five formats in menu order', () => {
+    expect(SELECTION_COPY_CHOICES.map((c) => c.label)).toEqual([
+      'TSV',
+      'TSV with headers',
+      'CSV',
+      'JSON',
+      'Markdown'
+    ])
+  })
+
+  it('serializes each format with the right headers and masked values blank', () => {
+    expect(copyAs('TSV')).toBe('1\t\n2\t')
+    expect(copyAs('TSV with headers')).toBe('id\temail\n1\t\n2\t')
+    expect(copyAs('CSV')).toBe('id,email\n1,\n2,')
+    expect(JSON.parse(copyAs('JSON'))).toEqual([
+      { id: 1, email: null },
+      { id: 2, email: null }
+    ])
+    expect(copyAs('Markdown')).toBe('| id | email |\n| --- | --- |\n| 1 |  |\n| 2 |  |')
+  })
+
+  it('never emits a masked value in any format', () => {
+    for (const choice of SELECTION_COPY_CHOICES) {
+      expect(copyAs(choice.label)).not.toContain('example.com')
+    }
   })
 })

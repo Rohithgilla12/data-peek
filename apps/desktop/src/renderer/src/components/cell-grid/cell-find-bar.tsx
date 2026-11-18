@@ -25,6 +25,8 @@ export interface CellFindBarProps {
   matchCount?: number
   /** Currently active match index (0-based). */
   currentMatchIndex?: number
+  /** Shown in place of the match count, e.g. when the needle is not a valid regex. */
+  error?: string
   /** Controlled search needle. */
   needle?: string
   /** Callback when search needle changes. */
@@ -51,6 +53,7 @@ export function CellFindBar({
   onSearchChange,
   matchCount,
   currentMatchIndex,
+  error,
   needle: controlledNeedle,
   onNeedleChange,
   caseSensitive: controlledCaseSensitive,
@@ -210,8 +213,6 @@ export function CellFindBar({
   const isMatchCountKnown = matchCount !== undefined
   const hasZeroMatches = isMatchCountKnown && matchCount === 0
   const totalMatches = matchCount ?? 0
-  const activeMatchNum =
-    totalMatches > 0 && currentMatchIndex !== undefined ? currentMatchIndex + 1 : 1
 
   return (
     <div
@@ -245,9 +246,12 @@ export function CellFindBar({
               } else {
                 handleFindNext()
               }
-            } else if (e.key === 'Escape') {
+            } else if (e.altKey && e.code === 'KeyC') {
               e.preventDefault()
-              handleClose()
+              handleToggleCase()
+            } else if (e.altKey && e.code === 'KeyR') {
+              e.preventDefault()
+              handleToggleRegex()
             }
           }}
           placeholder="Find..."
@@ -294,16 +298,20 @@ export function CellFindBar({
       </div>
 
       <div className="flex items-center min-w-[70px] px-1 text-2xs font-mono tabular-nums text-muted-foreground">
-        {hasNeedle ? (
-          hasZeroMatches ? (
-            <span className="text-destructive font-medium">No matches</span>
-          ) : isMatchCountKnown ? (
-            <span>
-              {activeMatchNum} of {totalMatches} matches
-            </span>
-          ) : currentMatchIndex !== undefined ? (
-            <span>Match {currentMatchIndex + 1}</span>
-          ) : null
+        {!hasNeedle ? null : error ? (
+          <span className="text-destructive font-medium" title={error}>
+            Invalid regex
+          </span>
+        ) : hasZeroMatches ? (
+          <span className="text-destructive font-medium">No matches</span>
+        ) : isMatchCountKnown ? (
+          <span data-testid="cell-find-count">
+            {currentMatchIndex !== undefined
+              ? `${currentMatchIndex + 1} of ${totalMatches}`
+              : `${totalMatches} ${totalMatches === 1 ? 'match' : 'matches'}`}
+          </span>
+        ) : currentMatchIndex !== undefined ? (
+          <span>Match {currentMatchIndex + 1}</span>
         ) : null}
       </div>
 
@@ -313,7 +321,7 @@ export function CellFindBar({
           variant="ghost"
           size="icon"
           onClick={handleFindPrev}
-          disabled={!hasNeedle || hasZeroMatches}
+          disabled={!hasNeedle || hasZeroMatches || Boolean(error)}
           aria-label="Previous Match"
           title="Previous Match (Shift+Enter)"
           className="h-6 w-6 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"
@@ -325,7 +333,7 @@ export function CellFindBar({
           variant="ghost"
           size="icon"
           onClick={handleFindNext}
-          disabled={!hasNeedle || hasZeroMatches}
+          disabled={!hasNeedle || hasZeroMatches || Boolean(error)}
           aria-label="Next Match"
           title="Next Match (Enter)"
           className="h-6 w-6 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40"

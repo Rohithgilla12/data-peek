@@ -11,6 +11,21 @@ export interface SerializeSelectionOptions {
   includeHeaders?: boolean
 }
 
+export interface SelectionCopyChoice {
+  label: string
+  format: SelectionFormat
+  includeHeaders: boolean
+}
+
+/** The "Copy Selection As" menu, in display order. */
+export const SELECTION_COPY_CHOICES: ReadonlyArray<SelectionCopyChoice> = [
+  { label: 'TSV', format: 'tsv', includeHeaders: false },
+  { label: 'TSV with headers', format: 'tsv', includeHeaders: true },
+  { label: 'CSV', format: 'csv', includeHeaders: true },
+  { label: 'JSON', format: 'json', includeHeaders: true },
+  { label: 'Markdown', format: 'markdown', includeHeaders: true }
+]
+
 /**
  * The text a cell contributes to the clipboard, or null for an empty cell. Find
  * matches against this same string, so what find highlights is what copy emits.

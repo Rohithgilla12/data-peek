@@ -61,8 +61,12 @@ import {
   CellGridInspector,
   CellGridOverlays,
   CellSelectionStats,
+  GridFindBar,
   type CellPosition,
-  useCellGrid
+  type CellSnapshot,
+  useCellGrid,
+  useGridFind,
+  useGridMetrics
 } from '@/components/cell-grid'
 import { WatchDecorationOverlay } from '@/components/cell-grid/watch-decoration-overlay'
 import { useWatchStore } from '@/stores/watch-store'
@@ -592,8 +596,8 @@ export function DataTable<TData extends Record<string, unknown>>({
   }, [sortChips, filterChips, table])
 
   const tableContainerRef = React.useRef<HTMLDivElement>(null)
+  const gridWrapperRef = React.useRef<HTMLDivElement>(null)
   const headerRef = React.useRef<HTMLTableRowElement>(null)
-  const [columnWidths, setColumnWidths] = React.useState<number[]>([])
 
   const rows = table.getRowModel().rows
   const shouldVirtualize = rows.length > VIRTUALIZATION_THRESHOLD
@@ -602,11 +606,11 @@ export function DataTable<TData extends Record<string, unknown>>({
   // watch diff must not decorate them.
   const isPinnedView = isPinnedDiffView(diffOverlay)
 
-  // Below the threshold the geometry overlay can't paint (no measured column
-  // offsets), so the row map further down tints cells inline instead. Scoped to
-  // the non-virtualized case on purpose: this subscription re-renders the whole
-  // grid on every tick, which is only acceptable at <= 50 rows — and there the
-  // grid re-renders anyway, since a tick replaces `tab.result`.
+  // Below the threshold the row map further down tints cells inline instead of
+  // using the geometry overlay. Scoped to the non-virtualized case on purpose:
+  // this subscription re-renders the whole grid on every tick, which is only
+  // acceptable at <= 50 rows — and there the grid re-renders anyway, since a
+  // tick replaces `tab.result`.
   const inlineWatchDiff = useWatchStore((s) =>
     selectInlineWatchDiff(tabId && !isPinnedView ? s.states[tabId] : undefined, shouldVirtualize)
   )
@@ -619,52 +623,10 @@ export function DataTable<TData extends Record<string, unknown>>({
   })
 
   const columnKey = columnDefs.map((c) => c.name).join(',')
-
-  React.useEffect(() => {
-    setColumnWidths([])
-  }, [columnKey])
-
-  React.useEffect(() => {
-    if (!shouldVirtualize || !headerRef.current) return
-
-    const measureWidths = () => {
-      const headerCells = headerRef.current?.querySelectorAll('th')
-      if (!headerCells) return
-      const widths = Array.from(headerCells, (cell) => cell.offsetWidth)
-      // Skip the update when widths haven't changed — otherwise every ResizeObserver
-      // tick churns geometry identity and re-renders the overlay layer.
-      setColumnWidths((prev) =>
-        prev.length === widths.length && prev.every((w, i) => w === widths[i]) ? prev : widths
-      )
-    }
-
-    const timeoutId = setTimeout(measureWidths, 0)
-
-    const resizeObserver = new ResizeObserver(measureWidths)
-    if (headerRef.current) {
-      resizeObserver.observe(headerRef.current)
-    }
-
-    return () => {
-      clearTimeout(timeoutId)
-      resizeObserver.disconnect()
-    }
-  }, [shouldVirtualize, columnKey])
-
-  const cellGrid = useCellGrid({
-    rows,
-    columnDefs,
-    columnWidths,
-    rowHeight: ROW_HEIGHT,
-    // Must match the sticky <TableHeader> row height; drift causes overlay misalignment.
-    headerHeight: 40,
-    containerRef: tableContainerRef,
-    virtualizer,
-    enabled: shouldVirtualize
-  })
+  const { columnWidths, headerHeight } = useGridMetrics(headerRef, columnKey)
 
   const getCellSnapshot = React.useCallback(
-    (pos: CellPosition) => {
+    (pos: CellPosition): CellSnapshot => {
       const row = rows[pos.row]
       const col = columnDefs[pos.col]
       if (!row || !col) return { value: undefined, columnName: '', dataType: '' }
@@ -673,10 +635,46 @@ export function DataTable<TData extends Record<string, unknown>>({
         value: isMasked ? null : row.original[col.name],
         columnName: col.name,
         dataType: col.dataType,
+        foreignKey: col.foreignKey,
         isMasked
       }
     },
     [rows, columnDefs, effectiveMasked]
+  )
+
+  const cellGrid = useCellGrid({
+    rowCount: rows.length,
+    colCount: columnDefs.length,
+    columnKey,
+    getCell: getCellSnapshot,
+    columnWidths,
+    rowHeight: ROW_HEIGHT,
+    headerHeight,
+    containerRef: tableContainerRef,
+    virtualizer
+  })
+
+  const find = useGridFind({
+    rows: table.getPrePaginationRowModel().rows,
+    columns: columnDefs,
+    maskedColumns: effectiveMasked,
+    pageIndex: table.getState().pagination.pageIndex,
+    pageSize: table.getState().pagination.pageSize,
+    setPageIndex: table.setPageIndex,
+    colOffset: 0,
+    pageRowCount: rows.length,
+    focusCell: cellGrid.setFocus,
+    returnFocusTo: tableContainerRef
+  })
+
+  const virtualItems = virtualizer.getVirtualItems()
+  const findRowWindow = shouldVirtualize
+    ? { start: virtualItems[0]?.index ?? 0, end: virtualItems.at(-1)?.index ?? -1 }
+    : undefined
+
+  const contextMenuColumns = React.useMemo(
+    () => columnDefs.map((c) => ({ name: c.name, dataType: c.dataType })),
+    [columnDefs]
   )
 
   // Time Machine's pinned diff and Watch Mode's live one are never both active
@@ -706,7 +704,12 @@ export function DataTable<TData extends Record<string, unknown>>({
       />
 
       {/* Table with single scroll container */}
-      <div className="flex-1 min-h-0 border rounded-lg border-border/50 relative">
+      <div
+        ref={gridWrapperRef}
+        data-cell-grid
+        className="flex-1 min-h-0 border rounded-lg border-border/50 relative"
+      >
+        <GridFindBar find={find} target={gridWrapperRef} />
         <CellGridInspector
           cellGrid={cellGrid}
           rowCount={rows.length}
@@ -754,43 +757,49 @@ export function DataTable<TData extends Record<string, unknown>>({
                         {virtualizer.getVirtualItems().map((virtualRow) => {
                           const row = rows[virtualRow.index]
                           return (
-                            <div
+                            <RowContextMenu
                               key={row.id}
-                              role="row"
-                              aria-rowindex={row.index + 1}
-                              data-index={virtualRow.index}
-                              className="hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center"
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                left: 0,
-                                height: `${virtualRow.size}px`,
-                                transform: `translateY(${virtualRow.start}px)`
-                              }}
+                              row={row.original as Record<string, unknown>}
+                              columns={contextMenuColumns}
+                              selectionCopy={cellGrid.selectionCopy}
                             >
-                              {row.getVisibleCells().map((cell, cellIndex) => (
-                                <div
-                                  key={cell.id}
-                                  role="cell"
-                                  data-cell-row={virtualRow.index}
-                                  data-cell-col={cellIndex}
-                                  className="py-2 px-4 text-sm whitespace-nowrap overflow-hidden"
-                                  style={{
-                                    width: columnWidths[cellIndex] || 'auto',
-                                    flexShrink: 0
-                                  }}
-                                >
-                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </div>
-                              ))}
-                            </div>
+                              <div
+                                role="row"
+                                aria-rowindex={row.index + 1}
+                                data-index={virtualRow.index}
+                                className="hover:bg-accent/30 border-b border-border/30 transition-colors flex items-center"
+                                style={{
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  height: `${virtualRow.size}px`,
+                                  transform: `translateY(${virtualRow.start}px)`
+                                }}
+                              >
+                                {row.getVisibleCells().map((cell, cellIndex) => (
+                                  <div
+                                    key={cell.id}
+                                    role="cell"
+                                    data-cell-row={virtualRow.index}
+                                    data-cell-col={cellIndex}
+                                    className="py-2 px-4 text-sm whitespace-nowrap overflow-hidden"
+                                    style={{
+                                      width: columnWidths[cellIndex] || 'auto',
+                                      flexShrink: 0
+                                    }}
+                                  >
+                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                  </div>
+                                ))}
+                              </div>
+                            </RowContextMenu>
                           )
                         })}
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  rows.map((row) => {
+                  rows.map((row, rowIndex) => {
                     const decoration = resolveInlineRowDecoration(
                       inlineDiff,
                       diffPlan,
@@ -801,11 +810,17 @@ export function DataTable<TData extends Record<string, unknown>>({
                       <RowContextMenu
                         key={row.id}
                         row={row.original as Record<string, unknown>}
-                        columns={columnDefs.map((c) => ({ name: c.name, dataType: c.dataType }))}
+                        columns={contextMenuColumns}
+                        selectionCopy={cellGrid.selectionCopy}
                       >
                         <TableRow
                           className="hover:bg-accent/30 border-border/30 transition-colors"
-                          style={decoration.isAdded ? INLINE_ADDED_ROW_STYLE : undefined}
+                          style={{
+                            // Cells carry no vertical padding, so every row is exactly ROW_HEIGHT
+                            // whatever it holds: the cell-grid overlays assume uniform rows.
+                            height: ROW_HEIGHT,
+                            ...(decoration.isAdded ? INLINE_ADDED_ROW_STYLE : undefined)
+                          }}
                         >
                           {row.getVisibleCells().map((cell, cellIndex) => {
                             const isChangedCell = isInlineChangedCell(
@@ -816,7 +831,9 @@ export function DataTable<TData extends Record<string, unknown>>({
                             return (
                               <TableCell
                                 key={cell.id}
-                                className="py-2 text-sm whitespace-nowrap"
+                                data-cell-row={rowIndex}
+                                data-cell-col={cellIndex}
+                                className="py-0 text-sm whitespace-nowrap"
                                 style={isChangedCell ? INLINE_CHANGED_CELL_STYLE : undefined}
                               >
                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -837,12 +854,11 @@ export function DataTable<TData extends Record<string, unknown>>({
               )}
             </TableBody>
           </table>
-          <CellGridOverlays cellGrid={cellGrid} />
+          <CellGridOverlays cellGrid={cellGrid} find={find} rowWindow={findRowWindow} />
           {/*
             The geometry overlays below and the inline tints above are mutually
-            exclusive: these need measured column widths, which only the
-            virtualized path produces. Everything at or below the threshold is
-            decorated inline (lib/watch-inline-diff.ts).
+            exclusive: these paint the virtualized path only. Everything at or
+            below the threshold is decorated inline (lib/watch-inline-diff.ts).
           */}
           <WatchOverlay
             tabId={tabId}

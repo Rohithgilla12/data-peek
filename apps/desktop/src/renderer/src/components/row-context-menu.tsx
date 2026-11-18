@@ -4,9 +4,14 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
+  ContextMenuSub,
+  ContextMenuSubContent,
+  ContextMenuSubTrigger,
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
+import type { SelectionCopyTarget } from '@/components/cell-grid'
 import { escapeCSVValue } from '@/lib/export'
+import { SELECTION_COPY_CHOICES } from '@/lib/selection-serialize'
 import { notify } from '@/stores'
 
 interface RowContextMenuProps {
@@ -19,6 +24,17 @@ interface RowContextMenuProps {
   onDuplicate?: () => void
   /** Called when the user picks "Delete Row". Hidden when omitted. */
   onDelete?: () => void
+  /** Offers "Copy Selection As" when the right-clicked cell is inside a multi-cell selection. */
+  selectionCopy?: SelectionCopyTarget
+}
+
+function cellPositionOf(target: EventTarget): { row: number; col: number } | null {
+  if (!(target instanceof Element)) return null
+  const cell = target.closest<HTMLElement>('[data-cell-row][data-cell-col]')
+  if (!cell) return null
+  const row = Number(cell.dataset.cellRow)
+  const col = Number(cell.dataset.cellCol)
+  return Number.isNaN(row) || Number.isNaN(col) ? null : { row, col }
 }
 
 function formatRowAsJson(row: Record<string, unknown>, columns: { name: string }[]): string {
@@ -47,12 +63,42 @@ export function RowContextMenu({
   row,
   columns,
   onDuplicate,
-  onDelete
+  onDelete,
+  selectionCopy
 }: RowContextMenuProps) {
+  const [offerSelectionCopy, setOfferSelectionCopy] = React.useState(false)
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    const pos = cellPositionOf(e.target)
+    setOfferSelectionCopy(Boolean(selectionCopy && pos && selectionCopy.covers(pos)))
+  }
+
   return (
     <ContextMenu>
-      <ContextMenuTrigger asChild>{children}</ContextMenuTrigger>
+      <ContextMenuTrigger asChild onContextMenu={handleContextMenu}>
+        {children}
+      </ContextMenuTrigger>
       <ContextMenuContent className="w-48">
+        {selectionCopy && offerSelectionCopy && (
+          <>
+            <ContextMenuSub>
+              <ContextMenuSubTrigger>Copy Selection As</ContextMenuSubTrigger>
+              <ContextMenuSubContent className="w-44">
+                {SELECTION_COPY_CHOICES.map((choice) => (
+                  <ContextMenuItem
+                    key={choice.label}
+                    onClick={() =>
+                      selectionCopy.copy(choice.format, { includeHeaders: choice.includeHeaders })
+                    }
+                  >
+                    {choice.label}
+                  </ContextMenuItem>
+                ))}
+              </ContextMenuSubContent>
+            </ContextMenuSub>
+            <ContextMenuSeparator />
+          </>
+        )}
         <ContextMenuItem onClick={() => copy(formatRowAsJson(row, columns), 'Row (JSON)')}>
           Copy Row as JSON
         </ContextMenuItem>

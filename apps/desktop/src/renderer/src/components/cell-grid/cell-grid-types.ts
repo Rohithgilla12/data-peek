@@ -81,6 +81,8 @@ export interface CellCopyEvent {
   pos: CellPosition
   kind?: 'cell' | 'range'
   count?: number
+  /** Names the format when it isn't the default TSV, e.g. "CSV". */
+  label?: string
 }
 
 export function buildGeometry(
