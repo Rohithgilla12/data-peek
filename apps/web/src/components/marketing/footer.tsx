@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { floatHref } from "@/lib/float";
 
 const cols: {
   title: string;
@@ -96,6 +97,18 @@ export function Footer() {
                 X · @gillarohith
               </Link>
             </div>
+            <p className="mt-5 text-[12px] leading-[1.6] text-[var(--n-fg-faint)]">
+              Also from the maker:{" "}
+              <Link
+                href={floatHref("footer")}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[var(--n-fg-muted)] underline underline-offset-4 decoration-[var(--n-line)] hover:text-[var(--n-fg)]"
+              >
+                Float
+              </Link>
+              , a floating scratchpad for macOS.
+            </p>
           </div>
 
           {cols.map((c) => (
