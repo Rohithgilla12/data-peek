@@ -21,7 +21,7 @@ const ways = [
 const moves = [
   { k: "⌘T", v: "Ask in plain English, or type SQL in the same box" },
   { k: "⌘I", v: "Describe an edit to your SQL, review it as a diff" },
-  { k: "⇥", v: "Tab flips between asking and running SQL" },
+  { k: "⇥", v: "Tab flips what you typed between a question and SQL" },
 ];
 
 function ChooseAiMock() {
@@ -142,7 +142,7 @@ export function AiSection() {
               Ask your database questions in plain English on the Claude Code,
               Codex, or Antigravity plan you already have. With no AI set up,
               data-peek finds the installed CLI, and one click puts it to work.
-              No API key, no per-token meter, and no AI add-on to buy from us.
+              No API key to set up and no AI add-on to buy from us.
             </p>
 
             <ul className="mt-8 max-w-[52ch]">

@@ -14,7 +14,7 @@ export function Hero() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
           <div className="lg:col-span-7">
             <div
-              className="inline-flex items-center gap-2 text-[11px] text-[var(--n-fg-muted)] h-7 px-2.5"
+              className="inline-flex items-center gap-2 text-[11px] text-[var(--n-fg-muted)] min-h-7 py-1 px-2.5"
               style={{ border: "1px solid var(--n-line-soft)" }}
             >
               <span

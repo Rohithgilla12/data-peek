@@ -15,7 +15,7 @@ const faqs = [
   },
   {
     q: "Do I have to pay extra for the AI?",
-    a: "No. AI is free for personal use and included in Pro. On a Claude Code, Codex, or Antigravity subscription it uses the plan you already have, so there's no per-token bill. With an API key you pay your provider directly, and data-peek adds nothing on top.",
+    a: "No. AI is free for personal use and included in Pro. On a Claude Code, Codex, or Antigravity subscription it draws on the plan you already have, within that plan's usage limits. With an API key you pay your provider directly, and data-peek adds nothing on top.",
   },
   {
     q: "Which databases are supported?",
