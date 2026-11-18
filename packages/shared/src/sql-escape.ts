@@ -96,7 +96,8 @@ export function escapeSQLIdentifier(
   name: string,
   dialect: SQLDialect = "standard",
 ): string {
-  const needsQuoting = !/^[a-z_][a-z0-9_]*$/i.test(name) || isSQLKeyword(name);
+  // Postgres folds bare names to lowercase, so any uppercase letter needs quoting.
+  const needsQuoting = !/^[a-z_][a-z0-9_]*$/.test(name) || isSQLKeyword(name);
 
   if (!needsQuoting) {
     return name;
