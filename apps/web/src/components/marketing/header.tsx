@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import pkg from "../../../package.json";
 import { SaleBanner } from "./sale-banner";
+
+const shortVersion = pkg.version.split(".").slice(0, 2).join(".");
 
 const nav = [
   { href: "/#features", label: "Features" },
@@ -50,7 +53,7 @@ export function Header() {
               />
               <span className="font-medium text-[var(--n-fg)]">data-peek</span>
               <span className="text-[11px] text-[var(--n-fg-faint)]">
-                v0.21
+                v{shortVersion}
               </span>
             </Link>
 
