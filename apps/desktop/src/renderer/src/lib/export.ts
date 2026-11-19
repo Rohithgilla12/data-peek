@@ -20,12 +20,19 @@ export interface ExportData {
   rows: Record<string, unknown>[]
 }
 
+// pg and mysql2 return timestamptz, date and datetime as Date objects;
+// JSON.stringify would wrap them in quotes.
+function cellText(value: unknown): string {
+  if (value instanceof Date) return value.toISOString()
+  return typeof value === 'object' ? JSON.stringify(value) : String(value)
+}
+
 export function escapeCSVValue(value: unknown): string {
   if (value === null || value === undefined) {
     return ''
   }
 
-  const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  const stringValue = cellText(value)
 
   if (stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('"')) {
     return `"${stringValue.replace(/"/g, '""')}"`
@@ -63,7 +70,7 @@ function escapeMarkdownValue(value: unknown): string {
     return ''
   }
 
-  const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value)
+  const stringValue = cellText(value)
 
   return stringValue.replace(/\|/g, '\\|').replace(/\r?\n/g, ' ')
 }
