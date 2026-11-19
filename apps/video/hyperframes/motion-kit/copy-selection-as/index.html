@@ -1,0 +1,1279 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1200" />
+    <title>data-peek: Copy Selection As</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        src: url('fonts/geist.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Geist Mono Variable';
+        src: url('fonts/geist-mono.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+
+      :root {
+        --bg: #101216;
+        --raised: #171a20;
+        --fg: #ebecee;
+        --muted: #9aa0ad;
+        --accent: #6b8cf5;
+        --accent-deep: #3b52c4;
+        --success: #4ade80;
+        --destructive: #f2555a;
+        --hairline: #2a2f3a;
+        --amber: #f5b14c;
+        --shadow: rgba(0, 0, 0, 0.55);
+        --accent-glow: rgba(59, 82, 196, 0.22);
+        --accent-soft: rgba(107, 140, 245, 0.16);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Variable', sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .mono {
+        font-family: 'Geist Mono Variable', monospace;
+        font-variant-ligatures: none;
+        font-feature-settings: "liga" 0, "calt" 0;
+      }
+
+      code,
+      pre,
+      kbd,
+      .mono,
+      .kbd,
+      .badge,
+      .md-code-box,
+      .stat-num,
+      .modal-chip,
+      #copy-flash {
+        font-variant-ligatures: none;
+        font-feature-settings: "liga" 0, "calt" 0;
+      }
+
+      #scene {
+        position: absolute;
+        inset: 0;
+      }
+
+      .glow {
+        position: absolute;
+        width: 1600px;
+        height: 1600px;
+        left: 160px;
+        top: -420px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--accent-glow) 0%, rgba(59, 82, 196, 0) 65%);
+        pointer-events: none;
+      }
+
+      .glow-sec {
+        position: absolute;
+        width: 1200px;
+        height: 1200px;
+        right: -300px;
+        bottom: -500px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(59, 82, 196, 0.15) 0%, rgba(59, 82, 196, 0) 65%);
+        pointer-events: none;
+      }
+
+      .dotgrid {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(154, 160, 173, 0.12) 2px, transparent 2px);
+        background-size: 56px 56px;
+        pointer-events: none;
+      }
+
+      /* Main Window */
+      #main-window {
+        position: absolute;
+        left: 100px;
+        top: 80px;
+        width: 1720px;
+        height: 1040px;
+        background: var(--raised);
+        border: 3px solid var(--hairline);
+        border-radius: 20px;
+        box-shadow: 0 40px 120px var(--shadow);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Title bar */
+      .titlebar {
+        height: 64px;
+        background: var(--bg);
+        border-bottom: 2px solid var(--hairline);
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        gap: 16px;
+        flex-shrink: 0;
+      }
+
+      .window-dots {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--muted);
+        opacity: 0.3;
+      }
+
+      .vsep {
+        width: 2px;
+        height: 28px;
+        margin: 0 8px;
+        background: var(--hairline);
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 26px;
+        font-weight: 600;
+        color: var(--fg);
+      }
+
+      .brand img {
+        width: 28px;
+        height: 28px;
+        display: block;
+      }
+
+      .conn-chip {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+
+      .conn-chip .live-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+
+      .tab-bar {
+        display: flex;
+        align-items: center;
+        height: 100%;
+        margin-left: 20px;
+      }
+
+      .tab-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 100%;
+        padding: 0 20px;
+        border-bottom: 2px solid var(--accent);
+        color: var(--fg);
+        font-size: 26px;
+        font-weight: 500;
+        background: var(--raised);
+      }
+
+      .tab-item svg {
+        width: 20px;
+        height: 20px;
+        color: var(--accent);
+      }
+
+      .tb-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+
+      /* SQL editor strip */
+      .sql-strip {
+        height: 56px;
+        background: rgba(16, 18, 22, 0.6);
+        border-bottom: 2px solid var(--hairline);
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        gap: 16px;
+        font-size: 26px;
+        flex-shrink: 0;
+      }
+
+      .sql-strip .ln {
+        color: var(--muted);
+        opacity: 0.5;
+        width: 24px;
+      }
+
+      .sql-strip .kw {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .sql-strip .run-pill {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+
+      .kbd {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2px 8px;
+        border-radius: 6px;
+        border: 2px solid var(--hairline);
+        background: rgba(255, 255, 255, 0.05);
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 26px;
+        color: var(--muted);
+      }
+
+      /* Grid table container */
+      .grid-container {
+        position: relative;
+        flex: 1;
+        padding: 0 80px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Table header */
+      .grid-header {
+        height: 54px;
+        display: flex;
+        align-items: center;
+        border-bottom: 2px solid var(--hairline);
+        background: var(--raised);
+        flex-shrink: 0;
+      }
+
+      .gh-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 26px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .badge {
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 26px;
+        padding: 2px 8px;
+        border-radius: 6px;
+        border: 1px solid var(--hairline);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+        opacity: 0.8;
+      }
+
+      .badge.int-badge {
+        color: var(--accent);
+        border-color: rgba(107, 140, 245, 0.3);
+      }
+
+      /* Grid body */
+      .grid-body {
+        position: relative;
+        flex-shrink: 0;
+      }
+
+      .grid-row {
+        height: 58px;
+        display: flex;
+        align-items: center;
+        border-bottom: 1px solid rgba(42, 47, 58, 0.5);
+      }
+
+      .grid-cell {
+        font-size: 28px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--fg);
+      }
+
+      .grid-cell.num {
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* Column width specifications (total width 1540px) */
+      .col-id {
+        width: 160px;
+      }
+      .col-customer {
+        width: 460px;
+      }
+      .col-status {
+        width: 340px;
+      }
+      .col-items {
+        width: 240px;
+      }
+      .col-amount {
+        width: 340px;
+      }
+
+
+      /* Overlays Layer */
+      #overlays-layer {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+      }
+
+      /* Focus Ring */
+      #cell-focus {
+        position: absolute;
+        left: 340px;
+        top: 370px;
+        width: 460px;
+        height: 58px;
+        box-sizing: border-box;
+        border-radius: 4px;
+        background: rgba(107, 140, 245, 0.12);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05), 0 0 0 2px var(--accent);
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      /* Selection Rectangle */
+      #selection-rect {
+        position: absolute;
+        left: 340px;
+        top: 370px;
+        width: 1380px;
+        height: 232px;
+        box-sizing: border-box;
+        border-radius: 4px;
+        background: rgba(107, 140, 245, 0.16);
+        border: 2px solid var(--accent);
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      /* Shift chip */
+      #shift-chip {
+        position: absolute;
+        left: 1470px;
+        top: 510px;
+        padding: 4px 12px;
+        border-radius: 8px;
+        border: 2px solid var(--hairline);
+        background: var(--raised);
+        color: var(--fg);
+        font-size: 26px;
+        font-weight: 500;
+        box-shadow: 0 10px 30px var(--shadow);
+        pointer-events: none;
+        opacity: 0;
+        z-index: 50;
+      }
+
+      /* Stats footer */
+      #stats-footer {
+        height: 64px;
+        margin: 16px 80px 0 80px;
+        background: rgba(16, 18, 22, 0.7);
+        border: 2px solid var(--hairline);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        gap: 16px;
+        font-size: 26px;
+        color: var(--muted);
+        opacity: 0;
+      }
+
+      #stats-footer .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      #stats-footer .stat-num {
+        font-family: 'Geist Mono Variable', monospace;
+        font-weight: 600;
+        color: var(--fg);
+        font-variant-numeric: tabular-nums;
+      }
+
+      #stats-footer .stat-sep {
+        color: var(--muted);
+        opacity: 0.4;
+      }
+
+      /* Context Menu */
+      #context-menu {
+        position: absolute;
+        left: 970px;
+        top: 457px;
+        width: 340px;
+        background: #171a20;
+        border: 2px solid var(--hairline);
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        opacity: 0;
+        z-index: 30;
+      }
+
+      .menu-item {
+        height: 48px;
+        padding: 0 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 8px;
+        font-size: 26px;
+        color: var(--fg);
+        cursor: pointer;
+      }
+
+      .menu-item.active,
+      .menu-item:hover {
+        background: rgba(107, 140, 245, 0.2);
+        color: #ffffff;
+      }
+
+      .menu-item.destructive {
+        color: var(--destructive);
+      }
+
+      .menu-sep {
+        height: 1px;
+        background: var(--hairline);
+        margin: 4px 6px;
+      }
+
+      .menu-arrow {
+        width: 18px;
+        height: 18px;
+        opacity: 0.7;
+      }
+
+      /* Submenu */
+      #submenu {
+        position: absolute;
+        left: 1318px;
+        top: 457px;
+        width: 310px;
+        background: #171a20;
+        border: 2px solid var(--hairline);
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.65);
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        opacity: 0;
+        z-index: 31;
+      }
+
+      /* Copy Flash Pill */
+      #copy-flash {
+        position: absolute;
+        left: 970px;
+        top: 390px;
+        padding: 8px 20px;
+        border-radius: 999px;
+        background: #1c212b;
+        border: 2px solid var(--accent);
+        box-shadow: 0 8px 32px rgba(107, 140, 245, 0.4);
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 26px;
+        color: var(--fg);
+        font-weight: 600;
+        opacity: 0;
+        pointer-events: none;
+        z-index: 40;
+      }
+
+      #copy-flash .check-ico {
+        width: 22px;
+        height: 22px;
+        color: var(--success);
+      }
+
+      /* Split Presentation Modal */
+      #split-modal {
+        position: absolute;
+        left: 140px;
+        top: 210px;
+        width: 1640px;
+        height: 640px;
+        background: rgba(16, 18, 22, 0.95);
+        border: 3px solid var(--hairline);
+        border-radius: 20px;
+        box-shadow: 0 40px 140px rgba(0, 0, 0, 0.85);
+        padding: 30px 40px;
+        display: flex;
+        flex-direction: column;
+        opacity: 0;
+        z-index: 45;
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 20px;
+        flex-shrink: 0;
+      }
+
+      .modal-title {
+        font-size: 38px;
+        font-weight: 700;
+        color: var(--fg);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .modal-chip {
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 26px;
+        padding: 4px 14px;
+        border-radius: 8px;
+        background: rgba(107, 140, 245, 0.15);
+        color: var(--accent);
+        border: 1px solid rgba(107, 140, 245, 0.35);
+      }
+
+      .split-cards {
+        display: flex;
+        gap: 32px;
+        flex: 1;
+        min-height: 0;
+      }
+
+      .split-card {
+        flex: 1;
+        background: var(--raised);
+        border: 2px solid var(--hairline);
+        border-radius: 14px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .card-top {
+        height: 54px;
+        background: rgba(16, 18, 22, 0.6);
+        border-bottom: 2px solid var(--hairline);
+        padding: 0 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 26px;
+        color: var(--muted);
+      }
+
+      .card-top .tag {
+        font-weight: 600;
+        color: var(--fg);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .card-content {
+        padding: 24px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .md-code-box {
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 26px;
+        line-height: 1.6;
+        color: var(--fg);
+        font-variant-ligatures: none;
+        font-feature-settings: "liga" 0, "calt" 0;
+      }
+
+      .md-line {
+        white-space: nowrap;
+      }
+
+      .md-pipe {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      .md-head {
+        color: var(--fg);
+        font-weight: 600;
+      }
+
+      .md-sep {
+        color: var(--muted);
+      }
+
+      .rendered-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 26px;
+      }
+
+      .rendered-table th {
+        text-align: left;
+        padding: 12px 16px;
+        border-bottom: 2px solid var(--hairline);
+        color: var(--fg);
+        font-weight: 600;
+        background: rgba(16, 18, 22, 0.5);
+      }
+
+      .rendered-table td {
+        padding: 12px 16px;
+        border-bottom: 1px solid rgba(42, 47, 58, 0.5);
+        color: var(--fg);
+      }
+
+      /* Oversized Cursor */
+      #cursor {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 0;
+        height: 0;
+        z-index: 100;
+        pointer-events: none;
+      }
+
+      #cursor-arrow {
+        position: absolute;
+        left: -5px;
+        top: -3px;
+        width: 52px;
+        height: 52px;
+        filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.6));
+      }
+
+      #cursor-arrow path {
+        fill: var(--fg);
+        stroke: var(--bg);
+        stroke-width: 1.5;
+        stroke-linejoin: round;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="stage"
+      data-composition-id="copy-selection-as"
+      data-start="0"
+      data-duration="9"
+      data-fps="30"
+      data-width="1920"
+      data-height="1200"
+    >
+      <div id="scene">
+        <div class="glow" data-layout-ignore></div>
+        <div class="glow-sec" data-layout-ignore></div>
+        <div class="dotgrid" data-layout-ignore></div>
+
+        <!-- Main results grid window -->
+        <div id="main-window" data-layout-allow-overflow="true">
+          <header class="titlebar">
+            <div class="window-dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+            <div class="vsep"></div>
+            <div class="brand">
+              <img src="logo.svg" alt="data-peek logo" />
+              <span>data-peek</span>
+            </div>
+            <div class="vsep"></div>
+            <div class="conn-chip">
+              <span class="live-dot"></span>
+              <span>prod-replica</span>
+            </div>
+            <div class="tab-bar">
+              <div class="tab-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18" />
+                </svg>
+                <span>orders</span>
+              </div>
+            </div>
+            <div class="tb-right mono">
+              <span>8 rows · 14 ms</span>
+            </div>
+          </header>
+
+          <div class="sql-strip mono">
+            <span class="ln">1</span>
+            <span><span class="kw">SELECT</span> id, customer, status, items, amount <span class="kw">FROM</span> orders;</span>
+            <div class="run-pill">
+              <span class="kbd">⌘↵</span>
+            </div>
+          </div>
+
+          <div class="grid-container" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+            <div class="grid-header mono">
+              <div class="gh-cell col-id">id <span class="badge int-badge">int4</span></div>
+              <div class="gh-cell col-customer">customer <span class="badge">text</span></div>
+              <div class="gh-cell col-status">status <span class="badge">text</span></div>
+              <div class="gh-cell col-items">items <span class="badge int-badge">int4</span></div>
+              <div class="gh-cell col-amount">amount <span class="badge int-badge">int4</span></div>
+            </div>
+
+            <div class="grid-body mono" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+              <!-- Row 0 -->
+              <div class="grid-row" id="row-0" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <div class="grid-cell col-id num">1041</div>
+                <div class="grid-cell col-customer">acme-corp</div>
+                <div class="grid-cell col-status">completed</div>
+                <div class="grid-cell col-items num">3</div>
+                <div class="grid-cell col-amount num">420</div>
+              </div>
+              <!-- Row 1 -->
+              <div class="grid-row" id="row-1" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <div class="grid-cell col-id num">1042</div>
+                <div class="grid-cell col-customer">globex</div>
+                <div class="grid-cell col-status">shipped</div>
+                <div class="grid-cell col-items num">12</div>
+                <div class="grid-cell col-amount num">1850</div>
+              </div>
+              <!-- Row 2 -->
+              <div class="grid-row" id="row-2" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <div class="grid-cell col-id num">1043</div>
+                <div class="grid-cell col-customer">hooli</div>
+                <div class="grid-cell col-status">pending</div>
+                <div class="grid-cell col-items num">4</div>
+                <div class="grid-cell col-amount num">640</div>
+              </div>
+              <!-- Row 3 -->
+              <div class="grid-row" id="row-3" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <div class="grid-cell col-id num">1044</div>
+                <div class="grid-cell col-customer">initech</div>
+                <div class="grid-cell col-status">completed</div>
+                <div class="grid-cell col-items num">2</div>
+                <div class="grid-cell col-amount num">310</div>
+              </div>
+              <!-- Row 4 -->
+              <div class="grid-row" id="row-4" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <div class="grid-cell col-id num">1045</div>
+                <div class="grid-cell col-customer">soylent</div>
+                <div class="grid-cell col-status">shipped</div>
+                <div class="grid-cell col-items num">8</div>
+                <div class="grid-cell col-amount num">1250</div>
+              </div>
+              <!-- Row 5 -->
+              <div class="grid-row" id="row-5" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <div class="grid-cell col-id num">1046</div>
+                <div class="grid-cell col-customer">umbrella</div>
+                <div class="grid-cell col-status">completed</div>
+                <div class="grid-cell col-items num">6</div>
+                <div class="grid-cell col-amount num">980</div>
+              </div>
+              <!-- Row 6 -->
+              <div class="grid-row" id="row-6" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <div class="grid-cell col-id num">1047</div>
+                <div class="grid-cell col-customer">massive-dynamic</div>
+                <div class="grid-cell col-status">completed</div>
+                <div class="grid-cell col-items num">1</div>
+                <div class="grid-cell col-amount num">150</div>
+              </div>
+              <!-- Row 7 -->
+              <div class="grid-row" id="row-7" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <div class="grid-cell col-id num">1048</div>
+                <div class="grid-cell col-customer">cyberdyne</div>
+                <div class="grid-cell col-status">refunded</div>
+                <div class="grid-cell col-items num">5</div>
+                <div class="grid-cell col-amount num">720</div>
+              </div>
+            </div>
+
+            <!-- Stats footer strip -->
+            <div id="stats-footer" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+              <div class="stat-item" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">Selected: <span class="stat-num" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">16</span> cells</div>
+              <span class="stat-sep" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">·</span>
+              <div class="stat-item" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">Sum: <span class="stat-num" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">3,200</span></div>
+              <span class="stat-sep" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">·</span>
+              <div class="stat-item" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">Avg: <span class="stat-num" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">400</span></div>
+              <span class="stat-sep" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">·</span>
+              <div class="stat-item" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">Min: <span class="stat-num" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">2</span></div>
+              <span class="stat-sep" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">·</span>
+              <div class="stat-item" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">Max: <span class="stat-num" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">1,250</span></div>
+              <span class="stat-sep" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">·</span>
+              <div class="stat-item" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">Distinct: <span class="stat-num" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">15</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Overlays (focus ring, selection rectangle) -->
+        <div id="overlays-layer" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+          <div id="cell-focus" data-layout-ignore></div>
+          <div id="selection-rect" data-layout-ignore></div>
+          <div id="shift-chip" class="mono" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">⇧ click</div>
+        </div>
+
+        <!-- Context menu -->
+        <div id="context-menu" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+          <div class="menu-item" id="menu-copy-selection-as" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+            <span>Copy Selection As</span>
+            <svg class="menu-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M9 18l6-6-6-6" />
+            </svg>
+          </div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+            <span>Copy Row as JSON</span>
+          </div>
+          <div class="menu-item" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+            <span>Copy Row as CSV</span>
+          </div>
+          <div class="menu-sep"></div>
+          <div class="menu-item" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+            <span>Duplicate Row</span>
+          </div>
+          <div class="menu-item destructive" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+            <span>Delete Row</span>
+          </div>
+        </div>
+
+        <!-- Submenu -->
+        <div id="submenu" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+          <div class="menu-item" id="sub-tsv" data-layout-allow-overlap="true" data-layout-allow-occlusion="true"><span>TSV</span></div>
+          <div class="menu-item" id="sub-tsv-headers" data-layout-allow-overlap="true" data-layout-allow-occlusion="true"><span>TSV with headers</span></div>
+          <div class="menu-item" id="sub-csv" data-layout-allow-overlap="true" data-layout-allow-occlusion="true"><span>CSV</span></div>
+          <div class="menu-item" id="sub-json" data-layout-allow-overlap="true" data-layout-allow-occlusion="true"><span>JSON</span></div>
+          <div class="menu-item" id="sub-markdown" data-layout-allow-overlap="true" data-layout-allow-occlusion="true"><span>Markdown</span></div>
+        </div>
+
+        <!-- Copy flash pill -->
+        <div id="copy-flash" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+          <svg class="check-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          <span>copied 16 cells (Markdown)</span>
+        </div>
+
+        <!-- Backdrop dim overlay for split modal -->
+        <div id="dim-backdrop" data-layout-ignore style="position: absolute; inset: 0; background: rgba(16, 18, 22, 0.85); opacity: 0; pointer-events: none; z-index: 42;"></div>
+
+        <!-- Split presentation modal (Clipboard & Rendered Preview) -->
+        <div id="split-modal" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+          <div class="modal-header">
+            <div class="modal-title">
+              <span>What landed on the clipboard</span>
+            </div>
+            <div class="modal-chip">4 rows × 4 columns</div>
+          </div>
+          <div class="split-cards" data-layout-allow-overflow="true">
+            <!-- Left Card: Raw Markdown -->
+            <div class="split-card" data-layout-allow-overflow="true">
+              <div class="card-top">
+                <span class="tag">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                  Clipboard (Markdown)
+                </span>
+                <span class="mono">raw text</span>
+              </div>
+              <div class="card-content">
+                <div class="md-code-box">
+                  <div class="md-line"><span class="md-pipe">|</span> <span class="md-head">customer</span> <span class="md-pipe">|</span> <span class="md-head">status</span> <span class="md-pipe">|</span> <span class="md-head">items</span> <span class="md-pipe">|</span> <span class="md-head">amount</span> <span class="md-pipe">|</span></div>
+                  <div class="md-line"><span class="md-pipe">|</span> <span class="md-sep">---</span> <span class="md-pipe">|</span> <span class="md-sep">---</span> <span class="md-pipe">|</span> <span class="md-sep">---</span> <span class="md-pipe">|</span> <span class="md-sep">---</span> <span class="md-pipe">|</span></div>
+                  <div class="md-line"><span class="md-pipe">|</span> hooli <span class="md-pipe">|</span> pending <span class="md-pipe">|</span> 4 <span class="md-pipe">|</span> 640 <span class="md-pipe">|</span></div>
+                  <div class="md-line"><span class="md-pipe">|</span> initech <span class="md-pipe">|</span> completed <span class="md-pipe">|</span> 2 <span class="md-pipe">|</span> 310 <span class="md-pipe">|</span></div>
+                  <div class="md-line"><span class="md-pipe">|</span> soylent <span class="md-pipe">|</span> shipped <span class="md-pipe">|</span> 8 <span class="md-pipe">|</span> 1250 <span class="md-pipe">|</span></div>
+                  <div class="md-line"><span class="md-pipe">|</span> umbrella <span class="md-pipe">|</span> completed <span class="md-pipe">|</span> 6 <span class="md-pipe">|</span> 980 <span class="md-pipe">|</span></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Card: Rendered Table in Comment Box -->
+            <div class="split-card" data-layout-allow-overflow="true">
+              <div class="card-top">
+                <span class="tag">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  Pasted into a comment
+                </span>
+                <span class="mono">preview</span>
+              </div>
+              <div class="card-content">
+                <table class="rendered-table">
+                  <thead>
+                    <tr>
+                      <th>customer</th>
+                      <th>status</th>
+                      <th>items</th>
+                      <th>amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="rendered-row">
+                      <td class="mono">hooli</td>
+                      <td class="mono">pending</td>
+                      <td class="mono num">4</td>
+                      <td class="mono num">640</td>
+                    </tr>
+                    <tr class="rendered-row">
+                      <td class="mono">initech</td>
+                      <td class="mono">completed</td>
+                      <td class="mono num">2</td>
+                      <td class="mono num">310</td>
+                    </tr>
+                    <tr class="rendered-row">
+                      <td class="mono">soylent</td>
+                      <td class="mono">shipped</td>
+                      <td class="mono num">8</td>
+                      <td class="mono num">1250</td>
+                    </tr>
+                    <tr class="rendered-row">
+                      <td class="mono">umbrella</td>
+                      <td class="mono">completed</td>
+                      <td class="mono num">6</td>
+                      <td class="mono num">980</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Oversized pointer cursor -->
+        <div id="cursor" data-layout-ignore>
+          <svg id="cursor-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 3 L5 19 L9 15 L12 22 L15 20.5 L11.5 14 L18 14 Z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const COMP_ID = 'copy-selection-as'
+
+      function build() {
+        const tl = gsap.timeline({ paused: true })
+
+        // Initial setup
+        gsap.set('#cursor', { x: 1620, y: 1040, opacity: 1 })
+        gsap.set('#cursor-arrow', { scale: 1, transformOrigin: '5px 3px' })
+        gsap.set('#cell-focus', { opacity: 0 })
+        gsap.set('#selection-rect', { opacity: 0 })
+        gsap.set('#shift-chip', { opacity: 0, scale: 0.9 })
+        gsap.set('#stats-footer', { opacity: 0, y: 12 })
+        gsap.set('#context-menu', { opacity: 0, scale: 0.95 })
+        gsap.set('#submenu', { opacity: 0, x: -10 })
+        gsap.set('#copy-flash', { opacity: 0, scale: 0.88 })
+        gsap.set('#split-modal', { opacity: 0, scale: 0.95, y: 16 })
+        gsap.set('#main-window', { opacity: 1, scale: 1, x: 0 })
+
+        // -------------------------------------------------------------
+        // Beat 1: Select (0.0 to 2.4s)
+        // -------------------------------------------------------------
+        // Pointer glides from rest to 'hooli' cell (row 2, customer)
+        // hooli cell center is approx x: 570, y: 399
+        tl.fromTo(
+          '#cursor',
+          { x: 1620, y: 1040 },
+          { x: 570, y: 399, duration: 0.65, ease: 'power3.out' },
+          0.05
+        )
+
+        // Click row 2 'customer' cell
+        tl.fromTo(
+          '#cursor-arrow',
+          { scale: 1 },
+          { scale: 0.82, duration: 0.08, ease: 'power2.in' },
+          0.7
+        )
+        tl.to('#cursor-arrow', { scale: 1, duration: 0.14, ease: 'power3.out' }, 0.78)
+
+        // Focus ring appears on 'hooli' cell
+        tl.fromTo(
+          '#cell-focus',
+          { opacity: 0, scale: 0.96 },
+          { opacity: 1, scale: 1, duration: 0.15, ease: 'power3.out' },
+          0.75
+        )
+
+        // Pointer glides toward row 5 'amount' cell (980) at x: 1550, y: 573
+        tl.fromTo(
+          '#cursor',
+          { x: 570, y: 399 },
+          { x: 1550, y: 573, duration: 0.65, ease: 'power2.inOut', immediateRender: false },
+          1.0
+        )
+
+        // Shift key chip flashes near cursor
+        tl.fromTo(
+          '#shift-chip',
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.18, ease: 'power3.out', immediateRender: false },
+          1.42
+        )
+
+        // Shift+click on amount cell
+        tl.fromTo(
+          '#cursor-arrow',
+          { scale: 1 },
+          { scale: 0.82, duration: 0.08, ease: 'power2.in', immediateRender: false },
+          1.65
+        )
+        tl.to('#cursor-arrow', { scale: 1, duration: 0.14, ease: 'power3.out' }, 1.73)
+        tl.to('#shift-chip', { opacity: 0, duration: 0.15, ease: 'power2.in' }, 1.75)
+
+        // Focus ring disappears, selection rectangle fills in
+        tl.to('#cell-focus', { opacity: 0, duration: 0.1 }, 1.68)
+        tl.fromTo(
+          '#selection-rect',
+          { opacity: 0, scaleY: 0.25, transformOrigin: 'top left' },
+          { opacity: 1, scaleY: 1, duration: 0.35, ease: 'power3.out', immediateRender: false },
+          1.7
+        )
+
+        // -------------------------------------------------------------
+        // Beat 2: Stats land (2.4 to 3.6s)
+        // -------------------------------------------------------------
+        tl.fromTo(
+          '#stats-footer',
+          { opacity: 0, y: 14 },
+          { opacity: 1, y: 0, duration: 0.35, ease: 'expo.out', immediateRender: false },
+          2.4
+        )
+        tl.fromTo(
+          '.stat-num',
+          { color: '#6b8cf5' },
+          { color: '#ebecee', duration: 0.45, stagger: 0.04, ease: 'power2.out', immediateRender: false },
+          2.5
+        )
+
+        // -------------------------------------------------------------
+        // Beat 3: Copy as Markdown (3.6 to 5.6s)
+        // -------------------------------------------------------------
+        // Pointer moves into selection for right-click (x: 970, y: 457)
+        tl.fromTo(
+          '#cursor',
+          { x: 1550, y: 573 },
+          { x: 970, y: 457, duration: 0.38, ease: 'power3.out', immediateRender: false },
+          3.6
+        )
+
+        // Right-click tap
+        tl.fromTo(
+          '#cursor-arrow',
+          { scale: 1 },
+          { scale: 0.84, duration: 0.07, ease: 'power2.in', immediateRender: false },
+          3.98
+        )
+        tl.to('#cursor-arrow', { scale: 1, duration: 0.12, ease: 'power3.out' }, 4.05)
+
+        // Context menu opens
+        tl.fromTo(
+          '#context-menu',
+          { opacity: 0, scale: 0.94, transformOrigin: 'top left' },
+          { opacity: 1, scale: 1, duration: 0.18, ease: 'power3.out', immediateRender: false },
+          4.02
+        )
+
+        // Pointer moves to 'Copy Selection As' item
+        tl.fromTo(
+          '#cursor',
+          { x: 970, y: 457 },
+          { x: 1050, y: 480, duration: 0.24, ease: 'power2.out', immediateRender: false },
+          4.18
+        )
+        tl.to(
+          '#menu-copy-selection-as',
+          { backgroundColor: 'rgba(107, 140, 245, 0.25)', color: '#ffffff', duration: 0.1 },
+          4.25
+        )
+
+        // Submenu opens to the right
+        tl.fromTo(
+          '#submenu',
+          { opacity: 0, x: -10 },
+          { opacity: 1, x: 0, duration: 0.18, ease: 'power3.out', immediateRender: false },
+          4.3
+        )
+
+        // Pointer glides down to 'Markdown' in submenu (x: 1420, y: 645)
+        tl.fromTo(
+          '#cursor',
+          { x: 1050, y: 480 },
+          { x: 1420, y: 645, duration: 0.32, ease: 'power2.out', immediateRender: false },
+          4.55
+        )
+        tl.to(
+          '#sub-markdown',
+          { backgroundColor: 'rgba(107, 140, 245, 0.25)', color: '#ffffff', duration: 0.1 },
+          4.8
+        )
+
+        // Click Markdown
+        tl.fromTo(
+          '#cursor-arrow',
+          { scale: 1 },
+          { scale: 0.82, duration: 0.07, ease: 'power2.in', immediateRender: false },
+          4.95
+        )
+        tl.to('#cursor-arrow', { scale: 1, duration: 0.12, ease: 'power3.out' }, 5.02)
+
+        // Menus close
+        tl.to(
+          ['#context-menu', '#submenu'],
+          { opacity: 0, scale: 0.95, duration: 0.12, ease: 'power2.in' },
+          5.02
+        )
+
+        // Copy flash pill appears and rises
+        tl.fromTo(
+          '#copy-flash',
+          { opacity: 0, scale: 0.88, y: 10 },
+          { opacity: 1, scale: 1, y: 0, duration: 0.2, ease: 'expo.out', immediateRender: false },
+          5.05
+        )
+        tl.to('#copy-flash', { y: -8, duration: 0.3, ease: 'power1.out' }, 5.25)
+        tl.to('#copy-flash', { opacity: 0, duration: 0.18, ease: 'power2.in' }, 5.38)
+
+        // Cursor glides away
+        tl.to('#cursor', { x: 1650, y: 850, duration: 0.45, ease: 'power2.out' }, 5.2)
+
+        // -------------------------------------------------------------
+        // Beat 4: What landed on the clipboard (5.6 to 8.2s)
+        // -------------------------------------------------------------
+        // Backdrop dims behind modal
+        tl.fromTo(
+          '#dim-backdrop',
+          { opacity: 0 },
+          { opacity: 0.85, duration: 0.5, ease: 'power3.out', immediateRender: false },
+          5.6
+        )
+
+        // Split presentation modal scales in
+        tl.fromTo(
+          '#split-modal',
+          { opacity: 0, scale: 0.94, y: 20 },
+          { opacity: 1, scale: 1, y: 0, duration: 0.55, ease: 'expo.out', immediateRender: false },
+          5.65
+        )
+
+        // Stagger in markdown lines
+        tl.fromTo(
+          '.md-line',
+          { opacity: 0, x: -8 },
+          { opacity: 1, x: 0, duration: 0.25, stagger: 0.05, ease: 'power3.out', immediateRender: false },
+          5.85
+        )
+
+        // Stagger in rendered table rows
+        tl.fromTo(
+          '.rendered-row',
+          { opacity: 0, y: 6 },
+          { opacity: 1, y: 0, duration: 0.25, stagger: 0.05, ease: 'power3.out', immediateRender: false },
+          5.95
+        )
+
+        // -------------------------------------------------------------
+        // Beat 5: Reset to loop point (8.2 to 9.0s)
+        // -------------------------------------------------------------
+        // Modal and backdrop exit
+        tl.to(
+          '#split-modal',
+          { opacity: 0, scale: 0.95, duration: 0.35, ease: 'power2.in' },
+          8.2
+        )
+        tl.to(
+          '#dim-backdrop',
+          { opacity: 0, duration: 0.35, ease: 'power2.in' },
+          8.2
+        )
+
+        // Clear selection, footer, and menu highlights
+        tl.to('#selection-rect', { opacity: 0, duration: 0.25, ease: 'power2.in' }, 8.35)
+        tl.to('#stats-footer', { opacity: 0, duration: 0.25, ease: 'power2.in' }, 8.35)
+        tl.to(
+          ['#menu-copy-selection-as', '#sub-markdown'],
+          { backgroundColor: 'transparent', color: '#ebecee', duration: 0.1 },
+          8.35
+        )
+
+        // Pointer returns to rest position (1620, 1040)
+        tl.fromTo(
+          '#cursor',
+          { x: 1650, y: 850 },
+          { x: 1620, y: 1040, duration: 0.5, ease: 'power2.inOut', immediateRender: false },
+          8.3
+        )
+
+        // Register paused timeline
+        window.__timelines = window.__timelines || {}
+        window.__timelines[COMP_ID] = tl
+        tl.seek(0)
+      }
+
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(build)
+      } else {
+        build()
+      }
+    </script>
+  </body>
+</html>

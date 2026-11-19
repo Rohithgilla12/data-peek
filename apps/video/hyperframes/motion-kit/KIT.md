@@ -1,6 +1,6 @@
 # data-peek motion kit
 
-Reusable, unnarrated motion graphics for the README and datapeek.dev. Seven short seamless loops sharing one visual system (`design.md`, inherited from the v0.26 launch videos).
+Reusable, unnarrated motion graphics for the README and datapeek.dev. Ten short seamless loops sharing one visual system (`design.md`, inherited from the v0.26 launch videos).
 
 ## Shared envelope (every piece)
 
@@ -27,6 +27,9 @@ Reusable, unnarrated motion graphics for the README and datapeek.dev. Seven shor
 | `mcp-approval/` | 6 s | An agent asks to run a write; the real in-app approval dialog slides in with the SQL; Approve lands, then the result shows. |
 | `time-machine/` | 6 s | A timeline of past runs with a row-count sparkline; the scrubber drags back, a "viewing the past" banner appears, and two runs diff cell by cell. |
 | `ask-ai/` | 10 s | Choose AI picks Claude on your subscription; a plain-English question answers, runs on its own, and draws a chart; a write stops on **Run it**. |
+| `find-in-results/` | 9 s | `⌘F` in the results grid finds `alice` across pages: `7 matches`, Enter steps to page 3, then `^alice@` with regex on. For the find-in-results blog post. |
+| `copy-selection-as/` | 9 s | Shift+click a block of cells, the stats footer lands, right-click → Copy Selection As → Markdown, and the clipboard text sits beside its rendered table. For the copy-as blog post. |
+| `ask-read-gate/` | 14 s | A read passes both layers; `SELECT record_audit_event()` passes read-guard but Postgres refuses it in `BEGIN READ ONLY`; every engine's backstop; a write waits on **Run it**. For the Ask blog post. |
 
 ## Exports (done by the master after render approval, not by builders)
 
@@ -42,4 +45,6 @@ cd .. && ./export.sh <piece> <poster-seconds>
 cp exports/<piece>.{mp4,webm,webp} exports/<piece>-poster.webp ../../../web/public/motion/
 ```
 
-Poster times used: hero 3.6, doctor-cli 5.42, query-plan 4.4, mcp-approval 3.0, watch-mode 3.0, time-machine 3.6, ask-ai 5.8. Each piece's `BRIEF.md` lists the source files its on-screen copy was taken from.
+Poster times used: hero 3.6, doctor-cli 5.42, query-plan 4.4, mcp-approval 3.0, watch-mode 3.0, time-machine 3.6, ask-ai 5.8, find-in-results 4.8, copy-selection-as 3.0, ask-read-gate 5.8. Each piece's `BRIEF.md` lists the source files its on-screen copy was taken from.
+
+The three blog pieces are exported for `notes/` posts as an animated WebP plus stills in `apps/web/public/blog/<slug>/` (960 px wide, 24 fps, `ffmpeg -c:v libwebp_anim`); `stills/` holds the PNGs they came from and is not committed.

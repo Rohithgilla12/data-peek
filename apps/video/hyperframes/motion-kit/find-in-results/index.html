@@ -1,0 +1,1094 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1200" />
+    <title>data-peek: Find in Results</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        src: url('fonts/geist.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Geist Mono Variable';
+        src: url('fonts/geist-mono.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+
+      :root {
+        --bg: #101216;
+        --raised: #171a20;
+        --fg: #ebecee;
+        --muted: #9aa0ad;
+        --accent: #6b8cf5;
+        --accent-deep: #3b52c4;
+        --success: #4ade80;
+        --destructive: #f2555a;
+        --hairline: #2a2f3a;
+        --amber: #f5b14c;
+        --cell-match-fill: rgba(154, 91, 0, 0.25);
+        --cell-match-current-fill: rgba(154, 91, 0, 0.5);
+        --cell-match-current-border: rgba(154, 91, 0, 0.9);
+        --cell-focus-ring: #6b8cf5;
+        --cell-focus-fill: rgba(107, 140, 245, 0.12);
+        --cell-row-stripe: rgba(107, 140, 245, 0.04);
+        --shadow: rgba(0, 0, 0, 0.6);
+        --accent-glow: rgba(59, 82, 196, 0.22);
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Variable', sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .mono {
+        font-family: 'Geist Mono Variable', monospace;
+        font-variant-ligatures: none;
+      }
+
+      .glow {
+        position: absolute;
+        width: 1600px;
+        height: 1600px;
+        left: 160px;
+        top: -420px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--accent-glow) 0%, rgba(59, 82, 196, 0) 65%);
+        pointer-events: none;
+      }
+
+      .dotgrid {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(154, 160, 173, 0.12) 2px, transparent 2px);
+        background-size: 56px 56px;
+        pointer-events: none;
+      }
+
+      .window-frame {
+        position: absolute;
+        inset: 0;
+        padding: 80px;
+        display: flex;
+      }
+
+      .window {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: var(--raised);
+        border: 3px solid var(--hairline);
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 40px 120px var(--shadow);
+      }
+
+      /* Titlebar */
+      .titlebar {
+        height: 72px;
+        flex: 0 0 72px;
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        background: var(--bg);
+        border-bottom: 2px solid var(--hairline);
+      }
+      .dots {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--muted);
+        opacity: 0.3;
+      }
+      .vsep {
+        width: 2px;
+        height: 30px;
+        margin: 0 20px;
+        background: var(--hairline);
+      }
+      .tab-active {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 72px;
+        padding: 0 16px;
+        border-bottom: 3px solid var(--accent);
+        margin-bottom: -2px;
+      }
+      .tab-title {
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--fg);
+      }
+      .titlebar-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .conn-badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .live-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+      .time-chip {
+        font-size: 26px;
+        color: var(--muted);
+        padding: 4px 12px;
+        background: rgba(154, 160, 173, 0.08);
+        border: 1px solid var(--hairline);
+        border-radius: 6px;
+      }
+
+      /* Smart Filter Bar */
+      .smart-filter-bar {
+        height: 68px;
+        flex: 0 0 68px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 28px;
+        background: var(--raised);
+        border-bottom: 2px solid var(--hairline);
+      }
+      .filter-input-wrap {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .filter-placeholder {
+        font-size: 27px;
+        color: var(--muted);
+        opacity: 0.45;
+      }
+      .filter-count {
+        font-size: 26px;
+        color: var(--muted);
+        opacity: 0.7;
+      }
+
+      /* Grid Container */
+      .grid-container {
+        flex: 1;
+        min-height: 0;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        overflow: hidden;
+      }
+
+      .grid-header {
+        height: 64px;
+        flex: 0 0 64px;
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        background: rgba(23, 26, 32, 0.95);
+        border-bottom: 2px solid var(--hairline);
+        font-size: 27px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+
+      .col-id { width: 140px; flex: 0 0 140px; }
+      .col-email { width: 520px; flex: 0 0 520px; }
+      .col-name { width: 380px; flex: 0 0 380px; }
+      .col-plan { width: 230px; flex: 0 0 230px; }
+      .col-created { width: 420px; flex: 0 0 420px; }
+
+      .col-head {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .type-badge {
+        font-size: 26px;
+        padding: 1px 8px;
+        border-radius: 5px;
+        background: rgba(154, 160, 173, 0.12);
+        color: var(--muted);
+      }
+
+      /* Grid Body */
+      .grid-viewport {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      .grid-page {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        z-index: 5;
+      }
+
+      .grid-row {
+        height: 80px;
+        flex: 0 0 80px;
+        display: flex;
+        align-items: center;
+        padding: 0 28px;
+        border-bottom: 1px solid rgba(42, 47, 58, 0.55);
+        font-size: 28px;
+        color: var(--fg);
+      }
+      .grid-row:nth-child(even) {
+        background: rgba(255, 255, 255, 0.015);
+      }
+
+      .null-val {
+        color: var(--muted);
+        opacity: 0.45;
+        font-style: italic;
+        font-size: 26px;
+      }
+      /* Overlays: Focus ring & Match highlights */
+      .match-overlay {
+        position: absolute;
+        pointer-events: none;
+        z-index: 1;
+        border-radius: 4px;
+        opacity: 0;
+        box-sizing: border-box;
+      }
+      .match-fill {
+        background: var(--cell-match-fill);
+      }
+      .match-current {
+        background: var(--cell-match-current-fill);
+        box-shadow: inset 0 0 0 2px var(--cell-match-current-border);
+      }
+
+      .grid-row > div {
+        position: relative;
+        z-index: 2;
+      }
+
+      #focus-ring {
+        position: absolute;
+        pointer-events: none;
+        z-index: 20;
+        border-radius: 4px;
+        background: var(--cell-focus-fill);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0 0 2px var(--cell-focus-ring);
+        box-sizing: border-box;
+      }
+
+      /* Find Bar */
+      .find-bar {
+        position: absolute;
+        top: 10px;
+        right: 28px;
+        z-index: 35;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 16px;
+        background: rgba(23, 26, 32, 0.96);
+        backdrop-filter: blur(12px);
+        border: 2px solid var(--hairline);
+        border-radius: 12px;
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+        opacity: 0;
+      }
+
+      .find-input-box {
+        position: relative;
+        width: 250px;
+        height: 48px;
+        border: 2px solid var(--hairline);
+        border-radius: 8px;
+        background: rgba(16, 18, 22, 0.85);
+        display: flex;
+        align-items: center;
+        padding: 0 14px;
+      }
+      .find-placeholder {
+        position: absolute;
+        left: 14px;
+        font-size: 26px;
+        color: var(--muted);
+        opacity: 0.5;
+        pointer-events: none;
+      }
+      .find-needle {
+        font-size: 26px;
+        color: var(--fg);
+        white-space: pre;
+      }
+      .find-cursor {
+        width: 3px;
+        height: 28px;
+        background: var(--accent);
+        margin-left: 1px;
+      }
+
+      .btn-toggle {
+        height: 46px;
+        padding: 0 16px;
+        border-radius: 8px;
+        font-size: 25px;
+        font-weight: 600;
+        color: var(--muted);
+        background: transparent;
+        border: 2px solid transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn-toggle.active {
+        background: rgba(107, 140, 245, 0.22);
+        color: var(--accent);
+        border-color: rgba(107, 140, 245, 0.5);
+      }
+
+      .find-counter {
+        min-width: 145px;
+        font-size: 25px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .btn-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+        background: transparent;
+        border: none;
+      }
+
+      /* Pagination Footer */
+      .pagination {
+        height: 72px;
+        flex: 0 0 72px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 28px;
+        background: var(--bg);
+        border-top: 2px solid var(--hairline);
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .page-strong {
+        font-weight: 500;
+        color: var(--fg);
+      }
+      .pagination-right {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+      .page-size-wrap,
+      .goto-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .select-mock,
+      .input-mock {
+        height: 42px;
+        padding: 0 14px;
+        border-radius: 7px;
+        background: rgba(23, 26, 32, 0.8);
+        border: 2px solid var(--hairline);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 26px;
+        color: var(--fg);
+      }
+      .input-mock {
+        min-width: 54px;
+        justify-content: center;
+      }
+      .page-nav-btns {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .nav-btn {
+        width: 44px;
+        height: 42px;
+        border-radius: 7px;
+        background: rgba(23, 26, 32, 0.8);
+        border: 2px solid var(--hairline);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+      }
+
+      /* Keyboard Chips Container */
+      .chip-dock {
+        position: absolute;
+        top: 160px;
+        left: 0;
+        width: 1920px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+        z-index: 50;
+      }
+      .kbd-chip {
+        position: absolute;
+        padding: 8px 22px;
+        border-radius: 10px;
+        background: rgba(23, 26, 32, 0.96);
+        border: 2px solid var(--accent);
+        color: var(--accent);
+        font-size: 30px;
+        font-weight: 600;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      /* Pointer */
+      #pointer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 34px;
+        height: 34px;
+        pointer-events: none;
+        z-index: 100;
+        opacity: 0;
+      }
+      #pointer svg {
+        width: 100%;
+        height: 100%;
+        filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.65));
+      }
+      #pointer path {
+        fill: var(--fg);
+        stroke: var(--bg);
+        stroke-width: 1.5;
+        stroke-linejoin: round;
+      }
+
+      /* SVGs */
+      .ic {
+        display: block;
+        flex: 0 0 auto;
+        fill: currentColor;
+      }
+    </style>
+  </head>
+  <body>
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-db" viewBox="0 0 256 256">
+          <path d="M224,80v96c0,35.35-43,64-96,64s-96-28.65-96-64V80c0-35.35,43-64,96-64S224,44.65,224,80Zm-16,0c0-21.87-35.48-48-80-48S48,58.13,48,80s35.48,48,80,48S208,101.87,208,80Zm-80,64c-35,0-63.78-16.27-74.66-38.35A62.59,62.59,0,0,0,48,128c0,21.87,35.48,48,80,48s80-26.13,80-48a62.59,62.59,0,0,0-5.34-19.65C191.78,127.73,163,144,128,144Zm0,48c-35,0-63.78-16.27-74.66-38.35A62.59,62.59,0,0,0,48,176c0,21.87,35.48,48,80,48s80-26.13,80-48a62.59,62.59,0,0,0-5.34-19.65C191.78,175.73,163,192,128,192Z" />
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 256 256">
+          <path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z" />
+        </symbol>
+        <symbol id="i-caret-up" viewBox="0 0 256 256">
+          <path d="M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z" />
+        </symbol>
+        <symbol id="i-caret-down" viewBox="0 0 256 256">
+          <path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z" />
+        </symbol>
+        <symbol id="i-caret-left" viewBox="0 0 256 256">
+          <path d="M165.66,202.34a8,8,0,0,1-11.32,0l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L99.31,128l66.35,66.34A8,8,0,0,1,165.66,202.34Z" />
+        </symbol>
+        <symbol id="i-caret-right" viewBox="0 0 256 256">
+          <path d="M181.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L164.69,128,98.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,181.66,133.66Z" />
+        </symbol>
+        <symbol id="i-caret-double-left" viewBox="0 0 256 256">
+          <path d="M205.66,194.34a8,8,0,0,1-11.32,0L134.05,134.05a8.53,8.53,0,0,1,0-12.1l60.29-60.29a8,8,0,0,1,11.32,11.32L151,128l54.66,55A8,8,0,0,1,205.66,194.34Zm-72,0a8,8,0,0,1-11.32,0L62.05,134.05a8.53,8.53,0,0,1,0-12.1l60.29-60.29a8,8,0,0,1,11.32,11.32L79,128l54.66,55A8,8,0,0,1,133.66,194.34Z" />
+        </symbol>
+        <symbol id="i-caret-double-right" viewBox="0 0 256 256">
+          <path d="M122.34,61.66a8,8,0,0,1,11.32,0l60.29,60.29a8.53,8.53,0,0,1,0,12.1l-60.29,60.29a8,8,0,0,1-11.32-11.32L177,128,122.34,73A8,8,0,0,1,122.34,61.66Zm-72,0a8,8,0,0,1,11.32,0l60.29,60.29a8.53,8.53,0,0,1,0,12.1l-60.29,60.29a8,8,0,0,1-11.32-11.32L105,128,50.34,73A8,8,0,0,1,50.34,61.66Z" />
+        </symbol>
+        <symbol id="i-close" viewBox="0 0 256 256">
+          <path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z" />
+        </symbol>
+      </defs>
+    </svg>
+
+    <div
+      id="stage"
+      data-composition-id="find-in-results"
+      data-start="0"
+      data-duration="9"
+      data-fps="30"
+      data-width="1920"
+      data-height="1200"
+    >
+      <div class="glow" data-layout-ignore="true"></div>
+      <div class="dotgrid" data-layout-ignore="true"></div>
+
+      <div class="window-frame">
+        <div class="window">
+          <!-- Titlebar -->
+          <div class="titlebar">
+            <div class="dots">
+              <span class="dot"></span>
+              <span class="dot"></span>
+              <span class="dot"></span>
+            </div>
+            <div class="vsep"></div>
+            <div class="tab-active">
+              <svg class="ic" style="width: 26px; height: 26px; color: var(--accent);"><use href="#i-db" /></svg>
+              <span class="tab-title">users</span>
+            </div>
+            <div class="titlebar-right mono">
+              <div class="conn-badge">
+                <span class="live-dot"></span>
+                <span>postgres/prod</span>
+              </div>
+              <div class="time-chip">38 ms</div>
+            </div>
+          </div>
+
+          <!-- Smart Filter Bar -->
+          <div class="smart-filter-bar">
+            <div class="filter-input-wrap">
+              <svg class="ic" style="width: 26px; height: 26px; color: var(--muted); opacity: 0.6;"><use href="#i-search" /></svg>
+              <span class="filter-placeholder">Filter results... (⌘F)</span>
+            </div>
+            <div class="filter-count mono">175 rows</div>
+          </div>
+
+          <!-- Grid Container -->
+          <div class="grid-container" data-cell-grid data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+            <!-- Column Headers -->
+            <div class="grid-header mono" data-layout-allow-overlap="true">
+              <div class="col-head col-id">
+                <span>id</span>
+                <span class="type-badge">int8</span>
+              </div>
+              <div class="col-head col-email">
+                <span>email</span>
+                <span class="type-badge">varchar</span>
+              </div>
+              <div class="col-head col-name">
+                <span>name</span>
+                <span class="type-badge">text</span>
+              </div>
+              <div class="col-head col-plan">
+                <span>plan</span>
+                <span class="type-badge">varchar</span>
+              </div>
+              <div class="col-head col-created">
+                <span>created_at</span>
+                <span class="type-badge">timestamptz</span>
+              </div>
+            </div>
+
+            <!-- Grid Viewport with Rows & Overlays -->
+            <div class="grid-viewport" data-layout-allow-overflow="true" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+              <!-- Match Overlays -->
+              <!-- Page 1 Match 1: Row 0 Email -->
+              <div id="match-p1-r0" class="match-overlay" data-layout-ignore="true" style="top: 0px; left: 168px; width: 520px; height: 80px;"></div>
+              <!-- Page 1 Match 2: Row 3 Name -->
+              <div id="match-p1-r3" class="match-overlay" data-layout-ignore="true" style="top: 240px; left: 688px; width: 380px; height: 80px;"></div>
+              <!-- Page 3 Match 3: Row 2 Email -->
+              <div id="match-p3-r2" class="match-overlay" data-layout-ignore="true" style="top: 160px; left: 168px; width: 520px; height: 80px;"></div>
+
+              <!-- Cell Focus Ring -->
+              <div id="focus-ring" data-layout-ignore="true" style="top: 0px; left: 168px; width: 520px; height: 80px;"></div>
+
+              <!-- Page 1 Rows (Rows 1 to 9) -->
+              <div id="page-1" class="grid-page mono" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <div class="grid-row">
+                  <div class="col-id">1</div>
+                  <div class="col-email">alice.smith@acme.io</div>
+                  <div class="col-name">A. Smith</div>
+                  <div class="col-plan">enterprise</div>
+                  <div class="col-created">2026-01-14 09:22:04</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">2</div>
+                  <div class="col-email">bob.jones@work.net</div>
+                  <div class="col-name">Bob Jones</div>
+                  <div class="col-plan">team</div>
+                  <div class="col-created">2026-01-15 11:04:19</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">3</div>
+                  <div class="col-email">carol.m@data.co</div>
+                  <div class="col-name">Carol Miller</div>
+                  <div class="col-plan">pro</div>
+                  <div class="col-created">2026-01-16 14:30:51</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">4</div>
+                  <div class="col-email">acooper@work.com</div>
+                  <div class="col-name">Alice Cooper</div>
+                  <div class="col-plan">pro</div>
+                  <div class="col-created">2026-01-18 10:15:22</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">5</div>
+                  <div class="col-email">david.kim@peak.ai</div>
+                  <div class="col-name">David Kim</div>
+                  <div class="col-plan">free</div>
+                  <div class="col-created">2026-01-19 16:50:33</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">6</div>
+                  <div class="col-email">elena.r@dev.io</div>
+                  <div class="col-name">Elena Rostova</div>
+                  <div class="col-plan">team</div>
+                  <div class="col-created">2026-01-21 08:45:10</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">7</div>
+                  <div class="col-email">frank.t@cloud.com</div>
+                  <div class="col-name">Frank Torres</div>
+                  <div class="col-plan">enterprise</div>
+                  <div class="col-created">2026-01-22 13:20:47</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">8</div>
+                  <div class="col-email">grace.h@system.dev</div>
+                  <div class="col-name"><span class="null-val">NULL</span></div>
+                  <div class="col-plan">pro</div>
+                  <div class="col-created">2026-01-24 17:10:05</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">9</div>
+                  <div class="col-email">ian.w@matrix.org</div>
+                  <div class="col-name">Ian Wright</div>
+                  <div class="col-plan"><span class="null-val">NULL</span></div>
+                  <div class="col-created">2026-01-25 12:00:18</div>
+                </div>
+              </div>
+
+              <!-- Page 3 Rows (Rows 51 to 59) -->
+              <div id="page-3" class="grid-page mono" data-layout-allow-overlap="true" data-layout-allow-occlusion="true" style="opacity: 0;">
+                <div class="grid-row">
+                  <div class="col-id">51</div>
+                  <div class="col-email">david.v@globex.org</div>
+                  <div class="col-name">David Vance</div>
+                  <div class="col-plan">pro</div>
+                  <div class="col-created">2026-04-18 11:02:15</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">52</div>
+                  <div class="col-email">elena.k@data.net</div>
+                  <div class="col-name">Elena Kim</div>
+                  <div class="col-plan">team</div>
+                  <div class="col-created">2026-04-20 16:45:00</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">53</div>
+                  <div class="col-email">alice@hyper.dev</div>
+                  <div class="col-name">M. Sterling</div>
+                  <div class="col-plan">enterprise</div>
+                  <div class="col-created">2026-04-21 14:10:42</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">54</div>
+                  <div class="col-email">jack.d@acme.co</div>
+                  <div class="col-name">Jack Davies</div>
+                  <div class="col-plan">free</div>
+                  <div class="col-created">2026-04-23 09:30:11</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">55</div>
+                  <div class="col-email">karen.p@peak.ai</div>
+                  <div class="col-name">Karen Page</div>
+                  <div class="col-plan">pro</div>
+                  <div class="col-created">2026-04-25 15:20:54</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">56</div>
+                  <div class="col-email">leo.m@system.dev</div>
+                  <div class="col-name">Leo Martin</div>
+                  <div class="col-plan">team</div>
+                  <div class="col-created">2026-04-27 10:05:39</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">57</div>
+                  <div class="col-email">mona.s@cloud.com</div>
+                  <div class="col-name">Mona Scott</div>
+                  <div class="col-plan">pro</div>
+                  <div class="col-created">2026-04-28 17:40:22</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">58</div>
+                  <div class="col-email">nathan.b@work.net</div>
+                  <div class="col-name">Nathan Bell</div>
+                  <div class="col-plan">free</div>
+                  <div class="col-created">2026-04-29 13:15:08</div>
+                </div>
+                <div class="grid-row">
+                  <div class="col-id">59</div>
+                  <div class="col-email">olivia.r@matrix.org</div>
+                  <div class="col-name">Olivia Reed</div>
+                  <div class="col-plan">enterprise</div>
+                  <div class="col-created">2026-04-30 08:50:31</div>
+                </div>
+              </div>
+
+              <!-- Find Bar in Grid Top-Right -->
+              <div id="find-bar" class="find-bar" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                <svg class="ic" style="width: 24px; height: 24px; color: var(--muted);"><use href="#i-search" /></svg>
+                <div class="find-input-box mono" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+                  <span id="find-placeholder" class="find-placeholder" data-layout-allow-overlap="true">Find...</span>
+                  <span id="find-needle" class="find-needle" data-layout-allow-overlap="true"></span>
+                  <span id="find-cursor" class="find-cursor" data-layout-ignore="true"></span>
+                </div>
+                <button type="button" class="btn-toggle mono" data-layout-allow-overlap="true">Aa</button>
+                <button type="button" id="btn-regex" class="btn-toggle mono" data-layout-allow-overlap="true">.*</button>
+                <div id="find-counter" class="find-counter mono" data-layout-allow-overlap="true"></div>
+                <button type="button" id="btn-prev" class="btn-icon" data-layout-allow-overlap="true" style="opacity: 0.4;">
+                  <svg class="ic" style="width: 24px; height: 24px;"><use href="#i-caret-up" /></svg>
+                </button>
+                <button type="button" id="btn-next" class="btn-icon" data-layout-allow-overlap="true" style="opacity: 0.4;">
+                  <svg class="ic" style="width: 24px; height: 24px;"><use href="#i-caret-down" /></svg>
+                </button>
+                <button type="button" id="btn-close" class="btn-icon" data-layout-allow-overlap="true">
+                  <svg class="ic" style="width: 24px; height: 24px;"><use href="#i-close" /></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Pagination Footer -->
+            <div class="pagination">
+              <div>
+                Rows <span id="pg-rows" class="page-strong mono">1-25</span> of <span class="page-strong mono">175</span>
+              </div>
+              <div class="pagination-right">
+                <div class="page-size-wrap">
+                  <span>Rows per page</span>
+                  <div class="select-mock mono">
+                    <span>25</span>
+                    <svg class="ic" style="width: 18px; height: 18px; color: var(--muted);"><use href="#i-caret-down" /></svg>
+                  </div>
+                </div>
+                <div class="goto-wrap">
+                  <span>Go to</span>
+                  <div id="pg-goto" class="input-mock mono">1</div>
+                  <span>of 7</span>
+                </div>
+                <div class="page-nav-btns">
+                  <div id="nav-first" class="nav-btn" style="opacity: 0.35;">
+                    <svg class="ic" style="width: 20px; height: 20px;"><use href="#i-caret-double-left" /></svg>
+                  </div>
+                  <div id="nav-prev" class="nav-btn" style="opacity: 0.35;">
+                    <svg class="ic" style="width: 20px; height: 20px;"><use href="#i-caret-left" /></svg>
+                  </div>
+                  <div id="nav-next" class="nav-btn">
+                    <svg class="ic" style="width: 20px; height: 20px;"><use href="#i-caret-right" /></svg>
+                  </div>
+                  <div id="nav-last" class="nav-btn">
+                    <svg class="ic" style="width: 20px; height: 20px;"><use href="#i-caret-double-right" /></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Keyboard Shortcut Chips -->
+      <div class="chip-dock" data-layout-ignore="true">
+        <div id="chip-cmdf" class="kbd-chip mono" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">⌘F</div>
+        <div id="chip-enter" class="kbd-chip mono" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">↵ Enter</div>
+        <div id="chip-esc" class="kbd-chip mono" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">esc</div>
+      </div>
+
+      <!-- Mouse Pointer for Clicking Regex Toggle -->
+      <div id="pointer" data-layout-ignore="true">
+        <svg viewBox="0 0 24 24"><path d="M5 3 L5 19 L9 15 L12 22 L15 20.5 L11.5 14 L18 14 Z" /></svg>
+      </div>
+    </div>
+
+    <script>
+      const COMP_ID = 'find-in-results'
+      const $ = (id) => document.getElementById(id)
+
+      function build() {
+        const tl = gsap.timeline({ paused: true })
+
+        // Initial setup at t=0
+        tl.set('#find-bar', { opacity: 0, y: -8, scale: 0.96 }, 0)
+        tl.set('#pointer', { opacity: 0, x: 1720, y: 480 }, 0)
+        tl.set(['#chip-cmdf', '#chip-enter', '#chip-esc'], { opacity: 0, scale: 0.9 }, 0)
+        tl.set('#match-p1-r0', { opacity: 0, className: 'match-overlay match-fill' }, 0)
+        tl.set('#match-p1-r3', { opacity: 0, className: 'match-overlay match-fill' }, 0)
+        tl.set('#match-p3-r2', { opacity: 0, className: 'match-overlay match-fill' }, 0)
+        tl.set('#focus-ring', { x: 0, y: 0, width: 520, height: 80, opacity: 1 }, 0)
+        tl.set('#page-1', { opacity: 1, x: 0, y: 0 }, 0)
+        tl.set('#page-3', { opacity: 0, y: 10 }, 0)
+        tl.set('#btn-regex', { className: 'btn-toggle mono' }, 0)
+        tl.set('#find-placeholder', { opacity: 0.5 }, 0)
+        tl.set('#find-needle', { textContent: '' }, 0)
+        tl.set('#find-counter', { textContent: '' }, 0)
+        tl.set(['#btn-prev', '#btn-next'], { opacity: 0.4 }, 0)
+        tl.set('#pg-rows', { textContent: '1-25' }, 0)
+        tl.set('#pg-goto', { textContent: '1' }, 0)
+        tl.set(['#nav-first', '#nav-prev'], { opacity: 0.35 }, 0)
+
+        // Cursor blink on the search input
+        ;[0.7, 1.1, 1.5, 1.9, 2.3, 2.7, 3.1, 3.5, 3.9, 4.3, 4.7, 5.1, 5.5, 5.9, 6.3, 6.7, 7.1, 7.5, 7.9].forEach((t) => {
+          tl.to('#find-cursor', { opacity: 0, duration: 0.18, ease: 'steps(1)' }, t)
+          tl.to('#find-cursor', { opacity: 1, duration: 0.18, ease: 'steps(1)' }, t + 0.2)
+        })
+
+        /* ========================================================
+           BEAT 1: OPEN (0 to 1.2 s)
+           ⌘F keyboard chip flashes; find bar appears top-right
+        ======================================================== */
+        tl.fromTo(
+          '#chip-cmdf',
+          { opacity: 0, scale: 0.88 },
+          {
+            keyframes: [
+              { opacity: 1, scale: 1, duration: 0.1, ease: 'power2.out' },
+              { opacity: 1, scale: 1, duration: 0.32 },
+              { opacity: 0, scale: 1.15, duration: 0.22, ease: 'power2.in' }
+            ]
+          },
+          0.32
+        )
+
+        tl.to(
+          '#find-bar',
+          { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: 'expo.out' },
+          0.55
+        )
+
+        /* ========================================================
+           BEAT 2: TYPE (1.2 to 2.6 s)
+           "alice" types into input; 7 matches found; highlights appear
+        ======================================================== */
+        tl.set('#find-placeholder', { opacity: 0 }, 1.3)
+
+        // Type "alice"
+        tl.set('#find-needle', { textContent: 'a' }, 1.35)
+        tl.set('#find-needle', { textContent: 'al' }, 1.50)
+        tl.set('#find-needle', { textContent: 'ali' }, 1.65)
+        tl.set('#find-needle', { textContent: 'alic' }, 1.80)
+        tl.set('#find-needle', { textContent: 'alice' }, 1.95)
+
+        // Counter updates: "7 matches" (before Enter is pressed)
+        tl.set('#find-counter', { textContent: '7 matches' }, 2.05)
+        tl.to(['#btn-prev', '#btn-next'], { opacity: 1, duration: 0.15 }, 2.05)
+
+        // Matching cells get match fill
+        tl.to('#match-p1-r0', { opacity: 1, duration: 0.2, ease: 'power2.out' }, 2.08)
+        tl.to('#match-p1-r3', { opacity: 1, duration: 0.2, ease: 'power2.out' }, 2.08)
+
+        /* ========================================================
+           BEAT 3: STEP ACROSS PAGES (2.6 to 5.4 s)
+           Enter: 1 of 7 (Match 1 gets current-match fill + focus ring)
+           Enter: 2 of 7 (Match 2 gets current-match fill + focus ring)
+           Enter: 3 of 7 (Page jumps to 3! Rows swap, Match 3 highlighted)
+        ======================================================== */
+        // Step 1: 1st Enter (t = 2.65 s)
+        tl.fromTo(
+          '#chip-enter',
+          { opacity: 0, scale: 0.88 },
+          {
+            keyframes: [
+              { opacity: 1, scale: 1, duration: 0.08, ease: 'power2.out' },
+              { opacity: 1, scale: 1, duration: 0.2 },
+              { opacity: 0, scale: 1.15, duration: 0.18, ease: 'power2.in' }
+            ]
+          },
+          2.65
+        )
+        tl.set('#find-counter', { textContent: '1 of 7' }, 2.75)
+        // Match 1 turns to current-match
+        tl.set('#match-p1-r0', { className: 'match-overlay match-current' }, 2.75)
+        tl.to('#focus-ring', { x: 0, y: 0, width: 520, height: 80, duration: 0.18, ease: 'power3.out' }, 2.75)
+
+        // Step 2: 2nd Enter (t = 3.45 s)
+        tl.fromTo(
+          '#chip-enter',
+          { opacity: 0, scale: 0.88 },
+          {
+            keyframes: [
+              { opacity: 1, scale: 1, duration: 0.08, ease: 'power2.out' },
+              { opacity: 1, scale: 1, duration: 0.2 },
+              { opacity: 0, scale: 1.15, duration: 0.18, ease: 'power2.in' }
+            ],
+            immediateRender: false
+          },
+          3.45
+        )
+        tl.set('#find-counter', { textContent: '2 of 7' }, 3.55)
+        // Match 1 reverts to standard match fill
+        tl.set('#match-p1-r0', { className: 'match-overlay match-fill' }, 3.55)
+        // Match 2 turns to current-match
+        tl.set('#match-p1-r3', { className: 'match-overlay match-current' }, 3.55)
+        // Focus ring moves to Match 2 (Row 3, Col 2: top 240px, left 688px, width 380px)
+        tl.to('#focus-ring', { x: 520, y: 240, width: 380, height: 80, duration: 0.22, ease: 'power3.out' }, 3.55)
+
+        // Step 3: 3rd Enter - PAGE JUMP TO PAGE 3! (t = 4.25 s)
+        tl.fromTo(
+          '#chip-enter',
+          { opacity: 0, scale: 0.88 },
+          {
+            keyframes: [
+              { opacity: 1, scale: 1, duration: 0.08, ease: 'power2.out' },
+              { opacity: 1, scale: 1, duration: 0.2 },
+              { opacity: 0, scale: 1.15, duration: 0.18, ease: 'power2.in' }
+            ],
+            immediateRender: false
+          },
+          4.25
+        )
+        tl.set('#find-counter', { textContent: '3 of 7' }, 4.35)
+
+        // Pagination updates
+        tl.set('#pg-rows', { textContent: '51-75' }, 4.35)
+        tl.set('#pg-goto', { textContent: '3' }, 4.35)
+        tl.to(['#nav-first', '#nav-prev'], { opacity: 1, duration: 0.15 }, 4.35)
+
+        // Page transition: Page 1 out, Page 3 in
+        tl.to('#page-1', { opacity: 0, y: -8, duration: 0.24, ease: 'power2.in' }, 4.32)
+        tl.set(['#match-p1-r0', '#match-p1-r3'], { opacity: 0 }, 4.45)
+        tl.fromTo('#page-3', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.28, ease: 'power3.out' }, 4.45)
+
+        // Match 3 on Page 3 appears: Row 2 Email (alice@hyper.dev)
+        tl.set('#match-p3-r2', { className: 'match-overlay match-current', opacity: 1 }, 4.48)
+        // Focus ring snaps to Match 3 on Page 3 (Row 2, Col 1: top 160px, left 168px, width 520px)
+        tl.to('#focus-ring', { x: 0, y: 160, width: 520, height: 80, duration: 0.24, ease: 'power3.out' }, 4.48)
+
+        // (Still 2: find-bar-with-filter.png is mid beat 3, around 4.8 s)
+
+        /* ========================================================
+           BEAT 4: REGEX (5.4 to 8.0 s)
+           Pointer moves to .*, clicks; .* becomes active;
+           needle edits to "^alice@"; counter updates to "2 of 3"
+        ======================================================== */
+        // Pointer enters and moves to ".*" button
+        // ".*" button in find-bar: find-bar right: 28px, window right: 80px -> ~1430px x, ~225px y
+        tl.fromTo(
+          '#pointer',
+          { opacity: 0, x: 1560, y: 360 },
+          { opacity: 1, x: 1410, y: 226, duration: 0.45, ease: 'power3.out' },
+          5.5
+        )
+
+        // Click on ".*"
+        tl.to('#pointer', { scale: 0.88, duration: 0.08, ease: 'power2.in' }, 5.98)
+        tl.to('#pointer', { scale: 1, duration: 0.14, ease: 'power2.out' }, 6.06)
+        tl.set('#btn-regex', { className: 'btn-toggle mono active' }, 6.06)
+
+        // Pointer moves away
+        tl.to('#pointer', { x: 1540, y: 340, opacity: 0, duration: 0.38, ease: 'power2.in' }, 6.18)
+
+        // Edit needle from "alice" to "^alice@"
+        tl.set('#find-needle', { textContent: '^alice' }, 6.45)
+        tl.set('#find-needle', { textContent: '^alice@' }, 6.80)
+
+        // Counter updates to "2 of 3"
+        tl.set('#find-counter', { textContent: '2 of 3' }, 6.95)
+
+        // Match 3 remains highlighted on Page 3
+        tl.to('#match-p3-r2', { opacity: 1, duration: 0.1 }, 6.95)
+
+        // (Still 1: find-bar-regex-toggle.png is mid beat 4, around 7.2 s)
+
+        /* ========================================================
+           BEAT 5: RESET (8.0 to 9.0 s)
+           Escape: find bar closes, highlights clear, page returns to 1,
+           and frame returns exactly to frame 0.
+        ======================================================== */
+        tl.fromTo(
+          '#chip-esc',
+          { opacity: 0, scale: 0.88 },
+          {
+            keyframes: [
+              { opacity: 1, scale: 1, duration: 0.08, ease: 'power2.out' },
+              { opacity: 1, scale: 1, duration: 0.2 },
+              { opacity: 0, scale: 1.15, duration: 0.18, ease: 'power2.in' }
+            ]
+          },
+          8.05
+        )
+
+        // Close find bar
+        tl.to('#find-bar', { opacity: 0, y: -8, scale: 0.96, duration: 0.22, ease: 'power2.in' }, 8.18)
+        tl.to('#match-p3-r2', { opacity: 0, duration: 0.15 }, 8.18)
+
+        // Swap back to Page 1
+        tl.to('#page-3', { opacity: 0, y: 8, duration: 0.22, ease: 'power2.in' }, 8.22)
+        tl.fromTo('#page-1', { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.26, ease: 'power3.out', immediateRender: false }, 8.44)
+
+        // Revert pagination controls
+        tl.set('#pg-rows', { textContent: '1-25' }, 8.44)
+        tl.set('#pg-goto', { textContent: '1' }, 8.44)
+        tl.to(['#nav-first', '#nav-prev'], { opacity: 0.35, duration: 0.12 }, 8.44)
+
+        // Reset find bar internal state back to frame 0 values
+        tl.set('#btn-regex', { className: 'btn-toggle mono' }, 8.5)
+        tl.set('#find-needle', { textContent: '' }, 8.5)
+        tl.set('#find-placeholder', { opacity: 0.5 }, 8.5)
+        tl.set('#find-counter', { textContent: '' }, 8.5)
+        tl.set(['#btn-prev', '#btn-next'], { opacity: 0.4 }, 8.5)
+
+        // Focus ring returns to initial cell (Row 0, Col 1 on Page 1)
+        tl.to('#focus-ring', { x: 0, y: 0, width: 520, height: 80, duration: 0.26, ease: 'power3.out' }, 8.44)
+
+        // Exact snap to resting state at 8.75s to ensure frame 270 (9.0s) === frame 0 (0.0s)
+        tl.set('#page-1', { opacity: 1, x: 0, y: 0 }, 8.75)
+        tl.set('#page-3', { opacity: 0, y: 10 }, 8.75)
+        tl.set('#focus-ring', { x: 0, y: 0, width: 520, height: 80, opacity: 1 }, 8.75)
+        tl.set(['#nav-first', '#nav-prev'], { opacity: 0.35 }, 8.75)
+
+        // Exact settle at 9.0 s
+        window.__timelines = window.__timelines || {}
+        window.__timelines[COMP_ID] = tl
+        tl.seek(0)
+      }
+
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(build)
+      } else {
+        build()
+      }
+    </script>
+  </body>
+</html>
