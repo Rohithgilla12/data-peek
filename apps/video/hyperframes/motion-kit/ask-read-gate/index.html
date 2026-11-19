@@ -1,0 +1,1415 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1200" />
+    <title>data-peek: The Two-Layer Read Gate</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face {
+        font-family: 'Geist Variable';
+        src: url('fonts/geist.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      @font-face {
+        font-family: 'Geist Mono Variable';
+        src: url('fonts/geist-mono.woff2') format('woff2');
+        font-weight: 100 900;
+      }
+      :root {
+        --bg: #101216;
+        --raised: #171a20;
+        --fg: #ebecee;
+        --muted: #9aa0ad;
+        --accent: #6b8cf5;
+        --accent-deep: #3b52c4;
+        --success: #4ade80;
+        --destructive: #f2555a;
+        --hairline: #2a2f3a;
+        --amber: #f5b14c;
+        --accent-glow: rgba(59, 82, 196, 0.22);
+        --accent-soft: rgba(107, 140, 245, 0.15);
+        --amber-soft: rgba(245, 177, 76, 0.08);
+        --amber-line: rgba(245, 177, 76, 0.45);
+        --destructive-soft: rgba(242, 85, 90, 0.12);
+        --destructive-line: rgba(242, 85, 90, 0.45);
+        --success-soft: rgba(74, 222, 128, 0.12);
+        --success-line: rgba(74, 222, 128, 0.45);
+        --shadow: rgba(0, 0, 0, 0.55);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+      }
+      #stage {
+        position: relative;
+        width: 1920px;
+        height: 1200px;
+        overflow: hidden;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: 'Geist Variable', sans-serif;
+        font-variant-numeric: tabular-nums;
+      }
+      .mono {
+        font-family: 'Geist Mono Variable', monospace;
+        font-variant-ligatures: none;
+      }
+      #scene {
+        position: absolute;
+        inset: 0;
+      }
+      .glow {
+        position: absolute;
+        width: 1600px;
+        height: 1600px;
+        left: 160px;
+        top: -420px;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--accent-glow) 0%, rgba(59, 82, 196, 0) 62%);
+        pointer-events: none;
+      }
+      .dotgrid {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(rgba(154, 160, 173, 0.13) 2px, transparent 2px);
+        background-size: 56px 56px;
+        pointer-events: none;
+      }
+      .ic {
+        display: block;
+        flex: 0 0 auto;
+        fill: currentColor;
+      }
+
+      /* LEFT WINDOW: ASK TAB (970px wide) */
+      .window {
+        position: absolute;
+        left: 80px;
+        top: 80px;
+        width: 970px;
+        height: 1040px;
+        background: var(--bg);
+        border: 2px solid var(--hairline);
+        border-radius: 16px;
+        box-shadow: 0 40px 120px var(--shadow);
+        overflow: hidden;
+      }
+      .titlebar {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 24px;
+        background: var(--raised);
+        border-bottom: 2px solid var(--hairline);
+        font-size: 26px;
+      }
+      .dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--muted);
+        opacity: 0.35;
+      }
+      .vsep {
+        width: 2px;
+        height: 28px;
+        margin: 0 10px 0 16px;
+        background: var(--hairline);
+      }
+      .conn {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 500;
+      }
+      .live {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: var(--success);
+      }
+      .conn .ic {
+        width: 22px;
+        height: 22px;
+        color: var(--muted);
+        opacity: 0.7;
+      }
+      .tb-right {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+      }
+      .tb-badge {
+        font-size: 26px;
+        color: var(--muted);
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--hairline);
+      }
+      .askbtn {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--accent);
+        font-size: 26px;
+        font-weight: 500;
+      }
+      .askbtn .ic {
+        width: 24px;
+        height: 24px;
+      }
+      kbd {
+        display: inline-block;
+        font-family: 'Geist Mono Variable', monospace;
+        font-size: 26px;
+        line-height: 1.2;
+        padding: 0 6px;
+        border-radius: 6px;
+        border: 2px solid var(--hairline);
+        color: var(--muted);
+      }
+
+      .tabs {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 64px;
+        height: 54px;
+        border-bottom: 2px solid var(--hairline);
+        background: rgba(16, 18, 22, 0.8);
+      }
+      .tab {
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 54px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 24px;
+        font-size: 26px;
+        color: var(--fg);
+      }
+      .tab .ic {
+        width: 22px;
+        height: 22px;
+        color: var(--accent);
+      }
+      .tabline {
+        position: absolute;
+        left: 0;
+        bottom: -2px;
+        width: 140px;
+        height: 3px;
+        background: var(--accent);
+      }
+
+      .viewport {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 118px;
+        bottom: 160px;
+        padding: 20px 24px;
+        overflow: hidden;
+      }
+
+      /* ASK BLOCKS */
+      .block {
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .b-head {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      .b-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 9px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .b-icon .ic {
+        width: 24px;
+        height: 24px;
+      }
+      .b-q {
+        flex: 1;
+        font-size: 30px;
+        font-weight: 600;
+        color: var(--fg);
+        letter-spacing: -0.01em;
+      }
+      .b-time {
+        font-size: 26px;
+        color: var(--muted);
+        opacity: 0.6;
+      }
+      .b-body {
+        margin-left: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .answer {
+        font-size: 28px;
+        color: var(--fg);
+        line-height: 1.35;
+      }
+      .card {
+        border: 2px solid var(--hairline);
+        border-radius: 12px;
+        background: var(--raised);
+        overflow: hidden;
+      }
+      .sqlpane {
+        padding: 16px 20px;
+        font-size: 26px;
+        line-height: 38px;
+        background: rgba(16, 18, 22, 0.4);
+      }
+      .sqlpane .ln {
+        display: block;
+        white-space: pre;
+      }
+      .k {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .fn {
+        color: #b8c7ff;
+      }
+      .s {
+        color: var(--success);
+      }
+      .n {
+        color: var(--amber);
+      }
+
+      /* RESULT AREA (Beat 1) */
+      .result-slot {
+        border-top: 2px solid var(--hairline);
+        padding: 16px 20px;
+        background: rgba(23, 26, 32, 0.7);
+      }
+      .rhead {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .vdot {
+        opacity: 0.5;
+      }
+      .r-badge {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        color: var(--success);
+        font-size: 26px;
+      }
+      .r-badge .ic {
+        width: 20px;
+        height: 20px;
+      }
+      .metric-box {
+        margin-top: 10px;
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+      }
+      .metric-val {
+        font-size: 56px;
+        font-weight: 700;
+        color: var(--fg);
+        line-height: 1;
+      }
+      .metric-lbl {
+        font-size: 26px;
+        color: var(--muted);
+      }
+
+      /* ERROR AREA (Beat 2) */
+      .err-slot {
+        border-top: 2px solid var(--destructive-line);
+        padding: 16px 20px;
+        background: var(--destructive-soft);
+      }
+      .err-box {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .err-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+      }
+      .err-icon {
+        width: 28px;
+        height: 28px;
+        color: var(--destructive);
+        margin-top: 2px;
+      }
+      .err-msg {
+        flex: 1;
+        font-size: 26px;
+        line-height: 36px;
+        color: var(--destructive);
+        white-space: pre-wrap;
+      }
+      .btn-fix {
+        align-self: flex-start;
+        margin-left: 40px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        height: 46px;
+        padding: 0 16px;
+        border-radius: 8px;
+        border: 2px solid var(--hairline);
+        background: var(--raised);
+        color: var(--fg);
+        font-size: 26px;
+        font-weight: 500;
+      }
+      .btn-fix .ic {
+        width: 22px;
+        height: 22px;
+        color: var(--accent);
+      }
+
+      /* HOLD BANNER (Beat 4) */
+      .hold-slot {
+        border-top: 2px solid var(--amber-line);
+        background: var(--amber-soft);
+      }
+      .hold-banner {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 20px;
+        height: 72px;
+      }
+      .warn-icon {
+        width: 28px;
+        height: 28px;
+        color: var(--amber);
+      }
+      .hold-text {
+        flex: 1;
+        font-size: 26px;
+        color: var(--fg);
+        white-space: nowrap;
+        opacity: 0.95;
+      }
+      .btn-runit {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        height: 48px;
+        padding: 0 18px;
+        border-radius: 8px;
+        border: 2px solid var(--amber-line);
+        background: rgba(245, 177, 76, 0.12);
+        color: var(--amber);
+        font-size: 26px;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .btn-runit .ic {
+        width: 22px;
+        height: 22px;
+      }
+      .run-halo {
+        position: absolute;
+        inset: -8px;
+        border-radius: 14px;
+        border: 3px solid var(--accent);
+        box-shadow: 0 0 24px rgba(107, 140, 245, 0.55);
+        pointer-events: none;
+        opacity: 0;
+      }
+
+      /* COMPOSER */
+      .composer {
+        position: absolute;
+        left: 24px;
+        right: 24px;
+        bottom: 24px;
+        height: 140px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .cbox {
+        border: 2px solid var(--hairline);
+        border-radius: 12px;
+        background: var(--raised);
+        padding: 12px 18px;
+      }
+      .c-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        height: 48px;
+      }
+      .mode {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 6px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 26px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .mode .ic {
+        width: 20px;
+        height: 20px;
+      }
+      .ctext {
+        flex: 1;
+        font-size: 28px;
+      }
+      .ph {
+        color: var(--muted);
+        opacity: 0.7;
+      }
+      .send {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        background: var(--accent);
+        color: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0.5;
+      }
+      .send .ic {
+        width: 24px;
+        height: 24px;
+      }
+      .status-line {
+        font-size: 26px;
+        color: var(--muted);
+        padding: 0 4px;
+        white-space: nowrap;
+      }
+
+      /* RIGHT PANEL: THE TWO-LAYER READ GATE (750px wide) */
+      .gate-panel {
+        position: absolute;
+        left: 1090px;
+        top: 80px;
+        width: 750px;
+        height: 1040px;
+        background: rgba(23, 26, 32, 0.75);
+        border: 2px solid var(--hairline);
+        border-radius: 16px;
+        box-shadow: 0 40px 120px var(--shadow);
+        padding: 30px;
+        display: flex;
+        flex-direction: column;
+        overflow: visible;
+      }
+      .gate-head {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 20px;
+      }
+      .gh-eyebrow {
+        font-size: 26px;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .gh-title {
+        font-size: 34px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+      }
+
+      /* LAYER CARDS */
+      .layer-card {
+        border: 2px solid var(--hairline);
+        border-radius: 14px;
+        background: var(--raised);
+        padding: 22px;
+        position: relative;
+      }
+      .l-top {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .l-badge {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+        font-weight: 700;
+      }
+      .l-title {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--fg);
+      }
+      .l-chip {
+        margin-left: auto;
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 26px;
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        border: 1px solid var(--hairline);
+        background: rgba(255, 255, 255, 0.04);
+        color: var(--muted);
+      }
+      .l-chip.passed {
+        border-color: var(--success-line);
+        background: var(--success-soft);
+        color: var(--success);
+      }
+      .l-chip.refused {
+        border-color: var(--destructive-line);
+        background: var(--destructive-soft);
+        color: var(--destructive);
+      }
+      .l-sub {
+        margin-top: 10px;
+        font-size: 26px;
+        color: var(--muted);
+        line-height: 1.35;
+      }
+
+      /* LAYER 1 CHECKS */
+      .checks {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .check-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        background: rgba(16, 18, 22, 0.5);
+        border: 1px solid var(--hairline);
+        font-size: 26px;
+        color: var(--muted);
+      }
+      .chk-ic {
+        width: 22px;
+        height: 22px;
+        color: var(--muted);
+        opacity: 0.3;
+      }
+      .check-item.active {
+        color: var(--fg);
+        border-color: rgba(74, 222, 128, 0.3);
+      }
+      .check-item.active .chk-ic {
+        color: var(--success);
+        opacity: 1;
+      }
+
+      /* CONNECTOR BUS */
+      .connector-bus {
+        height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+      }
+      .bus-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: var(--hairline);
+      }
+      .bus-arrow {
+        position: relative;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--raised);
+        border: 2px solid var(--hairline);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--muted);
+      }
+      .bus-arrow .ic {
+        width: 18px;
+        height: 18px;
+      }
+
+      /* LAYER 2 CONSOLE */
+      .console {
+        margin-top: 16px;
+        border-radius: 10px;
+        background: rgba(10, 12, 15, 0.85);
+        border: 1px solid var(--hairline);
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        font-size: 26px;
+        line-height: 36px;
+        min-height: 200px;
+      }
+      .cn-line {
+        display: block;
+        color: var(--muted);
+        white-space: pre-wrap;
+      }
+      .cn-stmt {
+        color: var(--fg);
+      }
+      .cn-line.err {
+        color: var(--destructive);
+        background: rgba(242, 85, 90, 0.1);
+        padding: 6px 10px;
+        border-radius: 6px;
+        border: 1px solid var(--destructive-line);
+      }
+      .err-txt {
+        color: var(--destructive);
+      }
+
+      .l-body {
+        overflow: hidden;
+      }
+
+      /* 5-ENGINE TABLE (Beat 3, Still 1) - Inside right-hand gate panel */
+      .engine-table {
+        margin-top: 14px;
+        background: rgba(10, 12, 15, 0.85);
+        border-radius: 10px;
+        border: 1px solid var(--hairline);
+        padding: 14px 16px;
+        display: none;
+        flex-direction: column;
+        gap: 8px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+        z-index: 60;
+      }
+      .et-header {
+        font-size: 26px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        color: var(--accent);
+        margin-bottom: 2px;
+      }
+      .et-item {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        padding: 8px 14px;
+        background: rgba(16, 18, 22, 0.7);
+        border-radius: 6px;
+        border: 1px solid var(--hairline);
+        text-align: left;
+      }
+      .et-name {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--fg);
+        line-height: 1.25;
+        text-align: left;
+      }
+      .et-rule {
+        font-size: 26px;
+        font-weight: 400;
+        color: var(--muted);
+        line-height: 1.25;
+        white-space: normal;
+        text-align: left;
+      }
+
+      /* SQL TOKEN */
+      .sql-token {
+        position: absolute;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        height: 48px;
+        padding: 0 16px;
+        border-radius: 24px;
+        background: var(--raised);
+        border: 2px solid var(--accent);
+        box-shadow: 0 0 20px rgba(107, 140, 245, 0.4);
+        font-size: 26px;
+        color: var(--fg);
+        z-index: 50;
+        pointer-events: none;
+      }
+      .tok-tag {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--accent);
+      }
+      .tok-stmt {
+        font-size: 26px;
+        color: var(--fg);
+      }
+
+      /* GATE BARRIER (Beat 4) */
+      .gate-barrier {
+        position: absolute;
+        left: 1070px;
+        top: 60px;
+        bottom: 60px;
+        width: 3px;
+        z-index: 40;
+        pointer-events: none;
+      }
+      .barrier-line {
+        position: absolute;
+        inset: 0;
+        width: 3px;
+        background: repeating-linear-gradient(
+          to bottom,
+          var(--amber),
+          var(--amber) 16px,
+          transparent 16px,
+          transparent 28px
+        );
+        box-shadow: 0 0 18px rgba(245, 177, 76, 0.55);
+      }
+    </style>
+  </head>
+  <body>
+    <!-- SVG SYMBOL DEFINITIONS -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <symbol id="i-ai" viewBox="0 0 256 256"><path d="M196.89,130.94,144.4,111.6,125.06,59.11a13.92,13.92,0,0,0-26.12,0L79.6,111.6,27.11,130.94a13.92,13.92,0,0,0,0,26.12L79.6,176.4l19.34,52.49a13.92,13.92,0,0,0,26.12,0L144.4,176.4l52.49-19.34a13.92,13.92,0,0,0,0-26.12Zm-4.15,14.86-55.08,20.3a6,6,0,0,0-3.56,3.56l-20.3,55.08a1.92,1.92,0,0,1-3.6,0L89.9,169.66a6,6,0,0,0-3.56-3.56L31.26,145.8a1.92,1.92,0,0,1,0-3.6l55.08-20.3a6,6,0,0,0,3.56-3.56l20.3-55.08a1.92,1.92,0,0,1,3.6,0l20.3,55.08a6,6,0,0,0,3.56,3.56l55.08,20.3a1.92,1.92,0,0,1,0,3.6ZM146,40a6,6,0,0,1,6-6h18V16a6,6,0,0,1,12,0V34h18a6,6,0,0,1,0,12H182V64a6,6,0,0,1-12,0V46H152A6,6,0,0,1,146,40ZM246,88a6,6,0,0,1-6,6H230v10a6,6,0,0,1-12,0V94H208a6,6,0,0,1,0-12h10V72a6,6,0,0,1,12,0V82h10A6,6,0,0,1,246,88Z" /></symbol>
+        <symbol id="i-caret-updown" viewBox="0 0 256 256"><path d="M180.24,171.76a6,6,0,0,1,0,8.48l-48,48a6,6,0,0,1-8.48,0l-48-48a6,6,0,0,1,8.48-8.48L128,215.51l43.76-43.75A6,6,0,0,1,180.24,171.76Zm-96-87.52L128,40.49l43.76,43.75a6,6,0,0,0,8.48-8.48l-48-48a6,6,0,0,0-8.48,0l-48,48a6,6,0,0,0,8.48,8.48Z" /></symbol>
+        <symbol id="i-arrow-up" viewBox="0 0 256 256"><path d="M204.24,116.24a6,6,0,0,1-8.48,0L134,54.49V216a6,6,0,0,1-12,0V54.49L60.24,116.24a6,6,0,0,1-8.48-8.48l72-72a6,6,0,0,1,8.48,0l72,72A6,6,0,0,1,204.24,116.24Z" /></symbol>
+        <symbol id="i-arrow-down" viewBox="0 0 256 256"><path d="M204.24,147.76l-72,72a6,6,0,0,1-8.48,0l-72-72a6,6,0,0,1,8.48-8.48L122,201.51V40a6,6,0,0,1,12,0V201.51l61.76-62.23a6,6,0,0,1,8.48,8.48Z" /></symbol>
+        <symbol id="i-play" viewBox="0 0 256 256"><path d="M231.36,116.19,87.28,28.06a14,14,0,0,0-14.18-.27A13.69,13.69,0,0,0,66,39.87V216.13a13.69,13.69,0,0,0,7.1,12.08,14,14,0,0,0,14.18-.27l144.08-88.13a13.82,13.82,0,0,0,0-23.62Zm-6.26,13.38L81,217.7a2,2,0,0,1-2.06,0,1.78,1.78,0,0,1-1-1.61V39.87a1.78,1.78,0,0,1,1-1.61A2.06,2.06,0,0,1,80,38a2,2,0,0,1,1,.31L225.1,126.43a1.82,1.82,0,0,1,0,3.14Z" /></symbol>
+        <symbol id="i-warning" viewBox="0 0 256 256"><path d="M235.07,189.09,147.61,37.22h0a22.75,22.75,0,0,0-39.22,0L20.93,189.09a21.53,21.53,0,0,0,0,21.72A22.35,22.35,0,0,0,40.55,222h174.9a22.35,22.35,0,0,0,19.6-11.19A21.53,21.53,0,0,0,235.07,189.09ZM224.66,204.8a10.46,10.46,0,0,1-9.21,5.2H40.55a10.46,10.46,0,0,1-9.21-5.2,9.51,9.51,0,0,1,0-9.72L118.79,43.21a10.75,10.75,0,0,1,18.42,0l87.46,151.87A9.51,9.51,0,0,1,224.66,204.8ZM122,144V104a6,6,0,0,1,12,0v40a6,6,0,0,1-12,0Zm16,36a10,10,0,1,1-10-10A10,10,0,0,1,138,180Z" /></symbol>
+        <symbol id="i-check" viewBox="0 0 256 256"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></symbol>
+        <symbol id="i-wand" viewBox="0 0 256 256"><path d="M213.66,82.34l-56-56a8,8,0,0,0-11.32,0l-112,112a8,8,0,0,0,0,11.32l56,56a8,8,0,0,0,11.32,0l112-112A8,8,0,0,0,213.66,82.34ZM104,192.69,63.31,152,144,71.31,184.69,112Zm92-92L160,64.69,173.66,51,205,82.34Z"/></symbol>
+        <symbol id="i-lock" viewBox="0 0 256 256"><path d="M208,80H176V56a48,48,0,0,0-96,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM96,56a32,32,0,0,1,64,0V80H96ZM208,208H48V96H208V208Zm-80-56v24a8,8,0,0,1-16,0V152a8,8,0,0,1,16,0Z"/></symbol>
+      </defs>
+    </svg>
+
+    <!-- COMPOSITION ROOT -->
+    <div
+      id="stage"
+      data-composition-id="ask-read-gate"
+      data-start="0"
+      data-duration="14"
+      data-fps="30"
+      data-width="1920"
+      data-height="1200"
+    >
+      <div id="scene">
+        <div class="glow" id="glow"></div>
+        <div class="dotgrid"></div>
+
+        <!-- LEFT WINDOW: ASK TAB -->
+        <section class="window" id="askWindow" data-layout-allow-overflow="true">
+          <header class="titlebar">
+            <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+            <span class="vsep"></span>
+            <span class="conn"><span class="live"></span>prod-replica<svg class="ic"><use href="#i-caret-updown" /></svg></span>
+            <div class="tb-right">
+              <span class="tb-badge mono">PostgreSQL</span>
+              <span class="askbtn"><svg class="ic"><use href="#i-ai" /></svg>Ask<kbd>⌘T</kbd></span>
+            </div>
+          </header>
+
+          <div class="tabs">
+            <div class="tab">
+              <svg class="ic"><use href="#i-ai" /></svg>
+              <span>Ask</span>
+            </div>
+            <div class="tabline"></div>
+          </div>
+
+          <div class="viewport" data-layout-allow-overflow="true">
+            <!-- BLOCK 1: Normal Read -->
+            <article class="block" id="b1" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+              <header class="b-head">
+                <span class="b-icon"><svg class="ic"><use href="#i-ai" /></svg></span>
+                <p class="b-q">how many orders shipped today?</p>
+                <span class="b-time mono">14:32</span>
+              </header>
+              <div class="b-body">
+                <p class="answer" id="b1Ans">Found 412 orders shipped today.</p>
+                <div class="card" id="b1Card">
+                  <div class="sqlpane mono">
+                    <span class="ln"><span class="k">SELECT</span> <span class="fn">count</span>(*) <span class="k">FROM</span> orders</span>
+                    <span class="ln"><span class="k">WHERE</span> shipped_at::date = <span class="fn">current_date</span>;</span>
+                  </div>
+                  <div class="result-slot" id="b1Result">
+                    <div class="rhead mono">
+                      <span>1 row</span><span class="vdot">·</span><span>24 ms</span>
+                    </div>
+                    <div class="metric-box">
+                      <span class="metric-val mono">412</span>
+                      <span class="metric-lbl">orders shipped today</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- BLOCK 2: Read that writes -->
+            <article class="block" id="b2" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+              <header class="b-head">
+                <span class="b-icon"><svg class="ic"><use href="#i-ai" /></svg></span>
+                <p class="b-q">log that I checked the audit table</p>
+                <span class="b-time mono">14:33</span>
+              </header>
+              <div class="b-body">
+                <p class="answer" id="b2Ans">Attempted to record audit event in replica.</p>
+                <div class="card" id="b2Card">
+                  <div class="sqlpane mono">
+                    <span class="ln"><span class="k">SELECT</span> <span class="fn">record_audit_event</span>(<span class="s">'checked'</span>);</span>
+                  </div>
+                  <div class="err-slot" id="b2Error">
+                    <div class="err-box">
+                      <div class="err-top">
+                        <svg class="ic err-icon"><use href="#i-warning" /></svg>
+                        <span class="err-msg mono">ERROR:  cannot execute INSERT in a read-only transaction</span>
+                      </div>
+                      <div class="btn-fix"><svg class="ic"><use href="#i-wand" /></svg>Fix with AI</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <!-- BLOCK 3: Real write waits -->
+            <article class="block" id="b3" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+              <header class="b-head">
+                <span class="b-icon"><svg class="ic"><use href="#i-ai" /></svg></span>
+                <p class="b-q">mark order 4182 as refunded</p>
+                <span class="b-time mono">14:34</span>
+              </header>
+              <div class="b-body">
+                <p class="answer" id="b3Ans">Prepares an update to order 4182.</p>
+                <div class="card" id="b3Card">
+                  <div class="sqlpane mono">
+                    <span class="ln"><span class="k">UPDATE</span> orders</span>
+                    <span class="ln"><span class="k">SET</span> status = <span class="s">'refunded'</span></span>
+                    <span class="ln"><span class="k">WHERE</span> id = <span class="n">4182</span>;</span>
+                  </div>
+                  <div class="hold-slot" id="b3Hold">
+                    <div class="hold-banner">
+                      <svg class="ic warn-icon"><use href="#i-warning" /></svg>
+                      <span class="hold-text">This statement can change data. Nothing has run yet.</span>
+                      <div class="btn-runit" id="runItBtn">
+                        <span class="run-halo" id="runHalo"></span>
+                        <svg class="ic"><use href="#i-play" /></svg>
+                        <span>Run it</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+
+          <!-- COMPOSER -->
+          <div class="composer">
+            <div class="cbox">
+              <div class="c-row">
+                <span class="mode mono"><svg class="ic"><use href="#i-ai" /></svg>Ask</span>
+                <div class="ctext">
+                  <span class="ph">Ask about prod-replica, or type SQL</span>
+                </div>
+                <span class="send"><svg class="ic"><use href="#i-arrow-up" /></svg></span>
+              </div>
+            </div>
+            <div class="status-line">
+              AI-written SQL that only reads runs on its own. Writes wait for you.
+            </div>
+          </div>
+        </section>
+
+        <!-- RIGHT PANEL: THE TWO-LAYER READ GATE -->
+        <section class="gate-panel" id="gatePanel" data-layout-allow-overflow="true">
+          <header class="gate-head">
+            <div class="gh-eyebrow mono">TWO-LAYER VERIFICATION</div>
+            <h2 class="gh-title">The Read Gate</h2>
+          </header>
+
+          <!-- LAYER 1: read-guard -->
+          <div class="layer-card" id="l1Card" data-layout-allow-overflow="true" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">
+            <div class="l-top">
+              <div class="l-badge mono">1</div>
+              <div class="l-title mono">read-guard</div>
+              <div class="l-chip mono" id="l1Status" data-layout-allow-occlusion="true">READY</div>
+            </div>
+            <div class="l-body" id="l1Body">
+              <div class="l-sub mono" id="l1Sub" data-layout-allow-occlusion="true">one statement · starts with a read keyword · no write keywords</div>
+              <div class="checks mono" id="l1Checks">
+                <div class="check-item" id="cSingle">
+                  <svg class="ic chk-ic"><use href="#i-check" /></svg>
+                  <span>one statement</span>
+                </div>
+                <div class="check-item" id="cRead">
+                  <svg class="ic chk-ic"><use href="#i-check" /></svg>
+                  <span id="cReadText" data-layout-allow-occlusion="true">starts with read keyword</span>
+                </div>
+                <div class="check-item" id="cNoWrite">
+                  <svg class="ic chk-ic"><use href="#i-check" /></svg>
+                  <span>no write keywords</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CONNECTOR BUS -->
+          <div class="connector-bus" id="connBus">
+            <div class="bus-line"></div>
+            <div class="bus-arrow" id="busArrow">
+              <svg class="ic"><use href="#i-arrow-down" /></svg>
+            </div>
+          </div>
+
+          <!-- LAYER 2: database engine -->
+          <div class="layer-card" id="l2Card" data-layout-allow-overflow="true" data-layout-allow-occlusion="true" data-layout-allow-overlap="true">
+            <div class="l-top">
+              <div class="l-badge mono">2</div>
+              <div class="l-title mono">database engine</div>
+              <div class="l-chip mono" id="l2Status" data-layout-allow-occlusion="true">READY</div>
+            </div>
+            <div class="l-sub mono" id="l2Sub" data-layout-allow-occlusion="true">BEGIN READ ONLY … ROLLBACK</div>
+
+            <!-- Terminal Console View -->
+            <div class="console mono" id="l2Console" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+              <div class="cn-line" id="cn1"><span class="k">BEGIN READ ONLY;</span></div>
+              <div class="cn-line" id="cn2"><span class="cn-stmt" id="cnStmt">SELECT count(*) FROM orders WHERE...</span></div>
+              <div class="cn-line err" id="cnErr"><span class="err-txt">ERROR:  cannot execute INSERT in a read-only transaction</span></div>
+              <div class="cn-line" id="cn3"><span class="k">ROLLBACK;</span></div>
+            </div>
+
+            <!-- Five Engine Backstop Table (Beat 3, Still 1) -->
+            <div class="engine-table mono" id="engineTable" data-layout-allow-overflow="true" data-layout-allow-overlap="true" data-layout-allow-occlusion="true">
+              <div class="et-header">EVERY ENGINE HAS A BACKSTOP</div>
+              <div class="et-item" id="erPg">
+                <div class="et-name">PostgreSQL</div>
+                <div class="et-rule">BEGIN READ ONLY · always rolled back</div>
+              </div>
+              <div class="et-item" id="erMy">
+                <div class="et-name">MySQL</div>
+                <div class="et-rule">START TRANSACTION READ ONLY ·<br />always rolled back</div>
+              </div>
+              <div class="et-item" id="erMs">
+                <div class="et-name">SQL Server</div>
+                <div class="et-rule">transaction always rolled back</div>
+              </div>
+              <div class="et-item" id="erSq">
+                <div class="et-name">SQLite</div>
+                <div class="et-rule">sqlite3_stmt_readonly ·<br />refused before it runs</div>
+              </div>
+              <div class="et-item" id="erCh">
+                <div class="et-name">ClickHouse</div>
+                <div class="et-rule">readonly = 1</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- TRAVELING SQL TOKEN -->
+        <div class="sql-token mono" id="sqlToken" data-layout-allow-overlap="true" data-layout-allow-overflow="true" data-layout-allow-occlusion="true">
+          <span class="tok-tag">SQL</span>
+          <span class="tok-stmt" id="tokStmt">SELECT count(*)</span>
+        </div>
+
+        <!-- GATE BARRIER (Beat 4) -->
+        <div class="gate-barrier" id="gateBarrier" data-layout-allow-overlap="true" data-layout-allow-occlusion="true" data-layout-allow-overflow="true">
+          <div class="barrier-line"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GSAP TIMELINE SCRIPT -->
+    <script>
+      const COMP_ID = 'ask-read-gate'
+      const $ = (id) => document.getElementById(id)
+
+      function build() {
+        const tl = gsap.timeline({ paused: true })
+
+        // Ambient breathing glow
+        tl.fromTo(
+          '#glow',
+          { scale: 1, opacity: 0.8 },
+          { scale: 1.08, opacity: 1, duration: 7, ease: 'sine.inOut', yoyo: true, repeat: 1 },
+          0
+        )
+
+        // INITIAL POSES (t = 0)
+        tl.set(['#b2', '#b3', '#cnErr', '#gateBarrier'], { opacity: 0 }, 0)
+        tl.set('#engineTable', { opacity: 0, display: 'none' }, 0)
+        tl.set('#l2Console', { opacity: 1, display: 'flex' }, 0)
+        tl.set('#l1Body', { height: 'auto', opacity: 1 }, 0)
+        tl.set(['#l1Card', '#l2Card'], { opacity: 1 }, 0)
+        tl.set('#b1', { opacity: 1, y: 0 }, 0)
+        tl.set(['#cSingle', '#cRead', '#cNoWrite'], { className: 'check-item' }, 0)
+        tl.set('#l1Status', { textContent: 'READY', className: 'l-chip mono' }, 0)
+        tl.set('#l2Status', { textContent: 'READY', className: 'l-chip mono' }, 0)
+        tl.set('#cnStmt', { textContent: 'SELECT count(*) FROM orders WHERE...' }, 0)
+        tl.set(['#cn1', '#cn2', '#cn3'], { opacity: 0.25 }, 0)
+        tl.set('#b1Result', { opacity: 0, y: 6 }, 0)
+        tl.set('#b2Error', { opacity: 0, y: 6 }, 0)
+        tl.set('#b3Hold', { opacity: 0, y: 6 }, 0)
+        tl.set('#runHalo', { opacity: 0 }, 0)
+        tl.set('#busArrow', { color: 'var(--muted)', borderColor: 'var(--hairline)' }, 0)
+        tl.set('#sqlToken', { opacity: 0, x: 260, y: 340, scale: 0.95 }, 0)
+        tl.set('#tokStmt', { textContent: 'SELECT count(*)' }, 0)
+
+        /* =========================================================
+           BEAT 1: A normal read (0 to 3.2 s)
+           ========================================================= */
+        tl.to('#sqlToken', { opacity: 1, duration: 0.2, ease: 'power2.out' }, 0.2)
+        tl.to(
+          '#sqlToken',
+          { x: 1450, y: 220, scale: 1, duration: 0.55, ease: 'power3.out' },
+          0.3
+        )
+
+        // Layer 1 evaluation
+        tl.to('#cSingle', { className: 'check-item active', duration: 0.12 }, 0.8)
+        tl.to('#cRead', { className: 'check-item active', duration: 0.12 }, 0.92)
+        tl.to('#cNoWrite', { className: 'check-item active', duration: 0.12 }, 1.04)
+        tl.to(
+          '#l1Status',
+          { textContent: 'PASSED', className: 'l-chip mono passed', duration: 0.14 },
+          1.1
+        )
+
+        // Token travels down through bus connector to Layer 2
+        tl.to(
+          '#sqlToken',
+          { x: 1450, y: 550, duration: 0.45, ease: 'power2.inOut' },
+          1.2
+        )
+        tl.to(
+          '#busArrow',
+          { color: 'var(--success)', borderColor: 'var(--success)', duration: 0.2 },
+          1.3
+        )
+
+        // Layer 2 execution
+        tl.to('#cn1', { opacity: 1, duration: 0.15 }, 1.55)
+        tl.to('#cn2', { opacity: 1, duration: 0.15 }, 1.7)
+        tl.to('#cn3', { opacity: 1, duration: 0.15 }, 1.85)
+        tl.to(
+          '#l2Status',
+          { textContent: 'PASSED', className: 'l-chip mono passed', duration: 0.14 },
+          1.95
+        )
+
+        // Token finishes and dissolves
+        tl.to('#sqlToken', { opacity: 0, scale: 0.9, duration: 0.2, ease: 'power2.in' }, 2.05)
+
+        // Ask block reveals metric result 412
+        tl.fromTo(
+          '#b1Result',
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out' },
+          2.05
+        )
+        tl.fromTo(
+          '#b1 .metric-val',
+          { scale: 0.85, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.35, ease: 'expo.out' },
+          2.15
+        )
+
+        // Transition Beat 1 -> Beat 2 at 3.0s
+        tl.to('#b1', { opacity: 0, y: -10, duration: 0.2, ease: 'power2.in' }, 3.0)
+        tl.to(
+          ['#cSingle', '#cRead', '#cNoWrite'],
+          { className: 'check-item', duration: 0.15 },
+          3.05
+        )
+        tl.to(
+          '#l1Status',
+          { textContent: 'READY', className: 'l-chip mono', duration: 0.15 },
+          3.05
+        )
+        tl.to(
+          '#l2Status',
+          { textContent: 'READY', className: 'l-chip mono', duration: 0.15 },
+          3.05
+        )
+        tl.to(
+          '#busArrow',
+          { color: 'var(--muted)', borderColor: 'var(--hairline)', duration: 0.15 },
+          3.05
+        )
+        tl.to(['#cn1', '#cn2', '#cn3'], { opacity: 0.25, duration: 0.15 }, 3.05)
+
+        /* =========================================================
+           BEAT 2: A read that writes (3.2 to 7.0 s) - DOMINANT BEAT
+           ========================================================= */
+        tl.set('#tokStmt', { textContent: "SELECT record_audit_event('checked')" }, 3.2)
+        tl.set('#cnStmt', { textContent: "SELECT record_audit_event('checked');" }, 3.2)
+        tl.fromTo(
+          '#b2',
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out' },
+          3.2
+        )
+
+        // Token emerges and moves to Layer 1
+        tl.fromTo(
+          '#sqlToken',
+          { x: 260, y: 340, opacity: 0, scale: 0.95 },
+          { opacity: 1, duration: 0.2, ease: 'power2.out' },
+          3.45
+        )
+        tl.to(
+          '#sqlToken',
+          { x: 1450, y: 220, scale: 1, duration: 0.55, ease: 'power3.out' },
+          3.55
+        )
+
+        // Layer 1 checks: starts with SELECT -> tick!
+        tl.to('#cSingle', { className: 'check-item active', duration: 0.12 }, 4.05)
+        tl.to('#cRead', { className: 'check-item active', duration: 0.12 }, 4.17)
+        tl.to('#cNoWrite', { className: 'check-item active', duration: 0.12 }, 4.29)
+        tl.to(
+          '#l1Status',
+          { textContent: 'PASSED', className: 'l-chip mono passed', duration: 0.14 },
+          4.35
+        )
+
+        // Token moves down into Layer 2
+        tl.to(
+          '#sqlToken',
+          { x: 1450, y: 550, duration: 0.45, ease: 'power2.inOut' },
+          4.45
+        )
+        tl.to(
+          '#busArrow',
+          { color: 'var(--success)', borderColor: 'var(--success)', duration: 0.2 },
+          4.55
+        )
+
+        // Layer 2 begins transaction
+        tl.to('#cn1', { opacity: 1, duration: 0.12 }, 4.75)
+        tl.to('#cn2', { opacity: 1, duration: 0.12 }, 4.88)
+
+        // Real Postgres error strikes!
+        tl.fromTo(
+          '#cnErr',
+          { opacity: 0, scale: 0.96 },
+          { opacity: 1, scale: 1, duration: 0.22, ease: 'expo.out' },
+          4.95
+        )
+        tl.to('#cn3', { opacity: 1, duration: 0.12 }, 5.25)
+        tl.to(
+          '#l2Status',
+          { textContent: 'WRITE REFUSED', className: 'l-chip mono refused', duration: 0.14 },
+          5.05
+        )
+        tl.to(
+          '#l2Card',
+          {
+            borderColor: 'var(--destructive)',
+            boxShadow: '0 0 30px rgba(242, 85, 90, 0.25)',
+            duration: 0.2,
+            repeat: 1,
+            yoyo: true,
+          },
+          5.05
+        )
+        tl.to('#sqlToken', { opacity: 0, scale: 1.1, duration: 0.2, ease: 'power2.in' }, 5.1)
+
+        // Ask block on left displays real error state
+        tl.fromTo(
+          '#b2Error',
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out' },
+          5.15
+        )
+
+        /* =========================================================
+           BEAT 3: Every engine has a backstop (7.0 to 9.8 s)
+           ========================================================= */
+        tl.to('#l1Body', { height: 0, opacity: 0, duration: 0.25, ease: 'power2.inOut' }, 7.0)
+        tl.to('#l2Console', { opacity: 0, duration: 0.18, ease: 'power2.in' }, 7.0)
+        tl.set('#l2Console', { display: 'none' }, 7.18)
+        tl.set('#engineTable', { display: 'flex' }, 7.18)
+        tl.fromTo(
+          '#engineTable',
+          { opacity: 0, scale: 0.96 },
+          { opacity: 1, scale: 1, duration: 0.32, ease: 'expo.out' },
+          7.2
+        )
+        tl.fromTo(
+          ['#erPg', '#erMy', '#erMs', '#erSq', '#erCh'],
+          { opacity: 0, x: -16 },
+          { opacity: 1, x: 0, duration: 0.25, ease: 'power3.out', stagger: 0.08 },
+          7.3
+        )
+
+        // Still 1 is taken mid-beat at t = 8.4 s
+        // Collapse back at 9.25 s
+        tl.to('#engineTable', { opacity: 0, scale: 0.96, duration: 0.22, ease: 'power2.in' }, 9.25)
+        tl.set('#engineTable', { display: 'none' }, 9.47)
+        tl.set('#l2Console', { display: 'flex', opacity: 1 }, 9.47)
+        tl.set(['#cn1', '#cn2', '#cn3', '#cnErr'], { opacity: 0 }, 9.47)
+        tl.to('#l1Body', { height: 'auto', opacity: 1, duration: 0.25, ease: 'power2.inOut' }, 9.35)
+        tl.set('#cnStmt', { textContent: 'SELECT count(*) FROM orders WHERE...' }, 9.47)
+        tl.to(
+          '#busArrow',
+          { color: 'var(--muted)', borderColor: 'var(--hairline)', duration: 0.15 },
+          9.45
+        )
+
+        // Fade out block 2
+        tl.to('#b2', { opacity: 0, y: -10, duration: 0.2, ease: 'power2.in' }, 9.45)
+
+        /* =========================================================
+           BEAT 4: A real write waits (9.8 to 13.2 s)
+           ========================================================= */
+        tl.set('#tokStmt', { textContent: 'UPDATE orders SET status...' }, 9.8)
+        tl.fromTo(
+          '#b3',
+          { opacity: 0, y: 10 },
+          { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out' },
+          9.8
+        )
+
+        // During beat 4: both layer cards are dimmed with badge text `not sent` (no ticks lit)
+        tl.to(['#l1Card', '#l2Card'], { opacity: 0.38, duration: 0.25, ease: 'power2.out' }, 9.8)
+        tl.set('#l1Status', { textContent: 'not sent', className: 'l-chip mono' }, 9.8)
+        tl.set('#l2Status', { textContent: 'not sent', className: 'l-chip mono' }, 9.8)
+        tl.set(['#cSingle', '#cRead', '#cNoWrite'], { className: 'check-item' }, 9.8)
+        // Layer-2 terminal area is empty (no old SELECT count(*) text)
+        tl.set(['#cn1', '#cn2', '#cn3', '#cnErr'], { opacity: 0 }, 9.8)
+        // Token is dropped; kept hidden so it never overlaps any text
+        tl.set('#sqlToken', { opacity: 0 }, 9.8)
+
+        // Gate barrier lights up at threshold in the gap
+        tl.fromTo(
+          '#gateBarrier',
+          { opacity: 0, scaleY: 0.8 },
+          { opacity: 1, scaleY: 1, duration: 0.25, ease: 'expo.out' },
+          10.45
+        )
+
+        // Left block shows hold banner and Run it button with halo
+        tl.fromTo(
+          '#b3Hold',
+          { opacity: 0, y: 8 },
+          { opacity: 1, y: 0, duration: 0.25, ease: 'power3.out' },
+          10.5
+        )
+        tl.fromTo(
+          '#runHalo',
+          { opacity: 0, scale: 1.15 },
+          { opacity: 0.85, scale: 1, duration: 0.35, ease: 'expo.out' },
+          10.7
+        )
+        tl.to(
+          '#runHalo',
+          { opacity: 0.45, duration: 0.6, ease: 'sine.inOut', yoyo: true, repeat: 2 },
+          11.05
+        )
+
+        // Still 2 is taken mid-beat at t = 11.5 s
+        // Hold beat 4 until 13.0 s
+
+        /* =========================================================
+           BEAT 5: Reset (13.0 to 14.0 s)
+           ========================================================= */
+        tl.to('#b3', { opacity: 0, duration: 0.25, ease: 'power2.in' }, 13.0)
+        tl.to('#gateBarrier', { opacity: 0, duration: 0.2, ease: 'power2.in' }, 13.0)
+        tl.to('#runHalo', { opacity: 0, duration: 0.15 }, 13.0)
+        tl.to(['#l1Card', '#l2Card'], { opacity: 1, duration: 0.25, ease: 'power2.out' }, 13.0)
+
+        // Reset elements to frame 0 state
+        tl.set('#tokStmt', { textContent: 'SELECT count(*)' }, 13.3)
+        tl.set('#cnStmt', { textContent: 'SELECT count(*) FROM orders WHERE...' }, 13.3)
+        tl.set('#sqlToken', { opacity: 0, x: 260, y: 340, scale: 0.95 }, 13.3)
+        tl.set('#b1Result', { opacity: 0, y: 6 }, 13.3)
+        tl.set('#b2Error', { opacity: 0, y: 6 }, 13.3)
+        tl.set('#b3Hold', { opacity: 0, y: 6 }, 13.3)
+        tl.set(['#cSingle', '#cRead', '#cNoWrite'], { className: 'check-item' }, 13.3)
+        tl.set('#l1Status', { textContent: 'READY', className: 'l-chip mono' }, 13.3)
+        tl.set('#l2Status', { textContent: 'READY', className: 'l-chip mono' }, 13.3)
+        tl.set('#busArrow', { color: 'var(--muted)', borderColor: 'var(--hairline)' }, 13.3)
+        tl.set('#cnErr', { opacity: 0 }, 13.3)
+        tl.set(['#cn1', '#cn2', '#cn3'], { opacity: 0.25 }, 13.3)
+        tl.set('#engineTable', { opacity: 0, display: 'none' }, 13.3)
+        tl.set('#l2Console', { opacity: 1, display: 'flex' }, 13.3)
+        tl.set('#l1Body', { height: 'auto', opacity: 1 }, 13.3)
+        tl.set(['#l1Card', '#l2Card'], { opacity: 1 }, 13.3)
+
+        // Bring back block 1 so t = 14.0 s matches frame 0 exactly
+        tl.fromTo(
+          '#b1',
+          { opacity: 0, y: 6 },
+          { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' },
+          13.4
+        )
+
+        window.__timelines = window.__timelines || {}
+        window.__timelines[COMP_ID] = tl
+        tl.seek(0)
+      }
+
+      if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(build)
+      } else {
+        build()
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "ask-read-gate",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npx --yes hyperframes@0.9.67 preview",
+    "check": "npx --yes hyperframes@0.9.67 check",
+    "render": "npx --yes hyperframes@0.9.67 render . -o ./renders/video.mp4",
+    "publish": "npx --yes hyperframes@0.9.67 publish"
+  }
+}
