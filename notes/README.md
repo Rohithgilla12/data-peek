@@ -20,6 +20,9 @@ This folder is the single source of truth for technical notes and blog posts. Fi
 | [ssl-defaults-for-cloud-dbs.mdx](./ssl-defaults-for-cloud-dbs.mdx)                               | v0.21.3 — opt-in strict cert verification for cloud DBs             |
 | [end-to-end-testing-an-electron-sql-client.mdx](./end-to-end-testing-an-electron-sql-client.mdx) | From 4 to 25 e2e tests with Playwright + Electron                   |
 | [v0.22.0-hardened-edges.mdx](./v0.22.0-hardened-edges.mdx)                                       | v0.22.0 release notes — silent-corruption hunt, lifecycle hardening |
+| [find-in-sql-query-results.mdx](./find-in-sql-query-results.mdx) | Find in results across every page of a virtualised grid |
+| [copy-sql-results-as-markdown-csv-json.mdx](./copy-sql-results-as-markdown-csv-json.mdx) | Multi-cell selection, live stats, and Copy Selection As |
+| [ask-your-database-with-claude-code-codex-antigravity.mdx](./ask-your-database-with-claude-code-codex-antigravity.mdx) | Ask on your existing agent CLI, and the two-layer read gate |
 
 ## Creating a New Post
 
