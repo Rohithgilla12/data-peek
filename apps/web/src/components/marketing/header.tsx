@@ -10,7 +10,7 @@ const nav = [
   { href: "/#ai", label: "AI" },
   { href: "/#pricing", label: "Pricing" },
   { href: "/#faq", label: "FAQ" },
-  { href: "/blog", label: "Changelog" },
+  { href: "/blog", label: "Blog" },
   { href: "https://docs.datapeek.dev/docs", label: "Docs", external: true },
 ];
 

@@ -32,7 +32,7 @@ const cols: {
         href: "https://docs.datapeek.dev/docs",
         external: true,
       },
-      { label: "Changelog", href: "/blog" },
+      { label: "Blog", href: "/blog" },
       { label: "FAQ", href: "/#faq" },
       { label: "Students & OSS", href: "/community" },
     ],
