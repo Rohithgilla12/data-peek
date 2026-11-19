@@ -11,19 +11,11 @@ import {
 import defaultMdxComponents from "fumadocs-ui/mdx";
 import {
   generateMetaTags,
+  canonicalLinks,
   DOCS_CONFIG,
   getTechArticleStructuredData,
   getBreadcrumbStructuredData,
 } from "@/lib/seo";
-
-type PageFrontmatter = {
-  title?: string;
-  description?: string;
-};
-
-type PageDataWithFrontmatter = {
-  frontmatter?: PageFrontmatter;
-};
 
 const loader = createServerFn({ method: "GET" })
   .inputValidator((slugs: string[]) => slugs)
@@ -31,37 +23,27 @@ const loader = createServerFn({ method: "GET" })
     const page = source.getPage(slugs);
     if (!page) throw notFound();
 
-    const pageData = (page.data as PageDataWithFrontmatter | undefined) ?? {};
-    const frontmatter = pageData.frontmatter ?? {
-      title: "Documentation",
-      description: DOCS_CONFIG.description,
-    };
-
     const breadcrumbs = [
       { name: "Home", url: DOCS_CONFIG.url },
       { name: "Documentation", url: `${DOCS_CONFIG.url}/docs` },
     ];
-
-    const pathParts = page.path.split("/").filter(Boolean);
-    let currentPath = "";
-    pathParts.forEach((part, index) => {
-      currentPath += `/${part}`;
-      const pageAtPath = source.getPage(pathParts.slice(0, index + 1));
-      if (pageAtPath) {
-        const pageFrontmatter = (
-          pageAtPath.data as PageDataWithFrontmatter | undefined
-        )?.frontmatter;
+    page.slugs.forEach((_, index) => {
+      const ancestor = source.getPage(page.slugs.slice(0, index + 1));
+      if (ancestor) {
         breadcrumbs.push({
-          name: pageFrontmatter?.title ?? part,
-          url: `${DOCS_CONFIG.url}/docs${currentPath}`,
+          name: ancestor.data.title,
+          url: `${DOCS_CONFIG.url}${ancestor.url}`,
         });
       }
     });
 
     return {
+      // File path, used by the MDX client loader.
       path: page.path,
-      title: frontmatter.title || "Documentation",
-      description: frontmatter.description || DOCS_CONFIG.description,
+      // Public URL, used for canonical / og:url / structured data.
+      url: page.url,
+      title: page.data.title,
+      description: page.data.description || DOCS_CONFIG.description,
       breadcrumbs,
     };
   });
@@ -75,17 +57,15 @@ export const Route = createFileRoute("/docs/$")({
     return data;
   },
   head: ({ loaderData }) => {
-    if (!loaderData?.path) return {};
+    if (!loaderData?.url) return {};
 
-    const pagePath = `/docs/${loaderData.path}`;
-    const url = `${DOCS_CONFIG.url}${pagePath}`;
     const title = loaderData.title;
     const description = loaderData.description;
 
     const meta = generateMetaTags({
       title,
       description,
-      path: pagePath,
+      path: loaderData.url,
       keywords: [
         "data-peek",
         "documentation",
@@ -98,7 +78,7 @@ export const Route = createFileRoute("/docs/$")({
       type: "article",
     });
 
-    return { meta };
+    return { meta, links: canonicalLinks(loaderData.url) };
   },
 });
 
@@ -120,7 +100,7 @@ function Page() {
   const data = Route.useLoaderData();
   const content = clientLoader.useContent(data.path);
 
-  const url = `${DOCS_CONFIG.url}/docs${data.path}`;
+  const url = `${DOCS_CONFIG.url}${data.url}`;
   const structuredData = [
     getTechArticleStructuredData({
       title: data.title,

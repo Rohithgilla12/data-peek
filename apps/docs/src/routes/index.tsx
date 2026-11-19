@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { HomeLayout } from "fumadocs-ui/layouts/home";
 import { baseOptions } from "@/lib/layout.shared";
-import { generateMetaTags, DOCS_CONFIG } from "@/lib/seo";
+import { generateMetaTags, canonicalLinks, DOCS_CONFIG } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -18,6 +18,7 @@ export const Route = createFileRoute("/")({
         "SQL editor documentation",
       ],
     }),
+    links: canonicalLinks(),
   }),
 });
 

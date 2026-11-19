@@ -54,7 +54,6 @@ export function generateMetaTags({
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: image },
     { name: "twitter:creator", content: DOCS_CONFIG.twitterHandle },
-    { rel: "canonical", href: url },
   ];
 
   if (keywords.length > 0) {
@@ -70,6 +69,13 @@ export function generateMetaTags({
   }
 
   return meta;
+}
+
+// Canonical is a <link>, not a <meta>, so it goes in a route's `links`.
+// TanStack concatenates `links` across matched routes without deduping, so
+// only leaf routes may emit one — never __root.
+export function canonicalLinks(path = "") {
+  return [{ rel: "canonical", href: `${DOCS_CONFIG.url}${path}` }];
 }
 
 export function getTechArticleStructuredData({
