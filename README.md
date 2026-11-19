@@ -24,7 +24,7 @@
 </p>
 
 <p align="center">
-  <b>Black Friday:</b> <a href="https://www.datapeek.dev/#pricing">Pro is 40% off</a> until 1 Dec, applied at checkout.
+  <b>Black Friday:</b> <a href="https://www.datapeek.dev/#pricing">Pro is 40% off</a> from 26 Nov to 1 Dec, applied at checkout.
 </p>
 
 <p align="center">
