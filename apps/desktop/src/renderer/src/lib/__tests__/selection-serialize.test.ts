@@ -275,6 +275,42 @@ describe('cellText', () => {
     expect(cellText(false)).toBe('false')
     expect(cellText({ a: [1, 2] })).toBe('{"a":[1,2]}')
   })
+
+  it('writes a Date as its ISO string without quotes', () => {
+    expect(cellText(new Date('2026-01-15T10:30:00Z'))).toBe('2026-01-15T10:30:00.000Z')
+  })
+
+  it('writes an invalid Date as null instead of throwing', () => {
+    expect(cellText(new Date(NaN))).toBe('null')
+  })
+})
+
+describe('Copy Selection As with a Date cell', () => {
+  const created = new Date('2026-01-15T10:30:00Z')
+  const snapshot = (pos: CellPosition): CellSnapshot =>
+    pos.col === 0
+      ? { columnName: 'id', dataType: 'integer', value: 1, isMasked: false }
+      : { columnName: 'created', dataType: 'timestamptz', value: created, isMasked: false }
+  const both: CellSelection = {
+    primary: { anchor: { row: 0, col: 0 }, active: { row: 0, col: 1 } },
+    additional: []
+  }
+
+  it('writes the date unquoted in TSV, CSV and Markdown', () => {
+    expect(serializeSelection(both, 'tsv', snapshot)).toBe('1\t2026-01-15T10:30:00.000Z')
+    expect(serializeSelection(both, 'csv', snapshot, { includeHeaders: true })).toBe(
+      'id,created\n1,2026-01-15T10:30:00.000Z'
+    )
+    expect(serializeSelection(both, 'markdown', snapshot)).toBe(
+      '| id | created |\n| --- | --- |\n| 1 | 2026-01-15T10:30:00.000Z |'
+    )
+  })
+
+  it('keeps the date a JSON string in JSON', () => {
+    expect(
+      JSON.parse(serializeSelection(both, 'json', snapshot, { includeHeaders: true }))
+    ).toEqual([{ id: 1, created: '2026-01-15T10:30:00.000Z' }])
+  })
 })
 
 describe('Copy Selection As', () => {

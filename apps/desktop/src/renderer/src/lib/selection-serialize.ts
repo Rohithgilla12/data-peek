@@ -32,6 +32,12 @@ export const SELECTION_COPY_CHOICES: ReadonlyArray<SelectionCopyChoice> = [
  */
 export function cellText(value: unknown): string | null {
   if (value === null || value === undefined) return null
+  // pg and mysql2 return timestamptz, date and datetime as Date objects,
+  // which JSON.stringify would wrap in quotes. Same rule as lib/export.ts.
+  if (value instanceof Date) {
+    // mysql2 returns an Invalid Date for zero dates ('0000-00-00'); toISOString() throws on it.
+    return Number.isNaN(value.getTime()) ? 'null' : value.toISOString()
+  }
   return typeof value === 'object' ? JSON.stringify(value) : String(value)
 }
 
