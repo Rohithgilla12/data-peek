@@ -20,6 +20,10 @@ describe('escapeCSVValue', () => {
     expect(escapeCSVValue(new Date('2026-01-15T10:30:00Z'))).toBe('2026-01-15T10:30:00.000Z')
   })
 
+  it('writes an invalid Date as null instead of throwing', () => {
+    expect(escapeCSVValue(new Date(NaN))).toBe('null')
+  })
+
   it('should return empty string for null', () => {
     expect(escapeCSVValue(null)).toBe('')
   })

@@ -23,7 +23,10 @@ export interface ExportData {
 // pg and mysql2 return timestamptz, date and datetime as Date objects;
 // JSON.stringify would wrap them in quotes.
 function cellText(value: unknown): string {
-  if (value instanceof Date) return value.toISOString()
+  if (value instanceof Date) {
+    // mysql2 returns an Invalid Date for zero dates ('0000-00-00'); toISOString() throws on it.
+    return Number.isNaN(value.getTime()) ? 'null' : value.toISOString()
+  }
   return typeof value === 'object' ? JSON.stringify(value) : String(value)
 }
 
