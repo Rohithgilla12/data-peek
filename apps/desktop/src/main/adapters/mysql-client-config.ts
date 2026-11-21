@@ -18,7 +18,10 @@ export function toMySQLConfig(
     port: overrides?.port ?? config.port,
     user: config.user,
     password: config.password,
-    database: config.database
+    database: config.database,
+    // Return DATE columns as `YYYY-MM-DD` strings. As a Date they are local midnight,
+    // and toISOString() moves them to the previous day ahead of UTC.
+    dateStrings: ['DATE']
   }
 
   if (config.ssl) {
