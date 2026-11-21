@@ -241,7 +241,9 @@ export function parseCellDate(v: unknown): Date {
   const dateOnly = DATE_ONLY.exec(text)
   if (dateOnly) {
     const [year, month, day] = [Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3])]
-    const d = new Date(year, month, day)
+    // setFullYear keeps a year below 100, which the Date constructor reads as 19xx.
+    const d = new Date(2000, 0, 1)
+    d.setFullYear(year, month, day)
     // The Date constructor rolls 2024-13-01 into 2025 and 2024-02-30 into
     // March; a day that isn't on the calendar is invalid, not another day.
     const real = d.getFullYear() === year && d.getMonth() === month && d.getDate() === day

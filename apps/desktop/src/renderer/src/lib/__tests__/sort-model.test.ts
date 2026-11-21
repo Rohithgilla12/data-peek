@@ -258,6 +258,12 @@ describe('applySorts', () => {
       expect([d.getFullYear(), d.getMonth(), d.getDate()]).toEqual([2024, 2, 1])
     })
 
+    it('keeps a year below 100', () => {
+      const d = parseCellDate('0099-01-02')
+      expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()]).toEqual([99, 0, 2, 0])
+      expect(Number.isNaN(parseCellDate('0099-02-29').getTime())).toBe(true)
+    })
+
     it('keeps the first of a month in that month', () => {
       expect(new Date('2024-03-01').getMonth()).toBe(1) // the zone is in effect
       const rows = [
