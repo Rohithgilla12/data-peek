@@ -236,7 +236,7 @@ const DATE_ONLY = /^(\d{4})-(\d{2})-(\d{2})$/
  * UTC its local month, weekday and hour are the previous evening's. A value
  * with no time is a calendar day, so it is read by its own fields.
  */
-function parseCellDate(v: unknown): Date {
+export function parseCellDate(v: unknown): Date {
   const text = String(v)
   const dateOnly = DATE_ONLY.exec(text)
   if (dateOnly) {

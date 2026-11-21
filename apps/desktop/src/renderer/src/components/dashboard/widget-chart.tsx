@@ -24,6 +24,7 @@ import {
 import type { ChartWidgetConfig } from '@shared/index'
 import { useMemo, useCallback } from 'react'
 import { seriesColors } from '@/lib/chart-palette'
+import { parseCellDate } from '@/lib/sort-model'
 
 interface WidgetChartProps {
   config: ChartWidgetConfig
@@ -63,7 +64,7 @@ function formatValue(value: unknown, type: 'number' | 'date' | 'string'): string
     return value.toLocaleString(undefined, { maximumFractionDigits: 2 })
   }
   if (type === 'date') {
-    const date = new Date(value as string | number | Date)
+    const date = typeof value === 'string' ? parseCellDate(value) : new Date(value as number | Date)
     return date.toLocaleDateString()
   }
   return String(value)
@@ -112,7 +113,8 @@ export function WidgetChart({ config, data }: WidgetChartProps) {
   const formatXAxis = useCallback(
     (value: unknown) => {
       if (xDataType === 'date') {
-        const date = new Date(value as string)
+        const date =
+          typeof value === 'string' ? parseCellDate(value) : new Date(value as number | Date)
         return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
       }
       const str = String(value)

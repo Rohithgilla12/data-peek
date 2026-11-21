@@ -20,7 +20,7 @@ export interface ExportData {
   rows: Record<string, unknown>[]
 }
 
-// pg and mysql2 return timestamptz, date and datetime as Date objects;
+// pg and mysql2 return timestamptz and datetime as Date objects;
 // JSON.stringify would wrap them in quotes.
 function cellText(value: unknown): string {
   if (value instanceof Date) {
