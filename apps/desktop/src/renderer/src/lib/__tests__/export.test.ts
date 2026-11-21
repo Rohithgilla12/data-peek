@@ -16,6 +16,14 @@ import {
 } from '../export'
 
 describe('escapeCSVValue', () => {
+  it('writes a Date as its ISO string without quotes', () => {
+    expect(escapeCSVValue(new Date('2026-01-15T10:30:00Z'))).toBe('2026-01-15T10:30:00.000Z')
+  })
+
+  it('writes an invalid Date as null instead of throwing', () => {
+    expect(escapeCSVValue(new Date(NaN))).toBe('null')
+  })
+
   it('should return empty string for null', () => {
     expect(escapeCSVValue(null)).toBe('')
   })
@@ -702,5 +710,15 @@ describe('generateExportFilename', () => {
     const filename = generateExportFilename('users')
 
     expect(filename).toMatch(/^users_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/)
+  })
+})
+
+describe('exportToMarkdown with dates', () => {
+  it('writes a Date as its ISO string without quotes', () => {
+    const md = exportToMarkdown({
+      columns: [{ name: 'created', dataType: 'timestamptz' }],
+      rows: [{ created: new Date('2026-01-15T10:30:00Z') }]
+    })
+    expect(md).toContain('| 2026-01-15T10:30:00.000Z |')
   })
 })
