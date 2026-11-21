@@ -7,7 +7,9 @@ import type { ConnectionConfig } from '@shared/index'
  *
  * Return `timestamp without time zone` (OID 1114) as a raw ISO string so JavaScript's
  * Date conversion can't shift a UTC-stored value to local time. (1184, timestamptz,
- * is left alone — that one *should* shift.)
+ * is left alone — that one *should* shift.) `date` (OID 1082) stays a raw `YYYY-MM-DD`
+ * string for the same reason: as a Date it is local midnight, and toISOString() moves
+ * it to the previous day ahead of UTC.
  *
  * pg keeps parsers in process-global state, so this is idempotent but every connection
  * path has to call it: registration used to be a side effect of building the first
@@ -16,6 +18,7 @@ import type { ConnectionConfig } from '@shared/index'
  */
 export function registerPgTypeParsers(): void {
   pgTypes.setTypeParser(1114, (val: string) => val)
+  pgTypes.setTypeParser(1082, (val: string) => val)
 }
 
 /**
