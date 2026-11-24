@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { readFileSync } from 'fs'
 import type { ConnectionConfig } from '@shared/index'
+import { types as pgTypes } from 'pg'
 import {
   buildClientConfig,
   buildSearchPathOption,
-  parseSchemaList
+  parseSchemaList,
+  registerPgTypeParsers
 } from '../adapters/pg-client-config'
 
 vi.mock('fs', async (importOriginal) => {
@@ -161,5 +163,13 @@ describe('buildClientConfig SSL', () => {
     expect(() =>
       buildClientConfig(makeConfig({ ssl: true, sslOptions: { ca: '/nope.pem' } }))
     ).toThrow('Failed to read CA certificate file: /nope.pem')
+  })
+})
+
+describe('registerPgTypeParsers', () => {
+  it('returns timestamp and date values as the raw strings Postgres sent', () => {
+    registerPgTypeParsers()
+    expect(pgTypes.getTypeParser(1114, 'text')('2026-01-15 10:30:00')).toBe('2026-01-15 10:30:00')
+    expect(pgTypes.getTypeParser(1082, 'text')('2026-01-15')).toBe('2026-01-15')
   })
 })

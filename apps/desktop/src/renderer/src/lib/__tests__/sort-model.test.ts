@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest'
 import {
   applySorts,
   getTypeCategory,
+  parseCellDate,
   toggleColumnSort,
   type SortChip,
   type SortColumn
@@ -250,6 +251,17 @@ describe('applySorts', () => {
     })
     afterAll(() => {
       vi.unstubAllEnvs()
+    })
+
+    it('reads a date-only cell as that calendar day (charts use this too)', () => {
+      const d = parseCellDate('2024-03-01')
+      expect([d.getFullYear(), d.getMonth(), d.getDate()]).toEqual([2024, 2, 1])
+    })
+
+    it('keeps a year below 100', () => {
+      const d = parseCellDate('0099-01-02')
+      expect([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()]).toEqual([99, 0, 2, 0])
+      expect(Number.isNaN(parseCellDate('0099-02-29').getTime())).toBe(true)
     })
 
     it('keeps the first of a month in that month', () => {

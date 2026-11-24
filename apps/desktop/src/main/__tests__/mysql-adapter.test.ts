@@ -94,6 +94,10 @@ describe('toMySQLConfig', () => {
     expect(cfg.ssl).toBeUndefined()
   })
 
+  it('returns DATE columns as strings so a date-only value keeps its day', () => {
+    expect(toMySQLConfig(makeConfig()).dateStrings).toEqual(['DATE'])
+  })
+
   it('without ssl sets no ssl options', () => {
     const cfg = toMySQLConfig(makeConfig({ ssl: false }))
     expect(cfg.host).toBe('db.example.com')
