@@ -37,6 +37,17 @@ function matchesOf(result: ReturnType<typeof findMatches>) {
 }
 
 describe('findMatches', () => {
+  it('matches a Date cell on the unquoted ISO string that copy emits', () => {
+    const dated = [{ created: new Date('2026-01-15T10:30:00Z') }]
+    const cols = [{ name: 'created' }]
+    expect(
+      matchesOf(findMatches(dated, cols, query('2026-01-15T10:30:00.000Z'), notMasked))
+    ).toEqual([{ row: 0, col: 0 }])
+    expect(
+      matchesOf(findMatches(dated, cols, query('^2026-01-15', { regex: true }), notMasked))
+    ).toEqual([{ row: 0, col: 0 }])
+  })
+
   it('returns no matches for an empty needle', () => {
     expect(findMatches(rows, columns, query(''), notMasked)).toEqual({ kind: 'ok', matches: [] })
   })
