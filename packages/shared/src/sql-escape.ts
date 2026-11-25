@@ -113,6 +113,12 @@ export function escapeSQLIdentifier(
   }
 }
 
+// MySQL reads backslash as an escape character inside string literals.
+function quoteString(value: string, dialect: SQLDialect): string {
+  const escaped = dialect === "mysql" ? value.replace(/\\/g, "\\\\") : value;
+  return `'${escaped.replace(/'/g, "''")}'`;
+}
+
 export function escapeSQLValue(
   value: unknown,
   dataType: string,
@@ -171,7 +177,7 @@ export function escapeSQLValue(
   // UUID types
   if (lowerType.includes("uuid") || lowerType.includes("uniqueidentifier")) {
     const strValue = String(value);
-    return `'${strValue.replace(/'/g, "''")}'`;
+    return quoteString(strValue, dialect);
   }
 
   // Date/Time types
@@ -191,7 +197,7 @@ export function escapeSQLValue(
       return `'${isoString}'`;
     }
     const strValue = String(value);
-    return `'${strValue.replace(/'/g, "''")}'`;
+    return quoteString(strValue, dialect);
   }
 
   // Binary/Bytea types
@@ -219,17 +225,17 @@ export function escapeSQLValue(
       return `'${hex}'`;
     }
     const strValue = String(value);
-    return `'${strValue.replace(/'/g, "''")}'`;
+    return quoteString(strValue, dialect);
   }
 
   // JSON/JSONB types
   if (lowerType.includes("json")) {
     const jsonStr = typeof value === "string" ? value : JSON.stringify(value);
-    const escaped = jsonStr.replace(/'/g, "''");
+    const quoted = quoteString(jsonStr, dialect);
     if (dialect === "postgresql" && lowerType === "jsonb") {
-      return `'${escaped}'::jsonb`;
+      return `${quoted}::jsonb`;
     }
-    return `'${escaped}'`;
+    return quoted;
   }
 
   // Array types (PostgreSQL)
@@ -246,21 +252,21 @@ export function escapeSQLValue(
           .replace(/'/g, "''");
         return `'${arrayLiteral}'`;
       }
-      return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
+      return quoteString(JSON.stringify(value), dialect);
     }
   }
 
   // Handle arrays that weren't caught by type
   if (Array.isArray(value)) {
-    return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
+    return quoteString(JSON.stringify(value), dialect);
   }
 
   // Object types
   if (typeof value === "object" && value !== null) {
-    return `'${JSON.stringify(value).replace(/'/g, "''")}'`;
+    return quoteString(JSON.stringify(value), dialect);
   }
 
   // String and other types
   const stringValue = String(value);
-  return `'${stringValue.replace(/'/g, "''")}'`;
+  return quoteString(stringValue, dialect);
 }

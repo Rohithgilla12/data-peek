@@ -155,6 +155,12 @@ describe('escapeSQLValue', () => {
     it('should handle empty strings', () => {
       expect(escapeSQLValue('', 'varchar')).toBe("''")
     })
+
+    it('should escape backslashes for MySQL only', () => {
+      expect(escapeSQLValue('C:\\new\\', 'varchar', 'mysql')).toBe("'C:\\\\new\\\\'")
+      expect(escapeSQLValue({ msg: 'say "hi"' }, 'json', 'mysql')).toBe(`'{"msg":"say \\\\"hi\\\\""}'`)
+      expect(escapeSQLValue('C:\\new', 'varchar', 'postgresql')).toBe("'C:\\new'")
+    })
   })
 
   describe('UUID types', () => {
